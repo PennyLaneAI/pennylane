@@ -18,8 +18,9 @@ from __future__ import annotations
 
 import inspect
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from textwrap import dedent
-from typing import Callable, Optional, Type, overload
+from typing import Optional, Type, overload
 
 from pennylane.operation import Operator
 
@@ -32,7 +33,7 @@ def register_condition(condition: Callable) -> Callable[[Callable], Decompositio
 @overload
 def register_condition(condition: Callable, qfunc: Callable) -> DecompositionRule: ...
 def register_condition(
-    condition: Callable[..., bool], qfunc: Optional[Callable] = None
+    condition: Callable[..., bool], qfunc: Callable | None = None
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     """Binds a condition to a decomposition rule for when it is applicable.
 
@@ -100,7 +101,7 @@ def register_resources(resources: Callable | dict) -> Callable[[Callable], Decom
 @overload
 def register_resources(resources: Callable | dict, qfunc: Callable) -> DecompositionRule: ...
 def register_resources(
-    resources: Callable | dict, qfunc: Optional[Callable] = None
+    resources: Callable | dict, qfunc: Callable | None = None
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     """Binds a quantum function to its required resources.
 
@@ -261,8 +262,8 @@ class DecompositionRule:
     def __init__(
         self,
         func: Callable,
-        resources: Optional[Callable | dict] = None,
-        condition: Optional[Callable[..., bool]] = None,
+        resources: Callable | dict | None = None,
+        condition: Callable[..., bool] | None = None,
     ):
 
         self._impl = func
@@ -347,7 +348,7 @@ _decompositions = defaultdict(list)
 """dict[str, list[DecompositionRule]]: A dictionary mapping operator names to decomposition rules."""
 
 
-def add_decomps(op_type: Type[Operator] | str, *decomps: DecompositionRule) -> None:
+def add_decomps(op_type: type[Operator] | str, *decomps: DecompositionRule) -> None:
     """Globally registers new decomposition rules with an operator class.
 
     .. note::
@@ -425,7 +426,7 @@ def add_decomps(op_type: Type[Operator] | str, *decomps: DecompositionRule) -> N
     _decompositions[translate_op_alias(op_type)].extend(decomps)
 
 
-def list_decomps(op_type: Type[Operator] | str) -> list[DecompositionRule]:
+def list_decomps(op_type: type[Operator] | str) -> list[DecompositionRule]:
     """Lists all stored decomposition rules for an operator class.
 
     .. note::
@@ -469,7 +470,7 @@ def list_decomps(op_type: Type[Operator] | str) -> list[DecompositionRule]:
     return _decompositions[translate_op_alias(op_type)][:]
 
 
-def has_decomp(op_type: Type[Operator] | str) -> bool:
+def has_decomp(op_type: type[Operator] | str) -> bool:
     """Checks whether an operator has decomposition rules defined.
 
     .. note::

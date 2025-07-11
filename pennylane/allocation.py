@@ -15,7 +15,8 @@
 This module contains the commands for allocating and deallocating wires dynamically.
 """
 import uuid
-from typing import Optional, Sequence
+from collections.abc import Sequence
+from typing import Optional
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.operation import Operator
@@ -73,7 +74,7 @@ class DynamicWire:
         key (Optional[str]): a ``uuid4`` string to uniquely identify the dynamic wire.
     """
 
-    def __init__(self, key: Optional[uuid.UUID] = None):
+    def __init__(self, key: uuid.UUID | None = None):
         self.key = key or uuid.uuid4()
 
     def __eq__(self, other):

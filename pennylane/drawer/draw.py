@@ -17,8 +17,9 @@ Contains the drawing function.
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import TYPE_CHECKING, Callable, Literal, Optional, Sequence
+from typing import TYPE_CHECKING, Literal, Optional
 
 from pennylane import math
 from pennylane.tape import make_qscript
@@ -334,7 +335,7 @@ def draw(
 
 def _draw_qnode(
     qnode,
-    wire_order: Optional[Sequence] = None,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
     *,
     decimals=2,
@@ -387,12 +388,12 @@ def _draw_qnode(
 
 def draw_mpl(
     qnode: QNode | Callable,
-    wire_order: Optional[Sequence] = None,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
-    decimals: Optional[int] = None,
-    style: Optional[str] = None,
+    decimals: int | None = None,
+    style: str | None = None,
     *,
-    max_length: Optional[int] = None,
+    max_length: int | None = None,
     fig=None,
     level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
     **kwargs,

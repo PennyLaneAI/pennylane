@@ -186,10 +186,10 @@ class QuantumScript:
 
     def __init__(
         self,
-        ops: Optional[Iterable[Operator]] = None,
-        measurements: Optional[Iterable[MeasurementProcess]] = None,
-        shots: Optional[ShotsLike] = None,
-        trainable_params: Optional[Sequence[int]] = None,
+        ops: Iterable[Operator] | None = None,
+        measurements: Iterable[MeasurementProcess] | None = None,
+        shots: ShotsLike | None = None,
+        trainable_params: Sequence[int] | None = None,
     ):
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
@@ -323,7 +323,7 @@ class QuantumScript:
         return len(self.trainable_params)
 
     @property
-    def batch_size(self) -> Optional[int]:
+    def batch_size(self) -> int | None:
         r"""The batch size of the quantum script inferred from the batch sizes
         of the used operations for parameter broadcasting.
 
@@ -959,7 +959,7 @@ class QuantumScript:
     def expand(
         self,
         depth: int = 1,
-        stop_at: Optional[Callable[[Operation | MeasurementProcess], bool]] = None,
+        stop_at: Callable[[Operation | MeasurementProcess], bool] | None = None,
         expand_measurements: bool = False,
     ) -> "QuantumScript":
         """Expand all operations to a specific depth.
@@ -1161,9 +1161,9 @@ class QuantumScript:
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def draw(
         self,
-        wire_order: Optional[Iterable[Hashable]] = None,
+        wire_order: Iterable[Hashable] | None = None,
         show_all_wires: bool = False,
-        decimals: Optional[int] = None,
+        decimals: int | None = None,
         max_length: int = 100,
         show_matrices: bool = True,
     ) -> str:
@@ -1192,10 +1192,10 @@ class QuantumScript:
 
     def to_openqasm(
         self,
-        wires: Optional[WiresLike] = None,
+        wires: WiresLike | None = None,
         rotations: bool = True,
         measure_all: bool = True,
-        precision: Optional[int] = None,
+        precision: int | None = None,
     ) -> str:
         """Serialize the circuit as an OpenQASM 2.0 program.
 
@@ -1290,7 +1290,7 @@ class QuantumScript:
 
     @classmethod
     def from_queue(
-        cls: type[QS], queue: qml.queuing.AnnotatedQueue, shots: Optional[ShotsLike] = None
+        cls: type[QS], queue: qml.queuing.AnnotatedQueue, shots: ShotsLike | None = None
     ) -> QS:
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
@@ -1373,7 +1373,7 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def make_qscript(fn: Callable[P, T], shots: Optional[ShotsLike] = None) -> Callable[P, QS]:
+def make_qscript(fn: Callable[P, T], shots: ShotsLike | None = None) -> Callable[P, QS]:
     """Returns a function that generates a qscript from a quantum function without any
     operation queuing taking place.
 

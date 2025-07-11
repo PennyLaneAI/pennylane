@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from functools import reduce
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 import scipy as sp
@@ -116,8 +116,8 @@ def _string_to_matrix(
 def _tensor_with_identity(
     modes: int,
     gridpoints: int,
-    index: Tuple[int],
-    ops: Tuple[np.ndarray | sp.sparse.csr_array],
+    index: tuple[int],
+    ops: tuple[np.ndarray | sp.sparse.csr_array],
     sparse: bool = False,
 ) -> np.ndarray | sp.sparse.csr_array:
     """Tensor the input matrices with the identity"""
@@ -150,7 +150,7 @@ def _kron(a: np.ndarray | sp.sparse.csr_array, b: np.ndarray | sp.sparse.csr_arr
     raise TypeError(f"Matrices must both be ndarray or csr_array. Got {type(a)} and {type(b)}.")
 
 
-def _zeros(shape: Tuple[int], sparse: bool = False) -> np.ndarray | sp.sparse.csr_array:
+def _zeros(shape: tuple[int], sparse: bool = False) -> np.ndarray | sp.sparse.csr_array:
     """Return a matrix representation of the zero operator"""
     if sparse:
         return sp.sparse.csr_array(shape)

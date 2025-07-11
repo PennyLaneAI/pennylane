@@ -555,7 +555,7 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
     )
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def _get_gen_op(op, allow_nonunitary, aux_wire):
     r"""Get the controlled-generator operation for a given operation.
 

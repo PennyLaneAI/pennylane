@@ -27,7 +27,7 @@ class DatasetMolecule(DatasetAttribute[HDF5Group, Molecule, Molecule]):
     type_id = "molecule"
 
     @classmethod
-    def consumes_types(cls) -> tuple[Type[Molecule]]:
+    def consumes_types(cls) -> tuple[type[Molecule]]:
         return (Molecule,)
 
     def hdf5_to_value(self, bind: HDF5Group) -> Molecule:

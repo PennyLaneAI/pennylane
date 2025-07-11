@@ -72,8 +72,8 @@ def _convert_to_interface(result, interface: Interface):
 
 
 def _make_execution_config(
-    circuit: Optional[QNode], diff_method=None, mcm_config=None
-) -> "qml.devices.ExecutionConfig":
+    circuit: QNode | None, diff_method=None, mcm_config=None
+) -> qml.devices.ExecutionConfig:
     circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
     gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
@@ -523,13 +523,13 @@ class QNode:
         cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
         max_diff: int = 1,
-        device_vjp: Optional[bool] = False,
-        postselect_mode: Optional[Literal["hw-like", "fill-shots"]] = None,
-        mcm_method: Optional[Literal["deferred", "one-shot", "tree-traversal"]] = None,
-        gradient_kwargs: Optional[dict] = None,
+        device_vjp: bool | None = False,
+        postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
+        mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+        gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         autograph: bool = True,
-        executor_backend: Optional[ExecBackends | str] = None,
+        executor_backend: ExecBackends | str | None = None,
     ):
         self._init_args = locals()
         del self._init_args["self"]
@@ -776,7 +776,7 @@ class QNode:
         device: SupportedDeviceAPIs,
         interface: str,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
-        tape: Optional["qml.tape.QuantumTape"] = None,
+        tape: qml.tape.QuantumTape | None = None,
     ):
         """Determine the best differentiation method, interface, and device
         for a requested device, interface, and diff method.

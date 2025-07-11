@@ -14,9 +14,10 @@
 """Transforms for pushing commuting gates through targets/control qubits."""
 
 from collections import deque
+from collections.abc import Sequence
 from functools import lru_cache, partial
 from itertools import islice
-from typing import Optional, Sequence
+from typing import Optional
 
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -250,7 +251,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
 CommuteControlledInterpreter, commute_controlled_plxpr_to_plxpr = _get_plxpr_commute_controlled()
 
 
-def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> Optional[int]:
+def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> int | None:
     """Finds the previous gate index that shares wires."""
 
     return find_next_gate(wires, reversed(prevs_ops))

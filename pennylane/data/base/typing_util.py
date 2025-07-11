@@ -50,7 +50,7 @@ class UnsetType(Enum):
 UNSET = UnsetType.UNSET
 
 
-def get_type(type_or_obj: object | Type) -> Type:
+def get_type(type_or_obj: object | type) -> type:
     """Given an object or an object type, returns the underlying class.
 
     Examples:
@@ -119,7 +119,7 @@ def get_type_str(cls: type | str | None) -> str:  # pylint: disable=too-many-ret
     return f"{cls.__module__}.{cls.__qualname__}"
 
 
-def resolve_special_type(type_: Any) -> Optional[tuple[type, list[type]]]:
+def resolve_special_type(type_: Any) -> tuple[type, list[type]] | None:
     """Converts special typing forms (Union[...], Optional[...]), and parametrized
     generics (List[...], Dict[...]) into a 2-tuple of its base type and arguments.
     If ``type_`` is a regular type, or an object, this function will return

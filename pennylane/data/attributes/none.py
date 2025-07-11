@@ -29,7 +29,7 @@ class DatasetNone(DatasetAttribute[HDF5Array, type(None), type(None)]):
         return None
 
     @classmethod
-    def consumes_types(cls) -> tuple[Type[None]]:
+    def consumes_types(cls) -> tuple[type[None]]:
         return (type(None),)
 
     def hdf5_to_value(self, bind) -> None:

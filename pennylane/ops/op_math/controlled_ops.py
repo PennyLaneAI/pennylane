@@ -18,8 +18,9 @@ This submodule contains controlled operators based on the ControlledOp class.
 
 # pylint: disable=arguments-differ,arguments-renamed
 
+from collections.abc import Iterable
 from functools import lru_cache, partial
-from typing import Iterable, List, Literal, Optional
+from typing import List, Literal, Optional
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -176,7 +177,7 @@ class ControlledQubitUnitary(ControlledOp):
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
-        work_wire_type: Optional[str] = "dirty",
+        work_wire_type: str | None = "dirty",
     ):
 
         if wires is None:
@@ -308,7 +309,7 @@ class CH(ControlledOp):
         return {}
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -448,7 +449,7 @@ class CY(ControlledOp):
         return CY(self.wires)
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -581,7 +582,7 @@ class CZ(ControlledOp):
         return CZ(self.wires)
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -706,7 +707,7 @@ class CSWAP(ControlledOp):
         return CSWAP(self.wires)
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -859,7 +860,7 @@ class CCZ(ControlledOp):
         return CCZ(self.wires)
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -900,7 +901,7 @@ class CCZ(ControlledOp):
     @staticmethod
     def compute_decomposition(
         wires: WiresLike,
-    ) -> List[qml.operation.Operator]:
+    ) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1075,7 +1076,7 @@ class CNOT(ControlledOp):
         return f"CNOT(wires={self.wires.tolist()})"
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1188,7 +1189,7 @@ class Toffoli(ControlledOp):
         return Toffoli(self.wires)
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix():  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1229,7 +1230,7 @@ class Toffoli(ControlledOp):
     @staticmethod
     def compute_decomposition(
         wires: WiresLike,
-    ) -> List[qml.operation.Operator]:
+    ) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1432,10 +1433,8 @@ class MultiControlledX(ControlledOp):
             if not (
                 isinstance(control_values, (bool, int))
                 or (
-                    (
-                        isinstance(control_values, (list, tuple))
-                        and all(isinstance(val, (bool, int)) for val in control_values)
-                    )
+                    isinstance(control_values, (list, tuple))
+                    and all(isinstance(val, (bool, int)) for val in control_values)
                 )
             ):
                 raise ValueError(f"control_values must be boolean or int. Got: {control_values}")
@@ -1443,7 +1442,7 @@ class MultiControlledX(ControlledOp):
     def __init__(
         self,
         wires: WiresLike = (),
-        control_values: bool | List[bool] | int | List[int] = None,
+        control_values: bool | list[bool] | int | list[int] = None,
         work_wires: WiresLike = (),
         work_wire_type: Literal["clean", "dirty"] = "dirty",
     ):
@@ -1775,7 +1774,7 @@ class CRX(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> List[qml.operation.Operator]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -1982,7 +1981,7 @@ class CRY(ControlledOp):
         return qml.math.stack([stack_last(row) for row in matrix], axis=-2)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> List[qml.operation.Operator]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2200,7 +2199,7 @@ class CRZ(ControlledOp):
         return self.compute_eigvals(*self.parameters)
 
     @staticmethod
-    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> List[qml.operation.Operator]:
+    def compute_decomposition(phi: TensorLike, wires: WiresLike) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -2407,7 +2406,7 @@ class CRot(ControlledOp):
     @staticmethod
     def compute_decomposition(
         phi: TensorLike, theta: TensorLike, omega: TensorLike, wires: WiresLike
-    ) -> List[qml.operation.Operator]:
+    ) -> list[qml.operation.Operator]:
         r"""Representation of the operator as a product of other operators (static method). :
 
         .. math:: O = O_1 O_2 \dots O_n.

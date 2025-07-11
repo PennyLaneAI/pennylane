@@ -159,8 +159,8 @@ class TransformProgram:
 
     def __init__(
         self,
-        initial_program: Optional[Sequence[TransformContainer]] = None,
-        cotransform_cache: Optional[CotransformCache] = None,
+        initial_program: Sequence[TransformContainer] | None = None,
+        cotransform_cache: CotransformCache | None = None,
     ):
         self._transform_program = list(initial_program) if initial_program else []
         self.cotransform_cache = cotransform_cache

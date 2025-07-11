@@ -1068,7 +1068,7 @@ class _QReg:
     of qubits that together form a quantum register.
     """
 
-    def __init__(self, qubits: Tuple["cirq.Qid", ...], dtype: "qt.QDType"):
+    def __init__(self, qubits: tuple["cirq.Qid", ...], dtype: "qt.QDType"):
         if isinstance(qubits, cirq.Qid):
             self.qubits = (qubits,)
         else:
@@ -1103,7 +1103,7 @@ class _QReg:
 def _ensure_in_reg_exists(
     bb: "qt.BloqBuilder",
     in_reg: "_QReg",
-    qreg_to_qvar: Dict["_QReg", "qt.Soquet"],
+    qreg_to_qvar: dict["_QReg", "qt.Soquet"],
 ) -> None:
     """Modified function from the Qualtran-Cirq interop module to ensure `qreg_to_qvar[in_reg]`
     exists. If `in_reg` is not found in `qreg_to_qvar`, that means that the input qubit register
@@ -1146,7 +1146,7 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     """
     qvars_in = {}
     for reg_name, quregs in op_quregs.items():
-        flat_soqs: List[qt.Soquet] = []
+        flat_soqs: list[qt.Soquet] = []
         for qureg in quregs.flatten():
             _ensure_in_reg_exists(bb, qureg, qreg_to_qvar)
             flat_soqs.append(qreg_to_qvar[qureg])
@@ -1319,7 +1319,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
                 {reg.name: out_quregs[reg.name] for reg in signature.rights()},
                 qreg_to_qvar,
             )
-            final_soqs_set = set(soq for soqs in final_soqs_dict.values() for soq in soqs.flatten())
+            final_soqs_set = {soq for soqs in final_soqs_dict.values() for soq in soqs.flatten()}
             # Free all dangling Soquets which are not part of the final soquets set.
             for qvar in qreg_to_qvar.values():
                 if qvar not in final_soqs_set:

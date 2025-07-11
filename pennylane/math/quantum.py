@@ -1071,7 +1071,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
                         break
                 Y_prev = Y.copy()
 
-        numerical_error = spla.norm((Y @ Y - mat))
+        numerical_error = spla.norm(Y @ Y - mat)
         if (norm_diff and norm_diff > tol) or numerical_error > tol:
             raise ValueError(
                 f"Convergence threshold not reached after {max_iter} iterations, "

@@ -16,8 +16,9 @@ This module contains the CircuitGraph class which is used to generate a DAG (dir
 representation of a quantum circuit from an Operator queue.
 """
 from collections import defaultdict, namedtuple
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Optional, Sequence
+from typing import Optional
 
 import numpy as np
 import rustworkx as rx
@@ -100,8 +101,8 @@ class CircuitGraph:
         ops: list[Operator | MeasurementProcess],
         obs: list[MeasurementProcess | Operator],
         wires: Wires,
-        par_info: Optional[list[dict]] = None,
-        trainable_params: Optional[set[int]] = None,
+        par_info: list[dict] | None = None,
+        trainable_params: set[int] | None = None,
     ):
         self._operations = ops
         self._observables = obs

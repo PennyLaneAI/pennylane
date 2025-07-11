@@ -14,7 +14,7 @@
 """
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 has_jax = True
 try:

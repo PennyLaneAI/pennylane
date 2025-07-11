@@ -183,7 +183,7 @@ def dot(
 def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
     """Compute dot when operators are a mix of pennylane operators, PauliWord and PauliSentence by turning them all into a PauliSentence instance.
     Returns a PauliSentence instance"""
-    pauli_words = defaultdict(lambda: 0)
+    pauli_words = defaultdict(int)
     for coeff, op in zip(coeffs, ops):
         sentence = qml.pauli.pauli_sentence(op)
         for pw in sentence:

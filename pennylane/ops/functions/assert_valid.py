@@ -364,12 +364,10 @@ def _check_capture(op):
         assert op == new_op
     except Exception as e:
         raise ValueError(
-            (
-                "The capture of the operation into jaxpr failed somehow."
-                " This capture mechanism is currently experimental and not a core"
-                " requirement, but will be necessary in the future."
-                " Please see the capture module documentation for more information."
-            )
+            "The capture of the operation into jaxpr failed somehow."
+            " This capture mechanism is currently experimental and not a core"
+            " requirement, but will be necessary in the future."
+            " Please see the capture module documentation for more information."
         ) from e
     finally:
         qml.capture.disable()

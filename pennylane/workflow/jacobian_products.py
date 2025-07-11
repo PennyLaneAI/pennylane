@@ -267,8 +267,8 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def __init__(
         self,
         inner_execute: Callable,
-        gradient_transform: "qml.transforms.core.TransformDispatcher",
-        gradient_kwargs: Optional[dict] = None,
+        gradient_transform: qml.transforms.core.TransformDispatcher,
+        gradient_kwargs: dict | None = None,
         cache_full_jacobian: bool = False,
     ):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
@@ -422,8 +422,8 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     def __init__(
         self,
-        device: "qml.devices.Device",
-        execution_config: Optional["qml.devices.ExecutionConfig"] = None,
+        device: qml.devices.Device,
+        execution_config: qml.devices.ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = qml.devices.DefaultExecutionConfig
@@ -672,9 +672,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     def __repr__(self):
         return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config}>"
 
-    def __init__(
-        self, device: "qml.devices.Device", execution_config: "qml.devices.ExecutionConfig"
-    ):
+    def __init__(self, device: qml.devices.Device, execution_config: qml.devices.ExecutionConfig):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("DeviceJacobianProducts created with (%s, %s)", device, execution_config)
         self._device = device

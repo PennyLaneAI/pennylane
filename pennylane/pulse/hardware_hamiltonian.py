@@ -315,8 +315,8 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         coeffs,
         observables,
         reorder_fn: Callable = _reorder_parameters,
-        pulses: Optional[list["HardwarePulse"]] = None,
-        settings: Optional[Union["qml.pulse.RydbergSettings", "qml.pulse.TransmonSettings"]] = None,
+        pulses: list["HardwarePulse"] | None = None,
+        settings: Union["qml.pulse.RydbergSettings", "qml.pulse.TransmonSettings"] | None = None,
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses

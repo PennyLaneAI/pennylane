@@ -410,7 +410,7 @@ class SpecialUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, theta: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, theta: TensorLike, wires: WiresLike, id: str | None = None):
         num_wires = 1 if isinstance(wires, int) else len(wires)
         self.hyperparameters["num_wires"] = num_wires
         theta_shape = qml.math.shape(theta)

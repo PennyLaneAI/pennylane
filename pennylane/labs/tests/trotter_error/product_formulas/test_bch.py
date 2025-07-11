@@ -241,7 +241,7 @@ fragment_list = [
 
 second_order_pf = ProductFormula(["X", "Y", "X"], coeffs=[1 / 2, 1, 1 / 2])
 c = 1 / (4 - 4 ** (1 / 3))
-fourth_order1 = second_order_pf(c) ** 2 @ second_order_pf((1 - 4 * c)) @ second_order_pf(c) ** 2
+fourth_order1 = second_order_pf(c) ** 2 @ second_order_pf(1 - 4 * c) @ second_order_pf(c) ** 2
 fourth_order_labels = ["X", "Y", "X", "Y", "X", "Y", "X", "Y", "X", "Y", "X"]
 fourth_order_coeffs = [
     c / 2,

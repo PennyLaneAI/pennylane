@@ -18,8 +18,8 @@ class lazy_module:  # pylint: disable=too-few-public-methods
     def __init__(
         self,
         module_name_or_module: str | ModuleType,
-        import_exc: Optional[Exception] = None,
-        post_import_cb: Optional[Callable[[ModuleType], None]] = None,
+        import_exc: Exception | None = None,
+        post_import_cb: Callable[[ModuleType], None] | None = None,
     ):
         """Creates a new top-level lazy module or initializes a nested one.
 

@@ -56,7 +56,7 @@ def _add_trace_level():
     lc.trace = trace
 
 
-def _configure_logging(config_file: str, config_override: Optional[dict] = None):
+def _configure_logging(config_file: str, config_override: dict | None = None):
     """
     This method allows custom logging configuration throughout PennyLane.
     All configurations are read through the ``log_config.toml`` file, with additional custom options provided through the ``config_override`` dictionary.

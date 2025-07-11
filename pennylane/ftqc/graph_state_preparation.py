@@ -188,7 +188,7 @@ class GraphStatePrep(Operation):
         graph: nx.Graph | QubitGraph,
         one_qubit_ops: Operation = qml.H,
         two_qubit_ops: Operation = qml.CZ,
-        wires: Optional[Wires] = None,
+        wires: Wires | None = None,
     ):
         self.hyperparameters["graph"] = graph
         self.hyperparameters["one_qubit_ops"] = one_qubit_ops

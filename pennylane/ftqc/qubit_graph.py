@@ -201,7 +201,7 @@ class QubitGraph:
         - Implement tensor-like indexing and slicing.
     """
 
-    def __init__(self, graph: Optional[nx.Graph] = None, id: Optional[Any] = None):
+    def __init__(self, graph: nx.Graph | None = None, id: Any | None = None):
         # The identifier for this QubitGraph, e.g. a number, string, tuple, etc.
         # Generate a random uuid if the input is None
         self._id = uuid.uuid4() if id is None else id

@@ -31,7 +31,7 @@ class DatasetTuple(
     type_id = "tuple"
 
     @classmethod
-    def consumes_types(cls) -> tuple[Type[tuple]]:
+    def consumes_types(cls) -> tuple[type[tuple]]:
         return (tuple,)
 
     @classmethod

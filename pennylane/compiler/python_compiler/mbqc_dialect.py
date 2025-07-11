@@ -90,7 +90,7 @@ class MeasureInBasisOp(IRDLOperation):
         in_qubit: QubitSSAValue | Operation,
         plane: MeasurementPlaneAttr,
         angle: SSAValue[Float64Type],
-        postselect: Optional[int | IntegerAttr] = None,
+        postselect: int | IntegerAttr | None = None,
     ):
         properties = {"plane": plane}
 

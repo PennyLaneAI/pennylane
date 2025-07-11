@@ -111,8 +111,8 @@ def ctrl_decomp_bisect(target_operation: Operator, control_wires: Wires):
 def ctrl_decomp_zyz(
     target_operation: Operator,
     control_wires: Wires,
-    work_wires: Optional[Wires] = None,
-    work_wire_type: Optional[str] = "dirty",
+    work_wires: Wires | None = None,
+    work_wire_type: str | None = "dirty",
 ) -> list[Operation]:
     """Decompose the controlled version of a target single-qubit operation
 

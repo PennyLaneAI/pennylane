@@ -14,10 +14,12 @@
 """
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
+from collections.abc import Callable, Sequence
+
 # pylint: disable=no-self-use
 from copy import copy
 from functools import partial, wraps
-from typing import Callable, Optional, Sequence
+from typing import Optional
 
 import jax
 
@@ -44,7 +46,7 @@ A dictionary containing flattened style cond, while, and for loop higher order p
 """
 
 
-def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[Optional[int]]):
+def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[int | None]):
     """
     A helper for broadcast_in_dim and iota to combine static dimensions and dynamic dimensions.
 

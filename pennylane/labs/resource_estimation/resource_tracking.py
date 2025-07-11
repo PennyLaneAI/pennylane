@@ -14,9 +14,9 @@
 r"""Core resource tracking logic."""
 import copy
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from functools import singledispatch, wraps
-from typing import Dict, Iterable, List, Set
+from typing import Dict, List, Set
 
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
 from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
@@ -75,10 +75,10 @@ resource_config = {
 
 
 def estimate_resources(
-    obj: ResourceOperator | Callable | Resources | List,
-    gate_set: Set = DefaultGateSet,
-    config: Dict = resource_config,
-    work_wires: int | Dict = 0,
+    obj: ResourceOperator | Callable | Resources | list,
+    gate_set: set = DefaultGateSet,
+    config: dict = resource_config,
+    work_wires: int | dict = 0,
     tight_budget: bool = False,
     single_qubit_rotation_error: float | None = None,
 ) -> Resources | Callable:
@@ -150,10 +150,10 @@ def estimate_resources(
 
 @singledispatch
 def _estimate_resources(
-    obj: ResourceOperator | Callable | Resources | List,
-    gate_set: Set = DefaultGateSet,
-    config: Dict = resource_config,
-    work_wires: int | Dict = 0,
+    obj: ResourceOperator | Callable | Resources | list,
+    gate_set: set = DefaultGateSet,
+    config: dict = resource_config,
+    work_wires: int | dict = 0,
     tight_budget: bool = False,
 ) -> Resources | Callable:
     r"""Raise error if there is no implementation registered for the object type."""
@@ -166,8 +166,8 @@ def _estimate_resources(
 @_estimate_resources.register
 def resources_from_qfunc(
     obj: Callable,
-    gate_set: Set = DefaultGateSet,
-    config: Dict = resource_config,
+    gate_set: set = DefaultGateSet,
+    config: dict = resource_config,
     work_wires=0,
     tight_budget=False,
 ) -> Callable:
@@ -209,8 +209,8 @@ def resources_from_qfunc(
 @_estimate_resources.register
 def resources_from_resource(
     obj: Resources,
-    gate_set: Set = DefaultGateSet,
-    config: Dict = resource_config,
+    gate_set: set = DefaultGateSet,
+    config: dict = resource_config,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -249,8 +249,8 @@ def resources_from_resource(
 @_estimate_resources.register
 def resources_from_resource_ops(
     obj: ResourceOperator,
-    gate_set: Set = DefaultGateSet,
-    config: Dict = resource_config,
+    gate_set: set = DefaultGateSet,
+    config: dict = resource_config,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -270,8 +270,8 @@ def resources_from_resource_ops(
 @_estimate_resources.register
 def resources_from_pl_ops(
     obj: Operation,
-    gate_set: Set = DefaultGateSet,
-    config: Dict = resource_config,
+    gate_set: set = DefaultGateSet,
+    config: dict = resource_config,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -290,9 +290,9 @@ def _counts_from_compressed_res_op(
     cp_rep: CompressedResourceOp,
     gate_counts_dict,
     qbit_mngr,
-    gate_set: Set,
+    gate_set: set,
     scalar: int = 1,
-    config: Dict = resource_config,
+    config: dict = resource_config,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
 
@@ -368,7 +368,7 @@ def _update_config_single_qubit_rot_error(config, error):
 @QueuingManager.stop_recording()
 def _ops_to_compressed_reps(
     ops: Iterable[Operation | ResourceOperator],
-) -> List[CompressedResourceOp]:
+) -> list[CompressedResourceOp]:
     """Convert the sequence of operations to a list of compressed resource ops.
 
     Args:

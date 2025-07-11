@@ -80,7 +80,7 @@ def constant(scalar, time):
     return scalar
 
 
-def rect(x: float | Callable, windows: Optional[tuple[float] | list[tuple[float]]] = None):
+def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None = None):
     """Takes a scalar or a scalar-valued function, x, and applies a rectangular window to it, such that the
     returned function is x inside the window and 0 outside it.
 

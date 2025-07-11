@@ -215,7 +215,7 @@ def fold_global_tape(circuit, scale_factor):
     # Generate base_circuit without measurements
     # Treat all circuits as lists of operations, build new tape in the end
     base_ops = circuit.operations
-    if any((isinstance(op, qml.operation.Channel) for op in base_ops)):
+    if any(isinstance(op, qml.operation.Channel) for op in base_ops):
         raise ValueError(
             "Circuits containing quantum channels cannot be folded with mitigate_with_zne. "
             "To use zero-noise extrapolation on the circuit with channel noise, "
@@ -264,7 +264,7 @@ def _polyfit(x, y, order):
     y = qml.math.stack(y)
 
     # scale X to improve condition number and solve
-    scale = qml.math.sum(qml.math.sqrt((X * X)), axis=0)
+    scale = qml.math.sum(qml.math.sqrt(X * X), axis=0)
     X = X / scale
 
     # Compute coeffs:
@@ -380,8 +380,8 @@ def mitigate_with_zne(
     scale_factors: Sequence[float],
     folding: callable,
     extrapolate: callable,
-    folding_kwargs: Optional[dict[str, Any]] = None,
-    extrapolate_kwargs: Optional[dict[str, Any]] = None,
+    folding_kwargs: dict[str, Any] | None = None,
+    extrapolate_kwargs: dict[str, Any] | None = None,
     reps_per_factor=1,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Mitigate an input circuit using zero-noise extrapolation.

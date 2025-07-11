@@ -38,14 +38,14 @@ class ColorScheme(NamedTuple):
     warning: str
     error: str
     critical: str
-    debug_bg: Optional[str]
-    info_bg: Optional[str]
-    warning_bg: Optional[str]
-    error_bg: Optional[str]
-    critical_bg: Optional[str]
+    debug_bg: str | None
+    info_bg: str | None
+    warning_bg: str | None
+    error_bg: str | None
+    critical_bg: str | None
 
 
-def build_code_rgb(rgb: tuple[int, int, int], rgb_bg: Optional[tuple[int, int, int]] = None):
+def build_code_rgb(rgb: tuple[int, int, int], rgb_bg: tuple[int, int, int] | None = None):
     """
     Utility function to generate the appropriate ANSI RGB codes for a given set of foreground (font) and background colors.
     """

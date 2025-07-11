@@ -13,8 +13,9 @@
 # limitations under the License.
 """Code for resource estimation"""
 import inspect
+from collections.abc import Callable
 from copy import copy
-from typing import Any, Callable, Literal
+from typing import Any, Literal
 
 import pennylane as qml
 

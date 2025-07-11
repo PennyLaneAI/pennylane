@@ -880,7 +880,7 @@ def pauli_group(n_qubits, wire_map=None):
     return _pauli_group_generator(n_qubits, wire_map=wire_map)
 
 
-@lru_cache()
+@lru_cache
 def partition_pauli_group(n_qubits: int) -> list[list[str]]:
     """Partitions the :math:`n`-qubit Pauli group into qubit-wise commuting terms.
 
@@ -1224,7 +1224,7 @@ def _binary_matrix_from_pws(terms, num_qubits, wire_map=None):
     return binary_matrix
 
 
-@lru_cache()
+@lru_cache
 def pauli_eigs(n):
     r"""Eigenvalues for :math:`A^{\otimes n}`, where :math:`A` is
     Pauli operator, or shares its eigenvalues.

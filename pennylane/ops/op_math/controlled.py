@@ -51,17 +51,17 @@ from .symbolicop import SymbolicOp
 def ctrl(
     op: Operator,
     control: Any,
-    control_values: Optional[Sequence[bool | int]] = None,
-    work_wires: Optional[Any] = None,
-    work_wire_type: Optional[str] = "dirty",
+    control_values: Sequence[bool | int] | None = None,
+    work_wires: Any | None = None,
+    work_wire_type: str | None = "dirty",
 ) -> Operator: ...
 @overload
 def ctrl(
     op: Callable,
     control: Any,
-    control_values: Optional[Sequence[bool | int]] = None,
-    work_wires: Optional[Any] = None,
-    work_wire_type: Optional[str] = "dirty",
+    control_values: Sequence[bool | int] | None = None,
+    work_wires: Any | None = None,
+    work_wire_type: str | None = "dirty",
 ) -> Callable: ...
 def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type="dirty"):
     r"""Create a method that applies a controlled version of the provided op.
@@ -572,7 +572,7 @@ class Controlled(SymbolicOp):
         control_wires: WiresLike,
         control_values=None,
         work_wires: WiresLike = None,
-        work_wire_type: Optional[str] = "dirty",
+        work_wire_type: str | None = "dirty",
         id=None,
     ):
         control_wires = Wires(control_wires)
@@ -894,7 +894,7 @@ class Controlled(SymbolicOp):
             for op in base_pow
         ]
 
-    def simplify(self) -> "Operator":
+    def simplify(self) -> Operator:
         if isinstance(self.base, Controlled):
             base = self.base.base.simplify()
             return ctrl(
@@ -950,7 +950,7 @@ def _decompose_pauli_x_based_no_control_values(op: Controlled):
     )
 
 
-def _decompose_custom_ops(op: Controlled) -> Optional[list[Operator]]:
+def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     """Custom handling for decomposing a controlled operation"""
 
     pauli_x_based_ctrl_ops = _get_pauli_x_based_ops()
@@ -990,7 +990,7 @@ def _decompose_custom_ops(op: Controlled) -> Optional[list[Operator]]:
     return None
 
 
-def _decompose_no_control_values(op: Controlled) -> Optional[list[Operator]]:
+def _decompose_no_control_values(op: Controlled) -> list[Operator] | None:
     """Decompose without considering control values. Returns None if no decomposition."""
 
     decomp = _decompose_custom_ops(op)

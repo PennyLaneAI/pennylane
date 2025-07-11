@@ -44,7 +44,7 @@ _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 _cnot_matrix = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]]).reshape((2,) * 4)
 
 
-def compute_theta(alpha: TensorLike, num_qubits: Optional[int] = None):
+def compute_theta(alpha: TensorLike, num_qubits: int | None = None):
     r"""Maps the input angles ``alpha`` of the multi-controlled rotations decomposition of a
     uniformly controlled rotation to the rotation angles used in the
     `Gray code <https://en.wikipedia.org/wiki/Gray_code>`__ implementation.

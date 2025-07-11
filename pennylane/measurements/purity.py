@@ -79,14 +79,14 @@ class PurityMP(StateMeasurement):
 
     _shortname = "purity"
 
-    def __init__(self, wires: Wires, id: Optional[str] = None):
+    def __init__(self, wires: Wires, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
     @property
     def numeric_type(self):
         return float
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):

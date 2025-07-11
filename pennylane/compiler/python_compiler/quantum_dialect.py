@@ -25,7 +25,8 @@ starting from the catalyst/mlir/include/Quantum/IR/QuantumOps.td file in the cat
 
 # pragma: no cover
 
-from typing import Sequence, TypeAlias
+from collections.abc import Sequence
+from typing import TypeAlias
 
 from xdsl.dialects.builtin import (
     I32,

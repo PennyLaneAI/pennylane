@@ -13,11 +13,11 @@
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
 import warnings
+from collections.abc import Iterable
 from copy import copy
 
 # pylint: disable=too-many-arguments
 from itertools import product
-from typing import Iterable
 
 import numpy as np
 

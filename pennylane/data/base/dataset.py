@@ -45,14 +45,14 @@ class Field(Generic[T]):
         info: Attribute info
     """
 
-    attribute_type: Type[DatasetAttribute[HDF5Any, T, Any]]
+    attribute_type: type[DatasetAttribute[HDF5Any, T, Any]]
     info: AttributeInfo
 
 
 def field(
-    attribute_type: Type[DatasetAttribute[HDF5Any, T, Any]] | Literal[UNSET] = UNSET,
-    doc: Optional[str] = None,
-    py_type: Optional[Any] = None,
+    attribute_type: type[DatasetAttribute[HDF5Any, T, Any]] | Literal[UNSET] = UNSET,
+    doc: str | None = None,
+    py_type: Any | None = None,
     **kwargs,
 ) -> Any:
     """Used to define fields on a declarative Dataset.
@@ -104,7 +104,7 @@ def field(
     """
 
     return Field(
-        cast(Type[DatasetAttribute[HDF5Any, T, T]], attribute_type),
+        cast(type[DatasetAttribute[HDF5Any, T, T]], attribute_type),
         AttributeInfo(doc=doc, py_type=py_type, **kwargs),
     )
 
@@ -114,7 +114,7 @@ class _InitArg:  # pylint: disable=too-few-public-methods
 
 
 def _init_arg(  # pylint: disable=unused-argument
-    default: Any, alias: Optional[str] = None, kw_only: bool = False
+    default: Any, alias: str | None = None, kw_only: bool = False
 ) -> Any:
     """This function exists only for the benefit of the type checker. It is used to
     annotate attributes on ``Dataset`` that are not part of the data model, but
@@ -150,15 +150,15 @@ class Dataset(MapperMixin, _DatasetTransform):
     an instance. Use ``attrs`` to view all attributes on an instance.
     """
 
-    bind_: Optional[HDF5Group] = _init_arg(default=None, alias="bind", kw_only=False)
-    data_name_: Optional[str] = _init_arg(default=None, alias="data_name")
+    bind_: HDF5Group | None = _init_arg(default=None, alias="bind", kw_only=False)
+    data_name_: str | None = _init_arg(default=None, alias="data_name")
 
     def __init__(
         self,
-        bind: Optional[HDF5Group] = None,
+        bind: HDF5Group | None = None,
         *,
-        data_name: Optional[str] = None,
-        identifiers: Optional[tuple[str, ...]] = None,
+        data_name: str | None = None,
+        identifiers: tuple[str, ...] | None = None,
         **attrs: Any,
     ):
         """
@@ -272,7 +272,7 @@ class Dataset(MapperMixin, _DatasetTransform):
     def read(
         self,
         source: str | Union[Path, "Dataset"],
-        attributes: Optional[Iterable[str]] = None,
+        attributes: Iterable[str] | None = None,
         *,
         overwrite: bool = False,
     ) -> None:
@@ -298,7 +298,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         self,
         dest: str | Union[Path, "Dataset"],
         mode: Literal["w", "w-", "a"] = "a",
-        attributes: Optional[Iterable[str]] = None,
+        attributes: Iterable[str] | None = None,
         *,
         overwrite: bool = False,
     ) -> None:
@@ -331,9 +331,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         if missing_identifiers:
             hdf5.copy_all(self.bind, dest.bind, *missing_identifiers)
 
-    def _init_bind(
-        self, data_name: Optional[str] = None, identifiers: Optional[tuple[str, ...]] = None
-    ):
+    def _init_bind(self, data_name: str | None = None, identifiers: tuple[str, ...] | None = None):
         if self.bind.file.mode == "r+":
             if "type_id" not in self.info:
                 self.info["type_id"] = self.type_id
@@ -387,7 +385,7 @@ class Dataset(MapperMixin, _DatasetTransform):
         return f"<{type(self).__name__} = {repr_items}>"
 
     def __init_subclass__(
-        cls, *, data_name: Optional[str] = None, identifiers: Optional[tuple[str, ...]] = None
+        cls, *, data_name: str | None = None, identifiers: tuple[str, ...] | None = None
     ) -> None:
         """Initializes the ``fields`` dict of a Dataset subclass using
         the declared ``Attributes`` and their type annotations."""

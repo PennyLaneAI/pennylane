@@ -15,8 +15,9 @@
 Contains the condition transform.
 """
 import functools
+from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import Callable, Optional, Sequence, Type
+from typing import Optional, Type
 
 import pennylane as qml
 from pennylane import QueuingManager
@@ -88,7 +89,7 @@ class Conditional(SymbolicOp, Operation):
             can be useful for some applications where the instance has to be identified
     """
 
-    def __init__(self, expr, then_op: Type[Operation], id=None):
+    def __init__(self, expr, then_op: type[Operation], id=None):
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         super().__init__(then_op, id=id)
@@ -313,8 +314,8 @@ class CondCallable:
 
 def cond(
     condition: MeasurementValue | bool,
-    true_fn: Optional[Callable] = None,
-    false_fn: Optional[Callable] = None,
+    true_fn: Callable | None = None,
+    false_fn: Callable | None = None,
     elifs: Sequence = (),
 ):
     """Quantum-compatible if-else conditionals --- condition quantum operations

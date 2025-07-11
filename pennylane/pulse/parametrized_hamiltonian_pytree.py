@@ -32,7 +32,7 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 class ParametrizedHamiltonianPytree:
     """Jax pytree class that represents a ``ParametrizedHamiltonian``."""
 
-    mat_fixed: Optional[jnp.ndarray | sparse.BCSR]
+    mat_fixed: jnp.ndarray | sparse.BCSR | None
     mats_parametrized: tuple[jnp.ndarray | sparse.BCSR, ...]
     coeffs_parametrized: tuple[Callable]
     reorder_fn: Callable

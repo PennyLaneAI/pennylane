@@ -220,10 +220,10 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
 import abc
 import copy
 import warnings
-from collections.abc import Hashable, Iterable
+from collections.abc import Callable, Hashable, Iterable
 from enum import IntEnum
 from functools import lru_cache
-from typing import Any, Callable, Literal, Optional, Type, Union
+from typing import Any, Literal, Optional, Type, Union
 
 import numpy as np
 from scipy.sparse import spmatrix
@@ -436,7 +436,7 @@ def _get_abstract_operator() -> type:
 
 
 def create_operator_primitive(
-    operator_type: Type["qml.operation.Operator"],
+    operator_type: type["qml.operation.Operator"],
 ) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to an operator type.
 
@@ -922,7 +922,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
-    def matrix(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
+    def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -990,7 +990,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
             or cls.sparse_matrix != Operator.sparse_matrix
         )
 
-    def sparse_matrix(self, wire_order: Optional[WiresLike] = None, format="csr") -> spmatrix:
+    def sparse_matrix(self, wire_order: WiresLike | None = None, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -1087,7 +1087,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         raise TermsUndefinedError
 
-    num_wires: Optional[int | _WiresEnum] = None
+    num_wires: int | _WiresEnum | None = None
     """Number of wires the operator acts on."""
 
     @property
@@ -1106,9 +1106,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         r"""A customizable string representation of the operator.
 
@@ -1213,13 +1213,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     def __init__(
         self,
         *params: TensorLike,
-        wires: Optional[WiresLike] = None,
-        id: Optional[str] = None,
+        wires: WiresLike | None = None,
+        id: str | None = None,
     ):
 
         self._name: str = self.__class__.__name__  #: str: name of the operator
         self._id: str = id
-        self._pauli_rep: Optional[qml.pauli.PauliSentence] = (
+        self._pauli_rep: qml.pauli.PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
         )
 
@@ -1258,7 +1258,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
-        self._batch_size: Optional[int] = _UNSET_BATCH_SIZE
+        self._batch_size: int | None = _UNSET_BATCH_SIZE
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
         self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
@@ -1358,7 +1358,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return self._ndim_params
 
     @property
-    def batch_size(self) -> Optional[int]:
+    def batch_size(self) -> int | None:
         r"""Batch size of the operator if it is used with broadcasted parameters.
 
         The ``batch_size`` is determined based on ``ndim_params`` and the provided parameters
@@ -1439,7 +1439,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     @staticmethod
     def compute_decomposition(
         *params: TensorLike,
-        wires: Optional[WiresLike] = None,
+        wires: WiresLike | None = None,
         **hyperparameters: dict[str, Any],
     ) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
@@ -2015,8 +2015,8 @@ class Operation(Operator):
     def __init__(
         self,
         *params: TensorLike,
-        wires: Optional[WiresLike] = None,
-        id: Optional[str] = None,
+        wires: WiresLike | None = None,
+        id: str | None = None,
     ):
         super().__init__(*params, wires=wires, id=id)
 
@@ -2381,7 +2381,7 @@ class StatePrepBase(Operation):
     grad_method = None
 
     @abc.abstractmethod
-    def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
+    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """
         Returns the initial state vector for a circuit given a state preparation.
 
@@ -2395,9 +2395,9 @@ class StatePrepBase(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return "|Ψ⟩"
 

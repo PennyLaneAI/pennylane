@@ -49,7 +49,7 @@ def _get_abstract_measurement():
         """
 
         def __init__(
-            self, abstract_eval: Callable, n_wires: Optional[int] = None, has_eigvals: bool = False
+            self, abstract_eval: Callable, n_wires: int | None = None, has_eigvals: bool = False
         ):
             self._abstract_eval = abstract_eval
             self._n_wires = n_wires
@@ -68,7 +68,7 @@ def _get_abstract_measurement():
             )
 
         @property
-        def n_wires(self) -> Optional[int]:
+        def n_wires(self) -> int | None:
             """The number of wires for a wire based measurement.
 
             Options are:
@@ -109,7 +109,7 @@ def _get_abstract_measurement():
 
 
 def create_measurement_obs_primitive(
-    measurement_type: Type["qml.measurements.MeasurementProcess"], name: str
+    measurement_type: type["qml.measurements.MeasurementProcess"], name: str
 ) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are an operator.
 
@@ -146,7 +146,7 @@ def create_measurement_obs_primitive(
 
 
 def create_measurement_mcm_primitive(
-    measurement_type: Type["qml.measurements.MeasurementProcess"], name: str
+    measurement_type: type["qml.measurements.MeasurementProcess"], name: str
 ) -> Optional["jax.extend.core.Primitive"]:
     """Create a primitive corresponding to the input type where the abstract inputs are classical
     mid circuit measurement results.

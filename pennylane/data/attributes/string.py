@@ -26,7 +26,7 @@ class DatasetString(DatasetAttribute[HDF5Array, str, str]):
     type_id = "string"
 
     @classmethod
-    def consumes_types(cls) -> tuple[Type[str]]:
+    def consumes_types(cls) -> tuple[type[str]]:
         return (str,)
 
     def hdf5_to_value(self, bind: HDF5Array) -> str:

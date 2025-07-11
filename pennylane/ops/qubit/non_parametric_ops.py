@@ -75,14 +75,14 @@ class Hadamard(Observable, Operation):
 
     resource_keys = set()
 
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, wires: WiresLike, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return base_label or "H"
 
@@ -102,7 +102,7 @@ class Hadamard(Observable, Operation):
         return {}
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -123,7 +123,7 @@ class Hadamard(Observable, Operation):
         return np.array([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]])
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[INV_SQRT2, INV_SQRT2], [INV_SQRT2, -INV_SQRT2]]).asformat(
             format=format
@@ -347,14 +347,14 @@ class PauliX(Observable, Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, wires: WiresLike, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return base_label or "X"
 
@@ -374,7 +374,7 @@ class PauliX(Observable, Operation):
         return {}
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -396,7 +396,7 @@ class PauliX(Observable, Operation):
         return np.array([[0, 1], [1, 0]])
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, 1], [1, 0]]).asformat(format=format)
 
@@ -630,7 +630,7 @@ class PauliY(Observable, Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, wires: WiresLike, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
     def __repr__(self) -> str:
@@ -642,9 +642,9 @@ class PauliY(Observable, Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return base_label or "Y"
 
@@ -657,7 +657,7 @@ class PauliY(Observable, Operation):
         return {}
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -678,7 +678,7 @@ class PauliY(Observable, Operation):
         return np.array([[0, -1j], [1j, 0]])
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[0, -1j], [1j, 0]]).asformat(format=format)
 
@@ -884,7 +884,7 @@ class PauliZ(Observable, Operation):
             )
         return self._pauli_rep
 
-    def __init__(self, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, wires: WiresLike, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
     def __repr__(self) -> str:
@@ -896,9 +896,9 @@ class PauliZ(Observable, Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return base_label or "Z"
 
@@ -911,7 +911,7 @@ class PauliZ(Observable, Operation):
         return {}
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -932,7 +932,7 @@ class PauliZ(Observable, Operation):
         return np.array([[1, 0], [0, -1]])
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
         return sparse.csr_matrix([[1, 0], [0, -1]]).asformat(format=format)
 
@@ -1174,7 +1174,7 @@ class S(Operation):
         return {}
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1343,7 +1343,7 @@ class T(Operation):
         return {}
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1498,7 +1498,7 @@ class SX(Operation):
         return f"SX({wire})"
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1656,7 +1656,7 @@ class SWAP(Operation):
         return self._pauli_rep
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -1679,7 +1679,7 @@ class SWAP(Operation):
         return np.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_sparse_matrix(format="csr") -> sparse.spmatrix:  # pylint: disable=arguments-differ
         r"""Sparse Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2015,7 +2015,7 @@ class ISWAP(Operation):
         return self._pauli_rep
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
@@ -2187,7 +2187,7 @@ class SISWAP(Operation):
         return self._pauli_rep
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix() -> np.ndarray:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 

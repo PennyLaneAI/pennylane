@@ -26,7 +26,7 @@ from pennylane.wires import Wires
 from .measurements import MeasurementProcess
 
 
-def measure(wires: Hashable | Wires, reset: bool = False, postselect: Optional[int] = None):
+def measure(wires: Hashable | Wires, reset: bool = False, postselect: int | None = None):
     r"""Perform a mid-circuit measurement in the computational basis on the
     supplied qubit.
 
@@ -218,7 +218,7 @@ def measure(wires: Hashable | Wires, reset: bool = False, postselect: Optional[i
 
 
 def _measure_impl(
-    wires: Hashable | Wires, reset: Optional[bool] = False, postselect: Optional[int] = None
+    wires: Hashable | Wires, reset: bool | None = False, postselect: int | None = None
 ):
     """Concrete implementation of qml.measure"""
     wires = Wires(wires)
@@ -292,10 +292,10 @@ class MidMeasureMP(MeasurementProcess):
 
     def __init__(
         self,
-        wires: Optional[Wires] = None,
-        reset: Optional[bool] = False,
-        postselect: Optional[int] = None,
-        id: Optional[str] = None,
+        wires: Wires | None = None,
+        reset: bool | None = False,
+        postselect: int | None = None,
+        id: str | None = None,
     ):
         self.batch_size = None
         super().__init__(wires=Wires(wires), id=id)
@@ -311,9 +311,9 @@ class MidMeasureMP(MeasurementProcess):
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ) -> tuple:
         return (), int
@@ -601,11 +601,11 @@ def find_post_processed_mcms(circuit):
     This includes any mid-circuit measurement that is post-selected or the object of a terminal
     measurement.
     """
-    post_processed_mcms = set(
+    post_processed_mcms = {
         op
         for op in circuit.operations
         if isinstance(op, MidMeasureMP) and op.postselect is not None
-    )
+    }
     for m in circuit.measurements:
         if isinstance(m.mv, list):
             for mv in m.mv:

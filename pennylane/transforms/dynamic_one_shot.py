@@ -288,7 +288,7 @@ def parse_native_mid_circuit_measurements(
     has_valid = qml.math.any(is_valid)
     mid_meas = [op for op in circuit.operations if is_mcm(op)]
     mcm_samples = [mcm_samples[:, i : i + 1] for i in range(n_mcms)]
-    mcm_samples = dict((k, v) for k, v in zip(mid_meas, mcm_samples))
+    mcm_samples = {k: v for k, v in zip(mid_meas, mcm_samples)}
     normalized_meas = []
     m_count = 0
     for m in circuit.measurements:

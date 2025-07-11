@@ -53,7 +53,7 @@ def _get_plxpr_single_qubit_fusion():  # pylint: disable=too-many-statements
             not share any wires. This will not impact the correctness of the circuit.
         """
 
-        def __init__(self, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None):
+        def __init__(self, atol: float | None = 1e-8, exclude_gates: list[str] | None = None):
             """Initialize the interpreter."""
             self.atol = atol
             self.exclude_gates = set(exclude_gates) if exclude_gates is not None else set()
@@ -263,7 +263,7 @@ SingleQubitFusionInterpreter, single_qubit_plxpr_to_plxpr = _get_plxpr_single_qu
 
 @partial(transform, plxpr_transform=single_qubit_plxpr_to_plxpr)
 def single_qubit_fusion(  # pylint: disable=too-many-branches
-    tape: QuantumScript, atol: Optional[float] = 1e-8, exclude_gates: Optional[list[str]] = None
+    tape: QuantumScript, atol: float | None = 1e-8, exclude_gates: list[str] | None = None
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Quantum function transform to fuse together groups of single-qubit
     operations into a general single-qubit unitary operation (:class:`~.Rot`).

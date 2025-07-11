@@ -16,8 +16,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
+from collections.abc import Callable, Hashable
 from inspect import signature
-from typing import Callable, Dict, Hashable, List, Optional, Type
+from typing import Dict, List, Optional, Type
 
 import numpy as np
 
@@ -58,7 +59,7 @@ class CompressedResourceOp:  # pylint: disable=too-few-public-methods
     """
 
     def __init__(
-        self, op_type: Type[ResourceOperator], params: Optional[dict] = None, name: str = None
+        self, op_type: type[ResourceOperator], params: dict | None = None, name: str = None
     ):
 
         if not issubclass(op_type, ResourceOperator):
@@ -245,28 +246,28 @@ class ResourceOperator(ABC):
 
     @classmethod
     @abstractmethod
-    def default_resource_decomp(cls, *args, **kwargs) -> List:
+    def default_resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list of actions that define the resources of the operator."""
 
     @classmethod
-    def resource_decomp(cls, *args, **kwargs) -> List:
+    def resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list of actions that define the resources of the operator."""
         return cls.default_resource_decomp(*args, **kwargs)
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, *args, **kwargs) -> List:
+    def default_adjoint_resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for the adjoint of the operator."""
         raise ResourcesNotDefined
 
     @classmethod
-    def adjoint_resource_decomp(cls, *args, **kwargs) -> List:
+    def adjoint_resource_decomp(cls, *args, **kwargs) -> list:
         r"""Returns a list of actions that define the resources of the operator."""
         return cls.default_adjoint_resource_decomp(*args, **kwargs)
 
     @classmethod
     def default_controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
-    ) -> List:
+    ) -> list:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -280,7 +281,7 @@ class ResourceOperator(ABC):
     @classmethod
     def controlled_resource_decomp(
         cls, ctrl_num_ctrl_wires: int, ctrl_num_ctrl_values: int, *args, **kwargs
-    ) -> List:
+    ) -> list:
         r"""Returns a list representing the resources for a controlled version of the operator.
 
         Args:
@@ -294,7 +295,7 @@ class ResourceOperator(ABC):
         )
 
     @classmethod
-    def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> List:
+    def default_pow_resource_decomp(cls, pow_z: int, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
@@ -304,7 +305,7 @@ class ResourceOperator(ABC):
         raise ResourcesNotDefined
 
     @classmethod
-    def pow_resource_decomp(cls, pow_z, *args, **kwargs) -> List:
+    def pow_resource_decomp(cls, pow_z, *args, **kwargs) -> list:
         r"""Returns a list representing the resources for an operator
         raised to a power.
 
@@ -419,7 +420,7 @@ class ResourcesNotDefined(Exception):
     r"""Exception to be raised when a ``ResourceOperator`` does not implement _resource_decomp"""
 
 
-def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
+def set_decomp(cls: type[ResourceOperator], decomp_func: Callable) -> None:
     """Set a custom function to override the default resource decomposition. This
     function will be set globally for every instance of the class.
 
@@ -468,7 +469,7 @@ def set_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="base")
 
 
-def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
+def set_ctrl_decomp(cls: type[ResourceOperator], decomp_func: Callable) -> None:
     """Set a custom function to override the default controlled-resource decomposition. This
     function will be set globally for every instance of the class.
 
@@ -519,7 +520,7 @@ def set_ctrl_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="ctrl")
 
 
-def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
+def set_adj_decomp(cls: type[ResourceOperator], decomp_func: Callable) -> None:
     """Set a custom function to override the default adjoint-resource decomposition. This
     function will be set globally for every instance of the class.
 
@@ -569,7 +570,7 @@ def set_adj_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
     cls.set_resources(decomp_func, override_type="adj")
 
 
-def set_pow_decomp(cls: Type[ResourceOperator], decomp_func: Callable) -> None:
+def set_pow_decomp(cls: type[ResourceOperator], decomp_func: Callable) -> None:
     """Set a custom function to override the default pow-resource decomposition. This
     function will be set globally for every instance of the class.
 
@@ -674,8 +675,8 @@ class GateCount:
 
 
 def resource_rep(
-    resource_op: Type[ResourceOperator],
-    resource_params: Dict | None = None,
+    resource_op: type[ResourceOperator],
+    resource_params: dict | None = None,
 ) -> CompressedResourceOp:
     r"""Produce a compressed representation of the resource operator to be used when
     tracking resources.

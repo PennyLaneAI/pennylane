@@ -27,14 +27,14 @@ from pennylane.transforms.core import TransformDispatcher
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: Optional[str] = None
+    mcm_method: str | None = None
     """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
     the device will decide which method to use."""
 
-    postselect_mode: Optional[str] = None
+    postselect_mode: str | None = None
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
     discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
@@ -57,13 +57,13 @@ class ExecutionConfig:
     See the Attributes section to learn more about the various configurable options.
     """
 
-    grad_on_execution: Optional[bool] = None
+    grad_on_execution: bool | None = None
     """Whether or not to compute the gradient at the same time as the execution.
 
     If ``None``, then the device or execution pipeline can decide which one is most efficient for the situation.
     """
 
-    use_device_gradient: Optional[bool] = None
+    use_device_gradient: bool | None = None
     """Whether or not to compute the gradient on the device.
 
     ``None`` indicates to use the device if possible, but to fall back to pennylane behaviour if it isn't.
@@ -71,7 +71,7 @@ class ExecutionConfig:
     True indicates a request to either use the device gradient or fail.
     """
 
-    use_device_jacobian_product: Optional[bool] = None
+    use_device_jacobian_product: bool | None = None
     """Whether or not to use the device provided vjp or jvp to compute gradients.
 
     ``None`` indicates to use the device if possible, but to fall back to the device Jacobian
@@ -80,13 +80,13 @@ class ExecutionConfig:
     ``True`` indicates to either use the device Jacobian products or fail.
     """
 
-    gradient_method: Optional[str | TransformDispatcher] = None
+    gradient_method: str | TransformDispatcher | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: Optional[dict] = None
+    gradient_keyword_arguments: dict | None = None
     """Arguments used to control a gradient transform"""
 
-    device_options: Optional[dict] = None
+    device_options: dict | None = None
     """Various options for the device executing a quantum circuit"""
 
     interface: Interface = Interface.NUMPY
@@ -105,7 +105,7 @@ class ExecutionConfig:
     execution itself will be jitted.
     """
 
-    executor_backend: Optional[RemoteExec] = None
+    executor_backend: RemoteExec | None = None
     """
     Defines the class for the executor backend.
     """

@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
+from collections.abc import Iterable
 from functools import singledispatch
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Tuple
 
 import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
@@ -770,7 +771,7 @@ class ResourceProd(ResourceOperator):
 
     def __init__(
         self,
-        res_ops: Iterable[ResourceOperator | Tuple[int, ResourceOperator]],
+        res_ops: Iterable[ResourceOperator | tuple[int, ResourceOperator]],
         wires=None,
     ) -> None:
 
@@ -800,7 +801,7 @@ class ResourceProd(ResourceOperator):
             ops_wires = [op.wires for op in ops if op.wires is not None]
             if len(ops_wires) == 0:
                 self.wires = None
-                self.num_wires = max((op.num_wires for op in ops))
+                self.num_wires = max(op.num_wires for op in ops)
             else:
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires)
@@ -813,7 +814,7 @@ class ResourceProd(ResourceOperator):
         return self
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -981,7 +982,7 @@ class ResourceChangeBasisOp(ResourceOperator):
             ops_wires = [op.wires for op in ops_to_remove if op.wires is not None]
             if len(ops_wires) == 0:
                 self.wires = None
-                self.num_wires = max((op.num_wires for op in ops_to_remove))
+                self.num_wires = max(op.num_wires for op in ops_to_remove)
             else:
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires)
@@ -994,7 +995,7 @@ class ResourceChangeBasisOp(ResourceOperator):
         return self
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:

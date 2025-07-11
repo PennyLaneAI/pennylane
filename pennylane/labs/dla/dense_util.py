@@ -13,9 +13,10 @@
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
 
+from collections.abc import Iterable
 from functools import reduce
 from itertools import combinations
-from typing import Iterable, Optional
+from typing import Optional
 
 import numpy as np
 from scipy.linalg import sqrtm
@@ -162,7 +163,7 @@ def _idx_to_pw(idx, n):
     return PauliWord(pw)
 
 
-def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = False):
+def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool = False):
     r"""Decomposes a Hermitian matrix or a batch of matrices into a linear combination
     of Pauli operators.
 

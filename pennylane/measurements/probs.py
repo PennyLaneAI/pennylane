@@ -164,7 +164,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int]:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int]:
         len_wires = len(self.wires) if self.wires else num_device_wires
         return (2**len_wires,)
 
@@ -172,8 +172,8 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Optional[tuple[int, ...]] = None,
-        bin_size: Optional[int] = None,
+        shot_range: tuple[int, ...] | None = None,
+        bin_size: int | None = None,
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]

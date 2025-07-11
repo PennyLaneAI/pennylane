@@ -115,7 +115,7 @@ class RealspaceCoeffs:
         return self._tree.is_zero
 
     @property
-    def shape(self) -> Tuple[int]:
+    def shape(self) -> tuple[int]:
         """Return the shape of the tensor."""
         return self._tree.shape
 
@@ -433,7 +433,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")
 
-    def compute(self, index: Tuple[int]) -> float:
+    def compute(self, index: tuple[int]) -> float:
         """Evaluate the tree on a given ``index``.
 
         Args:
@@ -471,7 +471,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")
 
-    def _validate_index(self, index: Tuple[int]) -> bool:
+    def _validate_index(self, index: tuple[int]) -> bool:
         """Validate the shape of an index.
 
         Args:
@@ -533,7 +533,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
         raise ValueError(f"_RealspaceTree was constructed with invalid _NodeType {self.node_type}.")
 
 
-def _add_dicts(d1: Dict, d2: Dict, threshold: float):
+def _add_dicts(d1: dict, d2: dict, threshold: float):
     """Add two coefficient dictionaries
 
     Args:

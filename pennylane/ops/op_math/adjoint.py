@@ -14,8 +14,9 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
+from collections.abc import Callable
 from functools import lru_cache, partial, wraps
-from typing import Callable, overload
+from typing import overload
 
 import pennylane as qml
 from pennylane._deprecated_observable import Observable

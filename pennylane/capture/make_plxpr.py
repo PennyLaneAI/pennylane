@@ -14,7 +14,7 @@
 
 """The make_plxpr function and helper methods"""
 
-from typing import Callable, Sequence
+from collections.abc import Callable, Sequence
 
 import pennylane as qml
 

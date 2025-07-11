@@ -49,7 +49,7 @@ _CLIFFORD_GATES_SUPPORTED = (H, S, CNOT)
 _NON_CLIFFORD_GATES_SUPPORTED = (RZ, RotXZX)
 
 
-def pauli_to_xz(op: Operator) -> Tuple[int, int]:
+def pauli_to_xz(op: Operator) -> tuple[int, int]:
     r"""
     Convert a `Pauli` operator to its `xz` representation up to a global phase, i.e., :math:`encode_{xz}(Pauli)=(x,z)=X^xZ^z`, where
     :math:`x` is the exponent of the :class:`~pennylane.X` and :math:`z` is the exponent of
@@ -112,7 +112,7 @@ def xz_to_pauli(x: int, z: int) -> Operator:
     raise ValueError("x and z should either 0 or 1.")
 
 
-def pauli_prod(ops: List[Operator]) -> Tuple[int, int]:
+def pauli_prod(ops: list[Operator]) -> tuple[int, int]:
     r"""
     Get the result of a product of a list of Pauli operators. The result is a new Pauli operator up to a global phase.
     Mathematically, this function returns :math:`\prod_{i=0}^{n} ops[i]`.
@@ -191,7 +191,7 @@ def _commute_cnot(xc: int, zc: int, xt: int, zt: int):
     return [(xc, zc ^ zt), (xc ^ xt, zt)]
 
 
-def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+def commute_clifford_op(clifford_op: Operator, xz: list[tuple[int, int]]) -> list[tuple[int, int]]:
     r"""Gets the list of xz-encoded bits representing the list of input Pauli ops after being commuted through the given Clifford op.
     Mathematically, this function applies the following equation: :math:`new\_xz \cdot clifford\_op = clifford\_op \cdot xz`
     up to a global phase to move the :math:`xz` through the :math:`clifford\_op` and returns the :math:`new\_xz`. Note that :math:`xz` and
@@ -247,7 +247,7 @@ def commute_clifford_op(clifford_op: Operator, xz: List[Tuple[int, int]]) -> Lis
     raise NotImplementedError("Only qml.H, qml.S and qml.CNOT are supported.")
 
 
-def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
+def _parse_mid_measurements(tape: QuantumScript, mid_meas: list):
     r"""Parse a series of mid-measurement results of a quantum tape where
     all gates are from the set {X, Y, Z, I, H, S, CNOT, RZ, RotXZX}, and
     where only the first gate on each wire is permitted to be a non-Clifford
@@ -298,7 +298,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: List):
     return by_ops
 
 
-def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]]):
+def _get_xz_record(tape: QuantumScript, by_ops: list[tuple[int, int]]):
     """Commutate/merge the Pauli/byproduct ops of a Clifford circuit.
 
     Args:
@@ -345,7 +345,7 @@ def _get_xz_record(tape: QuantumScript, by_ops: List[Tuple[int, int]]):
     return x_record, z_record
 
 
-def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals: List):
+def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals: list):
     """Correct sample measurements in a tape. The samples are corrected based on the `samples`
     at `wires` with the corresponding recorded x.
 
@@ -365,7 +365,7 @@ def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals
     return correct_meas
 
 
-def get_byproduct_corrections(tape: QuantumScript, mid_meas: List, measurement_vals: List):
+def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_vals: list):
     r"""Correct sample results offline based on the executed quantum script and the mid-circuit measurement results for each shot.
     The mid measurement results are first parsed with the quantum script to get the byproduct operations for each Clifford
     and non-Clifford gates. Note that byproduct operations are stored as a list and accessed in a stack manner. The calculation iteratively

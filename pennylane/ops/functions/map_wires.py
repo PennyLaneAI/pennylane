@@ -85,13 +85,13 @@ def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
             if not all(isinstance(v, int) and v >= 0 for v in self.wire_map.values()):
                 raise ValueError("Wire map values must be constant positive integers.")
 
-        def interpret_operation(self, op: "qml.operation.Operation"):
+        def interpret_operation(self, op: qml.operation.Operation):
             """Interpret an operation."""
             with qml.capture.pause():
                 op = op.map_wires(self.wire_map)
             return super().interpret_operation(op)
 
-        def interpret_measurement(self, measurement: "qml.measurement.MeasurementProcess"):
+        def interpret_measurement(self, measurement: qml.measurement.MeasurementProcess):
             """Interpret a measurement operation."""
             with qml.capture.pause():
                 measurement = measurement.map_wires(self.wire_map)

@@ -18,7 +18,8 @@ functions. The purpose is to convert imperative style code to functional or grap
 """
 import copy
 import functools
-from typing import Any, Callable, Iterator, SupportsIndex, Tuple
+from collections.abc import Callable, Iterator
+from typing import Any, SupportsIndex, Tuple
 
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
@@ -69,9 +70,9 @@ def if_stmt(
     pred: bool,
     true_fn: Callable[[], Any],
     false_fn: Callable[[], Any],
-    get_state: Callable[[], Tuple],
-    set_state: Callable[[Tuple], None],
-    symbol_names: Tuple[str],
+    get_state: Callable[[], tuple],
+    set_state: Callable[[tuple], None],
+    symbol_names: tuple[str],
     _num_results: int,
 ):
     """An implementation of the AutoGraph 'if' statement. The interface is defined by AutoGraph,
@@ -207,9 +208,9 @@ def for_stmt(
     iteration_target: Any,
     _extra_test: Callable[[], bool] | None,
     body_fn: Callable[[int], None],
-    get_state: Callable[[], Tuple],
-    set_state: Callable[[Tuple], None],
-    symbol_names: Tuple[str],
+    get_state: Callable[[], tuple],
+    set_state: Callable[[tuple], None],
+    symbol_names: tuple[str],
     _opts: dict,
 ):
     """An implementation of the AutoGraph 'for .. in ..' statement. The interface is defined by

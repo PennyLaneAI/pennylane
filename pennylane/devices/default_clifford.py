@@ -938,7 +938,7 @@ class DefaultClifford(Device):
         if tgt_states is None:
             num_wires = len(meas_wires)
             basis_vec = np.arange(2**num_wires)[:, np.newaxis]
-            tgt_states = (((basis_vec & (1 << np.arange(num_wires)[::-1]))) > 0).astype(int)
+            tgt_states = ((basis_vec & (1 << np.arange(num_wires)[::-1])) > 0).astype(int)
 
         # Rotate the circuit basis to computational basis
         diagonalizing_cit = kwargs.get("stim_circuit").copy()

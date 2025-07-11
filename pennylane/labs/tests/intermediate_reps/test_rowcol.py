@@ -153,7 +153,7 @@ def assert_reproduces_parity_matrix(cnots, expected_P):
 def assert_respects_connectivity(cnots, connectivity):
     """Helper function that asserts that only CNOTs allowed by a connectivity graph are used."""
     # Get sorted tuples representing connected qubits
-    edges = set(tuple(sorted(edge)) for edge in connectivity.edges())
+    edges = {tuple(sorted(edge)) for edge in connectivity.edges()}
     # Get sorted tuples (a, b) representing CNOT(a,b) or CNOT(b,a) (there is no direction in the
     # connectivity graph)
     unique_undirected_cnots = {tuple(sorted(cnot)) for cnot in cnots}

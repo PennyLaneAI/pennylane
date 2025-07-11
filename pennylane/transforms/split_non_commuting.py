@@ -48,7 +48,7 @@ def shot_vector_support(initial_postprocessing: PostprocessingFn) -> Postprocess
 
 @transform
 def split_non_commuting(
-    tape: QuantumScript, grouping_strategy: Optional[str] = "default"
+    tape: QuantumScript, grouping_strategy: str | None = "default"
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
@@ -590,7 +590,7 @@ def _processing_fn_no_grouping(
     res: ResultBatch,
     single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]],
     offsets: list[float | TensorLike],
-    batch_size: Optional[int],
+    batch_size: int | None,
 ):
     """Postprocessing function for the split_non_commuting transform without grouping.
 

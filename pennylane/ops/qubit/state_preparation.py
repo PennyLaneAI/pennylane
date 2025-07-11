@@ -158,7 +158,7 @@ class BasisState(StatePrepBase):
 
         return op_list
 
-    def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
+    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
         prep_vals_int = math.cast(self.parameters[0], int)
@@ -359,7 +359,7 @@ class StatePrep(StatePrepBase):
         wires: WiresLike,
         pad_with=None,
         normalize=False,
-        id: Optional[str] = None,
+        id: str | None = None,
         validate_norm: bool = False,
     ):
         self.is_sparse = False
@@ -424,7 +424,7 @@ class StatePrep(StatePrepBase):
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
-    def state_vector(self, wire_order: Optional[WiresLike] = None):
+    def state_vector(self, wire_order: WiresLike | None = None):
 
         if self.is_sparse:
             op_vector = _sparse_statevec_permute_and_embed(

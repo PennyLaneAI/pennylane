@@ -17,10 +17,11 @@ The default.qubit device is PennyLane's standard qubit-based device.
 
 import logging
 import warnings
+from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
 from numbers import Number
-from typing import Optional, Sequence
+from typing import Optional
 
 import numpy as np
 
@@ -460,7 +461,7 @@ class DefaultQubit(Device):
         """Reset the RNG key to its initial value."""
         self._prng_key = self._prng_seed
 
-    _state_cache: Optional[dict] = None
+    _state_cache: dict | None = None
     """
     A cache to store the "pre-rotated state" for reuse between the forward pass call to ``execute`` and
     subsequent calls to ``compute_vjp``. ``None`` indicates that no caching is required.
@@ -496,8 +497,8 @@ class DefaultQubit(Device):
     @debug_logger
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -532,7 +533,7 @@ class DefaultQubit(Device):
 
     @debug_logger
     def preprocess_transforms(
-        self, execution_config: Optional[ExecutionConfig] = None
+        self, execution_config: ExecutionConfig | None = None
     ) -> TransformProgram:
         """This function defines the device transform program to be applied and an updated device configuration.
 
@@ -595,7 +596,7 @@ class DefaultQubit(Device):
     # pylint: disable = too-many-branches
     @debug_logger
     def setup_execution_config(
-        self, config: Optional[ExecutionConfig] = None, circuit: Optional[QuantumScript] = None
+        self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
     ) -> ExecutionConfig:
         config = config or ExecutionConfig()
         updated_values = {}
@@ -615,13 +616,11 @@ class DefaultQubit(Device):
         if not qml.capture.enabled():
             jax_interfaces = {qml.math.Interface.JAX, qml.math.Interface.JAX_JIT}
             updated_values["convert_to_numpy"] = not (
-                (
-                    self._prng_key is not None
-                    and config.interface in jax_interfaces
-                    and config.gradient_method != "adjoint"
-                    # need numpy to use caching, and need caching higher order derivatives
-                    and config.derivative_order == 1
-                )
+                self._prng_key is not None
+                and config.interface in jax_interfaces
+                and config.gradient_method != "adjoint"
+                # need numpy to use caching, and need caching higher order derivatives
+                and config.derivative_order == 1
             )
 
         for option, value in config.device_options.items():
@@ -788,8 +787,8 @@ class DefaultQubit(Device):
     @debug_logger
     def supports_jvp(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Whether or not this device defines a custom jacobian vector product.
 
@@ -856,8 +855,8 @@ class DefaultQubit(Device):
     @debug_logger
     def supports_vjp(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Whether or not this device defines a custom vector jacobian product.
 

@@ -288,8 +288,8 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 

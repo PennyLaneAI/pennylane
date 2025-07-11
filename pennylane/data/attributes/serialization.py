@@ -27,18 +27,18 @@ from pennylane.wires import Wires
 
 @overload
 def pytree_structure_dump(
-    root: PyTreeStructure, *, indent: Optional[int] = None, decode: Literal[False] = False
+    root: PyTreeStructure, *, indent: int | None = None, decode: Literal[False] = False
 ) -> bytes: ...
 
 
 @overload
 def pytree_structure_dump(
-    root: PyTreeStructure, *, indent: Optional[int] = None, decode: Literal[True]
+    root: PyTreeStructure, *, indent: int | None = None, decode: Literal[True]
 ) -> str: ...
 
 
 def pytree_structure_dump(
-    root: PyTreeStructure, *, indent: Optional[int] = None, decode: bool = False
+    root: PyTreeStructure, *, indent: int | None = None, decode: bool = False
 ) -> bytes | str:
     """Convert Pytree structure ``root`` into JSON.
 

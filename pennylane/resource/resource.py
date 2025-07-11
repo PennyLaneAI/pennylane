@@ -503,7 +503,7 @@ def mul_in_parallel(resources: Resources, scalar: int) -> Resources:
     )
 
 
-def substitute(initial_resources: Resources, gate_info: Tuple[str, int], replacement: Resources):
+def substitute(initial_resources: Resources, gate_info: tuple[str, int], replacement: Resources):
     """Replaces a specified gate in a :class:`~.resource.Resources` object with the contents of another :class:`~.resource.Resources` object.
 
     Args:

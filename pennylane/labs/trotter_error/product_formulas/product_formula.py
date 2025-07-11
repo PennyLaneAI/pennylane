@@ -16,8 +16,8 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import Hashable
-from typing import Any, Dict, Sequence
+from collections.abc import Hashable, Sequence
+from typing import Any, Dict
 
 import numpy as np
 from scipy.linalg import expm, fractional_matrix_power
@@ -154,7 +154,7 @@ class ProductFormula:
 
         return "@".join([f"Exp({coeff}*H_{term})" for coeff, term in zip(self.coeffs, self.terms)])
 
-    def to_matrix(self, fragments: Dict[Hashable, np.ndarray]) -> np.ndarray:
+    def to_matrix(self, fragments: dict[Hashable, np.ndarray]) -> np.ndarray:
         """Returns a numpy representation of the product formula.
 
         Args:
@@ -193,7 +193,7 @@ class ProductFormula:
         return fractional_matrix_power(accumulator, self.exponent)
 
     @property
-    def ordered_fragments(self) -> Dict[Hashable, int]:
+    def ordered_fragments(self) -> dict[Hashable, int]:
         """Return the fragment ordering used by the product formula.
 
         **Example**
@@ -225,7 +225,7 @@ class ProductFormula:
         return ordered_fragments
 
     @property
-    def ordered_terms(self) -> Dict[Hashable, int]:
+    def ordered_terms(self) -> dict[Hashable, int]:
         """Return the term ordering used by the product formula.
 
         **Example**

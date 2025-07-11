@@ -36,7 +36,7 @@ from .utils import find_and_place_cuts, fragment_graph, replace_wire_cut_nodes
 def _cut_circuit_expand(
     tape: QuantumScript,
     use_opt_einsum: bool = False,
-    device_wires: Optional[Wires] = None,
+    device_wires: Wires | None = None,
     max_depth: int = 1,
     auto_cutter: bool | Callable = False,
     **kwargs,
@@ -73,7 +73,7 @@ def cut_circuit(
     tape: QuantumScript,
     auto_cutter: bool | Callable = False,
     use_opt_einsum: bool = False,
-    device_wires: Optional[Wires] = None,
+    device_wires: Wires | None = None,
     max_depth: int = 1,
     **kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:

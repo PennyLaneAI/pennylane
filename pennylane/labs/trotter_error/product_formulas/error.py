@@ -15,8 +15,8 @@
 
 import copy
 from collections import Counter, defaultdict
-from collections.abc import Hashable
-from typing import Dict, List, Sequence, Set, Tuple
+from collections.abc import Hashable, Sequence
+from typing import Dict, List, Set, Tuple
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
@@ -37,7 +37,7 @@ class _AdditiveIdentity:
 
 def effective_hamiltonian(
     product_formula: ProductFormula,
-    fragments: Dict[Hashable, Fragment],
+    fragments: dict[Hashable, Fragment],
     order: int,
     timestep: float = 1.0,
 ):
@@ -89,8 +89,8 @@ def effective_hamiltonian(
 
 
 def _insert_fragments(
-    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment]
-) -> Tuple[Fragment]:
+    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment]
+) -> tuple[Fragment]:
     """This function transforms a commutator of labels to a commutator of concrete `Fragment` objects.
     The function recurses through the nested structure of the tuple replacing each hashable `label` with
     the concrete value `fragments[label]`."""
@@ -104,14 +104,14 @@ def _insert_fragments(
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 def perturbation_error(
     product_formula: ProductFormula,
-    fragments: Dict[Hashable, Fragment],
+    fragments: dict[Hashable, Fragment],
     states: Sequence[AbstractState],
     order: int,
     timestep: float = 1.0,
     num_workers: int = 1,
     backend: str = "serial",
     parallel_mode: str = "state",
-) -> List[float]:
+) -> list[float]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
@@ -227,7 +227,7 @@ def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
 
 
 def _apply_commutator(
-    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment], state: AbstractState
+    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
 ) -> AbstractState:
     """Returns the state obtained from applying ``commutator`` to ``state``."""
 
@@ -250,7 +250,7 @@ def _apply_commutator(
     return new_state
 
 
-def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
+def _op_list(commutator) -> dict[tuple[Hashable], complex]:
     """Returns the operations needed to apply the commutator to a state."""
 
     if not commutator:
@@ -272,8 +272,8 @@ def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
 
 
 def _group_sums(
-    term_dicts: List[Dict[Tuple[Hashable], complex]],
-) -> List[Tuple[Hashable | Set]]:
+    term_dicts: list[dict[tuple[Hashable], complex]],
+) -> list[tuple[Hashable | set]]:
     """Reduce the number of commutators by grouping them using linearity in the first argument. For example,
     two commutators a*[X, A, B] and b*Y[A, B] will be merged into one commutator [a*X + b*Y, A, B].
     """
@@ -282,7 +282,7 @@ def _group_sums(
     ]
 
 
-def _group_sums_in_dict(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple[Hashable | Set]]:
+def _group_sums_in_dict(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashable | set]]:
     grouped_comms = defaultdict(set)
     for commutator, coeff in term_dict.items():
         head, *tail = commutator

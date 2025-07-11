@@ -56,13 +56,13 @@ class ExecBackendConfig:
 
     """
 
-    submit_fn: Optional[str] = None
-    map_fn: Optional[str] = None
-    starmap_fn: Optional[str] = None
-    shutdown_fn: Optional[str] = None
-    submit_unpack: Optional[bool] = None
-    map_unpack: Optional[bool] = None
-    blocking: Optional[bool] = None
+    submit_fn: str | None = None
+    map_fn: str | None = None
+    starmap_fn: str | None = None
+    shutdown_fn: str | None = None
+    submit_unpack: bool | None = None
+    map_unpack: bool | None = None
+    blocking: bool | None = None
 
 
 class RemoteExec(abc.ABC):
@@ -85,7 +85,7 @@ class RemoteExec(abc.ABC):
 
     """
 
-    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: int | None = None, persist: bool = False, **kwargs):
         self._size = max_workers
         self._persist = persist
         self._inputs = kwargs

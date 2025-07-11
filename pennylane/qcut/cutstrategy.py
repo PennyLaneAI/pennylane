@@ -132,7 +132,7 @@ class CutStrategy:
 
         if devices is not None:
             if not isinstance(devices, Sequence) or any(
-                (not isinstance(d, (LegacyDevice, Device)) for d in devices)
+                not isinstance(d, (LegacyDevice, Device)) for d in devices
             ):
                 raise ValueError(
                     "Argument `devices` must be a list or tuple containing elements of type "

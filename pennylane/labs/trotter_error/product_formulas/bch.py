@@ -17,10 +17,10 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from collections.abc import Hashable
+from collections.abc import Generator, Hashable, Sequence
 from functools import cache
 from itertools import permutations, product
-from typing import TYPE_CHECKING, Dict, Generator, List, Sequence, Tuple
+from typing import TYPE_CHECKING, Dict, List, Tuple
 
 import numpy as np
 
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 def bch_expansion(
     product_formula: ProductFormula, order: int
-) -> List[Dict[Tuple[Hashable], complex]]:
+) -> list[dict[tuple[Hashable], complex]]:
     r"""Compute the Baker-Campbell-Hausdorff expansion of a :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
 
     Args:
@@ -69,8 +69,8 @@ def bch_expansion(
 
 
 def _bch_expansion(
-    product_formula: ProductFormula, order: int, term_dict: Dict[Tuple[Hashable], complex]
-) -> List[Dict[Tuple[Hashable], complex]]:
+    product_formula: ProductFormula, order: int, term_dict: dict[tuple[Hashable], complex]
+) -> list[dict[tuple[Hashable], complex]]:
     """Recursively applies BCH to the product formula. The terms of ProductFormula objects are either
     hashable labels for fragments, or ProductFormula objects. The hashable labels are the base case,
     and the ProductFormula objects are the recursive case.
@@ -117,9 +117,9 @@ def _bch_expansion(
 def _bch(
     fragments: Sequence[Hashable],
     coeffs: Sequence[complex],
-    term_order: Dict[Hashable, int],
+    term_order: dict[Hashable, int],
     order: int,
-) -> List[Dict[Tuple[Hashable], complex]]:
+) -> list[dict[tuple[Hashable], complex]]:
     """Computes BCH on a list of labels by recursively applying BCH to the head and tail of the list.
     For a list [A, B, C] we compute BCH(A, BCH(B, C)). This is done with the following steps.
 
@@ -161,7 +161,7 @@ def _apply_exponent(bch, exponent):
 
 def _kth_order_terms(
     fragments: Sequence[Hashable], coeffs: Sequence[complex], k: int
-) -> Dict[Tuple[Hashable], complex]:
+) -> dict[tuple[Hashable], complex]:
     r"""Computes the kth order commutators of the BCH expansion of the product formula.
     See Proposition 1 of `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`."""
 
@@ -235,7 +235,7 @@ def _add_dicts(d1, d2):
     return d1
 
 
-def _partitions_nonnegative(m: int, n: int) -> Generator[Tuple[int]]:
+def _partitions_nonnegative(m: int, n: int) -> Generator[tuple[int]]:
     """Yields tuples of m nonnegative integers that sum to n"""
 
     if m == 1:
@@ -248,7 +248,7 @@ def _partitions_nonnegative(m: int, n: int) -> Generator[Tuple[int]]:
                 yield (i,) + partition
 
 
-def _partitions_positive(m: int, n: int) -> Generator[Tuple[int]]:
+def _partitions_positive(m: int, n: int) -> Generator[tuple[int]]:
     """Yields tuples of m positive integers that sum to n"""
 
     if m == 1:
@@ -263,7 +263,7 @@ def _partitions_positive(m: int, n: int) -> Generator[Tuple[int]]:
                 yield (i,) + partition
 
 
-def _phi(fragments: Sequence[Hashable]) -> Dict[Tuple[Hashable], float]:
+def _phi(fragments: Sequence[Hashable]) -> dict[tuple[Hashable], float]:
     """Implements equation 13 from `arXiv:2006.15869 <https://arxiv.org/pdf/2006.15869>`."""
     n = len(fragments)
     terms = defaultdict(complex)
@@ -289,9 +289,9 @@ def _n_descents(permutation: Sequence[Hashable]) -> int:
 
 
 def _remove_redundancies(
-    term_dicts: List[Dict[Tuple[Hashable], float]],
-    term_order: Dict[Hashable, int],
-) -> List[Dict[Tuple[Hashable], float]]:
+    term_dicts: list[dict[tuple[Hashable], float]],
+    term_order: dict[Hashable, int],
+) -> list[dict[tuple[Hashable], float]]:
     """Applies the following identities to the commutators
 
     1. Express the commutator as a linear combination of right-nested commutators
@@ -399,7 +399,7 @@ def _make_right_nested(terms):
 
 
 @cache
-def _right_nested(commutator: Tuple[Tuple | Hashable]) -> Dict[Tuple[Hashable], float]:
+def _right_nested(commutator: tuple[tuple | Hashable]) -> dict[tuple[Hashable], float]:
     """Express the commutator as a linear combation of right-nested commutators.
 
     Find the i such that commutaor[i] is a tuple representing a commutator, and commutator[j] is a hashable
@@ -439,7 +439,7 @@ def _right_nested(commutator: Tuple[Tuple | Hashable]) -> Dict[Tuple[Hashable], 
 
 
 @cache
-def _right_nest_two_comms(commutator: Tuple[Tuple | Hashable]) -> Dict[Tuple[Hashable], float]:
+def _right_nest_two_comms(commutator: tuple[tuple | Hashable]) -> dict[tuple[Hashable], float]:
     """Express a commutator of two right-nested commutators [[X_1, ..., X_n], [Y_1, ..., Y_m]] as a
     linear combination of right-nested commutators [Z_1, ..., Z_{n+m}].
 
@@ -478,8 +478,8 @@ def _right_nest_two_comms(commutator: Tuple[Tuple | Hashable]) -> Dict[Tuple[Has
 
 
 def _drop_zeros(
-    term_dicts: List[Dict[Tuple[Hashable], complex]],
-) -> List[Dict[Tuple[Hashable], float]]:
+    term_dicts: list[dict[tuple[Hashable], complex]],
+) -> list[dict[tuple[Hashable], float]]:
     """Remove any terms whose coefficient is close to zero"""
     for terms in term_dicts:
         delete = []

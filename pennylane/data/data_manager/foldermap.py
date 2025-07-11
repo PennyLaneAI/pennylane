@@ -81,7 +81,7 @@ class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
         """
         self.__curr_level = __curr_level
 
-    def get_default_key(self) -> Optional[str]:
+    def get_default_key(self) -> str | None:
         """Get the default key for this level of the foldermap.
         Raises a ValueError if it does not have a default.
         """
@@ -90,7 +90,7 @@ class FolderMapView(Mapping[str, Union["FolderMapView", DataPath]]):
     def find(
         self,
         data_name: str,
-        missing_default: Optional[ParamArg] = ParamArg.DEFAULT,
+        missing_default: ParamArg | None = ParamArg.DEFAULT,
         **params: Iterable[ParamVal] | ParamArg,
     ) -> list[tuple[Description, DataPath]]:
         """Returns a 2-tuple of dataset description and paths, for each dataset that

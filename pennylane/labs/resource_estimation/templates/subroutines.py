@@ -633,7 +633,7 @@ class ResourceSelect(ResourceOperator):
             ops_wires = [op.wires for op in select_ops if op.wires is not None]
             if len(ops_wires) == 0:
                 self.wires = None
-                self.num_wires = max((op.num_wires for op in select_ops)) + num_ctrl_wires
+                self.num_wires = max(op.num_wires for op in select_ops) + num_ctrl_wires
             else:
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires) + num_ctrl_wires
@@ -1073,7 +1073,7 @@ class ResourceQROM(ResourceOperator):
         return gate_cost
 
     @property
-    def resource_params(self) -> Dict:
+    def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:

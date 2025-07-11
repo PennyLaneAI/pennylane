@@ -3,9 +3,10 @@ This submodule contains the interpreter for OpenQASM 3.0.
 """
 
 import functools
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import partial
-from typing import Any, Callable, Iterable
+from typing import Any
 
 from numpy import uint
 from openqasm3 import ast

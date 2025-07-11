@@ -237,9 +237,9 @@ class ClassicalShadowMP(MeasurementTransform):
 
     def __init__(
         self,
-        wires: Optional[WiresLike] = None,
-        seed: Optional[int] = None,
-        id: Optional[str] = None,
+        wires: WiresLike | None = None,
+        seed: int | None = None,
+        id: str | None = None,
     ):
         self.seed = seed
         super().__init__(wires=wires, id=id)
@@ -586,14 +586,14 @@ class ClassicalShadowMP(MeasurementTransform):
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ) -> tuple:
         return (2, shots, n_wires), np.int8
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int, int]:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, int, int]:
         # otherwise, the return type requires a device
         if shots is None:
             raise MeasurementShapeError(
@@ -642,9 +642,9 @@ class ShadowExpvalMP(MeasurementTransform):
     def __init__(
         self,
         H: Operator | Sequence,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         k: int = 1,
-        id: Optional[str] = None,
+        id: str | None = None,
     ):
         self.seed = seed
         self.H = H
@@ -656,7 +656,7 @@ class ShadowExpvalMP(MeasurementTransform):
     def _primitive_bind_call(
         cls,
         H: Operator | Sequence,
-        seed: Optional[int] = None,
+        seed: int | None = None,
         k: int = 1,
         **kwargs,
     ):
@@ -723,7 +723,7 @@ class ShadowExpvalMP(MeasurementTransform):
     def numeric_type(self):
         return float
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return () if isinstance(self.H, Operator) else (len(self.H),)
 
     @property

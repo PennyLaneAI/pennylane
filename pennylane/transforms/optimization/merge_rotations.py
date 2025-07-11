@@ -47,7 +47,7 @@ def _get_plxpr_merge_rotations():
         """Plxpr Interpreter for applying the ``merge_rotations``
         transform when program capture is enabled."""
 
-        def __init__(self, atol: Optional[float] = 1e-8, include_gates: Optional[list[str]] = None):
+        def __init__(self, atol: float | None = 1e-8, include_gates: list[str] | None = None):
             super().__init__()
             self.atol = atol
             self.include_gates = include_gates
@@ -164,7 +164,7 @@ def _get_plxpr_merge_rotations():
             """Interpret all the previously seen operations and then clear."""
 
             # Use list(dict(...)) as opposed to a set to maintain deterministic order
-            ops_remaining = list(dict.fromkeys((self.previous_ops.values())))
+            ops_remaining = list(dict.fromkeys(self.previous_ops.values()))
             for op in ops_remaining:
                 super().interpret_operation(op)
 

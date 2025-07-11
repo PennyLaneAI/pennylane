@@ -16,8 +16,9 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from itertools import product
-from typing import Dict, Sequence, Tuple
+from typing import Dict, Tuple
 
 import numpy as np
 import scipy as sp
@@ -209,7 +210,7 @@ class RealspaceOperator:
         """
         return RealspaceOperator(modes, tuple(), RealspaceCoeffs(np.array(0)))
 
-    def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int], float]:
+    def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[int], float]:
         """Return the non-zero coefficients in a dictionary.
 
         Args:
@@ -421,7 +422,7 @@ class RealspaceSum(Fragment):
 
         return final_matrix
 
-    def norm(self, params: Dict) -> float:
+    def norm(self, params: dict) -> float:
         """Returns an upper bound on the spectral norm of the operator.
 
         Args:
@@ -481,7 +482,7 @@ class RealspaceSum(Fragment):
             mat @ state.vector,
         )
 
-    def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[str], Dict]:
+    def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[str], dict]:
         """Return a dictionary containing the non-zero coefficients of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:

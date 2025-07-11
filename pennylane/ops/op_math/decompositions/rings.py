@@ -129,7 +129,7 @@ class ZSqrtTwo:
         return self - ZSqrtTwo(round(n1 / d), round(n2 / d)) * other
 
     @property
-    def flatten(self: ZSqrtTwo) -> List[int]:
+    def flatten(self: ZSqrtTwo) -> list[int]:
         """Flatten to a list."""
         return [self.a, self.b]
 
@@ -299,7 +299,7 @@ class ZOmega:
         return cls(beta.b - alpha.b, beta.a, beta.b + alpha.b, alpha.a) + shift
 
     @property
-    def flatten(self: ZOmega) -> List[int]:
+    def flatten(self: ZOmega) -> list[int]:
         """Flatten to a list."""
         return [self.a, self.b, self.c, self.d]
 
@@ -435,7 +435,7 @@ class DyadicMatrix:
         k_scale, k_parity = int(math.pow(2, (A.k - B.k) // 2)), (A.k - B.k) % 2
         b_elems = []
         for b_elem in B.flatten:
-            a, b, c, d = [s * k_scale for s in b_elem.flatten]
+            a, b, c, d = (s * k_scale for s in b_elem.flatten)
             if k_parity != 0:  # sqrt(2) factor
                 a, b, c, d = [(b - d), (c + a), (b + d), (c - a)]
             b_elems.append(ZOmega(a, b, c, d))
@@ -470,7 +470,7 @@ class DyadicMatrix:
         )
 
     @property
-    def flatten(self: DyadicMatrix) -> List[ZOmega]:
+    def flatten(self: DyadicMatrix) -> list[ZOmega]:
         """Flatten the matrix elements to a list."""
         return [self.a, self.b, self.c, self.d]
 
@@ -526,7 +526,7 @@ class DyadicMatrix:
 
         while all(np.allclose([_s % 2 for _s in s.flatten], 0) for s in self.flatten):
             self.k -= 2
-            self.a, self.b, self.c, self.d = [s // 2 for s in self.flatten]
+            self.a, self.b, self.c, self.d = (s // 2 for s in self.flatten)
 
         # Factoring sqrt(2): Derived using (w - w^3) [a', b', c', d'] => [a, b, c, d]
         sqrt2_flag = True
@@ -616,7 +616,7 @@ class SO3Matrix:
         return self.k == other.k and all(x == y for (x, y) in zip(self.flatten, other.flatten))
 
     @property
-    def flatten(self: SO3Matrix) -> List[ZOmega]:
+    def flatten(self: SO3Matrix) -> list[ZOmega]:
         """Flatten the matrix to a 1D NumPy array."""
         return [l for row in self.so3mat for l in row]
 
@@ -636,7 +636,7 @@ class SO3Matrix:
         """Return the permutation vector of the SO(3) matrix."""
         return np.sum(self.parity_mat, axis=1)
 
-    def from_matrix(self, matrix: DyadicMatrix) -> List[List[ZSqrtTwo]]:
+    def from_matrix(self, matrix: DyadicMatrix) -> list[list[ZSqrtTwo]]:
         """Return the SO(3) matrix as a list of lists."""
         su2_elems, k = matrix.flatten, 2 * matrix.k
         if any(s.parity for s in su2_elems):

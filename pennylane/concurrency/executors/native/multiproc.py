@@ -45,7 +45,7 @@ class MPPoolExec(PyNativeExec):
     def _exec_backend(cls):
         return get_context("spawn").Pool
 
-    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: int | None = None, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
         self._cfg = ExecBackendConfig(
             submit_fn="apply",

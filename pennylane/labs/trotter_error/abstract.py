@@ -16,7 +16,8 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Dict, Sequence
+from collections.abc import Sequence
+from typing import Dict
 
 
 class Fragment(ABC):
@@ -52,7 +53,7 @@ class Fragment(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def norm(self, params: Dict) -> float:
+    def norm(self, params: dict) -> float:
         """Compute the norm of the fragment.
 
         Args:
