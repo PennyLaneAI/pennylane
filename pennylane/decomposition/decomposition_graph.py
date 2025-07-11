@@ -31,9 +31,9 @@ import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
 
 import pennylane as qml
+from pennylane.exceptions import DecompositionError
 from pennylane.operation import Operator
 
-from ..exceptions import DecompositionError
 from .decomposition_rule import DecompositionRule, list_decomps, null_decomp
 from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (

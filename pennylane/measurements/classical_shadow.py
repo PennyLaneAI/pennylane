@@ -22,10 +22,10 @@ from typing import Optional, Union
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import MeasurementShapeError
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from ..exceptions import MeasurementShapeError
 from .measurements import MeasurementTransform
 
 

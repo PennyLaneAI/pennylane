@@ -267,7 +267,7 @@ Here are a few more tips for adding measurements:
 
 You can find more about Pennylane standards in the guidelines on :doc:`/development/guide/documentation`.
 """
-from ..exceptions import MeasurementShapeError
+from pennylane.exceptions import MeasurementShapeError
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
 from .expval import ExpectationMP, expval

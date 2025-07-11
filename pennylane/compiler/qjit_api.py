@@ -13,7 +13,8 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
-from ..exceptions import CompileError
+from pennylane.exceptions import CompileError
+
 from .compiler import AvailableCompilers, _check_compiler_version, available
 
 
