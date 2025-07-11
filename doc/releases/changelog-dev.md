@@ -11,6 +11,9 @@
 
     * :class:`~.Adder`
       [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
+    
+    * :class:`~.ControlledSequence`
+      [(#7787)](https://github.com/PennyLaneAI/pennylane/pull/7787)
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
