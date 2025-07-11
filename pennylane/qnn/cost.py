@@ -103,7 +103,7 @@ class SquaredErrorLoss:
         **kwargs,
     ):
         warnings.warn(
-            "qml.qnn.cost.SquaredErrorLoss is deprecated and will be removed in version v0.43. "
+            "qml.qnn.cost.SquaredErrorLoss is deprecated and will be removed in version v0.44. "
             "Instead, this hybrid workflow can be accomplished with a function like "
             "`loss = lambda *args: (circuit(*args) - target)**2`.",
             PennyLaneDeprecationWarning,
