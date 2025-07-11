@@ -14,7 +14,7 @@
 """Contains DatasetAttribute definition for ``scipy.sparse.csr_array``."""
 
 from functools import lru_cache
-from typing import Generic, Type, TypeVar, cast
+from typing import Generic, TypeVar, cast
 
 import numpy as np
 from scipy.sparse import (

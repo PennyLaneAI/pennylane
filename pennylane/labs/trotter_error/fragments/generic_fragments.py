@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import Any, Dict, List
+from typing import Any
 
 from pennylane.labs.trotter_error import Fragment
 

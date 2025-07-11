@@ -23,7 +23,6 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autoray import numpy as np
 from numpy import ndarray
 
-from . import single_dispatch  # pylint:disable=unused-import
 from .interface_utils import get_interface
 from .utils import cast, cast_like, requires_grad
 

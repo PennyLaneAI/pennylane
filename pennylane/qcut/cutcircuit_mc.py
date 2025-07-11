@@ -18,7 +18,6 @@ Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragm
 import inspect
 from collections.abc import Callable
 from functools import partial
-from typing import Optional
 
 import numpy as np
 from networkx import MultiDiGraph

@@ -19,7 +19,7 @@ from __future__ import annotations
 import warnings
 from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
 from pennylane.tape import make_qscript

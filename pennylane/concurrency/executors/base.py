@@ -35,7 +35,6 @@ import os
 import sys
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass

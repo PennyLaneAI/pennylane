@@ -16,17 +16,7 @@ and converting them to strings."""
 
 from enum import Enum
 from functools import lru_cache
-from typing import (
-    Any,
-    ForwardRef,
-    Literal,
-    Optional,
-    Type,
-    TypeVar,
-    _SpecialForm,
-    get_args,
-    get_origin,
-)
+from typing import Any, ForwardRef, Literal, Optional, TypeVar, _SpecialForm, get_args, get_origin
 
 JSON = Optional[str | int | bool | float | dict[str, Any] | list[Any]]
 

@@ -19,7 +19,6 @@ from collections.abc import Callable
 from dataclasses import dataclass, field, replace
 from enum import Enum
 from itertools import repeat
-from typing import Optional
 
 import tomlkit as toml
 

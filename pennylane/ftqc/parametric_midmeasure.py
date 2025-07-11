@@ -20,7 +20,6 @@ import uuid
 from collections.abc import Hashable, Iterable
 from copy import copy
 from functools import lru_cache
-from typing import Optional
 
 import numpy as np
 

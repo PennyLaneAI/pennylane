@@ -13,7 +13,6 @@
 # limitations under the License.
 """Contains DatasetAttribute definition for ``pennylane.qchem.Molecule``."""
 
-from typing import Type
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group

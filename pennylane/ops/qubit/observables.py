@@ -19,7 +19,6 @@ excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 import warnings
 from collections.abc import Sequence
 from copy import copy
-from typing import Optional
 
 import numpy as np
 from scipy.sparse import csr_matrix, spmatrix

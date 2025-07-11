@@ -24,7 +24,7 @@ from collections.abc import Callable, Sequence
 from copy import copy
 from functools import wraps
 from inspect import signature
-from typing import Any, Optional, overload
+from typing import Any, overload
 
 import numpy as np
 from scipy import sparse

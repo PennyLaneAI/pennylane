@@ -19,7 +19,7 @@ functions. The purpose is to convert imperative style code to functional or grap
 import copy
 import functools
 from collections.abc import Callable, Iterator
-from typing import Any, SupportsIndex, Tuple
+from typing import Any, SupportsIndex
 
 from malt.core import config as ag_config
 from malt.impl import api as ag_api

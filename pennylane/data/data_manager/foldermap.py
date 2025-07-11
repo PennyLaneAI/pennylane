@@ -18,7 +18,7 @@ datasets bucket.
 
 from collections.abc import Iterable, Iterator, Mapping
 from pathlib import PurePosixPath
-from typing import Any, Literal, Optional, Union
+from typing import Any, Literal, Union
 
 from .params import Description, ParamArg, ParamVal
 

@@ -14,7 +14,6 @@
 """The realspace vibrational Hamiltonian"""
 
 from collections.abc import Sequence
-from typing import List
 
 import numpy as np
 

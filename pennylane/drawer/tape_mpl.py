@@ -24,7 +24,7 @@ from __future__ import annotations
 from collections import namedtuple
 from collections.abc import Sequence
 from functools import singledispatch
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP

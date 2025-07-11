@@ -15,7 +15,7 @@
 Contains class to represent different Hamiltonians.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class CompactHamiltonian:

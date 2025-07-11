@@ -20,7 +20,7 @@ from __future__ import annotations
 import inspect
 import logging
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal
 
 from cachetools import Cache
 
@@ -38,7 +38,6 @@ logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors import ExecBackends
-    from pennylane.devices import Device, LegacyDevice
     from pennylane.math import InterfaceLike
     from pennylane.tape import QuantumScriptBatch
     from pennylane.transforms.core import TransformDispatcher

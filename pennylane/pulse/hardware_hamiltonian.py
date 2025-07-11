@@ -16,7 +16,7 @@ Hardware Hamiltonians"""
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 

@@ -16,7 +16,6 @@
 import copy
 from collections.abc import Iterable
 from itertools import combinations, combinations_with_replacement
-from typing import List
 
 from scipy.linalg import null_space, sqrtm
 

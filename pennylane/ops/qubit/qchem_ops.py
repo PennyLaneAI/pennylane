@@ -17,7 +17,6 @@ from quantum chemistry applications.
 """
 # pylint: disable=arguments-differ
 import functools
-from typing import Optional
 
 import numpy as np
 from scipy.sparse import csr_matrix

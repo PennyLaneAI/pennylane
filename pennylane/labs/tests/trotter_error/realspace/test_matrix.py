@@ -13,7 +13,6 @@
 # limitations under the License.
 """Test matrix operations"""
 
-from typing import Dict, Tuple
 
 import numpy as np
 import pytest

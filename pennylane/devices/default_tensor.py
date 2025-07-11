@@ -21,7 +21,7 @@ from collections.abc import Callable
 from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 

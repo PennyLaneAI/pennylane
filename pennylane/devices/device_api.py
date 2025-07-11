@@ -19,7 +19,7 @@ import abc
 from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
-from typing import Optional, overload
+from typing import overload
 
 import pennylane as qml
 from pennylane.measurements import Shots

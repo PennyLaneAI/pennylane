@@ -20,7 +20,7 @@ from collections import defaultdict
 from collections.abc import Generator, Hashable, Sequence
 from functools import cache
 from itertools import permutations, product
-from typing import TYPE_CHECKING, Dict, List, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 

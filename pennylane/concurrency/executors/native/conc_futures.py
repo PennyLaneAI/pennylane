@@ -20,7 +20,6 @@ This module provides abstractions around the Python ``concurrent.futures`` libra
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from functools import partial
 from multiprocessing import get_context
-from typing import Optional
 
 from ..base import ExecBackendConfig
 from .api import PyNativeExec

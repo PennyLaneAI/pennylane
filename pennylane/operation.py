@@ -223,7 +223,7 @@ import warnings
 from collections.abc import Callable, Hashable, Iterable
 from enum import IntEnum
 from functools import lru_cache
-from typing import Any, Literal, Optional, Type, Union
+from typing import Any, Literal, Optional, Union
 
 import numpy as np
 from scipy.sparse import spmatrix

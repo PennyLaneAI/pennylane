@@ -19,7 +19,7 @@ Contains concurrent executor abstractions for task-based workloads based on supp
 
 import os
 from collections.abc import Callable, Sequence
-from typing import Optional, Union
+from typing import Union
 
 from ..base import ExtExec
 

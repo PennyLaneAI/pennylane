@@ -14,7 +14,7 @@
 """Contains a function to extract a single tape from a QNode"""
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from .construct_batch import construct_batch
 

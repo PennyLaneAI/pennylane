@@ -17,7 +17,7 @@ of operators."""
 import json
 from collections.abc import Sequence
 from functools import lru_cache
-from typing import Generic, Type, TypeVar
+from typing import Generic, TypeVar
 
 import numpy as np
 

@@ -16,7 +16,7 @@ This module contains the ``TransformProgram`` class.
 """
 from collections.abc import Sequence
 from functools import partial
-from typing import Optional, overload
+from typing import overload
 
 from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScriptBatch

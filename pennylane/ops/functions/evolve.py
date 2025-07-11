@@ -15,7 +15,7 @@
 This module contains the qml.evolve function.
 """
 from functools import singledispatch
-from typing import Optional, overload
+from typing import overload
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution

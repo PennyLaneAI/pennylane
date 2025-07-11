@@ -20,7 +20,7 @@ from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequenc
 from functools import lru_cache
 from numbers import Number
 from types import MappingProxyType
-from typing import Any, ClassVar, Generic, Literal, Optional, Type, TypeVar, overload
+from typing import Any, ClassVar, Generic, Literal, TypeVar, overload
 
 from pennylane.data.base import hdf5
 from pennylane.data.base.hdf5 import HDF5, HDF5Any, HDF5Group

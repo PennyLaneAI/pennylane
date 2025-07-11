@@ -22,7 +22,7 @@ import inspect
 import logging
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from typing import TYPE_CHECKING, Literal, Optional, get_args
+from typing import TYPE_CHECKING, Literal, get_args
 
 from cachetools import Cache, LRUCache
 

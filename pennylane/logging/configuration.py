@@ -21,7 +21,6 @@ import platform
 import subprocess
 from importlib import import_module
 from importlib.util import find_spec
-from typing import Optional
 
 has_toml = False
 toml_libs = ["tomllib", "tomli", "tomlkit"]

@@ -33,7 +33,6 @@ Known Limitations
 from abc import abstractmethod
 from dataclasses import dataclass
 from itertools import islice
-from typing import Optional
 
 import jax
 import jax.numpy as jnp

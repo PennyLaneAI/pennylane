@@ -18,7 +18,7 @@ it works with the PennyLane :class:`~.tensor` class.
 
 # isort: skip_file
 from numpy import __version__ as np_version
-from numpy.random import MT19937, PCG64, SFC64, Philox  # pylint: disable=unused-import
+from numpy.random import PCG64  # pylint: disable=unused-import
 from autograd.numpy import random as _random
 from packaging.specifiers import SpecifierSet
 from packaging.version import Version

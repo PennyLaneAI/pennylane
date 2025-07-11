@@ -18,7 +18,6 @@ representation of a quantum circuit from an Operator queue.
 from collections import defaultdict, namedtuple
 from collections.abc import Sequence
 from functools import cached_property
-from typing import Optional
 
 import numpy as np
 import rustworkx as rx

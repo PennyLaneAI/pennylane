@@ -17,7 +17,7 @@ This submodule defines the abstract classes and primitives for capturing measure
 
 from collections.abc import Callable
 from functools import lru_cache
-from typing import Optional, Type
+from typing import Optional
 
 from pennylane import capture
 from pennylane.math import is_abstract

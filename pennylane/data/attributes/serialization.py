@@ -17,7 +17,7 @@ An internal module for serializing and deserializing Pennylane pytrees.
 
 import json
 from collections.abc import Callable
-from typing import Any, Literal, Optional, overload
+from typing import Any, Literal, overload
 
 from pennylane.measurements.shots import Shots
 from pennylane.pytrees.pytrees import PyTreeStructure, get_typename, get_typename_type, leaf

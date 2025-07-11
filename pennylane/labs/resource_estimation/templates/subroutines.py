@@ -14,7 +14,6 @@
 r"""Resource operators for PennyLane subroutine templates."""
 import math
 from collections import defaultdict
-from typing import Dict
 
 from pennylane import numpy as qnp
 from pennylane.labs import resource_estimation as re

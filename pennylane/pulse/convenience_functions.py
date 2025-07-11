@@ -13,7 +13,6 @@
 # limitations under the License.
 """This file contains convenience functions for pulse programming."""
 from collections.abc import Callable
-from typing import Optional
 
 import numpy as np
 

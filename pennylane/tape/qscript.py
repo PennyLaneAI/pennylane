@@ -22,7 +22,7 @@ import copy
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, Optional, ParamSpec, TypeVar, Union
+from typing import Any, ParamSpec, TypeVar, Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess

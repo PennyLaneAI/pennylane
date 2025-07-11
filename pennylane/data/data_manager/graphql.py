@@ -3,7 +3,7 @@ Module for containing graphql functionality for interacting with the Datasets Se
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 from requests import post
 

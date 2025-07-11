@@ -15,7 +15,6 @@
 This submodule contains the CotransformCache for handling the classical cotransform part of a transform.
 """
 from functools import partial
-from typing import Optional
 
 import pennylane as qml  # for qml.workflow.construct_tape
 from pennylane import math

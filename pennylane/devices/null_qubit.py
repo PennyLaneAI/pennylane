@@ -25,7 +25,6 @@ from collections import defaultdict
 from dataclasses import replace
 from functools import lru_cache, singledispatch
 from numbers import Number
-from typing import Optional
 
 import numpy as np
 

@@ -15,7 +15,6 @@
 This module contains the qml.state measurement.
 """
 from collections.abc import Sequence
-from typing import Optional
 
 import pennylane as qml
 from pennylane.typing import TensorLike

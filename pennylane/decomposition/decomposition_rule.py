@@ -20,7 +20,7 @@ import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from textwrap import dedent
-from typing import Optional, Type, overload
+from typing import overload
 
 from pennylane.operation import Operator
 

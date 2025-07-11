@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import math
 from copy import deepcopy
-from typing import List
 
 import numpy as np
 

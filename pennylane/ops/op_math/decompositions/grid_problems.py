@@ -20,7 +20,6 @@ from collections.abc import Iterable
 from copy import copy
 from functools import cached_property, lru_cache
 from itertools import chain
-from typing import Union
 
 from pennylane.ops.op_math.decompositions.rings import _SQRT2, ZOmega, ZSqrtTwo
 

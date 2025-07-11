@@ -16,7 +16,6 @@
 from collections.abc import Callable, Sequence
 from functools import lru_cache, partial
 from numbers import Number
-from typing import Optional
 from warnings import warn
 
 import pennylane as qml

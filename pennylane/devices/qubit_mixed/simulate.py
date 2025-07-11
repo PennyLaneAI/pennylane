@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script for a qubit mixed state device."""
-from typing import Optional
 
 from numpy.random import default_rng
 

@@ -15,7 +15,6 @@
 This module contains the qml.probs measurement.
 """
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 

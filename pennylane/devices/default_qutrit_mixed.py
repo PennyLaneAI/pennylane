@@ -18,7 +18,6 @@ import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from functools import partial
-from typing import Optional
 
 import numpy as np
 

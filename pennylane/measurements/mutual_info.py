@@ -17,7 +17,6 @@ This module contains the qml.mutual_info measurement.
 """
 from collections.abc import Sequence
 from copy import copy
-from typing import Optional
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError

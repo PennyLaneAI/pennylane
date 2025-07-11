@@ -18,7 +18,6 @@ core parametrized gates.
 """
 # pylint: disable=arguments-differ
 import functools
-from typing import Optional
 
 import numpy as np
 import scipy as sp

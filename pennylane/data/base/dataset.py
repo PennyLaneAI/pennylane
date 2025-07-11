@@ -20,7 +20,7 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType
-from typing import Any, ClassVar, Generic, Literal, Optional, Type, TypeVar, Union, cast, get_origin
+from typing import Any, ClassVar, Generic, Literal, TypeVar, Union, cast, get_origin
 
 # pylint doesn't think this exists
 from typing_extensions import dataclass_transform

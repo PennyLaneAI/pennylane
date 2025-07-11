@@ -19,7 +19,6 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 # pylint: disable=too-many-boolean-expressions
 
 from functools import partial, wraps
-from typing import Optional
 
 import pennylane as qml
 from pennylane.measurements import ExpectationMP, MeasurementProcess, StateMP

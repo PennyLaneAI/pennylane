@@ -22,7 +22,7 @@ as they are specific to just ``for_loop`` and ``while_loop``.
 
 from collections import namedtuple
 from collections.abc import Callable
-from typing import Any, Optional
+from typing import Any
 
 from pennylane.typing import TensorLike
 

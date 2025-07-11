@@ -14,7 +14,7 @@
 """Provides transforms for mitigating quantum circuits."""
 from collections.abc import Sequence
 from copy import copy
-from typing import Any, Optional
+from typing import Any
 
 import pennylane as qml
 from pennylane import adjoint, apply

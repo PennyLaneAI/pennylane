@@ -14,7 +14,6 @@
 r"""Resource operators for symbolic operations."""
 from collections.abc import Iterable
 from functools import singledispatch
-from typing import Dict, Tuple
 
 import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires

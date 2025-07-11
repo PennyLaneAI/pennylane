@@ -20,7 +20,7 @@ import abc
 import inspect
 import logging
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 from cachetools import LRUCache

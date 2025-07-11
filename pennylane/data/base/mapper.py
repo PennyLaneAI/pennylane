@@ -17,7 +17,7 @@ class that provides the mapper class."""
 
 from collections.abc import Iterator, Mapping, MutableMapping
 from types import MappingProxyType
-from typing import Any, Optional, Type
+from typing import Any
 
 from pennylane.data.base.attribute import (
     AttributeInfo,

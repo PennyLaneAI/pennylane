@@ -17,7 +17,6 @@ Contains the condition transform.
 import functools
 from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import Optional, Type
 
 import pennylane as qml
 from pennylane import QueuingManager

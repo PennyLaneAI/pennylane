@@ -15,7 +15,6 @@
 
 
 from functools import lru_cache, partial
-from typing import Optional
 
 import pennylane as qml
 from pennylane.ops.op_math import Adjoint

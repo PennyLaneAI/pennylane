@@ -16,7 +16,6 @@ r"""
 This module contains Pauli Tracking functions.
 """
 import itertools
-from typing import List, Tuple
 
 import numpy as np
 

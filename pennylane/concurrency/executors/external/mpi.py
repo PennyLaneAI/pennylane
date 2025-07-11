@@ -18,7 +18,7 @@ Contains concurrent executor abstractions for task-based workloads backed by mpi
 """
 
 from collections.abc import Callable, Sequence
-from typing import Any, Optional
+from typing import Any
 
 from ..base import ExecBackendConfig, ExtExec
 

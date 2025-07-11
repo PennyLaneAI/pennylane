@@ -20,7 +20,7 @@ from collections.abc import Callable
 from functools import wraps
 from importlib import metadata
 from sys import version_info
-from typing import Any, Optional
+from typing import Any
 
 from pennylane.wires import WiresLike  # pylint: disable=ungrouped-imports
 

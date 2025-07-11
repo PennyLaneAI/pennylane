@@ -17,7 +17,6 @@ This module contains logic for the text based circuit drawer through the ``tape_
 
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ._add_obj import _add_obj
 from .drawable_layers import drawable_layers

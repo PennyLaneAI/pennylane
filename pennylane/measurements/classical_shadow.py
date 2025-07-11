@@ -17,7 +17,6 @@ This module contains the qml.classical_shadow measurement.
 import copy
 from collections.abc import Iterable, Sequence
 from string import ascii_letters
-from typing import Optional
 
 import numpy as np
 

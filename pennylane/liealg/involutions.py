@@ -13,7 +13,6 @@
 # limitations under the License.
 """Cartan involutions"""
 from functools import singledispatch
-from typing import Optional
 
 import numpy as np
 

@@ -17,7 +17,6 @@ accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
 import warnings
-from typing import Optional
 
 import numpy as np
 import scipy as sp

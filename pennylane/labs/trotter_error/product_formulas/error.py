@@ -16,7 +16,6 @@
 import copy
 from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
-from typing import Dict, List, Set, Tuple
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment

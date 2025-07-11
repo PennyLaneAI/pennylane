@@ -19,7 +19,6 @@ from collections import Counter
 
 # pylint: disable=arguments-differ
 from copy import copy
-from typing import Optional
 
 import numpy as np
 

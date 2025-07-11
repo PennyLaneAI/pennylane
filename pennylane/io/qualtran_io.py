@@ -20,7 +20,6 @@ This submodule contains the adapter class for Qualtran-PennyLane interoperabilit
 
 from collections import defaultdict
 from functools import cached_property, singledispatch, wraps
-from typing import Dict, List, Tuple
 
 import numpy as np
 

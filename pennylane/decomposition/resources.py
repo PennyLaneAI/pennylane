@@ -19,7 +19,6 @@ from __future__ import annotations
 import functools
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Optional, Type
 
 import pennylane as qml
 from pennylane.operation import Operator

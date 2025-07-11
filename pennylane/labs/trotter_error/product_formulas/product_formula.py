@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Hashable, Sequence
-from typing import Any, Dict
+from typing import Any
 
 import numpy as np
 from scipy.linalg import expm, fractional_matrix_power

@@ -20,7 +20,7 @@ This module provides single-threaded, local executor support for function execut
 from collections.abc import Callable, Sequence
 from functools import partial
 from itertools import starmap
-from typing import Any, Optional
+from typing import Any
 
 from ..base import ExecBackendConfig
 from .api import PyNativeExec

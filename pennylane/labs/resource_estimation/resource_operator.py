@@ -18,7 +18,6 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Callable, Hashable
 from inspect import signature
-from typing import Dict, List, Optional, Type
 
 import numpy as np
 

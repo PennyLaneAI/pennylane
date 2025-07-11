@@ -14,7 +14,6 @@
 r"""
 Contains the MottonenStatePreparation template.
 """
-from typing import Optional
 
 import numpy as np
 

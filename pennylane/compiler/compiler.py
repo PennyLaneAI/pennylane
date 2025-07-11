@@ -19,7 +19,6 @@ import sys
 from collections import defaultdict
 from importlib import metadata, reload
 from sys import version_info
-from typing import List, Optional
 
 from packaging.version import Version
 

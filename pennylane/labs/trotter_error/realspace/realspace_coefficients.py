@@ -17,7 +17,6 @@ from __future__ import annotations
 
 from enum import Enum
 from itertools import product
-from typing import Dict, Tuple
 
 import numpy as np
 from numpy import allclose, isclose, ndarray, zeros

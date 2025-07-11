@@ -19,7 +19,7 @@ import inspect
 import warnings
 from collections.abc import Callable
 from functools import wraps
-from typing import TYPE_CHECKING, Literal, Optional
+from typing import TYPE_CHECKING, Literal
 
 import pennylane as qml
 

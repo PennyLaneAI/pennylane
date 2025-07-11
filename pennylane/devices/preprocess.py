@@ -20,7 +20,6 @@ import os
 import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
-from typing import Optional, Type
 
 import pennylane as qml
 from pennylane.exceptions import DeviceError, QuantumFunctionError

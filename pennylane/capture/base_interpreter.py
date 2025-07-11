@@ -19,7 +19,6 @@ from collections.abc import Callable, Sequence
 # pylint: disable=no-self-use
 from copy import copy
 from functools import partial, wraps
-from typing import Optional
 
 import jax
 

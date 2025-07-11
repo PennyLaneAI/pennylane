@@ -20,7 +20,7 @@ import abc
 import inspect
 from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Any, Optional
+from typing import Any
 
 from ..base import ExecBackendConfig, IntExec
 

@@ -19,7 +19,6 @@ import logging
 # pylint: disable=unused-argument
 from collections import Counter
 from functools import partial, singledispatch
-from typing import Optional
 
 import numpy as np
 from numpy.random import default_rng
