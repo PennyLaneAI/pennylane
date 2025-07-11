@@ -9,7 +9,7 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.43. Instead, this hybrid workflow can be accomplished 
+* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
   with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
 
   - Deprecated in v0.42
