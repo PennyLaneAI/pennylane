@@ -19,7 +19,7 @@ from functools import lru_cache
 
 from pennylane import math
 from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
-from pennylane.operation import CNOT, Hadamard, Operation, S, T, X, adjoint
+from pennylane.ops import CNOT, Hadamard, Operation, S, T, X, adjoint
 from pennylane.wires import Wires, WiresLike
 
 

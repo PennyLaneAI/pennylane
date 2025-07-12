@@ -19,9 +19,8 @@ import copy
 
 import numpy as np
 
+from pennylane import ops
 from pennylane.operation import Operation
-from pennylane.ops import GlobalPhase, PhaseShift, X, adjoint, ctrl
-from pennylane.ops.functions.map_wires import map_wires
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
@@ -145,7 +144,7 @@ class Reflection(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["base"] = map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["base"] = ops.functions.map_wires(new_op._hyperparameters["base"], wire_map)
         new_op._hyperparameters["reflection_wires"] = tuple(
             wire_map.get(w, w) for w in new_op._hyperparameters["reflection_wires"]
         )
@@ -175,27 +174,27 @@ class Reflection(Operation):
 
         wires = Wires(reflection_wires) if reflection_wires is not None else wires
 
-        ops = []
+        decomp_ops = []
 
-        ops.append(GlobalPhase(np.pi))
-        ops.append(adjoint(U))
+        decomp_ops.append(ops.GlobalPhase(np.pi))
+        decomp_ops.append(ops.adjoint(U))
 
         if len(wires) > 1:
-            ops.append(X(wires=wires[-1]))
-            ops.append(
-                ctrl(
-                    PhaseShift(alpha, wires=wires[-1]),
+            decomp_ops.append(ops.X(wires=wires[-1]))
+            decomp_ops.append(
+                ops.ctrl(
+                    ops.PhaseShift(alpha, wires=wires[-1]),
                     control=wires[:-1],
                     control_values=[0] * (len(wires) - 1),
                 )
             )
-            ops.append(X(wires=wires[-1]))
+            decomp_ops.append(ops.X(wires=wires[-1]))
 
         else:
-            ops.append(X(wires=wires))
-            ops.append(PhaseShift(alpha, wires=wires))
-            ops.append(X(wires=wires))
+            decomp_ops.append(ops.X(wires=wires))
+            decomp_ops.append(ops.PhaseShift(alpha, wires=wires))
+            decomp_ops.append(ops.X(wires=wires))
 
-        ops.append(U)
+        decomp_ops.append(U)
 
-        return ops
+        return decomp_ops

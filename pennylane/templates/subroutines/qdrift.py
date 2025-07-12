@@ -18,7 +18,6 @@ from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operation
 from pennylane.ops import LinearCombination, Sum, exp
-from pennylane.ops.functions.map_wires import map_wires
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
@@ -221,7 +220,7 @@ class QDrift(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["base"] = map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["base"] = new_op._hyperparameters["base"].map_wires(wire_map)
 
         return new_op
 

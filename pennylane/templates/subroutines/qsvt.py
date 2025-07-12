@@ -24,25 +24,16 @@ import numpy as np
 import scipy
 from numpy.polynomial import Polynomial, chebyshev
 
-from pennylane import math
+from pennylane import math, ops
 from pennylane.operation import Operation, Operator
-from pennylane.ops import RY, prod
-from pennylane.ops.functions.map_wires import map_wires
-from pennylane.ops.op_math import adjoint
 from pennylane.queuing import QueuingManager, apply
-from pennylane.templates.subroutines import (
-    FABLE,
-    BlockEncode,
-    PCPhase,
-    PrepSelPrep,
-    Qubitization,
-    poly_to_angles,
-)
+from pennylane.templates.subroutines import PrepSelPrep, Qubitization, FABLE
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
+
     if block_encoding not in ["prepselprep", "qubitization", None]:
         raise ValueError(
             f"block_encoding = {block_encoding} not supported for A of type {type(A)}. "
@@ -66,7 +57,7 @@ def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="ro
     )
 
     projectors = [
-        PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires) for angle in angles
+        ops.PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires) for angle in angles
     ]
     return encoding, projectors
 
@@ -98,7 +89,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
         fable_norm = int(np.ceil(np.log2(max_dimension)))
         encoding = FABLE(2**fable_norm * A, wires=encoding_wires)
 
-        projectors = [PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
+        projectors = [ops.PCPhase(angle, dim=len(A), wires=encoding_wires) for angle in angles]
 
     else:
         c, r = math.shape(A)
@@ -106,9 +97,9 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
         projectors = []
         for idx, phi in enumerate(angles):
             dim = c if idx % 2 else r
-            projectors.append(PCPhase(phi, dim=dim, wires=encoding_wires))
+            projectors.append(ops.PCPhase(phi, dim=dim, wires=encoding_wires))
 
-        encoding = BlockEncode(A, wires=encoding_wires)
+        encoding = ops.BlockEncode(A, wires=encoding_wires)
 
     return encoding, projectors
 
@@ -505,9 +496,9 @@ class QSVT(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["UA"] = map_wires(new_op._hyperparameters["UA"], wire_map)
+        new_op._hyperparameters["UA"] = ops.functions.map_wires(new_op._hyperparameters["UA"], wire_map)
         new_op._hyperparameters["projectors"] = [
-            map_wires(proj, wire_map) for proj in new_op._hyperparameters["projectors"]
+            ops.functions.map_wires(proj, wire_map) for proj in new_op._hyperparameters["projectors"]
         ]
         return new_op
 
@@ -605,7 +596,7 @@ class QSVT(Operation):
                 op_list.append(UA)
 
             else:
-                op_list.append(adjoint(UA_adj))
+                op_list.append(ops.adjoint(UA_adj))
 
         if QueuingManager.recording():
             apply(projectors[-1])
@@ -655,10 +646,10 @@ class QSVT(Operation):
                 if idx % 2 == 0:
                     op_list.append(UA)
                 else:
-                    op_list.append(adjoint(UA_copy))
+                    op_list.append(ops.adjoint(UA_copy))
 
             op_list.append(projectors[-1])
-            mat = matrix(prod(*tuple(op_list[::-1])))
+            mat = ops.functions.matrix(ops.prod(*tuple(op_list[::-1])))
 
         return mat
 
@@ -765,7 +756,7 @@ def _compute_qsp_angle(poly_coeffs):
             poly_a, poly_b = polynomial_matrix[:, idx]
             rotation_angles[idx] = np.arctan2(poly_b.real, poly_a.real)
 
-            rotation_op = matrix(RY(-2 * rotation_angles[idx], wires=0))
+            rotation_op = ops.functions.matrix(ops.RY(-2 * rotation_angles[idx], wires=0))
 
             updated_poly_matrix = rotation_op @ polynomial_matrix
             polynomial_matrix = np.array(
@@ -892,7 +883,7 @@ def _grid_pts(degree, interface):
 
     d = (degree + 1) // 2 + (degree + 1) % 2
     return math.array(
-        [math.cos((2 * j - 1) * math.pi / (4 * d)) for j in range(1, d + 1)], like=interface
+        [math.cos((2 * j - 1) * np.pi / (4 * d)) for j in range(1, d + 1)], like=interface
     )
 
 

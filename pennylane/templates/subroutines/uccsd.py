@@ -21,7 +21,8 @@ import numpy as np
 
 from pennylane import math
 from pennylane.operation import Operation
-from pennylane.ops import BasisState, FermionicDoubleExcitation, FermionicSingleExcitation
+from pennylane.ops import BasisState
+from pennylane.templates.subroutines import FermionicDoubleExcitation, FermionicSingleExcitation
 from pennylane.wires import Wires
 
 

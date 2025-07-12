@@ -17,7 +17,7 @@ Contains the QuantumPhaseEstimation template.
 # pylint: disable=arguments-differ
 import copy
 
-from pennylane import math
+from pennylane import math, ops
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -27,9 +27,7 @@ from pennylane.decomposition import (
 )
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
-from pennylane.ops import Hadamard, Pow, QubitUnitary, adjoint, ctrl
 from pennylane.ops import pow as qml_pow
-from pennylane.ops.functions.map_wires import map_wires
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
 from pennylane.templates.subroutines import QFT
@@ -196,7 +194,7 @@ class QuantumPhaseEstimation(ErrorOperation):
             )
 
         else:
-            unitary = QubitUnitary(unitary, wires=target_wires)
+            unitary = ops.QubitUnitary(unitary, wires=target_wires)
 
         # Estimation wires are required, but kept as an optional argument so that it can be
         # placed after target_wires for backwards compatibility.
@@ -261,7 +259,7 @@ class QuantumPhaseEstimation(ErrorOperation):
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["unitary"] = map_wires(new_op._hyperparameters["unitary"], wire_map)
+        new_op._hyperparameters["unitary"] = ops.functions.map_wires(new_op._hyperparameters["unitary"], wire_map)
 
         for key in ["estimation_wires", "target_wires"]:
             new_op._hyperparameters[key] = [
@@ -296,23 +294,23 @@ class QuantumPhaseEstimation(ErrorOperation):
             list[.Operator]: decomposition of the operator
         """
 
-        op_list = [Hadamard(w) for w in estimation_wires]
+        op_list = [ops.Hadamard(w) for w in estimation_wires]
         pow_ops = (pow(unitary, 2**i) for i in range(len(estimation_wires) - 1, -1, -1))
-        op_list.extend(ctrl(op, w) for op, w in zip(pow_ops, estimation_wires))
-        op_list.append(adjoint(QFT(wires=estimation_wires)))
+        op_list.extend(ops.ctrl(op, w) for op, w in zip(pow_ops, estimation_wires))
+        op_list.append(ops.adjoint(QFT(wires=estimation_wires)))
 
         return op_list
 
 
 def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
     gate_count = {
-        Hadamard: num_estimation_wires,
+        ops.Hadamard: num_estimation_wires,
         adjoint_resource_rep(QFT, {"num_wires": num_estimation_wires}): 1,
     }
     for i in range(num_estimation_wires):
         gate_count[
             controlled_resource_rep(
-                Pow,
+                ops.Pow,
                 {
                     "base_class": base_resource_rep.op_type,
                     "base_params": base_resource_rep.params,
@@ -327,10 +325,10 @@ def _qpe_decomp_resource(base_resource_rep, num_estimation_wires):
 @register_resources(_qpe_decomp_resource)
 def _qpe_decomp(wires, unitary, estimation_wires, **_):  # pylint: disable=unused-argument
     for w in estimation_wires:
-        Hadamard(w)
+        ops.Hadamard(w)
     for i, w in enumerate(estimation_wires):
-        ctrl(qml_pow(unitary, 2 ** (len(estimation_wires) - 1 - i)), w)
-    adjoint(QFT(wires=estimation_wires))
+        ops.ctrl(qml_pow(unitary, 2 ** (len(estimation_wires) - 1 - i)), w)
+    ops.adjoint(QFT(wires=estimation_wires))
 
 
 add_decomps(QuantumPhaseEstimation, _qpe_decomp)

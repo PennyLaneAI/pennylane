@@ -19,7 +19,6 @@ import copy
 
 from pennylane import math
 from pennylane.operation import Operation
-from pennylane.ops.functions.map_wires import map_wires
 from pennylane.queuing import QueuingManager
 from pennylane.templates.subroutines import ApproxTimeEvolution
 from pennylane.wires import Wires
@@ -152,9 +151,7 @@ class CommutingEvolution(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["hamiltonian"] = map_wires(
-            new_op._hyperparameters["hamiltonian"], wire_map
-        )
+        new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(wire_map)
         return new_op
 
     def queue(self, context=QueuingManager):

@@ -19,7 +19,6 @@ import copy
 
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot
-from pennylane.ops.functions.map_wires import map_wires
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
@@ -149,8 +148,8 @@ class ApproxTimeEvolution(Operation):
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["hamiltonian"] = map_wires(
-            new_op._hyperparameters["hamiltonian"], wire_map
+        new_op._hyperparameters["hamiltonian"] = (
+            new_op._hyperparameters["hamiltonian"].map_wires(wire_map)
         )
         return new_op
 

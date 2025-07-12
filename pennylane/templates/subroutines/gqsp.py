@@ -15,12 +15,10 @@
 Contains the GQSP template.
 """
 
-
 import copy
 
+from pennylane import ops
 from pennylane.operation import Operation
-from pennylane.ops import U3, X, Z, ctrl
-from pennylane.ops.functions.map_wires import map_wires
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
@@ -109,7 +107,7 @@ class GQSP(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["unitary"] = map_wires(new_op._hyperparameters["unitary"], wire_map)
+        new_op._hyperparameters["unitary"] = ops.functions.map_wires(new_op._hyperparameters["unitary"], wire_map)
         new_op._hyperparameters["control"] = tuple(
             wire_map.get(w, w) for w in new_op._hyperparameters["control"]
         )
@@ -144,19 +142,19 @@ class GQSP(Operation):
         op_list = []
 
         # These four gates adapt PennyLane's qml.U3 to the chosen U3 format in the GQSP paper.
-        op_list.append(X(control))
-        op_list.append(U3(2 * thetas[0], phis[0], lambds[0], wires=control))
-        op_list.append(X(control))
-        op_list.append(Z(control))
+        op_list.append(ops.X(control))
+        op_list.append(ops.U3(2 * thetas[0], phis[0], lambds[0], wires=control))
+        op_list.append(ops.X(control))
+        op_list.append(ops.Z(control))
 
         for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
 
-            op_list.append(ctrl(unitary, control=control, control_values=0))
+            op_list.append(ops.ctrl(unitary, control=control, control_values=0))
 
-            op_list.append(X(control))
-            op_list.append(U3(2 * theta, phi, lamb, wires=control))
-            op_list.append(X(control))
-            op_list.append(Z(control))
+            op_list.append(ops.X(control))
+            op_list.append(ops.U3(2 * theta, phi, lamb, wires=control))
+            op_list.append(ops.X(control))
+            op_list.append(ops.Z(control))
 
         return op_list
 

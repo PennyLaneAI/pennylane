@@ -18,11 +18,8 @@ import copy
 from collections import defaultdict
 from functools import wraps
 
-from pennylane import math
+from pennylane import math, ops as qml_ops
 from pennylane.operation import Operation, Operator
-from pennylane.ops import LinearCombination, Sum, exp
-from pennylane.ops.functions.map_wires import map_wires
-from pennylane.ops.op_math import SProd, dot
 from pennylane.queuing import QueuingManager, apply
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.resource.error import (
@@ -62,10 +59,10 @@ def _recursive_expression(x, order, ops):
         list: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
-        return [exp(op, x * 1j) for op in ops]
+        return [qml_ops.exp(op, x * 1j) for op in ops]
 
     if order == 2:
-        return [exp(op, x * 0.5j) for op in ops + ops[::-1]]
+        return [qml_ops.exp(op, x * 0.5j) for op in ops + ops[::-1]]
 
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
@@ -257,7 +254,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
             )
 
-        if isinstance(hamiltonian, LinearCombination):
+        if isinstance(hamiltonian, qml_ops.LinearCombination):
             coeffs, ops = hamiltonian.terms()
             if len(coeffs) < 2:
                 raise ValueError(
@@ -265,9 +262,9 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 )
             if QueuingManager.recording():
                 QueuingManager.remove(hamiltonian)
-            hamiltonian = dot(coeffs, ops)
+            hamiltonian = qml_ops.functions.dot(coeffs, ops)
 
-        if isinstance(hamiltonian, SProd):
+        if isinstance(hamiltonian, qml_ops.op_math.SProd):
             if QueuingManager.recording():
                 QueuingManager.remove(hamiltonian)
             hamiltonian = hamiltonian.simplify()
@@ -276,7 +273,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                     "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
                 )
 
-        if not isinstance(hamiltonian, Sum):
+        if not isinstance(hamiltonian, qml_ops.Sum):
             raise TypeError(
                 f"The given operator must be a PennyLane ~.Sum or ~.SProd, got {hamiltonian}"
             )
@@ -301,7 +298,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["base"] = map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["base"] = qml_ops.functions.map_wires(new_op._hyperparameters["base"], wire_map)
         return new_op
 
     def queue(self, context=QueuingManager):
@@ -321,7 +318,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         num_wires = len(self.wires)
         num_gates = len(decomp)
 
-        depth = QuantumScript(ops=decomp).graph.get_depth()
+        depth = QuantumScript(decomp).graph.get_depth()
 
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)

@@ -19,9 +19,8 @@ import math
 
 import numpy as np
 
+from pennylane import ops as qml_ops
 from pennylane.operation import Operation
-from pennylane.ops import SWAP, Hadamard, I, ctrl, prod
-from pennylane.ops.functions.map_wires import map_wires
 from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.templates.subroutines import Select
@@ -31,7 +30,7 @@ from pennylane.wires import Wires, WiresLike
 def _multi_swap(wires1, wires2):
     """Apply a series of SWAP gates between two sets of wires."""
     for wire1, wire2 in zip(wires1, wires2):
-        SWAP(wires=[wire1, wire2])
+        qml_ops.SWAP(wires=[wire1, wire2])
 
 
 class QROM(Operation):
@@ -217,9 +216,9 @@ class QROM(Operation):
             depth = min(depth, len(bitstrings))
 
             ops = [BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
-            ops_identity = ops + [I(target_wires)] * int(2 ** len(control_wires) - len(ops))
+            ops_identity = ops + [qml_ops.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
 
-            n_columns = len(ops) // depth if len(ops) % depth == 0 else len(ops) // depth + 1
+            n_columns = len(ops) // depth + int(bool(len(ops) % depth))
             new_ops = []
             for i in range(n_columns):
                 column_ops = []
@@ -228,8 +227,8 @@ class QROM(Operation):
                         ops_identity[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
                         for l in range(len(target_wires))
                     }
-                    column_ops.append(map_wires(ops_identity[i * depth + j], dic_map))
-                new_ops.append(prod(*column_ops))
+                    column_ops.append(qml_ops.functions.map_wires(ops_identity[i * depth + j], dic_map))
+                new_ops.append(qml_ops.prod(*column_ops))
 
             # Select block
             n_control_select_wires = int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
@@ -246,7 +245,7 @@ class QROM(Operation):
             swap_ops = []
             for ind in range(len(control_swap_wires)):
                 for j in range(2**ind):
-                    new_op = prod(_multi_swap)(
+                    new_op = qml_ops.prod(_multi_swap)(
                         swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
                         swap_wires[
                             (j + 2**ind)
@@ -254,7 +253,7 @@ class QROM(Operation):
                             * len(target_wires)
                         ],
                     )
-                    swap_ops.insert(0, ctrl(new_op, control=control_swap_wires[-ind - 1]))
+                    swap_ops.insert(0, qml_ops.ctrl(new_op, control=control_swap_wires[-ind - 1]))
 
             if not clean or depth == 1:
                 # Based on this paper (Fig 1.c): https://arxiv.org/abs/1812.00954
@@ -263,7 +262,7 @@ class QROM(Operation):
             else:
                 # Based on this paper (Fig 4): https://arxiv.org/abs/1902.02134
                 adjoint_swap_ops = swap_ops[::-1]
-                hadamard_ops = [Hadamard(wires=w) for w in target_wires]
+                hadamard_ops = [qml_ops.Hadamard(wires=w) for w in target_wires]
 
                 decomp_ops = 2 * (hadamard_ops + adjoint_swap_ops + select_ops + swap_ops)
 
