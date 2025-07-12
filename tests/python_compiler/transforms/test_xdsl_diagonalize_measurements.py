@@ -16,8 +16,6 @@
 
 # pylint: disable=wrong-import-position
 
-from functools import partial
-
 import numpy as np
 import pytest
 
@@ -274,39 +272,308 @@ class TestDiagonalizeFinalMeasurementsPass:
 
 
 class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
+    """Integration tests going through plxpr (program capture enabled)"""
+
+    # pylint: disable=unnecessary-lambda
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.parametrize(
+        "mp, expected_res",
+        [
+            (qml.expval, qml.Identity, lambda x: 1),
+            (qml.var, qml.Identity, lambda x: 0),
+            (qml.expval, qml.X, lambda x: 0),
+            (qml.var, qml.X, lambda x: 1),
+            (qml.expval, qml.Y, lambda x: -np.sin(x)),
+            (qml.var, qml.Y, lambda x: 1 - np.sin(x) ** 2),
+            (qml.expval, qml.Z, lambda x: np.cos(x)),
+            (qml.var, qml.Z, lambda x: 1 - np.cos(x) ** 2),
+        ],
+    )
+    def test_with_single_obs(self, obs, mp, expected_res):
+        """Test the diagonalization transform for a circuit with a single measurement
+        of a single supported observable"""
+
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit_ref(phi):
+            qml.RX(phi, 0)
+            return mp(obs(0))
+
+        angle = 0.7692
+
+        assert expected_res(angle) == circuit_ref(
+            angle
+        ), "Sanity check failed, is expected_res correct?"
+
+        circuit_compiled = qml.qjit(
+            diagonalize_measurements_pass(circuit_ref),
+            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
+        )
+
+        assert expected_res(angle) == circuit_compiled(angle)
+
+    @pytest.mark.xfail(reason="operator arithmetic not yet supported for plxpr conversion")
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_with_composite_observables(self):
+        """Test the transform works for an observable built using operator arithmetic
+        (sprod, prod, sum)"""
+
+        dev = qml.device("lightning.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit_ref(x, y):
+            qml.RX(x, 0)
+            qml.RY(y, 1)
+            qml.RY(y / 2, 2)
+            return qml.expval(qml.Y(0) @ qml.X(1) + 3 * qml.X(2))
+
+        def expected_res(x, y):
+            y0_res = -np.sin(x)
+            x1_res = np.sin(y)
+            x2_res = np.sin(y / 2)
+            return y0_res * x1_res + 3 * x2_res
+
+        phi = 0.3867
+        theta = 1.394
+
+        assert np.allclose(
+            expected_res(phi, theta), circuit_ref(phi, theta)
+        ), "Sanity check failed, is expected_res correct?"
+
+        circuit_compiled = qml.qjit(
+            diagonalize_measurements_pass(circuit_ref),
+            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
+        )
+
+        assert np.allclose(expected_res(phi, theta), circuit_compiled(phi, theta))
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    @pytest.mark.parametrize("obs", [qml.PauliZ(1), qml.Identity(0), qml.Identity()])
-    def test_with_1_diagonalized_observable(self, obs, context_and_pipeline):
-        raise RuntimeError
+    def test_with_multiple_measurements(self):
+        """Test that the transform runs and returns the expected results for
+        a circuit with multiple measurements"""
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_ref(x, y):
+            qml.RX(x, 0)
+            qml.RY(y, 1)
+            return qml.expval(qml.Y(0)), qml.var(qml.X(1))
+
+        def expected_res(x, y):
+            return -np.sin(x), 1 - np.sin(y) ** 2
+
+        phi = 0.3867
+        theta = 1.394
+
+        assert np.allclose(
+            expected_res(phi, theta), circuit_ref(phi, theta)
+        ), "Sanity check failed, is expected_res correct?"
+
+        circuit_compiled = qml.qjit(
+            diagonalize_measurements_pass(circuit_ref),
+            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
+        )
+
+        assert np.allclose(expected_res(phi, theta), circuit_compiled(phi, theta))
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_with_1_undiagonalized_observable(self, obs, diag_gates, context_and_pipeline):
-        raise RuntimeError
+    def test_with_overlapping_observables(self):
+        """Test the case where multiple overlapping (commuting) observables exist in
+        the same circuit. Here we want to be sure not to diagonalize the Y(0)
+        observable twice (once for each occurence in measurements)"""
+        dev = qml.device("lightning.qubit", wires=2)
 
+        @qml.qnode(dev)
+        def circuit_ref(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Y(0)), qml.var(qml.Y(0))
+
+        def expected_res(x):
+            return -np.sin(x), 1 - np.sin(x) ** 2
+
+        phi = 0.7316
+
+        assert np.allclose(
+            expected_res(phi), circuit_ref(phi)
+        ), "Sanity check failed, is expected_res correct?"
+
+        circuit_compiled = qml.qjit(
+            diagonalize_measurements_pass(circuit_ref),
+            pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
+        )
+
+        assert np.allclose(expected_res(phi), circuit_compiled(phi))
+
+    # ToDo: get this handled (currently silently returns incorrect results)
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_with_multiple_observables(self, context_and_pipeline, run_filecheck):
-        raise RuntimeError
+    def test_non_commuting_observables_raise_error(self):
+        """Check that an error is if we try to diagonalize a circuit that contains
+        non-commuting observables."""
+        dev = qml.device("lightning.qubit", wires=1)
 
-    @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_with_multiple_measurements(self, context_and_pipeline, run_filecheck):
-        raise RuntimeError
+        @qml.qjit(pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
+        @diagonalize_measurements_pass
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Y(0)), qml.expval(qml.X(0))
+
+        with pytest.raises(
+            RuntimeError, match="cannot diagonalize circuit with non-commuting observables"
+        ):
+            _ = circuit(0.7)
 
 
-class TestDiagonalizeFinalMeasurementsExecution:
+class TestDiagonalizeFinalMeasurementsCatalystFrontend:
+    """Integration tests going through the catalyst frontend (program capture disabled)"""
 
-    @pytest.mark.parametrize("obs", [qml.PauliZ(1), qml.Identity(0), qml.Identity()])
-    def test_with_1_diagonalized_observable(self, obs, context_and_pipeline):
-        raise RuntimeError
+    # pylint: disable=unnecessary-lambda
+    @pytest.mark.parametrize(
+        "mp, expected_res",
+        [
+            (qml.expval, qml.Identity, lambda x: 1),
+            (qml.var, qml.Identity, lambda x: 0),
+            (qml.expval, qml.X, lambda x: 0),
+            (qml.var, qml.X, lambda x: 1),
+            (qml.expval, qml.Y, lambda x: -np.sin(x)),
+            (qml.var, qml.Y, lambda x: 1 - np.sin(x) ** 2),
+            (qml.expval, qml.Z, lambda x: np.cos(x)),
+            (qml.var, qml.Z, lambda x: 1 - np.cos(x) ** 2),
+        ],
+    )
+    def test_with_single_obs(self, obs, mp, expected_res):
+        """Test the diagonalization transform for a circuit with a single measurement
+        of a single supported observable"""
 
-    def test_with_1_undiagonalized_observable(self, obs, diag_gates, context_and_pipeline):
-        raise RuntimeError
+        dev = qml.device("lightning.qubit", wires=1)
 
-    def test_with_multiple_observables(self, context_and_pipeline, run_filecheck):
-        raise RuntimeError
+        @qml.qnode(dev)
+        def circuit_ref(phi):
+            qml.RX(phi, 0)
+            return mp(obs(0))
 
-    def test_with_overlapping_observables(self, context_and_pipeline, run_filecheck):
-        raise RuntimeError
+        angle = 0.7692
 
-    def test_with_multiple_measurements(self, context_and_pipeline, run_filecheck):
-        raise RuntimeError
+        assert np.allclose(
+            expected_res(angle), circuit_ref(angle)
+        ), "Sanity check failed, is expected_res correct?"
+
+        circuit_compiled = qml.qjit(
+            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-measurements")(
+                circuit_ref
+            ),
+        )
+
+        np.allclose(expected_res(angle), circuit_compiled(angle))
+
+    def test_with_composite_observables(self):
+        """Test the transform works for an observable built using operator arithmetic
+        (sprod, prod, sum)"""
+
+        dev = qml.device("lightning.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit_ref(x, y):
+            qml.RX(x, 0)
+            qml.RY(y, 1)
+            qml.RY(y / 2, 2)
+            return qml.expval(qml.Y(0) @ qml.X(1) + 3 * qml.X(2))
+
+        def expected_res(x, y):
+            y0_res = -np.sin(x)
+            x1_res = np.sin(y)
+            x2_res = np.sin(y / 2)
+            return y0_res * x1_res + 3 * x2_res
+
+        phi = 0.3867
+        theta = 1.394
+
+        assert np.allclose(
+            expected_res(phi, theta), circuit_ref(phi, theta)
+        ), "Sanity check failed, is expected_res correct?"
+
+        circuit_compiled = qml.qjit(
+            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-measurements")(
+                circuit_ref
+            ),
+        )
+
+        assert np.allclose(expected_res(phi, theta), circuit_compiled(phi, theta))
+
+    def test_with_multiple_measurements(self):
+        """Test that the transform runs and returns the expected results for
+        a circuit with multiple measurements"""
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_ref(x, y):
+            qml.RX(x, 0)
+            qml.RY(y, 1)
+            return qml.expval(qml.Y(0)), qml.var(qml.X(1))
+
+        def expected_res(x, y):
+            return -np.sin(x), 1 - np.sin(y) ** 2
+
+        phi = 0.3867
+        theta = 1.394
+
+        assert np.allclose(
+            expected_res(phi, theta), circuit_ref(phi, theta)
+        ), "Sanity check failed, is expected_res correct?"
+
+        circuit_compiled = qml.qjit(
+            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-measurements")(
+                circuit_ref
+            ),
+        )
+
+        assert np.allclose(expected_res(phi, theta), circuit_compiled(phi, theta))
+
+    def test_with_overlapping_observables(self):
+        """Test the case where multiple overlapping (commuting) observables exist in
+        the same circuit. Here we want to be sure not to diagonalize the Y(0)
+        observable twice (once for each occurence in measurements)"""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_ref(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Y(0)), qml.var(qml.Y(0))
+
+        def expected_res(x):
+            return -np.sin(x), 1 - np.sin(x) ** 2
+
+        phi = 0.7316
+
+        assert np.allclose(
+            expected_res(phi), circuit_ref(phi)
+        ), "Sanity check failed, is expected_res correct?"
+
+        circuit_compiled = qml.qjit(
+            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-measurements")(
+                circuit_ref
+            ),
+        )
+
+        assert np.allclose(expected_res(phi), circuit_compiled(phi))
+
+    # ToDo: get this handled (currently silently returns incorrect results)
+    def test_non_commuting_observables_raise_error(self):
+        """Check that an error is if we try to diagonalize a circuit that contains
+        non-commuting observables."""
+        dev = qml.device("lightning.qubit", wires=1)
+
+        @qml.qjit()
+        @catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-measurements")
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Y(0)), qml.expval(qml.X(0))
+
+        with pytest.raises(
+            RuntimeError, match="cannot diagonalize circuit with non-commuting observables"
+        ):
+            _ = circuit(0.7)
