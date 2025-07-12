@@ -605,7 +605,6 @@ def _unary_select_resources(ops):
 
     for op in ops:
         key = controlled_resource_rep(op.op_type, op.params, num_control_wires=1)
-        print(key)
         cnt[key] += 1
 
     return dict(cnt)
