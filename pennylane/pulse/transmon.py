@@ -19,7 +19,9 @@ from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.ops import X, Y
+from pennylane.ops.op_math import s_prod
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.typing import TensorLike
@@ -30,12 +32,12 @@ from pennylane.wires import Wires
 # pylint: disable=unused-argument
 def a(wire, d=2):
     """creation operator"""
-    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(0.5j, qml.Y(wire))
+    return s_prod(0.5, X(wire)) + s_prod(0.5j, Y(wire))
 
 
 def ad(wire, d=2):
     """annihilation operator"""
-    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(-0.5j, qml.Y(wire))
+    return s_prod(0.5, X(wire)) + s_prod(-0.5j, Y(wire))
 
 
 # pylint: disable=too-many-arguments
@@ -160,14 +162,14 @@ def transmon_interaction(
         anharmonicity = [0.0] * n_wires
 
     # TODO: make coefficients callable / trainable. Currently not supported
-    if callable(qubit_freq) or qml.math.ndim(qubit_freq) == 0:
+    if callable(qubit_freq) or math.ndim(qubit_freq) == 0:
         qubit_freq = [qubit_freq] * n_wires
     elif len(qubit_freq) != n_wires:
         raise ValueError(
             f"Number of qubit frequencies in {qubit_freq} does not match the provided wires = {wires}"
         )
 
-    if qml.math.ndim(coupling) == 0:
+    if math.ndim(coupling) == 0:
         coupling = [coupling] * len(connections)
     if len(coupling) != len(connections):
         raise ValueError(
@@ -233,10 +235,10 @@ class TransmonSettings:
 
     def __eq__(self, other):
         return (
-            qml.math.all(self.connections == other.connections)
-            and qml.math.all(self.qubit_freq == other.qubit_freq)
-            and qml.math.all(self.coupling == other.coupling)
-            and qml.math.all(self.anharmonicity == other.anharmonicity)
+            math.all(self.connections == other.connections)
+            and math.all(self.qubit_freq == other.qubit_freq)
+            and math.all(self.coupling == other.coupling)
+            and math.all(self.anharmonicity == other.anharmonicity)
         )
 
     def __add__(self, other):
@@ -407,9 +409,9 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     # TODO: use creation and annihilation operators when introducing qutrits
     # Note that exp(-iw)a* + exp(iw)a = cos(w)X - sin(w)Y for a=1/2(X+iY)
     # We compute the `coeffs` and `observables` of the EM field
-    coeffs = [AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq)]
+    coeffs = [AmplitudeAndPhaseAndFreq(math.sin, amplitude, phase, freq)]
 
-    drive_y_term = sum(qml.Y(wire) for wire in wires)
+    drive_y_term = sum(Y(wire) for wire in wires)
 
     observables = [drive_y_term]
 

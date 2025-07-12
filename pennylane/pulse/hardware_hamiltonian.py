@@ -20,8 +20,10 @@ from typing import Optional, Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operator
+from pennylane.ops import Identity, LinearCombination, SProd, X, Y
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .parametrized_hamiltonian import ParametrizedHamiltonian
@@ -227,12 +229,12 @@ def drive(amplitude, phase, wires):
     # TODO: use sigma+ and sigma- (not necessary as terms are the same, but for consistency)
     # We compute the `coeffs` and `observables` of the EM field
     coeffs = [
-        amplitude_and_phase(qml.math.cos, amplitude, phase),
-        amplitude_and_phase(qml.math.sin, amplitude, phase),
+        amplitude_and_phase(math.cos, amplitude, phase),
+        amplitude_and_phase(math.sin, amplitude, phase),
     ]
 
-    drive_x_term = qml.Hamiltonian([0.5] * len(wires), [qml.X(wire) for wire in wires])
-    drive_y_term = qml.Hamiltonian([-0.5] * len(wires), [qml.Y(wire) for wire in wires])
+    drive_x_term = LinearCombination([0.5] * len(wires), [X(wire) for wire in wires])
+    drive_y_term = LinearCombination([-0.5] * len(wires), [Y(wire) for wire in wires])
 
     observables = [drive_x_term, drive_y_term]
 
@@ -328,7 +330,7 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         return super().__call__(params, t)
 
     def __repr__(self):
-        return f"HardwareHamiltonian: terms={qml.math.shape(self.coeffs)[0]}"
+        return f"HardwareHamiltonian: terms={math.shape(self.coeffs)[0]}"
 
     def __add__(self, other):  # pylint: disable=too-many-return-statements
         if isinstance(other, HardwareHamiltonian):
@@ -361,14 +363,14 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         settings = self.settings
         pulses = self.pulses
 
-        if isinstance(other, (qml.ops.LinearCombination, ParametrizedHamiltonian)):
+        if isinstance(other, (LinearCombination, ParametrizedHamiltonian)):
             new_coeffs = coeffs + list(other.coeffs.copy())
             new_ops = ops + other.ops.copy()
             return HardwareHamiltonian(
                 new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
             )
 
-        if isinstance(other, qml.ops.SProd):
+        if isinstance(other, SProd):
             new_coeffs = coeffs + [other.scalar]
             new_ops = ops + [other.base]
             return HardwareHamiltonian(
@@ -388,8 +390,8 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
                     coeffs, ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
                 )
             new_coeffs = coeffs + [other]
-            with qml.queuing.QueuingManager.stop_recording():
-                new_ops = ops + [qml.Identity(self.wires[0])]
+            with QueuingManager.stop_recording():
+                new_ops = ops + [Identity(self.wires[0])]
 
             return HardwareHamiltonian(
                 new_coeffs, new_ops, reorder_fn=self.reorder_fn, settings=settings, pulses=pulses
