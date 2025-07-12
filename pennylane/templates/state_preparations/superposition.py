@@ -15,80 +15,11 @@ r"""
 Contains the Superposition template.
 """
 
-import pennylane as qml
+from pennylane import math
+from pennylane import ops as qml_ops
+from pennylane.io.qualtran_io import _assign_states
 from pennylane.operation import Operation
-
-
-def _assign_states(basis_list):
-    r"""
-    This function maps a given list of :math:`m` basis states to the first :math:`m` basis states in the
-    computational basis.
-
-    For instance, a given list of :math:`[s_0, s_1, ..., s_m]` where :math:`s` is a basis
-    state of length :math:`4` will be mapped as :math:`{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots}`.
-
-    Note that if a state in ``basis_list`` is one of the first :math:`m` basis states,
-    this state will be mapped to itself.
-
-    Args:
-        basis_list (list): list of basis states to be mapped
-
-    Returns:
-        dict: dictionary mapping basis states to the first :math:`m` basis states
-
-
-    ** Example **
-
-    .. code-block:: pycon
-
-        >>> basis_list = [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]]
-        >>> _assign_states(basis_list)
-        {
-        [1, 1, 0, 0]: [0, 0, 0, 0],
-        [1, 0, 1, 0]: [0, 0, 0, 1],
-        [0, 1, 0, 1]: [0, 0, 1, 0],
-        [1, 0, 0, 1]: [0, 0, 1, 1]
-        }
-
-
-    .. code-block:: pycon
-
-        >>> basis_list = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
-        >>> _assign_states(basis_list)
-        {
-        [1, 1, 0, 0]: [0, 0, 0, 0],
-        [0, 1, 0, 1]: [0, 0, 1, 0],
-        [0, 0, 0, 1]: [0, 0, 0, 1],
-        [1, 0, 0, 1]: [0, 0, 1, 1]
-        }
-
-    """
-
-    length = len(basis_list[0])
-    smallest_basis_lists = [tuple(map(int, f"{i:0{length}b}")) for i in range(len(basis_list))]
-
-    binary_dict = {}
-    used_smallest = set()
-
-    # Assign keys that can map to themselves
-    for original in basis_list:
-
-        if original in smallest_basis_lists and tuple(original) not in used_smallest:
-
-            binary_dict[tuple(original)] = original
-            used_smallest.add(tuple(original))
-
-    # Assign remaining keys to unused binary lists
-    remaining_keys = [key for key in basis_list if tuple(key) not in binary_dict]
-    remaining_values = [
-        value for value in smallest_basis_lists if tuple(value) not in used_smallest
-    ]
-
-    for key, value in zip(remaining_keys, remaining_values):
-        binary_dict[tuple(key)] = value
-        used_smallest.add(tuple(value))
-
-    return binary_dict
+from pennylane.wires import Wires
 
 
 def _permutation_operator(basis1, basis2, wires, work_wire):
@@ -106,13 +37,13 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
     """
 
     ops = []
-    ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis1))
+    ops.append(qml_ops.ctrl(qml_ops.PauliX(work_wire), control=wires, control_values=basis1))
 
     for i, b in enumerate(basis1):
         if b != basis2[i]:
-            ops.append(qml.CNOT(wires=work_wire + wires[i]))
+            ops.append(qml_ops.CNOT(wires=work_wire + wires[i]))
 
-    ops.append(qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis2))
+    ops.append(qml_ops.ctrl(qml_ops.PauliX(work_wire), control=wires, control_values=basis2))
 
     return ops
 
@@ -212,28 +143,26 @@ class Superposition(Operation):
         self, coeffs, bases, wires, work_wire, id=None
     ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
 
-        if not all(
-            all(qml.math.isclose(i, 0.0) or qml.math.isclose(i, 1.0) for i in b) for b in bases
-        ):
+        if not all(all(math.isclose(i, 0.0) or math.isclose(i, 1.0) for i in b) for b in bases):
             raise ValueError("The elements of the basis states must be either 0 or 1.")
 
         basis_lengths = {len(b) for b in bases}
         if len(basis_lengths) > 1:
             raise ValueError("All basis states must have the same length.")
 
-        if not qml.math.is_abstract(coeffs):
-            coeffs_norm = qml.math.linalg.norm(coeffs)
-            if not qml.math.allclose(coeffs_norm, qml.math.array(1.0)):
+        if not math.is_abstract(coeffs):
+            coeffs_norm = math.linalg.norm(coeffs)
+            if not math.allclose(coeffs_norm, math.array(1.0)):
                 raise ValueError("The input superposition must be normalized.")
 
-        unique_basis = qml.math.unique(qml.math.array([tuple(b) for b in bases]), axis=0)
+        unique_basis = math.unique(math.array([tuple(b) for b in bases]), axis=0)
 
         if len(unique_basis) != len(bases):
             raise ValueError("The basis states must be unique.")
 
         self.hyperparameters["bases"] = tuple(tuple(int(i) for i in b) for b in bases)
-        self.hyperparameters["target_wires"] = qml.wires.Wires(wires)
-        self.hyperparameters["work_wire"] = qml.wires.Wires(work_wire)
+        self.hyperparameters["target_wires"] = Wires(wires)
+        self.hyperparameters["work_wire"] = Wires(work_wire)
 
         all_wires = self.hyperparameters["target_wires"] + self.hyperparameters["work_wire"]
 
@@ -304,15 +233,15 @@ class Superposition(Operation):
 
         op_list = []
         op_list.append(
-            qml.StatePrep(
-                qml.math.stack(sorted_coefficients),
-                wires=wires[-int(qml.math.ceil(qml.math.log2(len(coeffs)))) :],
+            qml_ops.StatePrep(
+                math.stack(sorted_coefficients),
+                wires=wires[-int(math.ceil(math.log2(len(coeffs)))) :],
                 pad_with=0,
             )
         )
 
         for basis2, basis1 in perms.items():
-            if not qml.math.allclose(basis1, basis2):
+            if not math.allclose(basis1, basis2):
                 op_list += _permutation_operator(basis1, basis2, wires, work_wire)
 
         return op_list
