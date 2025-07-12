@@ -302,8 +302,8 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
 
         angle = 0.7692
 
-        assert expected_res(angle) == circuit_ref(
-            angle
+        assert np.allclose(
+            expected_res(angle), circuit_ref(angle)
         ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
@@ -311,7 +311,7 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
         )
 
-        assert expected_res(angle) == circuit_compiled(angle)
+        assert np.allclose(expected_res(angle), circuit_compiled(angle))
 
     @pytest.mark.xfail(reason="operator arithmetic not yet supported for plxpr conversion")
     @pytest.mark.usefixtures("enable_disable_plxpr")
