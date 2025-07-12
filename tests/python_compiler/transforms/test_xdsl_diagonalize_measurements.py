@@ -128,12 +128,12 @@ class TestDiagonalizeFinalMeasurementsPass:
                 // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
 
-                // CHECK: [[q_obs:%.*]] = quantum.custom "Hadamard"() [[q0]]
-                // CHECK-NEXT: [[q_measure:%.*]] =  quantum.namedobs [[q_obs]][PauliZ]
+                // CHECK: [[q0_1:%.*]] = quantum.custom "Hadamard"() [[q0]]
+                // CHECK-NEXT: [[q0_2:%.*]] =  quantum.namedobs [[q0_1]][PauliZ]
                 // CHECK-NOT: quantum.namedobs [[q:%.+]][PauliX]
                 %1 = quantum.namedobs %0[PauliX] : !quantum.obs
 
-                // CHECK: quantum.var [[q_measure]]
+                // CHECK: quantum.expval [[q0_2]]
                 %2 = quantum.expval %1 : f64
                 return
             }
@@ -238,6 +238,11 @@ class TestDiagonalizeFinalMeasurementsPass:
                 // CHECK: [[q_y:%.*]] =  quantum.namedobs [[q0_3]][PauliZ]
                 // CHECK-NOT: quantum.namedobs [[q:%.+]][PauliY]
                 %3 = quantum.namedobs %0[PauliY]: !quantum.obs
+                
+                // CHECK: [[q1_1:%.*]] = quantum.custom "Hadamard"() [[q1]]
+                // CHECK: [[q_x:%.*]] = custom.namedobs [[q1_1]][PauliZ]
+                // CHECK-NOT: quantum.namedobs [[q:%.+]][PauliX]
+                %4 = quantum.namedobs %1[PauliX]: !quantum.obs
             }
             """
 
