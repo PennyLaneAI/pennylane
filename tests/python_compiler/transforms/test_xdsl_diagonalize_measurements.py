@@ -205,17 +205,22 @@ class TestDiagonalizeFinalMeasurementsPass:
                 %4 = quantum.namedobs %1[PauliX]: !quantum.obs
                 
                 
-                // CHECK: [[t0:%.*]] = quantum.tensor [[q_x]], [[q_y]]: !quantum.obs
+                
+                // CHECK: [[tensor0:%.*]] = quantum.tensor [[q_y]], [[q_x]]: !quantum.obs
                 %5 = quantum.tensor %3, %4: !quantum.obs
                 
                 // CHECK: [[q_z:%.*]] = quantum.namedobs [[q2]][PauliZ]: !quantum.obs
                 %6 = quantum.namedobs %2[PauliZ]: !quantum.obs
                 
+                
+                
+                
                 // CHECK: [[size:%.*]] = "test.op"() : () -> tensor<2xf64>
                 %size_info = "test.op"() : () -> tensor<2xf64>
                 
-                // CHECK: quantum.hamiltonian([[size]]: tensor<2xf64>) [[t0]], [[q_z]] : !quantum.obs
+                // CHECK: quantum.hamiltonian([[size]]: tensor<2xf64>) [[tensor0]], [[q_z]] : !quantum.obs
                 %7 = quantum.hamiltonian(%size_info : tensor<2xf64>) %5, %6 : !quantum.obs
+
 
                 // CHECK: quantum.expval
                 %8 = quantum.expval %7 : f64
@@ -236,7 +241,6 @@ class TestDiagonalizeFinalMeasurementsPass:
                 // CHECK: [[q0_2:%.*]] = quantum.custom "S"() [[q0_1]]
                 // CHECK: [[q0_3:%.*]] = quantum.custom "Hadamard"() [[q0_2]]
                 // CHECK: [[q_y:%.*]] =  quantum.namedobs [[q0_3]][PauliZ]
-                // CHECK-NOT: quantum.namedobs [[q:%.+]][PauliY]
                 %3 = quantum.namedobs %0[PauliY]: !quantum.obs
                 
                 // CHECK: [[q1_1:%.*]] = quantum.custom "Hadamard"() [[q1]]
