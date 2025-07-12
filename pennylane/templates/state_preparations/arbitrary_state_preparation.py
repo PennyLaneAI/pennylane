@@ -17,8 +17,9 @@ Contains the ArbitraryStatePreparation template.
 
 import functools
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
+from pennylane.ops import PauliRot
 
 
 @functools.lru_cache()
@@ -83,7 +84,7 @@ class ArbitraryStatePreparation(Operation):
     grad_method = None
 
     def __init__(self, weights, wires, id=None):
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
         if shape != (2 ** (len(wires) + 1) - 2,):
             raise ValueError(
                 f"Weights tensor must be of shape {(2 ** (len(wires) + 1) - 2,)}; got {shape}."
@@ -126,7 +127,7 @@ class ArbitraryStatePreparation(Operation):
         """
         op_list = []
         for i, pauli_word in enumerate(_state_preparation_pauli_words(len(wires))):
-            op_list.append(qml.PauliRot(weights[i], pauli_word, wires=wires))
+            op_list.append(PauliRot(weights[i], pauli_word, wires=wires))
 
         return op_list
 

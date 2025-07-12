@@ -20,8 +20,9 @@ import numpy as np
 
 from pennylane import math
 from pennylane.operation import StatePrepBase
-from pennylane.templates.state_preparations import QutritBasisStatePreparation
 from pennylane.wires import WireError, Wires
+
+from .basis_qutrit import QutritBasisStatePreparation
 
 state_prep_ops = {"QutritBasisState"}
 

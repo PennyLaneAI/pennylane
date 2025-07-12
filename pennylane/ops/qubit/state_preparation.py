@@ -27,9 +27,10 @@ import pennylane as qml
 from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation, Operator, StatePrepBase
-from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
 from pennylane.wires import WireError, Wires, WiresLike
+
+from .mottonen import MottonenStatePreparation
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
