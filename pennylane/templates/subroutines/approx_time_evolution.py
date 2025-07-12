@@ -17,7 +17,6 @@ Contains the ApproxTimeEvolution template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import copy
 
-import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot
 from pennylane.ops.functions.map_wires import map_wires

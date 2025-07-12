@@ -16,7 +16,6 @@ Contains the ModExp template.
 """
 import numpy as np
 
-import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.templates.subroutines import ControlledSequence, Multiplier
 from pennylane.wires import Wires, WiresLike
@@ -116,7 +115,7 @@ class ModExp(Operation):
 
     def __init__(
         self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = (), id=None
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
         output_wires = Wires(output_wires)
         work_wires = Wires(() if work_wires is None else work_wires)

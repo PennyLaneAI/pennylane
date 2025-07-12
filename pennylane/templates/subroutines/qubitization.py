@@ -17,8 +17,8 @@ This submodule contains the template for Qubitization.
 
 import copy
 
-from pennylane import I, prod
 from pennylane.operation import Operation
+from pennylane.ops import I, prod
 from pennylane.ops.functions.map_wires import map_wires
 from pennylane.templates.subroutines import PrepSelPrep, Reflection
 from pennylane.wires import Wires
