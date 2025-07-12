@@ -18,9 +18,6 @@ written using xDSL.
 Known Limitations
 -----------------
   * Only observables PauliX, PauliY, PauliZ and Identity are currently supported when using this transform.
-  * Usage patterns that are not yet supported with program capture are also not supported in the
-    compilation pass. For example, operator arithmetic is not currently supported, such as
-    qml.expval(qml.Y(0) @ qml.X(1)).
   * The current implementation does not allow for support for observables with parametrized diagonalizing gates
     (for example, qml.H(0).diagonalizing_gates())
   * Unlike the current tape-based implementation of the transform, it doesn't allow for diagonalization of a subset
@@ -75,6 +72,7 @@ class DiagonalizeFinalMeasurementsPattern(
 ):  # pylint: disable=too-few-public-methods
     """RewritePattern for diagonalizing final measurements."""
 
+    # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
         self, observable: NamedObsOp, rewriter: pattern_rewriter.PatternRewriter
@@ -99,7 +97,7 @@ class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
 
     name = "diagonalize-measurements"
 
-    # pylint: disable=arguments-renamed
+    # pylint: disable=arguments-renamed, no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the diagonalize final measurements pass."""
         pattern_rewriter.PatternRewriteWalker(

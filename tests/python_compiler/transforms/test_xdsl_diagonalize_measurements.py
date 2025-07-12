@@ -38,7 +38,7 @@ from pennylane.compiler.python_compiler.transforms import (
 @pytest.fixture(name="context_and_pipeline", scope="function")
 def fixture_context_and_pipeline():
     """A fixture that prepares the context and pipeline for unit tests of the
-    measurements-from-samples pass.
+    diagonalize-measurements pass.
     """
     ctx = xdsl.context.Context(allow_unregistered=True)
     ctx.load_dialect(builtin.Builtin)
@@ -53,7 +53,7 @@ def fixture_context_and_pipeline():
 
 
 class TestDiagonalizeFinalMeasurementsPass:
-    """Unit tests for the measurements-from-samples pass."""
+    """Unit tests for the diagonalize-measurements pass."""
 
     def test_unsupported_observable_raises_error(self, context_and_pipeline):
         """Test that an unsupported observable raises an error. At the time of
@@ -277,7 +277,7 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
     # pylint: disable=unnecessary-lambda
     @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize(
-        "mp, expected_res",
+        "mp, obs, expected_res",
         [
             (qml.expval, qml.Identity, lambda x: 1),
             (qml.var, qml.Identity, lambda x: 0),
@@ -289,7 +289,7 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
             (qml.var, qml.Z, lambda x: 1 - np.cos(x) ** 2),
         ],
     )
-    def test_with_single_obs(self, obs, mp, expected_res):
+    def test_with_single_obs(self, mp, obs, expected_res):
         """Test the diagonalization transform for a circuit with a single measurement
         of a single supported observable"""
 
@@ -431,7 +431,7 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
 
     # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
-        "mp, expected_res",
+        "mp, obs, expected_res",
         [
             (qml.expval, qml.Identity, lambda x: 1),
             (qml.var, qml.Identity, lambda x: 0),
@@ -443,7 +443,7 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
             (qml.var, qml.Z, lambda x: 1 - np.cos(x) ** 2),
         ],
     )
-    def test_with_single_obs(self, obs, mp, expected_res):
+    def test_with_single_obs(self, mp, obs, expected_res):
         """Test the diagonalization transform for a circuit with a single measurement
         of a single supported observable"""
 
