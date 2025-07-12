@@ -79,13 +79,12 @@ class TestDiagonalizeFinalMeasurementsPass:
 
         program = """
             func.func @test_func() {
-                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
 
-                // CHECK: [[q0_1:%.*]] =  quantum.namedobs [[q0]][PauliZ]
-                %1 = quantum.namedobs %0[Identity] : !quantum.obs
+                // CHECK: quantum.namedobs %0[PauliZ] : !quantum.obs
+                %1 = quantum.namedobs %0[PauliZ] : !quantum.obs
 
-                // CHECK: quantum.expval [[q0_1]]
+                // CHECK: quantum.expval %1 : f64
                 %2 = quantum.expval %1 : f64
                 return
             }
@@ -105,11 +104,11 @@ class TestDiagonalizeFinalMeasurementsPass:
                 // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
 
-                // CHECK: [[q0_1:%.*]] =  quantum.namedobs [[q0]][Identity]
+                // CHECK: quantum.namedobs %0[Identity] : !quantum.obs
                 %1 = quantum.namedobs %0[Identity] : !quantum.obs
 
-                // CHECK: quantum.var [[q0_1]]
-                %2 = quantum.expval %1 : f64
+                // CHECK: quantum.var %1 : f64
+                %2 = quantum.var %1 : f64
                 return
             }
             """
@@ -140,7 +139,7 @@ class TestDiagonalizeFinalMeasurementsPass:
             }
             """
 
-        ctx, pipeline = context_and_pipeline()
+        ctx, pipeline = context_and_pipeline
         module = xdsl.parser.Parser(ctx, program).parse_module()
         pipeline.apply(ctx, module)
 
@@ -221,6 +220,24 @@ class TestDiagonalizeFinalMeasurementsPass:
                 // CHECK: quantum.expval
                 %8 = quantum.expval %7 : f64
                 return
+            }
+            """
+
+        program = """
+            func.func @test_func() {
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q2:%.*]] = "test.op"() : () -> !quantum.bit
+                %0 = "test.op"() : () -> !quantum.bit
+                %1 = "test.op"() : () -> !quantum.bit
+                %2 = "test.op"() : () -> !quantum.bit
+
+                // CHECK: [[q0_1:%.*]] = quantum.custom "PauliZ"() [[q0]]
+                // CHECK: [[q0_2:%.*]] = quantum.custom "S"() [[q0_1]]
+                // CHECK: [[q0_3:%.*]] = quantum.custom "Hadamard"() [[q0_2]]
+                // CHECK: [[q_y:%.*]] =  quantum.namedobs [[q0_3]][PauliZ]
+                // CHECK-NOT: quantum.namedobs [[q:%.+]][PauliY]
+                %3 = quantum.namedobs %0[PauliY]: !quantum.obs
             }
             """
 
