@@ -19,7 +19,7 @@ import copy
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.wires import Wires
@@ -523,12 +523,12 @@ class FermionicDoubleExcitation(Operation):
                 f"got {len(wires2)}"
             )
 
-        shape = qml.math.shape(weight)
+        shape = math.shape(weight)
         if shape != ():
             raise ValueError(f"Weight must be a scalar; got shape {shape}.")
 
-        wires1 = qml.wires.Wires(wires1)
-        wires2 = qml.wires.Wires(wires2)
+        wires1 = Wires(wires1)
+        wires2 = Wires(wires2)
 
         self._hyperparameters = {
             "wires1": wires1,

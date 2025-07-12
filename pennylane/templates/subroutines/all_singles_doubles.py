@@ -19,9 +19,9 @@ import copy
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
-from pennylane.ops import BasisState
+from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.wires import Wires
 
 
@@ -138,7 +138,7 @@ class AllSinglesDoubles(Operation):
                         f"Expected entries of 'singles' to be of size 2; got {s_wires} of length {len(s_wires)}"
                     )
 
-        weights_shape = qml.math.shape(weights)
+        weights_shape = math.shape(weights)
         exp_shape = self.shape(singles, doubles)
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
@@ -202,10 +202,10 @@ class AllSinglesDoubles(Operation):
         op_list.append(BasisState(hf_state, wires=wires))
 
         for i, d_wires in enumerate(doubles):
-            op_list.append(qml.DoubleExcitation(weights[len(singles) + i], wires=d_wires))
+            op_list.append(DoubleExcitation(weights[len(singles) + i], wires=d_wires))
 
         for j, s_wires in enumerate(singles):
-            op_list.append(qml.SingleExcitation(weights[j], wires=s_wires))
+            op_list.append(SingleExcitation(weights[j], wires=s_wires))
 
         return op_list
 

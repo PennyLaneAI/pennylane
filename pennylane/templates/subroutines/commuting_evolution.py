@@ -17,9 +17,11 @@ Contains the CommutingEvolution template.
 # pylint: disable-msg=too-many-arguments,import-outside-toplevel
 import copy
 
-import pennylane as qml
 from pennylane import math
 from pennylane.operation import Operation
+from pennylane.ops.functions.map_wires import map_wires
+from pennylane.queuing import QueuingManager
+from pennylane.templates.subroutines import ApproxTimeEvolution
 from pennylane.wires import Wires
 
 
@@ -134,7 +136,7 @@ class CommutingEvolution(Operation):
         trainable_hamiltonian = any(math.requires_grad(d) for d in hamiltonian.data)
         if frequencies is not None and not trainable_hamiltonian:
             c, s = generate_shift_rule(frequencies, shifts).T
-            recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
+            recipe = math.stack([c, math.ones_like(c), s]).T
             self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"
 
@@ -150,12 +152,12 @@ class CommutingEvolution(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["hamiltonian"] = qml.map_wires(
+        new_op._hyperparameters["hamiltonian"] = map_wires(
             new_op._hyperparameters["hamiltonian"], wire_map
         )
         return new_op
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=QueuingManager):
         context.remove(self.hyperparameters["hamiltonian"])
         context.append(self)
         return self
@@ -186,7 +188,7 @@ class CommutingEvolution(Operation):
             list[.Operator]: decomposition of the operator
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        return [qml.ApproxTimeEvolution(hamiltonian, time, 1)]
+        return [ApproxTimeEvolution(hamiltonian, time, 1)]
 
     def adjoint(self):
         hamiltonian = self.hyperparameters["hamiltonian"]

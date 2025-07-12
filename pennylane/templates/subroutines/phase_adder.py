@@ -17,7 +17,8 @@ Contains the PhaseAdder template.
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -25,6 +26,8 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
+from pennylane.ops import CNOT, ControlledPhaseShift, PhaseShift, X, adjoint, ctrl
+from pennylane.templates.subroutines import QFT
 from pennylane.wires import Wires, WiresLike
 
 
@@ -32,7 +35,7 @@ def _add_k_fourier(k, wires: WiresLike):
     """Adds k in the Fourier basis"""
     op_list = []
     for j, wire in enumerate(wires):
-        op_list.append(qml.PhaseShift(k * np.pi / (2**j), wires=wire))
+        op_list.append(PhaseShift(k * np.pi / (2**j), wires=wire))
     return op_list
 
 
@@ -141,7 +144,7 @@ class PhaseAdder(Operation):
 
         num_work_wires = len(work_wire)
 
-        if not qml.math.is_abstract(mod):
+        if not math.is_abstract(mod):
             if mod is None:
                 mod = 2 ** len(x_wires)
             elif mod != 2 ** len(x_wires) and num_work_wires != 1:
@@ -241,19 +244,19 @@ class PhaseAdder(Operation):
             op_list.extend(_add_k_fourier(k, x_wires))
 
             for op in reversed(_add_k_fourier(mod, x_wires)):
-                op_list.append(qml.adjoint(op))
+                op_list.append(adjoint(op))
 
-            op_list.append(qml.adjoint(qml.QFT)(wires=x_wires))
-            op_list.append(qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=1))
-            op_list.append(qml.QFT(wires=x_wires))
-            op_list.extend(qml.ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
+            op_list.append(adjoint(QFT)(wires=x_wires))
+            op_list.append(ctrl(X(work_wire), control=aux_k, control_values=1))
+            op_list.append(QFT(wires=x_wires))
+            op_list.extend(ctrl(op, control=work_wire) for op in _add_k_fourier(mod, x_wires))
 
             for op in reversed(_add_k_fourier(k, x_wires)):
-                op_list.append(qml.adjoint(op))
+                op_list.append(adjoint(op))
 
-            op_list.append(qml.adjoint(qml.QFT)(wires=x_wires))
-            op_list.append(qml.ctrl(qml.PauliX(work_wire), control=aux_k, control_values=0))
-            op_list.append(qml.QFT(wires=x_wires))
+            op_list.append(adjoint(QFT)(wires=x_wires))
+            op_list.append(ctrl(X(work_wire), control=aux_k, control_values=0))
+            op_list.append(QFT(wires=x_wires))
             op_list.extend(_add_k_fourier(k, x_wires))
 
         return op_list
@@ -262,16 +265,16 @@ class PhaseAdder(Operation):
 def _phase_adder_decomposition_resources(num_x_wires, mod) -> dict:
 
     if mod == 2**num_x_wires:
-        return {qml.PhaseShift: num_x_wires}
+        return {PhaseShift: num_x_wires}
 
     return {
-        qml.PhaseShift: 2 * num_x_wires,
-        adjoint_resource_rep(qml.PhaseShift, {}): 2 * num_x_wires,
-        resource_rep(qml.QFT, num_wires=num_x_wires): 2,
-        adjoint_resource_rep(qml.QFT, {"num_wires": num_x_wires}): 2,
-        qml.CNOT: 2,
-        qml.X: 2,
-        qml.ControlledPhaseShift: num_x_wires,
+        PhaseShift: 2 * num_x_wires,
+        adjoint_resource_rep(PhaseShift, {}): 2 * num_x_wires,
+        resource_rep(QFT, num_wires=num_x_wires): 2,
+        adjoint_resource_rep(QFT, {"num_wires": num_x_wires}): 2,
+        CNOT: 2,
+        X: 2,
+        ControlledPhaseShift: num_x_wires,
     }
 
 
@@ -281,9 +284,9 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
 
     n_wires = len(x_wires)
 
-    @qml.for_loop(n_wires)
+    @for_loop(n_wires)
     def _add_k_fourier_loop(i, _k):
-        qml.PhaseShift(_k * np.pi / (2**i), wires=x_wires[i])
+        PhaseShift(_k * np.pi / (2**i), wires=x_wires[i])
         return _k
 
     if mod == 2**n_wires:
@@ -292,17 +295,17 @@ def _phase_adder_decomposition(k, x_wires: WiresLike, mod, work_wire, **__):
 
     aux_k = x_wires[0]
     _add_k_fourier_loop(k)
-    qml.adjoint(_add_k_fourier_loop)(mod)
-    qml.adjoint(qml.QFT)(wires=x_wires)
-    qml.CNOT(wires=[aux_k, work_wire[0]])
-    qml.QFT(wires=x_wires)
-    qml.ctrl(_add_k_fourier_loop, control=work_wire)(mod)
-    qml.adjoint(_add_k_fourier_loop)(k)
-    qml.adjoint(qml.QFT)(wires=x_wires)
-    qml.X(aux_k)
-    qml.CNOT(wires=[aux_k, work_wire[0]])
-    qml.X(aux_k)
-    qml.QFT(wires=x_wires)
+    adjoint(_add_k_fourier_loop)(mod)
+    adjoint(QFT)(wires=x_wires)
+    CNOT(wires=[aux_k, work_wire[0]])
+    QFT(wires=x_wires)
+    ctrl(_add_k_fourier_loop, control=work_wire)(mod)
+    adjoint(_add_k_fourier_loop)(k)
+    adjoint(QFT)(wires=x_wires)
+    X(aux_k)
+    CNOT(wires=[aux_k, work_wire[0]])
+    X(aux_k)
+    QFT(wires=x_wires)
     _add_k_fourier_loop(k)
 
 

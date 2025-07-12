@@ -20,6 +20,8 @@ import copy
 import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot
+from pennylane.ops.functions.map_wires import map_wires
+from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
 
@@ -148,12 +150,12 @@ class ApproxTimeEvolution(Operation):
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["hamiltonian"] = qml.map_wires(
+        new_op._hyperparameters["hamiltonian"] = map_wires(
             new_op._hyperparameters["hamiltonian"], wire_map
         )
         return new_op
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=QueuingManager):
         context.remove(self.hyperparameters["hamiltonian"])
         context.append(self)
         return self
@@ -208,17 +210,17 @@ class ApproxTimeEvolution(Operation):
         time = coeffs_and_time[-1]
 
         single_round = []
-        with qml.QueuingManager.stop_recording():
+        with QueuingManager.stop_recording():
             for pw, coeff in hamiltonian.pauli_rep.items():
                 if len(pw) == 0:
                     continue
                 theta = 2 * time * coeff / n
                 term_str = "".join(pw.values())
-                wires = qml.wires.Wires(pw.keys())
+                wires = Wires(pw.keys())
                 single_round.append(PauliRot(theta, term_str, wires=wires))
 
         full_decomp = single_round * n
-        if qml.QueuingManager.recording():
-            _ = [qml.apply(op) for op in full_decomp]
+        if QueuingManager.recording():
+            _ = [apply(op) for op in full_decomp]
 
         return full_decomp

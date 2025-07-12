@@ -19,9 +19,9 @@ import copy
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
-from pennylane.ops import BasisState
+from pennylane.ops import BasisState, FermionicDoubleExcitation, FermionicSingleExcitation
 from pennylane.wires import Wires
 
 
@@ -193,7 +193,7 @@ class UCCSD(Operation):
         if n_repeats < 1:
             raise ValueError(f"Requires n_repeats to be at least 1; got {n_repeats}.")
 
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
 
         expected_shape = (len(s_wires) + len(d_wires),)
         if len(shape) == 1 and (n_repeats != 1 or shape != expected_shape):
@@ -206,7 +206,7 @@ class UCCSD(Operation):
                 f"Weights tensor must be of shape {(n_repeats,) + expected_shape}; got {shape}."
             )
 
-        init_state = qml.math.toarray(init_state)
+        init_state = math.toarray(init_state)
 
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
@@ -268,18 +268,18 @@ class UCCSD(Operation):
 
         op_list.append(BasisState(init_state, wires=wires))
 
-        if n_repeats == 1 and len(qml.math.shape(weights)) == 1:
-            weights = qml.math.expand_dims(weights, 0)
+        if n_repeats == 1 and len(math.shape(weights)) == 1:
+            weights = math.expand_dims(weights, 0)
 
         for layer in range(n_repeats):
             for i, (w1, w2) in enumerate(d_wires):
                 op_list.append(
-                    qml.FermionicDoubleExcitation(
+                    FermionicDoubleExcitation(
                         weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
                     )
                 )
 
             for j, s_wires_ in enumerate(s_wires):
-                op_list.append(qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
+                op_list.append(FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
 
         return op_list

@@ -18,12 +18,20 @@ import copy
 from collections import defaultdict
 from functools import wraps
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation, Operator
-from pennylane.ops import Sum
-from pennylane.ops.op_math import SProd
+from pennylane.ops import LinearCombination, Sum, exp
+from pennylane.ops.functions.map_wires import map_wires
+from pennylane.ops.op_math import SProd, dot
+from pennylane.queuing import QueuingManager, apply
 from pennylane.resource import Resources, ResourcesOperation
-from pennylane.resource.error import ErrorOperation, SpectralNormError
+from pennylane.resource.error import (
+    ErrorOperation,
+    SpectralNormError,
+    _commutator_error,
+    _one_norm_error,
+)
+from pennylane.tape import QuantumScript, make_qscript
 from pennylane.wires import Wires
 
 
@@ -40,7 +48,7 @@ def _scalar(order):
     return (4 - 4**root) ** -1
 
 
-@qml.QueuingManager.stop_recording()
+@QueuingManager.stop_recording()
 def _recursive_expression(x, order, ops):
     """Generate a list of operations using the
     recursive expression which defines the Trotter product.
@@ -54,10 +62,10 @@ def _recursive_expression(x, order, ops):
         list: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
-        return [qml.exp(op, x * 1j) for op in ops]
+        return [exp(op, x * 1j) for op in ops]
 
     if order == 2:
-        return [qml.exp(op, x * 0.5j) for op in ops + ops[::-1]]
+        return [exp(op, x * 0.5j) for op in ops + ops[::-1]]
 
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
@@ -249,19 +257,19 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 f"The order of a TrotterProduct must be 1 or a positive even integer, got {order}."
             )
 
-        if isinstance(hamiltonian, qml.ops.LinearCombination):
+        if isinstance(hamiltonian, LinearCombination):
             coeffs, ops = hamiltonian.terms()
             if len(coeffs) < 2:
                 raise ValueError(
                     "There should be at least 2 terms in the Hamiltonian. Otherwise use `qml.exp`"
                 )
-            if qml.QueuingManager.recording():
-                qml.QueuingManager.remove(hamiltonian)
-            hamiltonian = qml.dot(coeffs, ops)
+            if QueuingManager.recording():
+                QueuingManager.remove(hamiltonian)
+            hamiltonian = dot(coeffs, ops)
 
         if isinstance(hamiltonian, SProd):
-            if qml.QueuingManager.recording():
-                qml.QueuingManager.remove(hamiltonian)
+            if QueuingManager.recording():
+                QueuingManager.remove(hamiltonian)
             hamiltonian = hamiltonian.simplify()
             if len(hamiltonian.terms()[0]) < 2:
                 raise ValueError(
@@ -293,27 +301,27 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["base"] = map_wires(new_op._hyperparameters["base"], wire_map)
         return new_op
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=QueuingManager):
         context.remove(self.hyperparameters["base"])
         context.append(self)
         return self
 
-    def resources(self) -> qml.resource.Resources:
+    def resources(self) -> Resources:
         r"""The resource requirements for a given instance of the Suzuki-Trotter product.
 
         Returns:
             :class:`~.resource.Resources`: The resources for an instance of ``TrotterProduct``.
         """
-        with qml.QueuingManager.stop_recording():
+        with QueuingManager.stop_recording():
             decomp = self.compute_decomposition(*self.parameters, **self.hyperparameters)
 
         num_wires = len(self.wires)
         num_gates = len(decomp)
 
-        depth = qml.tape.QuantumScript(ops=decomp).graph.get_depth()
+        depth = QuantumScript(ops=decomp).graph.get_depth()
 
         gate_types = defaultdict(int)
         gate_sizes = defaultdict(int)
@@ -374,7 +382,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         parameters = [t] + base_unitary.parameters
         if any(
-            qml.math.get_interface(param) == "tensorflow" for param in parameters
+            math.get_interface(param) == "tensorflow" for param in parameters
         ):  # TODO: Add TF support
             raise TypeError(
                 "Calculating error bound for Tensorflow objects is currently not supported"
@@ -382,12 +390,10 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         terms = base_unitary.operands
         if method == "one-norm-bound":
-            return SpectralNormError(qml.resource.error._one_norm_error(terms, t, p, n, fast=fast))
+            return SpectralNormError(_one_norm_error(terms, t, p, n, fast=fast))
 
         if method == "commutator-bound":
-            return SpectralNormError(
-                qml.resource.error._commutator_error(terms, t, p, n, fast=fast)
-            )
+            return SpectralNormError(_commutator_error(terms, t, p, n, fast=fast))
 
         raise ValueError(
             f"The '{method}' method is not supported for computing the error. Please select a valid method for computing the error."
@@ -487,9 +493,9 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
         decomp = _recursive_expression(time / n, order, ops)[::-1] * n
 
-        if qml.QueuingManager.recording():
+        if QueuingManager.recording():
             for op in decomp:  # apply operators in reverse order of expression
-                qml.apply(op)
+                apply(op)
 
         return decomp
 
@@ -648,9 +654,9 @@ class TrotterizedQfunc(Operation):
             * n
         )
 
-        if qml.QueuingManager.recording():
+        if QueuingManager.recording():
             for op in decomp:
-                qml.apply(op)
+                apply(op)
 
         return decomp
 
@@ -790,7 +796,7 @@ def trotterize(qfunc, n=1, order=2, reverse=False):
     return wrapper
 
 
-@qml.QueuingManager.stop_recording()
+@QueuingManager.stop_recording()
 def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs):
     """Generate a list of operations using the
     recursive expression which defines the Trotter product.
@@ -802,11 +808,11 @@ def _recursive_qfunc(time, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kw
         list: the approximation as a product of exponentials of the Hamiltonian terms
     """
     if order == 1:
-        tape = qml.tape.make_qscript(qfunc)(time, *qfunc_args, wires=wires, **qfunc_kwargs)
+        tape = make_qscript(qfunc)(time, *qfunc_args, wires=wires, **qfunc_kwargs)
         return tape.operations[::-1] if reverse else tape.operations
 
     if order == 2:
-        tape = qml.tape.make_qscript(qfunc)(time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
+        tape = make_qscript(qfunc)(time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
         return (
             tape.operations[::-1] + tape.operations
             if reverse

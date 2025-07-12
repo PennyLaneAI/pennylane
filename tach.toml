@@ -223,10 +223,10 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.pyth
 # layer = "auxiliary"
 # cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
-# [[modules]]
-# path = "pennylane.templates.subroutines"
-# layer = "auxiliary"
-# cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
+[[modules]]
+path = "pennylane.templates.subroutines"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
 ## TERTIARY module(s)
 # These modules can only import from CORE, AUXILIARY and modules within their layer.

@@ -19,8 +19,9 @@ import copy
 
 import numpy as np
 
-import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.ops import GlobalPhase, PhaseShift, X, adjoint, ctrl
+from pennylane.ops.functions.map_wires import map_wires
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
@@ -144,7 +145,7 @@ class Reflection(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["base"] = map_wires(new_op._hyperparameters["base"], wire_map)
         new_op._hyperparameters["reflection_wires"] = tuple(
             wire_map.get(w, w) for w in new_op._hyperparameters["reflection_wires"]
         )
@@ -172,28 +173,28 @@ class Reflection(Operation):
         U = hyperparameters["base"]
         reflection_wires = hyperparameters["reflection_wires"]
 
-        wires = qml.wires.Wires(reflection_wires) if reflection_wires is not None else wires
+        wires = Wires(reflection_wires) if reflection_wires is not None else wires
 
         ops = []
 
-        ops.append(qml.GlobalPhase(np.pi))
-        ops.append(qml.adjoint(U))
+        ops.append(GlobalPhase(np.pi))
+        ops.append(adjoint(U))
 
         if len(wires) > 1:
-            ops.append(qml.PauliX(wires=wires[-1]))
+            ops.append(X(wires=wires[-1]))
             ops.append(
-                qml.ctrl(
-                    qml.PhaseShift(alpha, wires=wires[-1]),
+                ctrl(
+                    PhaseShift(alpha, wires=wires[-1]),
                     control=wires[:-1],
                     control_values=[0] * (len(wires) - 1),
                 )
             )
-            ops.append(qml.PauliX(wires=wires[-1]))
+            ops.append(X(wires=wires[-1]))
 
         else:
-            ops.append(qml.PauliX(wires=wires))
-            ops.append(qml.PhaseShift(alpha, wires=wires))
-            ops.append(qml.PauliX(wires=wires))
+            ops.append(X(wires=wires))
+            ops.append(PhaseShift(alpha, wires=wires))
+            ops.append(X(wires=wires))
 
         ops.append(U)
 

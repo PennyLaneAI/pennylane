@@ -15,9 +15,12 @@
 This submodule contains the templates for the Hilbert-Schmidt tests.
 """
 # pylint: disable-msg=too-many-arguments
-import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operation
+from pennylane.ops import CNOT, Hadamard, QubitUnitary
+from pennylane.queuing import QueuingManager, apply
+from pennylane.tape import QuantumScript, make_qscript
+from pennylane.wires import Wires
 
 
 class HilbertSchmidt(Operation):
@@ -121,7 +124,7 @@ class HilbertSchmidt(Operation):
     def __init__(self, *params, v_function, v_wires, u_tape, id=None):
         self._num_params = len(params)
 
-        if not isinstance(u_tape, qml.tape.QuantumScript):
+        if not isinstance(u_tape, QuantumScript):
             raise QuantumFunctionError("The argument u_tape must be a QuantumTape.")
 
         u_wires = u_tape.wires
@@ -134,21 +137,21 @@ class HilbertSchmidt(Operation):
 
         self.hyperparameters["v_function"] = v_function
 
-        v_tape = qml.tape.make_qscript(v_function)(*params)
+        v_tape = make_qscript(v_function)(*params)
         self.hyperparameters["v_tape"] = v_tape
-        self.hyperparameters["v_wires"] = qml.wires.Wires(v_wires)
+        self.hyperparameters["v_wires"] = Wires(v_wires)
 
         if len(u_wires) != len(v_wires):
             raise QuantumFunctionError("U and V must have the same number of wires.")
 
-        if not qml.wires.Wires(v_wires).contains_wires(v_tape.wires):
+        if not Wires(v_wires).contains_wires(v_tape.wires):
             raise QuantumFunctionError("All wires in v_tape must be in v_wires.")
 
         # Intersection of wires
-        if len(qml.wires.Wires.shared_wires([u_tape.wires, v_tape.wires])) != 0:
+        if len(Wires.shared_wires([u_tape.wires, v_tape.wires])) != 0:
             raise QuantumFunctionError("u_tape and v_tape must act on distinct wires.")
 
-        wires = qml.wires.Wires(u_wires + v_wires)
+        wires = Wires(u_wires + v_wires)
 
         super().__init__(*params, wires=wires, id=id)
 
@@ -170,17 +173,17 @@ class HilbertSchmidt(Operation):
         second_range = range(n_wires // 2, n_wires)
 
         # Hadamard first layer
-        decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
+        decomp_ops = [Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
-            qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
         )
 
         # Unitary U
         for op_u in u_tape.operations:
             # The operation has been defined outside of this function, to queue it we call qml.apply.
-            if qml.QueuingManager.recording():
-                qml.apply(op_u)
+            if QueuingManager.recording():
+                apply(op_u)
             decomp_ops.append(op_u)
 
         # Unitary V conjugate
@@ -188,17 +191,16 @@ class HilbertSchmidt(Operation):
         # apply the complex conjugate of each operation in the V tape and append it to the decomposition
         # using the QubitUnitary operation.
         decomp_ops.extend(
-            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires)
-            for op_v in v_tape.operations
+            QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v_tape.operations
         )
 
         # CNOT second layer
         decomp_ops.extend(
-            qml.CNOT(wires=[wires[i], wires[j]])
+            CNOT(wires=[wires[i], wires[j]])
             for i, j in zip(reversed(first_range), reversed(second_range))
         )
         # Hadamard second layer
-        decomp_ops.extend(qml.Hadamard(wires[i]) for i in first_range)
+        decomp_ops.extend(Hadamard(wires[i]) for i in first_range)
         return decomp_ops
 
 
@@ -285,15 +287,15 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         second_range = range(n_wires // 2, n_wires)
 
         # Hadamard first layer
-        decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
+        decomp_ops = [Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
-            qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
         )
 
         # Unitary U
-        if qml.QueuingManager.recording():
-            decomp_ops.extend(qml.apply(op_u) for op_u in u_tape.operations)
+        if QueuingManager.recording():
+            decomp_ops.extend(apply(op_u) for op_u in u_tape.operations)
         else:
             decomp_ops.extend(u_tape.operations)
 
@@ -302,10 +304,9 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         # apply the complex conjugate of each operation in the V tape and append it to the decomposition
         # using the QubitUnitary operation.
         decomp_ops.extend(
-            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires)
-            for op_v in v_tape.operations
+            QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v_tape.operations
         )
         # Single qubit measurement
-        decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
+        decomp_ops.extend((CNOT(wires=[wires[0], wires[n_wires // 2]]), Hadamard(wires[0])))
 
         return decomp_ops

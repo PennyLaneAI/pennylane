@@ -18,7 +18,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.templates.subroutines import ControlledSequence, Multiplier
+from pennylane.wires import Wires, WiresLike
 
 
 class ModExp(Operation):
@@ -117,8 +118,8 @@ class ModExp(Operation):
         self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
-        output_wires = qml.wires.Wires(output_wires)
-        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
+        output_wires = Wires(output_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         if len(work_wires) == 0:
             raise ValueError("Work wires must be specified for ModExp")
@@ -148,7 +149,7 @@ class ModExp(Operation):
 
         wire_keys = ["x_wires", "output_wires", "work_wires"]
         for key in wire_keys:
-            self.hyperparameters[key] = qml.wires.Wires(locals()[key])
+            self.hyperparameters[key] = Wires(locals()[key])
         all_wires = sum(self.hyperparameters[key] for key in wire_keys)
         base = base % mod
         self.hyperparameters["base"] = base
@@ -225,8 +226,6 @@ class ModExp(Operation):
         # TODO: Cancel the QFTs of consecutive Multipliers
         op_list = []
         op_list.append(
-            qml.ControlledSequence(
-                qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires
-            )
+            ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)
         )
         return op_list
