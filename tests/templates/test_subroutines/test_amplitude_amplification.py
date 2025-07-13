@@ -64,6 +64,7 @@ class TestInitialization:
         with pytest.raises(ValueError, match="work_wire must be different from the wires of O."):
             qml.AmplitudeAmplification(U, O, iters=3, fixed_point=fixed_point, work_wire=work_wire)
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Test standard validity using assert_valid."""
         U = generator(wires=range(3))

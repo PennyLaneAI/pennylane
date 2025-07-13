@@ -23,6 +23,7 @@ from pennylane import math
 from pennylane.wires import Wires
 
 
+@pytest.mark.jax
 def test_standard_checks():
     """Run standard checks with the assert_valid function."""
     op = qml.FlipSign([0, 1], wires=("a", "b"))

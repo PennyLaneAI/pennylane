@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+@pytest.mark.jax
 def test_standard_validity_ModExp():
     """Check the operation using the assert_valid function."""
     base = 6

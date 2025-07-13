@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Templates have been made compatible with `qml.capture`.
+  [(#7696)](https://github.com/PennyLaneAI/pennylane/pull/7696)
+
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
   terminal measurements in a program with a single :func:`pennylane.sample` measurement, and adds
@@ -62,3 +65,4 @@ Joey Carter,
 Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
+David Wierichs,

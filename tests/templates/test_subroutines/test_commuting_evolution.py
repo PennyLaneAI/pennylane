@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane import numpy as np
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Run standard tests of operation validity."""
     H = 2.0 * qml.PauliX(0) @ qml.PauliY(1) + 3.0 * qml.PauliY(0) @ qml.PauliZ(1)

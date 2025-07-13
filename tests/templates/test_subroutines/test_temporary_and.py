@@ -30,6 +30,7 @@ class TestTemporaryAND:
         op2 = qml.Elbow(wires=[0, "a", 2], control_values=(0, 0))
         qml.assert_equal(op1, op2)
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Check the operation using the assert_valid function."""
 
