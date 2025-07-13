@@ -55,6 +55,9 @@ class Select(Operation):
         ops (list[Operator]): operations to apply
         control (Sequence[int]): the wires controlling which operation is applied.
             At least :math:`\lceil \log_2 K\rceil` wires are required for :math:`K` operations.
+        work_wires (Union[Wires, Sequence[int], or int]): auxiliary wire(s) that may be
+            utilized during the decomposition of the operator into native operations.
+            For details, see the section on the unary iterator decomposition below.
         id (str or None): String representing the operation (optional)
 
     .. note::
@@ -300,7 +303,7 @@ class Select(Operation):
             raise ValueError(
                 f"Not enough control wires ({len(control)}) for the desired number of "
                 + f"operations ({len(ops)}). At least {_ceil_log(len(ops))} control "
-                + "wires required."
+                + "wires are required."
             )
 
         if any(

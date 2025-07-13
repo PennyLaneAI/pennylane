@@ -15,6 +15,7 @@
 """This module contains the classes and functions for creating and diagonalizing
 mid-circuit measurements with a parameterized measurement axis."""
 
+import hashlib
 import uuid
 from collections.abc import Hashable
 from copy import copy
@@ -26,6 +27,7 @@ import numpy as np
 from pennylane import capture
 from pennylane.drawer.tape_mpl import _add_operation_to_drawer
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.math import is_abstract, isscalar, ndim, unwrap
 from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP, measure
 from pennylane.ops.op_math import Conditional, adjoint
 from pennylane.ops.qubit import RX, RY, H, PhaseShift, S
@@ -389,10 +391,20 @@ class ParametricMidMeasureMP(MidMeasureMP):
     @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
+        if is_abstract(self.angle):  # pragma: no cover
+            # no unique value from tracer to values, hash based on object string
+            param_hash = hashlib.sha256(str(self).encode()).digest()
+        elif isscalar(self.angle) or ndim(self.angle) == 0:
+            # Values are 0-dim arrays or scalars, array-ify
+            param_hash = hashlib.sha256(unwrap(self.angle)).digest()
+        else:
+            # otherwise, use the existing array structure
+            param_hash = hashlib.sha256(self.angle).digest()
+
         fingerprint = (
             self.__class__.__name__,
             self.plane,
-            self.angle,
+            param_hash,
             tuple(self.wires.tolist()),
             self.id,
         )

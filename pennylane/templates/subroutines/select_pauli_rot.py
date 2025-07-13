@@ -114,7 +114,7 @@ class SelectPauliRot(Operation):
 
     def _flatten(self):
         metadata = tuple((key, value) for key, value in self.hyperparameters.items())
-        return self.parameters[0], metadata
+        return self.data, metadata
 
     # pylint: disable=arguments-differ
     @classmethod
@@ -125,7 +125,7 @@ class SelectPauliRot(Operation):
     @classmethod
     def _unflatten(cls, data, metadata):
         hyperparams_dict = dict(metadata)
-        return cls(data, **hyperparams_dict)
+        return cls(*data, **hyperparams_dict)
 
     @property
     def resource_params(self) -> dict:
