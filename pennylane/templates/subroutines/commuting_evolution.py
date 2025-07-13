@@ -123,8 +123,8 @@ class CommutingEvolution(Operation):
     def _unflatten(cls, data, metadata) -> "CommutingEvolution":
         return cls(data[1], data[0], frequencies=metadata[0], shifts=metadata[1])
 
-    def __init__(self, hamiltonian, time, *, frequencies=None, shifts=None, id=None):
-        # pylint: disable=import-outside-toplevel
+    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
+        # pylint: disable=import-outside-toplevel,too-many-positional-arguments
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
         if getattr(hamiltonian, "pauli_rep", None) is None:
@@ -195,4 +195,4 @@ class CommutingEvolution(Operation):
         frequencies = self.hyperparameters["frequencies"]
         shifts = self.hyperparameters["shifts"]
 
-        return CommutingEvolution(hamiltonian, -time, frequencies=frequencies, shifts=shifts)
+        return CommutingEvolution(hamiltonian, -time, frequencies, shifts)
