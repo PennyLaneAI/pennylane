@@ -452,13 +452,14 @@ class TestInitialization:
         assert op.hyperparameters == new_op.hyperparameters
         assert op is not new_op
 
-    @pytest.mark.xfail(reason="https://github.com/PennyLaneAI/pennylane/issues/6333", strict=False)
+    @pytest.mark.jax
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_standard_validity(self, hamiltonian):
         """Test standard validity criteria using assert_valid."""
         time, n, order = (4.2, 10, 4)
         op = qml.TrotterProduct(hamiltonian, time, n=n, order=order)
-        qml.ops.functions.assert_valid(op)
+        # Skip differentiation because of https://github.com/PennyLaneAI/pennylane/issues/6333
+        qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     # TODO: Remove test when we deprecate ApproxTimeEvolution
     @pytest.mark.parametrize("n", (1, 2, 5, 10))
@@ -575,7 +576,7 @@ class TestPrivateFunctions:
         with qml.tape.QuantumTape() as tape:
             decomp = _recursive_expression(1.23, order, ops)
 
-        assert tape.operations == []  # No queuing!
+        assert not tape.operations  # No queuing!
         for op1, op2 in zip(decomp, expected_expansion):
             qml.assert_equal(op1, op2)
 
@@ -717,7 +718,7 @@ class TestResources:
         with qml.Tracker(dev) as tracker:
             circ()
 
-        spec_resources = qml.specs(circ)()["resources"]
+        spec_resources = qml.specs(circ)()["resources"]  # pylint: disable=invalid-sequence-index
         tracker_resources = tracker.history["resources"][0]
 
         assert expected_resources == spec_resources
@@ -738,7 +739,8 @@ class TestResources:
 
         specs = qml.specs(circ)()
 
-        computed_error = (specs["errors"])["SpectralNormError"]
+        # pylint: disable=invalid-sequence-index
+        computed_error = specs["errors"]["SpectralNormError"]
         computed_resources = specs["resources"]
 
         # Expected resources and errors (computed by hand)

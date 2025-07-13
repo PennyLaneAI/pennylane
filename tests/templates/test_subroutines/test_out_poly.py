@@ -58,6 +58,7 @@ def f_test(x, y, z):
     return x**2 + y * x * z**5 - z**3 + 3
 
 
+@pytest.mark.jax
 def test_standard_validity_OutPoly():
     """Check the operation using the assert_valid function."""
     wires = qml.registers({"x": 3, "y": 3, "z": 3, "output": 3, "aux": 2})

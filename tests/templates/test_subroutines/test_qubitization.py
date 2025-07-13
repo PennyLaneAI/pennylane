@@ -65,6 +65,7 @@ def test_operator_definition_qpe(hamiltonian):
     assert np.allclose(np.sort(estimated_eigenvalues), qml.eigvals(hamiltonian), atol=0.1)
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize(
     ("lcu", "control", "skip_diff"),
     [

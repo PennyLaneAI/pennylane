@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Run standard tests of operation validity."""
     weights = np.array(

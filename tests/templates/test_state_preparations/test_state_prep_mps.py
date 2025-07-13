@@ -27,6 +27,7 @@ from pennylane.templates.state_preparations.state_prep_mps import (
 
 class TestMPSPrep:
 
+    @pytest.mark.jax
     def test_standard_validity(self):
         """Check the template using the `assert_valid` function."""
         mps = [

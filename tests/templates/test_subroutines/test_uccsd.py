@@ -127,6 +127,7 @@ test_data_decomposition = [
 ]
 
 
+@pytest.mark.jax
 @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
 def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
     """Test standard validity criteria using assert_valid."""

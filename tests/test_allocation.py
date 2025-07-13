@@ -72,6 +72,7 @@ class TestDynamicWire:
 
 class TestAllocateOp:
 
+    @pytest.mark.jax
     def test_valid_operation(self):
         """Test that Allocate is a valid Operator."""
         op = Allocate.from_num_wires(3)

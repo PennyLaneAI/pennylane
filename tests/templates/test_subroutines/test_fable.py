@@ -36,6 +36,7 @@ class TestFable:
             ]
         )
 
+    @pytest.mark.jax
     def test_standard_validity(self, input_matrix):
         """Check the operation using the assert_valid function."""
         op = qml.FABLE(input_matrix, wires=range(5), tol=0.01)

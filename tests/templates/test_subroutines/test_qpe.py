@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Test standard validity criteria using assert_valid."""
     op = qml.QuantumPhaseEstimation(np.eye(4), target_wires=(0, 1), estimation_wires=[2, 5])

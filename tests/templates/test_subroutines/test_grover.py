@@ -37,6 +37,7 @@ def test_work_wire_property():
     assert op.work_wires == expected
 
 
+@pytest.mark.jax
 def test_standard_validity():
     """Test the standard criteria for a valid operation."""
     work_wires = qml.wires.Wires((3, 4))
