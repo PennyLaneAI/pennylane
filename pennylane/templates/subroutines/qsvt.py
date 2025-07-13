@@ -27,7 +27,7 @@ from numpy.polynomial import Polynomial, chebyshev
 from pennylane import math, ops
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
-from pennylane.templates.subroutines import PrepSelPrep, Qubitization, FABLE
+from pennylane.templates.subroutines import FABLE, PrepSelPrep, Qubitization
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
@@ -57,7 +57,8 @@ def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="ro
     )
 
     projectors = [
-        ops.PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires) for angle in angles
+        ops.PCPhase(angle, dim=2 ** len(A.wires), wires=encoding_wires + A.wires)
+        for angle in angles
     ]
     return encoding, projectors
 
@@ -496,9 +497,12 @@ class QSVT(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["UA"] = ops.functions.map_wires(new_op._hyperparameters["UA"], wire_map)
+        new_op._hyperparameters["UA"] = ops.functions.map_wires(
+            new_op._hyperparameters["UA"], wire_map
+        )
         new_op._hyperparameters["projectors"] = [
-            ops.functions.map_wires(proj, wire_map) for proj in new_op._hyperparameters["projectors"]
+            ops.functions.map_wires(proj, wire_map)
+            for proj in new_op._hyperparameters["projectors"]
         ]
         return new_op
 

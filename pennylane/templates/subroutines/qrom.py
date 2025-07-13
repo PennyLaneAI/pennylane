@@ -116,7 +116,7 @@ class QROM(Operation):
         work_wires: WiresLike,
         clean=True,
         id=None,
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments,disable=too-many-positional-arguments
 
         control_wires = Wires(control_wires)
         target_wires = Wires(target_wires)
@@ -227,7 +227,9 @@ class QROM(Operation):
                         ops_identity[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
                         for l in range(len(target_wires))
                     }
-                    column_ops.append(qml_ops.functions.map_wires(ops_identity[i * depth + j], dic_map))
+                    column_ops.append(
+                        qml_ops.functions.map_wires(ops_identity[i * depth + j], dic_map)
+                    )
                 new_ops.append(qml_ops.prod(*column_ops))
 
             # Select block
