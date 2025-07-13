@@ -18,7 +18,8 @@ import copy
 from collections import defaultdict
 from functools import wraps
 
-from pennylane import math, ops as qml_ops
+from pennylane import math
+from pennylane import ops as qml_ops
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
 from pennylane.resource import Resources, ResourcesOperation
@@ -244,7 +245,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         # accepts no wires, so bypasses the wire processing.
         return cls._primitive.bind(*args, **kwargs)
 
-    def __init__(  # pylint: disable=too-many-arguments
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self, hamiltonian, time, n=1, order=1, check_hermitian=True, id=None
     ):
         r"""Initialize the TrotterProduct class"""
@@ -298,7 +299,9 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["base"] = qml_ops.functions.map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["base"] = qml_ops.functions.map_wires(
+            new_op._hyperparameters["base"], wire_map
+        )
         return new_op
 
     def queue(self, context=QueuingManager):

@@ -116,8 +116,8 @@ class Qubitization(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(w, w) for w in self.wires])
-        new_op._hyperparameters["hamiltonian"] = (
-            new_op._hyperparameters["hamiltonian"].map_wires(wire_map)
+        new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
+            wire_map
         )
         new_op._hyperparameters["control"] = Wires(
             [wire_map.get(w, w) for w in self._hyperparameters["control"]]

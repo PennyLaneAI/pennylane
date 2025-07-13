@@ -259,7 +259,9 @@ class QuantumPhaseEstimation(ErrorOperation):
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["unitary"] = ops.functions.map_wires(new_op._hyperparameters["unitary"], wire_map)
+        new_op._hyperparameters["unitary"] = ops.functions.map_wires(
+            new_op._hyperparameters["unitary"], wire_map
+        )
 
         for key in ["estimation_wires", "target_wires"]:
             new_op._hyperparameters[key] = [

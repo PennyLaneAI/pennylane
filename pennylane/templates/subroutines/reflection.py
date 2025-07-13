@@ -144,7 +144,9 @@ class Reflection(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["base"] = ops.functions.map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["base"] = ops.functions.map_wires(
+            new_op._hyperparameters["base"], wire_map
+        )
         new_op._hyperparameters["reflection_wires"] = tuple(
             wire_map.get(w, w) for w in new_op._hyperparameters["reflection_wires"]
         )

@@ -123,7 +123,7 @@ class CommutingEvolution(Operation):
     def _unflatten(cls, data, metadata) -> "CommutingEvolution":
         return cls(data[1], data[0], frequencies=metadata[0], shifts=metadata[1])
 
-    def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
+    def __init__(self, hamiltonian, time, *, frequencies=None, shifts=None, id=None):
         # pylint: disable=import-outside-toplevel
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
@@ -151,7 +151,9 @@ class CommutingEvolution(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(wire_map)
+        new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
+            wire_map
+        )
         return new_op
 
     def queue(self, context=QueuingManager):
@@ -193,4 +195,4 @@ class CommutingEvolution(Operation):
         frequencies = self.hyperparameters["frequencies"]
         shifts = self.hyperparameters["shifts"]
 
-        return CommutingEvolution(hamiltonian, -time, frequencies, shifts)
+        return CommutingEvolution(hamiltonian, -time, frequencies=frequencies, shifts=shifts)

@@ -21,11 +21,16 @@ from collections.abc import Sequence
 from functools import singledispatch
 from typing import Union
 
-import pennylane as qml
-from pennylane.operation import Operator
 from pennylane import ops
+from pennylane.operation import Operator
 from pennylane.templates.embeddings import AngleEmbedding
-from pennylane.templates.subroutines import ApproxTimeEvolution, CommutingEvolution, QDrift, ControlledSequence, FermionicDoubleExcitation
+from pennylane.templates.subroutines import (
+    ApproxTimeEvolution,
+    CommutingEvolution,
+    ControlledSequence,
+    FermionicDoubleExcitation,
+    QDrift,
+)
 from pennylane.typing import TensorLike
 
 from ..identity import Identity
@@ -70,9 +75,7 @@ def bind_new_parameters_approx_time_evolution(
 
 
 @bind_new_parameters.register
-def bind_new_parameters_commuting_evolution(
-    op: CommutingEvolution, params: Sequence[TensorLike]
-):
+def bind_new_parameters_commuting_evolution(op: CommutingEvolution, params: Sequence[TensorLike]):
     new_hamiltonian = bind_new_parameters(op.hyperparameters["hamiltonian"], params[1:])
     freq = op.hyperparameters["frequencies"]
     shifts = op.hyperparameters["shifts"]
@@ -113,9 +116,7 @@ def bind_new_parameters_identity(op: Identity, params: Sequence[TensorLike]):
 
 
 @bind_new_parameters.register
-def bind_new_parameters_linear_combination(
-    op: ops.LinearCombination, params: Sequence[TensorLike]
-):
+def bind_new_parameters_linear_combination(op: ops.LinearCombination, params: Sequence[TensorLike]):
     new_coeffs, new_ops = [], []
     i = 0
     for o in op.ops:
@@ -184,9 +185,7 @@ def bind_new_parameters_symbolic_op(op: SymbolicOp, params: Sequence[TensorLike]
 
 
 @bind_new_parameters.register
-def bind_new_parameters_controlled_sequence(
-    op: ControlledSequence, params: Sequence[TensorLike]
-):
+def bind_new_parameters_controlled_sequence(op: ControlledSequence, params: Sequence[TensorLike]):
     new_base = bind_new_parameters(op.base, params)
     return op.__class__(new_base, control=op.control)
 
