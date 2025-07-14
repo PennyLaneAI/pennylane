@@ -49,6 +49,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Make `pennylane.io` a tertiary module.
+  [(#)]()
+
 * Seeded tests for the `split_to_single_terms` transformation.
   [(#7851)](https://github.com/PennyLaneAI/pennylane/pull/7851)
 
