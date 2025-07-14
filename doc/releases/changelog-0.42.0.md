@@ -353,7 +353,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   ```python
   import pennylane as qml
 
-  ```python
   dev = qml.device("default.qubit", wires=[0, 1, 2])
   
   @qml.qnode(dev)
