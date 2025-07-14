@@ -4,6 +4,8 @@
 
 <h3>New features since last release</h3>
 
+* `set_shots` can be directly applied to a QNode, no more `partial` decorators are needed.
+
 <h4>OpenQASM 🤝 PennyLane</h4>
 
 * More functionality within :func:`qml.from_qasm3` has been added, which converts more complex OpenQASM 3.0 circuits 
