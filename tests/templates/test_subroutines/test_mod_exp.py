@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def test_standard_validity_ModExp():
@@ -178,6 +179,19 @@ class TestModExp:
 
         for op1, op2 in zip(adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
+
+    def test_decomposition_new(self):
+        """Tests the decomposition rule implemented with the new system."""
+        x_wires, output_wires, base, mod, work_wires = (
+            [0, 1, 2],
+            [3, 4, 5],
+            6,
+            7,
+            [9, 10, 11, 12, 13],
+        )
+        op = qml.ModExp(x_wires, output_wires, base, mod, work_wires)
+        for rule in qml.list_decomps(qml.ModExp):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.jax
     def test_jit_compatible(self):

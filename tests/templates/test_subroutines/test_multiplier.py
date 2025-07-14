@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.multiplier import _mul_out_k_mod
 
 
@@ -190,6 +191,31 @@ class TestMultiplier:
 
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize(
+        ("k", "x_wire", "mod", "work_wires"),
+        [
+            (
+                3,
+                [1],
+                1,
+                [2, 3, 4],
+            ),
+            (
+                3,
+                [1],
+                2,
+                [2, 3, 4],
+            ),
+        ],
+    )
+    def test_decomposition_new(
+        self, k, x_wire, mod, work_wires
+    ):  # pylint: disable=too-many-arguments
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.Multiplier(k, x_wire, mod, work_wires)
+        for rule in qml.list_decomps(qml.Multiplier):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.jax
     def test_jit_compatible(self):

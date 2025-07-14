@@ -11,6 +11,24 @@
 
     * :class:`~.Adder`
       [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
+    
+    * :class:`~.ControlledSequence`
+      [(#7787)](https://github.com/PennyLaneAI/pennylane/pull/7787)
+  
+    * :class:`~.OutAdder`
+      [(#7780)](https://github.com/PennyLaneAI/pennylane/pull/7780)
+
+    * :class:`~.OutMultiplier`
+      [(#7781)](https://github.com/PennyLaneAI/pennylane/pull/7781)
+
+    * :class:`~.OutPoly`
+      [(#7822)](https://github.com/PennyLaneAI/pennylane/pull/7822)
+
+    * :class:`~.Multiplier`
+      [(#7834)](https://github.com/PennyLaneAI/pennylane/pull/7834)
+    
+    * :class:`~.ModExp`
+      [(#7836)](https://github.com/PennyLaneAI/pennylane/pull/7836)
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
