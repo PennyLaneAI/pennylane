@@ -837,12 +837,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   increasing the performance of using `qml.execute` for standard executions.
   [(#7644)](https://github.com/PennyLaneAI/pennylane/pull/7644)
 
-* `null.qubit` can now support an optional `track_resources` argument which allows it to record which 
-  gates are executed.
-  [(#7226)](https://github.com/PennyLaneAI/pennylane/pull/7226)
-  [(#7372)](https://github.com/PennyLaneAI/pennylane/pull/7372)
-  [(#7392)](https://github.com/PennyLaneAI/pennylane/pull/7392)
-
 * `qml.grad` and `qml.jacobian` can now handle inputs with dynamic shapes being captured into plxpr.
   [(#7544)](https://github.com/PennyLaneAI/pennylane/pull/7544/)
 
@@ -1046,7 +1040,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7526)](https://github.com/PennyLaneAI/pennylane/pull/7526)
   [(#7540)](https://github.com/PennyLaneAI/pennylane/pull/7540)
   [(#7541)](https://github.com/PennyLaneAI/pennylane/pull/7541)
-  [(#7526)](https://github.com/PennyLaneAI/pennylane/pull/7526)
   [(#7584)](https://github.com/PennyLaneAI/pennylane/pull/7584)
   [(#7549)](https://github.com/PennyLaneAI/pennylane/pull/7549)
 
@@ -1073,8 +1066,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
 
 * Several new templates for various algorithms required for supporting compact Hamiltonian 
   development and resource estimation have been added: `qml.ResourceOutOfPlaceSquare`, 
-  `qml.ResourcePhaseGradient`, `qml.ResourceOutMultiplier`, `qml.ResourceSemiAdder`, 
-  `qml.ResourceSemiAdder`, `qml.ResourceBasisRotation`, `qml.ResourceSelect`, and 
+  `qml.ResourcePhaseGradient`, `qml.ResourceOutMultiplier`, `qml.ResourceSemiAdder`, `qml.ResourceBasisRotation`, `qml.ResourceSelect`, and 
   `qml.ResourceQROM`.
   [(#7725)](https://github.com/PennyLaneAI/pennylane/pull/7725)
 
@@ -1108,7 +1100,7 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   optimized for better performance by grouping commutators by linearity and by using a task-based 
   executor to parallelize the computationally heavy parts of the algorithm.
   [(#7681)](https://github.com/PennyLaneAI/pennylane/pull/7681)
-  [(#7790)][https://github.com/PennyLaneAI/pennylane/pull/7790]
+  [(#7790)](https://github.com/PennyLaneAI/pennylane/pull/7790)
 
 * Missing table descriptions for :class:`qml.FromBloq <pennylane.FromBloq>`,
   :func:`qml.qchem.two_particle <pennylane.qchem.two_particle>`,
