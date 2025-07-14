@@ -76,7 +76,7 @@ ufw==0.36.2
 urllib3==2.0.7
 userpath==1.9.2
 wadllib==1.3.6
-WALinuxAgent==2.9.1.1
+WALinuxAgent==2.11.1.4
 wheel==0.42.0
 zope.interface==6.1
 zstandard==0.22.0
