@@ -511,11 +511,6 @@ class QNode:
         indexing of ``x`` would fail in the ``RZ`` rotation within the QNode.
     """
 
-    # Class attribute for default shots - all QNodes share this
-    _DEFAULT_SHOTS = Shots(
-        None
-    )  # provide convenience for experienced users to alter their default shots once for all
-
     # pylint: disable=too-many-arguments
     def __init__(
         self,
@@ -610,7 +605,7 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        self._shots: Shots = Shots(self._DEFAULT_SHOTS)
+        self._shots: Shots = Shots(None)
         self._shots_override_device: bool = False
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
