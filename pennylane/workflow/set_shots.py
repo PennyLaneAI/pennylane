@@ -16,31 +16,33 @@ This module contains the set_shots decorator.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 from .qnode import QNode
+
+# Sentinel value to distinguish between "not provided" and "explicitly None"
+_DECORATOR_MODE = object()
 
 if TYPE_CHECKING:
     from pennylane.measurements import Shots
 
 
 def set_shots(
-    qnode: QNode,
+    qnode: Union[QNode, object] = _DECORATOR_MODE,
     shots: Optional[Shots | int | Sequence[int | Tuple[int, int]]] = None,
-) -> QNode:
+) -> Union[QNode, Callable[[QNode], QNode]]:
     """Transform used to set or update a circuit's shots.
 
     Args:
-        tape (QuantumScript): The quantum circuit to be modified.
+        qnode (QNode): The QNode to be modified. If not provided, returns a decorator.
         shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
             number of shots (or a shots vector) that the transformed circuit will execute.
             This specification will override any shots value previously associated
             with the circuit or QNode during execution.
 
     Returns:
-        tuple[List[QuantumScript], function]: The transformed circuit as a batch of tapes and a
-        post-processing function, as described in :func:`qml.transform <pennylane.transform>`. The output
-        tape(s) will have their ``shots`` attribute set to the value provided in the ``shots`` argument.
+        QNode or callable: The transformed QNode with updated shots, or a decorator function
+        if qnode is not provided.
 
     There are three ways to specify shot values (see :func:`qml.measurements.Shots <pennylane.measurements.Shots>` for more details):
 
@@ -54,9 +56,7 @@ def set_shots(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.set_shots, shots=2)
+        @qml.set_shots(shots=2)
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit():
             qml.RX(1.23, wires=0)
@@ -74,7 +74,20 @@ def set_shots(
     (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
 
     """
-    # When called directly with a function/QNode
+    # When used as decorator with arguments: @set_shots(shots=...)
+    # This happens when qnode parameter is not provided (decorator mode)
+    if qnode is _DECORATOR_MODE:
+
+        def decorator(qnode_func):
+            if isinstance(qnode_func, QNode):
+                return qnode_func.update_shots(shots)
+            raise ValueError("set_shots can only be applied to QNodes")
+
+        return decorator
+
+    # When called directly with a QNode
     if isinstance(qnode, QNode):
         return qnode.update_shots(shots)
+
+    # If qnode is not a QNode (including explicit None), raise error
     raise ValueError("set_shots can only be applied to QNodes")

@@ -2231,6 +2231,20 @@ class TestSetShots:
         # Verify that the set_shots value (50) was used, not the parameter value (25)
         assert len(result) == 50
 
+    def test_set_shots_direct_decorator(self):
+        """Test set_shots with partial decorator syntax."""
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        @set_shots(shots=50)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        assert circuit._shots == qml.measurements.Shots(50)
+        result = circuit()
+        assert len(result) == 50
+
     def test_set_shots_partial_decorator(self):
         """Test set_shots with partial decorator syntax."""
         dev = qml.device("default.qubit", wires=1, shots=10)
