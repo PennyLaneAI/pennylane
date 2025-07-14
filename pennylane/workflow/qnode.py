@@ -185,6 +185,11 @@ def _validate_diff_method(
     )
 
 
+_DEFAULT_SHOTS = Shots(
+    None
+)  # provide convenience for experienced users to alter their default shots once for all
+
+
 # pylint: disable=too-many-instance-attributes
 class QNode:
     r"""Represents a quantum node in the hybrid computational graph.
@@ -605,7 +610,7 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        self._shots: Shots = device.shots
+        self._shots: Shots = _DEFAULT_SHOTS
         self._shots_override_device: bool = False
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
