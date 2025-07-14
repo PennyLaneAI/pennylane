@@ -204,28 +204,22 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    # Handle adaptive sampling constraints early (before BCH expansion)
-    if adaptive_sampling:
-        if backend != "serial":
-            raise ValueError("Adaptive sampling is only compatible with backend='serial'")
-        if num_workers != 1:
-            raise ValueError("Adaptive sampling requires num_workers=1")
-
     start_time = time.time()
     commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order))
     print(f"BCH expansion time: {time.time() - start_time:.4f} seconds")
-    
-    # Handle case where no correction terms exist (e.g., order=1)
-    if not commutators:
-        print(f"No correction terms found for order {order}. Returning zero errors.")
-        return [0.0] * len(states)
 
-    # Handle adaptive sampling logic (after commutators are available)
+    # Handle adaptive sampling first (it has priority)
     if adaptive_sampling:
         if sample_size is not None:
             print("Warning: sample_size is ignored when adaptive_sampling=True")
 
         print("Using adaptive sampling (dynamic sample size determination)")
+
+        # Adaptive sampling is only compatible with serial execution
+        if backend != "serial":
+            raise ValueError("Adaptive sampling is only compatible with backend='serial'")
+        if num_workers != 1:
+            raise ValueError("Adaptive sampling requires num_workers=1")
 
         # Get gridpoints from the first state (all states should have the same gridpoints)
         gridpoints = getattr(states[0], 'gridpoints', 10) if states else 10
@@ -817,7 +811,7 @@ def _adaptive_sampling(
         print(f"  State {state_idx + 1} completed in {state_time:.2f}s")
 
     total_time = time.time() - total_start_time
-    print(f"\n=== Adaptive Sampling Summary ===")
+    print("\n=== Adaptive Sampling Summary ===")
     print(f"Total time: {total_time:.2f}s")
     print(f"Average time per state: {total_time/len(states):.2f}s")
     print(f"Final expectation values: {[f'{exp:.6e}' for exp in expectations]}")
