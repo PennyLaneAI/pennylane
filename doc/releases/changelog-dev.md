@@ -37,6 +37,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been removed. Please import these objects from the new ``pennylane.exceptions`` module.
+  [(#)]()
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>

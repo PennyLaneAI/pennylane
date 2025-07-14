@@ -9,12 +9,6 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
-  and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
-
-  - Deprecated in v0.42
-  - Will be removed in v0.43
-
 * ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
   provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
   ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
@@ -124,6 +118,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
+  is now removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
+
+  - Deprecated in v0.42
+  - Remove in v0.43
 
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is now removed in v0.42.
   The gradient keyword arguments should be passed to the new keyword argument ``gradient_kwargs`` via an explicit 
