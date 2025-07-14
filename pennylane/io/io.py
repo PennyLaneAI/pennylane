@@ -938,7 +938,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None, **kwargs):
             f"Please ensure the code is valid OpenQASM 3.0 syntax. {str(e)}",
         ) from e
 
-    def interpret_function():
+    def interpret_function(**kwargs):
         QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map}, **kwargs)
 
     return interpret_function
