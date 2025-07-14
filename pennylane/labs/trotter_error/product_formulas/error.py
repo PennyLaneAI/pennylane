@@ -258,7 +258,11 @@ def perturbation_error(
                 weighted_state = weight * _apply_commutator(commutator, fragments, state)
                 new_state += weighted_state
 
-            expectations.append(state.dot(new_state))
+            # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
+            if isinstance(new_state, _AdditiveIdentity):
+                expectations.append(0.0)
+            else:
+                expectations.append(state.dot(new_state))
 
         return expectations
 
@@ -286,7 +290,11 @@ def perturbation_error(
             for applied_state in applied_commutators:
                 new_state += applied_state
 
-            expectations.append(state.dot(new_state))
+            # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
+            if isinstance(new_state, _AdditiveIdentity):
+                expectations.append(0.0)
+            else:
+                expectations.append(state.dot(new_state))
 
         return expectations
 
@@ -311,7 +319,11 @@ def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
     for commutator in commutators:
         new_state += _apply_commutator(commutator, fragments, state)
 
-    return state.dot(new_state)
+    # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
+    if isinstance(new_state, _AdditiveIdentity):
+        return 0.0
+    else:
+        return state.dot(new_state)
 
 
 def _apply_commutator(
@@ -731,7 +743,12 @@ def _adaptive_sampling(
 
             # Apply commutator and get contribution
             applied_state = _apply_commutator(commutator, fragments, state)
-            contribution = weight * state.dot(applied_state)
+            
+            # Handle case where applied_state is _AdditiveIdentity
+            if isinstance(applied_state, _AdditiveIdentity):
+                contribution = 0.0
+            else:
+                contribution = weight * state.dot(applied_state)
 
             # Update running statistics
             n_samples += 1
@@ -863,11 +880,15 @@ def _compute_state_expectation(commutators, weights, fragments, state):
     
     This replaces the lambda function to make it pickleable for MPI.
     """
-    return state.dot(
-        sum((weight * _apply_commutator(commutator, fragments, state)
-            for commutator, weight in zip(commutators, weights)),
-            start=_AdditiveIdentity())
-    )
+    new_state = sum((weight * _apply_commutator(commutator, fragments, state)
+                    for commutator, weight in zip(commutators, weights)),
+                   start=_AdditiveIdentity())
+    
+    # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
+    if isinstance(new_state, _AdditiveIdentity):
+        return 0.0
+    else:
+        return state.dot(new_state)
 
 
 def _apply_weighted_commutator(commutator, weight, fragments, state):
