@@ -416,7 +416,7 @@ class QasmInterpreter:
         )
 
     @visit.register(list)
-    def visit_list(self, node_list: list, context: Context):
+    def visit_list(self, node_list: list, context: Context, allow_end: bool = True):
         """
         Visits a list of QASMNodes.
 
@@ -425,7 +425,16 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         for sub_node in node_list:
-            self.visit(sub_node, context)
+            try:
+                self.visit(sub_node, context)
+            except EndProgram as e:
+                if allow_end:
+                    # this will end the interpretation of the QASM...
+                    # not good if we're building a qscript for a controlled branch
+                    raise e
+                else:
+                    # this will end the construction of the qscript for this controlled branch
+                    break
 
     def interpret(self, node: QASMNode, context: dict):
         """
@@ -533,7 +542,7 @@ class QasmInterpreter:
                 if hasattr(node, "else_block")
                 else None
             ),
-        )()
+        )(allow_end=False)
 
     @visit.register(ast.SwitchStatement)
     def visit_switch_statement(self, node: ast.SwitchStatement, context: Context):
