@@ -13,6 +13,8 @@
 # limitations under the License.
 """Test Jax-based Catalyst-compatible Momentum-QNG optimizer"""
 
+from functools import partial
+
 import numpy as np
 import pytest
 
@@ -22,6 +24,13 @@ dev_names = (
     "default.qubit",
     "lightning.qubit",
 )
+
+
+def circuit(params):
+    """Simple circuit to use for testing."""
+    qml.RX(params[0], wires=0)
+    qml.RY(params[1], wires=1)
+    return qml.expval(qml.Z(wires=0))
 
 
 class TestBasics:
@@ -158,3 +167,74 @@ class TestOptimize:
             assert np.allclose(params, exp_params, atol=tol, rtol=0)
 
         assert np.allclose(circ(params), -1)
+
+    @pytest.mark.jax
+    def test_jit(self):
+        """Test optimizer compatibility with jax.jit compilation."""
+        import jax
+        import jax.numpy as jnp
+
+        device = qml.device("default.qubit", wires=2)
+        qnode = qml.QNode(circuit, device=device)
+
+        opt = qml.MomentumQNGOptimizerQJIT()
+        params = jnp.array([0.1, 0.2])
+        state = opt.init(params)
+
+        new_params1, state1 = opt.step(qnode, params, state)
+        new_params2, state2, cost = opt.step_and_cost(qnode, params, state)
+
+        step = jax.jit(partial(opt.step, qnode))
+        step_and_cost = jax.jit(partial(opt.step_and_cost, qnode))
+        new_params1_jit, state1_jit = step(params, state)
+        new_params2_jit, state2_jit, cost_jit = step_and_cost(params, state)
+
+        # check params have been updated
+        assert not np.allclose(params, new_params1)
+        assert not np.allclose(state, state1)
+        assert not np.allclose(params, new_params2)
+        assert not np.allclose(state, state2)
+
+        # check jitted results match
+        assert np.allclose(new_params1, new_params1_jit)
+        assert np.allclose(state1, state1_jit)
+        assert np.allclose(new_params2, new_params2_jit)
+        assert np.allclose(state2, state2_jit)
+        assert np.allclose(cost, cost_jit)
+
+    @pytest.mark.jax
+    @pytest.mark.catalyst
+    @pytest.mark.external
+    def test_qjit(self):
+        """Test optimizer compatibility with qml.qjit compilation."""
+        import jax.numpy as jnp
+
+        pytest.importorskip("catalyst")
+
+        device = qml.device("lightning.qubit", wires=2)
+        qnode = qml.QNode(circuit, device=device)
+
+        opt = qml.MomentumQNGOptimizerQJIT()
+        params = jnp.array([0.1, 0.2])
+        state = opt.init(params)
+
+        new_params1, state1 = opt.step(qnode, params, state)
+        new_params2, state2, cost = opt.step_and_cost(qnode, params, state)
+
+        step = qml.qjit(partial(opt.step, qnode))
+        step_and_cost = qml.qjit(partial(opt.step_and_cost, qnode))
+        new_params1_qjit, state1_qjit = step(params, state)
+        new_params2_qjit, state2_qjit, cost_qjit = step_and_cost(params, state)
+
+        # check params and state have been updated
+        assert not np.allclose(params, new_params1)
+        assert not np.allclose(state, state1)
+        assert not np.allclose(params, new_params2)
+        assert not np.allclose(state, state2)
+
+        # check qjitted results match
+        assert np.allclose(new_params1, new_params1_qjit)
+        assert np.allclose(state1, state1_qjit)
+        assert np.allclose(new_params2, new_params2_qjit)
+        assert np.allclose(state2, state2_qjit)
+        assert np.allclose(cost, cost_qjit)
