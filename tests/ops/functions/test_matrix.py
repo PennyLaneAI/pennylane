@@ -611,7 +611,7 @@ class TestValidation:
         """Assert error raised when input is neither a tape, QNode, nor quantum function"""
         with pytest.raises(
             TransformError,
-            match="Input is not an Operator, tape, QNode, or quantum function",
+            match="Decorating a QNode with @transform",
         ):
             _ = qml.matrix(None)
 
@@ -916,16 +916,17 @@ class TestWireOrderErrors:
             return qml.state()
 
         with pytest.raises(ValueError, match=r"wire_order is required"):
-            _ = qml.matrix(circuit)
+            _ = qml.matrix(circuit)()
 
     def test_error_qfunc(self):
         """Test that an error is raised when calling qml.matrix without wire_order on a qfunc."""
 
         def circuit():
             qml.PauliX(0)
+            qml.X(1)
 
         with pytest.raises(ValueError, match=r"wire_order is required"):
-            _ = qml.matrix(circuit)
+            _ = qml.matrix(circuit)()
 
     def test_op_class(self):
         """Tests that an error is raised when calling qml.matrix without wire_order
