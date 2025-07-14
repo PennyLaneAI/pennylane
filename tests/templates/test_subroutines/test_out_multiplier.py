@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.out_multiplier import OutMultiplier
 
 
@@ -239,6 +240,33 @@ class TestOutMultiplier:
 
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize(
+        ("x_wires", "y_wires", "output_wires", "mod", "work_wires"),
+        [
+            (
+                [0, 1, 2],
+                [3, 5],
+                [6, 8],
+                3,
+                [9, 10],
+            ),
+            (
+                [0, 1, 2],
+                [3, 6],
+                [5, 8],
+                4,
+                [9, 10],
+            ),
+        ],
+    )
+    def test_decomposition_new(
+        self, x_wires, y_wires, output_wires, mod, work_wires
+    ):  # pylint: disable=too-many-arguments
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.OutMultiplier(x_wires, y_wires, output_wires, mod, work_wires)
+        for rule in qml.list_decomps(qml.OutMultiplier):
+            _test_decomposition_rule(op, rule)
 
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""

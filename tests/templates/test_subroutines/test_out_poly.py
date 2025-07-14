@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.out_poly import (
     _get_polynomial,
     _mobius_inversion_of_zeta_transform,
@@ -187,6 +188,19 @@ class TestOutPoly:
 
         for op1, op2 in zip(expected_decomposition, ops):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize(
+        ("polynomial_function", "input_registers", "output_wires"),
+        [
+            (lambda x, y: x + y, [[0, 1], [2]], [3]),
+            (lambda x, y: x * y, [[0, 1], [2]], [3]),
+        ],
+    )
+    def test_decomposition_new(self, polynomial_function, input_registers, output_wires):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.OutPoly(polynomial_function, input_registers, output_wires)
+        for rule in qml.list_decomps(qml.OutPoly):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.jax
     def test_jit_compatible(self):

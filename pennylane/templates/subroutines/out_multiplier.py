@@ -14,8 +14,13 @@
 """
 Contains the OutMultiplier template.
 """
-
 import pennylane as qml
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
@@ -141,6 +146,8 @@ class OutMultiplier(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "mod"}
+
     def __init__(
         self,
         x_wires: WiresLike,
@@ -198,6 +205,15 @@ class OutMultiplier(Operation):
         # pylint: disable=consider-using-generator
         all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
         super().__init__(wires=all_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_output_wires": len(self.hyperparameters["output_wires"]),
+            "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "num_y_wires": len(self.hyperparameters["y_wires"]),
+            "mod": self.hyperparameters["mod"],
+        }
 
     @property
     def num_params(self):
@@ -277,3 +293,57 @@ class OutMultiplier(Operation):
         op_list.append(qml.adjoint(qml.QFT)(wires=qft_output_wires))
 
         return op_list
+
+
+def _out_multiplier_decomposition_resources(
+    num_output_wires, num_x_wires, num_y_wires, mod
+) -> dict:
+
+    if mod != 2**num_output_wires:
+        qft_wires = num_output_wires + 1
+    else:
+        qft_wires = num_output_wires
+
+    return {
+        resource_rep(qml.QFT, num_wires=qft_wires): 1,
+        resource_rep(
+            qml.ControlledSequence,
+            base=qml.ControlledSequence,
+            base_params={
+                "base": qml.PhaseAdder,
+                "base_params": {"num_x_wires": qft_wires, "mod": mod},
+                "num_control_wires": num_x_wires,
+            },
+            num_control_wires=num_y_wires,
+        ): 1,
+        adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
+    }
+
+
+# pylint: disable=no-value-for-parameter
+@register_resources(_out_multiplier_decomposition_resources)
+def _out_multiplier_decomposition(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod,
+    work_wires: WiresLike,
+    **__,
+):
+    if mod != 2 ** len(output_wires):
+        qft_output_wires = work_wires[:1] + output_wires
+        work_wire = work_wires[1:]
+    else:
+        qft_output_wires = output_wires
+        work_wire = ()
+    qml.QFT(wires=qft_output_wires)
+    qml.ControlledSequence(
+        qml.ControlledSequence(
+            qml.PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
+        ),
+        control=y_wires,
+    )
+    qml.adjoint(qml.QFT)(wires=qft_output_wires)
+
+
+add_decomps(OutMultiplier, _out_multiplier_decomposition)

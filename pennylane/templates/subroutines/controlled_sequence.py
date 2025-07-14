@@ -227,7 +227,6 @@ def _cntl_seq_decomposition_resources(base, base_params, num_control_wires) -> d
             z=z,
         )
         resources[rep] = 1
-
     return resources
 
 
