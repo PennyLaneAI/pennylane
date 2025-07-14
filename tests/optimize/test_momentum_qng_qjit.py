@@ -56,10 +56,8 @@ class TestOptimize:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", dev_names)
-    @pytest.mark.parametrize("rho", [0.9, 0.0])
-    def test_step_and_cost(self, dev_name, rho):
-        """Test that the step and step_and_cost methods are returning
-        the correct result for a few optimization steps."""
+    def test_step_and_cost(self, dev_name):
+        """Test that the step and step_and_cost methods are returning the correct result."""
         import jax.numpy as jnp
 
         @qml.qnode(qml.device(dev_name))
@@ -68,36 +66,31 @@ class TestOptimize:
             qml.RY(params[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        params = [0.11, 0.412]
-        params_qml = qml.numpy.array(params)
-        params_jax = jnp.array(params)
-        stepsize = 0.01
+        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.4)
+        params = jnp.array([0.11, 0.412])
+        state = jnp.array([[-0.31, 0.842]])
 
-        opt = qml.MomentumQNGOptimizerQJIT(stepsize=stepsize, momentum=rho)
-        state = opt.init(params_jax)
+        new_params1, state1 = opt.step(circ, params, state)
+        new_params2, state2, cost = opt.step_and_cost(circ, params, state)
 
-        for _ in range(4):
-            new_params1, state1 = opt.step(circ, params_jax, state)
-            new_params2, state2, cost = opt.step_and_cost(circ, params_jax, state)
+        exp_params = qml.numpy.array(params)
+        exp_state = np.array([-0.31, 0.842])
+        exp_cost = circ(exp_params)
+        exp_mt = np.array([0.25, (np.cos(exp_params[0]) ** 2) / 4])
+        exp_state = opt.momentum * exp_state + opt.stepsize * qml.grad(circ)(exp_params) / exp_mt
+        exp_params -= exp_state
 
-            expected_mt = np.array([0.25, (np.cos(params[0]) ** 2) / 4])
-            state = rho * state + stepsize * qml.grad(circ)(params_qml) / expected_mt
-            expected_params = params_qml - state
-            expected_cost = circ(params)
-
-            assert np.allclose(new_params1, expected_params)
-            assert np.allclose(new_params2, expected_params)
-            assert np.allclose(state1, state)
-            assert np.allclose(state2, state)
-            assert np.allclose(cost, expected_cost)
+        assert np.allclose(new_params1, exp_params)
+        assert np.allclose(new_params2, exp_params)
+        assert np.allclose(state1, exp_state)
+        assert np.allclose(state2, exp_state)
+        assert np.allclose(cost, exp_cost)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("dev_name", dev_names)
-    @pytest.mark.parametrize("rho", [0.9, 0.0])
-    def test_step_and_cost_with_gen_hamiltonian(self, dev_name, rho):
-        """Test that the step and step_and_cost methods are returning
-        the correct result for a few optimization steps when the generator
-        of an operator is a Hamiltonian."""
+    def test_step_and_cost_with_gen_hamiltonian(self, dev_name):
+        """Test that the step and step_and_cost methods are returning the correct result
+        when the generator of an operator is a Hamiltonian."""
         import jax.numpy as jnp
 
         @qml.qnode(qml.device(dev_name, wires=4))
@@ -106,25 +99,62 @@ class TestOptimize:
             qml.RY(params[1], wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        params = [0.11, 0.412]
-        params_qml = qml.numpy.array(params)
-        params_jax = jnp.array(params)
-        stepsize = 0.01
+        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.4)
+        params = jnp.array([0.11, 0.412])
+        state = jnp.array([[-0.31, 0.842]])
 
-        opt = qml.MomentumQNGOptimizerQJIT(stepsize=stepsize, momentum=rho)
-        state = opt.init(params_jax)
+        new_params1, state1 = opt.step(circ, params, state)
+        new_params2, state2, cost = opt.step_and_cost(circ, params, state)
 
-        for _ in range(4):
-            new_params1, state1 = opt.step(circ, params_jax, state)
-            new_params2, state2, cost = opt.step_and_cost(circ, params_jax, state)
+        exp_params = qml.numpy.array(params)
+        exp_state = np.array([-0.31, 0.842])
+        exp_cost = circ(exp_params)
+        exp_mt = np.array([1 / 16, 1 / 4])
+        exp_state = opt.momentum * exp_state + opt.stepsize * qml.grad(circ)(exp_params) / exp_mt
+        exp_params -= exp_state
 
-            expected_mt = np.array([1 / 16, 1 / 4])
-            state = rho * state + stepsize * qml.grad(circ)(params_qml) / expected_mt
-            expected_params = params_qml - state
-            expected_cost = circ(params)
+        assert np.allclose(new_params1, exp_params)
+        assert np.allclose(new_params2, exp_params)
+        assert np.allclose(state1, exp_state)
+        assert np.allclose(state2, exp_state)
+        assert np.allclose(cost, exp_cost)
 
-            assert np.allclose(new_params1, expected_params)
-            assert np.allclose(new_params2, expected_params)
-            assert np.allclose(state1, state)
-            assert np.allclose(state2, state)
-            assert np.allclose(cost, expected_cost)
+    @pytest.mark.jax
+    @pytest.mark.parametrize("dev_name", dev_names)
+    def test_qubit_rotations_circuit(self, tol, dev_name):
+        """Test that a simple qubit rotations circuit gets optimized correctly, checking params and cost at each step."""
+        import jax.numpy as jnp
+
+        @qml.qnode(qml.device(dev_name))
+        def circ(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        def grad(params):
+            """Returns the gradient of the above circuit."""
+            da = -np.sin(params[0]) * np.cos(params[1])
+            db = -np.cos(params[0]) * np.sin(params[1])
+            return np.array([da, db])
+
+        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.2, momentum=0.3)
+        params = jnp.array([0.011, 0.012])
+        state = opt.init(params)
+
+        exp_params = np.array([0.011, 0.012])
+        exp_state = np.zeros_like(exp_params)
+
+        num_steps = 30
+        for _ in range(num_steps):
+            params, state, cost = opt.step_and_cost(circ, params, state)
+
+            exp_cost = circ(exp_params)
+            exp_mt = np.array([0.25, (np.cos(exp_params[0]) ** 2) / 4])
+            exp_state = opt.momentum * exp_state + opt.stepsize * grad(exp_params) / exp_mt
+            exp_params -= exp_state
+
+            assert np.allclose(cost, exp_cost, atol=tol, rtol=0)
+            assert np.allclose(state, exp_state, atol=tol, rtol=0)
+            assert np.allclose(params, exp_params, atol=tol, rtol=0)
+
+        assert np.allclose(circ(params), -1)
