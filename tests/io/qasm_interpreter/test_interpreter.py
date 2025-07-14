@@ -60,6 +60,66 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
+class TestIO:
+
+    def test_wrong_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=escape(
+                "Got the wrong input parameters ['theta', 'phi'] to QASM, expecting ['theta']."
+            ),
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"name": "wrong-input", "wire_map": None}, theta=0.2, phi=0.1
+            )
+
+    def test_missing_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Missing input theta. Please pass theta as a keyword argument to from_qasm3.",
+        ):
+            QasmInterpreter().interpret(ast, context={"name": "missing-input", "wire_map": None})
+
+    def test_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "inputs", "wire_map": None}, theta=0.1
+            )
+            QasmInterpreter().interpret(
+                ast, context={"name": "inputs", "wire_map": None}, theta=0.2
+            )
+
+        assert q.queue == [
+            RX(0.1, "q"),
+            RX(0.2, "q"),
+        ]
+
+
+@pytest.mark.external
 class TestMeasurementReset:
 
     def test_condition_on_measurement(self):

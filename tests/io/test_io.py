@@ -21,12 +21,15 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import queuing
+from pennylane.ops import RX
+from pennylane.wires import Wires
 
 has_openqasm = True
 try:
     import openqasm3
 
-    from pennylane.io.io import from_qasm3
+    from pennylane.io.io import from_qasm3  # pylint: disable=ungrouped-imports
     from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
 except (ModuleNotFoundError, ImportError) as import_error:
     has_openqasm = False
@@ -211,6 +214,22 @@ class TestOpenQasm:
     """Test the qml.to_openqasm and qml.from_qasm3 functions."""
 
     dev = qml.device("default.qubit", wires=2, shots=100)
+
+    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
+    def test_qasm3_inputs(self):
+        circuit = """\
+            OPENQASM 3.0;
+            qubit q0;
+            input float t;
+            rx(t) q0;
+            """
+
+        # call the method
+        with queuing.AnnotatedQueue() as q:
+            from_qasm3(circuit)(t=1.1)
+
+        # assertions
+        assert q.queue == [RX(1.1, Wires(["q0"]))]
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_invalid_qasm3(self):
