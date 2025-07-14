@@ -50,6 +50,12 @@ class Ellipse:
     Args:
         D (list[float, float, float]): The elements of the positive definite matrix.
         p (tuple[float, float]): The center of the ellipse.
+
+    .. note::
+      We obtain corresponding matrix :math:`D^{\prime}` with determinant :math:`1` from :math:`D`.
+      These are useful for computing key properties of ``EllipseState``, i.e., a pair of ellipses:
+        - a = eλ^{-z}, d = eλ^z, b^2 = e^2 - 1; (Eq. 31, arXiv:1403.2975)
+        - 2z * log(λ) = log(d / a) => z = 0.5 * log(d / a) / log(λ)
     """
 
     def __init__(
@@ -59,8 +65,6 @@ class Ellipse:
     ):
         self.a, self.b, self.d = D
         self.p = p
-        # a = eλ^{-z}, d = eλ^z, b^2 = e^2 - 1; (Eq. 31, arXiv:1403.2975)
-        # 2z * log(λ) = log(d / a) => z = 0.5 * log(d / a) / log(λ)
         self.z = 0.5 * math.log2(self.d / self.a) / math.log2(_LAMBDA)
         self.e = math.sqrt(self.a * self.d)
 
@@ -554,18 +558,16 @@ def _useful_grid_ops() -> dict["str", "GridOp"]:
 class GridIterator:
     r"""Iterate over the solutions to the scaled grid problem.
 
-    This is based on the Section 5 of arXiv:1403.2975 and
-    implements Proposition 5.22, to enumerate all solutions
-    to the scaled grid problem over the :math:`\epsilon`-region,
+    This is based on the Section 5 of arXiv:1403.2975 and implements Proposition 5.22,
+    to enumerate all solutions to the scaled grid problem over the :math:`\epsilon`-region
     and a unit disk.
 
-    It implements an ``__iter__`` method to iterate over the
-    solutions efficiently as a generator.
+    It implements an ``__iter__`` method to iterate over the solutions efficiently as a generator.
 
     Args:
         theta (float): The angle of the grid problem.
         epsilon (float): The epsilon of the grid problem.
-        max_trials (int): The maximum number of iterations. Default is 20.
+        max_trials (int): The maximum number of iterations. Default is ``20``.
     """
 
     def __init__(self, theta: float = 0.0, epsilon: float = 1e-3, max_trials: int = 20):

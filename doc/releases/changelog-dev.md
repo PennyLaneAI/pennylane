@@ -6,6 +6,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Update minimum supported `pytest` version to `8.4.1`.
+  [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
+
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
   terminal measurements in a program with a single :func:`pennylane.sample` measurement, and adds
@@ -22,6 +25,9 @@
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
 
+* The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
+  complete global phase information when used for decomposing a phase gate to Clifford+T basis.
+  [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -34,6 +40,9 @@
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
+
+* Seeded tests for the `split_to_single_terms` transformation.
+  [(#7851)](https://github.com/PennyLaneAI/pennylane/pull/7851)
 
 * Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
@@ -51,7 +60,9 @@
 
 This release contains contributions from (in alphabetical order):
 
-Erick Ochoa,
+Utkarsh Azad,
 Joey Carter,
+Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
+Jake Zaia
