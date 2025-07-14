@@ -432,9 +432,8 @@ class QasmInterpreter:
                     # this will end the interpretation of the QASM...
                     # not good if we're building a qscript for a controlled branch
                     raise e
-                else:
-                    # this will end the construction of the qscript for this controlled branch
-                    break
+                # this will end the construction of the qscript for this controlled branch
+                break
 
     def interpret(self, node: QASMNode, context: dict):
         """
@@ -543,13 +542,7 @@ class QasmInterpreter:
                 if hasattr(node, "else_block")
                 else None
             ),
-        )(
-            allow_end=(
-                False
-                if isinstance(condition, MeasurementValue) or isinstance(condition, MidMeasureMP)
-                else True
-            )
-        )
+        )(allow_end=(not isinstance(condition, (MeasurementValue, MidMeasureMP))))
 
     @visit.register(ast.SwitchStatement)
     def visit_switch_statement(self, node: ast.SwitchStatement, context: Context):
