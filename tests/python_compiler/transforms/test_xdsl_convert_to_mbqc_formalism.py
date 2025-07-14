@@ -29,7 +29,7 @@ from pennylane.compiler.python_compiler.transforms import ConvertToMBQCFormalism
 class TestConvertToMBQCFormalismPass:
     """Unit tests for ConvertToMBQCFormalismPass."""
 
-    def test_convert_to_mbqc_formalism_allocop_aux_wires(self, run_filecheck):
+    def test_allocop_aux_wires(self, run_filecheck):
         """Test that ConvertToMBQCFormalismPass can pre-allocate 13 aux wires. Note that
         this is a temporal solution.
         """
@@ -49,5 +49,32 @@ class TestConvertToMBQCFormalismPass:
         module = xdsl.parser.Parser(ctx, program).parse_module()
         pipeline = xdsl.passes.PipelinePass((ConvertToMBQCFormalismPass(),))
         pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    def test_qubit_mgr(self, run_filecheck):
+        """Test that ConvertToMBQCFormalismPass can pre-allocate 13 aux wires. Note that
+        this is a temporal solution.
+        """
+        program = """
+            func.func @test_func() {
+              // CHECK: %0 = "quantum.alloc"() <{nqubits_attr = 15 : i64}> : () -> !quantum.reg
+              %0 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
+              // CHECK: %1
+              return
+            }
+        """
+
+        ctx = Context()
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((ConvertToMBQCFormalismPass(),))
+        pipeline.apply(ctx, module)
+
+        print(module)
+        breakpoint()
 
         run_filecheck(program, module)
