@@ -850,7 +850,7 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     .. note::
         The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. Built-in mathematical functions and
         constants, custom gates, and pulses are not yet supported. The remaining standard library gates,
-        subroutines, variables, control flow, measurements, inputs and ``end`` statements are all supported.
+        subroutines, variables, control flow, measurements, inputs, outputs and ``end`` statements are all supported.
 
         In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
         environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3>`__
@@ -939,6 +939,11 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
         ) from e
 
     def interpret_function(**kwargs):
-        QasmInterpreter().interpret(ast, context={"name": "global", "wire_map": wire_map}, **kwargs)
+        context = QasmInterpreter().interpret(
+            ast, context={"name": "global", "wire_map": wire_map}, **kwargs
+        )
+        if context["return"]:
+            return tuple(map(lambda v: v.val, context["return"].values()))
+        return context
 
     return interpret_function
