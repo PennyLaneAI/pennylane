@@ -159,12 +159,9 @@ class AllocOp(IRDLOperation):
 
     name = "quantum.alloc"
 
-    assembly_format = """
-           `(` ($nqubits^):($nqubits_attr)? `)` attr-dict `:` type(results)
-       """
-
-
-    #assembly_format = "`(` $nqubits^ `:` type($nqubits) `)` attr-dict `:` type(results)"
+    # assembly_format = """
+    #        `(` ($nqubits^):($nqubits_attr)? `)` attr-dict `:` type(results)
+    #    """
 
     nqubits = opt_operand_def(i64)
 
