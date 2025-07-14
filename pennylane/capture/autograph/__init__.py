@@ -16,12 +16,12 @@
 Public/internal API for the AutoGraph module.
 """
 
+from pennylane.exceptions import AutoGraphWarning
 from .transformer import (
     autograph_source,
     run_autograph,
 )
 
-from pennylane.exceptions import AutoGraphWarning
 
 __all__ = (
     "autograph_source",
