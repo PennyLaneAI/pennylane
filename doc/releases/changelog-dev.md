@@ -58,4 +58,4 @@ Erick Ochoa,
 Joey Carter,
 Andrija Paurevic,
 Jay Soni,
-Jake Zaia.
+Jake Zaia
