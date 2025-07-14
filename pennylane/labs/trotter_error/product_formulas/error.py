@@ -204,23 +204,31 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
+    # Handle adaptive sampling constraints early (before BCH expansion)
+    if adaptive_sampling:
+        if backend != "serial":
+            raise ValueError("Adaptive sampling is only compatible with backend='serial'")
+        if num_workers != 1:
+            raise ValueError("Adaptive sampling requires num_workers=1")
+
     start_time = time.time()
     commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order))
     print(f"BCH expansion time: {time.time() - start_time:.4f} seconds")
+    
+    # Handle case where no correction terms exist (e.g., order=1)
+    if not commutators:
+        print(f"No correction terms found for order {order}. Returning zero errors.")
+        return [0.0] * len(states)
 
-    # Handle adaptive sampling first (it has priority)
+    # Handle adaptive sampling logic (after commutators are available)
     if adaptive_sampling:
         if sample_size is not None:
             print("Warning: sample_size is ignored when adaptive_sampling=True")
 
         print("Using adaptive sampling (dynamic sample size determination)")
 
-        # Adaptive sampling is only compatible with serial execution
-        if backend != "serial":
-            raise ValueError("Adaptive sampling is only compatible with backend='serial'")
-        if num_workers != 1:
-            raise ValueError("Adaptive sampling requires num_workers=1")
-
+        # Get gridpoints from the first state (all states should have the same gridpoints)
+        gridpoints = getattr(states[0], 'gridpoints', 10) if states else 10
         return _adaptive_sampling(
             commutators=commutators,
             fragments=fragments,
@@ -232,13 +240,16 @@ def perturbation_error(
             min_sample_size=min_sample_size,
             max_sample_size=max_sample_size,
             random_seed=random_seed,
+            gridpoints=gridpoints,
         )
 
     # Handle fixed-size sampling if explicitly requested
     if sample_size is not None:
         print(f"Using fixed-size sampling with {sample_size} commutators out of {len(commutators)} total")
+        # Get gridpoints from the first state (all states should have the same gridpoints)
+        gridpoints = getattr(states[0], 'gridpoints', 10) if states else 10
         commutators, commutator_weights = _sample_commutators(
-            commutators, fragments, timestep, sample_size, sampling_method, random_seed
+            commutators, fragments, timestep, sample_size, sampling_method, random_seed, gridpoints
         )
     else:
         print(f"Using all {len(commutators)} commutators exactly (no sampling)")
@@ -261,11 +272,7 @@ def perturbation_error(
         executor = concurrency.backends.get_executor(backend)
         with executor(max_workers=num_workers) as ex:
             expectations = ex.starmap(
-                lambda commutators, weights, fragments, state: state.dot(
-                    sum((weight * _apply_commutator(commutator, fragments, state)
-                        for commutator, weight in zip(commutators, weights)),
-                        start=_AdditiveIdentity())
-                ),
+                _compute_state_expectation,
                 [(commutators, commutator_weights, fragments, state) for state in states],
             )
 
@@ -277,7 +284,7 @@ def perturbation_error(
         for state in states:
             with executor(max_workers=num_workers) as ex:
                 applied_commutators = ex.starmap(
-                    lambda commutator, weight, fragments, state: weight * _apply_commutator(commutator, fragments, state),
+                    _apply_weighted_commutator,
                     [(commutator, weight, fragments, state) for commutator, weight in zip(commutators, commutator_weights)],
                 )
 
@@ -451,7 +458,8 @@ def importance_sample_commutators(
     fragments: Dict[Hashable, Fragment],
     timestep: float,
     sample_size: int,
-    random_seed: Optional[int] = None
+    random_seed: Optional[int] = None,
+    gridpoints: int = 10
 ) -> List[Tuple[Tuple[Hashable | Set], float]]:
     r"""
     Importance sample commutators based on their magnitude and structure.
@@ -483,6 +491,7 @@ def importance_sample_commutators(
         timestep: Time step for the simulation
         sample_size: Number of commutators to sample
         random_seed: Random seed for reproducibility
+        gridpoints: Number of gridpoints for norm calculation
 
     Returns:
         List of tuples (commutator, weight) where weight is the importance sampling weight
@@ -497,7 +506,7 @@ def importance_sample_commutators(
     probabilities = []
 
     for commutator in tqdm(commutators, desc="Calculating commutator probabilities"):
-        prob = _calculate_commutator_probability(commutator, fragments, timestep)
+        prob = _calculate_commutator_probability(commutator, fragments, timestep, gridpoints)
         probabilities.append(prob)
 
     # Normalize probabilities
@@ -536,7 +545,8 @@ def importance_sample_commutators(
 def _calculate_commutator_probability(
     commutator: Tuple[Hashable | Set],
     fragments: Dict[Hashable, Fragment],
-    timestep: float
+    timestep: float,
+    gridpoints: int = 10
 ) -> float:
     r"""
     Calculate the unnormalized probability for importance sampling a commutator.
@@ -565,6 +575,7 @@ def _calculate_commutator_probability(
         commutator: Tuple representing a commutator structure
         fragments: Dictionary mapping fragment keys to Fragment objects
         timestep: Time step for the simulation
+        gridpoints: Number of gridpoints for norm calculation
 
     Returns:
         float: Unnormalized probability for importance sampling
@@ -590,13 +601,13 @@ def _calculate_commutator_probability(
 
             # Compute the norm of the weighted sum
             if weighted_fragment is not None:
-                frozenset_norm = weighted_fragment.norm({})
+                frozenset_norm = weighted_fragment.norm({"gridpoints": gridpoints})
                 fragment_norms.append(frozenset_norm)
             else:
                 fragment_norms.append(0.0)
         elif element in fragments:
             # Handle direct fragment keys
-            fragment_norms.append(fragments[element].norm({}))
+            fragment_norms.append(fragments[element].norm({"gridpoints": gridpoints}))
         else:
             # For other elements (like indices), assign a default norm
             fragment_norms.append(1.0)
@@ -623,6 +634,7 @@ def _adaptive_sampling(
     min_sample_size: int,
     max_sample_size: int,
     random_seed: Optional[int] = None,
+    gridpoints: int = 10,
 ) -> List[float]:
     r"""
     Adaptive sampling that continues until variance-based stopping criterion is met.
@@ -676,7 +688,7 @@ def _adaptive_sampling(
         probabilities = []
 
         for commutator in tqdm(commutators, desc="Calculating probabilities", unit="commutator"):
-            prob = _calculate_commutator_probability(commutator, fragments, timestep)
+            prob = _calculate_commutator_probability(commutator, fragments, timestep, gridpoints)
             probabilities.append(prob)
 
         probabilities = np.array(probabilities)
@@ -819,7 +831,8 @@ def _sample_commutators(
     timestep: float,
     sample_size: int,
     sampling_method: str,
-    random_seed: Optional[int] = None
+    random_seed: Optional[int] = None,
+    gridpoints: int = 10
 ) -> Tuple[List[Tuple[Hashable | Set]], List[float]]:
     """
     Sample commutators and return them with their corresponding weights.
@@ -842,10 +855,30 @@ def _sample_commutators(
         return sampled_commutators, weights
     if sampling_method == "importance":
         sampled_data = importance_sample_commutators(
-            commutators, fragments, timestep, sample_size, random_seed
+            commutators, fragments, timestep, sample_size, random_seed, gridpoints
         )
         sampled_commutators = [data[0] for data in sampled_data]
         weights = [data[1] for data in sampled_data]
         return sampled_commutators, weights
 
     raise ValueError("sampling_method must be 'random' or 'importance'")
+
+
+def _compute_state_expectation(commutators, weights, fragments, state):
+    """Helper function to compute state expectation for parallel processing.
+    
+    This replaces the lambda function to make it pickleable for MPI.
+    """
+    return state.dot(
+        sum((weight * _apply_commutator(commutator, fragments, state)
+            for commutator, weight in zip(commutators, weights)),
+            start=_AdditiveIdentity())
+    )
+
+
+def _apply_weighted_commutator(commutator, weight, fragments, state):
+    """Helper function to apply weighted commutator for parallel processing.
+    
+    This replaces the lambda function to make it pickleable for MPI.
+    """
+    return weight * _apply_commutator(commutator, fragments, state)
