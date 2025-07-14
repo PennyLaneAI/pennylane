@@ -216,6 +216,22 @@ class TestAdder:
         for rule in qml.list_decomps(qml.Adder):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.parametrize("mod", [2, 4])
+    def test_controlled_decomposition_new(self, mod):
+        """Tests the decomposition rule implemented with the new system."""
+
+        k = 4
+        x_wires = [2, 3]
+        control_wires = [1]
+        work_wires = [4, 5]
+        op = qml.ops.Controlled(
+            qml.Adder(k, x_wires, mod, work_wires),
+            control_wires,
+            [1],
+        )
+        for rule in qml.list_decomps("C(Adder)"):
+            _test_decomposition_rule(op, rule)
+
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
         wires = qml.Adder(1, x_wires=[1, 2]).wires

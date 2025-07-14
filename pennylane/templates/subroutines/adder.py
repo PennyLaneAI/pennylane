@@ -18,6 +18,7 @@ import pennylane as qml
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
+    controlled_resource_rep,
     register_resources,
     resource_rep,
 )
@@ -250,3 +251,57 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
 
 
 add_decomps(Adder, _adder_decomposition)
+
+
+def _controlled_adder_resources(
+    *_,
+    num_control_wires,
+    num_work_wires,
+    work_wire_type,
+    base_class,
+    base_params,
+    **__,
+):  # pylint: disable=unused-argument
+    if base_params["mod"] == 2 ** base_params["num_x_wires"]:
+        qft_wires = base_params["num_x_wires"]
+    else:
+        qft_wires = 1 + base_params["num_x_wires"]
+
+    return {
+        resource_rep(qml.QFT, num_wires=qft_wires): 1,
+        controlled_resource_rep(
+            qml.PhaseAdder,
+            {"num_x_wires": qft_wires, "mod": base_params["mod"]},
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+            work_wire_type=work_wire_type,
+        ): 1,
+        adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
+    }
+
+
+@register_resources(_controlled_adder_resources)
+def _controlled_adder_decomposition(
+    wires, control_wires, work_wires, work_wire_type, base, **__
+):  # pylint: disable=unused-argument
+    if base.hyperparameters["mod"] == 2 ** len(base.hyperparameters["x_wires"]):
+        qft_wires = base.hyperparameters["x_wires"]
+        work_wire = ()
+    else:
+        qft_wires = base.hyperparameters["work_wires"][:1] + base.hyperparameters["x_wires"]
+        work_wire = base.hyperparameters["work_wires"][1:]
+
+    qml.QFT(qft_wires)
+    qml.ctrl(
+        qml.PhaseAdder(
+            base.hyperparameters["k"], qft_wires, base.hyperparameters["mod"], work_wire
+        ),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    qml.adjoint(qml.QFT)(qft_wires)
+
+
+add_decomps("C(Adder)", _controlled_adder_decomposition)
