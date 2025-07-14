@@ -21,8 +21,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.measurements import MeasurementValue
 from pennylane import queuing
+from pennylane.measurements import MeasurementValue
 from pennylane.ops import RX
 from pennylane.wires import Wires
 
