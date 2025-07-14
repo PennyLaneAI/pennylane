@@ -335,7 +335,7 @@ def __getattr__(name):
         "poly_extrapolate",
         "richardson_extrapolate",
         "exponential_extrapolate",
-    }:  # pragma: no cover
+    }:
 
         # pylint: disable=import-outside-toplevel
         import warnings
