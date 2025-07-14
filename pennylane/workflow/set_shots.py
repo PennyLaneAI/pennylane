@@ -79,9 +79,7 @@ def set_shots(
     if qnode is _DECORATOR_MODE:
 
         def decorator(qnode_func):
-            if isinstance(qnode_func, QNode):
-                return qnode_func.update_shots(shots)
-            raise ValueError("set_shots can only be applied to QNodes")
+            return set_shots(qnode_func, shots)
 
         return decorator
 
