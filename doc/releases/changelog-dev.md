@@ -11,6 +11,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Update minimum supported `pytest` version to `8.4.1`.
+  [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
+
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
   terminal measurements in a program with a single :func:`pennylane.sample` measurement, and adds
@@ -68,3 +71,4 @@ Simone Gasperini,
 Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
+Jake Zaia
