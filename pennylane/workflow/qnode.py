@@ -728,15 +728,6 @@ class QNode:
 
         # pylint: disable=protected-access
         old_shots = self._shots
-        # set shots issue
-        if "device" in kwargs:
-            if old_shots != kwargs["device"].shots:
-                warnings.warn(
-                    "The device's shots value does not match the QNode's shots value. "
-                    "This may lead to unexpected behavior. Use `set_shots` to update the QNode's shots.",
-                    UserWarning,
-                )
-
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
         updated_qn._set_shots(old_shots)  # pylint: disable=protected-access
