@@ -13,7 +13,7 @@ from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.measurements import MeasurementValue, measure
+from pennylane.measurements import MeasurementValue, MidMeasureMP, measure
 from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
@@ -526,8 +526,9 @@ class QasmInterpreter:
             node (BranchingStatement): the branch QASMNode.
             context (Context): the current context.
         """
+        condition = self.visit(node.condition, context)
         ops.cond(
-            self.visit(node.condition, context),
+            condition,
             partial(
                 self.visit,
                 node.if_block,
@@ -542,7 +543,13 @@ class QasmInterpreter:
                 if hasattr(node, "else_block")
                 else None
             ),
-        )(allow_end=False)
+        )(
+            allow_end=(
+                False
+                if isinstance(condition, MeasurementValue) or isinstance(condition, MidMeasureMP)
+                else True
+            )
+        )
 
     @visit.register(ast.SwitchStatement)
     def visit_switch_statement(self, node: ast.SwitchStatement, context: Context):
