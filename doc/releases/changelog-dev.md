@@ -18,6 +18,18 @@
     * :class:`~.OutAdder`
       [(#7780)](https://github.com/PennyLaneAI/pennylane/pull/7780)
 
+    * :class:`~.OutMultiplier`
+      [(#7781)](https://github.com/PennyLaneAI/pennylane/pull/7781)
+
+    * :class:`~.OutPoly`
+      [(#7822)](https://github.com/PennyLaneAI/pennylane/pull/7822)
+
+    * :class:`~.Multiplier`
+      [(#7834)](https://github.com/PennyLaneAI/pennylane/pull/7834)
+    
+    * :class:`~.ModExp`
+      [(#7836)](https://github.com/PennyLaneAI/pennylane/pull/7836)
+
 <h3>Breaking changes 💔</h3>
 
 <h3>Deprecations 👋</h3>
