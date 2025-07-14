@@ -204,8 +204,6 @@ class Device(abc.ABC):
         details = []
         if self.wires:
             details.append(f"wires={len(self.wires)}")
-        if self.shots:
-            details.append(f"shots={self.shots.total_shots}")
         details = f"({', '.join(details)}) " if details else ""
         return f"<{self.name} device {details}at {hex(id(self))}>"
 
