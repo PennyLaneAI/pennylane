@@ -16,12 +16,14 @@ This module contains the Abstract Base Class for the next generation of devices.
 """
 
 import abc
+import warnings
 from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
 from typing import Optional, Union, overload
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
@@ -223,6 +225,12 @@ class Device(abc.ABC):
         :attr:`~.QuantumTape.shots`, not from this property. This property is used to provide a default at the start of a workflow.
 
         """
+        warnings.warn(
+            "Using shots on a device instance is deprecated and will be removed in a future version. "
+            "Please use set_shots on a QNode definition, on a constructed QNode or set shots on individual tapes.",
+            PennyLaneDeprecationWarning,
+            stacklevel=2,
+        )
         return self._shots
 
     @shots.setter
