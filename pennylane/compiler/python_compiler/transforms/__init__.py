@@ -17,10 +17,13 @@ from .cancel_inverses import IterativeCancelInversesPass, iterative_cancel_inver
 from .measurements_from_samples import MeasurementsFromSamplesPass, measurements_from_samples_pass
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
 from .combine_global_phases import combine_global_phases_pass, CombineGlobalPhasesPass
+from .convert_to_mbqc_formalism import convert_to_mbqc_formalism, ConvertToMBQCFormalismPass
 
 __all__ = [
     "combine_global_phases_pass",
     "CombineGlobalPhasesPass",
+    "convert_to_mbqc_formalism",
+    "ConvertToMBQCFormalismPass",
     "iterative_cancel_inverses_pass",
     "IterativeCancelInversesPass",
     "measurements_from_samples_pass",
