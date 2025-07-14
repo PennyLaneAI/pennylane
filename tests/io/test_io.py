@@ -22,6 +22,9 @@ import pytest
 
 import pennylane as qml
 from pennylane.measurements import MeasurementValue
+from pennylane import queuing
+from pennylane.ops import RX
+from pennylane.wires import Wires
 
 has_openqasm = True
 try:
@@ -230,6 +233,23 @@ class TestOpenQasm:
         assert isinstance(b, MeasurementValue)
         assert v == 2.2
 
+    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
+    def test_qasm3_inputs(self):
+        circuit = """\
+            OPENQASM 3.0;
+            qubit q0;
+            input float t;
+            rx(t) q0;
+            """
+
+        # call the method
+        with queuing.AnnotatedQueue() as q:
+            from_qasm3(circuit)(t=1.1)
+
+        # assertions
+        assert q.queue == [RX(1.1, Wires(["q0"]))]
+
+    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_invalid_qasm3(self):
         circuit = """\
             OPENQASM 3.0;

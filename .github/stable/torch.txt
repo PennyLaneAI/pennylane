@@ -2,11 +2,11 @@ appdirs==1.4.4
 astroid==2.6.6
 astunparse==1.6.3
 autograd==1.8.0
-autoray==0.7.1
+autoray==0.7.2
 black==25.1.0
 build==1.2.2.post1
 cachetools==6.1.0
-certifi==2025.6.15
+certifi==2025.7.9
 cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.4.2
@@ -60,9 +60,9 @@ nvidia-nvjitlink-cu12==12.4.127
 nvidia-nvtx-cu12==12.4.127
 osqp==1.0.4
 packaging==25.0
-pandas==2.3.0
+pandas==2.3.1
 pathspec==0.12.1
-pennylane_lightning==0.42.0.dev43
+pennylane_lightning==0.42.0rc2
 pillow==11.3.0
 platformdirs==4.3.8
 pluggy==1.6.0
