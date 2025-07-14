@@ -104,9 +104,11 @@ class SparseFragment(Fragment):
         """Apply the fragment to a state using the underlying object's ``__matmul__`` method."""
         return SparseState(self.fragment.dot(state.csr_matrix.transpose()).transpose())
 
-    def expectation(self, left: SparseState, right: Any) -> float:
+    def expectation(self, left: SparseState, right: Any) -> complex:
         """Compute the expectation value using the underlying object's ``__matmul__`` method."""
-        return left.csr_matrix.conjugate().dot(self.fragment.dot(right.csr_matrix.transpose())).item()
+        result = left.csr_matrix.conjugate().transpose().dot(self.fragment.dot(right.csr_matrix))
+        # Convert to scalar - handle both sparse matrix and array cases
+        return complex(result.toarray().flatten()[0])
 
     def norm(self, params: Dict = None) -> float:
         return norm(self.fragment)
@@ -158,14 +160,14 @@ class SparseState(AbstractState):
         """
         raise NotImplementedError
 
-    def dot(self, other) -> float:
+    def dot(self, other) -> complex:
         """Compute the dot product of two states.
 
         Args:
             other: the state to take the dot product with
 
         Returns:
-        float: the dot product of self and other
+        complex: the dot product of self and other
         """
         # Handle _AdditiveIdentity (zero state)
         if hasattr(other, '__class__') and 'AdditiveIdentity' in other.__class__.__name__:
@@ -173,6 +175,11 @@ class SparseState(AbstractState):
 
         # Handle SparseState objects
         if isinstance(other, SparseState):
-            return self.csr_matrix.conjugate().dot(other.csr_matrix.transpose())[0,0]
+            result = self.csr_matrix.conjugate().transpose().dot(other.csr_matrix)
+            # Convert to scalar - handle both sparse matrix and array cases
+            if hasattr(result, 'toarray'):
+                return complex(result.toarray().flatten()[0])
+            else:
+                return complex(result.flatten()[0])
 
         raise TypeError(f"Cannot compute dot product between SparseState and {type(other)}")
