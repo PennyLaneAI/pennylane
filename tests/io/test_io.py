@@ -216,11 +216,11 @@ class TestOpenQasm:
     dev = qml.device("default.qubit", wires=2, shots=100)
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
-    def test_from_qasm3(self):
+    def test_qasm3_inputs(self):
         circuit = """\
             OPENQASM 3.0;
             qubit q0;
-            input t;
+            input float t;
             rx(t) q0;
             """
 
@@ -229,7 +229,7 @@ class TestOpenQasm:
             from_qasm3(circuit)(t=1.1)
 
         # assertions
-        assert q.queue == [RX(1.1, Wires(["q0", "t"]))]
+        assert q.queue == [RX(1.1, Wires(["q0"]))]
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_invalid_qasm3(self):
