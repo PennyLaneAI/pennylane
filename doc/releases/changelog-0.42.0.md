@@ -4,6 +4,8 @@
 
 <h3>New features since last release</h3>
 
+<h4>State-of-the-art templates and decompositions 🐝</h4>
+
 * A new decomposition using [unary iteration](https://arxiv.org/pdf/1805.03662) has been added to :class:`~.Select`.
   This state-of-the-art decomposition reduces the :class:`~.T`-count significantly, and uses :math:`c-1` auxiliary wires,
   where :math:`c` is the number of control wires of the `Select` operator.
