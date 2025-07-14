@@ -18,18 +18,16 @@ written using xDSL."""
 from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import arith, builtin, func
+from xdsl.dialects import builtin, func
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
-from xdsl.rewriter import InsertPoint
-from xdsl.dialects.builtin import IntegerAttr
 
 from ..quantum_dialect import AllocOp
 from .api import compiler_transform
 
+
 @dataclass(frozen=True)
 class ConvertToMBQCFormalismPass(passes.ModulePass):
-    """Pass that converts gates in the MBQC gate set to the MBQC formalism.
-    """
+    """Pass that converts gates in the MBQC gate set to the MBQC formalism."""
 
     name = "convert-to-mbqc-formalism"
 
@@ -37,12 +35,13 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the convert-to-mbqc-formalism pass."""
         pattern_rewriter.PatternRewriteWalker(
-            [ConvertToMBQCFormalismPattern(),],
+            ConvertToMBQCFormalismPattern(),
             apply_recursively=False,
         ).rewrite_module(module)
 
 
 convert_to_mbqc_formalism = compiler_transform(ConvertToMBQCFormalismPass)
+
 
 class ConvertToMBQCFormalismPattern(
     pattern_rewriter.RewritePattern
@@ -54,27 +53,22 @@ class ConvertToMBQCFormalismPattern(
     def match_and_rewrite(
         self, root: func.FuncOp | IfOp | ForOp | WhileOp, rewriter: pattern_rewriter.PatternRewriter
     ):  # pylint: disable=arguments-differ, cell-var-from-loop
-        """Match and rewrite for .
-        """
+        """Match and rewrite for converting to the MBQC formalism."""
 
         # Replace AllocOp with 13 more qubits
         for region in root.regions:
             for op in region.ops:
                 if isinstance(op, AllocOp):
-                    num_wires = op.operands[0]
-                    # Note that 13 more qubits is added and this is subject to change 
+                    # Note that as of 25.07.14, generic assembly format is used
+                    # the number of qubits is assigned to the nqubits_attr.
+                    num_wires_int = op.properties["nqubits_attr"].value.data
+                    # Note that 13 more qubits is added and this is subject to change
                     # once the dynamic qubit allocate and deallocate is supported.
-                    num_aux_wires_op = arith.ConstantOp(IntegerAttr.from_index_int_value(13))
-                    addOp = arith.AddfOp(num_wires, num_aux_wires_op)
-                    rewriter.insert_op(num_aux_wires_op, InsertPoint.before(op))
-                    rewriter.insert_op(addOp, InsertPoint.before(op))
-                    total_num_wires = addOp.result
-                    op.operands[0].replace_by_if(total_num_wires, lambda use: use.operation == op)
-        
+                    total_num_wires = num_wires_int + 13
+                    new_op = AllocOp(total_num_wires)
+                    rewriter.replace_op(op, new_op)
+
         # Mimic the wire/aux_wire to physical register mapping with memref
-
-
-
 
         # for region in root.regions:
         #     phi = None
