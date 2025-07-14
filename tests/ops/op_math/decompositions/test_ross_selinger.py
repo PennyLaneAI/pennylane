@@ -30,7 +30,8 @@ from pennylane.ops.op_math.decompositions.ross_selinger import (
     ("angle", "result"),
     [
         (math.pi / 3, (-math.pi / 2, ZOmega(b=1))),
-        (math.pi / 8, (0.0, ZOmega(d=1))),
+        (math.pi / 8, ((1.0, 1), (ZOmega(b=1), ZOmega(b=1)))),
+        (-3 * math.pi / 8, ((-1.0, 3), (ZOmega(b=-1), ZOmega(c=1)))),
         (math.pi / 2, (-math.pi / 2, ZOmega(b=1))),
         (5 * math.pi / 3, (-3 * math.pi / 2, ZOmega(b=-1))),
         (3 * math.pi / 2, (-3 * math.pi / 2, ZOmega(b=-1))),
@@ -40,7 +41,7 @@ from pennylane.ops.op_math.decompositions.ross_selinger import (
 def test_domain_correction(angle, result):
     """Test the functionality to create domain correction"""
     shift, scale = _domain_correction(angle)
-    assert qml.math.isclose(shift, result[0])
+    assert qml.math.allclose(shift, result[0])
     assert scale == result[1]
 
 
@@ -48,10 +49,14 @@ def test_domain_correction(angle, result):
     ("op", "epsilon"),
     [
         (qml.RZ(math.pi / 42, wires=[1]), 1e-4),
+        (qml.RZ(5 * math.pi / 4, wires=[1]), 1e-5),
         (qml.PhaseShift(math.pi / 7, wires=["a"]), 1e-3),
         (qml.RZ(math.pi / 3, wires=[1]), 1e-5),
+        (qml.RZ(-math.pi / 3, wires=[1]), 1e-3),
+        (qml.RZ(-math.pi / 4, wires=[1]), 1e-4),
         (qml.PhaseShift(-math.pi / 6, wires=[0]), 1e-3),
         (qml.RZ(-math.pi / 5, wires=[0]), 1e-4),
+        (qml.RZ(-math.pi / 7, wires=[1]), 1e-4),
         (qml.RZ(-math.pi / 8, wires=[2]), 1e-2),
     ],
 )
@@ -63,14 +68,7 @@ def test_ross_selinger(op, epsilon):
 
     matrix_rs = qml.matrix(qml.tape.QuantumScript(gates))
 
-    mat1 = qml.matrix(op)
-    mat2 = matrix_rs
-    phase = qml.math.divide(
-        mat1, mat2, out=qml.math.zeros_like(mat1, dtype=complex), where=mat1 != 0
-    )[qml.math.nonzero(qml.math.round(mat1, 10))]
-
-    assert qml.math.allclose(phase / phase[0], qml.math.ones(len(phase)), atol=1e-3)
-    assert qml.math.allclose(qml.matrix(op), phase[0] * matrix_rs, atol=epsilon)
+    assert qml.math.allclose(qml.matrix(op), matrix_rs, atol=epsilon)
     assert qml.prod(*gates, lazy=False).wires == op.wires
 
 
@@ -85,8 +83,8 @@ def test_epsilon_value_effect():
 def test_warm_start():
     """Test that warm start is working."""
     op = qml.RZ(math.pi / 8, 0)
-    decomp_with_error = rs_decomposition(op, 1e-10, max_trials=100)
-    decomp_less_error = rs_decomposition(op, 1e-3, max_trials=100)
+    decomp_with_error = rs_decomposition(op, 1e-10, max_search_trials=100)
+    decomp_less_error = rs_decomposition(op, 1e-3, max_search_trials=100)
     assert len(decomp_with_error) == len(decomp_less_error)
 
 
@@ -98,7 +96,7 @@ def test_exception():
         ValueError,
         match=r"Operator must be a RZ or PhaseShift gate",
     ):
-        rs_decomposition(op, epsilon=1e-4, max_trials=1)
+         rs_decomposition(op, epsilon=1e-4, max_search_trials=1)
 
 
 @pytest.mark.parametrize(
