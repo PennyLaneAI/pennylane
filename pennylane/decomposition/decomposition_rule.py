@@ -18,8 +18,9 @@ from __future__ import annotations
 
 import inspect
 from collections import Counter, defaultdict
+from collections.abc import Callable
 from textwrap import dedent
-from typing import Callable, Optional, Type, overload
+from typing import NamedTuple, Type, overload
 
 from pennylane.operation import Operator
 
@@ -27,18 +28,38 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 from .utils import translate_op_alias
 
 
+class WorkWireSpec(NamedTuple):
+    """The work-wire requirements of a decomposition rule."""
+
+    num_wires: int
+    """int: the number of work wires required."""
+
+    require_zeros: bool
+    """bool: whether the work wires must be in the zeroed state."""
+
+    restored: bool
+    """bool: whether the decomposition will restore work wires before deallocation."""
+
+
 @overload
 def require_work_wires(
-    num_work_wires: int | Callable[..., int], *, require_zeros: bool = True
+    num_work_wires: int | Callable[..., int],
+    *,
+    require_zeros: bool = True,
+    restored: bool = True,
 ) -> Callable[[Callable], DecompositionRule]: ...
 @overload
 def require_work_wires(
-    num_work_wires: int | Callable[..., int], qfunc: Callable, require_zeros: bool = True
+    num_work_wires: int | Callable[..., int],
+    qfunc: Callable,
+    require_zeros: bool = True,
+    restored: bool = True,
 ) -> DecompositionRule: ...
 def require_work_wires(
     num_work_wires: int | Callable[..., int],
-    qfunc: Optional[Callable] = None,
+    qfunc: Callable | None = None,
     require_zeros: bool = True,
+    restored: bool = True,
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     r"""Declares the number of work wires that the decomposition rule requires
 
@@ -60,6 +81,8 @@ def require_work_wires(
     Keyword Args:
         require_zeros (bool): Whether the work wires are required to be in the :math:`|0\rangle` state,
             defaults to ``True``.
+        restored (bool): Whether this decomposition will uncompute the work wires (i.e., restore them to
+            the original state) before deallocation, defaults to ``True``.
 
     Returns:
         DecompositionRule:
@@ -77,7 +100,7 @@ def require_work_wires(
         from pennylane.decomposition import adjoint_resource_rep
         from pennylane.allocation import allocate
 
-        @qml.require_work_wires(2, require_zeros=True)
+        @qml.require_work_wires(2, require_zeros=True, restored=True)
         @qml.register_resources({
             qml.CNOT: 9,
             qml.Hadamard: 3,
@@ -129,7 +152,7 @@ def require_work_wires(
     def _decorator(_qfunc) -> DecompositionRule:
         if not isinstance(_qfunc, DecompositionRule):
             _qfunc = DecompositionRule(_qfunc)
-        _qfunc.set_work_wire_requirement(num_work_wires, require_zeros)
+        _qfunc.set_work_wire_requirement(num_work_wires, require_zeros, restored)
         return _qfunc
 
     return _decorator(qfunc) if qfunc else _decorator
@@ -140,7 +163,7 @@ def register_condition(condition: Callable) -> Callable[[Callable], Decompositio
 @overload
 def register_condition(condition: Callable, qfunc: Callable) -> DecompositionRule: ...
 def register_condition(
-    condition: Callable[..., bool], qfunc: Optional[Callable] = None
+    condition: Callable[..., bool], qfunc: Callable | None = None
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     """Binds a condition to a decomposition rule for when it is applicable.
 
@@ -208,7 +231,7 @@ def register_resources(resources: Callable | dict) -> Callable[[Callable], Decom
 @overload
 def register_resources(resources: Callable | dict, qfunc: Callable) -> DecompositionRule: ...
 def register_resources(
-    resources: Callable | dict, qfunc: Optional[Callable] = None
+    resources: Callable | dict, qfunc: Callable | None = None
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
     """Binds a quantum function to its required resources.
 
@@ -366,7 +389,7 @@ def register_resources(
 class DecompositionRule:
     """Represents a decomposition rule for an operator."""
 
-    def __init__(self, func: Callable, resources: Optional[Callable | dict] = None):
+    def __init__(self, func: Callable, resources: Callable | dict | None = None):
 
         self._impl = func
 
@@ -386,8 +409,8 @@ class DecompositionRule:
             self._compute_resources = resources
 
         self._condition = None
-        self._num_work_wires = 0
-        self._work_wire_require_zeros = True
+        self._num_work_wires: Callable | int = 0
+        self._work_wire_req = WorkWireSpec(0, True, True)
 
     def __call__(self, *args, **kwargs):
         return self._impl(*args, **kwargs)
@@ -413,13 +436,16 @@ class DecompositionRule:
             return True
         return self._condition(*args, **kwargs)
 
-    def work_wire_requirements(self, *args, **kwargs) -> tuple[int, bool]:
+    def work_wire_requirement(self, *args, **kwargs) -> WorkWireSpec:
         """Returns the number of work wires required by this rule and whether
         the work wires must be in the zeroed state"""
-        if isinstance(self._num_work_wires, Callable):
-            num_work_wires = self._num_work_wires(*args, **kwargs)
-            return num_work_wires, self._work_wire_require_zeros
-        return self._num_work_wires, self._work_wire_require_zeros
+        num_work_wires = (
+            self._num_work_wires(*args, **kwargs)
+            if isinstance(self._num_work_wires, Callable)
+            else self._num_work_wires
+        )
+        req = self._work_wire_req
+        return WorkWireSpec(num_work_wires, req.require_zeros, req.restored)
 
     def set_condition(self, condition: Callable[..., bool]) -> None:
         """Sets the condition for this decomposition rule."""
@@ -438,11 +464,11 @@ class DecompositionRule:
             self._compute_resources = resources
 
     def set_work_wire_requirement(
-        self, num_work_wires: int | Callable, require_zeros: bool
+        self, num_work_wires: int | Callable, require_zeros: bool, restored: bool
     ) -> None:
         """Sets the work wire requirement for this decomposition rule"""
         self._num_work_wires = num_work_wires
-        self._work_wire_require_zeros = require_zeros
+        self._work_wire_req = WorkWireSpec(0, require_zeros, restored)
 
 
 def _auto_wrap(op_type):

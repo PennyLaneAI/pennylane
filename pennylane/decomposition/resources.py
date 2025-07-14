@@ -19,7 +19,7 @@ from __future__ import annotations
 import functools
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Optional, Type
+from typing import Type
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -35,13 +35,13 @@ class Resources:
     """
 
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
-    weighted_cost: Optional[float] = field(default=None)
+    weighted_cost: float | None = field(default=None)
 
     def __post_init__(self):
         """Verify that all gate counts are non-zero."""
         assert all(v > 0 for v in self.gate_counts.values())
         if self.weighted_cost is None:
-            self.weighted_cost = sum(count for gate, count in self.gate_counts.items())
+            self.weighted_cost = sum(count for _, count in self.gate_counts.items())
         assert self.weighted_cost >= 0.0
 
     @cached_property
@@ -116,7 +116,7 @@ class CompressedResourceOp:
 
     """
 
-    def __init__(self, op_type: Type[Operator], params: Optional[dict] = None):
+    def __init__(self, op_type: Type[Operator], params: dict | None = None):
         if not isinstance(op_type, type):
             raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
         if not issubclass(op_type, qml.operation.Operator):
@@ -139,7 +139,7 @@ class CompressedResourceOp:
     def __hash__(self) -> int:
         return hash((self.op_type, self._hashable_params))
 
-    def __eq__(self, other: CompressedResourceOp) -> bool:
+    def __eq__(self, other) -> bool:
         return (
             isinstance(other, CompressedResourceOp)
             and self.op_type == other.op_type
@@ -381,7 +381,7 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments
     )
 
 
-def adjoint_resource_rep(base_class: Type[Operator], base_params: dict = None):
+def adjoint_resource_rep(base_class: Type[Operator], base_params: dict | None = None):
     """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
 
     Args:
@@ -492,7 +492,7 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments
     num_zero_control_values,
     num_work_wires,
     work_wire_type="dirty",
-) -> Optional[CompressedResourceOp]:
+) -> CompressedResourceOp | None:
     """Helper function that handles custom logic for controlled X gates."""
 
     if base_class is qml.X:
