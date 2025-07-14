@@ -49,7 +49,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes early termination of QASM interpretation with end staements in measurement conditioned branches.
+* Fixes early termination of QASM interpretation with end statements in measurement conditioned branches.
   [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
 
 * Fixes attributes and types in the quantum dialect.
