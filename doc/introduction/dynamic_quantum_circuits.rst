@@ -241,13 +241,26 @@ scalings  with respect to the number of mid-circuit measurements (and shots) are
 
 .. raw:: html
 
-   <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
    <script>
-     $(document).ready(function() {
-       $('.gr').parent().parent().addClass('gr-parent');
-       $('.or').parent().parent().addClass('or-parent');
-       $('.rd').parent().parent().addClass('rd-parent');
-     });
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.gr').forEach(function(element) {
+            if (element.parentElement && element.parentElement.parentElement) {
+                element.parentElement.parentElement.classList.add('gr-parent');
+            }
+        });
+
+        document.querySelectorAll('.or').forEach(function(element) {
+            if (element.parentElement && element.parentElement.parentElement) {
+                element.parentElement.parentElement.classList.add('or-parent');
+            }
+        });
+
+        document.querySelectorAll('.rd').forEach(function(element) {
+            if (element.parentElement && element.parentElement.parentElement) {
+                element.parentElement.parentElement.classList.add('rd-parent');
+            }
+        });
+    });
    </script>
    <style>
        .gr-parent {background-color:#e1eba8}
@@ -266,7 +279,7 @@ scalings  with respect to the number of mid-circuit measurements (and shots) are
 +--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------+--------------+
 | Dynamic one-shot         | :gr:`\ ` :math:`\mathcal{O}(1)`           | :rd:`\ ` :math:`\mathcal{O}(n_{shots})`                   | :or:`\ ` finite differences\ :math:`{}^2` | :gr:`\ ` yes | :rd:`\ ` no  |
 +--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------+--------------+
-| Tree-traversal           | :or:`\ ` :math:`\mathcal{O}(n_{MCM}+1)`   | :or:`\ ` :math:`\mathcal{O}(min(n_{shots}, 2^{n_{MCM}}))` | :or:`\ ` finite differences\ :math:`{}^2` | :gr:`\ ` yes | :rd:`\ ` no  |
+| Tree-traversal           | :or:`\ ` :math:`\mathcal{O}(n_{MCM}+1)`   | :or:`\ ` :math:`\mathcal{O}(min(n_{shots}, 2^{n_{MCM}}))` | :or:`\ ` finite differences\ :math:`{}^2` | :gr:`\ ` yes | :gr:`\ ` yes |
 +--------------------------+-------------------------------------------+-----------------------------------------------------------+-------------------------------------------+--------------+--------------+
 
 
@@ -393,11 +406,19 @@ Since the counts of many nodes come out to be zero for shot-based simulations,
 it is often possible to ignore entire sub-trees, thereby reducing the computational
 cost.
 
-.. warning::
+.. note::
 
-    The tree-traversal algorithm is only supported by the
-    :class:`~.pennylane.devices.DefaultQubit` device, and currently does
-    not support just-in-time (JIT) compilation.
+    The tree-traversal algorithm is supported by the following devices:
+
+    * :class:`~.pennylane.devices.DefaultQubit`,
+    
+    * `lightning.qubit <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_qubit/device.html>`_,
+    
+    * `lightning.gpu <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_gpu/device.html>`_,
+    
+    * `lightning.kokkos <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_kokkos/device.html>`_,
+    
+    and currently does not support just-in-time (JIT) compilation.
 
 .. _mcm_config:
 

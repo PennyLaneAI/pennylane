@@ -24,7 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane.ops.op_math.condition import CondCallable, ConditionalTransformError
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 

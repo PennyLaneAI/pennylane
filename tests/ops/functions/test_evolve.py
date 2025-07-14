@@ -21,6 +21,13 @@ from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 
 
+def test_error_for_unsupported_input():
+    """Test an error is raised for an unsupported input type."""
+
+    with pytest.raises(ValueError, match="No dispatch rule for first argument of type"):
+        qml.evolve(0.5)
+
+
 @pytest.mark.jax
 class TestEvolveConstructor:
     """Unit tests for the evolve function"""
