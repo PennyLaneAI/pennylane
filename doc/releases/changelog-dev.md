@@ -5,6 +5,7 @@
 <h3>New features since last release</h3>
 
 * `set_shots` can be directly applied to a QNode, no more `partial` decorators are needed.
+  [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
 
 <h4>OpenQASM 🤝 PennyLane</h4>
 
