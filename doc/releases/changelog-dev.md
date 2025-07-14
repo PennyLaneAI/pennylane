@@ -11,20 +11,19 @@
   terminal measurements in a program with a single :func:`pennylane.sample` measurement, and adds
   postprocessing instructions to recover the original measurement.
   [(#7620)](https://github.com/PennyLaneAI/pennylane/pull/7620)
-
 * A combine-global-phase pass has been added to the xDSL Python compiler integration.
   Note that the current implementation can only combine all the global phase operations at
-  the last global phase operation in the same region. In other words, global phase operations inside a control flow region can't be combined with those in their parent 
+  the last global phase operation in the same region. In other words, global phase operations inside a control flow region can't be combined with those in their parent
   region.
   [(#7675)](https://github.com/PennyLaneAI/pennylane/pull/7675)
-
 * The `mbqc` xDSL dialect has been added to the Python compiler, which is used to represent
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
-
 * The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
   complete global phase information when used for decomposing a phase gate to Clifford+T basis.
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
+* New :class:`SparseFragment` are available for the estimation of Trotter error. Simultaneously, we added uniform and importance sampling to the estimation of Trotter error.
+  ([#7873](https://github.com/PennyLaneAI/pennylane/pull/7873))
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -40,7 +39,6 @@
 
 * Seeded tests for the `split_to_single_terms` transformation.
   [(#7851)](https://github.com/PennyLaneAI/pennylane/pull/7851)
-
 * Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
@@ -59,6 +57,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Joey Carter,
+Pablo Antonio Moreno Casares,
 Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
