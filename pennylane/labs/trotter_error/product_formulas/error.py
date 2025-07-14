@@ -104,7 +104,7 @@ def _insert_fragments(
     )
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-branches
+# pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-branches, too-many-statements
 def perturbation_error(
     product_formula: ProductFormula,
     fragments: Dict[Hashable, Fragment],
@@ -222,7 +222,10 @@ def perturbation_error(
             raise ValueError("Adaptive sampling requires num_workers=1")
 
         # Get gridpoints from the first state (all states should have the same gridpoints)
-        gridpoints = getattr(states[0], 'gridpoints', 10) if states else 10
+        if states and hasattr(states[0], 'gridpoints'):
+            gridpoints = states[0].gridpoints
+        else:
+            gridpoints = None
         return _adaptive_sampling(
             commutators=commutators,
             fragments=fragments,
@@ -241,7 +244,10 @@ def perturbation_error(
     if sample_size is not None:
         print(f"Using fixed-size sampling with {sample_size} commutators out of {len(commutators)} total")
         # Get gridpoints from the first state (all states should have the same gridpoints)
-        gridpoints = getattr(states[0], 'gridpoints', 10) if states else 10
+        if states and hasattr(states[0], 'gridpoints'):
+            gridpoints = states[0].gridpoints
+        else:
+            gridpoints = None
         commutators, commutator_weights = _sample_commutators(
             commutators, fragments, timestep, sample_size, sampling_method, random_seed, gridpoints
         )
@@ -321,9 +327,11 @@ def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
 
     # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
     if isinstance(new_state, _AdditiveIdentity):
-        return 0.0
+        result = 0.0
     else:
-        return state.dot(new_state)
+        result = state.dot(new_state)
+
+    return result
 
 
 def _apply_commutator(
@@ -743,7 +751,7 @@ def _adaptive_sampling(
 
             # Apply commutator and get contribution
             applied_state = _apply_commutator(commutator, fragments, state)
-            
+
             # Handle case where applied_state is _AdditiveIdentity
             if isinstance(applied_state, _AdditiveIdentity):
                 contribution = 0.0
@@ -877,23 +885,25 @@ def _sample_commutators(
 
 def _compute_state_expectation(commutators, weights, fragments, state):
     """Helper function to compute state expectation for parallel processing.
-    
+
     This replaces the lambda function to make it pickleable for MPI.
     """
     new_state = sum((weight * _apply_commutator(commutator, fragments, state)
                     for commutator, weight in zip(commutators, weights)),
                    start=_AdditiveIdentity())
-    
+
     # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
     if isinstance(new_state, _AdditiveIdentity):
-        return 0.0
+        result = 0.0
     else:
-        return state.dot(new_state)
+        result = state.dot(new_state)
+
+    return result
 
 
 def _apply_weighted_commutator(commutator, weight, fragments, state):
     """Helper function to apply weighted commutator for parallel processing.
-    
+
     This replaces the lambda function to make it pickleable for MPI.
     """
     return weight * _apply_commutator(commutator, fragments, state)
