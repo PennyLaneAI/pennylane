@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.normal_forms import (
+    _clifford_gates_to_SU2,
     _clifford_group_to_SO3,
     _ma_normal_form,
     _parity_transforms,
@@ -39,11 +40,10 @@ class TestNormalForms:
         assert isinstance(clifford_matrices, dict)
         assert len(clifford_matrices) == 24
 
-        for gates, (so3mat, phase) in clifford_matrices.items():
+        for gates, so3mat in clifford_matrices.items():
             # Check that the SO(3) matrix is orthogonal and has determinant 1
             assert isinstance(so3mat, SO3Matrix), "All gates should be SO3Matrix instances"
             assert so3mat.k == 0, f"Gate {gates} should have k=0"
-            assert isinstance(phase, float), "Phase should be a float."
 
             su2mat = _SU2_transform(qml.matrix(qml.prod(*gates)))[0]
             w, x, y, z = _quaternion_transform(su2mat)
@@ -57,6 +57,20 @@ class TestNormalForms:
                     ]
                 ),
             ), "SO(3) matrix does not match expected form"
+
+    def test_clifford_gates_to_SU2(self):
+        """Test that the Clifford gates are correctly mapped to SU(2) matrices."""
+        clifford_matrices = _clifford_gates_to_SU2()
+        assert isinstance(clifford_matrices, dict)
+        assert len(clifford_matrices) == 7
+
+        for gate, (su2mat, phase) in clifford_matrices.items():
+            assert isinstance(su2mat, DyadicMatrix), "All gates should be DyadicMatrix instances"
+            assert isinstance(phase, float), "Phase should be a float."
+
+            assert qml.math.allclose(
+                su2mat.ndarray, _SU2_transform(qml.matrix(gate))[0]
+            ), "SU(2) matrix does not match expected form"
 
     def test_parity_transforms(self):
         """Test that the parity transforms are correctly defined."""
@@ -72,7 +86,10 @@ class TestNormalForms:
                 gate, (qml.ops.Operation, qml.ops.op_math.Prod)
             ), "Each transform should have a gate"
             assert isinstance(phase, float)
-            assert qml.math.allclose(phase * math.pi, _SU2_transform(qml.matrix(gate))[1])
+            if parity_vec != (1, 1, 1):  # 0.125 here comes from the matrix form of the T-gate.
+                assert qml.math.allclose(
+                    phase, (0.125 - _SU2_transform(qml.matrix(gate))[1] / math.pi) % 2
+                )
 
             su2mat = _SU2_transform(qml.matrix(qml.adjoint(gate)))[0]
             w, x, y, z = _quaternion_transform(su2mat)
@@ -118,7 +135,7 @@ class TestNormalForms:
                     so3rep @= op_
 
         cl_list = list(clifford_elements.keys())
-        so3mat @= clifford_elements[cl_list[c]][0]
+        so3mat @= clifford_elements[cl_list[c]]
         for op_ in cl_list[c]:
             so3rep @= op_
 

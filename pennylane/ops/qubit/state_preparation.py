@@ -217,7 +217,7 @@ add_decomps(BasisState, _basis_state_decomp)
 
 
 class StatePrep(StatePrepBase):
-    r"""StatePrep(state, wires, pad_with = None, normalize = False, validate_norm = True)
+    r"""StatePrep(state, wires, pad_with = None, normalize = False, validate_norm = False)
     Prepare subsystems using a state vector in the computational basis.
 
     **Details:**
@@ -503,7 +503,7 @@ class StatePrep(StatePrepBase):
                 padding = math.convert_like(padding, state)
                 state = math.hstack([state, padding])
 
-        if not validate_norm:
+        if not (validate_norm or normalize):
             return state
 
         # normalize
