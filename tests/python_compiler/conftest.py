@@ -13,9 +13,12 @@
 # limitations under the License.
 """Pytest configuration for tests for the pennylane.compiler.python_compiler submodule."""
 
+import inspect
 import io
 
 import pytest
+
+from pennylane.compiler.python_compiler import Compiler
 
 filecheck_available = True
 
@@ -50,3 +53,51 @@ def run_filecheck():
         pytest.skip("Cannot run lit tests without filecheck.")
 
     yield _run_filecheck_impl
+
+
+def _get_filecheck_directives(qjit_fn):
+    """Return a string containing all FileCheck directives in the source function."""
+    try:
+        src = inspect.getsource(qjit_fn)
+    except Exception as e:
+        raise RuntimeError(f"Could not get source for {qjit_fn}") from e
+
+    filecheck_directives = []
+    for line in src.splitlines():
+        line = line.strip()
+        if line[0] != "#":
+            continue
+
+        line = line[1:].strip()
+        if line.startswith(("CHECK", "COM")):
+            filecheck_directives.append("// " + line)
+
+    return "\n".join(filecheck_directives)
+
+
+def _run_filecheck_qjit_impl(fn):
+    """Run filecheck on a qjit-ed function, using FileCheck directives in its inline
+    comments to assert correctness."""
+    if not filecheck_available:
+        return
+
+    checks = _get_filecheck_directives(fn)
+    compiler = Compiler()
+    mlir = compiler.run(fn.mlir_module)
+
+    opts = parse_argv_options(["filecheck", __file__])
+    matcher = Matcher(
+        opts,
+        FInput("no-name", str(mlir)),
+        Parser(opts, io.StringIO(checks), *pattern_for_opts(opts)),
+    )
+    assert matcher.run() == 0
+
+
+@pytest.fixture(scope="function")
+def run_filecheck_qjit():
+    """Fixture to run filecheck on a qjit-ed function."""
+    if not filecheck_available:
+        pytest.skip("Cannot run lit tests without filecheck.")
+
+    yield _run_filecheck_qjit_impl
