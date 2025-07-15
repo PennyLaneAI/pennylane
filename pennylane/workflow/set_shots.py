@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 def set_shots(
     qnode: QNode | object = _DECORATOR_MODE,
-    shots: Optional[Shots | int | Sequence[int | Tuple[int, int]]] = None,
+    shots: Optional[Shots | int | Sequence[int | tuple[int, int]]] = None,
 ) -> QNode | Callable[[QNode], QNode]:
     """Transform used to set or update a circuit's shots.
 
