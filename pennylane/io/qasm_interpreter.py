@@ -1148,7 +1148,7 @@ class QasmInterpreter:
             gates_dict = PARAMETERIZED_GATES
         elif name in NON_PARAMETERIZED_GATES:
             gates_dict = NON_PARAMETERIZED_GATES
-        elif name in list(map(lambda n: n.upper(), context.scopes["custom_gates"].keys())):
+        elif name in [n.upper() for n in context.scopes["custom_gates"].keys()]:
             self.execute_custom_gate(node, context)
             return
         else:
