@@ -468,9 +468,11 @@ class OutPoly(Operation):
 def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
     num_output_adder_mod = num_output_wires + 1 if num_work_wires else num_output_wires
 
-    resources = Counter({
-        resource_rep(qml.QFT, num_wires=num_output_adder_mod): 1,
-    })
+    resources = Counter(
+        {
+            resource_rep(qml.QFT, num_wires=num_output_adder_mod): 1,
+        }
+    )
 
     coeffs_dic = dict(coeffs_list)
 

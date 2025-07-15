@@ -297,10 +297,12 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
     else:
         qft_wires = num_output_wires
 
-    resources = Counter({
-        resource_rep(qml.QFT, num_wires=qft_wires): 1,
-        adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
-    })
+    resources = Counter(
+        {
+            resource_rep(qml.QFT, num_wires=qft_wires): 1,
+            adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
+        }
+    )
 
     for num_wires in (num_x_wires, num_y_wires):
         rep = resource_rep(
