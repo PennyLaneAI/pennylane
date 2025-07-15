@@ -47,6 +47,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `level=None` argument in the :func:`pennylane.get_transform_program` and :func:`pennylane.transforms.add_noise` transform is deprecated and will be removed in a future release.
+  Please use `level='device'` instead to apply the noise model at the device level.
+
 <h3>Internal changes ⚙️</h3>
 
 * Make `pennylane.io` a tertiary module.
