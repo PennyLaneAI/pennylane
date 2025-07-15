@@ -120,7 +120,7 @@ def perturbation_error(
     random_seed: Optional[int] = None,
     adaptive_sampling: bool = False,
     confidence_level: float = 0.95,
-    target_error: float = 0.01,
+    target_relative_error: float = 1.,
     min_sample_size: int = 10,
     max_sample_size: int = 10000,
 ) -> List[float]:
@@ -232,7 +232,7 @@ def perturbation_error(
             timestep=timestep,
             sampling_method=sampling_method,
             confidence_level=confidence_level,
-            target_error=target_error,
+            target_error=target_relative_error,
             min_sample_size=min_sample_size,
             max_sample_size=max_sample_size,
             random_seed=random_seed,
