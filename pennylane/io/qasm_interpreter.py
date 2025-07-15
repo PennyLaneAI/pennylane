@@ -938,7 +938,7 @@ class QasmInterpreter:
                     if var.ty == "BitType":
                         return FUNCTIONS[name](var, self.visit(node.arguments[1], context))
                     return FUNCTIONS[name](var.val, self.visit(node.arguments[1], context))
-            return FUNCTIONS[name](*[self.visit(raw_arg, context) for raw_arg in node.arguments])
+            return FUNCTIONS[name](*(self.visit(raw_arg, context) for raw_arg in node.arguments))
 
         raise NameError(
             f"Reference to subroutine {name} not available in calling namespace "
