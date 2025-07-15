@@ -185,11 +185,11 @@ def merge_subsets(list_of_pairs):
     merge_occurred = True
     while merge_occurred:
         merge_occurred = False
-        for i in range(len(merged_list)):
+        for i, merged in enumerate(merged_list):
             for j in range(i + 1, len(merged_list)):
-                if any(elem in merged_list[j] for elem in merged_list[i]):
+                if any(elem in merged_list[j] for elem in merged):
                     # Merge i-th and j-th sublists and remove the j-th sublist
-                    merged_list[i] = merge_and_order(merged_list[i], merged_list[j])
+                    merged = merge_and_order(merged, merged_list[j])
                     del merged_list[j]
                     merge_occurred = True
                     break
@@ -291,26 +291,26 @@ def best_qpath(C, output_qubit_index):
                     C = update_candidate_matrix(C, output_qubit, input_qubit)
 
             return Q_p_i, C
+
+        max_size = max(len(D[input_qubit]) for input_qubit in D)
+        M = {input_qubit for input_qubit in D if len(D[input_qubit]) == max_size}
+
+        if len(M) == 1:
+            input_qubit = next(iter(M))
         else:
-            max_size = max(len(D[input_qubit]) for input_qubit in D)
-            M = {input_qubit for input_qubit in D if len(D[input_qubit]) == max_size}
+            S = {}
+            for input_qubit in M:
+                neighbors_j = D[input_qubit]
+                sigma = [len(neighbors_j & D[k]) for k in M if k != input_qubit]
+                S[input_qubit] = sum(sigma)
 
-            if len(M) == 1:
-                input_qubit = next(iter(M))
-            else:
-                S = {}
-                for input_qubit in M:
-                    neighbors_j = D[input_qubit]
-                    sigma = [len(neighbors_j & D[k]) for k in M if k != input_qubit]
-                    S[input_qubit] = sum(sigma)
+            max_intersection = max(S.values())
+            L = [input_qubit for input_qubit in S if S[input_qubit] == max_intersection]
+            input_qubit = random.choice(L)
 
-                max_intersection = max(S.values())
-                L = [input_qubit for input_qubit in S if S[input_qubit] == max_intersection]
-                input_qubit = random.choice(L)
-
-            neighbors_j = D[input_qubit]
-            Q_p_i.append(input_qubit)
-            P_r_i = neighbors_j
+        neighbors_j = D[input_qubit]
+        Q_p_i.append(input_qubit)
+        P_r_i = neighbors_j
 
     if len(Q_p_i) > 1:
         for k in range(len(Q_p_i) - 1):
@@ -322,6 +322,17 @@ def best_qpath(C, output_qubit_index):
 
 
 def generate_dynamic_circuit(qubit_reuse_sequence, tape):
+    """
+    Using the qubit reuse sequence, generates a dynamic circuit with mid-circuit measurements and
+    reduced qubit count.
+
+    Args:
+        qubit_reuse_sequence (list): The qubit reuse sequence.
+        tape (Tape): The initial circuit.
+
+    Returns:
+        QuantumScript: The dynamic circuit with mid-circuit measurements.
+    """
     map_static_to_dynamic = {}
     for dynamic_index, static_qubits in enumerate(qubit_reuse_sequence):
         for static_qubit_index in static_qubits:
@@ -388,7 +399,6 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     R = [[i] for i in range(n)]
 
     if np.all(C == 0):
-        # return R  # Irreducible circuit
         return None  # Irreducible circuit
 
     # TODO: this is supposed to include shots*log(n)
