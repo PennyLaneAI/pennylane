@@ -54,6 +54,33 @@ class ConvertToMBQCFormalismPattern(
 ):  # pylint: disable=too-few-public-methods
     """RewritePattern for pre-allocate 13 more aux wires."""
 
+    def _swap_qubits(
+        self, rewriter, registers_state, op, current_op, num_wires_int, res_idx, offset
+    ):
+        # NOTE: The following logic mimic the QubitMgr class defined in the `ftqc.utils` module
+        # 1. Extract the target wire and the result wires in the auxiliary registers
+        target_qubits_index = op.results[res_idx].index
+        target_qubit = ExtractOp(registers_state, target_qubits_index)
+        rewriter.insert_op(target_qubit, insertion_point=InsertPoint.after(current_op))
+        current_op = target_qubit
+        result_qubits_index = num_wires_int + offset
+        res_qubit = ExtractOp(registers_state, result_qubits_index)
+        rewriter.insert_op(res_qubit, insertion_point=InsertPoint.after(current_op))
+        current_op = res_qubit
+
+        # 2. Swap the target register and the result register
+        new_target_qubit = InsertOp(registers_state, result_qubits_index, target_qubit)
+        rewriter.insert_op(new_target_qubit, insertion_point=InsertPoint.after(current_op))
+        registers_state = new_target_qubit.results[0]
+
+        current_op = new_target_qubit
+
+        new_res_qubit = InsertOp(registers_state, target_qubits_index, res_qubit)
+        rewriter.insert_op(new_res_qubit, insertion_point=InsertPoint.after(current_op))
+        registers_state = new_res_qubit.results[0]
+        current_op = new_res_qubit
+        return current_op, registers_state
+
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
@@ -82,26 +109,19 @@ class ConvertToMBQCFormalismPattern(
                     "RZ",
                     "RotXZX",
                 ]:
-                    current_op = op
-                    # NOTE: The following logic mimic the QubitMgr class defined in the `ftqc.utils` module
-                    # 1. Extract the target wire and the result wires in the auxiliary registers
-                    target_qubits_index = op.results[0].index
-                    target_qubit = ExtractOp(registers_state, target_qubits_index)
-                    rewriter.insert_op(target_qubit, insertion_point=InsertPoint.after(current_op))
-                    current_op = target_qubit
-                    result_qubits_index = num_wires_int + 3
-                    res_qubit = ExtractOp(registers_state, result_qubits_index)
-                    rewriter.insert_op(res_qubit, insertion_point=InsertPoint.after(current_op))
-                    current_op = res_qubit
-
-                    # 2. Swap the target register and the result register
-                    new_target_qubit = InsertOp(registers_state, result_qubits_index, target_qubit)
-                    rewriter.insert_op(
-                        new_target_qubit, insertion_point=InsertPoint.after(current_op)
+                    current_op, registers_state = self._swap_qubits(
+                        rewriter, registers_state, op, op, num_wires_int, res_idx=0, offset=3
                     )
-                    registers_state = new_target_qubit.results[0]
-
-                    current_op = new_target_qubit
-
-                    new_res_qubit = InsertOp(registers_state, target_qubits_index, res_qubit)
-                    rewriter.insert_op(new_res_qubit, insertion_point=InsertPoint.after(current_op))
+                elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
+                    current_op, registers_state = self._swap_qubits(
+                        rewriter, registers_state, op, op, num_wires_int, res_idx=0, offset=11
+                    )
+                    current_op, registers_state = self._swap_qubits(
+                        rewriter,
+                        registers_state,
+                        op,
+                        current_op,
+                        num_wires_int,
+                        res_idx=1,
+                        offset=12,
+                    )

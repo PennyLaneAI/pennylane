@@ -52,7 +52,7 @@ class TestConvertToMBQCFormalismPass:
 
         run_filecheck(program, module)
 
-    def test_qubit_mgr(self, run_filecheck):
+    def test_qubit_mgr_1_qubit_gate(self, run_filecheck):
         """Test that ConvertToMBQCFormalismPass can extract and swap the target qubit and
         the result qubit in the auxiliary wires.
         """
@@ -68,6 +68,42 @@ class TestConvertToMBQCFormalismPass:
               // CHECK: %3 = "quantum.extract"(%0) <{idx_attr = 5 : i64}> : (!quantum.reg) -> !quantum.bit
               // CHECK: %4 = "quantum.insert"(%0, %2) <{idx_attr = 5 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
               // CHECK: %5 = "quantum.insert"(%4, %3) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+
+              return
+            }
+        """
+
+        ctx = Context()
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((ConvertToMBQCFormalismPass(),))
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
+
+    def test_qubit_mgr_cnot(self, run_filecheck):
+        """Test that ConvertToMBQCFormalismPass can extract and swap the target qubit and
+        the result qubit in the auxiliary wires.
+        """
+        program = """
+            func.func @test_func() {
+              // CHECK: %0 = "quantum.alloc"() <{nqubits_attr = 15 : i64}> : () -> !quantum.reg
+              %0 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
+              // CHECK: %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
+              %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
+              %2 = "quantum.extract"() <{idx_attr = 1 : i64}> : () -> !quantum.bit
+              %out_qubits0, %out_qubits1 = quantum.custom "CNOT"() %1, %2 : !quantum.bit, !quantum.bit
+              // CHECK: %3 = "quantum.extract"(%0) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+              // CHECK: %4 = "quantum.extract"(%0) <{idx_attr = 13 : i64}> : (!quantum.reg) -> !quantum.bit
+              // CHECK: %5 = "quantum.insert"(%0, %3) <{idx_attr = 13 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+              // CHECK: %6 = "quantum.insert"(%5, %4) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+              // CHECK: %7 = "quantum.extract"(%6) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
+              // CHECK: %8 = "quantum.extract"(%6) <{idx_attr = 14 : i64}> : (!quantum.reg) -> !quantum.bit
+              // CHECK: %9 = "quantum.insert"(%6, %7) <{idx_attr = 14 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+              // CHECK: %10 = "quantum.insert"(%9, %8) <{idx_attr = 1 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
 
               return
             }
