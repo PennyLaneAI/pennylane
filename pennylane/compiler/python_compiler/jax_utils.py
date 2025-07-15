@@ -15,7 +15,7 @@
 """Utilities for translating JAX to xDSL"""
 
 from functools import wraps
-from typing import Callable, TypeAlias
+from typing import Callable, Optional, Sequence, TypeAlias
 
 import jaxlib
 from catalyst import QJIT
@@ -30,12 +30,43 @@ from xdsl.dialects import scf as xscf
 from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects import tensor as xtensor
 from xdsl.dialects import transform as xtransform
+from xdsl.ir import Dialect as xDialect
 from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
-from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
+from .mbqc_dialect import MBQCDialect as MBQC
+from .quantum_dialect import QuantumDialect as Quantum
 
 JaxJittedFunction: TypeAlias = jaxlib.xla_extension.PjitFunction
+
+
+class LoaderParser(xParser):  # pylint: disable=abstract-method
+    """A subclass of the xDSL ``parser.Parser`` that loads key dialects into the input context."""
+
+    def __init__(
+        self,
+        ctx: xContext,
+        input: str,
+        name: str = "<unknown>",
+        extra_dialects: Optional[Sequence[xDialect]] = None,
+    ) -> None:
+        super().__init__(ctx, input, name)
+
+        extra_dialects = extra_dialects or ()
+        dialects = (
+            xarith.Arith,
+            xbuiltin.Builtin,
+            xfunc.Func,
+            xscf.Scf,
+            xstablehlo.StableHLO,
+            xtensor.Tensor,
+            xtransform.Transform,
+            Quantum,
+            MBQC,
+        ) + tuple(extra_dialects)
+
+        for dialect in dialects:
+            self.ctx.load_dialect(dialect)
 
 
 def _module_inline(func: JaxJittedFunction, *args, **kwargs) -> jModule:
@@ -70,18 +101,13 @@ def generic(func: JaxJittedFunction) -> Callable[..., str]:  # pragma: no cover
     return wrapper
 
 
-def parse_generic_to_xdsl_module(program: str) -> xbuiltin.ModuleOp:  # pragma: no cover
+def parse_generic_to_xdsl_module(
+    program: str, extra_dialects: Optional[Sequence[xDialect]] = None
+) -> xbuiltin.ModuleOp:  # pragma: no cover
     """Parses generic MLIR program to xDSL module"""
     ctx = xContext(allow_unregistered=True)
-    ctx.load_dialect(xarith.Arith)
-    ctx.load_dialect(xbuiltin.Builtin)
-    ctx.load_dialect(xfunc.Func)
-    ctx.load_dialect(xscf.Scf)
-    ctx.load_dialect(xstablehlo.StableHLO)
-    ctx.load_dialect(xtensor.Tensor)
-    ctx.load_dialect(xtransform.Transform)
-    ctx.load_dialect(QuantumDialect)
-    moduleOp: xbuiltin.ModuleOp = xParser(ctx, program).parse_module()
+    parser = LoaderParser(ctx, program, extra_dialects=extra_dialects)
+    moduleOp: xbuiltin.ModuleOp = parser.parse_module()
     return moduleOp
 
 
