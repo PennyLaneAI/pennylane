@@ -102,7 +102,7 @@ class ControlledSequence(SymbolicOp, Operation):
     @property
     def resource_params(self) -> dict:
         params = {
-            "base": self.hyperparameters["base"].__class__,
+            "base_class": self.hyperparameters["base"].__class__,
             "base_params": self.hyperparameters["base"].resource_params,
             "num_control_wires": len(self.hyperparameters["control_wires"]),
         }
@@ -213,7 +213,7 @@ class ControlledSequence(SymbolicOp, Operation):
         return ops
 
 
-def _cntl_seq_decomposition_resources(base, base_params, num_control_wires) -> dict:
+def _ctrl_seq_decomposition_resources(base, base_params, num_control_wires) -> dict:
 
     resources = {}
 
