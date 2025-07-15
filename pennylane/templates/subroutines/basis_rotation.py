@@ -132,7 +132,6 @@ class BasisRotation(Operation):
         The basis rotation performed by ``BasisRotation`` implements a transformation
         in the qubit Hilbert space that corresponds to a simple basis change of
         fermionic creation operators, translated to qubits via the Jordan-Wigner mapping.
-
         The old fermionic creation operators :math:`a_p^\dagger` and the new creation
         operators :math:`b_p^\dagger` are related to each other by the following equation:
 
@@ -173,7 +172,7 @@ class BasisRotation(Operation):
 
             P_{j}(\phi) = \operatorname{diag}(1,\cdots, 1, e^{i\phi}, 1, \cdots, 1),
 
-        where the single non-trivial entry is at index :math:`j`.
+        with the single non-trivial entry at index :math:`j`.
         Such a factorization is implemented in :func:`~.math.decomposition.givens_decomposition`.
         It will be useful to look at the generators of :math:`T_{k}` and :math:`P_j`, as well as
         the Lie algebra :math:`\mathfrak{g}` they generate:
@@ -197,8 +196,7 @@ class BasisRotation(Operation):
         and :math:`N` matrices :math:`D`, so that all taken together span the
         :math:`N^2`-dimensional algebra :math:`\mathfrak{u}(N)`.
 
-        The template ``BasisRotation`` maps the factorization of :math:`u` to a quantum circuit
-        via the identification
+        The factorization of :math:`u` can be mapped to a quantum circuit by identifying:
 
         .. math::
 

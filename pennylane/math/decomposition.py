@@ -363,7 +363,7 @@ def _absorb_phases_so(left_givens, right_givens, N, phases, interface):
 
     The rotations in `left_givens` and `right_givens` are such that
     `reduce(dot, [mat.T for mat in left_givens] + reversed(right_givens)) == phases`
-    and the phases are guaranteed to be 1 or -1.
+    and the phases are guaranteed to be :math:`\pm 1`.
     This function goes through the last `N-1` nearest-neighbour Givens rotations added
     in the diagonalization. They are the last ones in `left_givens` (`right_givens`) if `N` is
     odd (even). For each of these rotations, we denote the matrix index `idx0` (`idx1`) that will (not)
@@ -417,8 +417,7 @@ def _commute_phases_u(left_givens, right_givens, unitary, interface):
     nleft_givens = []
     for grot_mat, (i, j) in reversed(left_givens):
         # Manually compute new Givens matrix and new phase when commuting a phase through.
-        abs_s = math.abs(grot_mat[1, 0])
-        abs_c = math.abs(grot_mat[0, 0])
+        abs_c, abs_s = math.abs(grot_mat[:, 0])
         first_col = unitary[j, j] * math.conj(unitary[i, i]) * grot_mat[1, 1] * grot_mat[0, 1]
         givens_mat = math.array(
             [[first_col / abs_s, -abs_s], [first_col / abs_c, abs_c]], like=interface
@@ -432,7 +431,7 @@ def _commute_phases_u(left_givens, right_givens, unitary, interface):
 
         nleft_givens.append((math.conj(givens_mat), (i, j)))
 
-    ordered_rotations = list(reversed(nleft_givens)) + list(reversed(right_givens))
+    ordered_rotations = nleft_givens[::-1] + right_givens[::-1]
 
     return math.diag(unitary), ordered_rotations
 
