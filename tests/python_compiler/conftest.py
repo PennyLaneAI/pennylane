@@ -17,8 +17,12 @@ import inspect
 import io
 
 import pytest
+from xdsl.context import Context
+from xdsl.dialects import test
+from xdsl.passes import PipelinePass
 
 from pennylane.compiler.python_compiler import Compiler
+from pennylane.compiler.python_compiler.jax_utils import LoaderParser
 
 filecheck_available = True
 
@@ -31,11 +35,17 @@ except ImportError:
     filecheck_available = False
 
 
-def _run_filecheck_impl(program_str, xdsl_module):
+def _run_filecheck_impl(program_str, pipeline):
     """Run filecheck on an xDSL module, comparing it to a program string containing
     filecheck directives."""
     if not filecheck_available:
         return
+
+    ctx = Context(allow_unregistered=True)
+    xdsl_module = LoaderParser(ctx, program_str, extra_dialects=(test.Test,)).parse_module()
+
+    pipeline = PipelinePass(pipeline)
+    pipeline.apply(ctx, xdsl_module)
 
     opts = parse_argv_options(["filecheck", __file__])
     matcher = Matcher(
@@ -83,12 +93,12 @@ def _run_filecheck_qjit_impl(fn):
 
     checks = _get_filecheck_directives(fn)
     compiler = Compiler()
-    mlir = compiler.run(fn.mlir_module)
+    mlir_module = compiler.run(fn.mlir_module)
 
     opts = parse_argv_options(["filecheck", __file__])
     matcher = Matcher(
         opts,
-        FInput("no-name", str(mlir)),
+        FInput("no-name", str(mlir_module)),
         Parser(opts, io.StringIO(checks), *pattern_for_opts(opts)),
     )
     assert matcher.run() == 0
