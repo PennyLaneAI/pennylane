@@ -227,6 +227,7 @@ operator towards a target gate set.
 
     >>> with qml.queuing.AnnotatedQueue() as q:
     ...     graph.decomposition(op)(0.5, wires=[0, 1])
+    ...
     >>> q.queue
     [RZ(1.5707963267948966, wires=[1]),
      RY(0.25, wires=[1]),
