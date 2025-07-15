@@ -346,7 +346,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
 
         >>> qnode = qml.QNode(qfunc, dev)
         >>> print(qml.draw(qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
-        0: ──H──Rot(0.1, 0.2, 0.3)──Rot(0.4, 0.5, 0.6)──RZ(0.1)──RZ(0.4)──┤ ⟨X⟩
+        0: ──H──Rot(0.10,0.20,0.30)──Rot(0.40,0.50,0.60)──RZ(0.10)──RZ(0.40)─┤  <X>
 
         Full single-qubit gate fusion allows us to collapse this entire sequence into a
         single ``qml.Rot`` rotation gate.
@@ -354,7 +354,7 @@ def single_qubit_fusion(  # pylint: disable=too-many-branches
         >>> optimized_qfunc = qml.transforms.single_qubit_fusion(qfunc)
         >>> optimized_qnode = qml.QNode(optimized_qfunc, dev)
         >>> print(qml.draw(optimized_qnode)([0.1, 0.2, 0.3], [0.4, 0.5, 0.6]))
-        0: ──Rot(3.57, 2.09, 2.05)──┤ ⟨X⟩
+        0: ──Rot(3.57,2.09,2.05)──GlobalPhase(-1.57)─┤  <X>
 
     .. details::
         :title: Derivation
