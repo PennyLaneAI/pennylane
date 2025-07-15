@@ -325,7 +325,7 @@ solver.
   ```pycon
   >>> gridsynth_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
   >>> sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
-  >>> gridsynth_specs = qml.specs(rs_circuit)()["resources"]
+  >>> gridsynth_specs = qml.specs(gridsynth_circuit)()["resources"]
   >>> sk_specs = qml.specs(sk_circuit)()["resources"]
   >>> print(gridsynth_specs.num_gates, sk_specs.num_gates)
   239 47942
