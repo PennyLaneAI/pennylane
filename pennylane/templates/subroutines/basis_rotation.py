@@ -435,7 +435,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         theta = math.arccos(math.real(grot_mat[1, 1]))
         phi = math.angle(grot_mat[0, 0])
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
-        cond(~math.allclose(phi, 0.0), _phase_shift)(phi, wires[i])
+        cond(not math.allclose(phi, 0.0), _phase_shift)(phi, wires[i])
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)

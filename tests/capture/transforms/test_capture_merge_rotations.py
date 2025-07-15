@@ -39,7 +39,7 @@ from pennylane.transforms.optimization.merge_rotations import (
 )
 from pennylane.transforms.optimization.optimization_utils import fuse_rot_angles
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 class TestMergeRotationsInterpreter:

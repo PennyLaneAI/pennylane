@@ -14,9 +14,17 @@
 
 """Utility functions for decompositions are available from ``qml.math.decomposition``."""
 
+from functools import lru_cache, partial
+
 import numpy as np
 
 from pennylane import math
+
+try:
+    import jax
+    import jax.numpy as jnp
+except ModuleNotFoundError:  # pragma: no cover
+    ...
 
 
 def zyz_rotation_angles(U, return_global_phase=False):
@@ -298,7 +306,7 @@ def _set_unitary_matrix(unitary_matrix, index, value, like=None):
     return unitary_matrix
 
 
-def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
+def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
     r"""Build a :math:`2 \times 2` Givens rotation matrix :math:`G`.
 
     When the matrix :math:`G` is applied to a vector :math:`[a,\ b]^T` the following would happen:
@@ -343,6 +351,18 @@ def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
 
     if real_valued:
         sign = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))
+        if interface == "jax":
+            return jax.lax.cond(
+                left,
+                lambda cosine, sine: math.array(
+                    [[cosine, -sign * sine], [sign * sine, cosine]], like=interface
+                ),
+                lambda cosine, sine: math.array(
+                    [[sine, sign * cosine], [-sign * cosine, sine]], like=interface
+                ),
+                cosine,
+                sine,
+            )
         if not left:
             cosine, sine = sine, -cosine
         return math.array([[cosine, -sign * sine], [sign * sine, cosine]], like=interface)
@@ -350,6 +370,20 @@ def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
     aprod = math.nan_to_num(abs_b * abs_a)
     phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + 1e-15))
     phase = math.where(abs_a < tol, 1.0, phase)
+
+    if interface == "jax":
+        return jax.lax.cond(
+            left,
+            lambda phase, cosine, sine: math.array(
+                [[phase * cosine, -sine], [phase * sine, cosine]], like=interface
+            ),
+            lambda phase, cosine, sine: math.array(
+                [[phase * sine, cosine], [-phase * cosine, sine]], like=interface
+            ),
+            phase,
+            cosine,
+            sine,
+        )
 
     if left:
         cosine, sine = -sine, cosine
@@ -470,6 +504,75 @@ def _commute_phases_u(left_givens, right_givens, phases, interface):
     return math.diag(phases), ordered_rotations
 
 
+@lru_cache
+def _givens_matrix_jax():
+
+    @partial(jax.jit, static_argnames=("real_valued",))
+    def givens_matrix_jax(a, b, left=True, tol=1e-8, real_valued=False):
+        return _givens_matrix_core(a, b, left=left, tol=tol, real_valued=real_valued)
+
+    return givens_matrix_jax
+
+
+def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
+    interface = math.get_interface(a)
+    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
+        return _givens_matrix_jax()(a, b, left=left, tol=tol, real_valued=real_valued)
+    return _givens_matrix_core(a, b, left=left, tol=tol, real_valued=real_valued)
+
+
+def _right_givens_core(indices, unitary, N, j, real_valued):
+    interface = math.get_interface(unitary)
+    grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, left=True, real_valued=real_valued)
+    unitary = _set_unitary_matrix(
+        unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
+    )
+    return unitary, math.conj(grot_mat)
+
+
+@lru_cache
+def _right_givens_jax():
+
+    @partial(jax.jit, static_argnames=("real_valued",))
+    def _right_givens_jax(indices, unitary, N, j, real_valued):
+        return _right_givens_core(indices, unitary, N, j, real_valued)
+
+    return _right_givens_jax
+
+
+def _right_givens(indices, unitary, N, j, real_valued):
+    interface = math.get_interface(unitary)
+    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
+        return _right_givens_jax()(indices, unitary, N, j, real_valued)
+    return _right_givens_core(indices, unitary, N, j, real_valued)
+
+
+def _left_givens_core(indices, unitary, j, real_valued):
+    interface = math.get_interface(unitary)
+    grot_mat = _givens_matrix(*unitary[indices, j - 1], left=False, real_valued=real_valued)
+    unitary = _set_unitary_matrix(
+        unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
+    )
+    return unitary, grot_mat
+
+
+@lru_cache
+def _left_givens_jax():
+
+    @partial(jax.jit, static_argnames=("real_valued",))
+    def _left_givens_jax(indices, unitary, j, real_valued):
+        return _left_givens_core(indices, unitary, j, real_valued)
+
+    return _left_givens_jax
+
+
+def _left_givens(indices, unitary, j, real_valued):
+    interface = math.get_interface(unitary)
+    if interface == "jax" and isinstance(jnp.array(0), jax.core.Tracer):
+        return _left_givens_jax()(indices, unitary, j, real_valued)
+    return _left_givens_core(indices, unitary, j, real_valued)
+
+
 # pylint: disable=too-many-branches
 def givens_decomposition(unitary):
     r"""Decompose a unitary into a sequence of Givens rotation gates with phase shifts and a diagonal phase matrix.
@@ -583,18 +686,12 @@ def givens_decomposition(unitary):
         if i % 2:
             for j in range(i):
                 indices = [i - j - 1, i - j]
-                grot_mat = _givens_matrix(*unitary[N - j - 1, indices].T, real_valued=is_real)
-                unitary = _set_unitary_matrix(
-                    unitary, (Ellipsis, indices), unitary[:, indices] @ grot_mat.T, like=interface
-                )
-                right_givens.append((math.conj(grot_mat), indices))
+                unitary, grot_mat_conj = _right_givens(indices, unitary, N, j, is_real)
+                right_givens.append((grot_mat_conj, indices))
         else:
-            for j in range(i):
-                indices = [N + j - i - 1, N + j - i]
-                grot_mat = _givens_matrix(*unitary[indices, j], left=False, real_valued=is_real)
-                unitary = _set_unitary_matrix(
-                    unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
-                )
+            for j in range(1, i + 1):
+                indices = [N + j - i - 2, N + j - i - 1]
+                unitary, grot_mat = _left_givens(indices, unitary, j, is_real)
                 left_givens.append((grot_mat, indices))
     return (_absorb_phases_so if is_real else _commute_phases_u)(
         left_givens, right_givens, unitary, interface
