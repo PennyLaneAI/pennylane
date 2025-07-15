@@ -4,16 +4,6 @@
 
 <h3>New features since last release</h3>
 
-<h4>OpenQASM 🤝 PennyLane</h4>
-
-* More functionality within :func:`qml.from_qasm3` has been added, which converts more complex OpenQASM 3.0 circuits 
-  into quantum functions that can be subsequently loaded into QNodes and executed. For more details, 
-  please consult the documentation for :func:`qml.from_qasm3`.
-  [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
-  [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
-  [(#7676)](https://github.com/PennyLaneAI/pennylane/pull/7676)
-  [(#7677)](https://github.com/PennyLaneAI/pennylane/pull/7677)
-
 <h3>Improvements 🛠</h3>
 
 <h4>OpenQASM-PennyLane interoperability</h4>
@@ -23,6 +13,7 @@
   [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
   [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
   [(#7676)](https://github.com/PennyLaneAI/pennylane/pull/7676)
+  [(#7677)](https://github.com/PennyLaneAI/pennylane/pull/7677)
 
 <h4>Other improvements</h4>
 
