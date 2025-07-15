@@ -2474,3 +2474,19 @@ class TestSetShots:
         ]
         assert len(targeted) == 0
         assert len(result) == 50
+
+    def test_no_warning_if_shots_not_updated_set_shots(self):
+        """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
+        dev = qml.device("default.qubit")
+
+        @partial(qml.set_shots, shots=100)
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0))
+
+        # No warning should be raised when calling with the same shots value
+        with pytest.warns(
+            UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified."
+        ):
+            result = circuit.update(diff_method="parameter-shift")(shots=50)
+        assert len(result) == 100
