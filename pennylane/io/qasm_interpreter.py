@@ -11,6 +11,7 @@ from typing import Any, Callable, Iterable
 import numpy as np
 from numpy import uint
 from openqasm3 import ast
+from openqasm3.ast import FunctionCall
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
@@ -865,10 +866,55 @@ class QasmInterpreter:
 
         # custom gates do not return a value
 
+    @staticmethod
+    def _execute_function(self, name: str, node: FunctionCall, context: Context):
+        """
+        Executes a subroutine.
+
+        Args:
+            name (str): the name of the subroutine.
+            node (FunctionCall): the subroutine call.
+            context (Context): the current context.
+
+        Returns:
+            Any: anything returned by the subroutine.
+        """
+        func_context = context.scopes["subroutines"][name]
+
+        # reset return
+        func_context.context["return"] = None
+
+        # bind subroutine arguments
+        evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
+        for evald_arg, param in list(zip(evald_args, func_context.params)):
+            if isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                if evald_arg in context.wire_map:
+                    evald_arg = context.wire_map[evald_arg]
+                if evald_arg != param:
+                    func_context.wire_map[param] = evald_arg
+            else:
+                func_context.vars[param] = Variable(
+                    evald_arg.__class__.__name__,
+                    evald_arg,
+                    None,
+                    node.span.start_line,
+                    False,
+                    func_context.name,
+                )
+
+        # execute the subroutine
+        self.visit(func_context.body, func_context)
+
+        # reset context
+        func_context.vars = {
+            k: v for k, v in func_context.vars.items() if (v.scope == context.name) and v.constant
+        }
+
+        # the return value
+        return getattr(func_context, "return")
+
     @visit.register(ast.FunctionCall)
-    def visit_function_call(  # pylint: disable=inconsistent-return-statements
-        self, node: ast.FunctionCall, context: Context
-    ):
+    def visit_function_call(self, node: ast.FunctionCall, context: Context):
         """
         Registers a function call. The node must refer to a subroutine that has been defined and
         is available in the current scope.
@@ -882,49 +928,8 @@ class QasmInterpreter:
         """
         name = _resolve_name(node)  # str or Identifier
 
-        if not (name in context.scopes["subroutines"] or name in FUNCTIONS):
-            raise NameError(
-                f"Reference to subroutine {name} not available in calling namespace "
-                f"on line {node.span.start_line}."
-            )
-
         if name in context.scopes["subroutines"]:
-
-            func_context = context.scopes["subroutines"][name]
-
-            # reset return
-            func_context.context["return"] = None
-
-            # bind subroutine arguments
-            evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
-            for evald_arg, param in list(zip(evald_args, func_context.params)):
-                if isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                    if evald_arg in context.wire_map:
-                        evald_arg = context.wire_map[evald_arg]
-                    if evald_arg != param:
-                        func_context.wire_map[param] = evald_arg
-                else:
-                    func_context.vars[param] = Variable(
-                        evald_arg.__class__.__name__,
-                        evald_arg,
-                        None,
-                        node.span.start_line,
-                        False,
-                        func_context.name,
-                    )
-
-            # execute the subroutine
-            self.visit(func_context.body, func_context)
-
-            # reset context
-            func_context.vars = {
-                k: v
-                for k, v in func_context.vars.items()
-                if (v.scope == context.name) and v.constant
-            }
-
-            # the return value
-            return getattr(func_context, "return")
+            return self._execute_function(name, node, context)
 
         if name in FUNCTIONS:
             # special handling since there is a loss of information when the parser encodes a bit string as an int
@@ -935,6 +940,11 @@ class QasmInterpreter:
                         return FUNCTIONS[name](var, self.visit(node.arguments[1], context))
                     return FUNCTIONS[name](var.val, self.visit(node.arguments[1], context))
             return FUNCTIONS[name](*[self.visit(raw_arg, context) for raw_arg in node.arguments])
+
+        raise NameError(
+            f"Reference to subroutine {name} not available in calling namespace "
+            f"on line {node.span.start_line}."
+        )
 
     @visit.register(ast.RangeDefinition)
     def visit_range(self, node: ast.RangeDefinition, context: Context):
