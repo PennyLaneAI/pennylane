@@ -19,11 +19,8 @@ pytestmark = pytest.mark.external
 xdsl = pytest.importorskip("xdsl")
 
 # pylint: disable=wrong-import-position
-from xdsl.context import Context
-from xdsl.dialects import arith, func, test
-
-from pennylane.compiler.python_compiler import Quantum
-from pennylane.compiler.python_compiler.transforms import MergeRotationsPass
+import pennylane as qml
+from pennylane.compiler.python_compiler.transforms import MergeRotationsPass, merge_rotations_pass
 
 
 class TestMergeRotationsPass:
@@ -43,16 +40,8 @@ class TestMergeRotationsPass:
             }
         """
 
-        ctx = Context()
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((MergeRotationsPass(),))
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (MergeRotationsPass(),)
+        run_filecheck(program, pipeline)
 
     def test_composable_ops(self, run_filecheck):
         """Test that composable gates are merged."""
@@ -69,16 +58,8 @@ class TestMergeRotationsPass:
             }
         """
 
-        ctx = Context()
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((MergeRotationsPass(),))
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (MergeRotationsPass(),)
+        run_filecheck(program, pipeline)
 
     def test_many_composable_ops(self, run_filecheck):
         """Test that more than 2 composable ops are merged correctly."""
@@ -99,16 +80,8 @@ class TestMergeRotationsPass:
             }
         """
 
-        ctx = Context()
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((MergeRotationsPass(),))
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (MergeRotationsPass(),)
+        run_filecheck(program, pipeline)
 
     def test_non_consecutive_composable_ops(self, run_filecheck):
         """Test that non-consecutive composable gates are not merged."""
@@ -126,16 +99,8 @@ class TestMergeRotationsPass:
             }
         """
 
-        ctx = Context()
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((MergeRotationsPass(),))
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (MergeRotationsPass(),)
+        run_filecheck(program, pipeline)
 
     def test_composable_ops_different_qubits(self, run_filecheck):
         """Test that composable gates on different qubits are not merged."""
@@ -153,16 +118,8 @@ class TestMergeRotationsPass:
             }
         """
 
-        ctx = Context()
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((MergeRotationsPass(),))
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (MergeRotationsPass(),)
+        run_filecheck(program, pipeline)
 
     def test_controlled_composable_ops(self, run_filecheck):
         """Test that controlled composable ops can be merged."""
@@ -184,17 +141,8 @@ class TestMergeRotationsPass:
             }
         """
 
-        ctx = Context()
-        ctx.load_dialect(arith.Arith)
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((MergeRotationsPass(),))
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (MergeRotationsPass(),)
+        run_filecheck(program, pipeline)
 
     def test_controlled_composable_ops_same_control_values(self, run_filecheck):
         """Test that controlled composable ops with the same control values
@@ -218,17 +166,8 @@ class TestMergeRotationsPass:
             }
         """
 
-        ctx = Context()
-        ctx.load_dialect(arith.Arith)
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((MergeRotationsPass(),))
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (MergeRotationsPass(),)
+        run_filecheck(program, pipeline)
 
     def test_controlled_composable_ops_different_control_values(self, run_filecheck):
         """Test that controlled composable ops with different control values
@@ -251,17 +190,31 @@ class TestMergeRotationsPass:
             }
         """
 
-        ctx = Context()
-        ctx.load_dialect(arith.Arith)
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
+        pipeline = (MergeRotationsPass(),)
+        run_filecheck(program, pipeline)
 
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((MergeRotationsPass(),))
-        pipeline.apply(ctx, module)
 
-        run_filecheck(program, module)
+# pylint: disable=too-few-public-methods
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestIterativeCancelInversesIntegration:
+    """Integration tests for the IterativeCancelInversesPass."""
+
+    def test_qjit(self, run_filecheck_qjit):
+        """Test that the IterativeCancelInversesPass works correctly with qjit."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit(target="mlir")
+        @merge_rotations_pass
+        @qml.qnode(dev)
+        def circuit(x: float, y: float):
+            # CHECK: [[phi:%.*]] arith.addf
+            # CHECK: quantum.custom "RX"([[phi:%.*]])
+            # CHECK-NOT: quantum.custom
+            qml.RX(x, 0)
+            qml.RX(y, 0)
+            return qml.state()
+
+        run_filecheck_qjit(circuit)
 
 
 if __name__ == "__main__":

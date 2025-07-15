@@ -15,7 +15,7 @@
 
 import pytest
 
-pytestmark = [pytest.mark.external, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = pytest.mark.external
 
 pytest.importorskip("xdsl")
 
@@ -186,6 +186,7 @@ class TestIterativeCancelInversesPass:
 
 
 # pylint: disable=too-few-public-methods
+@pytest.mark.usefixtures("enable_disable_plxpr")
 class TestIterativeCancelInversesIntegration:
     """Integration tests for the IterativeCancelInversesPass."""
 

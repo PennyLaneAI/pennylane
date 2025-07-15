@@ -22,7 +22,7 @@ from xdsl.dialects import test
 from xdsl.passes import PipelinePass
 
 from pennylane.compiler.python_compiler import Compiler
-from pennylane.compiler.python_compiler.jax_utils import LoaderParser
+from pennylane.compiler.python_compiler.jax_utils import LoaderParser, parse_generic_to_xdsl_module
 
 filecheck_available = True
 
@@ -95,10 +95,17 @@ def _run_filecheck_qjit_impl(fn):
     compiler = Compiler()
     mlir_module = compiler.run(fn.mlir_module)
 
+    # The following is done because ``mlir_module`` will be in the generic syntax, and
+    # we want as many ops to be pretty printed as possible.
+    mod_str = mlir_module.operation.get_asm(
+        binary=False, print_generic_op_form=True, assume_verified=True
+    )
+    xdsl_module = parse_generic_to_xdsl_module(mod_str)
+
     opts = parse_argv_options(["filecheck", __file__])
     matcher = Matcher(
         opts,
-        FInput("no-name", str(mlir_module)),
+        FInput("no-name", str(xdsl_module)),
         Parser(opts, io.StringIO(checks), *pattern_for_opts(opts)),
     )
     assert matcher.run() == 0
