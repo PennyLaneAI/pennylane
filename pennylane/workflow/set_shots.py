@@ -34,11 +34,9 @@ def set_shots(
     """Transform used to set or update a circuit's shots.
 
     Args:
-        qnode (QNode): The QNode to be modified. If not provided, returns a decorator.
+        qnode (QNode): The QNode to transform. If not provided, returns a decorator.
         shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
             number of shots (or a shots vector) that the transformed circuit will execute.
-            This specification will override any shots value previously associated
-            with the circuit or QNode during execution.
 
     Returns:
         QNode or callable: The transformed QNode with updated shots, or a decorator function
