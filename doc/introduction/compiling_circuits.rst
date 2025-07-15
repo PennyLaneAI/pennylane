@@ -104,8 +104,8 @@ As mentioned earlier we can also simplify QNode objects to, for example, group r
 Compilation transforms for circuit optimization
 -----------------------------------------------
 
-PennyLane includes multiple transforms that take quantum functions and return new
-quantum functions of optimized circuits:
+PennyLane includes multiple transforms that can act on ``QNode``'s, quantum functions, and multiple
+other PennyLane objects.
 
 :html:`<div class="summary-table">`
 
@@ -122,6 +122,7 @@ quantum functions of optimized circuits:
     ~pennylane.transforms.single_qubit_fusion
     ~pennylane.transforms.undo_swaps
     ~pennylane.transforms.decompose
+    ~pennylane.transforms.combine_global_phases
 
 :html:`</div>`
 
@@ -238,7 +239,7 @@ a pre-defined set of gates:
     from functools import partial
 
     dev = qml.device('default.qubit')
-    allowed_gates = {qml.Toffoli, qml.RX, qml.RZ}
+    allowed_gates = {qml.Toffoli, qml.RX, qml.RZ, qml.GlobalPhase}
 
     @partial(decompose, gate_set=allowed_gates)
     @qml.qnode(dev)
@@ -251,9 +252,9 @@ With the Hadamard gate not in our gate set, it will be decomposed into allowed r
 gate operators.
 
 >>> print(qml.draw(circuit)())
-0: ──RZ(1.57)──RX(1.57)──RZ(1.57)─╭●─┤  <Z>
-1: ───────────────────────────────├●─┤     
-2: ───────────────────────────────╰X─┤ 
+0: ──RZ(1.57)─╭GlobalPhase(-0.79)──RX(1.57)──RZ(1.57)─╭GlobalPhase(-0.79)─╭●─┤  <Z>
+1: ───────────├GlobalPhase(-0.79)─────────────────────├GlobalPhase(-0.79)─├●─┤     
+2: ───────────╰GlobalPhase(-0.79)─────────────────────╰GlobalPhase(-0.79)─╰X─┤     
 
 Using a gate rule
 *****************
@@ -323,14 +324,16 @@ M0 =
  [0.        -0.47942554j 0.87758256+0.j        ]]
 
 >>> print(qml.draw(decompose(circuit, max_expansion=2))())
-0: ──H──RZ(11.00)──RY(1.14)─╭X──RY(-1.14)──RZ(-9.42)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
-1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
-2: ──H─────────────────────────────────────────────────────────────────────────────────╰● ···
-3: ──H─────────────────────────────────────────────────────────────────────────────────── ···
+0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
+1: ──H─────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
+2: ──H────────────────────────────────────────────────────────────────────────────────╰● ···
+3: ──H────────────────────────────────────────────────────────────────────────────────── ···
+<BLANKLINE>
 0: ··· ──RY(-1.00)──RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X ···
 1: ··· ───────────────────────│────────────────────────────────│────────────────────────│─ ···
 2: ··· ───────────────────────╰●───────────────────────────────│────────────────────────│─ ···
 3: ··· ────────────────────────────────────────────────────────╰●───────────────────────╰● ···
+<BLANKLINE>
 0: ··· ──RZ(4.71)────────────────────────────────────────────────────┤  
 1: ··· ─╭SWAP†─────────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤  
 2: ··· ─│─────────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤  
@@ -457,6 +460,8 @@ and a declaration of its resource requirements (gate counts) via :func:`~.pennyl
 Consider this example where we add a fixed decomposition to ``CNOT`` gates:
 
 .. code-block:: python
+
+    qml.decomposition.enable_graph()
 
     @qml.register_resources({qml.H: 2, qml.CZ: 1})
     def my_cnot(wires, **__):

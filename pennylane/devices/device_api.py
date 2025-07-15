@@ -167,7 +167,7 @@ class Device(abc.ABC):
         return type(self).__name__
 
     tracker: Tracker = Tracker()
-    """A :class:`~pennylane.devices.Tracker` that can store information about device executions, shots, batches,
+    """A :class:`~pennylane.Tracker` that can store information about device executions, shots, batches,
     intermediate results, or any additional device dependent information.
 
     A plugin developer can store information in the tracker by:
