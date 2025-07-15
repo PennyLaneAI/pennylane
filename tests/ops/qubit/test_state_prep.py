@@ -162,14 +162,15 @@ class TestDecomposition:
             (np.array([1, 1j, 1j, 1])),
         ],
     )
-    def test_StatePrep_normalize(self, state):
+    @pytest.mark.parametrize("validate_norm", [True, False])
+    def test_StatePrep_normalize(self, state, validate_norm):
         """Test that StatePrep normalizes the input state correctly."""
 
         wires = (0, 1)
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit():
-            qml.StatePrep(state, normalize=True, wires=wires, validate_norm=True)
+            qml.StatePrep(state, normalize=True, wires=wires, validate_norm=validate_norm)
             return qml.state()
 
         assert np.allclose(circuit(), state / 2)
