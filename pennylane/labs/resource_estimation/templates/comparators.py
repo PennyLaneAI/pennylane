@@ -45,6 +45,13 @@ class ResourceSingleQubitCompare(ResourceOperator):
 
     >>> single_qubit_compare = plre.ResourceSingleQubitCompare()
     >>> print(plre.estimate_resources(single_qubit_compare))
+    --- Resources: ---
+     Total qubits: 4
+     Total gates : 8
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 4
+     Gate breakdown:
+      {'Toffoli': 1, 'CNOT': 4, 'X': 3}
     """
 
     def __init__(self, wires=None):
@@ -95,10 +102,10 @@ class ResourceSingleQubitCompare(ResourceOperator):
         return gate_lst
 
 
-class ResourceTwoBitCompare(ResourceOperator):
+class ResourceTwoQubitCompare(ResourceOperator):
     r"""Resource class for comparing two qubits.
 
-    This operation provides the cost for implementing a comparison between two bit integers.
+    This operation provides the cost for implementing a comparison between two qubit registers.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
@@ -106,14 +113,22 @@ class ResourceTwoBitCompare(ResourceOperator):
     Resources:
         The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
         <https://arxiv.org/abs/1711.10460>`_. Specifically,
-        the resources are given as :math:`2` controlled SWAP gates, and :math:`3` CNOT gates.
+        the resources are given as :math:`1` ancilla, :math:`2` controlled SWAP gates,
+        and :math:`3` CNOT gates.
 
     **Example**
 
     The resources for this operation are computed using:
 
-    >>> two_qubit_compare = plre.ResourceTwoBitCompare()
+    >>> two_qubit_compare = plre.ResourceTwoQubitCompare()
     >>> print(plre.estimate_resources(two_qubit_compare))
+    --- Resources: ---
+     Total qubits: 5
+     Total gates : 9
+     Qubit breakdown:
+      clean qubits: 1, dirty qubits: 0, algorithmic qubits: 4
+     Gate breakdown:
+      {'Toffoli': 2, 'CNOT': 7}
     """
 
     def __init__(self, wires=None):
@@ -147,7 +162,8 @@ class ResourceTwoBitCompare(ResourceOperator):
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
             <https://arxiv.org/abs/1711.10460>`_. Specifically,
-            the resources are given as :math:`2` controlled SWAP gates, and :math:`3` CNOT gates.
+            the resources are given as :math:`1` ancilla, :math:`2` controlled SWAP gates,
+            and :math:`3` CNOT gates.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -168,7 +184,7 @@ class ResourceIntegerComparator(ResourceOperator):
     r"""Resource class for comparing a state to a positive integer.
 
     This operation provides the cost for comparing basis state, `x`, and a fixed positive integer, val.
-        It flips a target qubit if :math:`x \geq val` or :math:`x < val`, depending on the parameter geq.
+    It flips a target qubit if :math:`x \geq val` or :math:`x < val`, depending on the parameter geq.
 
     Args:
         val (int): the integer to be compared against
@@ -196,8 +212,15 @@ class ResourceIntegerComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> integer_compare = plre.ResourceIntegerComparator()
+    >>> integer_compare = plre.ResourceIntegerComparator(val=4, register_size=6)
     >>> print(plre.estimate_resources(integer_compare))
+    --- Resources: ---
+     Total qubits: 9
+     Total gates : 19
+     Qubit breakdown:
+      clean qubits: 2, dirty qubits: 0, algorithmic qubits: 7
+     Gate breakdown:
+      {'X': 8, 'Toffoli': 3, 'Hadamard': 6, 'CNOT': 2}
     """
 
     def __init__(self, val, register_size, geq=False, wires=None):
@@ -293,23 +316,20 @@ class ResourceIntegerComparator(ResourceOperator):
 
             mcx = resource_rep(
                 plre.ResourceMultiControlledX,
-                {"num_ctrl_wires": first_zero + 1, "num_ctrl_values": 0},
+                {"num_ctrl_wires": first_zero + 1, "num_ctrl_values": 1},
             )
-            gate_lst.append(mcx, 1)
-
-            gate_lst.append(GateCount(resource_rep(plre.ResourceX), 2))
+            gate_lst.append(GateCount(mcx, 1))
 
             while (first_zero := binary_str.find("0", first_zero + 1)) != -1:
                 gate_lst.append(
                     GateCount(
                         resource_rep(
                             plre.ResourceMultiControlledX,
-                            {"num_ctrl_wires": first_zero + 1, "num_ctrl_values": 0},
+                            {"num_ctrl_wires": first_zero + 1, "num_ctrl_values": 1},
                         ),
                         1,
                     )
                 )
-                gate_lst.append(GateCount(resource_rep(plre.ResourceX), 2))
 
             gate_lst.append(
                 GateCount(
@@ -375,8 +395,15 @@ class ResourceRegisterComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> two_qubit_compare = plre.ResourceLessThanEqual()
-    >>> print(plre.estimate_resources(two_qubit_compare))
+    >>> register_compare = plre.ResourceRegisterComparator(4, 6)
+    >>> print(plre.estimate_resources(register_compare))
+    --- Resources: ---
+     Total qubits: 21
+     Total gates : 16
+     Qubit breakdown:
+      clean qubits: 10, dirty qubits: 0, algorithmic qubits: 11
+     Gate breakdown:
+      {'X': 12, 'Toffoli': 4}
     """
 
     def __init__(self, a_num_qubits, b_num_qubits, geq=False, wires=None):
@@ -397,7 +424,11 @@ class ResourceRegisterComparator(ResourceOperator):
                 * geq (bool): If set to ``True``, the comparison made will be :math:`a \geq b`. If
                 ``False``, the comparison made will be :math:`a < b`.
         """
-        return {"a_num_qubits": self.a_num_qubits, "b_num_qubits": self.b_num_qubits, "geq": geq}
+        return {
+            "a_num_qubits": self.a_num_qubits,
+            "b_num_qubits": self.b_num_qubits,
+            "geq": self.geq,
+        }
 
     @classmethod
     def resource_rep(cls, a_num_qubits, b_num_qubits, geq=False):
@@ -442,30 +473,49 @@ class ResourceRegisterComparator(ResourceOperator):
         """
 
         gate_list = []
-        gate_list.append(AllocWires(a_num_qubits + b_num_qubits))
+        compare_size = min(a_num_qubits, b_num_qubits)
+        gate_list.append(AllocWires(2 * compare_size))
+
+        one_qubit_compare = resource_rep(plre.ResourceSingleQubitCompare)
+        two_qubit_compare = resource_rep(plre.ResourceTwoQubitCompare)
         if a_num_qubits == b_num_qubits:
 
-            one_qubit_compare = resource_rep(plre.ResourceSingleQubitCompare)
-            two_qubit_compare = resource_rep(plre.ResourceTwoBitCompare)
-
-            gate_list.append(GateCount(one_qubit_compare, 1))
             gate_list.append(GateCount(two_qubit_compare, a_num_qubits - 1))
+            gate_list.append(GateCount(one_qubit_compare, 1))
 
             gate_list.append(
-                GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": one_qubit_compare})),
-                1,
+                GateCount(
+                    resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": two_qubit_compare}),
+                    a_num_qubits - 1,
+                )
             )
             gate_list.append(
-                GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": two_qubit_compare})),
-                a_num_qubits - 1,
+                GateCount(
+                    resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": one_qubit_compare}),
+                    1,
+                )
             )
 
             gate_list.append(GateCount(resource_rep(plre.ResourceX), 1))
             gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 1))
+            gate_list.append(FreeWires(a_num_qubits + b_num_qubits))
 
             return gate_list
 
         diff = abs(a_num_qubits - b_num_qubits)
+
+        gate_list.append(GateCount(two_qubit_compare, compare_size - 1))
+        gate_list.append(GateCount(one_qubit_compare, 1))
+
+        gate_list.append(
+            GateCount(
+                resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": two_qubit_compare}),
+                compare_size - 1,
+            )
+        )
+        gate_list.append(
+            GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": one_qubit_compare}), 1)
+        )
         mcx = resource_rep(
             plre.ResourceMultiControlledX, {"num_ctrl_wires": diff, "num_ctrl_values": diff}
         )
@@ -497,6 +547,6 @@ class ResourceRegisterComparator(ResourceOperator):
 
         if geq:
             gate_list.append(GateCount(resource_rep(plre.ResourceX), 1))
-        gate_list.append(FreeWires(a_num_qubits + b_num_qubits))
+        gate_list.append(FreeWires(2 * compare_size))
 
         return gate_list

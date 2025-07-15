@@ -36,6 +36,6 @@ from .trotter import (
 from .comparators import (
     ResourceIntegerComparator,
     ResourceSingleQubitCompare,
-    ResourceTwoBitCompare,
+    ResourceTwoQubitCompare,
     ResourceRegisterComparator,
 )

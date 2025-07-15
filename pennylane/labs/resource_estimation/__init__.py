@@ -126,7 +126,7 @@ Templates:
     ~ResourceSelect
     ~ResourceQROM
     ~ResourceSingleQubitCompare
-    ~ResourceTwoBitCompare
+    ~ResourceTwoQubitCompare
     ~ResourceIntegerComparator
     ~ResourceRegisterComparator
     ~ResourceSelectPauliRot
@@ -218,7 +218,7 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
-    ResourceTwoBitCompare,
+    ResourceTwoQubitCompare,
     ResourceIntegerComparator,
     ResourceSingleQubitCompare,
     ResourceRegisterComparator,
