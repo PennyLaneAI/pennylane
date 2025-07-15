@@ -40,7 +40,6 @@
   >>> workflow()
   Array([ 3.14159265, -1.57079633], dtype=float64)
   ```
-<h4>OpenQASM 🤝 PennyLane</h4>
 
 <h3>Improvements 🛠</h3>
 
