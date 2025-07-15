@@ -22,6 +22,7 @@ from xdsl.dialects import arith, builtin, func, memref, vector
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
 
+from ..mbqc_dialect import MeasureInBasisOp
 from ..quantum_dialect import AllocOp, CustomOp, ExtractOp, InsertOp
 from .api import compiler_transform
 
@@ -76,19 +77,19 @@ class ConvertToMBQCFormalismPattern(
                     rewriter.replace_op(op, new_op)
                     registers_state = new_op.results[0]
                 elif isinstance(op, CustomOp) and op.gate_name.data in [
-                    "PauliX",
+                    "Hadamard",
+                    "S",
+                    "RZ",
+                    "RotXZX",
                 ]:
                     current_op = op
-                    # TODO
-                    # Convert a gate operation in the standard circuit model
-
                     # NOTE: The following logic mimic the QubitMgr class defined in the `ftqc.utils` module
                     # 1. Extract the target wire and the result wires in the auxiliary registers
                     target_qubits_index = op.results[0].index
                     target_qubit = ExtractOp(registers_state, target_qubits_index)
                     rewriter.insert_op(target_qubit, insertion_point=InsertPoint.after(current_op))
                     current_op = target_qubit
-                    result_qubits_index = target_qubits_index + num_wires_int
+                    result_qubits_index = num_wires_int + 3
                     res_qubit = ExtractOp(registers_state, result_qubits_index)
                     rewriter.insert_op(res_qubit, insertion_point=InsertPoint.after(current_op))
                     current_op = res_qubit
