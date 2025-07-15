@@ -219,7 +219,7 @@ class Context:
         if "wire_map" not in context or context["wire_map"] is None:
             context["wire_map"] = {}
         if "return" not in context:
-            context["return"] = None
+            context["return"] = {}
         self.context = context
 
     def init_subroutine_scope(self, node: ast.SubroutineDefinition):
@@ -396,6 +396,14 @@ class QasmInterpreter:
     visitor function on each node.
     """
 
+    def __init__(self):
+        """
+        Initializes the QASM interpreter.
+        """
+        self.inputs = {}
+        self.outputs = []
+        self.found_inputs = []
+
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: Context, aliasing: bool = False):
         """
@@ -427,18 +435,23 @@ class QasmInterpreter:
         for sub_node in node_list:
             self.visit(sub_node, context)
 
-    def interpret(self, node: QASMNode, context: dict):
+    def interpret(self, node: QASMNode, context: dict, **inputs):
         """
         Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
-            context (Context): The initial context populated with the name of the program (the outermost scope).
+            context (dict): The initial context populated with the name of the program (the outermost scope).
+            inputs (dict): Additional inputs to the OpenQASM 3.0 program.
+
+        Raises:
+            ValueError: If the wrong parameters are provided in **inputs.
 
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
         """
         context = Context(context)
+        self.inputs = inputs
 
         # begin recursive descent traversal
         try:
@@ -450,6 +463,15 @@ class QasmInterpreter:
                         self.visit(item, context)
         except EndProgram:
             pass
+
+        if len(self.found_inputs) != len(inputs):
+            raise ValueError(
+                f"Got the wrong input parameters {list(inputs.keys())} to QASM, expecting {self.found_inputs}."
+            )
+
+        for output in self.outputs:
+            context["return"][output] = context.retrieve_variable(output)
+
         return context
 
     @visit.register(ast.QuantumMeasurement)
@@ -804,6 +826,36 @@ class QasmInterpreter:
         raise NotImplementedError(
             f"Array index does not evaluate to a single RangeDefinition or Literal at line {node.span.start_line}."
         )
+
+    @visit.register(ast.IODeclaration)
+    def visit_io_declaration(self, node: ast.IODeclaration, context: Context):
+        """
+        Registers an input declaration (outputs to come in a future PR).
+
+        Args:
+            node (IODeclaration): The IODeclaration QASMNode.
+            context (Context): the current context.
+        """
+        if node.io_identifier == ast.IOKeyword.input:
+            name = _resolve_name(node.identifier)
+            self.found_inputs.append(name)
+            if name not in self.inputs:
+                raise ValueError(
+                    f"Missing input {name}. Please pass {name} as a keyword argument to from_qasm3."
+                )
+            context.vars[name] = Variable(
+                node.type.__class__.__name__, self.inputs[name], -1, node.span.start_line, True
+            )
+        elif node.io_identifier == ast.IOKeyword.output:
+            name = _resolve_name(node.identifier)
+            context.vars[name] = Variable(
+                node.type.__class__.__name__,
+                None,
+                -1,
+                node.span.start_line,
+                False,
+            )
+            self.outputs.append(_resolve_name(node.identifier))
 
     @visit.register(ast.EndStatement)
     def visit_end_statement(self, node: ast.EndStatement, context: Context):

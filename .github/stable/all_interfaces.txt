@@ -3,11 +3,11 @@ appdirs==1.4.4
 astroid==2.6.6
 astunparse==1.6.3
 autograd==1.8.0
-autoray==0.7.1
+autoray==0.7.2
 black==25.1.0
 build==1.2.2.post1
 cachetools==6.1.0
-certifi==2025.6.15
+certifi==2025.7.9
 cffi==1.17.1
 cfgv==3.4.0
 charset-normalizer==3.4.2
@@ -37,8 +37,8 @@ identify==2.6.12
 idna==3.10
 iniconfig==2.1.0
 isort==5.13.2
-jax==0.6.0
-jaxlib==0.6.0
+jax==0.6.2
+jaxlib==0.6.2
 Jinja2==3.1.6
 joblib==1.5.1
 keras==3.10.0
@@ -74,9 +74,9 @@ opt_einsum==3.4.0
 optree==0.16.0
 osqp==1.0.4
 packaging==25.0
-pandas==2.3.0
+pandas==2.3.1
 pathspec==0.12.1
-pennylane_lightning==0.42.0.dev43
+pennylane_lightning==0.42.0rc2
 pillow==11.3.0
 platformdirs==4.3.8
 pluggy==1.6.0

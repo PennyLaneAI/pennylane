@@ -4,10 +4,21 @@
 
 <h3>New features since last release</h3>
 
+<h4>OpenQASM 🤝 PennyLane</h4>
+
+* More functionality within :func:`qml.from_qasm3` has been added, which converts more complex OpenQASM 3.0 circuits 
+  into quantum functions that can be subsequently loaded into QNodes and executed. For more details, 
+  please consult the documentation for :func:`qml.from_qasm3`.
+  [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
+  [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
+
 <h3>Improvements 🛠</h3>
 
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
+  
+* Update minimum supported `pytest` version to `8.4.1`.
+  [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
@@ -25,6 +36,9 @@
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
 
+* The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
+  complete global phase information when used for decomposing a phase gate to Clifford+T basis.
+  [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
@@ -38,6 +52,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Make `pennylane.io` a tertiary module.
+  [(#7877)](https://github.com/PennyLaneAI/pennylane/pull/7877)
+
+* Seeded tests for the `split_to_single_terms` transformation.
+  [(#7851)](https://github.com/PennyLaneAI/pennylane/pull/7851)
+
 * Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
@@ -46,10 +66,17 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes attributes and types in the quantum dialect.
+  This allows for types to be inferred correctly when parsing.
+  [(#7825)](https://github.com/PennyLaneAI/pennylane/pull/7825)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Utkarsh Azad,
 Joey Carter,
+Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
+Jake Zaia

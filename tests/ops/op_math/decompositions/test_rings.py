@@ -68,6 +68,7 @@ class TestZSqrtTwo:
         assert z2 % 2 == ZSqrtTwo(1, 0)
         assert z1.to_omega() == ZOmega(a=-2, b=0, c=2, d=1)
         assert z2.to_omega() == ZOmega(a=-4, b=0, c=4, d=3)
+        assert 1 - ZSqrtTwo(1, 2) == ZSqrtTwo(0, -2)
 
     def test_arithmetic_errors(self):
         """Test that arithmetic operations raise errors for invalid types."""
