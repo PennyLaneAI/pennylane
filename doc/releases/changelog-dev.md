@@ -17,6 +17,10 @@
 
 <h4>Other improvements</h4>
 
+* Changed how basis states are assigned internally in `qml.Superposition`, improving its
+  decomposition slightly both regarding classical computing time and gate decomposition.
+  [(#7880)](https://github.com/PennyLaneAI/pennylane/pull/7880)
+
 * Update minimum supported `pytest` version to `8.4.1`.
   [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
@@ -82,4 +86,5 @@ Joey Carter,
 Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
-Jake Zaia
+Jake Zaia,
+David Wierichs,
