@@ -199,14 +199,14 @@ class ResourceIntegerComparator(ResourceOperator):
         The given integer is first converted into its binary representation, and the decomposition proceeds by
         iteratively examining significant prefixes of this binary representation.
         For example, when geq is `False`, val is 22 (Binary 010110), and num_wires is 6:
-            Initial Prefix: For all 6-bit number where the first two control qubits are in the 00 state, the
-            flipping condition is always `True`, a ``MultiControlledX`` gate can be applied with the first two wires as
-            controls and 2 control values.
-            Next Prefix: Subsequently, the next significant bit prefix is examined. The target value 22 begins with 0101.
-            Therefore, all 6-bit numbers begining with 0100 will satisfy the condition, so a ``MultiControlledX`` gate can
-            be applied with the first four wires as controls and 0100 as control values.
-            This iterative procedure continues, with MultiControlledX gates being added for each significant bit prefix of
-            the target value, until the full conditional operation is realized with the minimum number of multi-controlled operations.
+        Initial Prefix: For all 6-bit number where the first two control qubits are in the 00 state, the
+        flipping condition is always `True`, a ``MultiControlledX`` gate can be applied with the first two wires as
+        controls and 2 control values.
+        Next Prefix: Subsequently, the next significant bit prefix is examined. The target value 22 begins with 0101.
+        Therefore, all 6-bit numbers begining with 0100 will satisfy the condition, so a ``MultiControlledX`` gate can
+        be applied with the first four wires as controls and 0100 as control values.
+        This iterative procedure continues, with MultiControlledX gates being added for each significant bit prefix of
+        the target value, until the full conditional operation is realized with the minimum number of multi-controlled operations.
 
     **Example**
 
@@ -239,7 +239,7 @@ class ResourceIntegerComparator(ResourceOperator):
                 * val (int): the integer to be compared against
                 * register_size (int): size of the register for basis state
                 * geq (bool): If set to ``True``, the comparison made will be :math:`x \geq val`. If
-                ``False``, the comparison made will be :math:`x < val`.
+                  ``False``, the comparison made will be :math:`x < val`.
 
         """
         return {"val": self.val, "register_size": self.register_size, "geq": self.geq}
@@ -276,14 +276,14 @@ class ResourceIntegerComparator(ResourceOperator):
             The given integer is first converted into its binary representation, and the decomposition proceeds by
             iteratively examining significant prefixes of this binary representation.
             For example, when geq is `False`, val is 22 (Binary 010110), and num_wires is 6:
-                Initial Prefix: For all 6-bit number where the first two control qubits are in the 00 state, the
-                flipping condition is always `True`, a ``MultiControlledX`` gate can be applied with the first two wires as
-                controls and 2 control values.
-                Next Prefix: Subsequently, the next significant bit prefix is examined. The target value 22 begins with 0101.
-                Therefore, all 6-bit numbers begining with 0100 will satisfy the condition, so a ``MultiControlledX`` gate can
-                be applied with the first four wires as controls and 0100 as control values.
-                This iterative procedure continues, with MultiControlledX gates being added for each significant bit prefix of
-                the target value, until the full conditional operation is realized with the minimum number of multi-controlled operations.
+            Initial Prefix: For all 6-bit number where the first two control qubits are in the 00 state, the
+            flipping condition is always `True`, a ``MultiControlledX`` gate can be applied with the first two wires as
+            controls and 2 control values.
+            Next Prefix: Subsequently, the next significant bit prefix is examined. The target value 22 begins with 0101.
+            Therefore, all 6-bit numbers begining with 0100 will satisfy the condition, so a ``MultiControlledX`` gate can
+            be applied with the first four wires as controls and 0100 as control values.
+            This iterative procedure continues, with MultiControlledX gates being added for each significant bit prefix of
+            the target value, until the full conditional operation is realized with the minimum number of multi-controlled operations.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -399,12 +399,12 @@ class ResourceRegisterComparator(ResourceOperator):
     >>> register_compare = plre.ResourceRegisterComparator(4, 6)
     >>> print(plre.estimate_resources(register_compare))
     --- Resources: ---
-     Total qubits: 21
-     Total gates : 16
+     Total qubits: 20
+     Total gates : 89
      Qubit breakdown:
-      clean qubits: 10, dirty qubits: 0, algorithmic qubits: 11
+      clean qubits: 9, dirty qubits: 0, algorithmic qubits: 11
      Gate breakdown:
-      {'X': 12, 'Toffoli': 4}
+      {'Toffoli': 17, 'CNOT': 51, 'X': 18, 'Hadamard': 3}
     """
 
     def __init__(self, a_num_qubits, b_num_qubits, geq=False, wires=None):
@@ -423,7 +423,7 @@ class ResourceRegisterComparator(ResourceOperator):
                 * a_num_qubits (int): the size of the first register
                 * b_num_qubits (int): the size of the second register
                 * geq (bool): If set to ``True``, the comparison made will be :math:`a \geq b`. If
-                ``False``, the comparison made will be :math:`a < b`.
+                  ``False``, the comparison made will be :math:`a < b`.
 
         """
         return {
@@ -459,7 +459,7 @@ class ResourceRegisterComparator(ResourceOperator):
             a_num_qubits (int): the size of the first register
             b_num_qubits (int): the size of the second register
             geq (bool): If set to ``True``, the comparison made will be :math:`a \geq b`. If
-            ``False``, the comparison made will be :math:`a < b`.
+                ``False``, the comparison made will be :math:`a < b`.
 
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
