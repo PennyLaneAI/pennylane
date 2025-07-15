@@ -240,6 +240,7 @@ class ResourceIntegerComparator(ResourceOperator):
                 * register_size (int): size of the register for basis state
                 * geq (bool): If set to ``True``, the comparison made will be :math:`x \geq val`. If
                 ``False``, the comparison made will be :math:`x < val`.
+
         """
         return {"val": self.val, "register_size": self.register_size, "geq": self.geq}
 
@@ -423,6 +424,7 @@ class ResourceRegisterComparator(ResourceOperator):
                 * b_num_qubits (int): the size of the second register
                 * geq (bool): If set to ``True``, the comparison made will be :math:`a \geq b`. If
                 ``False``, the comparison made will be :math:`a < b`.
+
         """
         return {
             "a_num_qubits": self.a_num_qubits,
