@@ -60,6 +60,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug with `QNode.update` where unnecessary `_set_shots` was being called.
+  This caused unnecessary warnings when no `QNode._shots` are really updated.
+
 * Fixes attributes and types in the quantum dialect.
   This allows for types to be inferred correctly when parsing.
   [(#7825)](https://github.com/PennyLaneAI/pennylane/pull/7825)
