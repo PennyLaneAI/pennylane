@@ -62,6 +62,22 @@ except (ModuleNotFoundError, ImportError) as import_error:
 @pytest.mark.external
 class TestIO:
 
+    def test_output(self):
+        ast = parse(
+            """
+            output float v;
+            output bit b;
+            qubit q;
+            v = 2.2;
+            measure q -> b;
+            """
+        )
+
+        context = QasmInterpreter().interpret(ast, context={"name": "outputs", "wire_map": None})
+
+        assert context["return"]["v"].val == 2.2
+        assert isinstance(context["return"]["b"].val, MeasurementValue)
+
     def test_wrong_input(self):
         ast = parse(
             """

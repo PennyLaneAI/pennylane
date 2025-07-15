@@ -46,6 +46,7 @@
   into quantum functions that can be subsequently loaded into QNodes and executed. For more details, 
   please consult the documentation for :func:`qml.from_qasm3`.
   [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
+  [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
 
 <h3>Improvements 🛠</h3>
 
@@ -83,6 +84,9 @@
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
+
+* Make `pennylane.io` a tertiary module.
+  [(#7877)](https://github.com/PennyLaneAI/pennylane/pull/7877)
 
 * Seeded tests for the `split_to_single_terms` transformation.
   [(#7851)](https://github.com/PennyLaneAI/pennylane/pull/7851)

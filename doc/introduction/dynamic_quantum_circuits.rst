@@ -220,7 +220,7 @@ Collecting statistics for sequences of mid-circuit measurements is supported wit
 .. warning::
 
     When collecting statistics for a sequence of mid-circuit measurements, the
-    sequence must not contain arithmetic expressions.
+    sequence must not contain arithmetic combinations of more than one measurement.
 
 .. _simulation_techniques:
 
@@ -418,7 +418,7 @@ cost.
     
     * `lightning.kokkos <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_kokkos/device.html>`_,
     
-    and currently does not support just-in-time (JIT) compilation.
+    Just-in-time (JIT) compilation is not available on ``DefaultQubit`` with ``shots=None``.
 
 .. _mcm_config:
 
@@ -450,7 +450,7 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
 
   .. code-block:: python3
 
-      dev = qml.device("default.qubit", wires=3, shots=10)
+      dev = qml.device("default.qubit", wires=3)
 
       def circ():
           qml.Hadamard(0)
@@ -459,6 +459,8 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
 
       fill_shots = qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="fill-shots")
       hw_like = qml.QNode(circ, dev, mcm_method="one-shot", postselect_mode="hw-like")
+      fill_shots = qml.set_shots(fill_shots, shots=10)
+      hw_like = qml.set_shots(hw_like, shots=10)
 
   .. code-block:: pycon
 
