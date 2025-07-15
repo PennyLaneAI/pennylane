@@ -37,7 +37,7 @@ from pennylane.operation import (
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
 from pennylane.tape import make_qscript
-from pennylane.templates.state_preparations.superposition import _assign_states
+from pennylane.templates.state_preparations.superposition import assign_states
 from pennylane.wires import WiresLike
 from pennylane.workflow import construct_tape
 from pennylane.workflow.qnode import QNode
@@ -129,7 +129,7 @@ def _(op: qtemps.state_preparations.Superposition):
     size_basis_state = len(bases[0])  # assuming they are all the same size
 
     dic_state = dict(zip(bases, coeffs))
-    perms = _assign_states(bases)
+    perms = assign_states(bases)
     new_dic_state = {perms[key]: val for key, val in dic_state.items() if key in perms}
 
     sorted_coefficients = [
@@ -392,7 +392,6 @@ def _(op: qtemps.subroutines.ModExp):
     num_work_wires = len(op.hyperparameters["work_wires"])
     num_x_wires = len(op.hyperparameters["x_wires"])
 
-    mult_resources = {}
     if mod == 2**num_x_wires:
         num_aux_wires = num_x_wires
         num_aux_swap = num_x_wires
@@ -412,16 +411,17 @@ def _(op: qtemps.subroutines.ModExp):
 
     cnot = qt_gates.CNOT()
 
-    mult_resources = {}
-    mult_resources[qft] = 2
-    mult_resources[qft_dag] = 2
-    mult_resources[sequence] = 1
-    mult_resources[sequence_dag] = 1
-    mult_resources[cnot] = min(num_x_wires, num_aux_swap)
+    mult_resources = {
+        qft: 2,
+        qft_dag: 2,
+        sequence: 1,
+        sequence_dag: 1,
+        cnot: min(num_x_wires, num_aux_swap),
+    }
 
     gate_types = defaultdict(int, {})
     ctrl_spec = CtrlSpec(cvs=[1])
-    for comp_rep in mult_resources:
+    for comp_rep, comp_rep_val in mult_resources.items():
         new_rep = comp_rep.controlled(ctrl_spec)
         if comp_rep == qt_gates.CNOT():
             new_rep = qt_gates.Toffoli()
@@ -433,7 +433,7 @@ def _(op: qtemps.subroutines.ModExp):
             if comp_rep.subbloq.op.name == "QFT":
                 gate_types[new_rep] = 1
         else:
-            gate_types[new_rep] = mult_resources[comp_rep] * ((2**num_x_wires) - 1)
+            gate_types[new_rep] = comp_rep_val * ((2**num_x_wires) - 1)
 
     return gate_types
 
