@@ -737,6 +737,8 @@ class QNode:
         # pylint: disable=protected-access
         if updated_qn._shots != old_shots:
             updated_qn._set_shots(old_shots)
+        if self._shots_override_device:
+            updated_qn._shots_override_device = True
 
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)
