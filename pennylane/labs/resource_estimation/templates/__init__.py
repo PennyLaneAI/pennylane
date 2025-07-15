@@ -32,10 +32,10 @@ from .trotter import (
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
 )
-
 from .comparators import (
     ResourceIntegerComparator,
     ResourceSingleQubitCompare,
     ResourceTwoQubitCompare,
     ResourceRegisterComparator,
 )
+from .stateprep import ResourceUniformStatePrep

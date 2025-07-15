@@ -230,4 +230,5 @@ from .templates import (
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
     ResourceQubitizeTHC,
+    ResourceUniformStatePrep,
 )
