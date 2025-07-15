@@ -2452,3 +2452,25 @@ class TestSetShots:
 
         # Original circuit should be unchanged
         assert circuit._shots == qml.measurements.Shots(50)
+
+    def test_no_warning_if_shots_not_updated(self):
+        """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0))
+
+        # No warning should be raised when calling with the same shots value
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
+            result = circuit.update(diff_method="parameter-shift")(shots=50)
+        # Filter for targeted warnings (by type and/or message)
+        targeted = [
+            w
+            for w in record
+            if issubclass(w.category, UserWarning)
+            and "Both 'shots=' parameter and 'set_shots' transform are specified." in str(w.message)
+        ]
+        assert len(targeted) == 0
+        assert len(result) == 50
