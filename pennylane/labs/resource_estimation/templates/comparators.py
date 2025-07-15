@@ -194,19 +194,19 @@ class ResourceIntegerComparator(ResourceOperator):
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-
         This decomposition uses the minimum number of ``MultiControlledX`` gates.
         The given integer is first converted into its binary representation, and the decomposition proceeds by
         iteratively examining significant prefixes of this binary representation.
         For example, when geq is `False`, val is 22 (Binary 010110), and num_wires is 6:
-        Initial Prefix: For all 6-bit number where the first two control qubits are in the 00 state, the
-        flipping condition is always `True`, a ``MultiControlledX`` gate can be applied with the first two wires as
-        controls and 2 control values.
-        Next Prefix: Subsequently, the next significant bit prefix is examined. The target value 22 begins with 0101.
-        Therefore, all 6-bit numbers begining with 0100 will satisfy the condition, so a ``MultiControlledX`` gate can
-        be applied with the first four wires as controls and 0100 as control values.
-        This iterative procedure continues, with MultiControlledX gates being added for each significant bit prefix of
-        the target value, until the full conditional operation is realized with the minimum number of multi-controlled operations.
+
+        - Initial Prefix: For all 6-bit number where the first two control qubits are in the 00 state, the
+          flipping condition is always `True`, a ``MultiControlledX`` gate can be applied with the first two wires as
+          controls and 2 control values.
+        - Next Prefix: Subsequently, the next significant bit prefix is examined. The target value 22 begins with 0101.
+        - Therefore, all 6-bit numbers begining with 0100 will satisfy the condition, so a ``MultiControlledX`` gate can
+          be applied with the first four wires as controls and 0100 as control values.
+        - This iterative procedure continues, with MultiControlledX gates being added for each significant bit prefix of
+          the target value, until the full conditional operation is realized with the minimum number of multi-controlled operations.
 
     **Example**
 
@@ -276,14 +276,15 @@ class ResourceIntegerComparator(ResourceOperator):
             The given integer is first converted into its binary representation, and the decomposition proceeds by
             iteratively examining significant prefixes of this binary representation.
             For example, when geq is `False`, val is 22 (Binary 010110), and num_wires is 6:
-            Initial Prefix: For all 6-bit number where the first two control qubits are in the 00 state, the
-            flipping condition is always `True`, a ``MultiControlledX`` gate can be applied with the first two wires as
-            controls and 2 control values.
-            Next Prefix: Subsequently, the next significant bit prefix is examined. The target value 22 begins with 0101.
-            Therefore, all 6-bit numbers begining with 0100 will satisfy the condition, so a ``MultiControlledX`` gate can
-            be applied with the first four wires as controls and 0100 as control values.
-            This iterative procedure continues, with MultiControlledX gates being added for each significant bit prefix of
-            the target value, until the full conditional operation is realized with the minimum number of multi-controlled operations.
+
+            - Initial Prefix: For all 6-bit number where the first two control qubits are in the 00 state, the
+              flipping condition is always `True`, a ``MultiControlledX`` gate can be applied with the first two wires as
+              controls and 2 control values.
+            - Next Prefix: Subsequently, the next significant bit prefix is examined. The target value 22 begins with 0101.
+              Therefore, all 6-bit numbers begining with 0100 will satisfy the condition, so a ``MultiControlledX`` gate can
+              be applied with the first four wires as controls and 0100 as control values.
+            - This iterative procedure continues, with MultiControlledX gates being added for each significant bit prefix of
+              the target value, until the full conditional operation is realized with the minimum number of multi-controlled operations.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
