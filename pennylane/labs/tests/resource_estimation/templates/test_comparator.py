@@ -228,7 +228,6 @@ class TestRegisterComparator:
                 10,
                 True,
                 [
-                    AllocWires(20),
                     GateCount(resource_rep(plre.ResourceTwoQubitCompare), 9),
                     GateCount(resource_rep(plre.ResourceSingleQubitCompare), 1),
                     GateCount(
@@ -247,7 +246,6 @@ class TestRegisterComparator:
                     ),
                     GateCount(resource_rep(plre.ResourceX), 1),
                     GateCount(resource_rep(plre.ResourceCNOT), 1),
-                    FreeWires(20),
                 ],
             ),
             (
@@ -255,7 +253,6 @@ class TestRegisterComparator:
                 4,
                 False,
                 [
-                    AllocWires(8),
                     GateCount(resource_rep(plre.ResourceTwoQubitCompare), 3),
                     GateCount(resource_rep(plre.ResourceSingleQubitCompare), 1),
                     GateCount(
@@ -310,7 +307,6 @@ class TestRegisterComparator:
                         ),
                         1,
                     ),
-                    FreeWires(8),
                 ],
             ),
             (
@@ -318,7 +314,6 @@ class TestRegisterComparator:
                 6,
                 True,
                 [
-                    AllocWires(8),
                     GateCount(resource_rep(plre.ResourceTwoQubitCompare), 3),
                     GateCount(resource_rep(plre.ResourceSingleQubitCompare), 1),
                     GateCount(
@@ -374,7 +369,6 @@ class TestRegisterComparator:
                         1,
                     ),
                     GateCount(resource_rep(plre.ResourceX), 1),
-                    FreeWires(8),
                 ],
             ),
         ),

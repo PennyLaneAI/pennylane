@@ -231,4 +231,5 @@ from .templates import (
     ResourceTrotterVibronic,
     ResourceQubitizeTHC,
     ResourceUniformStatePrep,
+    ResourceAliasSampling,
 )
