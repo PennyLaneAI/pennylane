@@ -70,8 +70,6 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
     >>> workflow()
     Array([ 3.14159265, -1.57079633], dtype=float64)
 
-
-
     Keyword Args:
         stepsize=0.01 (float): the stepsize hyperparameter
         momentum=0.9 (float): the momentum coefficient hyperparameter
