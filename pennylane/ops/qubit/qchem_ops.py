@@ -232,45 +232,24 @@ class SingleExcitation(Operation):
         **Example:**
 
         >>> qml.SingleExcitation.compute_decomposition(1.23, wires=(0,1))
-        [Adjoint(T(0)),
-         H(0),
-         S(0),
-         Adjoint(T(1)),
-         Adjoint(S(1)),
-         H(1),
-         CNOT(wires=[1, 0]),
-         RZ(-0.615, wires=[0]),
-         RY(0.615, wires=[1]),
-         CNOT(wires=[1, 0]),
-         Adjoint(S(0)),
-         H(0),
-         T(0),
-         H(1),
-         S(1),
-         T(1)]
+        [H(0),
+         CNOT(wires=[0, 1]),
+         RY(-0.615, wires=[0]),
+         RY(-0.615, wires=[1]),
+         CNOT(wires=[0, 1]),
+         H(0)]
 
         """
-        # This decomposition was found by plugging the matrix representation
-        # into transforms.two_qubit_decomposition and post-processing some of
-        # the resulting single-qubit gates.
+        # This decomposition is reported, e.g., in Fig. 2 of https://arxiv.org/pdf/2104.05695
         decomp_ops = [
-            qml.adjoint(qml.T)(wires=wires[0]),
-            qml.Hadamard(wires=wires[0]),
-            qml.S(wires=wires[0]),
-            qml.adjoint(qml.T)(wires=wires[1]),
-            qml.adjoint(qml.S)(wires=wires[1]),
-            qml.Hadamard(wires=wires[1]),
-            qml.CNOT(wires=[wires[1], wires[0]]),
-            qml.RZ(-phi / 2, wires=wires[0]),
-            qml.RY(phi / 2, wires=wires[1]),
-            qml.CNOT(wires=[wires[1], wires[0]]),
-            qml.adjoint(qml.S)(wires=wires[0]),
-            qml.Hadamard(wires=wires[0]),
-            qml.T(wires=wires[0]),
-            qml.Hadamard(wires=wires[1]),
-            qml.S(wires=wires[1]),
-            qml.T(wires=wires[1]),
+            qml.Hadamard(wires[0]),
+            qml.CNOT(wires),
+            qml.RY(-phi / 2, wires[0]),
+            qml.RY(-phi / 2, wires[1]),
+            qml.CNOT(wires),
+            qml.Hadamard(wires[0]),
         ]
+
         return decomp_ops
 
     def adjoint(self) -> "SingleExcitation":
@@ -291,35 +270,20 @@ class SingleExcitation(Operation):
 
 def _single_excitation_resources():
     return {
-        qml.decomposition.adjoint_resource_rep(qml.T, {}): 2,
-        qml.decomposition.adjoint_resource_rep(qml.S, {}): 2,
-        qml.Hadamard: 4,
-        qml.S: 2,
+        qml.Hadamard: 2,
         qml.CNOT: 2,
-        qml.RZ: 1,
-        qml.RY: 1,
-        qml.T: 2,
+        qml.RY: 2,
     }
 
 
 @register_resources(_single_excitation_resources)
 def _single_excitation_decomp(phi, wires, **__):
-    qml.adjoint(qml.T)(wires=wires[0])
-    qml.Hadamard(wires=wires[0])
-    qml.S(wires=wires[0])
-    qml.adjoint(qml.T)(wires=wires[1])
-    qml.adjoint(qml.S)(wires=wires[1])
-    qml.Hadamard(wires=wires[1])
-    qml.CNOT(wires=[wires[1], wires[0]])
-    qml.RZ(-phi / 2, wires=wires[0])
-    qml.RY(phi / 2, wires=wires[1])
-    qml.CNOT(wires=[wires[1], wires[0]])
-    qml.adjoint(qml.S)(wires=wires[0])
-    qml.Hadamard(wires=wires[0])
-    qml.T(wires=wires[0])
-    qml.Hadamard(wires=wires[1])
-    qml.S(wires=wires[1])
-    qml.T(wires=wires[1])
+    qml.Hadamard(wires[0])
+    qml.CNOT(wires)
+    qml.RY(-phi / 2, wires[0])
+    qml.RY(-phi / 2, wires[1])
+    qml.CNOT(wires)
+    qml.Hadamard(wires[0])
 
 
 add_decomps(SingleExcitation, _single_excitation_decomp)
@@ -429,27 +393,29 @@ class SingleExcitationMinus(Operation):
         **Example:**
 
         >>> qml.SingleExcitationMinus.compute_decomposition(1.23, wires=(0,1))
-        [X(0),
-        X(1),
-        ControlledPhaseShift(-0.615, wires=[1, 0]),
-        X(0),
-        X(1),
-        ControlledPhaseShift(-0.615, wires=[0, 1]),
-        CNOT(wires=[0, 1]),
-        CRY(1.23, wires=[1, 0]),
-        CNOT(wires=[0, 1])]
+        [H(1),
+         CNOT(wires=[1, 0]),
+         RY(0.615, wires=[0]),
+         RY(0.615, wires=[1]),
+         CY(wires=[1, 0]),
+         S(1),
+         H(1),
+         RZ(0.615, wires=[1]),
+         CNOT(wires=[0, 1]),
+         GlobalPhase(0.3075, wires=[])]
 
         """
         decomp_ops = [
-            qml.X(wires[0]),
-            qml.X(wires[1]),
-            qml.ControlledPhaseShift(-phi / 2, wires=[wires[1], wires[0]]),
-            qml.X(wires[0]),
-            qml.X(wires[1]),
-            qml.ControlledPhaseShift(-phi / 2, wires=[wires[0], wires[1]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(phi, wires=[wires[1], wires[0]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.Hadamard(wires[1]),
+            qml.CNOT([wires[1], wires[0]]),
+            qml.RY(phi / 2, wires[0]),
+            qml.RY(phi / 2, wires[1]),
+            qml.CY([wires[1], wires[0]]),
+            qml.S(wires[1]),
+            qml.Hadamard(wires[1]),
+            qml.RZ(phi / 2, wires[1]),
+            qml.CNOT(wires),
+            qml.GlobalPhase(phi / 4),
         ]
         return decomp_ops
 
@@ -467,20 +433,29 @@ class SingleExcitationMinus(Operation):
 
 
 def _single_excitation_minus_decomp_resources():
-    return {qml.X: 4, qml.ControlledPhaseShift: 2, qml.CNOT: 2, qml.CRY: 1}
+    return {
+        qml.Hadamard: 2,
+        qml.CY: 1,
+        qml.CNOT: 2,
+        qml.RY: 2,
+        qml.S: 1,
+        qml.RZ: 1,
+        qml.GlobalPhase: 1,
+    }
 
 
 @register_resources(_single_excitation_minus_decomp_resources)
 def _single_excitation_minus_decomp(phi, wires: WiresLike, **__):
-    qml.X(wires[0])
-    qml.X(wires[1])
-    qml.ControlledPhaseShift(-phi / 2, wires=[wires[1], wires[0]])
-    qml.X(wires[0])
-    qml.X(wires[1])
-    qml.ControlledPhaseShift(-phi / 2, wires=[wires[0], wires[1]])
-    qml.CNOT(wires=[wires[0], wires[1]])
-    qml.CRY(phi, wires=[wires[1], wires[0]])
-    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.Hadamard(wires[1])
+    qml.CNOT([wires[1], wires[0]])
+    qml.RY(phi / 2, wires[0])
+    qml.RY(phi / 2, wires[1])
+    qml.CY([wires[1], wires[0]])
+    qml.S(wires[1])
+    qml.Hadamard(wires[1])
+    qml.RZ(phi / 2, wires[1])
+    qml.CNOT(wires)
+    qml.GlobalPhase(phi / 4)
 
 
 add_decomps(SingleExcitationMinus, _single_excitation_minus_decomp)
@@ -590,27 +565,29 @@ class SingleExcitationPlus(Operation):
         **Example:**
 
         >>> qml.SingleExcitationPlus.compute_decomposition(1.23, wires=(0,1))
-        [X(0),
-        X(1),
-        ControlledPhaseShift(0.615, wires=[1, 0]),
-        X(0),
-        X(1),
-        ControlledPhaseShift(0.615, wires=[0, 1]),
-        CNOT(wires=[0, 1]),
-        CRY(1.23, wires=[1, 0]),
-        CNOT(wires=[0, 1])]
+        [H(1),
+         CNOT(wires=[1, 0]),
+         RY(0.615, wires=[0]),
+         RY(0.615, wires=[1]),
+         CY(wires=[1, 0]),
+         S(1),
+         H(1),
+         RZ(0.615, wires=[1]),
+         CNOT(wires=[0, 1]),
+         GlobalPhase(-0.3075, wires=[])]
 
         """
         decomp_ops = [
-            qml.X(wires[0]),
-            qml.X(wires[1]),
-            qml.ControlledPhaseShift(phi / 2, wires=[wires[1], wires[0]]),
-            qml.X(wires[0]),
-            qml.X(wires[1]),
-            qml.ControlledPhaseShift(phi / 2, wires=[wires[0], wires[1]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
-            qml.CRY(phi, wires=[wires[1], wires[0]]),
-            qml.CNOT(wires=[wires[0], wires[1]]),
+            qml.Hadamard(wires[1]),
+            qml.CNOT([wires[1], wires[0]]),
+            qml.RY(phi / 2, wires[0]),
+            qml.RY(phi / 2, wires[1]),
+            qml.CY([wires[1], wires[0]]),
+            qml.S(wires[1]),
+            qml.Hadamard(wires[1]),
+            qml.RZ(-phi / 2, wires[1]),
+            qml.CNOT(wires),
+            qml.GlobalPhase(-phi / 4),
         ]
         return decomp_ops
 
@@ -628,20 +605,29 @@ class SingleExcitationPlus(Operation):
 
 
 def _single_excitation_plus_decomp_resources():
-    return {qml.X: 4, qml.ControlledPhaseShift: 2, qml.CNOT: 2, qml.CRY: 1}
+    return {
+        qml.Hadamard: 2,
+        qml.CY: 1,
+        qml.CNOT: 2,
+        qml.RY: 2,
+        qml.S: 1,
+        qml.RZ: 1,
+        qml.GlobalPhase: 1,
+    }
 
 
 @register_resources(_single_excitation_plus_decomp_resources)
 def _single_excitation_plus_decomp(phi, wires: WiresLike, **__):
-    qml.X(wires[0])
-    qml.X(wires[1])
-    qml.ControlledPhaseShift(phi / 2, wires=[wires[1], wires[0]])
-    qml.X(wires[0])
-    qml.X(wires[1])
-    qml.ControlledPhaseShift(phi / 2, wires=[wires[0], wires[1]])
-    qml.CNOT(wires=[wires[0], wires[1]])
-    qml.CRY(phi, wires=[wires[1], wires[0]])
-    qml.CNOT(wires=[wires[0], wires[1]])
+    qml.Hadamard(wires[1])
+    qml.CNOT([wires[1], wires[0]])
+    qml.RY(phi / 2, wires[0])
+    qml.RY(phi / 2, wires[1])
+    qml.CY([wires[1], wires[0]])
+    qml.S(wires[1])
+    qml.Hadamard(wires[1])
+    qml.RZ(-phi / 2, wires[1])
+    qml.CNOT(wires)
+    qml.GlobalPhase(-phi / 4)
 
 
 add_decomps(SingleExcitationPlus, _single_excitation_plus_decomp)

@@ -350,8 +350,9 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
                 keras.ops.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1
             )
         else:
-            # offset, axis1, axis2 arguments are called differently in torch, use positional arguments
-            pre_diag = math.diagonal(math.diagonal(prod, 0, 1, 3), 0, 0, 1)
+            pre_diag = math.diagonal(
+                math.diagonal(prod, offset=0, axis1=1, axis2=3), offset=0, axis1=0, axis2=1
+            )
 
         gram_diag = math.real(math.sum(pre_diag, axis=0))
 

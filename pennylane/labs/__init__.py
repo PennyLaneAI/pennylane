@@ -35,7 +35,6 @@ Modules
 
 from pennylane.labs import dla
 from pennylane.labs import resource_estimation
-from pennylane.labs import vibrational
 from pennylane.labs import trotter_error
 from pennylane.labs import intermediate_reps
 from pennylane.labs import zxopt

@@ -464,8 +464,7 @@ class TestMeasureFunctions:
         ):
             func([0, 1])
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "func", [partial(measure_arbitrary_basis, angle=-0.8, plane="XY"), measure_x, measure_y]
     )
@@ -496,10 +495,9 @@ class TestMeasureFunctions:
         assert isinstance(mp, MidMeasureMP)
 
     # pylint: disable=too-many-positional-arguments, too-many-arguments
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
-        "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, 1.5707, "XY")]
+        "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, np.pi / 2, "XY")]
     )
     @pytest.mark.parametrize(
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
@@ -522,10 +520,9 @@ class TestMeasureFunctions:
         assert f"postselect={postselect}" in captured_measurement
         assert f"reset={reset}" in captured_measurement
 
-        # last section is parameters
-        dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
-        assert str(angle) in dynamic_params
-        assert str(wire) in dynamic_params
+        # parameters held in invars
+        assert jax.numpy.isclose(angle, plxpr.eqns[0].invars[0].val)
+        assert jax.numpy.isclose(wire, plxpr.eqns[0].invars[1].val)
 
         # measurement value is assigned and passed forward
         conditional = str(plxpr.eqns[1])
@@ -533,16 +530,23 @@ class TestMeasureFunctions:
         assert captured_measurement[:8] == "a:bool[]"
         assert "lambda ; a:i64[]" in conditional
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize("angle, plane", [(1.23, "XY"), (1.5707, "YZ"), (-0.34, "ZX")])
     @pytest.mark.parametrize(
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
     )
-    def test_arbitrary_basis_with_program_capture(self, angle, plane, wire, reset, postselect):
+    @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax"])
+    def test_arbitrary_basis_with_program_capture(
+        self, angle, plane, wire, reset, postselect, angle_type
+    ):
         """Test that the measure_ functions are captured as expected"""
         import jax
         import networkx as nx
+
+        if angle_type == "numpy":
+            angle = np.array(angle)
+        elif angle_type == "jax":
+            angle = jax.numpy.array(angle)
 
         def circ():
             m = measure_arbitrary_basis(
@@ -555,16 +559,20 @@ class TestMeasureFunctions:
         plxpr = jax.make_jaxpr(circ)()
         captured_measurement = str(plxpr.eqns[0])
 
-        # measurement is captured as epxected
+        # measurement is captured as expected
         assert "measure_in_basis" in captured_measurement
         assert f"plane={plane}" in captured_measurement
         assert f"postselect={postselect}" in captured_measurement
         assert f"reset={reset}" in captured_measurement
 
-        # last section is parameters
-        dynamic_params = captured_measurement.rsplit("] ", maxsplit=1)[-1]
-        assert str(angle) in dynamic_params
-        assert str(wire) in dynamic_params
+        # dynamic parameters held in invars for numpy, and consts for jax
+        if "jax" in angle_type:
+            assert jax.numpy.isclose(angle, plxpr.consts[0])
+        else:
+            assert jax.numpy.isclose(angle, plxpr.eqns[0].invars[0].val)
+
+        # Wires captured as invars
+        assert jax.numpy.allclose(wire, plxpr.eqns[0].invars[1].val)
 
         # measurement value is assigned and passed forward
         conditional = str(plxpr.eqns[1])
@@ -572,8 +580,7 @@ class TestMeasureFunctions:
         assert captured_measurement[:8] == "a:bool[]"
         assert "lambda ; a:i64[]" in conditional
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "func, kwargs",
         [
@@ -919,22 +926,47 @@ class TestWorkflows:
             assert np.allclose(circ(), [np.cos(2.345), -1])
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
-    def test_diagonalize_mcms_returns_parametrized_mcms(self, mcm_method, shots):
+    @pytest.mark.parametrize("angle", [0.1234, np.array([-0.4321])])
+    @pytest.mark.parametrize("angle_type", ["float", "numpy", "jax"])
+    @pytest.mark.parametrize("use_jit", [False, True])
+    def test_diagonalize_mcms_returns_parametrized_mcms(
+        self, mcm_method, shots, angle, angle_type, use_jit
+    ):  # pylint: disable=too-many-arguments
         """Test that when diagonalizing, parametrized mid-circuit measurements can be returned
         by the QNode"""
 
+        if "jax" in angle_type or use_jit:
+            jax = pytest.importorskip("jax")
+
+        if mcm_method == "tree-traversal" and use_jit:
+            # https://docs.pennylane.ai/en/stable/introduction/dynamic_quantum_circuits.html#tree-traversal-algorithm
+            pytest.skip("TT & jax.jit are incompatible")
+
         dev = qml.device("default.qubit", shots=shots)
 
+        if angle_type == "numpy":
+            angle = np.array(angle)
+        elif angle_type == "jax":
+            angle = jax.numpy.array(angle)
+
+        def jit_wrapper(func):
+            if use_jit:
+                import jax
+
+                return jax.jit(func)
+            return func
+
+        @jit_wrapper
         @diagonalize_mcms
         @qml.qnode(dev, mcm_method=mcm_method)
-        def circ():
+        def circ(angle):
             m0 = measure_x(0)
             m1 = measure_y(1)
-            m2 = measure_arbitrary_basis(2, angle=1.23, plane="XY")
+            m2 = measure_arbitrary_basis(2, angle=angle, plane="XY")
 
             return qml.expval(m0), qml.expval(m1), qml.expval(m2)
 
-        circ()
+        circ(angle)
 
     @pytest.mark.parametrize("mcm_method, shots", [("tree-traversal", None), ("one-shot", 10000)])
     def test_diagonalize_mcms_returns_cond_measure_result(self, mcm_method, shots):
