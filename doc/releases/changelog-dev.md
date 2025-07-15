@@ -45,6 +45,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead
+  be set on the tape itself.
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>

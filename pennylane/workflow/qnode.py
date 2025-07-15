@@ -734,7 +734,7 @@ class QNode:
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
-        updated_qn._set_shots(old_shots)  # pylint: disable=protected-access
+        updated_qn._shots = Shots(old_shots)  # pylint: disable=protected-access
 
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)

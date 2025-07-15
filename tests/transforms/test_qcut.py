@@ -2653,7 +2653,7 @@ class TestCutCircuitMCTransform:
             return qml.sample(wires=[0, 2])
 
         v = 0.319
-        with pytest.raises(ValueError, match="A shots value must be provided in the device "):
+        with pytest.raises(ValueError, match="cut_circuit_mc requires finite shots."):
             cut_circuit(v)
 
     def test_sample_obs_error(self, dev_fn):
@@ -2692,25 +2692,24 @@ class TestCutCircuitMCTransform:
 
         dev = dev_fn(wires=2)
 
-        with pytest.raises(
-            ValueError, match="Cannot provide a 'shots' value directly to the cut_circuit_mc "
-        ):
+        @partial(qml.cut_circuit_mc, shots=456)
+        @qml.qnode(dev)
+        def cut_circuit(x):  # pylint: disable=unused-variable,unused-argument
+            qml.RX(x, wires=0)
+            qml.RY(0.5, wires=1)
+            qml.RX(1.3, wires=2)
 
-            @partial(qml.cut_circuit_mc, shots=456)
-            @qml.qnode(dev)
-            def cut_circuit(x):  # pylint: disable=unused-variable,unused-argument
-                qml.RX(x, wires=0)
-                qml.RY(0.5, wires=1)
-                qml.RX(1.3, wires=2)
+            qml.CNOT(wires=[0, 1])
+            qml.WireCut(wires=1)
+            qml.CNOT(wires=[1, 2])
 
-                qml.CNOT(wires=[0, 1])
-                qml.WireCut(wires=1)
-                qml.CNOT(wires=[1, 2])
+            qml.RX(x, wires=0)
+            qml.RY(0.7, wires=1)
+            qml.RX(2.3, wires=2)
+            return qml.sample(wires=[0, 2])
 
-                qml.RX(x, wires=0)
-                qml.RY(0.7, wires=1)
-                qml.RX(2.3, wires=2)
-                return qml.sample(wires=[0, 2])
+        with pytest.raises(ValueError, match="shots has been removed from cut_circuit_mc."):
+            cut_circuit(5)
 
     def test_multiple_meas_error(self, dev_fn):
         """
@@ -2769,24 +2768,6 @@ class TestCutCircuitMCTransform:
             ValueError, match="The Monte Carlo circuit cutting workflow only supports circuits "
         ):
             cut_circuit(v)
-
-    def test_qnode_shots_arg_error(self, dev_fn):
-        """
-        Tests that if a shots argument is passed directly to the qnode when using
-        `cut_circuit_mc` the correct error is given
-        """
-        shots = 100
-        dev = dev_fn(wires=2, shots=shots)
-
-        with pytest.raises(
-            ValueError,
-            match="Detected 'shots' as an argument of the quantum function to transform. ",
-        ):
-
-            @qml.cut_circuit_mc
-            @qml.qnode(dev)
-            def cut_circuit(x, shots=shots):  # pylint: disable=unused-variable,unused-argument
-                return qml.sample(wires=[0, 2])
 
     def test_no_interface(self, dev_fn):
         """
