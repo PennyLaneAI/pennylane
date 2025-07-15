@@ -4,9 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
-  momentum quantum natural gradient optimizer is now possible with the new 
-  :class:`~.MomentumQNGOptimizerQJIT` optimizer. 
+* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the momentum
+  quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.
   [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
 
   Similar to the :class:`~.QNGOptimizerQJIT` optimizer, :class:`~.MomentumQNGOptimizerQJIT` offers a 
@@ -16,9 +15,11 @@
   ```python
   import pennylane as qml
   import jax.numpy as jnp
+
   @qml.qjit(autograph=True)
   def workflow():
       dev = qml.device("lightning.qubit", wires=2)
+
       @qml.qnode(dev)
       def circuit(params):
           qml.RX(params[0], wires=0)
