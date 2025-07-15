@@ -6,8 +6,8 @@
 
 <h4>OpenQASM 🤝 PennyLane</h4>
 
-* More functionality within :func:`qml.from_qasm3` has been added, which converts more complex OpenQASM 3.0 circuits 
-  into quantum functions that can be subsequently loaded into QNodes and executed. For more details, 
+* More functionality within :func:`qml.from_qasm3` has been added, which converts more complex OpenQASM 3.0 circuits
+  into quantum functions that can be subsequently loaded into QNodes and executed. For more details,
   please consult the documentation for :func:`qml.from_qasm3`.
   [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
   [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
@@ -25,7 +25,7 @@
 
 * A combine-global-phase pass has been added to the xDSL Python compiler integration.
   Note that the current implementation can only combine all the global phase operations at
-  the last global phase operation in the same region. In other words, global phase operations inside a control flow region can't be combined with those in their parent 
+  the last global phase operation in the same region. In other words, global phase operations inside a control flow region can't be combined with those in their parent
   region.
   [(#7675)](https://github.com/PennyLaneAI/pennylane/pull/7675)
 
@@ -42,6 +42,10 @@
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
+
+* Added state of the art resources for the `ResourceSingleQubitCompare`, `ResourceTwoQubitCompare`,
+  `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
+  [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
 
 <h3>Breaking changes 💔</h3>
 
