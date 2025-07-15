@@ -164,6 +164,9 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.
     """
+    raise ValueError(
+        f"No dispatch rule for first argument of type {type(args[0])}. Options are Operator and ParametrizedHamiltonian"
+    )
 
 
 # pylint: disable=missing-docstring

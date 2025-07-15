@@ -114,13 +114,19 @@ def nested_commutator(fragments: Sequence[Fragment]) -> Fragment:
         Fragment: the nested commutator of the fragments
     """
 
-    if len(fragments) < 2:
-        raise ValueError("Need at least two fragments to commute.")
+    if len(fragments) == 0:
+        return []
 
-    if len(fragments) == 2:
-        return commutator(*fragments)
+    if len(fragments) == 1:
+        if isinstance(fragments[0], Sequence):
+            return nested_commutator(fragments[0])
+
+        return fragments[0]
 
     head, *tail = fragments
+
+    if isinstance(head, Sequence):
+        return commutator(nested_commutator(head), nested_commutator(tail))
 
     return commutator(head, nested_commutator(tail))
 

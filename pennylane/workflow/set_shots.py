@@ -14,30 +14,29 @@
 """
 This module contains the set_shots decorator.
 """
-from typing import Sequence, Tuple, Union
+from __future__ import annotations
 
-from pennylane.measurements import Shots
+from typing import TYPE_CHECKING, Optional, Sequence, Tuple
 
 from .qnode import QNode
+
+if TYPE_CHECKING:
+    from pennylane.measurements import Shots
 
 
 def set_shots(
     qnode: QNode,
-    shots: Union[Shots, None, int, Sequence[Union[int, Tuple[int, int]]]] = None,
+    shots: Optional[Shots | int | Sequence[int | Tuple[int, int]]] = None,
 ) -> QNode:
     """Transform used to set or update a circuit's shots.
 
     Args:
-        tape (QuantumScript): The quantum circuit to be modified.
+        qnode (QNode): The QNode to transform.
         shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
             number of shots (or a shots vector) that the transformed circuit will execute.
-            This specification will override any shots value previously associated
-            with the circuit or QNode during execution.
 
     Returns:
-        tuple[List[QuantumScript], function]: The transformed circuit as a batch of tapes and a
-        post-processing function, as described in :func:`qml.transform <pennylane.transform>`. The output
-        tape(s) will have their ``shots`` attribute set to the value provided in the ``shots`` argument.
+        QNode: The transformed QNode with the specified shots.
 
     There are three ways to specify shot values (see :func:`qml.measurements.Shots <pennylane.measurements.Shots>` for more details):
 
