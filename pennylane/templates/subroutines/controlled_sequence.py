@@ -231,8 +231,8 @@ def _ctrl_seq_decomposition_resources(base, base_params, num_control_wires) -> d
 
 
 # pylint: disable=no-value-for-parameter
-@register_resources(_cntl_seq_decomposition_resources)
-def _cntl_seq_decomposition(*_, base=None, control_wires=None, **__):
+@register_resources(_ctrl_seq_decomposition_resources)
+def _ctrl_seq_decomposition(*_, base=None, control_wires=None, **__):
     powers_of_two = [2**i for i in range(len(control_wires))]
 
     @qml.for_loop(len(powers_of_two) - 1, -1, -1)
@@ -245,4 +245,4 @@ def _cntl_seq_decomposition(*_, base=None, control_wires=None, **__):
     _powers_loop()
 
 
-add_decomps(ControlledSequence, _cntl_seq_decomposition)
+add_decomps(ControlledSequence, _ctrl_seq_decomposition)
