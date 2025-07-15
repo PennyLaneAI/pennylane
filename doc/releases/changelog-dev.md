@@ -4,6 +4,16 @@
 
 <h3>New features since last release</h3>
 
+<h4>OpenQASM 🤝 PennyLane</h4>
+
+* More functionality within :func:`qml.from_qasm3` has been added, which converts more complex OpenQASM 3.0 circuits 
+  into quantum functions that can be subsequently loaded into QNodes and executed. For more details, 
+  please consult the documentation for :func:`qml.from_qasm3`.
+  [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
+  [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
+
+<h3>Improvements 🛠</h3>
+
 * The :func:`~.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
   
@@ -19,16 +29,6 @@
   >>> circuit()
   0.002
   ```
-
-<h4>OpenQASM 🤝 PennyLane</h4>
-
-* More functionality within :func:`qml.from_qasm3` has been added, which converts more complex OpenQASM 3.0 circuits 
-  into quantum functions that can be subsequently loaded into QNodes and executed. For more details, 
-  please consult the documentation for :func:`qml.from_qasm3`.
-  [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
-  [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
-
-<h3>Improvements 🛠</h3>
 
 * Update minimum supported `pytest` version to `8.4.1`.
   [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
