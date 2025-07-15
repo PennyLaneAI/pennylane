@@ -18,11 +18,11 @@ written using xDSL."""
 from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import arith, builtin, func, memref
+from xdsl.dialects import arith, builtin, func, memref, vector
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
 
-from ..quantum_dialect import AllocOp
+from ..quantum_dialect import AllocOp, CustomOp, ExtractOp
 from .api import compiler_transform
 
 
@@ -60,6 +60,8 @@ class PreAllocateAuxWiresPattern(
     ):  # pylint: disable=arguments-differ, cell-var-from-loop
         """Match and rewrite for pre-allocate 13 more aux wires."""
 
+        num_wires_int = 0
+        alloc_op = None
         # Replace AllocOp with 13 more qubits
         for region in root.regions:
             for op in region.ops:
@@ -72,18 +74,18 @@ class PreAllocateAuxWiresPattern(
                     total_num_wires_int = num_wires_int + 13
                     new_op = AllocOp(total_num_wires_int)
                     rewriter.replace_op(op, new_op)
+                    alloc_op = new_op
+                elif isinstance(op, CustomOp) :
+                    target_qubits_index = op.results[0].index
+                    target_qubit = ExtractOp(new_op, target_qubits_index)
+                    rewriter.insert_op(target_qubit, insertion_point=InsertPoint.after(op))
+                    result_qubits_index = target_qubits_index + num_wires_int
+                    res_qubit = ExtractOp(new_op, result_qubits_index)
+                    rewriter.insert_op(res_qubit, insertion_point=InsertPoint.after(target_qubit))
 
-                    qubit_mgr = memref.AllocOp.get(builtin.i64, shape=[total_num_wires_int])
-                    rewriter.insert_op(qubit_mgr, insertion_point=InsertPoint.after(new_op))
-                    prev_op = qubit_mgr
-                    for i in range(total_num_wires_int):
-                        const_op = arith.ConstantOp.from_int_and_width(i, builtin.IndexType())
-                        rewriter.insert_op(const_op, insertion_point=InsertPoint.after(prev_op))
-                        # index_op = arith.ConstantOp.from_int_and_width(i, builtin.IndexType())
-                        # rewriter.insert_op(index_op, insertion_point=InsertPoint.after(const_op))
-                        store_op = memref.StoreOp.get(const_op, qubit_mgr, const_op)
-                        rewriter.insert_op(store_op, insertion_point=InsertPoint.after(const_op))
-                        prev_op = store_op
+                    
+                    
+                    
 
 
 # class AddQubitMapPattern(

@@ -61,6 +61,9 @@ class TestConvertToMBQCFormalismPass:
               // CHECK: %0 = "quantum.alloc"() <{nqubits_attr = 15 : i64}> : () -> !quantum.reg
               %0 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
               // CHECK: %1
+              %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
+              %out_qubits = quantum.custom "PauliX"() %1 : !quantum.bit
+
               return
             }
         """
