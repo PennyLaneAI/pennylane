@@ -16,14 +16,23 @@
 Public/internal API for the AutoGraph module.
 """
 
-from .transformer import (
-    autograph_source,
-    run_autograph,
-)
+import functools
 
 from .ag_primitives import AutoGraphWarning
+from .transformer import autograph_source, run_autograph
+
+
+def wraps(target):
+    """Wrap another function using functools.wraps. For use with AutoGraph, the __module__ attribute
+    should be preserved in order for the AutoGraph conversion allow/block listing to work properly.
+    """
+    return functools.wraps(
+        target, assigned=("__name__", "__qualname__", "__doc__", "__annotations__")
+    )
+
 
 __all__ = (
     "autograph_source",
     "run_autograph",
+    "wraps",
 )
