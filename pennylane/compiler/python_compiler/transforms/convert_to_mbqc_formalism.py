@@ -22,7 +22,7 @@ from xdsl.dialects import arith, builtin, func, memref, vector
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
 
-from ..quantum_dialect import AllocOp, CustomOp, ExtractOp
+from ..quantum_dialect import AllocOp, CustomOp, ExtractOp, InsertOp
 from .api import compiler_transform
 
 
@@ -38,7 +38,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         pattern_rewriter.PatternRewriteWalker(
             pattern_rewriter.GreedyRewritePatternApplier(
                 [
-                    PreAllocateAuxWiresPattern(),
+                    ConvertToMBQCFormalismPattern(),
                 ]
             ),
             apply_recursively=False,
@@ -48,7 +48,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
 convert_to_mbqc_formalism = compiler_transform(ConvertToMBQCFormalismPass)
 
 
-class PreAllocateAuxWiresPattern(
+class ConvertToMBQCFormalismPattern(
     pattern_rewriter.RewritePattern
 ):  # pylint: disable=too-few-public-methods
     """RewritePattern for pre-allocate 13 more aux wires."""
@@ -75,44 +75,34 @@ class PreAllocateAuxWiresPattern(
                     new_op = AllocOp(total_num_wires_int)
                     rewriter.replace_op(op, new_op)
                     alloc_op = new_op
-                elif isinstance(op, CustomOp) :
+                elif isinstance(op, CustomOp):
+                    current_op = op
+                    # TODO
+                    # Convert a gate operation in the standard circuit model 
+
+
+
+
+
+
+                    # NOTE: The following logic mimic the QubitMgr class defined in the `ftqc.utils` module
+                    # 1. Extract the target wire and the result wires in the auxiliary registers
                     target_qubits_index = op.results[0].index
-                    target_qubit = ExtractOp(new_op, target_qubits_index)
-                    rewriter.insert_op(target_qubit, insertion_point=InsertPoint.after(op))
+                    target_qubit = ExtractOp(alloc_op, target_qubits_index)
+                    rewriter.insert_op(target_qubit, insertion_point=InsertPoint.after(current_op))
+                    current_op = target_qubit
                     result_qubits_index = target_qubits_index + num_wires_int
-                    res_qubit = ExtractOp(new_op, result_qubits_index)
-                    rewriter.insert_op(res_qubit, insertion_point=InsertPoint.after(target_qubit))
+                    res_qubit = ExtractOp(alloc_op, result_qubits_index)
+                    rewriter.insert_op(res_qubit, insertion_point=InsertPoint.after(current_op))
+                    current_op = res_qubit
 
-                    
-                    
-                    
+                    # 2. Swap the target register and the result register
+                    new_target_qubit = InsertOp(alloc_op, result_qubits_index, target_qubit)
+                    rewriter.insert_op(
+                        new_target_qubit, insertion_point=InsertPoint.after(current_op)
+                    )
+                    current_op = new_target_qubit
 
+                    new_res_qubit = InsertOp(alloc_op, target_qubits_index, res_qubit)
+                    rewriter.insert_op(new_res_qubit, insertion_point=InsertPoint.after(current_op))
 
-# class AddQubitMapPattern(
-#     pattern_rewriter.RewritePattern
-# ):  # pylint: disable=too-few-public-methods
-#     """Pass for adding the QubitMgr logic."""
-
-#     # pylint: disable=no-self-use
-#     @pattern_rewriter.op_type_rewrite_pattern
-#     def match_and_rewrite(
-#         self, root: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
-#     ):  # pylint: disable=arguments-differ, cell-var-from-loop
-#         """Match and rewrite for pre-allocate 13 more aux wires."""
-
-#         # Replace AllocOp with 13 more qubits
-#         for region in root.regions:
-#             for op in region.ops:
-#                 if isinstance(op, AllocOp):
-#                     # Initialize
-#                     num_wires_int = op.properties["nqubits_attr"].value.data
-#                     qubit_mgr = memref.AllocOp.get(builtin.IntegerAttr(), 0, (num_wires_int))
-#                     rewriter.insert_op(qubit_mgr, insertion_point=InsertPoint.after(op))
-#                     prev_op = qubit_mgr
-#                     for i in range(num_wires_int):
-#                         const_op = arith.ConstantOp.from_int_and_width(i, builtin.IndexType())
-#                         rewriter.insert_op(const_op, insertion_point=InsertPoint.after(prev_op))
-#                         index_op = arith.ConstantOp.from_int_and_width(i, builtin.IndexType())
-#                         rewriter.insert_op(index_op, insertion_point=InsertPoint.after(const_op))
-#                         store_op = memref.StoreOp.get(const_op, qubit_mgr, index_op)
-#                         prev_op = store_op
