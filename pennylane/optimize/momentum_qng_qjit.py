@@ -29,13 +29,13 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
 
         Please be aware of the following:
 
-            - As with ``MomentumQNGOptimizer``, ``MomentumQNGOptimizerQJIT`` supports a single QNode to encode the objective function.
+        - As with ``MomentumQNGOptimizer``, ``MomentumQNGOptimizerQJIT`` supports a single QNode to encode the objective function.
 
-            - ``MomentumQNGOptimizerQJIT`` does not support any QNode with multiple arguments. A potential workaround
-              would be to combine all parameters into a single objective function argument.
+        - ``MomentumQNGOptimizerQJIT`` does not support any QNode with multiple arguments. A potential workaround
+          would be to combine all parameters into a single objective function argument.
 
-            - ``MomentumQNGOptimizerQJIT`` does not work correctly if there is any classical processing in the QNode circuit
-              (e.g., ``2 * theta`` as a gate parameter).
+        - ``MomentumQNGOptimizerQJIT`` does not work correctly if there is any classical processing in the QNode circuit
+          (e.g., ``2 * theta`` as a gate parameter).
 
     **Example:**
 
