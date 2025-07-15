@@ -400,7 +400,6 @@ class TestAddNoiseLevels:
             (0, slice(0, 0)),
             ("user", 4),
             ("user", slice(0, 4)),
-            (None, slice(0, None)),
             (-1, slice(0, -1)),
             ("device", slice(0, None)),
         ],

@@ -184,7 +184,7 @@ def add_noise(tape, noise_model, level="device"):
             "Please use `level='device'` to include all transforms.",
             PennyLaneDeprecationWarning,
         )
-    if level is None or level == "user":  # decompose templates and their adjoints
+    if level is None or level in ("device", "user"):  # decompose templates and their adjoints
 
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
