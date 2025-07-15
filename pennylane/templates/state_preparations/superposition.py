@@ -66,7 +66,7 @@ def assign_states(basis_states):
     # Create the integers corresponding to the input basis states
     basis_ints = [int("".join(map(str, state)), 2) for state in basis_states]
 
-    basis_states = list(map(tuple, basis_states))  # Need hashable objects, so we use tuples
+    basis_states = [tuple(s) for s in basis_states]  # Need hashable objects, so we use tuples
     state_map = {}  # The map for basis states to be populated
     unmapped_states = []  # Will collect non-fixed point states
     unmapped_ints = {i: None for i in range(m)}  # Will remove fixed point states
