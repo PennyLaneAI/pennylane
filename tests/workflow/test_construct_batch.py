@@ -114,8 +114,12 @@ class TestTransformProgramGetter:
         p_dev = get_transform_program(circuit, level="device")
         assert isinstance(p_grad, TransformProgram)
         p_default = get_transform_program(circuit)
-        p_none = get_transform_program(circuit, None)
         assert p_dev == p_default
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="`level=None` is deprecated",
+        ):
+            p_none = get_transform_program(circuit, None)
         assert p_none == p_dev
         assert len(p_dev) == 9
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
@@ -327,14 +331,13 @@ class TestConstructBatch:
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
-    @pytest.mark.parametrize("level", ("device", None))
-    def test_device_transforms(self, level):
+    def test_device_transforms(self):
         """Test that all device transforms can be run with the device keyword."""
 
         weights = np.array([[1.0, 2.0]])
         order = [2, 1, 0]
 
-        batch, fn = construct_batch(circuit1, level=level)(weights, order)
+        batch, fn = construct_batch(circuit1, level="device")(weights, order)
 
         expected = qml.tape.QuantumScript(
             [qml.RY(1, 0), qml.RX(2, 1), qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))]
@@ -343,8 +346,7 @@ class TestConstructBatch:
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
-    @pytest.mark.parametrize("level", ("device"))
-    def test_device_transforms_legacy_interface(self, level):
+    def test_device_transforms_legacy_interface(self):
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
@@ -355,7 +357,7 @@ class TestConstructBatch:
             qml.X(0)
             return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
 
-        batch, fn = qml.workflow.construct_batch(circuit, level=level)((2, 1, 0))
+        batch, fn = qml.workflow.construct_batch(circuit, level="device")((2, 1, 0))
 
         expected0 = qml.tape.QuantumScript(
             [qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))], shots=50
@@ -378,7 +380,7 @@ class TestConstructBatch:
 
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="The `level=None` argument is deprecated and will be removed in a future release.",
+            match="`level=None` is deprecated",
         ):
             get_transform_program(circuit, level=None)
 
