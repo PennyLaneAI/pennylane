@@ -21,6 +21,8 @@ from .subroutines import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceSelectPauliRot,
+    ResourceQubitUnitary,
 )
 from .trotter import (
     ResourceTrotterCDF,
