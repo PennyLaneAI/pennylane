@@ -4896,9 +4896,7 @@ class TestKaHyPar:
             ),
         ),
     ]
-    config_path = str(
-        Path(__file__).parent.parent.parent / "pennylane/qcut/_cut_kKaHyPar_sea20.ini"
-    )
+    config_path = str(Path(__file__).parent.parent / "pennylane/qcut/_cut_kKaHyPar_sea20.ini")
 
     def test_seed_in_ci(self):
         """Test if seed is properly set in github action CI"""
