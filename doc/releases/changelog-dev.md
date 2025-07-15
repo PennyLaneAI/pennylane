@@ -4,8 +4,21 @@
 
 <h3>New features since last release</h3>
 
-* `set_shots` can be directly applied to a QNode, no more `partial` decorators are needed.
+* The :func:`~.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
+  
+  ```python
+  @qml.set_shots(shots=1000)
+  @qml.qnode(dev)
+  def circuit():
+      qml.H(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit()
+  0.002
+  ```
 
 <h4>OpenQASM 🤝 PennyLane</h4>
 
