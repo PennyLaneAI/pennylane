@@ -14,8 +14,6 @@
 r"""
 Contains the Superposition template.
 """
-import numpy as np
-
 import pennylane as qml
 from pennylane.operation import Operation
 
@@ -37,7 +35,8 @@ def assign_states(basis_states):
     ** Example **
 
     For instance, a given list of :math:`[s_0, s_1, ..., s_m]` where :math:`s` is a basis
-    state of length :math:`4` will be mapped as :math:`{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots}`.
+    state of length :math:`4` will be mapped as
+    :math:`{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots}`.
 
     .. code-block:: pycon
 
@@ -65,18 +64,17 @@ def assign_states(basis_states):
     m = len(basis_states)
     length = len(basis_states[0])
     # Create the integers corresponding to the input basis states
-    powers_of_two = 2 ** np.arange(length - 1, -1, -1)
-    basis_ints = [np.dot(powers_of_two, state) for state in basis_states]
+    basis_ints = [int("".join(map(str, state)), 2) for state in basis_states]
 
     basis_states = list(map(tuple, basis_states))  # Need hashable objects, so we use tuples
     state_map = {}  # The map for basis states to be populated
     unmapped_states = []  # Will collect non-fixed point states
-    unmapped_ints = list(range(m))  # Will remove fixed point states
+    unmapped_ints = {i: None for i in range(m)}  # Will remove fixed point states
     # Map fixed-point states to themselves and collect states and target ints still to be paired
     for b_int, state in zip(basis_ints, basis_states):
         if b_int < m:
             state_map[state] = state
-            unmapped_ints.remove(b_int)
+            unmapped_ints.pop(b_int)
         else:
             unmapped_states.append(state)
 
