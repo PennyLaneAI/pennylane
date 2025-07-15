@@ -866,7 +866,6 @@ class QasmInterpreter:
 
         # custom gates do not return a value
 
-    @staticmethod
     def _execute_function(self, name: str, node: FunctionCall, context: Context):
         """
         Executes a subroutine.
