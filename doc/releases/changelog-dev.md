@@ -47,6 +47,7 @@
 
 * `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead
   be set on the tape itself.
+  [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 <h3>Deprecations 👋</h3>
 
