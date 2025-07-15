@@ -61,7 +61,7 @@ class ConvertToMBQCFormalismPattern(
         """Match and rewrite for pre-allocate 13 more aux wires."""
 
         num_wires_int = 0
-        alloc_op = None
+        registers_state = None
         # Replace AllocOp with 13 more qubits
         for region in root.regions:
             for op in region.ops:
@@ -74,35 +74,33 @@ class ConvertToMBQCFormalismPattern(
                     total_num_wires_int = num_wires_int + 13
                     new_op = AllocOp(total_num_wires_int)
                     rewriter.replace_op(op, new_op)
-                    alloc_op = new_op
-                elif isinstance(op, CustomOp):
+                    registers_state = new_op.results[0]
+                elif isinstance(op, CustomOp) and op.gate_name.data in [
+                    "PauliX",
+                ]:
                     current_op = op
                     # TODO
-                    # Convert a gate operation in the standard circuit model 
-
-
-
-
-
+                    # Convert a gate operation in the standard circuit model
 
                     # NOTE: The following logic mimic the QubitMgr class defined in the `ftqc.utils` module
                     # 1. Extract the target wire and the result wires in the auxiliary registers
                     target_qubits_index = op.results[0].index
-                    target_qubit = ExtractOp(alloc_op, target_qubits_index)
+                    target_qubit = ExtractOp(registers_state, target_qubits_index)
                     rewriter.insert_op(target_qubit, insertion_point=InsertPoint.after(current_op))
                     current_op = target_qubit
                     result_qubits_index = target_qubits_index + num_wires_int
-                    res_qubit = ExtractOp(alloc_op, result_qubits_index)
+                    res_qubit = ExtractOp(registers_state, result_qubits_index)
                     rewriter.insert_op(res_qubit, insertion_point=InsertPoint.after(current_op))
                     current_op = res_qubit
 
                     # 2. Swap the target register and the result register
-                    new_target_qubit = InsertOp(alloc_op, result_qubits_index, target_qubit)
+                    new_target_qubit = InsertOp(registers_state, result_qubits_index, target_qubit)
                     rewriter.insert_op(
                         new_target_qubit, insertion_point=InsertPoint.after(current_op)
                     )
+                    registers_state = new_target_qubit.results[0]
+
                     current_op = new_target_qubit
 
-                    new_res_qubit = InsertOp(alloc_op, target_qubits_index, res_qubit)
+                    new_res_qubit = InsertOp(registers_state, target_qubits_index, res_qubit)
                     rewriter.insert_op(new_res_qubit, insertion_point=InsertPoint.after(current_op))
-

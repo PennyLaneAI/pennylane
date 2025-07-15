@@ -53,7 +53,7 @@ class TestConvertToMBQCFormalismPass:
         run_filecheck(program, module)
 
     def test_qubit_mgr(self, run_filecheck):
-        """Test that ConvertToMBQCFormalismPass can extract and swap the target qubit and 
+        """Test that ConvertToMBQCFormalismPass can extract and swap the target qubit and
         the result qubit in the auxiliary wires.
         """
         program = """
@@ -67,7 +67,7 @@ class TestConvertToMBQCFormalismPass:
               // CHECK: %2 = "quantum.extract"(%0) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
               // CHECK: %3 = "quantum.extract"(%0) <{idx_attr = 2 : i64}> : (!quantum.reg) -> !quantum.bit
               // CHECK: %4 = "quantum.insert"(%0, %2) <{idx_attr = 2 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-              // CHECK: %5 = "quantum.insert"(%0, %3) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+              // CHECK: %5 = "quantum.insert"(%4, %3) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
 
               return
             }
