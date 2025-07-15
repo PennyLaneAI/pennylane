@@ -213,7 +213,7 @@ class ControlledSequence(SymbolicOp, Operation):
         return ops
 
 
-def _cntl_seq_decomposition_resources(base, base_params, num_control_wires) -> dict:
+def _ctrl_seq_decomposition_resources(base, base_params, num_control_wires) -> dict:
 
     resources = {}
 
