@@ -227,16 +227,11 @@ def _rotate(var: Variable | int, n: int, dir="left"):
         TypeError: if the variable is not of BitType.
     """
     bits = _get_bit_type_val(var)
-    new_bits = {}
-    for i, bit in enumerate(bits):
-        if dir == "left":
-            new_bits[(i + len(bits) + 1 - n) % len(bits) - 1] = bit
-        else:
-            new_bits[(i + n + 1) % len(bits) - 1] = bit
-    new_bit_str = ["" for _ in range(len(bits))]
-    for j in new_bits:
-        new_bit_str[j] = new_bits[j]
-    return int("".join(new_bit_str), 2)
+    if dir == "left":
+        new_bits = bits[n:] + bits[:n]
+    else:
+        new_bits = bits[-n:] + bits[:-n]
+    return int(new_bits, 2)
 
 
 FUNCTIONS = {
