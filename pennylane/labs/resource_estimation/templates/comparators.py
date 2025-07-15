@@ -70,7 +70,7 @@ class ResourceSingleQubitCompare(ResourceOperator):
     @classmethod
     def resource_rep(cls):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -147,7 +147,7 @@ class ResourceTwoQubitCompare(ResourceOperator):
     @classmethod
     def resource_rep(cls):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -436,7 +436,7 @@ class ResourceRegisterComparator(ResourceOperator):
     @classmethod
     def resource_rep(cls, a_num_qubits, b_num_qubits, geq=False):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             a_num_qubits (int): the size of the first register
