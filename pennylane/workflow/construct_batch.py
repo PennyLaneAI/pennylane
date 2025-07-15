@@ -22,6 +22,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Literal, Optional
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 from ._setup_transform_program import _setup_transform_program
 from .qnode import _make_execution_config
@@ -95,6 +96,15 @@ def _validate_level(
     Raises:
         ValueError: If the level is not recognized
     """
+    if level is None:
+        warnings.warn(
+            "Using `level=None` is deprecated and will be removed in a future release. "
+            "Please use `level='device'` to include all transforms.",
+            PennyLaneDeprecationWarning,
+            stacklevel=2,
+        )
+        return
+
     if level is None or isinstance(level, (int, slice)):
         return
 
@@ -184,7 +194,7 @@ def _get_inner_transform_slice(
 
 def get_transform_program(
     qnode: QNode,
-    level: Optional[Literal["top", "user", "device", "gradient"] | int | slice] = None,
+    level: Optional[Literal["top", "user", "device", "gradient"] | int | slice] = "device",
     gradient_fn="unset",
 ) -> "qml.transforms.core.TransformProgram":
     """Extract a transform program at a designated level.

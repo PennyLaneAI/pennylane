@@ -11,16 +11,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for adding a noise model to a quantum circuit or device"""
+import warnings
 from copy import copy
 from functools import lru_cache
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.transforms.core import TransformContainer, transform
 
 
 # pylint: disable=too-many-branches
 @transform
-def add_noise(tape, noise_model, level=None):
+def add_noise(tape, noise_model, level="device"):
     """Insert operations according to a provided noise model.
 
     Circuits passed through this quantum transform will be updated to apply the
@@ -145,7 +147,7 @@ def add_noise(tape, noise_model, level=None):
         transforming a ``QNode``, this transform can be added at a designated level within the transform program, as determined using the
         :func:`get_transform_program <pennylane.workflow.get_transform_program>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
-        >>> qml.transforms.add_noise(circuit, noise_model, level=None).transform_program
+        >>> qml.transforms.add_noise(circuit, noise_model, level="device").transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise, metric_tensor)
 
         Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
@@ -175,6 +177,13 @@ def add_noise(tape, noise_model, level=None):
             f"Provided noise model object must define model_map and metatadata attributes, got {noise_model}."
         )
 
+    if level is None:
+        # raise a deprecation warning for None level
+        warnings.warn(
+            "The `level=None` argument is deprecated and will be removed in a future release. "
+            "Please use `level='device'` to include all transforms.",
+            PennyLaneDeprecationWarning,
+        )
     if level is None or level == "user":  # decompose templates and their adjoints
 
         def stop_at(obj):
