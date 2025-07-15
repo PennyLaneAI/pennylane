@@ -64,7 +64,7 @@ class Compiler:
         pipeline.apply(ctx, xmod)
 
         buffer = io.StringIO()
-        Printer(stream=buffer, print_generic_format=True).print(xmod)
+        Printer(stream=buffer, print_generic_format=True).print_op(xmod)
         with jaxContext() as ctx:
             ctx.allow_unregistered_dialects = True
             ctx.append_dialect_registry(mlir.upstream_dialects)
