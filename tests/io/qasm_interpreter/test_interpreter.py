@@ -40,7 +40,7 @@ from pennylane import (
     queuing,
 )
 from pennylane.measurements import MeasurementValue, MidMeasureMP
-from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
+from pennylane.ops import Adjoint, Conditional, Controlled, ControlledPhaseShift, MultiControlledX
 from pennylane.ops.op_math.pow import PowOperation, PowOpObs
 from pennylane.wires import Wires
 
@@ -317,6 +317,55 @@ class TestControlFlow:
             PauliY("q0"),
             PauliY("q0"),
         ]
+
+    def test_end_in_loop(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/end_in_loop.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "loop-end", "wire_map": None})
+
+        assert q.queue == [RX(1, "q0")]
+
+    def test_end_in_measurement_controlled_branch(self):
+        # parse the QASM
+        ast = parse(
+            open(
+                "tests/io/qasm_interpreter/end_in_measure_conditioned_branch.qasm", mode="r"
+            ).read(),
+            permissive=True,
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "meas-ctrl-branch-nested-end", "wire_map": None}
+            )
+
+        # circuit should look like:
+        # 0: ──RY(0.10)──X²─────────────X─┤ < Z >
+        # 1: ──RX(0.20)───────RZ(1.00)──║─┤
+        # 2: ──H─────────┤↗├──║─────────║─┤
+        #                 ╚═══╩═════════╝
+
+        assert q.queue[:4] == [
+            RY(0.1, wires=["q0"]),
+            RX(0.2, wires=["q1"]),
+            PauliX("q0") ** 2,
+            Hadamard("q2"),
+        ]
+
+        assert isinstance(q.queue[4], MidMeasureMP)
+        assert q.queue[4].wires == Wires(["q2"])
+        assert isinstance(q.queue[5], Conditional)
+        assert q.queue[5].data == (1,)  # control on one
+        assert q.queue[5].base == RZ(1, wires=["q1"])
+        assert isinstance(q.queue[6], Conditional)
+        assert q.queue[6].data == ()  # control on zero
+        assert q.queue[6].base == PauliX(wires=["q0"])
 
     def test_nested_end(self):
         # parse the QASM

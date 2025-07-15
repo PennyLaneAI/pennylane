@@ -13,7 +13,7 @@ from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.measurements import MeasurementValue, measure
+from pennylane.measurements import MeasurementValue, MidMeasureMP, measure
 from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
@@ -424,7 +424,7 @@ class QasmInterpreter:
         )
 
     @visit.register(list)
-    def visit_list(self, node_list: list, context: Context):
+    def visit_list(self, node_list: list, context: Context, allow_end: bool = True):
         """
         Visits a list of QASMNodes.
 
@@ -433,7 +433,15 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         for sub_node in node_list:
-            self.visit(sub_node, context)
+            try:
+                self.visit(sub_node, context)
+            except EndProgram as e:
+                if allow_end:
+                    # this will end the interpretation of the QASM...
+                    # not good if we're building a qscript for a controlled branch
+                    raise e
+                # this will end the construction of the qscript for this controlled branch
+                break
 
     def interpret(self, node: QASMNode, context: dict, **inputs):
         """
@@ -539,8 +547,9 @@ class QasmInterpreter:
             node (BranchingStatement): the branch QASMNode.
             context (Context): the current context.
         """
+        condition = self.visit(node.condition, context)
         ops.cond(
-            self.visit(node.condition, context),
+            condition,
             partial(
                 self.visit,
                 node.if_block,
@@ -555,7 +564,7 @@ class QasmInterpreter:
                 if hasattr(node, "else_block")
                 else None
             ),
-        )()
+        )(allow_end=(not isinstance(condition, (MeasurementValue, MidMeasureMP))))
 
     @visit.register(ast.SwitchStatement)
     def visit_switch_statement(self, node: ast.SwitchStatement, context: Context):
