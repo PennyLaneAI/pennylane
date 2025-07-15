@@ -481,7 +481,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
             else:
                 resources[rep] = 1
         else:
-            num_controls = sum([1 for bit in item if bit == 1])
+            num_controls = sum(1 for bit in item if bit == 1)
 
             ctrl_phase_rep = controlled_resource_rep(
                 base_class=qml.PhaseAdder,
