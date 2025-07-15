@@ -105,14 +105,14 @@ def resolve_dynamic_wires(
     #. If wires exist in the ``zeroed`` register, we take one from that register
     #. If no ``zeroed`` wires exist, we pull one from ``any_state`` and apply a reset operation
     #. If no wires exist in the ``zeroed`` or ``any_state`` registers, we increment ``min_int`` and
-        add a new wire
+       add a new wire
 
     For a dynamic wire with ``require_zeros=False``, we try:
 
     #. If wires exist in the ``any_state``, we take one from that register
     #. If no wires exist in ``any_state``, we pull one from ``zeroed``
     #. If no wires exist in the ``zeroed`` or ``any_state`` registers, we increment ``min_int`` and
-        add a new wire
+       add a new wire
 
     This approach minimizes the width of the circuit at the cost of more reset operations.
 
