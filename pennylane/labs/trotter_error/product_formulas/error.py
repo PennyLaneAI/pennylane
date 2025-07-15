@@ -21,7 +21,6 @@ from typing import List, Sequence, Tuple, Hashable, Dict, Set, Optional
 
 from tqdm import tqdm
 import numpy as np
-from scipy.sparse import csr_matrix
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
