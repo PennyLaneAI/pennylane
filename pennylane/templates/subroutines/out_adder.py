@@ -313,6 +313,8 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
         )
         resources[rep] += 1
 
+    return dict(resources)
+
 
 # pylint: disable=no-value-for-parameter
 @register_resources(_out_adder_decomposition_resources)

@@ -499,7 +499,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
 
     resources[adjoint_resource_rep(qml.QFT, {"num_wires": num_output_adder_mod})] = 1
 
-    return resources
+    return dict(resources)
 
 
 # pylint: disable=no-value-for-parameter

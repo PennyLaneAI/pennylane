@@ -291,7 +291,7 @@ def _multiplier_decomposition_resources(
         rep = resource_rep(qml.SWAP)
         resources[rep] += 1
 
-    return resources
+    return dict(resources)
 
 
 @register_resources(_multiplier_decomposition_resources)
