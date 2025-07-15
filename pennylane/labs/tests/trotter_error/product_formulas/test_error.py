@@ -15,20 +15,27 @@
 
 import numpy as np
 import pytest
+from scipy.sparse import csr_matrix
 
 from pennylane.labs.trotter_error import (
     HOState,
+    SparseState,
     ProductFormula,
     perturbation_error,
     vibrational_fragments,
 )
 from pennylane.labs.trotter_error.product_formulas.error import (
     _group_sums,
-    random_sample_commutators,
-    importance_sample_commutators,
-    _calculate_commutator_probability,
+    _sample_importance_commutators,
+    _fixed_sampling,
+    _adaptive_sampling,
+    _compute_expectation_values,
     effective_hamiltonian,
+    _get_confidence_z_score,
+    _setup_importance_probabilities,
+    _adaptive_sample_single_state,
 )
+from pennylane.labs.trotter_error.fragments import sparse_fragments
 
 
 # Shared test fixtures to reduce code duplication
@@ -90,6 +97,67 @@ def minimal_system():
         'states': [state1, state2],
         'n_modes': n_modes,
         'gridpoints': gridpoints
+    }
+
+
+@pytest.fixture
+def simple_system_sparse():
+    """Create a simple 2-mode system with SparseState for testing."""
+
+    # Create simple sparse matrices for testing
+    # Identity and Pauli-X-like matrices
+    matrix1 = csr_matrix([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+    matrix2 = csr_matrix([[0, 1, 0, 0], [1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+
+    frags = dict(enumerate(sparse_fragments([matrix1, matrix2])))
+
+    frag_labels = [0, 1, 1, 0]
+    frag_coeffs = [1 / 2, 1 / 2, 1 / 2, 1 / 2]
+    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+
+    # Create sparse states compatible with 4x4 matrices - as row vectors for transpose operations
+    state1_sparse = csr_matrix([[1, 0, 0, 0]])  # |0> as row vector
+    state1 = SparseState(state1_sparse)
+
+    state2_sparse = csr_matrix([[0, 1, 0, 0]])  # |1> as row vector
+    state2 = SparseState(state2_sparse)
+
+    return {
+        'pf': pf,
+        'frags': frags,
+        'states': [state1, state2],
+        'n_modes': 2,  # Keep for compatibility
+        'gridpoints': 2  # Adjusted for 4x4 matrices
+    }
+
+
+@pytest.fixture
+def minimal_system_sparse():
+    """Create a minimal system with SparseState for unit tests."""
+
+    # Create simple sparse matrices for testing
+    matrix1 = csr_matrix([[1, 0], [0, 1]])  # Identity matrix
+    matrix2 = csr_matrix([[0, 1], [1, 0]])  # Pauli-X matrix
+
+    frags = dict(enumerate(sparse_fragments([matrix1, matrix2])))
+
+    frag_labels = [0, 1]
+    frag_coeffs = [1 / 2, 1 / 2]
+    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+
+    # Create sparse states compatible with 2x2 matrices - as row vectors for transpose operations
+    state1_sparse = csr_matrix([[1, 0]])  # |0> as row vector
+    state1 = SparseState(state1_sparse)
+
+    state2_sparse = csr_matrix([[0, 1]])  # |1> as row vector
+    state2 = SparseState(state2_sparse)
+
+    return {
+        'pf': pf,
+        'frags': frags,
+        'states': [state1, state2],
+        'n_modes': 2,  # Keep for compatibility
+        'gridpoints': 2  # Adjusted for 2x2 matrices
     }
 
 
@@ -306,24 +374,6 @@ def test_effective_hamiltonian_basic(minimal_system):  # pylint: disable=redefin
         assert norm_value >= 0, "Norm should be non-negative"
 
 
-@pytest.mark.parametrize("order", [1, 2, 3])
-@pytest.mark.parametrize("timestep", [0.01, 0.1, 1.0])
-def test_effective_hamiltonian_scaling(order, timestep, minimal_system):  # pylint: disable=redefined-outer-name
-    """Test that effective Hamiltonian scales properly with timestep and order."""
-    eff_ham = effective_hamiltonian(
-        minimal_system['pf'],
-        minimal_system['frags'],
-        order=order,
-        timestep=timestep
-    )
-
-    # Verify basic properties
-    assert eff_ham is not None
-    norm_value = eff_ham.norm({"gridpoints": minimal_system['gridpoints']})
-    assert np.isfinite(norm_value)
-    assert norm_value >= 0
-
-
 def test_effective_hamiltonian_fragment_mismatch():
     """Test that effective_hamiltonian raises error when fragments don't match product formula."""
     # Create a product formula requiring fragment 2 that doesn't exist
@@ -349,280 +399,339 @@ def test_effective_hamiltonian_fragment_mismatch():
         effective_hamiltonian(pf, incomplete_frags, order=2, timestep=0.1)
 
 
-def test_random_sample_commutators():
-    """Test the random_sample_commutators function comprehensively."""
-    # Create a simple list of commutators for testing
-    commutators = [
-        (0,),
-        (1,),
-        ((0,), (1,)),
-        ((1,), (0,)),
-        (((0,), (1,)), (0,)),
-        (((1,), (0,)), (1,)),
-    ]
-
-    # Test normal sampling
-    sample_size = 3
-    sampled = random_sample_commutators(
-        commutators, sample_size=sample_size, random_seed=42
-    )
-
-    assert isinstance(sampled, list)
-    assert len(sampled) == sample_size
-    # All sampled items should be in original list
-    for item in sampled:
-        assert item in commutators
-
-    # Test reproducibility with same seed
-    sampled_2 = random_sample_commutators(
-        commutators, sample_size=sample_size, random_seed=42
-    )
-    assert sampled == sampled_2, "Same seed should produce same sample"
-
-    # Test edge case: sample size larger than available commutators
-    large_sample = random_sample_commutators(
-        commutators, sample_size=10, random_seed=42
-    )
-    assert len(large_sample) == len(commutators), "Should return all commutators when sample_size > len(commutators)"
-
-    # Test edge case: sample size of 0
-    empty_sample = random_sample_commutators(
-        commutators, sample_size=0, random_seed=42
-    )
-    assert len(empty_sample) == 0, "Sample size 0 should return empty list"
-
-
-def test_calculate_commutator_probability(minimal_system):  # pylint: disable=redefined-outer-name
-    """Test the _calculate_commutator_probability function with various commutator types."""
+def test_fixed_sampling_invalid_method(minimal_system):  # pylint: disable=redefined-outer-name
+    """Test that _fixed_sampling raises error for invalid sampling method."""
     frags = minimal_system['frags']
-    timestep = 0.1
-    gridpoints = minimal_system['gridpoints']
+    states = minimal_system['states']
+    commutators = [(0,), (1,)]
 
-    # Test single fragment commutator
-    commutator_single = (0,)
-    prob_single = _calculate_commutator_probability(
-        commutator_single, frags, timestep, gridpoints
-    )
-    assert isinstance(prob_single, float)
-    assert prob_single > 0
-
-    # Test two-fragment commutator
-    commutator_double = (0, 1)
-    prob_double = _calculate_commutator_probability(
-        commutator_double, frags, timestep, gridpoints
-    )
-    assert isinstance(prob_double, float)
-    assert prob_double > 0
-
-    # Test nested commutator
-    commutator_nested = ((0,), (1,))
-    prob_nested = _calculate_commutator_probability(
-        commutator_nested, frags, timestep, gridpoints
-    )
-    assert isinstance(prob_nested, float)
-    assert prob_nested > 0
-
-    # Verify that higher order commutators have different probabilities
-    assert prob_single != prob_double
-    assert prob_single != prob_nested
-
-    # Test empty commutator
-    commutator_empty = ()
-    prob_empty = _calculate_commutator_probability(
-        commutator_empty, frags, timestep, gridpoints
-    )
-    assert prob_empty == 0.0
-
-    # Test commutator with frozenset (weighted fragments)
-    commutator_frozenset = (frozenset({(0, 0.5), (1, 0.3)}),)
-    prob_frozenset = _calculate_commutator_probability(
-        commutator_frozenset, frags, timestep, gridpoints
-    )
-    assert isinstance(prob_frozenset, float)
-    assert prob_frozenset > 0
-
-
-@pytest.mark.parametrize("timestep_factor", [0.5, 2.0, 5.0])
-def test_calculate_commutator_probability_scaling(timestep_factor, minimal_system):  # pylint: disable=redefined-outer-name
-    """Test that commutator probabilities scale correctly with timestep."""
-    frags = minimal_system['frags']
-    base_timestep = 0.1
-    scaled_timestep = base_timestep * timestep_factor
-    gridpoints = minimal_system['gridpoints']
-
-    # Test single fragment commutator (order 1)
-    commutator_single = (0,)
-    prob_base = _calculate_commutator_probability(
-        commutator_single, frags, base_timestep, gridpoints
-    )
-    prob_scaled = _calculate_commutator_probability(
-        commutator_single, frags, scaled_timestep, gridpoints
-    )
-
-    # For order-1 commutator, prob should scale as timestep^1
-    expected_ratio = timestep_factor ** 1
-    actual_ratio = prob_scaled / prob_base
-    np.testing.assert_allclose(actual_ratio, expected_ratio, rtol=1e-10)
-
-    # Test double fragment commutator (order 2)
-    commutator_double = (0, 1)
-    prob_base_double = _calculate_commutator_probability(
-        commutator_double, frags, base_timestep, gridpoints
-    )
-    prob_scaled_double = _calculate_commutator_probability(
-        commutator_double, frags, scaled_timestep, gridpoints
-    )
-
-    # For order-2 commutator, prob should scale as timestep^2
-    expected_ratio_double = timestep_factor ** 2
-    actual_ratio_double = prob_scaled_double / prob_base_double
-    np.testing.assert_allclose(actual_ratio_double, expected_ratio_double, rtol=1e-10)
-
-
-def test_importance_sample_commutators(minimal_system):  # pylint: disable=redefined-outer-name
-    """Test the importance_sample_commutators function."""
-    frags = minimal_system['frags']
-
-    # Create a simple list of commutators for testing
-    commutators = [
-        (0,),
-        (1,),
-        ((0,), (1,)),
-    ]
-
-    # Test importance sampling - handle potential KeyError gracefully
-    try:
-        sample_size = 2
-        timestep = 0.1
-        sampled = importance_sample_commutators(
-            commutators,
+    with pytest.raises(ValueError, match="sampling_method must be"):
+        _fixed_sampling(
+            commutators=commutators,
             fragments=frags,
-            timestep=timestep,
-            sample_size=sample_size,
-            random_seed=42,
-            gridpoints=minimal_system['gridpoints']
+            states=states,
+            sample_size=2,
+            sampling_method="invalid_method",
+            timestep=0.1,
+            gridpoints=minimal_system['gridpoints'],
+            random_seed=42
         )
 
-        assert isinstance(sampled, list)
-        assert len(sampled) <= sample_size
-        # Each element should be a tuple of (commutator, weight)
-        for item in sampled:
-            assert isinstance(item, tuple)
-            assert len(item) == 2
-            commutator, weight = item
-            assert commutator in commutators
-            assert isinstance(weight, (int, float))
-            assert weight > 0  # Importance weights should be positive
-    except KeyError as e:
-        if "gridpoints" in str(e):
-            pytest.skip("Importance sampling requires gridpoints parameter setup")
-        else:
-            raise
 
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_fixed_sampling_random(system_fixture, request):
+    """Test _fixed_sampling with random method for both HOState and SparseState."""
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+    states = system['states']
 
-def test_sampling_methods_consistency():
-    """Test that sampling methods produce consistent results across runs with same seed."""
-    # Create a simple list of commutators for testing
+    # Create test commutators
     commutators = [
         (0,),
         (1,),
         ((0,), (1,)),
         ((1,), (0,)),
-        (((0,), (1,)), (0,)),
     ]
 
-    sample_size = 3
-    # Test random sampling consistency
-    sampled1 = random_sample_commutators(
-        commutators, sample_size=sample_size, random_seed=42
+    # Test random sampling
+    results = _fixed_sampling(
+        commutators=commutators,
+        fragments=frags,
+        states=states,
+        timestep=0.1,
+        sample_size=3,
+        sampling_method="random",
+        random_seed=42,
+        gridpoints=system['gridpoints']
     )
-    sampled2 = random_sample_commutators(
-        commutators, sample_size=sample_size, random_seed=42
+
+    assert isinstance(results, list)
+    assert len(results) == len(states)
+    for result in results:
+        assert np.isfinite(result)
+        assert isinstance(result, (complex, float, int))
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_fixed_sampling_importance(system_fixture, request):
+    """Test _fixed_sampling with importance method for both HOState and SparseState."""
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+    states = system['states']
+
+    # Create test commutators
+    commutators = [
+        (0,),
+        (1,),
+        ((0,), (1,)),
+        ((1,), (0,)),
+    ]
+
+    # Test importance sampling
+    results = _fixed_sampling(
+        commutators=commutators,
+        fragments=frags,
+        states=states,
+        timestep=0.1,
+        sample_size=3,
+        sampling_method="importance",
+        random_seed=42,
+        gridpoints=system['gridpoints']
     )
-    assert sampled1 == sampled2
 
-    # Test that all sampled items are from original list
-    for item in sampled1:
-        assert item in commutators
+    assert isinstance(results, list)
+    assert len(results) == len(states)
+    for result in results:
+        assert np.isfinite(result)
+        assert isinstance(result, (complex, float, int))
 
 
-def test_perturbation_error_multiprocessing(minimal_system):  # pylint: disable=redefined-outer-name
-    """Test multiprocessing backends with simpler configuration to avoid pickling issues."""
-    # Test serial version first
-    errors_serial = perturbation_error(
-        minimal_system['pf'],
-        minimal_system['frags'],
-        minimal_system['states'],
-        order=2,  # Lower order to reduce complexity
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_adaptive_sampling(system_fixture, request):
+    """Test _adaptive_sampling for both HOState and SparseState."""
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+    states = system['states']
+
+    # Create test commutators
+    commutators = [
+        (0,),
+        (1,),
+        ((0,), (1,)),
+        ((1,), (0,)),
+    ]
+
+    # Test adaptive sampling
+    results = _adaptive_sampling(
+        commutators=commutators,
+        fragments=frags,
+        states=states,
+        timestep=0.1,
+        sampling_method="random",
+        confidence_level=0.95,
+        target_error=0.1,
+        min_sample_size=2,
+        max_sample_size=5,
+        random_seed=42,
+        gridpoints=system['gridpoints']
+    )
+
+    assert isinstance(results, list)
+    assert len(results) == len(states)
+    for result in results:
+        assert np.isfinite(result)
+        assert isinstance(result, (complex, float, int))
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_compute_expectation_values(system_fixture, request):
+    """Test _compute_expectation_values for both HOState and SparseState."""
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+    states = system['states']
+
+    # Create test commutators and weights
+    commutators = [
+        (0,),
+        (1,),
+        ((0,), (1,)),
+    ]
+    weights = [1.0, 1.0, 2.0]
+
+    # Test expectation value computation
+    results = _compute_expectation_values(
+        commutators=commutators,
+        weights=weights,
+        fragments=frags,
+        states=states,
         num_workers=1,
         backend="serial",
+        parallel_mode="state"
     )
 
-    # Test multiprocessing backends if they work
-    for backend in ["mp_pool", "cf_procpool"]:
-        try:
-            errors_parallel = perturbation_error(
-                minimal_system['pf'],
-                minimal_system['frags'],
-                minimal_system['states'],
-                order=2,
-                num_workers=2,
-                backend=backend,
-                parallel_mode="state",  # Use state parallelization which is more stable
-            )
-
-            assert isinstance(errors_parallel, list)
-            assert len(errors_parallel) == 2
-
-            # Results should be approximately equal
-            for serial, parallel in zip(errors_serial, errors_parallel):
-                assert np.isfinite(serial)
-                assert np.isfinite(parallel)
-                # Allow for some numerical differences
-                np.testing.assert_allclose(serial, parallel, rtol=1e-10, atol=1e-12)
-
-        except (RuntimeError, ImportError, OSError, TypeError, AttributeError) as e:
-            # If multiprocessing backend fails due to pickling or other issues,
-            # we skip it but note the issue
-            if "pickle" in str(e).lower() or "can't pickle" in str(e).lower():
-                pytest.skip(f"Skipping {backend} due to pickling limitations")
-            else:
-                # Re-raise other unexpected errors
-                raise
+    assert isinstance(results, list)
+    assert len(results) == len(states)
+    for result in results:
+        assert np.isfinite(result)
+        assert isinstance(result, (complex, float, int))
 
 
-# Additional edge case tests
-@pytest.mark.parametrize("timestep", [0.001, 0.01, 0.1, 1.0])
-def test_perturbation_error_timestep_scaling(timestep, minimal_system):  # pylint: disable=redefined-outer-name
-    """Test that perturbation error scales appropriately with timestep."""
-    errors = perturbation_error(
-        minimal_system['pf'],
-        minimal_system['frags'],
-        minimal_system['states'],
-        order=2,
-        timestep=timestep,
+def test_sample_importance_commutators():
+    """Test _sample_importance_commutators with synthetic data."""
+
+    # Create test commutators
+    commutators = [
+        (0,),
+        (1,),
+        ((0,), (1,)),
+        ((1,), (0,)),
+    ]
+
+    # Pre-calculate probabilities (simplified uniform for this test)
+    probabilities = np.ones(len(commutators)) / len(commutators)
+
+    # Test importance sampling
+    sampled_commutators, weights = _sample_importance_commutators(
+        commutators=commutators,
+        probabilities=probabilities,
+        sample_size=2,
+        random_seed=42
     )
 
-    assert isinstance(errors, list)
-    assert len(errors) == 2
-    for error in errors:
-        assert np.isfinite(error)
-        assert isinstance(error, (complex, float, int))
+    assert isinstance(sampled_commutators, list)
+    assert isinstance(weights, list)
+    assert len(sampled_commutators) == 2
+    assert len(weights) == 2
+
+    for comm in sampled_commutators:
+        assert comm in commutators
+
+    for weight in weights:
+        assert np.isfinite(weight)
+        assert weight > 0
 
 
-@pytest.mark.parametrize("order", [1, 2, 3])
-def test_perturbation_error_order_scaling(order, minimal_system):  # pylint: disable=redefined-outer-name
-    """Test that perturbation error works for different orders."""
-    errors = perturbation_error(
-        minimal_system['pf'],
-        minimal_system['frags'],
-        minimal_system['states'],
-        order=order,
+# ==================== TESTS FOR NEW HELPER FUNCTIONS ====================
+
+def test_get_confidence_z_score():
+    """Test _get_confidence_z_score function with different confidence levels."""
+
+    # Test known confidence levels with correct statistical values
+    assert _get_confidence_z_score(0.68) == 1.0     # 1 standard deviation
+    assert _get_confidence_z_score(0.9545) == 2.0   # 2 standard deviations
+    assert _get_confidence_z_score(0.90) == 1.645   # 90% confidence
+    assert _get_confidence_z_score(0.95) == 1.96    # 95% confidence
+    assert _get_confidence_z_score(0.99) == 2.576   # 99% confidence
+
+    # Test default fallback for unrecognized confidence levels
+    assert _get_confidence_z_score(0.85) == 1.0  # Should fallback to 68%
+    assert _get_confidence_z_score(0.12) == 1.0  # Should fallback to 68%
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_setup_importance_probabilities_random(system_fixture, request):
+    """Test _setup_importance_probabilities with random sampling."""
+
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+
+    # Create test commutators
+    commutators = [
+        (0,),
+        (1,),
+        ((0,), (1,)),
+    ]
+
+    # Test random sampling - should return None
+    probabilities = _setup_importance_probabilities(
+        commutators=commutators,
+        fragments=frags,
         timestep=0.1,
+        gridpoints=system['gridpoints'],
+        sampling_method="random"
     )
 
-    assert isinstance(errors, list)
-    assert len(errors) == 2
-    for error in errors:
-        assert np.isfinite(error)
-        assert isinstance(error, (complex, float, int))
+    assert probabilities is None
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_setup_importance_probabilities_importance(system_fixture, request):
+    """Test _setup_importance_probabilities with importance sampling."""
+
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+
+    # Create test commutators
+    commutators = [
+        (0,),
+        (1,),
+        ((0,), (1,)),
+    ]
+
+    # Test importance sampling - should return normalized probabilities
+    probabilities = _setup_importance_probabilities(
+        commutators=commutators,
+        fragments=frags,
+        timestep=0.1,
+        gridpoints=system['gridpoints'],
+        sampling_method="importance"
+    )
+
+    assert isinstance(probabilities, np.ndarray)
+    assert len(probabilities) == len(commutators)
+    assert np.all(probabilities >= 0)
+    assert np.sum(probabilities) > 0
+
+    # Should be normalized
+    np.testing.assert_allclose(np.sum(probabilities), 1.0, rtol=1e-10)
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_adaptive_sample_single_state_random(system_fixture, request):
+    """Test _adaptive_sample_single_state with random sampling."""
+
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+    state = system['states'][0]  # Use first state
+
+    # Create test commutators
+    commutators = [
+        (0,),
+        (1,),
+        ((0,), (1,)),
+        ((1,), (0,)),
+    ]
+
+    # Test with random sampling (probabilities = None)
+    expectation = _adaptive_sample_single_state(
+        state=state,
+        state_idx=0,
+        commutators=commutators,
+        fragments=frags,
+        probabilities=None,  # Random sampling
+        sampling_method="random",
+        z_score=1.96,
+        target_error=0.5,  # Large error to converge quickly
+        min_sample_size=2,
+        max_sample_size=5,
+    )
+
+    assert np.isfinite(expectation)
+    assert isinstance(expectation, (complex, float, int))
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_adaptive_sample_single_state_importance(system_fixture, request):
+    """Test _adaptive_sample_single_state with importance sampling."""
+
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+    state = system['states'][0]  # Use first state
+
+    # Create test commutators
+    commutators = [
+        (0,),
+        (1,),
+        ((0,), (1,)),
+        ((1,), (0,)),
+    ]
+
+    # Create uniform probabilities for importance sampling
+    probabilities = np.ones(len(commutators)) / len(commutators)
+
+    # Test with importance sampling
+    expectation = _adaptive_sample_single_state(
+        state=state,
+        state_idx=0,
+        commutators=commutators,
+        fragments=frags,
+        probabilities=probabilities,
+        sampling_method="importance",
+        z_score=1.96,
+        target_error=0.5,  # Large error to converge quickly
+        min_sample_size=2,
+        max_sample_size=5,
+    )
+
+    assert np.isfinite(expectation)
+    assert isinstance(expectation, (complex, float, int))

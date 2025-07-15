@@ -15,11 +15,13 @@
 
 import copy
 import time
+import warnings
 from collections import Counter, defaultdict
 from typing import List, Sequence, Tuple, Hashable, Dict, Set, Optional
 
-import numpy as np
 from tqdm import tqdm
+import numpy as np
+from scipy.sparse import csr_matrix
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
@@ -137,7 +139,7 @@ def perturbation_error(
         timestep (float): time step for the trotter error operator.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backends.
-            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
+            Available options : "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
         parallel_mode (str): the mode of parallelization to use.
             Options are "state" or "commutator".
             "state" parallelizes the computation of expectation values per state,
@@ -196,7 +198,7 @@ def perturbation_error(
     >>> print(errors)
     [0.9189251160920877j, 4.797716682426847j]
     >>>
-    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3, num_workers=4, backend="mp_pool", parallel_mode="commutator")
+    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3, num_workers=2, backend="mpi4py_pool", parallel_mode="commutator")
     >>> print(errors)
     [0.9189251160920877j, 4.797716682426847j]
     """
@@ -204,16 +206,12 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    start_time = time.time()
     commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order))
-    print(f"BCH expansion time: {time.time() - start_time:.4f} seconds")
 
     # Handle adaptive sampling first (it has priority)
     if adaptive_sampling:
         if sample_size is not None:
-            print("Warning: sample_size is ignored when adaptive_sampling=True")
-
-        print("Using adaptive sampling (dynamic sample size determination)")
+            warnings.warn("sample_size is ignored when adaptive_sampling=True", UserWarning)
 
         # Adaptive sampling is only compatible with serial execution
         if backend != "serial":
@@ -226,6 +224,8 @@ def perturbation_error(
             gridpoints = states[0].gridpoints
         else:
             gridpoints = None
+
+        # Perform adaptive sampling for each state
         return _adaptive_sampling(
             commutators=commutators,
             fragments=fragments,
@@ -237,74 +237,38 @@ def perturbation_error(
             min_sample_size=min_sample_size,
             max_sample_size=max_sample_size,
             random_seed=random_seed,
-            gridpoints=gridpoints,
+            gridpoints=gridpoints or 10,  # Default gridpoints if not found
         )
 
     # Handle fixed-size sampling if explicitly requested
     if sample_size is not None:
-        print(f"Using fixed-size sampling with {sample_size} commutators out of {len(commutators)} total")
         # Get gridpoints from the first state (all states should have the same gridpoints)
         if states and hasattr(states[0], 'gridpoints'):
             gridpoints = states[0].gridpoints
         else:
             gridpoints = None
-        commutators, commutator_weights = _sample_commutators(
-            commutators, fragments, timestep, sample_size, sampling_method, random_seed, gridpoints
+        return _fixed_sampling(
+            commutators=commutators,
+            fragments=fragments,
+            states=states,
+            timestep=timestep,
+            sample_size=sample_size,
+            sampling_method=sampling_method,
+            random_seed=random_seed,
+            gridpoints=gridpoints,
+            num_workers=num_workers,
+            backend=backend,
+            parallel_mode=parallel_mode,
         )
-    else:
-        print(f"Using all {len(commutators)} commutators exactly (no sampling)")
-        commutator_weights = [1.0] * len(commutators)
 
-    if backend == "serial":
-        assert num_workers == 1, "num_workers must be set to 1 for serial execution."
-        expectations = []
-        for state in states:
-            new_state = _AdditiveIdentity()
-            for weight, commutator in tqdm(zip(commutator_weights, commutators), desc="Processing commutators", total=len(commutators)):
-                weighted_state = weight * _apply_commutator(commutator, fragments, state)
-                new_state += weighted_state
+    # Use all commutators exactly (no sampling)
+    commutator_weights = [1.0] * len(commutators)
 
-            # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
-            if isinstance(new_state, _AdditiveIdentity):
-                expectations.append(0.0)
-            else:
-                expectations.append(state.dot(new_state))
-
-        return expectations
-
-    if parallel_mode == "state":
-        executor = concurrency.backends.get_executor(backend)
-        with executor(max_workers=num_workers) as ex:
-            expectations = ex.starmap(
-                _compute_state_expectation,
-                [(commutators, commutator_weights, fragments, state) for state in states],
-            )
-
-        return expectations
-
-    if parallel_mode == "commutator":
-        executor = concurrency.backends.get_executor(backend)
-        expectations = []
-        for state in states:
-            with executor(max_workers=num_workers) as ex:
-                applied_commutators = ex.starmap(
-                    _apply_weighted_commutator,
-                    [(commutator, weight, fragments, state) for commutator, weight in zip(commutators, commutator_weights)],
-                )
-
-            new_state = _AdditiveIdentity()
-            for applied_state in applied_commutators:
-                new_state += applied_state
-
-            # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
-            if isinstance(new_state, _AdditiveIdentity):
-                expectations.append(0.0)
-            else:
-                expectations.append(state.dot(new_state))
-
-        return expectations
-
-    raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
+    # Use the shared expectation value computation function
+    return _compute_expectation_values(
+        commutators, commutator_weights, fragments, states,
+        num_workers, backend, parallel_mode
+    )
 
 
 def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
@@ -359,7 +323,12 @@ def _apply_commutator(
                     (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
                 )
             else:
-                frag = fragments[frag]
+                # Handle tuple wrapping from _op_list structure
+                if isinstance(frag, tuple) and len(frag) == 1:
+                    frag_key = frag[0]
+                else:
+                    frag_key = frag
+                frag = fragments[frag_key]
 
             tmp_state = frag.apply(tmp_state)
 
@@ -434,126 +403,6 @@ def _group_sums_in_dict(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple
         grouped_comms[tail].add((head, coeff))
 
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
-
-
-def random_sample_commutators(
-    commutators: List[Tuple[Hashable | Set]],
-    sample_size: int,
-    random_seed: Optional[int] = None
-) -> List[Tuple[Hashable | Set]]:
-    """
-    Randomly sample commutators uniformly without replacement.
-
-    Args:
-        commutators: List of commutator tuples to sample from
-        sample_size: Number of commutators to sample
-        random_seed: Random seed for reproducibility
-
-    Returns:
-        List of sampled commutator tuples
-    """
-    if random_seed is not None:
-        np.random.seed(random_seed)
-
-    if len(commutators) <= sample_size:
-        return commutators
-
-    sampled_indices = np.random.choice(
-        len(commutators),
-        size=sample_size,
-        replace=False
-    )
-
-    return [commutators[i] for i in sampled_indices]
-
-
-def importance_sample_commutators(
-    commutators: List[Tuple[Hashable | Set]],
-    fragments: Dict[Hashable, Fragment],
-    timestep: float,
-    sample_size: int,
-    random_seed: Optional[int] = None,
-    gridpoints: int = 10
-) -> List[Tuple[Tuple[Hashable | Set], float]]:
-    r"""
-    Importance sample commutators based on their magnitude and structure.
-
-    Importance sampling is a variance reduction technique that samples commutators according to
-    a probability distribution proportional to their expected contribution to the final result.
-
-    For a commutator :math:`C_k` of order :math:`k`, the unnormalized probability is given by:
-
-    .. math::
-        p_k \propto 2^{k-1} \cdot \tau^k \cdot \prod_{i} \|\hat{H}_i\|
-
-    where :math:`\tau` is the timestep, :math:`\hat{H}_i` are the fragment operators in the commutator,
-    and :math:`\|\hat{H}_i\|` are their operator norms.
-
-    The final sampling probability is :math:`P_k = p_k / \sum_j p_j`, and each sampled commutator
-    receives an importance weight :math:`w_k = 1/(P_k \cdot N_{\text{sample}})` to ensure the estimator
-    remains unbiased:
-
-    .. math::
-        \langle \hat{\varepsilon} \rangle \approx \frac{1}{N_{\text{sample}}} \sum_{k \in \text{sampled}} \frac{\langle \psi | C_k | \psi \rangle}{P_k}
-
-    This approach typically provides better convergence compared to uniform random sampling
-    when estimating perturbation theory errors.
-
-    Args:
-        commutators: List of commutator tuples where each tuple represents a commutator
-        fragments: Dictionary mapping fragment keys to Fragment objects
-        timestep: Time step for the simulation
-        sample_size: Number of commutators to sample
-        random_seed: Random seed for reproducibility
-        gridpoints: Number of gridpoints for norm calculation
-
-    Returns:
-        List of tuples (commutator, weight) where weight is the importance sampling weight
-    """
-    if random_seed is not None:
-        np.random.seed(random_seed)
-
-    if not commutators:
-        return []
-
-    # Calculate unnormalized probabilities for each commutator
-    probabilities = []
-
-    for commutator in tqdm(commutators, desc="Calculating commutator probabilities"):
-        prob = _calculate_commutator_probability(commutator, fragments, timestep, gridpoints)
-        probabilities.append(prob)
-
-    # Normalize probabilities
-    probabilities = np.array(probabilities)
-    total_prob_sum = np.sum(probabilities)
-
-    if total_prob_sum == 0:
-        # Handle the case where all probabilities are zero
-        # Fallback to uniform sampling
-        probabilities = np.ones(len(commutators)) / len(commutators)
-    else:
-        probabilities = probabilities / total_prob_sum
-
-    # Sample with replacement using the calculated probabilities
-    sampled_indices = np.random.choice(
-        len(commutators),
-        size=sample_size,
-        replace=True,
-        p=probabilities
-    )
-
-    # Create the list of sampled commutators with importance weights
-    sampled_commutators = []
-
-    for idx in sampled_indices:
-        commutator = commutators[idx]
-
-        # Calculate importance sampling weight
-        if probabilities[idx] > 0:
-            weight = 1.0 / (probabilities[idx] * sample_size)
-            sampled_commutators.append((commutator, weight))
-
-    return sampled_commutators
 
 
 def _calculate_commutator_probability(
@@ -637,6 +486,7 @@ def _calculate_commutator_probability(
 
 
 # pylint: disable=too-many-branches, too-many-statements
+# pylint: disable=too-many-arguments
 def _adaptive_sampling(
     commutators: List[Tuple[Hashable | Set]],
     fragments: Dict[Hashable, Fragment],
@@ -675,212 +525,428 @@ def _adaptive_sampling(
     Returns:
         List of expectation values for each state
     """
-    print("\n=== Adaptive Sampling Configuration ===")
-    print(f"Total commutators available: {len(commutators)}")
-    print(f"Sampling method: {sampling_method}")
-    print(f"Confidence level: {confidence_level}")
-    print(f"Target relative error: {target_error}")
-    print(f"Min sample size: {min_sample_size}")
-    print(f"Max sample size: {max_sample_size}")
-    print(f"Number of states: {len(states)}")
-
     if random_seed is not None:
         np.random.seed(random_seed)
-        print(f"Random seed: {random_seed}")
 
-    # Calculate z-score for given confidence level (avoid scipy dependency)
-    # For 95% confidence: z ≈ 1.96, for 99%: z ≈ 2.576
-    z_score_dict = {0.90: 1.645, 0.95: 1.96, 0.99: 2.576}
-    z_score = z_score_dict.get(confidence_level, 1.96)  # Default to 95%
-    print(f"Z-score for {confidence_level} confidence: {z_score}")
+    # Get z-score for confidence level
+    z_score = _get_confidence_z_score(confidence_level)
 
-    # Pre-calculate sampling probabilities for importance sampling (only once!)
-    probabilities = None
-    if sampling_method == "importance":
-        print("\n=== Pre-calculating Importance Sampling Probabilities ===")
-        prob_start_time = time.time()
-        probabilities = []
+    # Setup probabilities for sampling
+    probabilities = _setup_importance_probabilities(
+        commutators, fragments, timestep, gridpoints, sampling_method
+    )
 
-        for commutator in tqdm(commutators, desc="Calculating probabilities", unit="commutator"):
-            prob = _calculate_commutator_probability(commutator, fragments, timestep, gridpoints)
-            probabilities.append(prob)
-
-        probabilities = np.array(probabilities)
-        total_prob_sum = np.sum(probabilities)
-
-        if total_prob_sum == 0:
-            print("Warning: All probabilities are zero, falling back to uniform distribution")
-            probabilities = np.ones(len(commutators)) / len(commutators)
-        else:
-            probabilities = probabilities / total_prob_sum
-
-        prob_time = time.time() - prob_start_time
-        print(f"Probability calculation completed in {prob_time:.2f} seconds")
-        print(f"Probability stats: min={np.min(probabilities):.2e}, max={np.max(probabilities):.2e}, mean={np.mean(probabilities):.2e}")
-    else:
-        print("\n=== Using Random Sampling ===")
-
-    # Initialize result storage for each state
+    # Process each state with adaptive sampling
     expectations = []
-    total_start_time = time.time()
 
     for state_idx, state in enumerate(states):
-        state_start_time = time.time()
-        print(f"\n=== Processing State {state_idx + 1}/{len(states)} ===")
-
-        # Initialize statistics for this state
-        n_samples = 0
-        sum_values = 0.0
-        sum_squared = 0.0
-        last_report_time = time.time()
-        report_interval = 10  # Report every 10 samples initially
-
-        # Start sampling
-        while n_samples < max_sample_size:
-            sample_start_time = time.time()
-
-            # Sample one commutator
-            if sampling_method == "random":
-                idx = np.random.choice(len(commutators))
-                weight = len(commutators)  # Scaling factor for uniform sampling
-                commutator = commutators[idx]
-            else:  # importance sampling
-                idx = np.random.choice(len(commutators), p=probabilities)
-                weight = 1.0 / probabilities[idx]  # Importance weight
-                commutator = commutators[idx]
-
-            # Apply commutator and get contribution
-            applied_state = _apply_commutator(commutator, fragments, state)
-
-            # Handle case where applied_state is _AdditiveIdentity
-            if isinstance(applied_state, _AdditiveIdentity):
-                contribution = 0.0
-            else:
-                contribution = weight * state.dot(applied_state)
-
-            # Update running statistics
-            n_samples += 1
-            sum_values += contribution
-            sum_squared += contribution * contribution
-
-            sample_time = time.time() - sample_start_time
-
-            # Progress reporting
-            current_time = time.time()
-            if (n_samples % report_interval == 0) or (current_time - last_report_time > 5.0):  # Report every interval or every 5 seconds
-                mean = sum_values / n_samples
-                variance = (sum_squared - n_samples * mean * mean) / (n_samples - 1) if n_samples > 1 else 0
-                # Handle complex variance by taking the absolute value
-                variance_abs = abs(variance)
-                std_dev = np.sqrt(variance_abs)
-
-                print(f"  Sample {n_samples:4d}: "
-                      f"mean={mean:8.3e}, "
-                      f"std={std_dev:8.3e}, "
-                      f"time={sample_time:.3f}s")
-
-                last_report_time = current_time
-
-                # Adaptive reporting interval: start with 10, then 50, then 100
-                if n_samples >= 50 and report_interval == 10:
-                    report_interval = 50
-                elif n_samples >= 200 and report_interval == 50:
-                    report_interval = 100
-
-            # Check stopping criterion after minimum samples
-            if n_samples >= min_sample_size:
-                mean = sum_values / n_samples
-                variance = (sum_squared - n_samples * mean * mean) / (n_samples - 1) if n_samples > 1 else 0
-                # Handle complex variance by taking the absolute value
-                variance_abs = abs(variance)
-                std_dev = np.sqrt(variance_abs)
-
-                # Avoid division by zero
-                if abs(mean) > 1e-12:
-                    relative_error = std_dev / abs(mean)
-                    required_samples = (z_score * relative_error / target_error) ** 2
-
-                    if n_samples >= required_samples:
-                        convergence_time = time.time() - state_start_time
-                        print(f"  ✓ CONVERGED after {n_samples} samples in {convergence_time:.2f}s")
-                        print(f"    Required samples: {required_samples:.1f}")
-                        print(f"    Final mean: {mean:.6e}")
-                        print(f"    Final std: {std_dev:.6e}")
-                        print(f"    Relative error: {relative_error:.6e} (target: {target_error:.6e})")
-                        break
-                else:
-                    # If mean is very close to zero, use absolute error criterion
-                    if std_dev < target_error:
-                        convergence_time = time.time() - state_start_time
-                        print(f"  ✓ CONVERGED after {n_samples} samples in {convergence_time:.2f}s (mean ≈ 0)")
-                        print(f"    Final std: {std_dev:.6e} (target: {target_error:.6e})")
-                        break
-
-        final_mean = sum_values / n_samples if n_samples > 0 else 0.0
-        expectations.append(final_mean)
-
-        state_time = time.time() - state_start_time
-        if n_samples >= max_sample_size:
-            print(f"  ⚠ STOPPED at maximum samples ({max_sample_size}) for state {state_idx + 1}")
-            print(f"    Time spent: {state_time:.2f}s")
-            print(f"    Final mean: {final_mean:.6e}")
-            variance = (sum_squared - n_samples * final_mean * final_mean) / (n_samples - 1) if n_samples > 1 else 0
-            # Handle complex variance by taking the absolute value
-            variance_abs = abs(variance)
-            std_dev = np.sqrt(variance_abs)
-            print(f"    Final std: {std_dev:.6e}")
-            if abs(final_mean) > 1e-12:
-                rel_err = std_dev / abs(final_mean)
-                print(f"    Achieved relative error: {rel_err:.6e} (target: {target_error:.6e})")
-
-        print(f"  State {state_idx + 1} completed in {state_time:.2f}s")
-
-    total_time = time.time() - total_start_time
-    print("\n=== Adaptive Sampling Summary ===")
-    print(f"Total time: {total_time:.2f}s")
-    print(f"Average time per state: {total_time/len(states):.2f}s")
-    print(f"Final expectation values: {[f'{exp:.6e}' for exp in expectations]}")
+        expectation = _adaptive_sample_single_state(
+            state=state,
+            state_idx=state_idx,
+            commutators=commutators,
+            fragments=fragments,
+            probabilities=probabilities,
+            sampling_method=sampling_method,
+            z_score=z_score,
+            target_error=target_error,
+            min_sample_size=min_sample_size,
+            max_sample_size=max_sample_size,
+        )
+        expectations.append(expectation)
 
     return expectations
 
+def _get_confidence_z_score(confidence_level: float) -> float:
+    """
+    Get the z-score for a given confidence level.
 
-def _sample_commutators(
+    Args:
+        confidence_level: Confidence level (e.g., 0.95 for 95% confidence)
+
+    Returns:
+        float: Corresponding z-score
+    """
+    # Avoid scipy dependency by using a lookup table for common confidence levels
+    z_score_dict = {
+        0.68: 1.0,      # 68% confidence interval (1 standard deviation)
+        0.90: 1.645,    # 90% confidence interval
+        0.95: 1.96,     # 95% confidence interval
+        0.9545: 2.0,    # ~95.45% confidence interval (2 standard deviations)
+        0.99: 2.576     # 99% confidence interval
+    }
+    return z_score_dict.get(confidence_level, 1.0)  # Default to 68% confidence (z=1.0)
+
+
+def _setup_importance_probabilities(
     commutators: List[Tuple[Hashable | Set]],
     fragments: Dict[Hashable, Fragment],
+    timestep: float,
+    gridpoints: int,
+    sampling_method: str,
+) -> Optional[np.ndarray]:
+    """
+    Setup probabilities for importance sampling.
+
+    Args:
+        commutators: List of all available commutators
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        timestep: Time step for simulation
+        gridpoints: Number of gridpoints for norm calculations
+        sampling_method: "random" or "importance"
+
+    Returns:
+        np.ndarray or None: Normalized probabilities for importance sampling,
+                           or None for random sampling
+    """
+    if sampling_method == "random":
+        return None
+
+    # Pre-calculate importance sampling probabilities
+    probabilities = []
+
+    for commutator in tqdm(commutators, desc="Calculating probabilities", unit="commutator"):
+        prob = _calculate_commutator_probability(commutator, fragments, timestep, gridpoints)
+        probabilities.append(prob)
+
+    probabilities = np.array(probabilities)
+    total_prob_sum = np.sum(probabilities)
+
+    if total_prob_sum == 0:
+        warnings.warn("All probabilities are zero, falling back to uniform distribution", UserWarning)
+        probabilities = np.ones(len(commutators)) / len(commutators)
+    else:
+        probabilities = probabilities / total_prob_sum
+
+    return probabilities
+
+
+def _adaptive_sample_single_state(
+    state: AbstractState,
+    state_idx: int,
+    commutators: List[Tuple[Hashable | Set]],
+    fragments: Dict[Hashable, Fragment],
+    probabilities: Optional[np.ndarray],
+    sampling_method: str,
+    z_score: float,
+    target_error: float,
+    min_sample_size: int,
+    max_sample_size: int,
+) -> float:
+    """
+    Perform adaptive sampling for a single state until convergence.
+
+    Args:
+        state: The quantum state to compute expectation value for
+        state_idx: Index of the state (for logging)
+        commutators: List of all commutators
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        probabilities: Pre-calculated probabilities for importance sampling (None for random)
+        sampling_method: "random" or "importance"
+        z_score: Z-score for confidence interval calculation
+        target_error: Target relative error for convergence
+        min_sample_size: Minimum number of samples before checking convergence
+        max_sample_size: Maximum number of samples (stopping criterion)
+
+    Returns:
+        float: Final expectation value estimate
+    """
+    state_start_time = time.time()
+    print(f"\n=== Processing State {state_idx + 1} ===")
+
+    # Initialize statistics for this state
+    n_samples = 0
+    sum_values = 0.0
+    sum_squared = 0.0
+    last_report_time = time.time()
+    report_interval = 10  # Report every 10 samples initially
+
+    # Start sampling
+    while n_samples < max_sample_size:
+        sample_start_time = time.time()
+
+        # Sample one commutator and compute its contribution
+        if sampling_method == "random":
+            idx = np.random.choice(len(commutators))
+            weight = len(commutators)  # Scaling factor for uniform sampling
+            commutator = commutators[idx]
+        else:  # importance sampling
+            idx = np.random.choice(len(commutators), p=probabilities)
+            weight = 1.0 / probabilities[idx]  # Importance weight
+            commutator = commutators[idx]
+
+        # Compute the contribution of this commutator
+        applied_state = _apply_commutator(commutator, fragments, state)
+        if isinstance(applied_state, _AdditiveIdentity):
+            contribution = 0.0
+        else:
+            contribution = weight * state.dot(applied_state)
+
+        # Update running statistics
+        n_samples += 1
+        sum_values += contribution
+        sum_squared += contribution * contribution
+
+        sample_time = time.time() - sample_start_time
+
+        # Progress reporting
+        current_time = time.time()
+        if (n_samples % report_interval == 0) or (current_time - last_report_time > 5.0):
+            mean = sum_values / n_samples
+            variance = (sum_squared - n_samples * mean * mean) / (n_samples - 1) if n_samples > 1 else 0
+            variance_abs = abs(variance)
+            std_dev = np.sqrt(variance_abs)
+
+            print(f"  Sample {n_samples:4d}: "
+                  f"mean={mean:8.3e}, "
+                  f"std={std_dev:8.3e}, "
+                  f"time={sample_time:.3f}s")
+
+            last_report_time = current_time
+
+            # Adaptive reporting interval: start with 10, then 50, then 100
+            if n_samples >= 50 and report_interval == 10:
+                report_interval = 50
+            elif n_samples >= 200 and report_interval == 50:
+                report_interval = 100
+
+        # Check stopping criterion after minimum samples
+        if n_samples >= min_sample_size:
+            mean = sum_values / n_samples
+            variance = (sum_squared - n_samples * mean * mean) / (n_samples - 1) if n_samples > 1 else 0
+            variance_abs = abs(variance)
+            std_dev = np.sqrt(variance_abs)
+
+            # Avoid division by zero
+            if abs(mean) > 1e-12:
+                relative_error = std_dev / abs(mean)
+                required_samples = (z_score * relative_error / target_error) ** 2
+
+                if n_samples >= required_samples:
+                    convergence_time = time.time() - state_start_time
+                    print(f"  ✓ CONVERGED after {n_samples} samples in {convergence_time:.2f}s")
+                    print(f"    Required samples: {required_samples:.1f}")
+                    print(f"    Final mean: {mean:.6e}")
+                    print(f"    Final std: {std_dev:.6e}")
+                    print(f"    Relative error: {relative_error:.6e} (target: {target_error:.6e})")
+                    break
+            else:
+                # If mean is very close to zero, use absolute error criterion
+                if std_dev < target_error:
+                    convergence_time = time.time() - state_start_time
+                    print(f"  ✓ CONVERGED after {n_samples} samples in {convergence_time:.2f}s (mean ≈ 0)")
+                    print(f"    Final std: {std_dev:.6e} (target: {target_error:.6e})")
+                    break
+
+    final_mean = sum_values / n_samples if n_samples > 0 else 0.0
+    state_time = time.time() - state_start_time
+
+    if n_samples >= max_sample_size:
+        print(f"  ⚠ STOPPED at maximum samples ({max_sample_size}) for state {state_idx + 1}")
+        print(f"    Time spent: {state_time:.2f}s")
+        print(f"    Final mean: {final_mean:.6e}")
+        variance = (sum_squared - n_samples * final_mean * final_mean) / (n_samples - 1) if n_samples > 1 else 0
+        variance_abs = abs(variance)
+        std_dev = np.sqrt(variance_abs)
+        print(f"    Final std: {std_dev:.6e}")
+        if abs(final_mean) > 1e-12:
+            rel_err = std_dev / abs(final_mean)
+            print(f"    Achieved relative error: {rel_err:.6e} (target: {target_error:.6e})")
+
+    print(f"  State {state_idx + 1} completed in {state_time:.2f}s")
+    return final_mean
+
+
+def _fixed_sampling(
+    commutators: List[Tuple[Hashable | Set]],
+    fragments: Dict[Hashable, Fragment],
+    states: Sequence[AbstractState],
     timestep: float,
     sample_size: int,
     sampling_method: str,
     random_seed: Optional[int] = None,
-    gridpoints: int = 10
+    gridpoints: int = 10,
+    num_workers: int = 1,
+    backend: str = "serial",
+    parallel_mode: str = "state",
+) -> List[float]:
+    """
+    Fixed-size sampling for perturbation error calculation.
+
+    Samples a fixed number of commutators using either random or importance sampling,
+    then computes expectation values for all states.
+
+    Args:
+        commutators: List of all available commutators
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        states: States to compute expectation values for
+        timestep: Time step for simulation
+        sample_size: Number of commutators to sample
+        sampling_method: "random" or "importance"
+        random_seed: Random seed for reproducibility
+        gridpoints: Number of gridpoints for norm calculations
+        num_workers: Number of workers for parallel processing
+        backend: Backend for parallel processing
+        parallel_mode: Mode of parallelization ("state" or "commutator")
+
+    Returns:
+        List of expectation values for each state
+    """
+    print(f"Using fixed-size sampling with {sample_size} commutators out of {len(commutators)} total")
+
+    # Pre-calculate sampling probabilities and sample commutators
+    if sampling_method == "random":
+        if random_seed is not None:
+            np.random.seed(random_seed)
+
+        # Sample uniformly at random with replacement
+        effective_sample_size = min(sample_size, len(commutators))
+        sampled_indices = np.random.choice(len(commutators), size=effective_sample_size, replace=True)
+        sampled_commutators = [commutators[idx] for idx in sampled_indices]
+
+        scaling_factor = len(commutators) / len(sampled_commutators) if sampled_commutators else 1.0
+        commutator_weights = [scaling_factor] * len(sampled_commutators)
+
+    elif sampling_method == "importance":
+        print("=== Using Importance Sampling ===")
+        # Pre-calculate probabilities once
+        start_time = time.time()
+        probabilities = _setup_importance_probabilities(
+            commutators, fragments, timestep, gridpoints, sampling_method
+        )
+        prob_time = time.time() - start_time
+        print(f"Probability calculation completed in {prob_time:.2f} seconds")
+
+        sampled_commutators, commutator_weights = _sample_importance_commutators(
+            commutators, probabilities, sample_size, random_seed
+        )
+    else:
+        raise ValueError("sampling_method must be 'random' or 'importance'")
+
+    # Compute expectation values using the sampled commutators
+    return _compute_expectation_values(
+        sampled_commutators, commutator_weights, fragments, states,
+        num_workers, backend, parallel_mode
+    )
+
+
+def _sample_importance_commutators(
+    commutators: List[Tuple[Hashable | Set]],
+    probabilities: np.ndarray,
+    sample_size: int,
+    random_seed: Optional[int] = None
 ) -> Tuple[List[Tuple[Hashable | Set]], List[float]]:
     """
-    Sample commutators and return them with their corresponding weights.
+    Sample commutators using importance sampling with pre-calculated probabilities.
 
     Args:
         commutators: List of commutator tuples to sample from
-        fragments: Dictionary mapping fragment keys to Fragment objects
-        timestep: Time step for the simulation
+        probabilities: Pre-calculated normalized probabilities for each commutator
         sample_size: Number of commutators to sample
-        sampling_method: "random" for uniform random sampling, "importance" for importance sampling
         random_seed: Random seed for reproducibility
 
     Returns:
         Tuple of (sampled_commutators, weights)
     """
-    if sampling_method == "random":
-        sampled_commutators = random_sample_commutators(commutators, sample_size, random_seed)
-        scaling_factor = len(commutators) / len(sampled_commutators) if sampled_commutators else 1.0
-        weights = [scaling_factor] * len(sampled_commutators)
-        return sampled_commutators, weights
-    if sampling_method == "importance":
-        sampled_data = importance_sample_commutators(
-            commutators, fragments, timestep, sample_size, random_seed, gridpoints
-        )
-        sampled_commutators = [data[0] for data in sampled_data]
-        weights = [data[1] for data in sampled_data]
-        return sampled_commutators, weights
+    if random_seed is not None:
+        np.random.seed(random_seed)
 
-    raise ValueError("sampling_method must be 'random' or 'importance'")
+    # Sample with replacement using the calculated probabilities
+    sampled_indices = np.random.choice(
+        len(commutators),
+        size=sample_size,
+        replace=True,
+        p=probabilities
+    )
+
+    # Create lists of sampled commutators and their importance weights
+    sampled_commutators = []
+    weights = []
+
+    for idx in sampled_indices:
+        commutator = commutators[idx]
+        # Calculate importance sampling weight
+        if probabilities[idx] > 0:
+            weight = 1.0 / (probabilities[idx] * sample_size)
+            sampled_commutators.append(commutator)
+            weights.append(weight)
+
+    return sampled_commutators, weights
+
+
+def _compute_expectation_values(
+    commutators: List[Tuple[Hashable | Set]],
+    weights: List[float],
+    fragments: Dict[Hashable, Fragment],
+    states: Sequence[AbstractState],
+    num_workers: int = 1,
+    backend: str = "serial",
+    parallel_mode: str = "state",
+) -> List[float]:
+    """
+    Compute expectation values for all states using the sampled commutators.
+
+    Args:
+        commutators: List of sampled commutators
+        weights: List of weights for each commutator
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        states: States to compute expectation values for
+        num_workers: Number of workers for parallel processing
+        backend: Backend for parallel processing
+        parallel_mode: Mode of parallelization ("state" or "commutator")
+
+    Returns:
+        List of expectation values for each state
+    """
+    if backend == "serial":
+        assert num_workers == 1, "num_workers must be set to 1 for serial execution."
+        expectations = []
+        for state in states:
+            new_state = _AdditiveIdentity()
+            for weight, commutator in tqdm(zip(weights, commutators), desc="Processing commutators", total=len(commutators)):
+                weighted_state = weight * _apply_commutator(commutator, fragments, state)
+                new_state += weighted_state
+
+            # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
+            if isinstance(new_state, _AdditiveIdentity):
+                expectations.append(0.0)
+            else:
+                expectations.append(state.dot(new_state))
+
+        return expectations
+
+    if parallel_mode == "state":
+        executor = concurrency.backends.get_executor(backend)
+        with executor(max_workers=num_workers) as ex:
+            expectations = ex.starmap(
+                _compute_state_expectation,
+                [(commutators, weights, fragments, state) for state in states],
+            )
+
+        return expectations
+
+    if parallel_mode == "commutator":
+        executor = concurrency.backends.get_executor(backend)
+        expectations = []
+        for state in states:
+            with executor(max_workers=num_workers) as ex:
+                applied_commutators = ex.starmap(
+                    _apply_weighted_commutator,
+                    [(commutator, weight, fragments, state) for commutator, weight in zip(commutators, weights)],
+                )
+
+            new_state = _AdditiveIdentity()
+            for applied_state in applied_commutators:
+                new_state += applied_state
+
+            # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
+            if isinstance(new_state, _AdditiveIdentity):
+                expectations.append(0.0)
+            else:
+                expectations.append(state.dot(new_state))
+
+        return expectations
+
+    raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
 
 
 def _compute_state_expectation(commutators, weights, fragments, state):

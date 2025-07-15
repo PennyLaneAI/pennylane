@@ -175,11 +175,9 @@ class SparseState(AbstractState):
 
         # Handle SparseState objects
         if isinstance(other, SparseState):
-            result = self.csr_matrix.conjugate().transpose().dot(other.csr_matrix)
+            # For row vectors (1,n), dot product is self.conj() @ other.T
+            result = self.csr_matrix.conjugate().dot(other.csr_matrix.transpose())
             # Convert to scalar - handle both sparse matrix and array cases
-            if hasattr(result, 'toarray'):
-                return complex(result.toarray().flatten()[0])
-            else:
-                return complex(result.flatten()[0])
+            return complex(result.toarray().flatten()[0])
 
         raise TypeError(f"Cannot compute dot product between SparseState and {type(other)}")
