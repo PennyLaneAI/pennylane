@@ -211,7 +211,7 @@ but are just located in different modules.
     :parts: 1
 
 Noise transforms
-~~~~~~~~~~~~~~~~
+^^^^^^^^^^^^^^^^
 
 .. currentmodule:: pennylane.noise
 
