@@ -14,6 +14,8 @@
 """
 Contains the OutAdder template.
 """
+from collections import Counter
+
 import pennylane as qml
 from pennylane.decomposition import (
     add_decomps,
@@ -294,33 +296,20 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
         qft_wires = 1 + num_output_wires
     else:
         qft_wires = num_output_wires
-    if num_y_wires == num_x_wires:
-        return {
-            resource_rep(qml.QFT, num_wires=qft_wires): 1,
-            resource_rep(
-                qml.ControlledSequence,
-                base=qml.PhaseAdder,
-                base_params={"num_x_wires": qft_wires, "mod": mod},
-                num_control_wires=num_x_wires,
-            ): 2,
-            adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
-        }
-    return {
+
+    resources = Counter({
         resource_rep(qml.QFT, num_wires=qft_wires): 1,
-        resource_rep(
-            qml.ControlledSequence,
-            base=qml.PhaseAdder,
-            base_params={"num_x_wires": qft_wires, "mod": mod},
-            num_control_wires=num_x_wires,
-        ): 1,
-        resource_rep(
-            qml.ControlledSequence,
-            base=qml.PhaseAdder,
-            base_params={"num_x_wires": qft_wires, "mod": mod},
-            num_control_wires=num_y_wires,
-        ): 1,
         adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
-    }
+    })
+
+    for num_wires in (num_x_wires, num_y_wires):
+        rep = resource_rep(
+            qml.ControlledSequence,
+            base=qml.PhaseAdder,
+            base_params={"num_x_wires": qft_wires, "mod": mod},
+            num_control_wires=num_wires,
+        )
+        resources[rep] += 1
 
 
 # pylint: disable=no-value-for-parameter

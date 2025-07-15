@@ -14,6 +14,7 @@
 """
 Contains the Multiplier template.
 """
+from collections import Counter
 
 import numpy as np
 
@@ -265,7 +266,7 @@ def _multiplier_decomposition_resources(
     else:
         num_wires_aux = num_x_wires
 
-    resources = {
+    resources = Counter({
         resource_rep(qml.QFT, num_wires=num_wires_aux): 2,
         resource_rep(
             qml.ControlledSequence,
@@ -282,14 +283,11 @@ def _multiplier_decomposition_resources(
             },
         ): 1,
         adjoint_resource_rep(qml.QFT, {"num_wires": num_wires_aux}): 2,
-    }
+    })
 
     for _ in range(num_x_wires):
         rep = resource_rep(qml.SWAP)
-        if rep in resources:
-            resources[rep] += 1
-        else:
-            resources[rep] = 1
+        resources[rep] += 1
 
     return resources
 

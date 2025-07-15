@@ -14,6 +14,8 @@
 """
 Contains the OutPoly template.
 """
+from collections import Counter
+
 import pennylane as qml
 from pennylane.decomposition import (
     add_decomps,
@@ -466,9 +468,9 @@ class OutPoly(Operation):
 def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coeffs_list) -> dict:
     num_output_adder_mod = num_output_wires + 1 if num_work_wires else num_output_wires
 
-    resources = {
+    resources = Counter({
         resource_rep(qml.QFT, num_wires=num_output_adder_mod): 1,
-    }
+    })
 
     coeffs_dic = dict(coeffs_list)
 
@@ -476,10 +478,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
 
         if not 1 in item:
             rep = resource_rep(qml.PhaseAdder, num_x_wires=num_output_adder_mod, mod=mod)
-            if rep in resources:
-                resources[rep] += 1
-            else:
-                resources[rep] = 1
+            resources[rep] += 1
         else:
             num_controls = sum([1 for bit in item if bit == 1])
 
@@ -516,13 +515,11 @@ def _out_poly_decomposition(
     if len(work_wires) == 0:
         work_wires = [(), ()]
 
-    list_ops = []
-
     output_adder_mod = (
         [work_wires[0]] + registers_wires[-1] if work_wires[0] else registers_wires[-1]
     )
 
-    list_ops.append(qml.QFT(wires=output_adder_mod))
+    qml.QFT(wires=output_adder_mod)
 
     coeffs_dic = dict(kwargs["coeffs_list"])
 

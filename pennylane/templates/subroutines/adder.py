@@ -287,15 +287,15 @@ def _controlled_adder_decomposition(
 ):  # pylint: disable=unused-argument
     if base.hyperparameters["mod"] == 2 ** len(base.hyperparameters["x_wires"]):
         qft_wires = base.hyperparameters["x_wires"]
-        work_wire = ()
+        base_work_wire = ()
     else:
         qft_wires = base.hyperparameters["work_wires"][:1] + base.hyperparameters["x_wires"]
-        work_wire = base.hyperparameters["work_wires"][1:]
+        base_work_wire = base.hyperparameters["work_wires"][1:]
 
     qml.QFT(qft_wires)
     qml.ctrl(
         qml.PhaseAdder(
-            base.hyperparameters["k"], qft_wires, base.hyperparameters["mod"], work_wire
+            base.hyperparameters["k"], qft_wires, base.hyperparameters["mod"], base_work_wire
         ),
         control=control_wires,
         work_wires=work_wires,
