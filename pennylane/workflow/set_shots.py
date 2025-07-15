@@ -16,11 +16,12 @@ This module contains the set_shots decorator.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Optional, Sequence, Tuple
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Optional
 
 from .qnode import QNode
 
-# Sentinel value to distinguish between "not provided" and "explicitly None"
+# Sentinel value to distinguish decorator mode from direct calls
 _DECORATOR_MODE = object()
 
 if TYPE_CHECKING:
