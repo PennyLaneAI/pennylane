@@ -92,7 +92,7 @@ def resolve_dynamic_wires(
     Returns:
         tuple[QuantumScript], Callable[[ResultBatch], Result]: A batch of tapes and a postprocessing function
 
-    .. node::
+    .. note::
 
         This transform currently uses a "Last In, First Out" (LIFO) stack based approach to distributing wires.
         This minimizes the total number of wires used, at the cost of higher depth and more resets. Other
