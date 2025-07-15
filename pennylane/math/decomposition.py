@@ -357,9 +357,25 @@ def _givens_matrix(a, b, left=True, tol=1e-8, real_valued=False):
     return math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface)
 
 
-def _absorb_phases_so(left_givens, right_givens, N, phases, interface):
-    """Function handling the diagonal phases left over from diagonalization via Givens
+def _absorb_phases_so(left_givens, right_givens, phases, interface):
+    r"""Function handling the diagonal phases left over from diagonalization via Givens
     rotations, for the real-valued case.
+
+    Args:
+        left_givens (list[tuple[array, int]]): Givens rotations applied from the left
+            in the obtained decomposition (see details below). Each rotation is given as a
+            :math:`2\times 2` matrix describing the rotation and two (sorted) integers encoding
+            the matrix dimensions to which the rotation is applied.
+        right_givens (list[tuple[array, int]]): Givens rotations applied from the right
+            in the obtained decomposition (see details below). The format is as for ``left_givens``
+        phases (array): Result of the diagonalization via Givens rotations (see details below).
+            Will be diagonal and only contain :math:`\pm 1`.
+        interface (str): The ML interface of ``phases``.
+
+    Returns:
+        tuple[array, list[tuple[array,int]]]: New phases with at most one entry :math:`-1`, and
+        concatenated list of Givens rotations that form a new valid decomposition of the originally
+        decomposed matrix. The format for each rotation is like that for ``left_givens``.
 
     The rotations in `left_givens` and `right_givens` are such that
     `reduce(dot, [mat.T for mat in left_givens] + reversed(right_givens)) == phases`
@@ -384,6 +400,7 @@ def _absorb_phases_so(left_givens, right_givens, N, phases, interface):
     The phases with -1 are guaranteed to come in an even number, so that this procedure will
     end up with modified rotations and the identity as phase matrix.
     """
+    N = len(phases)
     mod = N % 2
     last_rotations = left_givens if mod else right_givens
     for k in range(len(last_rotations) - 1, len(last_rotations) - N, -1):
@@ -402,9 +419,26 @@ def _absorb_phases_so(left_givens, right_givens, N, phases, interface):
     return math.diag(phases), left_givens + list(reversed(right_givens))
 
 
-def _commute_phases_u(left_givens, right_givens, unitary, interface):
-    """Function handling the diagonal phases left over from diagonalization via Givens
+def _commute_phases_u(left_givens, right_givens, phases, interface):
+    r"""Function handling the diagonal phases left over from diagonalization via Givens
     rotations, for the complex-valued case.
+
+    Args:
+        left_givens (list[tuple[array, int]]): Givens rotations applied from the left
+            in the obtained decomposition (see details below). Each rotation is given as a
+            :math:`2\times 2` matrix describing the rotation and two (sorted) integers encoding
+            the matrix dimensions to which the rotation is applied.
+        right_givens (list[tuple[array, int]]): Givens rotations applied from the right
+            in the obtained decomposition (see details below). The format is as for ``left_givens``
+        phases (array): Result of the diagonalization via Givens rotations (see details below).
+            Will be diagonal and only contain complex phases :math:`e^{i\phi}`.
+        interface (str): The ML interface of ``phases``.
+
+    Returns:
+        tuple[array, list[tuple[array,int]]]: New diagonal phases after commuting through Givens
+        rotations, and concatenated list of Givens rotations that form a new valid decomposition
+        of the originally decomposed matrix. The format for each rotation is like that
+        for ``left_givens``.
 
     After the diagonalization, the phases sit at the diagonal of the square grid of Givens
     rotations. Instead, we want them to be moved to the front of the decomposition. For
@@ -418,22 +452,22 @@ def _commute_phases_u(left_givens, right_givens, unitary, interface):
     for grot_mat, (i, j) in reversed(left_givens):
         # Manually compute new Givens matrix and new phase when commuting a phase through.
         abs_c, abs_s = math.abs(grot_mat[:, 0])
-        first_col = unitary[j, j] * math.conj(unitary[i, i]) * grot_mat[1, 1] * grot_mat[0, 1]
+        first_col = phases[j, j] * math.conj(phases[i, i]) * grot_mat[1, 1] * grot_mat[0, 1]
         givens_mat = math.array(
             [[first_col / abs_s, -abs_s], [first_col / abs_c, abs_c]], like=interface
         )
         nphase_diag = [
-            -math.conj(grot_mat[1, 0]) / abs_s * unitary[j, j],
-            grot_mat[1, 1] / abs_c * unitary[j, j],
+            -math.conj(grot_mat[1, 0]) / abs_s * phases[j, j],
+            grot_mat[1, 1] / abs_c * phases[j, j],
         ]
         for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag):
-            unitary = _set_unitary_matrix(unitary, diag_idx, diag_val, like=interface)
+            phases = _set_unitary_matrix(phases, diag_idx, diag_val, like=interface)
 
         nleft_givens.append((math.conj(givens_mat), (i, j)))
 
     ordered_rotations = nleft_givens[::-1] + right_givens[::-1]
 
-    return math.diag(unitary), ordered_rotations
+    return math.diag(phases), ordered_rotations
 
 
 # pylint: disable=too-many-branches
@@ -562,7 +596,6 @@ def givens_decomposition(unitary):
                     unitary, (indices, Ellipsis), grot_mat @ unitary[indices, :], like=interface
                 )
                 left_givens.append((grot_mat, indices))
-    if is_real:
-        return _absorb_phases_so(left_givens, right_givens, N, unitary, interface)
-
-    return _commute_phases_u(left_givens, right_givens, unitary, interface)
+    return (_absorb_phases_so if is_real else _commute_phases_u)(
+        left_givens, right_givens, unitary, interface
+    )
