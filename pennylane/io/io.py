@@ -843,7 +843,7 @@ def from_quil_file(quil_filename: str):
     return plugin_converter(quil_filename)
 
 
-def from_qasm3(quantum_circuit: str, wire_map: dict = None, **kwargs):
+def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     """
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
@@ -938,19 +938,11 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None, **kwargs):
             f"Please ensure the code is valid OpenQASM 3.0 syntax. {str(e)}",
         ) from e
 
-<<<<<<< HEAD
-    def interpret_function():
-        context = QasmInterpreter().interpret(
-            ast, context={"name": "global", "wire_map": wire_map}, **kwargs
-        )
-        if len(context["return"].keys()) > 0:
-=======
     def interpret_function(**kwargs):
         context = QasmInterpreter().interpret(
             ast, context={"name": "global", "wire_map": wire_map}, **kwargs
         )
         if context["return"]:
->>>>>>> master
             return tuple(map(lambda v: v.val, context["return"].values()))
         return context
 

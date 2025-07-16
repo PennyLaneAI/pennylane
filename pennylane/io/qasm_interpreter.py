@@ -917,16 +917,6 @@ class QasmInterpreter:
             # the return value
             return getattr(func_context, "return")
 
-        if name in FUNCTIONS:
-            # special handling since there is a loss of information when the parser encodes a bit string as an int
-            if name in ("rotr", "rotl"):
-                if isinstance(node.arguments[0], ast.Identifier):
-                    var = context.retrieve_variable(_resolve_name(node.arguments[0]))
-                    if var.ty == "BitType":
-                        return FUNCTIONS[name](var, self.visit(node.arguments[1], context))
-                    return FUNCTIONS[name](var.val, self.visit(node.arguments[1], context))
-            return FUNCTIONS[name](*[self.visit(raw_arg, context) for raw_arg in node.arguments])
-
     @visit.register(ast.FunctionCall)
     def visit_function_call(self, node: ast.FunctionCall, context: Context):
         """
