@@ -28,10 +28,10 @@ pytestmark = pytest.mark.external
 from xdsl.dialects.test import TestOp
 from xdsl.ir import AttributeCovT, OpResult
 
-from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
+from pennylane.compiler.python_compiler.dialects import Quantum
 
-all_ops = list(QuantumDialect.operations)
-all_attrs = list(QuantumDialect.attributes)
+all_ops = list(Quantum.operations)
+all_attrs = list(Quantum.attributes)
 
 expected_ops_names = {
     "AdjointOp": "quantum.adjoint",
@@ -82,7 +82,7 @@ def create_ssa_value(t: AttributeCovT) -> OpResult[AttributeCovT]:
 
 def test_quantum_dialect_name():
     """Test that the QuantumDialect name is correct."""
-    assert QuantumDialect.name == "quantum"
+    assert Quantum.name == "quantum"
 
 
 @pytest.mark.parametrize("op", all_ops)
@@ -147,7 +147,7 @@ def test_assembly_format():
     ctx.load_dialect(builtin.Builtin)
     ctx.load_dialect(func.Func)
     ctx.load_dialect(test.Test)
-    ctx.load_dialect(QuantumDialect)
+    ctx.load_dialect(Quantum)
 
     module = xdsl.parser.Parser(ctx, program).parse_module()
 
