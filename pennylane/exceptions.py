@@ -11,10 +11,78 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-This file contains all the custom exceptions and warnings used in PennyLane.
-"""
-# pragma: no cover
+r"""
+This module contains all the custom exceptions and warnings used in PennyLane.
+
+.. warning::
+
+    Unless you are a PennyLane or plugin developer, you will likely not need
+    to use these classes directly. They are raised by PennyLane functions
+    when errors are encountered.
+
+Contents
+--------
+
+The exceptions and warnings are organized by their category of use.
+
+.. currentmodule:: pennylane.exceptions
+
+General Execution Errors
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~CaptureError
+    ~DeviceError
+    ~QuantumFunctionError
+    ~TransformError
+    ~ConditionalTransformError
+    ~QueuingError
+    ~WireError
+    ~MeasurementShapeError
+
+Operator Property Errors
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~OperatorPropertyUndefined
+    ~DecompositionUndefinedError
+    ~TermsUndefinedError
+    ~MatrixUndefinedError
+    ~SparseMatrixUndefinedError
+    ~EigvalsUndefinedError
+    ~DiagGatesUndefinedError
+    ~AdjointUndefinedError
+    ~PowUndefinedError
+    ~GeneratorUndefinedError
+    ~ParameterFrequenciesUndefinedError
+
+Autograph and Compilation Errors
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~AutoGraphError
+    ~CompileError
+    ~DecompositionError
+    ~InvalidCapabilitiesError
+    ~NonDifferentiableError
+
+Warnings
+~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~PennyLaneDeprecationWarning
+    ~ExperimentalWarning
+    ~AutoGraphWarning
+
+"""  # pragma: no cover
 
 # =============================================================================
 # General Execution and Quantum Function Errors
