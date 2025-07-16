@@ -18,32 +18,30 @@ import io
 
 import pytest
 
-from pennylane.compiler.python_compiler import Compiler
-from pennylane.compiler.python_compiler.jax_utils import QuantumParser, parse_generic_to_xdsl_module
-
-filecheck_available = True
-xdsl_available = True
-
-try:
-    from xdsl.context import Context
-    from xdsl.dialects import test
-    from xdsl.passes import PipelinePass
-except ImportError:
-    xdsl_available = False
+deps_available = True
 
 try:
     from filecheck.finput import FInput
     from filecheck.matcher import Matcher
     from filecheck.options import parse_argv_options
     from filecheck.parser import Parser, pattern_for_opts
-except ImportError:
-    filecheck_available = False
+    from xdsl.context import Context
+    from xdsl.dialects import test
+    from xdsl.passes import PipelinePass
+
+    from pennylane.compiler.python_compiler import Compiler
+    from pennylane.compiler.python_compiler.jax_utils import (
+        QuantumParser,
+        parse_generic_to_xdsl_module,
+    )
+except (ImportError, ModuleNotFoundError):
+    deps_available = False
 
 
 def _run_filecheck_impl(program_str, pipeline):
     """Run filecheck on an xDSL module, comparing it to a program string containing
     filecheck directives."""
-    if not (filecheck_available and xdsl_available):
+    if not deps_available:
         return
 
     ctx = Context(allow_unregistered=True)
@@ -64,7 +62,7 @@ def _run_filecheck_impl(program_str, pipeline):
 @pytest.fixture(scope="function")
 def run_filecheck():
     """Fixture to run filecheck on an xDSL module."""
-    if not (filecheck_available and xdsl_available):
+    if not deps_available:
         pytest.skip("Cannot run lit tests without xDSL and filecheck.")
 
     yield _run_filecheck_impl
@@ -93,7 +91,7 @@ def _get_filecheck_directives(qjit_fn):
 def _run_filecheck_qjit_impl(fn):
     """Run filecheck on a qjit-ed function, using FileCheck directives in its inline
     comments to assert correctness."""
-    if not (filecheck_available and xdsl_available):
+    if not deps_available:
         return
 
     checks = _get_filecheck_directives(fn)
@@ -119,7 +117,7 @@ def _run_filecheck_qjit_impl(fn):
 @pytest.fixture(scope="function")
 def run_filecheck_qjit():
     """Fixture to run filecheck on a qjit-ed function."""
-    if not (filecheck_available and xdsl_available):
+    if not deps_available:
         pytest.skip("Cannot run lit tests without xDSL and filecheck.")
 
     yield _run_filecheck_qjit_impl
