@@ -30,9 +30,18 @@ def get_best_diff_method(qnode: QNode):
     """Returns a function that computes the 'best' differentiation method
     for a particular QNode.
 
-    The method uses the same resolution logic as :func:`~pennylane.workflow.execution.execute`
-    and :func:`~pennylane.workflow.construct_batch.construct_batch` to ensure consistency
-    across the workflow.
+    This method prioritizes differentiation methods in the following order (SPSA-based and Hadamard-based gradients
+    are not included here):
+
+    * ``"device"``
+    * ``"backprop"``
+    * ``"parameter-shift"``
+
+    .. note::
+
+        The first differentiation method that is supported (from top to bottom)
+        will be returned. The order is designed to maximize efficiency, generality,
+        and stability.
 
     .. seealso::
 
