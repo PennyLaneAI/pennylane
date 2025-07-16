@@ -15,6 +15,76 @@ from pennylane.labs.trotter_error import (
 from pennylane.labs.trotter_error.realspace.matrix import _momentum_operator, _position_operator
 
 
+from mpi4py import MPI
+import time
+
+TIMES_TABLE = {(MPI.COMM_WORLD.Get_rank()): {}}
+
+def timeit(func):
+    def wrapper(*args, **kwargs):
+        rank = MPI.COMM_WORLD.Get_rank()
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        end = time.perf_counter()
+        # print(f"Rank {rank} finished {func.__name__} in {end - start} seconds")
+        
+        if func.__name__ not in TIMES_TABLE[rank]:
+            TIMES_TABLE[rank][func.__name__] = {"hit_count": 0, "runs": []}
+        TIMES_TABLE[rank][func.__name__]["hit_count"] += 1
+        TIMES_TABLE[rank][func.__name__]["runs"].append(end - start)
+        
+        return result
+    return wrapper
+
+def get_times_table():
+    """Return the times table for all ranks merged in rank 0."""
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    
+    # First, compute total and average times for local data
+    for rank_id, data in TIMES_TABLE.items():
+        for func_name, stats in data.items():
+            if "runs" in stats and stats["runs"]:
+                total_time = sum(stats["runs"])
+                avg_time = total_time / stats["hit_count"]
+                stats["total_time"] = total_time
+                stats["avg_time"] = avg_time
+    
+    # Gather all timing data to rank 0
+    all_times_tables = comm.gather(TIMES_TABLE, root=0)
+    
+    if rank == 0:
+        # Merge all ranks' data into a single global table
+        global_times = {}
+        
+        for rank_data in all_times_tables:
+            for rank_id, timing_data in rank_data.items():
+                global_times[rank_id] = timing_data
+        
+        # Print the merged times table
+        print("Global Times Table (merged from all ranks):")
+        for rank_id in sorted(global_times.keys()):
+            data = global_times[rank_id]
+            print(f"Rank {rank_id}:")
+            # for func_name, stats in data.items():
+            for func_name in sorted(data.keys()):
+                stats = data[func_name]
+                if "total_time" in stats and "avg_time" in stats:
+                    print(f"  {func_name}: hit_count={stats['hit_count']}, total_time={stats['total_time']:.4f}s, avg_time={stats['avg_time']:.4f}s")
+                    # precision print for runs > 0.1s
+                    if stats['avg_time'] > 0.01:
+                        print(f"  Runs: ", end="")
+                        for run in stats['runs']:
+                            print(f"{run:6.4f}s,", end=" ")
+                        print()
+
+        return global_times
+    else:
+        return None        
+    
+
+@timeit
 def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, batch: list):
     if not _is_pow_2(gridpoints) or gridpoints <= 0:
         raise ValueError(f"Number of gridpoints must be a positive power of 2, got {gridpoints}.")
@@ -28,7 +98,7 @@ def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, batch: list):
 
     return norms
 
-
+@timeit
 def build_error_term(freqs, taylor_coeffs, modes):
     freqs, taylor_coeffs = get_reduced_model(freqs, taylor_coeffs, modes, strategy="PT")
     states = taylor_coeffs[0].shape[0]
@@ -44,6 +114,7 @@ def build_error_term(freqs, taylor_coeffs, modes):
     return (eff - 1j * ham) * (1 / 1j)
 
 
+# @timeit
 def _compute_norm(norm_mat: np.ndarray):
     if norm_mat.shape == (1, 1):
         return norm_mat[0, 0]
@@ -60,7 +131,7 @@ def _compute_norm(norm_mat: np.ndarray):
 
     return norm1 + norm2
 
-
+@timeit
 def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
     mode_groups = {}
 
@@ -94,11 +165,17 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
 
 
 def _get_eigenvalue(mat):
+    rank =  MPI.COMM_WORLD.Get_rank()
+    
     _, _, values = sp.sparse.find(mat)
     if np.allclose(values, 0):
         return 0
 
-    eigvals, _ = sp.sparse.linalg.eigs(mat, k=1)
+    # print(f"Computing eigenvalue for matrix of shape {mat.shape}, rank {rank}")
+    if mat.shape[0] <= 2:
+        eigvals, _ = sp.linalg.eig(mat.toarray())
+    else:
+        eigvals, _ = sp.sparse.linalg.eigs(mat, k=1)
     return np.abs(eigvals[0])
 
 
@@ -110,3 +187,29 @@ def _is_pow_2(k: int) -> bool:
 def _next_pow_2(k: int) -> int:
     """Return the smallest power of 2 greater than or equal to k"""
     return 2 ** (k - 1).bit_length()
+
+def print_global_timing_stats():
+    """Convenience function to print timing statistics across all ranks."""
+    global_times = get_times_table()
+    return global_times
+
+def finalize_timing():
+    """Call this at the end of your program to collect and print all timing data."""
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    
+    # Synchronize all ranks before collecting timing data
+    comm.Barrier()
+    
+    if rank == 0:
+        print("\n" + "="*50)
+        print("FINAL TIMING STATISTICS")
+        print("="*50)
+    
+    global_times = get_times_table()
+    
+    if rank == 0:
+        print("="*50 + "\n")
+        return global_times
+    
+    return None

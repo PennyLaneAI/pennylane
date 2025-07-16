@@ -6,7 +6,7 @@ from itertools import product
 
 import numpy as np
 from mpi4py import MPI
-from vibronic_norm import _compute_norm, build_error_term, vibronic_norm
+from vibronic_norm import _compute_norm, build_error_term, vibronic_norm, finalize_timing
 
 # FILE, GRIDPOINTS, MODES
 jobs = [
@@ -73,3 +73,6 @@ if __name__ == "__main__":
         os.makedirs("norms", exist_ok=True)
         with open(path, "wb+") as f:
             pickle.dump(final_result[: err.states, : err.states], f)
+            
+    print("Execution complete")
+    finalize_timing()
