@@ -18,6 +18,22 @@
 
 <h4>Other improvements</h4>
 
+* The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
+  [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
+  
+  ```python
+  @qml.set_shots(shots=1000)
+  @qml.qnode(dev)
+  def circuit():
+      qml.H(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit()
+  0.002
+  ```
+
 * Update minimum supported `pytest` version to `8.4.1`.
   [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
@@ -66,6 +82,9 @@
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
+
+* Calling `QNode.update` no longer acts as if `set_shots` has been applied.
+  [(#7881)](https://github.com/PennyLaneAI/pennylane/pull/7881)
 
 * Fixes attributes and types in the quantum dialect.
   This allows for types to be inferred correctly when parsing.
