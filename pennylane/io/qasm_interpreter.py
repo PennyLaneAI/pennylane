@@ -11,6 +11,7 @@ from typing import Any, Callable, Iterable
 import numpy as np
 from numpy import uint
 from openqasm3 import ast
+from openqasm3.ast import FunctionCall
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
@@ -231,16 +232,11 @@ def _rotate(var: Variable | int, n: int, dir="left"):
         TypeError: if the variable is not of BitType.
     """
     bits = _get_bit_type_val(var)
-    new_bits = {}
-    for i, bit in enumerate(bits):
-        if dir == "left":
-            new_bits[(i + len(bits) + 1 - n) % len(bits) - 1] = bit
-        else:
-            new_bits[(i + n + 1) % len(bits) - 1] = bit
-    new_bit_str = ["" for _ in range(len(bits))]
-    for j in new_bits:
-        new_bit_str[j] = new_bits[j]
-    return int("".join(new_bit_str), 2)
+    if dir == "left":
+        new_bits = bits[n:] + bits[:n]
+    else:
+        new_bits = bits[-n:] + bits[:-n]
+    return int(new_bits, 2)
 
 
 FUNCTIONS = {
@@ -870,28 +866,18 @@ class QasmInterpreter:
 
         # custom gates do not return a value
 
-    @visit.register(ast.FunctionCall)
-    def visit_function_call(  # pylint: disable=inconsistent-return-statements
-        self, node: ast.FunctionCall, context: Context
-    ):
+    def _execute_function(self, name: str, node: FunctionCall, context: Context):
         """
-        Registers a function call. The node must refer to a subroutine that has been defined and
-        is available in the current scope.
+        Executes a subroutine.
 
         Args:
-            node (FunctionCall): The FunctionCall QASMNode.
-            context (Context): The current context.
+            name (str): the name of the subroutine.
+            node (FunctionCall): the subroutine call.
+            context (Context): the current context.
 
-        Raises:
-            NameError: When the subroutine is not defined.
+        Returns:
+            Any: anything returned by the subroutine.
         """
-        name = _resolve_name(node)  # str or Identifier
-
-        if not (name in context.scopes["subroutines"] or name in FUNCTIONS):
-            raise NameError(
-                f"Reference to subroutine {name} not available in calling namespace "
-                f"on line {node.span.start_line}."
-            )
 
         if name in context.scopes["subroutines"]:
 
@@ -940,6 +926,39 @@ class QasmInterpreter:
                         return FUNCTIONS[name](var, self.visit(node.arguments[1], context))
                     return FUNCTIONS[name](var.val, self.visit(node.arguments[1], context))
             return FUNCTIONS[name](*[self.visit(raw_arg, context) for raw_arg in node.arguments])
+
+    @visit.register(ast.FunctionCall)
+    def visit_function_call(self, node: ast.FunctionCall, context: Context):
+        """
+        Registers a function call. The node must refer to a subroutine that has been defined and
+        is available in the current scope.
+
+        Args:
+            node (FunctionCall): The FunctionCall QASMNode.
+            context (Context): The current context.
+
+        Raises:
+            NameError: When the subroutine is not defined.
+        """
+        name = _resolve_name(node)  # str or Identifier
+
+        if name in context.scopes["subroutines"]:
+            return self._execute_function(name, node, context)
+
+        if name in FUNCTIONS:
+            # special handling since there is a loss of information when the parser encodes a bit string as an int
+            if name in ("rotr", "rotl"):
+                if isinstance(node.arguments[0], ast.Identifier):
+                    var = context.retrieve_variable(_resolve_name(node.arguments[0]))
+                    if var.ty == "BitType":
+                        return FUNCTIONS[name](var, self.visit(node.arguments[1], context))
+                    return FUNCTIONS[name](var.val, self.visit(node.arguments[1], context))
+            return FUNCTIONS[name](*(self.visit(raw_arg, context) for raw_arg in node.arguments))
+
+        raise NameError(
+            f"Reference to subroutine {name} not available in calling namespace "
+            f"on line {node.span.start_line}."
+        )
 
     @visit.register(ast.RangeDefinition)
     def visit_range(self, node: ast.RangeDefinition, context: Context):
@@ -1240,7 +1259,7 @@ class QasmInterpreter:
             gates_dict = PARAMETERIZED_GATES
         elif name in NON_PARAMETERIZED_GATES:
             gates_dict = NON_PARAMETERIZED_GATES
-        elif name in list(map(lambda n: n.upper(), context.scopes["custom_gates"].keys())):
+        elif name in [n.upper() for n in context.scopes["custom_gates"].keys()]:
             self.execute_custom_gate(node, context)
             return
         else:

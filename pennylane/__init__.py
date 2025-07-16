@@ -116,7 +116,6 @@ from pennylane.io import (
     bloq_registers,
     from_qasm3,
     to_bloq,
-    ToBloq,
 )
 from pennylane.transforms import (
     transform,

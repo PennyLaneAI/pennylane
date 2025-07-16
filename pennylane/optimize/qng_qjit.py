@@ -18,12 +18,6 @@ from pennylane.compiler import active_compiler
 from pennylane.gradients.metric_tensor import metric_tensor
 from pennylane.workflow import QNode
 
-has_catalyst = True
-try:
-    import catalyst
-except ModuleNotFoundError:
-    has_catalyst = False
-
 has_jax = True
 try:
     import jax
@@ -32,7 +26,7 @@ except ModuleNotFoundError:
 
 
 class QNGOptimizerQJIT:
-    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the ``QNGOptimizer``,
+    r"""Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation of the :class:`~.QNGOptimizer`,
     a step- and parameter-dependent learning rate optimizer, leveraging a reparameterization of
     the optimization space based on the Fubini-Study metric tensor.
 
@@ -215,9 +209,9 @@ class QNGOptimizerQJIT:
         Raise an ``ModuleNotFoundError`` if the required package is not installed.
         """
         if active_compiler() == "catalyst":
-            if has_catalyst:
-                return catalyst.grad(qnode)(params, **kwargs)
-            raise ModuleNotFoundError("Catalyst is required.")  # pragma: no cover
+            import catalyst  # pylint: disable=import-outside-toplevel
+
+            return catalyst.grad(qnode)(params, **kwargs)
         if has_jax:
             return jax.grad(qnode)(params, **kwargs)
         raise ModuleNotFoundError("Jax is required.")  # pragma: no cover
@@ -230,9 +224,9 @@ class QNGOptimizerQJIT:
         Raise an ``ModuleNotFoundError`` if the required package is not installed.
         """
         if active_compiler() == "catalyst":
-            if has_catalyst:
-                return catalyst.value_and_grad(qnode)(params, **kwargs)
-            raise ModuleNotFoundError("Catalyst is required.")  # pragma: no cover
+            import catalyst  # pylint: disable=import-outside-toplevel
+
+            return catalyst.value_and_grad(qnode)(params, **kwargs)
         if has_jax:
             return jax.value_and_grad(qnode)(params, **kwargs)
         raise ModuleNotFoundError("Jax is required.")  # pragma: no cover
