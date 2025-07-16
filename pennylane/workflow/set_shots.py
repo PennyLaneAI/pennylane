@@ -16,27 +16,32 @@ This module contains the set_shots decorator.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Sequence, Tuple
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, Optional
 
 from .qnode import QNode
+
+# Sentinel value to distinguish decorator mode from direct calls
+_DECORATOR_MODE = object()
 
 if TYPE_CHECKING:
     from pennylane.measurements import Shots
 
 
 def set_shots(
-    qnode: QNode,
-    shots: Optional[Shots | int | Sequence[int | Tuple[int, int]]] = None,
-) -> QNode:
+    qnode: QNode | object = _DECORATOR_MODE,
+    shots: Optional[Shots | int | Sequence[int | tuple[int, int]]] = None,
+) -> QNode | Callable[[QNode], QNode]:
     """Transform used to set or update a circuit's shots.
 
     Args:
-        qnode (QNode): The QNode to transform.
+        qnode (QNode): The QNode to transform. If not provided, `set_shots` can be used as a decorator directly.
         shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
             number of shots (or a shots vector) that the transformed circuit will execute.
 
     Returns:
-        QNode: The transformed QNode with the specified shots.
+        QNode or callable: The transformed QNode with updated shots, or a wrapper function
+        if qnode is not provided.
 
     There are three ways to specify shot values (see :func:`qml.measurements.Shots <pennylane.measurements.Shots>` for more details):
 
@@ -50,9 +55,7 @@ def set_shots(
 
     .. code-block:: python
 
-        from functools import partial
-
-        @partial(qml.set_shots, shots=2)
+        @qml.set_shots(shots=2)
         @qml.qnode(qml.device("default.qubit", wires=1))
         def circuit():
             qml.RX(1.23, wires=0)
@@ -70,7 +73,18 @@ def set_shots(
     (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
 
     """
-    # When called directly with a function/QNode
+    # When used as decorator with arguments: @set_shots(shots=...)
+    # This happens when qnode parameter is not provided (decorator mode)
+    if qnode is _DECORATOR_MODE:
+
+        def decorator(qnode_func):
+            return set_shots(qnode_func, shots)
+
+        return decorator
+
+    # When called directly with a QNode
     if isinstance(qnode, QNode):
         return qnode.update_shots(shots)
+
+    # If qnode is not a QNode (including explicit None), raise error
     raise ValueError("set_shots can only be applied to QNodes")

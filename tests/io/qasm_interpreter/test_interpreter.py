@@ -5,6 +5,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 from re import escape
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
 
 from pennylane import (
@@ -57,6 +58,31 @@ try:
     )
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
+
+
+@pytest.mark.external
+class TestBuiltIns:  # pylint: disable=too-few-public-methods
+
+    def test_constants(self):
+        ast = parse(
+            """
+            const float one = π;
+            const float two = τ;
+            const float three = ℇ;
+            const float four = pi;
+            const float five = tau;
+            const float six = e;
+            """
+        )
+
+        context = QasmInterpreter().interpret(ast, context={"name": "constants", "wire_map": None})
+
+        assert context.vars["one"].val == np.pi
+        assert context.vars["two"].val == np.pi * 2
+        assert context.vars["three"].val == np.e
+        assert context.vars["four"].val == np.pi
+        assert context.vars["five"].val == np.pi * 2
+        assert context.vars["six"].val == np.e
 
 
 @pytest.mark.external
@@ -1014,6 +1040,22 @@ class TestVariables:
 
 @pytest.mark.external
 class TestGates:
+
+    def test_custom_gates(self):
+        ast = parse(
+            open("tests/io/qasm_interpreter/custom_gates.qasm", mode="r").read(), permissive=True
+        )
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "custom-gates"})
+
+        assert q.queue == [
+            PauliY("q1"),
+            CNOT(wires=["q0", "q1"]),
+            CNOT(wires=["q0", "q1"]),
+            RX(0.7853975, wires=["q1"]),
+            PauliX("q0"),
+        ]
 
     def test_nested_modifiers(self):
         # parse the QASM program
