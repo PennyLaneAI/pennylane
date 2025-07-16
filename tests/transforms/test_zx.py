@@ -30,26 +30,33 @@ pyzx = pytest.importorskip("pyzx")
 pytestmark = pytest.mark.external
 
 supported_operations = [
-    qml.PauliX(wires=0),
-    qml.PauliZ(wires=0),
-    qml.Hadamard(wires=0),
+    qml.X(wires=0),
+    qml.Y(wires=0),
+    qml.Z(wires=0),
     qml.S(wires=0),
     qml.T(wires=0),
+    qml.Hadamard(wires=0),
     qml.SWAP(wires=[0, 1]),
     qml.CNOT(wires=[0, 1]),
+    qml.CY(wires=[0, 1]),
     qml.CZ(wires=[0, 1]),
     qml.CH(wires=[0, 1]),
 ]
 
 supported_operations_params = [
     qml.RX(0.3, wires=0),
+    qml.RY(0.3, wires=0),
     qml.RZ(0.3, wires=0),
+    qml.PhaseShift(0.3, wires=0),
+    qml.CRX(0.3, wires=[0, 1]),
+    qml.CRY(0.3, wires=[0, 1]),
     qml.CRZ(0.3, wires=[0, 1]),
 ]
 
-expanded_operations = [qml.PauliY(wires=0), qml.PhaseShift(0.3, wires=0), qml.RY(0.3, wires=0)]
-
-non_diagram_like_operations = [qml.CCZ(wires=[0, 1, 2]), qml.Toffoli(wires=[0, 1, 2])]
+expanded_operations = [
+    qml.Toffoli(wires=[0, 1, 2]),
+    qml.CCZ(wires=[0, 1, 2]),
+]
 
 decompose_phases = [True, False]
 qscript = [True, False]
@@ -193,28 +200,6 @@ class TestConvertersZX:
         mat_product /= mat_product[0, 0]
 
         assert qml.math.allclose(mat_product, I)
-
-    @pytest.mark.parametrize("operation", non_diagram_like_operations)
-    def test_non_diagram_like_op(self, operation):
-        """Test operations that result in a non diagram like circuit."""
-
-        I = qml.math.eye(2 ** len(operation.wires))
-
-        qs = QuantumScript([operation], [])
-        matrix_qscript = qml.matrix(qs, wire_order=qs.wires)
-
-        zx_g = qml.transforms.to_zx(qs)
-        assert isinstance(zx_g, pyzx.graph.graph_s.GraphS)
-
-        matrix_zx = zx_g.to_matrix()
-        # Check whether the two matrices are each others conjugate transposes
-        mat_product = qml.math.dot(matrix_qscript, qml.math.conj(matrix_zx.T))
-        # Remove global phase
-        mat_product /= mat_product[0, 0]
-        assert qml.math.allclose(mat_product, I)
-
-        with pytest.raises(QuantumFunctionError, match="Graph doesn't seem circuit like"):
-            qml.transforms.from_zx(zx_g)
 
     @pytest.mark.parametrize("decompose", decompose_phases)
     def test_circuit(self, decompose):

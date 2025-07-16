@@ -284,17 +284,22 @@ def _to_zx_transform(
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     gate_types = {
-        "PauliX": pyzx.circuit.gates.NOT,
-        "PauliZ": pyzx.circuit.gates.Z,
+        "X": pyzx.circuit.gates.NOT,
+        "Y": pyzx.circuit.gates.Y,
+        "Z": pyzx.circuit.gates.Z,
         "S": pyzx.circuit.gates.S,
         "T": pyzx.circuit.gates.T,
         "Hadamard": pyzx.circuit.gates.HAD,
         "RX": pyzx.circuit.gates.XPhase,
+        "RY": pyzx.circuit.gates.YPhase,
         "RZ": pyzx.circuit.gates.ZPhase,
         "PhaseShift": pyzx.circuit.gates.ZPhase,
         "SWAP": pyzx.circuit.gates.SWAP,
         "CNOT": pyzx.circuit.gates.CNOT,
+        "CY": pyzx.circuit.gates.CY,
         "CZ": pyzx.circuit.gates.CZ,
+        "CRX": pyzx.circuit.gates.CRX,
+        "CRY": pyzx.circuit.gates.CRY,
         "CRZ": pyzx.circuit.gates.CRZ,
         "CH": pyzx.circuit.gates.CHAD,
         "CCZ": pyzx.circuit.gates.CCZ,
@@ -334,14 +339,7 @@ def _to_zx_transform(
 
         # Define specific decompositions
         for op in mapped_tape.operations:
-            if op.name == "RY":
-                decomp = [
-                    qml.RZ(-np.pi / 2, wires=op.wires),
-                    qml.RX(op.data[0], wires=op.wires),
-                    qml.RZ(np.pi / 2, wires=op.wires),
-                ]
-                expanded_operations.extend(decomp)
-            elif op.name == "Toffoli":
+            if op.name == "Toffoli":
                 decomp = [
                     qml.Hadamard(wires=op.wires[2]),
                     qml.CNOT(wires=[op.wires[1], op.wires[2]]),
