@@ -449,7 +449,7 @@ def _multi_controlled_rep(target_rep, num_control_wires, state):
         base_params=target_rep.params,
         num_control_wires=num_control_wires,
         num_work_wires=0,
-        num_zero_control_values=sum((1 - s for s in state)),
+        num_zero_control_values=num_control_wires - sum(state),
     )
 
 

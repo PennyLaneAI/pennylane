@@ -139,7 +139,6 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
     if not rule.is_applicable(**op.resource_params):
         return
 
-    print(rule)
     # Test that the resource function is correct
     resources = rule.compute_resources(**op.resource_params)
     gate_counts = resources.gate_counts

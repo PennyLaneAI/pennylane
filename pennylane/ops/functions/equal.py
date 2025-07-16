@@ -800,8 +800,8 @@ def _equal_prep_sel_prep(op1: PrepSelPrep, op2: PrepSelPrep, **kwargs):
 
 
 @_equal_dispatch.register
-def _equal_prep_sel_prep(op1: Select, op2: Select, **kwargs):
-    """Determine whether two PrepSelPrep are equal"""
+def _equal_select(op1: Select, op2: Select, **kwargs):
+    """Determine whether two Select are equal"""
     if op1.control != op2.control:
         return f"op1 and op2 have different control wires. Got {op1.control} and {op2.control}."
     t1 = op1.hyperparameters["ops"]

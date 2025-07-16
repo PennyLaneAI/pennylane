@@ -276,9 +276,9 @@ class TestSelect:
         decomp_ops = qml.tape.QuantumScript.from_queue(q).operations
 
         qml.assert_equal(decomp_ops[0], qml.ctrl(qml.X(2), (0, 1), control_values=[0, 0]))
-        qml.assert_equal(decomp_ops[1], qml.ctrl(qml.X(3), (0, 1), control_values=[False, True]))
-        qml.assert_equal(decomp_ops[2], qml.ctrl(qml.X(4), (0, 1), control_values=[True, False]))
-        qml.assert_equal(decomp_ops[3], qml.ctrl(qml.Y(2), (0, 1), control_values=[True, True]))
+        qml.assert_equal(decomp_ops[1], qml.ctrl(qml.X(3), (0, 1), control_values=[0, 1]))
+        qml.assert_equal(decomp_ops[2], qml.ctrl(qml.X(4), (0, 1), control_values=[1, 0]))
+        qml.assert_equal(decomp_ops[3], qml.ctrl(qml.Y(2), (0, 1), control_values=[1, 1]))
 
 
 class TestErrorMessages:

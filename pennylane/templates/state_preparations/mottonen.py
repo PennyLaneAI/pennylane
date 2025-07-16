@@ -468,7 +468,7 @@ class MottonenStatePreparation(Operation):
 
 
 def _mottonen_resources(num_wires):
-    n = sum(2**i for i in range(num_wires))
+    n = 2**num_wires - 1  # Equal to `sum(2**i for i in range(num_wires))`
 
     return {qml.GlobalPhase: 1, qml.RY: n, qml.RZ: n, qml.CNOT: 2 * (n - 1)}
 

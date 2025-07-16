@@ -290,7 +290,7 @@ class TestDecomposition:
         assert op.resource_params == {"num_wires": 2}
 
     def test_decomposition_rule(self):
-        """Test that MottonenSTatePreparation has a correct decomposition rule registered."""
+        """Test that MottonenStatePreparation has a correct decomposition rule registered."""
 
         decomp = qml.list_decomps(qml.MottonenStatePreparation)[0]
 

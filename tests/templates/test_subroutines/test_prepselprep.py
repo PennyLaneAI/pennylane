@@ -357,7 +357,7 @@ class TestPrepSelPrep:
         assert op.resource_params == {"num_control": 2, "op_reps": op_reps}
 
     def test_decomposition_new_structure(self):
-        """Test that the decomposition is registered into the new pipelien."""
+        """Test that the decomposition is registered into the new pipeline."""
 
         ops = [qml.X(0), qml.X(1), qml.X(0) @ qml.Y(1)]
         grep = qml.resource_rep(qml.GlobalPhase)
