@@ -879,43 +879,39 @@ class QasmInterpreter:
             Any: anything returned by the subroutine.
         """
 
-        if name in context.scopes["subroutines"]:
+        func_context = context.scopes["subroutines"][name]
 
-            func_context = context.scopes["subroutines"][name]
+        # reset return
+        func_context.context["return"] = None
 
-            # reset return
-            func_context.context["return"] = None
+        # bind subroutine arguments
+        evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
+        for evald_arg, param in list(zip(evald_args, func_context.params)):
+            if isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                if evald_arg in context.wire_map:
+                    evald_arg = context.wire_map[evald_arg]
+                if evald_arg != param:
+                    func_context.wire_map[param] = evald_arg
+            else:
+                func_context.vars[param] = Variable(
+                    evald_arg.__class__.__name__,
+                    evald_arg,
+                    None,
+                    node.span.start_line,
+                    False,
+                    func_context.name,
+                )
 
-            # bind subroutine arguments
-            evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
-            for evald_arg, param in list(zip(evald_args, func_context.params)):
-                if isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                    if evald_arg in context.wire_map:
-                        evald_arg = context.wire_map[evald_arg]
-                    if evald_arg != param:
-                        func_context.wire_map[param] = evald_arg
-                else:
-                    func_context.vars[param] = Variable(
-                        evald_arg.__class__.__name__,
-                        evald_arg,
-                        None,
-                        node.span.start_line,
-                        False,
-                        func_context.name,
-                    )
+        # execute the subroutine
+        self.visit(func_context.body, func_context)
 
-            # execute the subroutine
-            self.visit(func_context.body, func_context)
+        # reset context
+        func_context.vars = {
+            k: v for k, v in func_context.vars.items() if (v.scope == context.name) and v.constant
+        }
 
-            # reset context
-            func_context.vars = {
-                k: v
-                for k, v in func_context.vars.items()
-                if (v.scope == context.name) and v.constant
-            }
-
-            # the return value
-            return getattr(func_context, "return")
+        # the return value
+        return getattr(func_context, "return")
 
     @visit.register(ast.FunctionCall)
     def visit_function_call(self, node: ast.FunctionCall, context: Context):
