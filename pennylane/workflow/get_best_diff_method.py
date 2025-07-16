@@ -57,7 +57,7 @@ def get_best_diff_method(qnode: QNode):
         device = qnode.device
 
         # Construct the tape using the same method as the execution workflow
-        tape = qml.workflow.construct_tape(qnode, level="user")(*args, **kwargs)
+        batch, _ = qml.workflow.construct_batch(qnode, level="user")(*args, **kwargs)
 
         # Create execution config with "best" method - this matches the workflow behavior
         mcm_config = qml.devices.MCMConfig(
