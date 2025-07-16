@@ -13,10 +13,12 @@
 # limitations under the License.
 """Contains the SemiAdder template for performing the semi-out-place addition."""
 
-import pennylane as qml
-from pennylane.decomposition import add_decomps, register_resources
+from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.ops import CNOT, adjoint
+from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
+from pennylane.templates.subroutines import TemporaryAND
+from pennylane.wires import Wires, WiresLike
 
 
 def _left_operator(wires, ik_is_zero=False):
@@ -25,15 +27,15 @@ def _left_operator(wires, ik_is_zero=False):
     if not ik_is_zero:
         ck, ik, tk, aux = wires
         return [
-            qml.CNOT([ck, ik]),
-            qml.CNOT([ck, tk]),
-            qml.TemporaryAND([ik, tk, aux]),
-            qml.CNOT([ck, aux]),
+            CNOT([ck, ik]),
+            CNOT([ck, tk]),
+            TemporaryAND([ik, tk, aux]),
+            CNOT([ck, aux]),
         ]
 
     ck, tk, aux = wires
 
-    return [qml.CNOT([ck, tk]), qml.TemporaryAND([ck, tk, aux]), qml.CNOT([ck, aux])]
+    return [CNOT([ck, tk]), TemporaryAND([ck, tk, aux]), CNOT([ck, aux])]
 
 
 def _right_operator(wires, ik_is_zero=False):
@@ -42,15 +44,15 @@ def _right_operator(wires, ik_is_zero=False):
     if not ik_is_zero:
         ck, ik, tk, aux = wires
         return [
-            qml.CNOT([ck, aux]),
-            qml.adjoint(qml.TemporaryAND([ik, tk, aux])),
-            qml.CNOT([ck, ik]),
-            qml.CNOT([ik, tk]),
+            CNOT([ck, aux]),
+            adjoint(TemporaryAND([ik, tk, aux])),
+            CNOT([ck, ik]),
+            CNOT([ik, tk]),
         ]
 
     ck, tk, aux = wires
 
-    return [qml.CNOT([ck, aux]), qml.adjoint(qml.TemporaryAND([ck, tk, aux]))]
+    return [CNOT([ck, aux]), adjoint(TemporaryAND([ck, tk, aux]))]
 
 
 class SemiAdder(Operation):
@@ -138,9 +140,9 @@ class SemiAdder(Operation):
         id=None,
     ):  # pylint: disable=too-many-arguments
 
-        x_wires = qml.wires.Wires(x_wires)
-        y_wires = qml.wires.Wires(y_wires)
-        work_wires = qml.wires.Wires(work_wires)
+        x_wires = Wires(x_wires)
+        y_wires = Wires(y_wires)
+        work_wires = Wires(work_wires)
 
         if len(work_wires) < len(y_wires) - 1:
             raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
@@ -155,7 +157,7 @@ class SemiAdder(Operation):
         self.hyperparameters["y_wires"] = y_wires
         self.hyperparameters["work_wires"] = work_wires
 
-        all_wires = qml.wires.Wires.all_wires([x_wires, y_wires, work_wires])
+        all_wires = Wires.all_wires([x_wires, y_wires, work_wires])
 
         super().__init__(wires=all_wires, id=id)
 
@@ -217,12 +219,12 @@ class SemiAdder(Operation):
             list[.Operator]: Decomposition of the operator
         """
 
-        with qml.queuing.AnnotatedQueue() as q:
+        with AnnotatedQueue() as q:
             _semiadder(x_wires, y_wires, work_wires)
 
-        if qml.queuing.QueuingManager.recording():
+        if QueuingManager.recording():
             for op in q.queue:
-                qml.apply(op)
+                apply(op)
 
         return q.queue
 
@@ -231,9 +233,9 @@ def _semiadder_resources(num_y_wires):
     # Resources extracted from `arXiv:1709.06648 <https://arxiv.org/abs/1709.06648>`_.
     # In the case where len(x_wires) < len(y_wires), this is an upper bound.
     return {
-        qml.TemporaryAND: num_y_wires - 1,
-        qml.decomposition.adjoint_resource_rep(qml.TemporaryAND, {}): num_y_wires - 1,
-        qml.CNOT: 6 * (num_y_wires - 2) + 3,
+        TemporaryAND: num_y_wires - 1,
+        adjoint_resource_rep(TemporaryAND, {}): num_y_wires - 1,
+        CNOT: 6 * (num_y_wires - 2) + 3,
     }
 
 
@@ -246,7 +248,7 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
     x_wires_pl = x_wires[::-1][:num_y_wires]
     y_wires_pl = y_wires[::-1]
     work_wires_pl = work_wires[::-1]
-    qml.TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])
+    TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]])
 
     for i in range(1, num_y_wires - 1):
         if i < num_x_wires:
@@ -254,10 +256,10 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
         else:
             _left_operator([work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]], ik_is_zero=True)
 
-    qml.CNOT([work_wires_pl[-1], y_wires_pl[-1]])
+    CNOT([work_wires_pl[-1], y_wires_pl[-1]])
 
     if num_x_wires >= num_y_wires:
-        qml.CNOT([x_wires_pl[-1], y_wires_pl[-1]])
+        CNOT([x_wires_pl[-1], y_wires_pl[-1]])
 
     for i in range(len(y_wires_pl) - 2, 0, -1):
         if i < num_x_wires:
@@ -267,8 +269,8 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
                 [work_wires_pl[i - 1], y_wires_pl[i], work_wires_pl[i]], ik_is_zero=True
             )
 
-    qml.adjoint(qml.TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
-    qml.CNOT([x_wires_pl[0], y_wires_pl[0]])
+    adjoint(TemporaryAND([x_wires_pl[0], y_wires_pl[0], work_wires_pl[0]]))
+    CNOT([x_wires_pl[0], y_wires_pl[0]])
 
 
 add_decomps(SemiAdder, _semiadder)

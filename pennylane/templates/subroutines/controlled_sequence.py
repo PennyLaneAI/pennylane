@@ -16,9 +16,9 @@ Contains the ControlledSequence template.
 """
 from copy import copy
 
-import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.ops.op_math.symbolicop import SymbolicOp
+from pennylane.ops.op_math import SymbolicOp, ctrl
+from pennylane.ops.op_math import pow as qml_pow
 from pennylane.wires import Wires
 
 
@@ -191,6 +191,6 @@ class ControlledSequence(SymbolicOp, Operation):
         ops = []
 
         for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
-            ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
+            ops.append(qml_pow(ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops

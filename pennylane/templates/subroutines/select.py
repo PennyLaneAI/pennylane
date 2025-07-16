@@ -19,7 +19,6 @@ import copy
 import itertools
 from collections import Counter
 
-import pennylane as qml
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
@@ -30,6 +29,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, X, adjoint, ctrl
+from pennylane.queuing import QueuingManager
 from pennylane.templates.subroutines.temporary_and import TemporaryAND
 from pennylane.wires import Wires
 
@@ -311,7 +311,7 @@ class Select(Operation):
             raise ValueError("Control wires should be different from operation wires.")
 
         for op in ops:
-            qml.QueuingManager.remove(op)
+            QueuingManager.remove(op)
 
         target_wires = Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires

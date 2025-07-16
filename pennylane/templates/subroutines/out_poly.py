@@ -15,9 +15,11 @@
 Contains the OutPoly template.
 """
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.ops import adjoint, ctrl
+from pennylane.templates.subroutines import QFT, PhaseAdder
+from pennylane.wires import Wires, WiresLike
 
 
 def _get_polynomial(f, mod, *variable_sizes):
@@ -87,7 +89,7 @@ def _get_polynomial(f, mod, *variable_sizes):
 
     coeffs_dict = {}
     for s, f_value in enumerate(f_values):
-        if not qml.math.isclose(f_value, 0.0):
+        if not math.isclose(f_value, 0.0):
             bin_tuple = tuple(all_binary_list[s])
             coeffs_dict[bin_tuple] = f_value
 
@@ -115,7 +117,7 @@ def _mobius_inversion_of_zeta_transform(f_values, mod):
 
     """
 
-    total_wires = int(qml.math.log2(len(f_values)))
+    total_wires = int(math.log2(len(f_values)))
     num_combinations = len(f_values)
 
     for i in range(total_wires):
@@ -276,7 +278,7 @@ class OutPoly(Operation):
 
         registers_wires = [*input_registers, output_wires]
 
-        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
         num_work_wires = len(work_wires)
         if mod is None:
             mod = 2 ** len(registers_wires[-1])
@@ -292,13 +294,13 @@ class OutPoly(Operation):
         inp_regs = []
 
         for reg in input_registers:
-            wires = qml.wires.Wires(reg)
+            wires = Wires(reg)
             inp_regs.append(wires)
             all_wires += wires
 
         self.hyperparameters["input_registers"] = tuple(inp_regs)
 
-        wires = qml.wires.Wires(output_wires)
+        wires = Wires(output_wires)
         self.hyperparameters["output_wires"] = wires
         all_wires += wires
 
@@ -317,8 +319,8 @@ class OutPoly(Operation):
         )
 
         coeffs = [c[1] for c in self.hyperparameters["coeffs_list"]]
-        assert qml.math.allclose(
-            coeffs, qml.math.floor(coeffs)
+        assert math.allclose(
+            coeffs, math.floor(coeffs)
         ), "The polynomial function must have integer coefficients"
 
         if len(work_wires) != 0:
@@ -344,7 +346,7 @@ class OutPoly(Operation):
     def map_wires(self, wire_map: dict):
 
         new_input_registers = [
-            qml.wires.Wires([wire_map[wire] for wire in reg])
+            Wires([wire_map[wire] for wire in reg])
             for reg in self.hyperparameters["input_registers"]
         ]
 
@@ -415,7 +417,7 @@ class OutPoly(Operation):
             [work_wires[0]] + registers_wires[-1] if work_wires[0] else registers_wires[-1]
         )
 
-        list_ops.append(qml.QFT(wires=output_adder_mod))
+        list_ops.append(QFT(wires=output_adder_mod))
 
         coeffs_dic = dict(kwargs["coeffs_list"])
 
@@ -425,13 +427,13 @@ class OutPoly(Operation):
 
             if not 1 in item:
                 # Add the constant term
-                list_ops.append(qml.PhaseAdder(int(coeff), output_adder_mod))
+                list_ops.append(PhaseAdder(int(coeff), output_adder_mod))
             else:
                 controls = [all_wires_input[i] for i, bit in enumerate(item) if bit == 1]
 
                 list_ops.append(
-                    qml.ctrl(
-                        qml.PhaseAdder(
+                    ctrl(
+                        PhaseAdder(
                             int(coeff) % mod,
                             output_adder_mod,
                             work_wire=work_wires[1],
@@ -441,6 +443,6 @@ class OutPoly(Operation):
                     )
                 )
 
-        list_ops.append(qml.adjoint(qml.QFT)(wires=output_adder_mod))
+        list_ops.append(adjoint(QFT)(wires=output_adder_mod))
 
         return list_ops

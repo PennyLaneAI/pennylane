@@ -19,9 +19,10 @@ import copy
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import QubitUnitary
+from pennylane.templates.subroutines import QuantumPhaseEstimation
 from pennylane.wires import Wires
 
 
@@ -59,10 +60,10 @@ def probs_to_unitary(probs):
            [ 0.5       ,  0.16666667,  0.16666667, -0.83333333]])
     """
 
-    if not qml.math.is_abstract(
+    if not math.is_abstract(
         sum(probs)
     ):  # skip check and error if jitting to avoid JAX tracer errors
-        if not qml.math.allclose(sum(probs), 1) or min(probs) < 0:
+        if not math.allclose(sum(probs), 1) or min(probs) < 0:
             raise ValueError(
                 "A valid probability distribution of non-negative numbers that sum to one "
                 "must be input"
@@ -70,14 +71,14 @@ def probs_to_unitary(probs):
 
     # Using the approach discussed here:
     # https://quantumcomputing.stackexchange.com/questions/10239/how-can-i-fill-a-unitary-knowing-only-its-first-column
-    psi = qml.math.sqrt(probs)
+    psi = math.sqrt(probs)
     overlap = psi[0]
-    denominator = qml.math.sqrt(2 + 2 * overlap)
-    psi = qml.math.set_index(psi, 0, psi[0] + 1)  # psi[0] += 1, but JAX-JIT compatible
+    denominator = math.sqrt(2 + 2 * overlap)
+    psi = math.set_index(psi, 0, psi[0] + 1)  # psi[0] += 1, but JAX-JIT compatible
     psi /= denominator
 
     dim = len(probs)
-    return 2 * qml.math.outer(psi, psi) - np.eye(dim)
+    return 2 * math.outer(psi, psi) - np.eye(dim)
 
 
 def func_to_unitary(func, M):
@@ -132,9 +133,7 @@ def func_to_unitary(func, M):
     unitary = np.zeros((2 * M, 2 * M))
 
     fs = [func(i) for i in range(M)]
-    if not qml.math.is_abstract(
-        fs[0]
-    ):  # skip check and error if jitting to avoid JAX tracer errors
+    if not math.is_abstract(fs[0]):  # skip check and error if jitting to avoid JAX tracer errors
         if min(fs) < 0 or max(fs) > 1:
             raise ValueError(
                 "func must be bounded within the interval [0, 1] for the range of input values"
@@ -142,10 +141,10 @@ def func_to_unitary(func, M):
 
     for i, f in enumerate(fs):
         # array = set_index(array, idx, val) is a JAX-JIT compatible version of array[idx] = val
-        unitary = qml.math.set_index(unitary, (2 * i, 2 * i), qml.math.sqrt(1 - f))
-        unitary = qml.math.set_index(unitary, (2 * i + 1, 2 * i), qml.math.sqrt(f))
-        unitary = qml.math.set_index(unitary, (2 * i, 2 * i + 1), qml.math.sqrt(f))
-        unitary = qml.math.set_index(unitary, (2 * i + 1, 2 * i + 1), -qml.math.sqrt(1 - f))
+        unitary = math.set_index(unitary, (2 * i, 2 * i), math.sqrt(1 - f))
+        unitary = math.set_index(unitary, (2 * i + 1, 2 * i), math.sqrt(f))
+        unitary = math.set_index(unitary, (2 * i, 2 * i + 1), math.sqrt(f))
+        unitary = math.set_index(unitary, (2 * i + 1, 2 * i + 1), -math.sqrt(1 - f))
 
     return unitary
 
@@ -202,7 +201,7 @@ def make_Q(A, R):
     Returns:
         array: the :math:`\mathcal{Q}` unitary
     """
-    A_big = qml.math.kron(A, np.eye(2))
+    A_big = math.kron(A, np.eye(2))
     F = R @ A_big
     F_dagger = F.conj().T
 
@@ -431,9 +430,7 @@ class QuantumMonteCarlo(Operation):
         op_list = [
             QubitUnitary(A, wires=target_wires[:-1]),
             QubitUnitary(R, wires=target_wires),
-            qml.templates.QuantumPhaseEstimation(
-                Q, target_wires=target_wires, estimation_wires=estimation_wires
-            ),
+            QuantumPhaseEstimation(Q, target_wires=target_wires, estimation_wires=estimation_wires),
         ]
 
         return op_list

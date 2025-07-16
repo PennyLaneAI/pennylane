@@ -19,8 +19,8 @@ import warnings
 
 import numpy as np
 
-import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
 
 
 class AQFT(Operation):
@@ -169,14 +169,14 @@ class AQFT(Operation):
 
         decomp_ops = []
         for i, wire in enumerate(wires):
-            decomp_ops.append(qml.Hadamard(wire))
+            decomp_ops.append(Hadamard(wire))
             counter = 0
 
             for shift, control_wire in zip(shifts[: len(shifts) - i], wires[i + 1 :]):
                 if counter >= order:
                     break
 
-                op = qml.ControlledPhaseShift(shift, wires=[control_wire, wire])
+                op = ControlledPhaseShift(shift, wires=[control_wire, wire])
                 decomp_ops.append(op)
                 counter = counter + 1
 
@@ -184,7 +184,7 @@ class AQFT(Operation):
         last_half_wires = wires[-(n_wires // 2) :]
 
         for wire1, wire2 in zip(first_half_wires, reversed(last_half_wires)):
-            swap = qml.SWAP(wires=[wire1, wire2])
+            swap = SWAP(wires=[wire1, wire2])
             decomp_ops.append(swap)
 
         return decomp_ops

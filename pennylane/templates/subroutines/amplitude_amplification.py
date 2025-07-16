@@ -21,9 +21,12 @@ import copy
 
 import numpy as np
 
-import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.wires import Wires
+from pennylane.ops import Hadamard, PhaseShift
+from pennylane.ops.op_math import ctrl
+from pennylane.queuing import QueuingManager, apply
+from pennylane.templates.subroutines import Reflection
+from pennylane.wires import WireError, Wires
 
 
 def _get_fixed_point_angles(iters, p_min):
@@ -36,7 +39,7 @@ def _get_fixed_point_angles(iters, p_min):
     gamma = np.cos(np.arccos(1 / delta, dtype=np.complex128) / iters, dtype=np.complex128) ** -1
 
     alphas = [
-        float(2 * np.arctan(1 / (np.tan(2 * np.pi * j / iters) * np.sqrt(1 - gamma**2))))
+        np.real(2 * np.arctan(1 / (np.tan(2 * np.pi * j / iters) * np.sqrt(1 - gamma**2))))
         for j in range(1, iters // 2 + 1)
     ]
     betas = [-alphas[-j] for j in range(1, iters // 2 + 1)]
@@ -125,13 +128,13 @@ class AmplitudeAmplification(Operation):
             reflection_wires = U.wires
 
         if fixed_point and work_wire is None:
-            raise qml.wires.WireError("work_wire must be specified if fixed_point == True.")
+            raise WireError("work_wire must be specified if fixed_point == True.")
 
-        if fixed_point and len(O.wires + qml.wires.Wires(work_wire)) == len(O.wires):
+        if fixed_point and len(O.wires + Wires(work_wire)) == len(O.wires):
             raise ValueError("work_wire must be different from the wires of O.")
 
         if fixed_point:
-            wires = U.wires + qml.wires.Wires(work_wire)
+            wires = U.wires + Wires(work_wire)
         else:
             wires = U.wires
 
@@ -141,7 +144,7 @@ class AmplitudeAmplification(Operation):
         self.hyperparameters["fixed_point"] = fixed_point
         self.hyperparameters["work_wire"] = work_wire
         self.hyperparameters["p_min"] = p_min
-        self.hyperparameters["reflection_wires"] = qml.wires.Wires(reflection_wires)
+        self.hyperparameters["reflection_wires"] = Wires(reflection_wires)
 
         super().__init__(*U.data, *O.data, wires=wires)
 
@@ -161,21 +164,21 @@ class AmplitudeAmplification(Operation):
             alphas, betas = _get_fixed_point_angles(iters, p_min)
 
             for iter in range(iters // 2):
-                ops.append(qml.Hadamard(wires=work_wire))
-                ops.append(qml.ctrl(O, control=work_wire))
-                ops.append(qml.Hadamard(wires=work_wire))
-                ops.append(qml.PhaseShift(betas[iter], wires=work_wire))
-                ops.append(qml.Hadamard(wires=work_wire))
-                ops.append(qml.ctrl(O, control=work_wire))
-                ops.append(qml.Hadamard(wires=work_wire))
+                ops.append(Hadamard(wires=work_wire))
+                ops.append(ctrl(O, control=work_wire))
+                ops.append(Hadamard(wires=work_wire))
+                ops.append(PhaseShift(betas[iter], wires=work_wire))
+                ops.append(Hadamard(wires=work_wire))
+                ops.append(ctrl(O, control=work_wire))
+                ops.append(Hadamard(wires=work_wire))
 
-                ops.append(qml.Reflection(U, -alphas[iter], reflection_wires=reflection_wires))
+                ops.append(Reflection(U, -alphas[iter], reflection_wires=reflection_wires))
         else:
             for _ in range(iters):
                 ops.append(O)
-                if qml.QueuingManager.recording():
-                    qml.apply(O)
-                ops.append(qml.Reflection(U, np.pi, reflection_wires=reflection_wires))
+                if QueuingManager.recording():
+                    apply(O)
+                ops.append(Reflection(U, np.pi, reflection_wires=reflection_wires))
 
         return ops
 
@@ -193,7 +196,7 @@ class AmplitudeAmplification(Operation):
         )
         return new_op
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=QueuingManager):
         for op in [self.hyperparameters["U"], self.hyperparameters["O"]]:
             context.remove(op)
         context.append(self)

@@ -15,9 +15,10 @@
 Contains the Adder template.
 """
 
-import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.ops.op_math import adjoint
+from pennylane.templates.subroutines import QFT, PhaseAdder
+from pennylane.wires import Wires, WiresLike
 
 
 class Adder(Operation):
@@ -105,8 +106,8 @@ class Adder(Operation):
         self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
-        x_wires = qml.wires.Wires(x_wires)
-        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
+        x_wires = Wires(x_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         num_works_wires = len(work_wires)
 
@@ -199,8 +200,8 @@ class Adder(Operation):
         else:
             qft_wires = work_wires[:1] + x_wires
             work_wire = work_wires[1:]
-        op_list.append(qml.QFT(qft_wires))
-        op_list.append(qml.PhaseAdder(k, qft_wires, mod, work_wire))
-        op_list.append(qml.adjoint(qml.QFT)(qft_wires))
+        op_list.append(QFT(qft_wires))
+        op_list.append(PhaseAdder(k, qft_wires, mod, work_wire))
+        op_list.append(adjoint(QFT)(qft_wires))
 
         return op_list

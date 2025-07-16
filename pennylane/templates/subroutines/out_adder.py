@@ -15,9 +15,10 @@
 Contains the OutAdder template.
 """
 
-import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.ops import adjoint
+from pennylane.templates.subroutines import QFT, ControlledSequence, PhaseAdder
+from pennylane.wires import Wires, WiresLike
 
 
 class OutAdder(Operation):
@@ -150,10 +151,10 @@ class OutAdder(Operation):
         id=None,
     ):  # pylint: disable=too-many-arguments
 
-        x_wires = qml.wires.Wires(x_wires)
-        y_wires = qml.wires.Wires(y_wires)
-        output_wires = qml.wires.Wires(output_wires)
-        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
+        x_wires = Wires(x_wires)
+        y_wires = Wires(y_wires)
+        output_wires = Wires(output_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         num_work_wires = len(work_wires)
 
@@ -180,7 +181,7 @@ class OutAdder(Operation):
         if any(wire in y_wires for wire in output_wires):
             raise ValueError("None of the wires in y_wires should be included in output_wires.")
         for key in ["x_wires", "y_wires", "output_wires", "work_wires"]:
-            self.hyperparameters[key] = qml.wires.Wires(locals()[key])
+            self.hyperparameters[key] = Wires(locals()[key])
 
         # pylint: disable=consider-using-generator
         all_wires = sum(
@@ -257,17 +258,13 @@ class OutAdder(Operation):
         else:
             qft_new_output_wires = output_wires
             work_wire = ()
-        op_list.append(qml.QFT(wires=qft_new_output_wires))
+        op_list.append(QFT(wires=qft_new_output_wires))
         op_list.append(
-            qml.ControlledSequence(
-                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
-            )
+            ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
         )
         op_list.append(
-            qml.ControlledSequence(
-                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
-            )
+            ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
         )
-        op_list.append(qml.adjoint(qml.QFT)(wires=qft_new_output_wires))
+        op_list.append(adjoint(QFT)(wires=qft_new_output_wires))
 
         return op_list

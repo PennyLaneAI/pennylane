@@ -15,9 +15,10 @@
 Contains the OutMultiplier template.
 """
 
-import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.ops import adjoint
+from pennylane.templates.subroutines import QFT, ControlledSequence, PhaseAdder
+from pennylane.wires import Wires, WiresLike
 
 
 class OutMultiplier(Operation):
@@ -151,10 +152,10 @@ class OutMultiplier(Operation):
         id=None,
     ):  # pylint: disable=too-many-arguments
 
-        x_wires = qml.wires.Wires(x_wires)
-        y_wires = qml.wires.Wires(y_wires)
-        output_wires = qml.wires.Wires(output_wires)
-        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
+        x_wires = Wires(x_wires)
+        y_wires = Wires(y_wires)
+        output_wires = Wires(output_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         num_work_wires = len(work_wires)
 
@@ -192,7 +193,7 @@ class OutMultiplier(Operation):
             wires_name.append("work_wires")
 
         for name, wires in zip(wires_name, wires_list):
-            self.hyperparameters[name] = qml.wires.Wires(wires)
+            self.hyperparameters[name] = Wires(wires)
         self.hyperparameters["mod"] = mod
 
         # pylint: disable=consider-using-generator
@@ -265,15 +266,15 @@ class OutMultiplier(Operation):
         else:
             qft_output_wires = output_wires
             work_wire = ()
-        op_list.append(qml.QFT(wires=qft_output_wires))
+        op_list.append(QFT(wires=qft_output_wires))
         op_list.append(
-            qml.ControlledSequence(
-                qml.ControlledSequence(
-                    qml.PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
+            ControlledSequence(
+                ControlledSequence(
+                    PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
                 ),
                 control=y_wires,
             )
         )
-        op_list.append(qml.adjoint(qml.QFT)(wires=qft_output_wires))
+        op_list.append(adjoint(QFT)(wires=qft_output_wires))
 
         return op_list

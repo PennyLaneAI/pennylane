@@ -17,20 +17,21 @@ Contains the Multiplier template.
 
 import numpy as np
 
-import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.ops import SWAP, adjoint
+from pennylane.templates.subroutines import QFT, ControlledSequence, PhaseAdder
+from pennylane.wires import Wires, WiresLike
 
 
 def _mul_out_k_mod(k, x_wires: WiresLike, mod, work_wire_aux: WiresLike, wires_aux: WiresLike):
     """Performs :math:`x \times k` in the registers wires wires_aux"""
     op_list = []
 
-    op_list.append(qml.QFT(wires=wires_aux))
+    op_list.append(QFT(wires=wires_aux))
     op_list.append(
-        qml.ControlledSequence(qml.PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires)
+        ControlledSequence(PhaseAdder(k, wires_aux, mod, work_wire_aux), control=x_wires)
     )
-    op_list.append(qml.adjoint(qml.QFT(wires=wires_aux)))
+    op_list.append(adjoint(QFT(wires=wires_aux)))
     return op_list
 
 
@@ -122,8 +123,8 @@ class Multiplier(Operation):
         self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
 
-        x_wires = qml.wires.Wires(x_wires)
-        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
+        x_wires = Wires(x_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
         if len(work_wires) == 0:
             raise ValueError("Work wires must be specified for Multiplier")
 
@@ -230,10 +231,10 @@ class Multiplier(Operation):
             wires_aux_swap = wires_aux
         op_list.extend(_mul_out_k_mod(k, x_wires, mod, work_wire_aux, wires_aux))
         for x_wire, aux_wire in zip(x_wires, wires_aux_swap):
-            op_list.append(qml.SWAP(wires=[x_wire, aux_wire]))
+            op_list.append(SWAP(wires=[x_wire, aux_wire]))
         inv_k = pow(k, -1, mod)
 
         for op in reversed(_mul_out_k_mod(inv_k, x_wires, mod, work_wire_aux, wires_aux)):
-            op_list.append(qml.adjoint(op))
+            op_list.append(adjoint(op))
 
         return op_list

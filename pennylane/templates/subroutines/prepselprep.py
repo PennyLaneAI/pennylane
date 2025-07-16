@@ -17,22 +17,26 @@ Contains the PrepSelPrep template.
 # pylint: disable=arguments-differ
 import copy
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
+from pennylane.ops import GlobalPhase, LinearCombination, adjoint
+from pennylane.templates.embeddings import AmplitudeEmbedding
+from pennylane.templates.subroutines import Select
+from pennylane.wires import Wires
 
 
 def _get_new_terms(lcu):
     """Compute a new sum of unitaries with positive coefficients"""
     coeffs, ops = lcu.terms()
-    coeffs = qml.math.stack(coeffs)
-    angles = qml.math.angle(coeffs)
+    coeffs = math.stack(coeffs)
+    angles = math.angle(coeffs)
     new_ops = []
 
     for angle, op in zip(angles, ops):
-        new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
+        new_op = op @ GlobalPhase(-angle, wires=op.wires)
         new_ops.append(new_op)
 
-    return qml.math.abs(coeffs), new_ops
+    return math.abs(coeffs), new_ops
 
 
 class PrepSelPrep(Operation):
@@ -76,19 +80,18 @@ class PrepSelPrep(Operation):
     def __init__(self, lcu, control=None, id=None):
 
         coeffs, ops = lcu.terms()
-        control = qml.wires.Wires(control)
-        self.hyperparameters["lcu"] = qml.ops.LinearCombination(coeffs, ops)
+        control = Wires(control)
+        self.hyperparameters["lcu"] = LinearCombination(coeffs, ops)
         self.hyperparameters["coeffs"] = coeffs
         self.hyperparameters["ops"] = ops
         self.hyperparameters["control"] = control
 
         if any(
-            control_wire in qml.wires.Wires.all_wires([op.wires for op in ops])
-            for control_wire in control
+            control_wire in Wires.all_wires([op.wires for op in ops]) for control_wire in control
         ):
             raise ValueError("Control wires should be different from operation wires.")
 
-        target_wires = qml.wires.Wires.all_wires([op.wires for op in ops])
+        target_wires = Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
@@ -107,7 +110,7 @@ class PrepSelPrep(Operation):
     def map_wires(self, wire_map: dict) -> "PrepSelPrep":
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
         new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
-        new_lcu = qml.ops.LinearCombination(self.hyperparameters["coeffs"], new_ops)
+        new_lcu = LinearCombination(self.hyperparameters["coeffs"], new_ops)
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
@@ -118,10 +121,10 @@ class PrepSelPrep(Operation):
         if cache is None or not isinstance(cache.get("matrices", None), list):
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
-        coeffs = qml.math.array(self.coeffs)
-        shape = qml.math.shape(coeffs)
+        coeffs = math.array(self.coeffs)
+        shape = math.shape(coeffs)
         for i, mat in enumerate(cache["matrices"]):
-            if shape == qml.math.shape(mat) and qml.math.allclose(coeffs, mat):
+            if shape == math.shape(mat) and math.allclose(coeffs, mat):
                 str_wo_id = f"{op_label}(M{i})"
                 break
         else:
@@ -136,14 +139,10 @@ class PrepSelPrep(Operation):
         coeffs, ops = _get_new_terms(lcu)
 
         decomp_ops = [
-            qml.AmplitudeEmbedding(
-                qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
-            ),
-            qml.Select(ops, control),
-            qml.adjoint(
-                qml.AmplitudeEmbedding(
-                    qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
-                )
+            AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
+            Select(ops, control),
+            adjoint(
+                AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
             ),
         ]
 
