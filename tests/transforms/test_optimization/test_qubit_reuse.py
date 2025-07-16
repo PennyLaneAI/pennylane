@@ -18,7 +18,6 @@ import random
 from collections import Counter
 
 import pennylane as qml
-
 from pennylane import queuing
 
 
