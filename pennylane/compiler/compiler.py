@@ -25,8 +25,7 @@ from packaging.version import Version
 
 from pennylane.exceptions import CompileError
 
-PL_CATALYST_MIN_VERSION = Version("0.11.0")
-
+PL_CATALYST_MIN_VERSION = Version("0.12.0")
 
 @dataclasses.dataclass
 class AvailableCompilers:
