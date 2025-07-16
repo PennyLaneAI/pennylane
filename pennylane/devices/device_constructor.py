@@ -107,11 +107,11 @@ def device(name, *args, **kwargs):
             that contains global and/or device specific configurations.
 
         .. warning::
-            The custom_decomps keyword param is deprecated and will be removed in version 0.44.
-            Instead, please implement a custom decomposition (i.e. U_decomp) of an operator or
-            template U as a quantum function and register it with qml.decomposition.add_decomps(U, U_decomp).
+            The ``custom_decomps`` keyword param is deprecated and will be removed in version 0.44.
+            Instead, please implement a custom decomposition (i.e. ``U_decomp``) of an operator or
+            template ``U`` as a quantum function and register it with ``qml.decomposition.add_decomps(U, U_decomp)``.
             This requires that the graph based decomposition system be enabled with
-            qml.decomposition.enable_graph().
+            ``qml.decomposition.enable_graph()``.
 
         custom_decomps (Dict[Union(str, Operator), Callable]): Custom
             decompositions to be applied by the device at runtime.
