@@ -21,6 +21,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Callable, Literal, Optional, Sequence, Union
 
 from pennylane import math
+from pennylane.allocation import DynamicWire
 from pennylane.tape import make_qscript
 from pennylane.workflow import construct_batch
 
@@ -315,9 +316,9 @@ def draw(
             _wire_order = wire_order
         else:
             try:
-                _wire_order = sorted(tape.wires)
+                _wire_order = sorted((w for w in tape.wires if not isinstance(w, DynamicWire)))
             except TypeError:
-                _wire_order = tape.wires
+                _wire_order = [w for w in tape.wires if not isinstance(w, DynamicWire)]
 
         return tape_text(
             tape,
@@ -353,9 +354,9 @@ def _draw_qnode(
             _wire_order = qnode.device.wires
         else:
             try:
-                _wire_order = sorted(tapes[0].wires)
+                _wire_order = sorted((w for w in tapes[0].wires if not isinstance(w, DynamicWire)))
             except TypeError:
-                _wire_order = tapes[0].wires
+                _wire_order = [w for w in tapes[0].wires if not isinstance(w, DynamicWire)]
 
         cache = {"tape_offset": 0, "matrices": []}
         res = [
