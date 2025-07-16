@@ -101,6 +101,7 @@ class TestQubitReuse:
         random.seed(10)  # for test reproducibility
         new_circuit = qml.transforms.qubit_reuse(circuit)
 
+
         # execute the circuit
         with queuing.AnnotatedQueue() as q:
             new_circuit()

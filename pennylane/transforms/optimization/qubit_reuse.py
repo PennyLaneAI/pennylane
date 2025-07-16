@@ -450,6 +450,11 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
             R = R_prime
 
     new_tape = generate_dynamic_circuit(R, tape)
+    new_wires = []
+    wire_map = _build_wire_map(tape)
+    for val in new_tape.wires:
+        new_wires.append(next(key for key, value in wire_map.items() if value == val))
+    new_tape.wires = new_wires
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
