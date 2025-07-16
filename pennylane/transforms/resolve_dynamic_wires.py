@@ -138,9 +138,9 @@ def resolve_dynamic_wires(
 
     If we only provide one zeroed wire, we perform a reset on that wire before reusing for the ``Y`` operation.
 
-    >>> assigned_one_zeroed = qml.transforms.resolve_dynamic_wires(circuit, zeroed=("a", "b"))
+    >>> assigned_one_zeroed = qml.transforms.resolve_dynamic_wires(circuit, zeroed=("a",))
     >>> print(qml.draw(assigned_one_zeroed)())
-    b: ──X──┤↗│  │0⟩──Y─┤
+    a: ──X──┤↗│  │0⟩──Y─┤
 
     If we only provide ``any_state`` qubits with unknown states, then they will be reset to zero before being used
     in an operation that requires a zero state.
