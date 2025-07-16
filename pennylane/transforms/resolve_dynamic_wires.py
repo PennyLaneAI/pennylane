@@ -104,15 +104,15 @@ def resolve_dynamic_wires(
 
       #. If wires exist in the ``zeroed`` register, we take one from that register
       #. If no ``zeroed`` wires exist, we pull one from ``any_state`` and apply a reset operation
-      #. If no wires exist in the ``zeroed`` or ``any_state`` registers, we increment ``min_int`` and
-         add a new wire
+      #. If no wires exist in the ``zeroed`` or ``any_state`` registers and ``min_int`` is not ``None``,
+         we increment ``min_int`` and add a new wire.
 
     For a dynamic wire with ``require_zeros=False``, we try:
 
       #. If wires exist in the ``any_state``, we take one from that register
       #. If no wires exist in ``any_state``, we pull one from ``zeroed``
-      #. If no wires exist in the ``zeroed`` or ``any_state`` registers, we increment ``min_int`` and
-         add a new wire
+      #. If no wires exist in the ``zeroed`` or ``any_state`` registers and ``min_int`` is not ``None``,
+         we increment ``min_int`` and add a new wire
 
     This approach minimizes the width of the circuit at the cost of more reset operations.
 
@@ -142,14 +142,15 @@ def resolve_dynamic_wires(
     >>> print(qml.draw(assigned_one_zeroed)())
     b: ──X──┤↗│  │0⟩──Y─┤
 
-    If we only provide any_state qubits with unknown states, then they will be reset to zero before being used
+    If we only provide ``any_state`` qubits with unknown states, then they will be reset to zero before being used
     in an operation that requires a zero state.
 
     >>> assigned_any_state = qml.transforms.resolve_dynamic_wires(circuit, any_state=("a", "b"))
     >>> print(qml.draw(assigned_any_state)())
     b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─|
 
-    If the wire allocations had ``require_zeros=False``, no reset operations would occur.
+    Note that the last provided wire with label ``"b"`` is used first.
+    If the wire allocations had ``require_zeros=False``, no reset operations would occur:
 
     >>> print(qml.draw(assigned_any_state)(require_zeros=False))
     b: ──X──Y─┤
@@ -179,7 +180,7 @@ def resolve_dynamic_wires(
     2: ──────────────╰X─┤
 
     If both an explicit register and ``min_int`` are specified, ``min_int`` will be used once all available
-    explicit wires are loaned out. Below ``"a"`` is extracted and used first, but then later wires
+    explicit wires are loaned out. Below, ``"a"`` is extracted and used first, but then wires
     are extracted starting from ``0``.
 
     >>> zeroed_and_min_int = qml.transforms.resolve_dynamic_wires(multiple_allocations, zeroed=("a",), min_int=0)
