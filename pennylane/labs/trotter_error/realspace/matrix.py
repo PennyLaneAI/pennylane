@@ -16,14 +16,10 @@
 from __future__ import annotations
 
 from functools import reduce
-from typing import TYPE_CHECKING, Tuple, Union
+from typing import Tuple, Union
 
 import numpy as np
 import scipy as sp
-
-if TYPE_CHECKING:
-    from pennylane.labs.trotter_error.realspace import RealspaceOperator, RealspaceSum
-
 
 def _position_operator(
     gridpoints: int, sparse: bool = False, basis: str = "realspace"
