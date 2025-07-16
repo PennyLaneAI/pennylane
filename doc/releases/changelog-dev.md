@@ -76,8 +76,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* `DefaultQubitLegacy` (test suite only) uses `seed` correctly now. It does not hold the
-  classical shadow copy of legacy version anymore.
+* `DefaultQubitLegacy` (test suite only) no longer provides a customized classical shadow
+  implementation
   [(#7895)](https://github.com/PennyLaneAI/pennylane/pull/7895)
 
 * Make `pennylane.io` a tertiary module.
@@ -110,6 +110,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Joey Carter,
+Yushao Chen,
 Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
