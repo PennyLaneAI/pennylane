@@ -11,12 +11,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for adding a noise model to a quantum circuit or device"""
-import warnings
 from copy import copy
 from functools import lru_cache
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.transforms.core import TransformContainer, transform
 
 
@@ -177,13 +175,6 @@ def add_noise(tape, noise_model, level="device"):
             f"Provided noise model object must define model_map and metatadata attributes, got {noise_model}."
         )
 
-    if level is None:
-        # raise a deprecation warning for None level
-        warnings.warn(
-            "The `level=None` argument is deprecated and will be removed in a future release. "
-            "Please use `level='device'` to include all transforms.",
-            PennyLaneDeprecationWarning,
-        )
     if level is None or level in ("device", "user"):  # decompose templates and their adjoints
 
         def stop_at(obj):
