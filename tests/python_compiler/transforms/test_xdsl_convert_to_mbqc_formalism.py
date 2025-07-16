@@ -18,12 +18,20 @@ pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
 
+from catalyst.passes import xdsl_plugin
+
 # pylint: disable=wrong-import-position
 from xdsl.context import Context
 from xdsl.dialects import func, test
 
+import pennylane as qml
+from pennylane.compiler.python_compiler import Compiler
+from pennylane.compiler.python_compiler.jax_utils import parse_generic_to_xdsl_module
 from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect as Quantum
-from pennylane.compiler.python_compiler.transforms import ConvertToMBQCFormalismPass
+from pennylane.compiler.python_compiler.transforms import (
+    ConvertToMBQCFormalismPass,
+    convert_to_mbqc_formalism_pass,
+)
 
 
 class TestConvertToMBQCFormalismPass:
@@ -119,3 +127,51 @@ class TestConvertToMBQCFormalismPass:
         pipeline.apply(ctx, module)
 
         run_filecheck(program, module)
+
+    @pytest.xfail(
+        reason="This unit test is not complete and will be updated once PR#7888 is merged."
+    )
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_qubit_mgr_integrate(self, run_filecheck):
+        """Test that ConvertToMBQCFormalismPass can extract and swap the target qubit and
+        the result qubit in the auxiliary wires.
+        """
+        program = """
+            func.func @test_func() {
+              // CHECK: %0 = "quantum.alloc"() <{nqubits_attr = 15 : i64}> : () -> !quantum.reg
+              %0 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
+              // CHECK: %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
+              %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
+              %2 = "quantum.extract"() <{idx_attr = 1 : i64}> : () -> !quantum.bit
+              %out_qubits0, %out_qubits1 = quantum.custom "CNOT"() %1, %2 : !quantum.bit, !quantum.bit
+              // CHECK: %3 = "quantum.extract"(%0) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+              // CHECK: %4 = "quantum.extract"(%0) <{idx_attr = 13 : i64}> : (!quantum.reg) -> !quantum.bit
+              // CHECK: %5 = "quantum.insert"(%0, %3) <{idx_attr = 13 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+              // CHECK: %6 = "quantum.insert"(%5, %4) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+              // CHECK: %7 = "quantum.extract"(%6) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
+              // CHECK: %8 = "quantum.extract"(%6) <{idx_attr = 14 : i64}> : (!quantum.reg) -> !quantum.bit
+              // CHECK: %9 = "quantum.insert"(%6, %7) <{idx_attr = 14 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+              // CHECK: %10 = "quantum.insert"(%9, %8) <{idx_attr = 1 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
+
+              return
+            }
+        """
+
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit(target="mlir", pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
+        @convert_to_mbqc_formalism_pass
+        @qml.qnode(dev)
+        def circuit_ref():
+            qml.H(0)
+            qml.H(0)
+            return qml.expval(qml.X(0))
+
+        compiler = Compiler()
+        mlir_module = compiler.run(circuit_ref.mlir_module)
+        mod_str = mlir_module.operation.get_asm(
+            binary=False, print_generic_op_form=True, assume_verified=True
+        )
+        xdsl_module = parse_generic_to_xdsl_module(mod_str)
+
+        run_filecheck(program, xdsl_module)
