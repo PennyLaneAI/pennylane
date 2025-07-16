@@ -20,7 +20,7 @@ from pennylane.transforms.core import TransformContainer, transform
 
 # pylint: disable=too-many-branches
 @transform
-def add_noise(tape, noise_model, level="device"):
+def add_noise(tape, noise_model, level=None):
     """Insert operations according to a provided noise model.
 
     Circuits passed through this quantum transform will be updated to apply the
@@ -145,7 +145,7 @@ def add_noise(tape, noise_model, level="device"):
         transforming a ``QNode``, this transform can be added at a designated level within the transform program, as determined using the
         :func:`get_transform_program <pennylane.workflow.get_transform_program>`. For example, specifying ``None`` will add it at the end, ensuring that the tape is expanded to have no ``Adjoint`` and ``Templates``:
 
-        >>> qml.transforms.add_noise(circuit, noise_model, level="device").transform_program
+        >>> qml.transforms.add_noise(circuit, noise_model, level=None).transform_program
         TransformProgram(cancel_inverses, merge_rotations, undo_swaps, _expand_metric_tensor, batch_transform, expand_fn, add_noise, metric_tensor)
 
         Other acceptable values for ``level`` are ``"top"``, ``"user"``, ``"device"``, and ``"gradient"``. Among these, `"top"` will allow addition
@@ -175,7 +175,7 @@ def add_noise(tape, noise_model, level="device"):
             f"Provided noise model object must define model_map and metatadata attributes, got {noise_model}."
         )
 
-    if level is None or level in ("device", "user"):  # decompose templates and their adjoints
+    if level is None or level == "user":  # decompose templates and their adjoints
 
         def stop_at(obj):
             if not isinstance(obj, qml.operation.Operator):
