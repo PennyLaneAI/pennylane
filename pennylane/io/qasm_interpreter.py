@@ -2,11 +2,13 @@
 This submodule contains the interpreter for OpenQASM 3.0.
 """
 
+import copy
 import functools
 from dataclasses import dataclass
 from functools import partial
 from typing import Any, Callable, Iterable
 
+import numpy as np
 from numpy import uint
 from openqasm3 import ast
 from openqasm3.visitor import QASMNode
@@ -48,6 +50,15 @@ PARAMETERIZED_GATES = {
     "CRX": ops.CRX,
     "CRY": ops.CRY,
     "CRZ": ops.CRZ,
+}
+
+CONSTANTS = {
+    "π": np.pi,
+    "τ": np.pi * 2,
+    "ℇ": np.e,
+    "pi": np.pi,
+    "tau": np.pi * 2,
+    "e": np.e,
 }
 
 
@@ -215,12 +226,36 @@ class Context:
         if "wires" not in context:
             context["wires"] = []
         if "scopes" not in context:
-            context["scopes"] = {"subroutines": {}}
+            context["scopes"] = {"subroutines": {}, "custom_gates": {}}
         if "wire_map" not in context or context["wire_map"] is None:
             context["wire_map"] = {}
         if "return" not in context:
-            context["return"] = None
+            context["return"] = {}
         self.context = context
+
+    def init_custom_gate_scope(self, node: ast.QuantumGateDefinition):
+        """
+        Initializes a context for a custom quantum gate.
+
+        Args:
+            node (QuantumGateDefinition): the custom quantum gate definition.
+        """
+        self.scopes["custom_gates"][node.name.name] = Context(
+            {
+                "vars": {k: v for k, v in self.vars.items() if v.constant},
+                "wire_map": {},
+                "body": node.body,
+                "params": [_resolve_name(param) for param in node.arguments]
+                + [_resolve_name(qubit) for qubit in node.qubits],
+                "wires": copy.deepcopy(self.wires),
+                "name": node.name.name,
+                # we want subroutines declared in the global scope to be available
+                "scopes": {
+                    "subroutines": self.scopes["subroutines"],
+                    "custom_gates": self.scopes["custom_gates"],
+                },
+            }
+        )
 
     def init_subroutine_scope(self, node: ast.SubroutineDefinition):
         """
@@ -235,10 +270,13 @@ class Context:
             {
                 "vars": {k: v for k, v in self.vars.items() if v.constant},  # same namespace
                 "wire_map": {},
-                "wires": self.wires,
+                "wires": copy.deepcopy(self.wires),
                 "name": node.name.name,
                 # we want subroutines declared in the global scope to be available
-                "scopes": {"subroutines": self.scopes["subroutines"]},
+                "scopes": {
+                    "subroutines": self.scopes["subroutines"],
+                    "custom_gates": self.scopes["custom_gates"],
+                },
                 "body": node.body,
                 "params": [param.name.name for param in node.arguments],
             }
@@ -268,6 +306,8 @@ class Context:
             return name
         if name in self.aliases:
             return self.aliases[name](self)  # evaluate the alias and de-reference
+        if name in CONSTANTS:
+            return CONSTANTS[name]
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
     def update_var(
@@ -396,6 +436,14 @@ class QasmInterpreter:
     visitor function on each node.
     """
 
+    def __init__(self):
+        """
+        Initializes the QASM interpreter.
+        """
+        self.inputs = {}
+        self.outputs = []
+        self.found_inputs = []
+
     @functools.singledispatchmethod
     def visit(self, node: QASMNode, context: Context, aliasing: bool = False):
         """
@@ -427,18 +475,23 @@ class QasmInterpreter:
         for sub_node in node_list:
             self.visit(sub_node, context)
 
-    def interpret(self, node: QASMNode, context: dict):
+    def interpret(self, node: QASMNode, context: dict, **inputs):
         """
         Entry point for visiting the QASMNodes of a parsed OpenQASM 3.0 program.
 
         Args:
             node (QASMNode): The top-most QASMNode.
-            context (Context): The initial context populated with the name of the program (the outermost scope).
+            context (dict): The initial context populated with the name of the program (the outermost scope).
+            inputs (dict): Additional inputs to the OpenQASM 3.0 program.
+
+        Raises:
+            ValueError: If the wrong parameters are provided in **inputs.
 
         Returns:
             dict: The context updated after the compilation of all nodes by the visitor.
         """
         context = Context(context)
+        self.inputs = inputs
 
         # begin recursive descent traversal
         try:
@@ -450,6 +503,15 @@ class QasmInterpreter:
                         self.visit(item, context)
         except EndProgram:
             pass
+
+        if len(self.found_inputs) != len(inputs):
+            raise ValueError(
+                f"Got the wrong input parameters {list(inputs.keys())} to QASM, expecting {self.found_inputs}."
+            )
+
+        for output in self.outputs:
+            context["return"][output] = context.retrieve_variable(output)
+
         return context
 
     @visit.register(ast.QuantumMeasurement)
@@ -712,6 +774,40 @@ class QasmInterpreter:
         wire = self.visit(node.qubits, context)
         measure(context.wire_map.get(wire, wire), reset=True)
 
+    def execute_custom_gate(self, node: ast.QuantumGate, context: Context):
+        """
+        Executes a custom gate.
+
+        Args:
+            node (QuantumGate): the custom gate call.
+            context (Context): the current context.
+        """
+
+        gate_context = context.scopes["custom_gates"][_resolve_name(node)]
+
+        # bind subroutine arguments
+        evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments] + [
+            _resolve_name(qubit) for qubit in node.qubits
+        ]
+        for evald_arg, param in list(zip(evald_args, gate_context.params)):
+            if not isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                gate_context.vars[param] = Variable(
+                    evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
+                )
+            else:
+                if evald_arg in context.wire_map:
+                    evald_arg = context.wire_map[evald_arg]
+                if param != evald_arg:
+                    gate_context.wire_map[param] = evald_arg
+
+        # execute the subroutine
+        self.visit(gate_context.body, gate_context)
+
+        # reset context
+        gate_context.vars = {k: v for k, v in gate_context.vars.items() if v.constant}
+
+        # custom gates do not return a value
+
     @visit.register(ast.FunctionCall)
     def visit_function_call(self, node: ast.FunctionCall, context: Context):
         """
@@ -804,6 +900,36 @@ class QasmInterpreter:
         raise NotImplementedError(
             f"Array index does not evaluate to a single RangeDefinition or Literal at line {node.span.start_line}."
         )
+
+    @visit.register(ast.IODeclaration)
+    def visit_io_declaration(self, node: ast.IODeclaration, context: Context):
+        """
+        Registers an input declaration (outputs to come in a future PR).
+
+        Args:
+            node (IODeclaration): The IODeclaration QASMNode.
+            context (Context): the current context.
+        """
+        if node.io_identifier == ast.IOKeyword.input:
+            name = _resolve_name(node.identifier)
+            self.found_inputs.append(name)
+            if name not in self.inputs:
+                raise ValueError(
+                    f"Missing input {name}. Please pass {name} as a keyword argument to from_qasm3."
+                )
+            context.vars[name] = Variable(
+                node.type.__class__.__name__, self.inputs[name], -1, node.span.start_line, True
+            )
+        elif node.io_identifier == ast.IOKeyword.output:
+            name = _resolve_name(node.identifier)
+            context.vars[name] = Variable(
+                node.type.__class__.__name__,
+                None,
+                -1,
+                node.span.start_line,
+                False,
+            )
+            self.outputs.append(_resolve_name(node.identifier))
 
     @visit.register(ast.EndStatement)
     def visit_end_statement(self, node: ast.EndStatement, context: Context):
@@ -961,6 +1087,31 @@ class QasmInterpreter:
         """
         return [self.visit(literal, context) for literal in node.values]
 
+    @visit.register(ast.QuantumGateDefinition)
+    def visit_quantum_gate_definition(self, node: ast.QuantumGateDefinition, context: Context):
+        """
+        Registers a quantum gate definition.
+
+        Args:
+            node (QuantumGateDefinition): The quantum gate definition QASMNode.
+            context (Context): the current context.
+        """
+        context.init_custom_gate_scope(node)
+
+        # register the params
+        for param in node.arguments:
+            context.scopes["custom_gates"][_resolve_name(node)].vars[_resolve_name(param)] = (
+                Variable(
+                    ty=param.__class__.__name__,
+                    val=None,
+                    size=-1,
+                    line=param.span.start_line,
+                    constant=False,
+                )
+            )
+        for qubit in node.qubits:
+            context.scopes["custom_gates"][_resolve_name(node)].wires.append(_resolve_name(qubit))
+
     @visit.register(ast.SubroutineDefinition)
     def visit_subroutine_definition(self, node: ast.SubroutineDefinition, context: Context):
         """
@@ -1009,6 +1160,9 @@ class QasmInterpreter:
             gates_dict = PARAMETERIZED_GATES
         elif name in NON_PARAMETERIZED_GATES:
             gates_dict = NON_PARAMETERIZED_GATES
+        elif name in [n.upper() for n in context.scopes["custom_gates"].keys()]:
+            self.execute_custom_gate(node, context)
+            return
         else:
             raise NotImplementedError(f"Unsupported gate encountered in QASM: {node.name.name}")
 
