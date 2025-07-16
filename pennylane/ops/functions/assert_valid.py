@@ -441,9 +441,9 @@ def assert_valid(
     op: qml.operation.Operator,
     *,
     skip_deepcopy=False,
+    skip_differentiation=False,
     skip_pickle=False,
     skip_wire_mapping=False,
-    skip_differentiation=False,
     skip_new_decomp=False,
     heuristic_resources=False,
 ) -> None:
@@ -454,7 +454,8 @@ def assert_valid(
         op (.Operator): an operator instance to validate
 
     Keyword Args:
-        skip_deepcopy=False: If `True`, deepcopy tests are not run.
+        skip_differentiation=False: If ``True``, differentiation tests are not run.
+        skip_deepcopy=False: If ``True``, deepcopy tests are not run.
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.

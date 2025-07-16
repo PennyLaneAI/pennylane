@@ -17,6 +17,15 @@
 
 <h4>Other improvements</h4>
 
+* The following PennyLane operators and templates are now compatible with the new
+  decomposition system: 
+  - `qml.ops.Prod`
+  - `qml.StatePrep`
+  - `qml.MottonenStatePreparation`
+  - `qml.PrepSelPrep`
+  - `qml.Select`
+  [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
+ 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
   

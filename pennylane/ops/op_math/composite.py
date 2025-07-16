@@ -88,6 +88,7 @@ class CompositeOp(Operator):
         self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
+        self._hyperparameters = {"operands": operands}
 
     @handle_recursion_error
     def _check_batching(self):

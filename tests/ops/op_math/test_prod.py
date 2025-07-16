@@ -1686,3 +1686,44 @@ class TestSwappableOps:
     def test_non_swappable_ops(self, op1, op2):
         """Test the check for non-swappable operators."""
         assert not _swappable_ops(op1, op2)
+
+
+class TestDecomposition:
+
+    def test_resource_keys(self):
+        """Test that the resource keys of `Prod` are op_reps."""
+        assert Prod.resource_keys == frozenset({"resources"})
+        product = qml.X(0) @ qml.Y(1) @ qml.X(2)
+        resources = {qml.resource_rep(qml.X): 2, qml.resource_rep(qml.Y): 1}
+        assert product.resource_params == {"resources": resources}
+
+    def test_registered_decomp(self):
+        """Test that the decomposition of prod is registered."""
+
+        decomps = qml.decomposition.list_decomps(Prod)
+
+        default_decomp = decomps[0]
+        _ops = [qml.X(0), qml.X(1), qml.X(2), qml.MultiRZ(0.5, wires=(0, 1))]
+        resources = {qml.resource_rep(qml.X): 3, qml.resource_rep(qml.MultiRZ, num_wires=2): 1}
+
+        resource_obj = default_decomp.compute_resources(resources=resources)
+
+        assert resource_obj.num_gates == 4
+        assert resource_obj.gate_counts == resources
+
+        with qml.queuing.AnnotatedQueue() as q:
+            default_decomp(operands=_ops)
+
+        assert q.queue == _ops[::-1]
+
+    def test_integration(self, enable_graph_decomposition):
+        """Test that prod's can be integrated into the decomposition."""
+
+        op = qml.S(0) @ qml.S(1) @ qml.T(0) @ qml.Y(1)
+
+        graph = qml.decomposition.DecompositionGraph([op], gate_set=set(qml.ops.__all__))
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(**op.hyperparameters)
+
+        assert q.queue == list(op[::-1])
