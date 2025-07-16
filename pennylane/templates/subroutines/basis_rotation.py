@@ -394,7 +394,7 @@ class BasisRotation(Operation):
 
             op_list.append(SingleExcitation(2 * theta, wires=[wires[i], wires[j]]))
 
-            if math.is_abstract(phi) or not math.isclose(phi, 0.0):
+            if math.is_abstract(phi) or not math.isclose(phi, phi * 0.0):
                 op_list.append(PhaseShift(phi, wires=wires[i]))
 
         return op_list
