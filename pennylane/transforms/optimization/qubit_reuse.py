@@ -104,7 +104,7 @@ def pennylane_to_networkx(tape) -> nx.DiGraph:
         G.add_node(op_node_id, type="operator", name=op.name)
 
         # Process each wire involved in the current operation.
-        for wire in wire_map:
+        for wire in op.wires:
 
             # Get the current qubit state node for this wire.
             # This node represents the qubit's state *before* the current operation.
