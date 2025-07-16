@@ -17,6 +17,8 @@ Unit tests for the optimization transform ``undo_swaps``.
 import random
 from collections import Counter
 
+from pennylane.wires import Wires
+
 import pennylane as qml
 from pennylane import queuing
 
@@ -26,8 +28,7 @@ class TestQubitReuse:
 
     def test_transform_circuit(self):
         """A simple test case."""
-        num_wires = 9
-        dev = qml.device("default.qubit", wires=num_wires)
+        dev = qml.device("default.qubit")
 
         # define the 5-qubit circuit
         #
@@ -46,6 +47,50 @@ class TestQubitReuse:
             qml.CNOT(wires=[2, 4])
             qml.CNOT(wires=[3, 4])
             return qml.expval(qml.PauliZ(0))
+
+        # apply the transform to get the new 3-qubit circuit i.e.
+        #
+        # 0: ──H─╭X───────────╭●──┤↗│  │0⟩───────────╭●──┤↗│  │0⟩───────────┤
+        # 1: ────╰●──┤↗│  │0⟩─╰X─╭●─────────┤↗│  │0⟩─│──╭●─────────┤↗│  │0⟩─┤
+        # 2: ────────────────────╰X──────────────────╰X─╰X──────────────────┤
+
+        random.seed(10)  # for test reproducibility
+        new_circuit = qml.transforms.qubit_reuse(circuit)
+
+        # execute the circuit
+        with queuing.AnnotatedQueue() as q:
+            new_circuit()
+
+        # check that we now use less (3) wires
+        found_wires = Counter()
+        for op in q.queue:
+            for wire in op.wires:
+                found_wires[wire] += 1
+
+        assert len(found_wires) == 3
+
+    def test_tranform_with_string_wires(self):
+        """Tests that the same circuit works with string wires."""
+
+        dev = qml.device("default.qubit", wires=Wires([str(i) for i in range(8)]))
+
+        # define the 5-qubit circuit
+        #
+        # 0: ──H─╭●──────────┤ < Z >
+        # 1: ─╭●─│──╭●───────┤
+        # 2: ─╰X─│──│──╭●────┤
+        # 3: ────╰X─│──│──╭●─┤
+        # 4: ───────╰X─╰X─╰X─┤
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard("0")
+            qml.CNOT(wires=["1", "2"])
+            qml.CNOT(wires=["0", "3"])
+            qml.CNOT(wires=["1", "4"])
+            qml.CNOT(wires=["2", "4"])
+            qml.CNOT(wires=["3", "4"])
+            return qml.expval(qml.PauliZ("0"))
 
         # apply the transform to get the new 3-qubit circuit i.e.
         #

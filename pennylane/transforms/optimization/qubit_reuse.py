@@ -21,10 +21,39 @@ import networkx as nx
 
 from pennylane import numpy as np
 from pennylane.measurements import MidMeasureMP
+from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
+
+def _build_wire_map(tape):
+    """
+    Number a tape's wires in a map.
+
+    Args:
+        tape (Tape): the tape whose wires to map to ints.
+
+    Returns:
+        dict: the wire map.
+    """
+    wire_map = {}
+    previous = -1
+    found_wires = []
+
+    for op in tape.operations:
+        for wire in op.wires:
+            found_wires.append(wire)
+
+    for wire in set(found_wires):
+        if isinstance(wire, int):
+            wire_map[wire] = wire
+            previous = wire
+        else:
+            wire_map[wire] = previous + 1
+            previous = previous + 1
+
+    return wire_map
 
 def pennylane_to_networkx(tape) -> nx.DiGraph:
     """
@@ -54,9 +83,7 @@ def pennylane_to_networkx(tape) -> nx.DiGraph:
     # Create a new directed graph
     G = nx.DiGraph()
 
-    # Get the number of wires directly from the tape's wires attribute.
-    # This is more direct when dealing with a tape object.
-    num_wires = len(range(min(tape.wires), max(tape.wires) + 1))
+    wire_map = _build_wire_map(tape)
 
     # Dictionary to keep track of the *current* qubit state node (its ID) on each wire.
     # This helps in creating sequential connections based on the flow through operations.
@@ -64,10 +91,10 @@ def pennylane_to_networkx(tape) -> nx.DiGraph:
 
     # 1. Add Initial Qubit State Nodes (Green)
     # These represent the starting state of each qubit before any operations.
-    for i in range(num_wires):
-        node_name = f"Qubit_{i}_Init"
-        G.add_node(node_name, type="initial_qubit_state", wire=i)
-        current_qubit_state_node[i] = node_name  # Initialize the current node for this wire
+    for i in wire_map:
+        node_name = f"Qubit_{wire_map[i]}_Init"
+        G.add_node(node_name, type="initial_qubit_state", wire=wire_map[i])
+        current_qubit_state_node[wire_map[i]] = node_name  # Initialize the current node for this wire
 
     # 2. Add Operator Nodes (Blue) and connect them to qubit state nodes.
     # Iterate through each operation in the PennyLane tape.
@@ -77,23 +104,22 @@ def pennylane_to_networkx(tape) -> nx.DiGraph:
         G.add_node(op_node_id, type="operator", name=op.name)
 
         # Process each wire involved in the current operation.
-        for wire in op.wires:
-            wire_idx = wire
+        for wire in wire_map:
 
             # Get the current qubit state node for this wire.
             # This node represents the qubit's state *before* the current operation.
-            input_qubit_node = current_qubit_state_node[wire_idx]
+            input_qubit_node = current_qubit_state_node[wire_map[wire]]
 
             # Add an edge from the input qubit state node to the operator node.
             G.add_edge(input_qubit_node, op_node_id)
 
             # Create a new qubit state node representing the qubit's state *after* this operation.
             # This new node will be of type 'intermediate_or_final_qubit_state' (purple).
-            output_qubit_node_id = f"Qubit_{wire_idx}_AfterOp_{op_idx}"
+            output_qubit_node_id = f"Qubit_{wire_map[wire]}_AfterOp_{op_idx}"
             G.add_node(
                 output_qubit_node_id,
                 type="intermediate_or_final_qubit_state",
-                wire=wire_idx,
+                wire=wire_map[wire],
                 from_op=op_node_id,
             )
 
@@ -102,7 +128,7 @@ def pennylane_to_networkx(tape) -> nx.DiGraph:
 
             # Update the current qubit state node for this wire to the newly created output node.
             # This ensures that subsequent operations on this wire will connect from this new state.
-            current_qubit_state_node[wire_idx] = output_qubit_node_id
+            current_qubit_state_node[wire_map[wire]] = output_qubit_node_id
 
     return G
 
@@ -338,11 +364,13 @@ def generate_dynamic_circuit(qubit_reuse_sequence, tape):
         for static_qubit_index in static_qubits:
             map_static_to_dynamic[static_qubit_index] = dynamic_index
     new_ops, new_measurements = [], []
+
+    wire_map = _build_wire_map(tape)
     for op in tape.operations:
         op_class = type(op)
 
         op_params = op.parameters
-        new_wires = [map_static_to_dynamic[static_wire] for static_wire in op.wires]
+        new_wires = [map_static_to_dynamic[wire_map[static_wire]] for static_wire in op.wires]
         new_op = op_class(*op_params, wires=new_wires)
         new_ops.append(new_op)
         if len(new_wires) == 2:
@@ -388,7 +416,7 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
             if G.out_degree(node) == 0:
                 out_nodes.append(node)
 
-    num_wires = len(range(min(tape.wires), max(tape.wires) + 1))
+    num_wires = len(tape.wires)
     B = np.eye(num_wires)
     for root_node, terminal_node in product(in_nodes, out_nodes):
         B[int(root_node.split("_")[1])][int(terminal_node.split("_")[1])] = nx.has_path(
