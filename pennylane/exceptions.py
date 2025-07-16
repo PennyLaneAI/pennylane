@@ -72,8 +72,8 @@ Autograph and Compilation Errors
     ~InvalidCapabilitiesError
     ~NonDifferentiableError
 
-Warnings
-~~~~~~~~
+User Warnings
+~~~~~~~~~~~~~
 
 .. autosummary::
     :toctree: api
