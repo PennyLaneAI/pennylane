@@ -13,6 +13,7 @@
   [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
   [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
   [(#7676)](https://github.com/PennyLaneAI/pennylane/pull/7676)
+  [(#7679)](https://github.com/PennyLaneAI/pennylane/pull/7679)
   [(#7677)](https://github.com/PennyLaneAI/pennylane/pull/7677)
 
 <h4>Other improvements</h4>
@@ -32,6 +33,9 @@
   >>> circuit()
   0.002
   ```
+
+* Enforce various modules to follow modular architecture via `tach`.
+  [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
