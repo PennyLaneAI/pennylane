@@ -239,7 +239,7 @@ def get_transform_program(
             def circuit():
                 return qml.expval(qml.Z(0))
 
-        By default, we get the full transform program. This can be manually specified by ``level="device"``.
+        By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 
         >>> qml.workflow.get_transform_program(circuit)
         TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor,
