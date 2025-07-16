@@ -37,7 +37,7 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
         - ``MomentumQNGOptimizerQJIT`` does not work correctly if there is any classical processing in the QNode circuit
           (e.g., ``2 * theta`` as a gate parameter).
 
-    Keyword Args:
+    Parameters:
         stepsize=0.01 (float): the stepsize hyperparameter
         momentum=0.9 (float): the momentum coefficient hyperparameter
         approx="block-diag" (str): approximation method for the metric tensor.
