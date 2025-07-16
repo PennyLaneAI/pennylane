@@ -27,6 +27,7 @@ from pennylane.exceptions import CompileError
 
 PL_CATALYST_MIN_VERSION = Version("0.12.0")
 
+
 @dataclasses.dataclass
 class AvailableCompilers:
     """This contains data of installed PennyLane compiler packages."""
