@@ -446,7 +446,8 @@ class TestCreateCustomDecompExpandFn:
         """
 
         custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
-        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
         # NOTE: don't try to construct; they might cause infinite recursion
         assert isinstance(decomp_dev, qml.devices.LegacyDeviceFacade)
@@ -457,7 +458,8 @@ class TestCreateCustomDecompExpandFn:
         """Test that the custom_decomps dictionary accepts both strings and operator classes as keys."""
 
         custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
-        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev)
         def circuit():
@@ -483,7 +485,8 @@ class TestCreateCustomDecompExpandFn:
             return qml.expval(qml.PauliZ(0))
 
         original_dev = qml.device(device_name, wires=3)
-        decomp_dev = qml.device(device_name, wires=3, custom_decomps={})
+
+        decomp_dev = qml.device(device_name, wires=3)
 
         original_qnode = qml.QNode(circuit, original_dev)
         decomp_qnode = qml.QNode(circuit, decomp_dev)
@@ -509,7 +512,7 @@ class TestCreateCustomDecompExpandFn:
             return qml.expval(qml.PauliZ(0))
 
         original_dev = qml.device(device_name, wires=3)
-        decomp_dev = qml.device(device_name, wires=3, custom_decomps={})
+        decomp_dev = qml.device(device_name, wires=3)
 
         original_qnode = qml.QNode(circuit, original_dev)
         decomp_qnode = qml.QNode(circuit, decomp_dev)
@@ -530,7 +533,8 @@ class TestCreateCustomDecompExpandFn:
         """Test that specifying a single custom decomposition works as expected."""
 
         custom_decomps = {"Hadamard": custom_hadamard}
-        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev)
         def circuit():
@@ -562,7 +566,8 @@ class TestCreateCustomDecompExpandFn:
             return qml.expval(qml.PauliZ(0))
 
         original_dev = qml.device(device_name, wires=3)
-        decomp_dev = qml.device(device_name, wires=3, custom_decomps={"Rot": custom_rot})
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            decomp_dev = qml.device(device_name, wires=3, custom_decomps={"Rot": custom_rot})
 
         original_qnode = qml.QNode(circuit, original_dev)
         decomp_qnode = qml.QNode(circuit, decomp_dev)
@@ -587,7 +592,8 @@ class TestCreateCustomDecompExpandFn:
         works as expected."""
 
         custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
-        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev)
         def circuit():
@@ -625,7 +631,8 @@ class TestCreateCustomDecompExpandFn:
         works as expected even when there is a template."""
 
         custom_decomps = {"Hadamard": custom_hadamard, qml.CNOT: custom_cnot}
-        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev)
         def circuit():
@@ -672,7 +679,8 @@ class TestCreateCustomDecompExpandFn:
 
         # BasicEntanglerLayers custom decomposition involves AngleEmbedding
         custom_decomps = {"BasicEntanglerLayers": custom_basic_entangler_layers, "RX": custom_rx}
-        decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev)
         def circuit():
@@ -706,7 +714,8 @@ class TestCreateCustomDecompExpandFn:
         undergoing the custom decomposition."""
 
         custom_decomps = {qml.RX: custom_rx}
-        decomp_dev = qml.device(device_name, wires="a", custom_decomps=custom_decomps)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            decomp_dev = qml.device(device_name, wires="a", custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev)
         def circuit():
@@ -745,7 +754,8 @@ class TestCreateCustomDecompExpandFn:
             expand_fn = qml.transforms.create_decomp_expand_fn(custom_decomps, decomp_dev)
             decomp_dev.custom_expand(expand_fn)
         else:
-            decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
+            with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+                decomp_dev = qml.device(device_name, wires=2, custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev)
         def circuit():
@@ -852,7 +862,8 @@ class TestCreateCustomDecompExpandFn:
         res = []
         for _ in range(2):
             custom_decomps = {"MultiRZ": qml.MultiRZ.compute_decomposition}
-            dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
+            with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+                dev = qml.device("lightning.qubit", wires=2, custom_decomps=custom_decomps)
 
             @qml.qnode(dev, diff_method="adjoint")
             def cost(theta):
@@ -871,7 +882,8 @@ class TestCreateCustomDecompExpandFn:
         """Test that specifying a single custom decomposition works as expected."""
 
         custom_decomps = {"Hadamard": custom_hadamard}
-        decomp_dev = qml.device("default.qubit", shots=shots, custom_decomps=custom_decomps)
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            decomp_dev = qml.device("default.qubit", shots=shots, custom_decomps=custom_decomps)
 
         @qml.qnode(decomp_dev)
         def circuit():
