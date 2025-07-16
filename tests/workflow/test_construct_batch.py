@@ -65,6 +65,16 @@ class TestTransformProgramGetter:
         with pytest.raises(ValueError, match=r"level bah not recognized."):
             get_transform_program(circuit, level="bah")
 
+    def test_bad_other_key(self):
+        """Test a value error is raised if a bad, unrecognized key is provided."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"not recognized."):
+            get_transform_program(circuit, level=["bah"])
+
     def test_get_transform_program_diff_method_transform(self):
         """Tests for the transform program when the diff_method is a transform."""
 
@@ -388,7 +398,8 @@ class TestConstructBatch:
         """Test a user transform that creates multiple tapes."""
 
         @qml.transforms.split_non_commuting
-        @qml.qnode(qml.device("default.qubit", shots=10))
+        @partial(qml.set_shots, shots=10)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.S(0)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
@@ -432,17 +443,22 @@ class TestConstructBatch:
     def test_qfunc_with_shots_arg(self):
         """Test that the tape uses device shots only when qfunc has a shots kwarg"""
 
-        dev = qml.device("default.qubit", shots=100)
+        dev = qml.device("default.qubit")
 
         with pytest.warns(UserWarning, match="Detected 'shots' as an argument"):
 
+            @partial(qml.set_shots, shots=100)
             @qml.qnode(dev)
             def circuit(shots):
                 for _ in range(shots):
                     qml.S(0)
                 return qml.expval(qml.PauliZ(0))
 
-        batch, fn = construct_batch(circuit, level=None)(shots=2)
+        with pytest.warns(
+            UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified"
+        ):
+            batch, fn = construct_batch(circuit, level=None)(shots=2)
+
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(
             [qml.S(0), qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=100

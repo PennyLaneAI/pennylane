@@ -1,6 +1,6 @@
 :orphan:
 
-# Release 0.41.1 (current release)
+# Release 0.41.1
 
 <h3>Bug fixes 🐛</h3>
 

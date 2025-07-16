@@ -115,13 +115,14 @@ def test_perturbation_error(backend, num_workers, parallel_mode, n_states, mpi4p
     if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
         pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
 
-    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)(h)
+    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
     states = [state] * n_states
     actual = perturbation_error(
         pf,
         fragments,
         states,
         order=order,
+        timestep=h,
         backend=backend,
         num_workers=num_workers,
         parallel_mode=parallel_mode,

@@ -240,7 +240,7 @@ class TestIQPE:
 
 
 @pytest.mark.slow
-@pytest.mark.jax
+@pytest.mark.capture
 def test_capture_execution(seed):
     """Test that iterative qpe can be captured and executed.
 
@@ -255,8 +255,6 @@ def test_capture_execution(seed):
 
 
     """
-
-    qml.capture.enable()
     import jax
 
     def f(x):

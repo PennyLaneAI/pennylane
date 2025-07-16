@@ -810,8 +810,7 @@ class TestTransformProgramCall:
         dummy_results = (1, 2, 3, 4, 5, 1, 1, 1, 1, 1)
         assert fn(dummy_results) == (3, 12, 5)
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     def test_call_jaxpr_empty(self):
         """Test that calling an empty TransformProgram with jaxpr returns untransformed ClosedJaxpr."""
         # pylint: disable=import-outside-toplevel
@@ -842,8 +841,7 @@ class TestTransformProgramCall:
             # seperately, they will not be equal (hence the string check)
             assert str(eqn1.params) == str(eqn2.params)
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     def test_call_jaxpr_single_transform(self):
         """Test that calling a TransformProgram with a single transform with jaxpr works correctly."""
         # pylint: disable=import-outside-toplevel
@@ -869,8 +867,7 @@ class TestTransformProgramCall:
         assert transformed_jaxpr.eqns[0].primitive == qml.PauliZ._primitive
         assert transformed_jaxpr.eqns[1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     def test_call_jaxpr_multiple_transforms(self):
         """Test that calling a TransformProgram with multiple transforms with jaxpr works correctly."""
         # pylint: disable=import-outside-toplevel

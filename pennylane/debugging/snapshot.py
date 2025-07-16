@@ -68,7 +68,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
         tape (QNode or QuantumTape or Callable): a quantum circuit.
 
     Returns:
-        dictionary (dict) or qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]:
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     If tape splitting is carried out, the transform will be conservative about the wires that it includes in each tape.
