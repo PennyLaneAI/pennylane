@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Transform for removing the Barrier gate from quantum circuits."""
+"""Transform for minimizing the number of qubits in circuits by introducing mid-circuit measurements, qubit re-use."""
 
 import random
 from collections import defaultdict
