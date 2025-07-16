@@ -89,6 +89,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `get_best_diff_method` now correctly aligns with `execute` and `construct_batch` logic in workflows.
+  [(#7898)](https://github.com/PennyLaneAI/pennylane/pull/7898)
+
 * Calling `QNode.update` no longer acts as if `set_shots` has been applied.
   [(#7881)](https://github.com/PennyLaneAI/pennylane/pull/7881)
 
