@@ -24,7 +24,7 @@ from xdsl.context import Context as xContext
 from xdsl.passes import PipelinePass
 from xdsl.printer import Printer
 
-from .jax_utils import LoaderParser
+from .jax_utils import QuantumParser
 from .transforms.api import ApplyTransformSequence
 
 
@@ -44,7 +44,7 @@ class Compiler:
             binary=False, print_generic_op_form=True, assume_verified=True
         )
         ctx = xContext(allow_unregistered=True)
-        parser = LoaderParser(ctx, gentxtmod)
+        parser = QuantumParser(ctx, gentxtmod)
         xmod = parser.parse_module()
         pipeline = PipelinePass((ApplyTransformSequence(),))
         # xmod is modified in place

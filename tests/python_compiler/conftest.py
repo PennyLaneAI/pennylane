@@ -22,7 +22,7 @@ from xdsl.dialects import test
 from xdsl.passes import PipelinePass
 
 from pennylane.compiler.python_compiler import Compiler
-from pennylane.compiler.python_compiler.jax_utils import LoaderParser, parse_generic_to_xdsl_module
+from pennylane.compiler.python_compiler.jax_utils import QuantumParser, parse_generic_to_xdsl_module
 
 filecheck_available = True
 
@@ -42,7 +42,7 @@ def _run_filecheck_impl(program_str, pipeline):
         return
 
     ctx = Context(allow_unregistered=True)
-    xdsl_module = LoaderParser(ctx, program_str, extra_dialects=(test.Test,)).parse_module()
+    xdsl_module = QuantumParser(ctx, program_str, extra_dialects=(test.Test,)).parse_module()
 
     pipeline = PipelinePass(pipeline)
     pipeline.apply(ctx, xdsl_module)

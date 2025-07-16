@@ -40,15 +40,24 @@ from .quantum_dialect import QuantumDialect as Quantum
 JaxJittedFunction: TypeAlias = jaxlib.xla_extension.PjitFunction
 
 
-class LoaderParser(xParser):  # pylint: disable=abstract-method
-    """A subclass of the xDSL ``parser.Parser`` that loads key dialects into the input context."""
+class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-methods
+    """A subclass of ``xdsl.parser.Parser`` that automatically loads relevant dialects
+    into the input context.
+
+    Args:
+        ctx (xdsl.context.Context): Context to use for parsing.
+        input (str): Input program string to parse.
+        name (str): The name for the input. ``"<unknown>"`` by default.
+        extra_dialects (Sequence[xdsl.ir.Dialect]): Any additional dialects
+            that should be loaded into the context before parsing.
+    """
 
     def __init__(
         self,
         ctx: xContext,
         input: str,
         name: str = "<unknown>",
-        extra_dialects: Optional[Sequence[xDialect]] = None,
+        extra_dialects: Optional[Sequence[xDialect]] = (),
     ) -> None:
         super().__init__(ctx, input, name)
 
@@ -106,7 +115,7 @@ def parse_generic_to_xdsl_module(
 ) -> xbuiltin.ModuleOp:  # pragma: no cover
     """Parses generic MLIR program to xDSL module"""
     ctx = xContext(allow_unregistered=True)
-    parser = LoaderParser(ctx, program, extra_dialects=extra_dialects)
+    parser = QuantumParser(ctx, program, extra_dialects=extra_dialects)
     moduleOp: xbuiltin.ModuleOp = parser.parse_module()
     return moduleOp
 
