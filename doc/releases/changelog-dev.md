@@ -80,7 +80,7 @@
 
 <h3>Documentation 📝</h3>
 
-* Docstrings for all optimizers were slightly refactored for consistency and legibility.
+* Improved the docstrings of all optimizers for consistency and legibility.
   [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
 
 <h3>Bug fixes 🐛</h3>
