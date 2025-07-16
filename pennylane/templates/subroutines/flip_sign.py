@@ -14,7 +14,6 @@
 r"""
 Contains the FlipSign template.
 """
-import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.ops import X, Z, ctrl
 
