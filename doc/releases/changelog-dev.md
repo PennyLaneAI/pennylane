@@ -80,6 +80,10 @@
 * Update minimum supported `pytest` version to `8.4.1`.
   [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
+* `DefaultQubitLegacy` (test suite only) no longer provides a customized classical shadow
+  implementation
+  [(#7895)](https://github.com/PennyLaneAI/pennylane/pull/7895)
+
 * Make `pennylane.io` a tertiary module.
   [(#7877)](https://github.com/PennyLaneAI/pennylane/pull/7877)
 
@@ -110,6 +114,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Joey Carter,
+Yushao Chen,
 Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
