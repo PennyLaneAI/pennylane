@@ -14,6 +14,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Added a `QuantumParser` class to the `qml.compiler.python_compiler` submodule that automatically loads relevant dialects.
+  [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
+
 * Update minimum supported `pytest` version to `8.4.1`.
   [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
@@ -49,6 +52,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
+  `qml.compiler.python_compiler` submodule.
+  [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
+
 * Make `pennylane.io` a tertiary module.
   [(#7877)](https://github.com/PennyLaneAI/pennylane/pull/7877)
 
@@ -74,6 +81,7 @@ This release contains contributions from (in alphabetical order):
 Utkarsh Azad,
 Joey Carter,
 Erick Ochoa,
+Mudit Pandey,
 Andrija Paurevic,
 Jay Soni,
 Jake Zaia
