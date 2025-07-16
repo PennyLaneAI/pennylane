@@ -47,17 +47,17 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         The bound device must also be instantiated with a finite number of shots.
 
     Parameters:
-        min_shots (int): The minimum number of shots used to estimate the expectations
+        min_shots (int): the minimum number of shots used to estimate the expectations
             of each term in the Hamiltonian. Note that this must be larger than 2 for the variance
             of the gradients to be computed.
-        mu (float): The running average constant :math:`\mu \in [0, 1]`. Used to control how
-            quickly the number of shots recommended for each gradient component changes.
-        b (float): Regularization bias. The bias should be kept small, but non-zero.
-        term_sampling (str): The random sampling algorithm to multinomially distribute the shot
+        term_sampling (str): the random sampling algorithm to multinomially distribute the shot
             budget across terms in the Hamiltonian expectation value. Currently, only
             ``"weighted_random_sampling"`` is supported. The default value is ``None``, which
             disables the random sampling behaviour.
-        stepsize (float): The learning rate :math:`\eta`. The learning rate *must* be such
+        mu (float): the running average constant :math:`\mu \in [0, 1]`. Used to control how
+            quickly the number of shots recommended for each gradient component changes (default value: 0.99).
+        b (float): the regularization bias. The bias should be kept small, but non-zero (default value: 1e-06).
+        stepsize (float): the learning rate :math:`\eta` (default value: 0.07). The learning rate *must* be such
             that :math:`\eta < 2/L = 2/\sum_i|c_i|`, where:
 
             * :math:`L \leq \sum_i|c_i|` is the bound on the `Lipschitz constant

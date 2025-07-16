@@ -103,8 +103,8 @@ class QNGOptimizer(GradientDescentOptimizer):
           if a parameter is shared amongst several QNodes.
 
     Parameters:
-        stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
-        approx (str): Which approximation of the metric tensor to compute.
+        stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
 
             - If ``None``, the full metric tensor is computed
 
@@ -115,8 +115,8 @@ class QNGOptimizer(GradientDescentOptimizer):
               reducing the classical overhead but not the quantum resources
               (compared to ``"block-diag"``).
 
-        lam=0 (float): metric tensor regularization :math:`G_{ij}+\lambda I`
-            to be applied at each optimization step
+        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
+            to be applied at each optimization step (default value: 0).
 
     **Examples:**
 

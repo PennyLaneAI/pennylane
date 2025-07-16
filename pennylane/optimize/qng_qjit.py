@@ -45,8 +45,8 @@ class QNGOptimizerQJIT:
               (e.g., ``2 * theta`` as a gate parameter).
 
     Parameters:
-        stepsize=0.01 (float): the user-defined stepsize hyperparameter
-        approx="block-diag" (str): approximation method for the metric tensor.
+        stepsize (float): the user-defined stepsize hyperparameter (default value: 0.01).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
 
             - If ``None``, the full metric tensor is computed
 
@@ -57,7 +57,7 @@ class QNGOptimizerQJIT:
               reducing the classical overhead but not the quantum resources
               (compared to ``"block-diag"``)
 
-        lam=0 (float): metric tensor regularization to be applied at each optimization step
+        lam (float): metric tensor regularization to be applied at each optimization step (default value: 0).
 
     **Example:**
 

@@ -157,9 +157,9 @@ class RotosolveOptimizer:
         manner with TensorFlow or JAX.
 
     Parameters:
-        substep_optimizer (str or callable): Optimizer to use for the substeps of Rotosolve
+        substep_optimizer (str or callable): optimizer to use for the substeps of Rotosolve
             that carries out a univariate (i.e., single-parameter) global optimization.
-            *Only used if there are more than one frequency for a given parameter.*
+            *Only used if there are more than one frequency for a given parameter* (default value: "brute").
             It must take as inputs:
 
             - A function ``fn`` that maps scalars to scalars,
@@ -185,7 +185,7 @@ class RotosolveOptimizer:
 
             - ``"shgo"``: `SciPy's SHGO optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.shgo.html>`_.
 
-        substep_kwargs (dict): Keyword arguments to be passed to the ``substep_optimizer``
+        substep_kwargs (dict): keyword arguments to be passed to the ``substep_optimizer``
             callable. For ``substep_optimizer="shgo"``, the original keyword arguments of
             the SciPy implementation are available, for ``substep_optimizer="brute"`` the
             keyword arguments ``ranges``, ``Ns`` and ``num_steps`` are useful.
