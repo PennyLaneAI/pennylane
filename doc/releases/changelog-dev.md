@@ -36,9 +36,6 @@
 
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
-  
-* Update minimum supported `pytest` version to `8.4.1`.
-  [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
@@ -75,6 +72,13 @@
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
+
+* Added a `dialects` submodule to `qml.compiler.python_compiler` which now houses all the xDSL dialects we create.
+  Additionally, the `MBQCDialect` and `QuantumDialect` dialects have been renamed to `MBQC` and `Quantum`.
+  [(#7897)](https://github.com/PennyLaneAI/pennylane/pull/7897)
+
+* Update minimum supported `pytest` version to `8.4.1`.
+  [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
 * `DefaultQubitLegacy` (test suite only) no longer provides a customized classical shadow
   implementation
