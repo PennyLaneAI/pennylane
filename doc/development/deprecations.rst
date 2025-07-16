@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The ``level=None`` argument in the ``get_transform_program`` and ``construct_batch`` is deprecated and will be removed in a future release.
+  Please use ``level='device'`` instead to apply the noise model at the device level.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
   and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
 
