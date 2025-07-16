@@ -13,6 +13,7 @@
   [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
   [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
   [(#7676)](https://github.com/PennyLaneAI/pennylane/pull/7676)
+  [(#7679)](https://github.com/PennyLaneAI/pennylane/pull/7679)
   [(#7677)](https://github.com/PennyLaneAI/pennylane/pull/7677)
 
 <h4>Other improvements</h4>
@@ -33,6 +34,9 @@
   0.002
   ```
 
+* Enforce various modules to follow modular architecture via `tach`.
+  [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
+  
 * Update minimum supported `pytest` version to `8.4.1`.
   [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
@@ -64,6 +68,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead
+  be set on the tape itself.
+  [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
@@ -79,6 +87,9 @@
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
 
 <h3>Documentation 📝</h3>
+
+* Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
+  [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
 <h3>Bug fixes 🐛</h3>
 
