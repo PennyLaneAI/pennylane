@@ -1138,6 +1138,10 @@ may move operations across a `Snapshot`.
 
 <h3>Bug fixes 🐛</h3>
 
+* Resolve issues with AutoGraph transforming internal PennyLane library code due to incorrect
+  module atrtibution of wrapper functions.
+  [(#7889)](https://github.com/PennyLaneAI/pennylane/pull/7889)
+
 * Fixes broken support of `qml.matrix` for a `QNode` when using mixed Torch GPU & CPU data for parametric tensors.
   [(#7775)](https://github.com/PennyLaneAI/pennylane/pull/7775) 
 
@@ -1305,6 +1309,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+David Ittah,
 Korbinian Kottmann,
 Christina Lee,
 Austin Huang,
