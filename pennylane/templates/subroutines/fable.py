@@ -21,7 +21,7 @@ import numpy as np
 from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RY, SWAP, Hadamard
-from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
+from pennylane.ops.qubit.mottonen import compute_theta, gray_code
 from pennylane.wires import Wires
 
 

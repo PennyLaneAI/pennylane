@@ -37,7 +37,6 @@ from pennylane.operation import (
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
 from pennylane.tape import make_qscript
-from pennylane.templates.state_preparations.superposition import _assign_states
 from pennylane.wires import WiresLike
 from pennylane.workflow import construct_tape
 from pennylane.workflow.qnode import QNode
@@ -54,6 +53,78 @@ except (ModuleNotFoundError, ImportError) as import_error:
     qualtran = False
 
     Bloq = object
+
+
+def _assign_states(basis_list):
+    r"""
+    This function maps a given list of :math:`m` basis states to the first :math:`m` basis states in the
+    computational basis.
+
+    For instance, a given list of :math:`[s_0, s_1, ..., s_m]` where :math:`s` is a basis
+    state of length :math:`4` will be mapped as :math:`{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots}`.
+
+    Note that if a state in ``basis_list`` is one of the first :math:`m` basis states,
+    this state will be mapped to itself.
+
+    Args:
+        basis_list (list): list of basis states to be mapped
+
+    Returns:
+        dict: dictionary mapping basis states to the first :math:`m` basis states
+
+
+    ** Example **
+
+    .. code-block:: pycon
+
+        >>> basis_list = [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]]
+        >>> _assign_states(basis_list)
+        {
+        [1, 1, 0, 0]: [0, 0, 0, 0],
+        [1, 0, 1, 0]: [0, 0, 0, 1],
+        [0, 1, 0, 1]: [0, 0, 1, 0],
+        [1, 0, 0, 1]: [0, 0, 1, 1]
+        }
+
+
+    .. code-block:: pycon
+
+        >>> basis_list = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
+        >>> _assign_states(basis_list)
+        {
+        [1, 1, 0, 0]: [0, 0, 0, 0],
+        [0, 1, 0, 1]: [0, 0, 1, 0],
+        [0, 0, 0, 1]: [0, 0, 0, 1],
+        [1, 0, 0, 1]: [0, 0, 1, 1]
+        }
+
+    """
+
+    length = len(basis_list[0])
+    smallest_basis_lists = [tuple(map(int, f"{i:0{length}b}")) for i in range(len(basis_list))]
+
+    binary_dict = {}
+    used_smallest = set()
+
+    # Assign keys that can map to themselves
+    for original in basis_list:
+
+        if original in smallest_basis_lists and tuple(original) not in used_smallest:
+
+            binary_dict[tuple(original)] = original
+            used_smallest.add(tuple(original))
+
+    # Assign remaining keys to unused binary lists
+    remaining_keys = [key for key in basis_list if tuple(key) not in binary_dict]
+    remaining_values = [
+        value for value in smallest_basis_lists if tuple(value) not in used_smallest
+    ]
+
+    for key, value in zip(remaining_keys, remaining_values):
+        binary_dict[tuple(key)] = value
+        used_smallest.add(tuple(value))
+
+    return binary_dict
 
 
 @singledispatch
@@ -421,7 +492,7 @@ def _(op: qtemps.subroutines.ModExp):
 
     gate_types = defaultdict(int, {})
     ctrl_spec = CtrlSpec(cvs=[1])
-    for comp_rep in mult_resources:
+    for comp_rep, comp_rep_count in mult_resources:
         new_rep = comp_rep.controlled(ctrl_spec)
         if comp_rep == qt_gates.CNOT():
             new_rep = qt_gates.Toffoli()
@@ -433,7 +504,7 @@ def _(op: qtemps.subroutines.ModExp):
             if comp_rep.subbloq.op.name == "QFT":
                 gate_types[new_rep] = 1
         else:
-            gate_types[new_rep] = mult_resources[comp_rep] * ((2**num_x_wires) - 1)
+            gate_types[new_rep] = comp_rep_count * ((2**num_x_wires) - 1)
 
     return gate_types
 

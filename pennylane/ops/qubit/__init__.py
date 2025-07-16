@@ -84,6 +84,7 @@ from .qchem_ops import (
 )
 from .special_unitary import SpecialUnitary, TmpPauliRot
 from .state_preparation import BasisState, StatePrep, QubitDensityMatrix
+from .mottonen import MottonenStatePreparation
 
 __ops__ = {
     "Identity",
@@ -125,6 +126,7 @@ __ops__ = {
     "IsingXY",
     "BasisState",
     "StatePrep",
+    "MottonenStatePreparation",
     "QubitDensityMatrix",
     "QubitUnitary",
     "BlockEncode",

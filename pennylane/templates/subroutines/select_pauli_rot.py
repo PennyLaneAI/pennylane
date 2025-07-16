@@ -19,8 +19,8 @@ from pennylane import math
 from pennylane.decomposition import add_decomps, adjoint_resource_rep, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RZ, Hadamard, S, adjoint
+from pennylane.ops.qubit.mottonen import _apply_uniform_rotation_dagger
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
-from pennylane.templates.state_preparations.mottonen import _apply_uniform_rotation_dagger
 from pennylane.wires import Wires
 
 

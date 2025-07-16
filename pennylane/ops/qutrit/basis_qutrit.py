@@ -17,8 +17,9 @@ Contains the QutritBasisStatePreparation template.
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
+from pennylane.ops.qutrit import TRY, TRZ, TShift
 
 
 class QutritBasisStatePreparation(Operation):
@@ -57,15 +58,15 @@ class QutritBasisStatePreparation(Operation):
     grad_method = None
 
     def __init__(self, basis_state, wires, id=None):
-        basis_state = qml.math.stack(basis_state)
+        basis_state = math.stack(basis_state)
 
         # check if the `basis_state` param is batched
-        batched = len(qml.math.shape(basis_state)) > 1
+        batched = math.ndim(basis_state) > 1
 
         state_batch = basis_state if batched else [basis_state]
 
         for i, state in enumerate(state_batch):
-            shape = qml.math.shape(state)
+            shape = math.shape(state)
 
             if len(shape) != 1:
                 raise ValueError(
@@ -78,7 +79,7 @@ class QutritBasisStatePreparation(Operation):
                     f"Basis states must be of length {len(wires)}; state {i} has length {n_bits}."
                 )
 
-            if not qml.math.is_abstract(basis_state):
+            if not math.is_abstract(basis_state):
                 if any(bit not in [0, 1, 2] for bit in state):
                     raise ValueError(
                         f"Basis states must only consist of 0s, 1s, and 2s; state {i} is {state}"
@@ -115,22 +116,22 @@ class QutritBasisStatePreparation(Operation):
 
         op_list = []
 
-        if qml.math.is_abstract(basis_state):
+        if math.is_abstract(basis_state):
             for wire, state in zip(wires, basis_state):
                 op_list.extend(
                     [
-                        qml.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 1)),
-                        qml.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 2)),
-                        qml.TRZ((-2 * state + 3) * state * np.pi, wires=wire, subspace=(0, 2)),
-                        qml.TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 2)),
-                        qml.TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 1)),
-                        qml.TRZ(-(7 * state - 10) * state * np.pi, wires=wire, subspace=(0, 2)),
+                        TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 1)),
+                        TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 2)),
+                        TRZ((-2 * state + 3) * state * np.pi, wires=wire, subspace=(0, 2)),
+                        TRY(state * (2 - state) * np.pi, wires=wire, subspace=(0, 2)),
+                        TRY(state * (1 - state) * np.pi / 2, wires=wire, subspace=(0, 1)),
+                        TRZ(-(7 * state - 10) * state * np.pi, wires=wire, subspace=(0, 2)),
                     ]
                 )
             return op_list
 
         for wire, state in zip(wires, basis_state):
             for _ in range(state):
-                op_list.append(qml.TShift(wire))
+                op_list.append(TShift(wire))
 
         return op_list

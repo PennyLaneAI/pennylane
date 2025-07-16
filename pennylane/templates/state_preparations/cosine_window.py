@@ -16,9 +16,9 @@ Contains the CosineWindow template.
 """
 import numpy as np
 
-import pennylane as qml
-from pennylane import math
+from pennylane import math, ops
 from pennylane.operation import StatePrepBase
+from pennylane.templates.subroutines import QFT
 from pennylane.wires import WireError, Wires
 
 
@@ -73,12 +73,12 @@ class CosineWindow(StatePrepBase):
 
         decomp_ops = []
 
-        decomp_ops.append(qml.Hadamard(wires=wires[-1]))
-        decomp_ops.append(qml.RZ(np.pi, wires=wires[-1]))
-        decomp_ops.append(qml.adjoint(qml.QFT)(wires=wires))
+        decomp_ops.append(ops.Hadamard(wires=wires[-1]))
+        decomp_ops.append(ops.RZ(np.pi, wires=wires[-1]))
+        decomp_ops.append(ops.adjoint(QFT)(wires=wires))
 
         for ind, wire in enumerate(wires):
-            decomp_ops.append(qml.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire))
+            decomp_ops.append(ops.PhaseShift(np.pi * 2 ** (-ind - 1), wires=wire))
 
         return decomp_ops
 

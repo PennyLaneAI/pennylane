@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.mottonen import _get_alpha_y, compute_theta, gray_code
+from pennylane.ops.qubit.mottonen import _get_alpha_y, compute_theta, gray_code
 
 
 def test_standard_validity():
