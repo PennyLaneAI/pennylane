@@ -204,7 +204,14 @@ class DefaultQubitLegacy(QubitDevice):
     }
 
     def __init__(
-        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
+        self,
+        wires,
+        *,
+        r_dtype=np.float64,
+        c_dtype=np.complex128,
+        shots=None,
+        analytic=None,
+        seed=None,
     ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
@@ -227,6 +234,7 @@ class DefaultQubitLegacy(QubitDevice):
             "CZ": self._apply_cz,
             "Toffoli": self._apply_toffoli,
         }
+        self._seed = seed
 
     @property
     def stopping_condition(self):
@@ -971,3 +979,50 @@ class DefaultQubitLegacy(QubitDevice):
             if m.obs is None or not isinstance(m.obs, qml.ops.LinearCombination)
         ]
         return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))
+
+    def sample_basis_states(self, number_of_states, state_probability):
+        """Sample from the computational basis states based on the state
+        probability.
+
+        This is an auxiliary method to the generate_samples method.
+
+        Args:
+            number_of_states (int): the number of basis states to sample from
+            state_probability (array[float]): the computational basis probability vector
+
+        Returns:
+            array[int]: the sampled basis states
+        """
+        if self.shots is None:
+            raise QuantumFunctionError(
+                "The number of shots has to be explicitly set on the device "
+                "when using sample-based measurements."
+            )
+        seed = self._seed or np.random.randint(0, 2**31)  # pylint:disable=protected-access
+        shots = self.shots
+        rng = np.random.default_rng(seed)
+
+        basis_states = np.arange(number_of_states)
+        # pylint:disable = import-outside-toplevel
+        if (
+            qml.math.is_abstract(state_probability)
+            and qml.math.get_interface(state_probability) == "jax"
+        ):
+            import jax
+
+            key = jax.random.PRNGKey(seed)
+            if jax.numpy.ndim(state_probability) == 2:
+                return jax.numpy.array(
+                    [
+                        jax.random.choice(key, basis_states, shape=(shots,), p=prob)
+                        for prob in state_probability
+                    ]
+                )
+            return jax.random.choice(key, basis_states, shape=(shots,), p=state_probability)
+
+        state_probs = qml.math.unwrap(state_probability)
+        if self._ndim(state_probability) == 2:
+            # np.random.choice does not support broadcasting as needed here.
+            return np.array([rng.choice(basis_states, shots, p=prob) for prob in state_probs])
+
+        return rng.choice(basis_states, shots, p=state_probs)
