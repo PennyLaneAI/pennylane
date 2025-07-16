@@ -18,8 +18,11 @@ import pytest
 pytestmark = pytest.mark.external
 
 pytest.importorskip("xdsl")
+pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
+from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
+
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
     IterativeCancelInversesPass,
@@ -194,7 +197,7 @@ class TestIterativeCancelInversesIntegration:
         """Test that the IterativeCancelInversesPass works correctly with qjit."""
         dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qjit(target="mlir")
+        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
         @iterative_cancel_inverses_pass
         @qml.qnode(dev)
         def circuit():
