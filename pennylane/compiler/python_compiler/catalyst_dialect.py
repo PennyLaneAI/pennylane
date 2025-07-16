@@ -145,30 +145,32 @@ class ListLoadDataOp(IRDLOperation):
     data = result_def(AnyAttr())
 
 
-@irdl_op_definition
-class ListPopOp(IRDLOperation):
-    """Remove an element from the end of an array list and return it."""
+# @irdl_op_definition
+# class ListPopOp(IRDLOperation):
+#     """Remove an element from the end of an array list and return it."""
 
-    name = "catalyst.list_pop"
+#     name = "catalyst.list_pop"
 
-    assembly_format = """ $list attr-dict `:` type($list) `->` type($result) """
+#     assembly_format = """ $list attr-dict `:` type($list) """
 
-    list = operand_def(BaseAttr(ArrayListType))
+#     T = VarConstraint("T", AnyAttr())
 
-    result = result_def(AnyAttr())
+#     list = operand_def(BaseAttr(ArrayListType(T)))
+
+#     result = result_def(T)
 
 
-@irdl_op_definition
-class ListPushOp(IRDLOperation):
-    """Append an element to the end of an array list."""
+# @irdl_op_definition
+# class ListPushOp(IRDLOperation):
+#     """Append an element to the end of an array list."""
 
-    name = "catalyst.list_push"
+#     name = "catalyst.list_push"
 
-    assembly_format = """ $value `,` $list attr-dict `:` type($list) """
+#     assembly_format = """ $value `,` $list attr-dict `:` type($list) """
 
-    value = operand_def(AnyAttr())
+#     value = operand_def(AnyAttr())
 
-    list = operand_def(BaseAttr(ArrayListType))
+#     list = operand_def(BaseAttr(ArrayListType))
 
 
 @irdl_op_definition
@@ -195,8 +197,8 @@ Catalyst_Dialect = Dialect(
         ListDeallocOp,
         ListInitOp,
         ListLoadDataOp,
-        ListPopOp,
-        ListPushOp,
+        # ListPopOp,
+        # ListPushOp,
         PrintOp,
     ],
     [
