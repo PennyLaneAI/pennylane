@@ -382,7 +382,7 @@ class TestConstructBatch:
             PennyLaneDeprecationWarning,
             match="`level=None` is deprecated",
         ):
-            get_transform_program(circuit, level=None)
+            construct_batch(circuit, level=None)
 
     def test_final_transform(self):
         """Test that the final transform is included when level="device"."""
