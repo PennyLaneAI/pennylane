@@ -14,6 +14,7 @@
 """
 This module contains code for the main device construction delegation logic.
 """
+import warnings
 from importlib import metadata
 from sys import version_info
 
@@ -104,6 +105,14 @@ def device(name, *args, **kwargs):
     Keyword Args:
         config (pennylane.Configuration): a PennyLane configuration object
             that contains global and/or device specific configurations.
+
+        .. warning::
+            The custom_decomps keyword param is deprecated and will be removed in version 0.44.
+            Instead, please implement a custom decomposition (i.e. U_decomp) of an operator or
+            template U as a quantum function and register it with qml.decomposition.add_decomps(U, U_decomp).
+            This requires that the graph based decomposition system be enabled with
+            qml.decomposition.enable_graph().
+
         custom_decomps (Dict[Union(str, Operator), Callable]): Custom
             decompositions to be applied by the device at runtime.
 
@@ -271,6 +280,13 @@ def device(name, *args, **kwargs):
         # Once the device is constructed, we set its custom expansion function if
         # any custom decompositions were specified.
         if custom_decomps is not None:
+            warnings.warn(
+                "The custom_decomps keyword param is deprecated and will be removed in version 0.44. "
+                "Instead, please implement a custom decomposition (i.e. U_decomp) of an operator or template U as a "
+                "quantum function and register it with qml.decomposition.add_decomps(U, U_decomp). This requires that "
+                "the graph based decomposition system be enabled with qml.decomposition.enable_graph().",
+                qml.exceptions.PennyLaneDeprecationWarning,
+            )
             if isinstance(dev, qml.devices.LegacyDevice):
                 custom_decomp_expand_fn = qml.transforms.create_decomp_expand_fn(
                     custom_decomps, dev
