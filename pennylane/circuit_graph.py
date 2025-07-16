@@ -252,6 +252,8 @@ class CircuitGraph:
 
         Args:
             ops (Iterable[Operator]): set of operators in the circuit
+            sort=False (bool): if ``True``, sort the operators according
+            to the topological order determined by the queue index
 
         Returns:
             list[Operator]: ancestors of the given operators
@@ -280,6 +282,8 @@ class CircuitGraph:
 
         Args:
             indexes (Sequence[int]) : the index into the queue for the operator
+            sort=False (bool): if ``True``, sort the operators according
+            to the topological order determined by the queue index
 
         Returns:
             list[Operator]: ancestors of the given operators
@@ -295,6 +299,8 @@ class CircuitGraph:
 
         Args:
             indexes (Sequence[int]) : the index into the queue for the operator
+            sort=False (bool): if ``True``, sort the operators according
+            to the topological order determined by the queue index
 
         Returns:
             list[Operator]: descendants of the given operators
@@ -310,6 +316,8 @@ class CircuitGraph:
 
         Args:
             ops (Iterable[Operator]): set of operators in the circuit
+            sort=False (bool): if ``True``, sort the operators according
+            to the topological order determined by the queue index
 
         Returns:
             list[Operator]: descendants of the given operators

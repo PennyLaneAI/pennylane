@@ -2231,6 +2231,20 @@ class TestSetShots:
         # Verify that the set_shots value (50) was used, not the parameter value (25)
         assert len(result) == 50
 
+    def test_set_shots_direct_decorator(self):
+        """Test set_shots with partial decorator syntax."""
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        @set_shots(shots=50)
+        @qml.qnode(dev)
+        def circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        assert circuit._shots == qml.measurements.Shots(50)
+        result = circuit()
+        assert len(result) == 50
+
     def test_set_shots_partial_decorator(self):
         """Test set_shots with partial decorator syntax."""
         dev = qml.device("default.qubit", wires=1, shots=10)
@@ -2452,3 +2466,41 @@ class TestSetShots:
 
         # Original circuit should be unchanged
         assert circuit._shots == qml.measurements.Shots(50)
+
+    def test_no_warning_if_shots_not_updated(self):
+        """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0))
+
+        # No warning should be raised when calling with the same shots value
+        with warnings.catch_warnings(record=True) as record:
+            warnings.simplefilter("always")
+            result = circuit.update(diff_method="parameter-shift")(shots=50)
+        # Filter for targeted warnings (by type and/or message)
+        targeted = [
+            w
+            for w in record
+            if issubclass(w.category, UserWarning)
+            and "Both 'shots=' parameter and 'set_shots' transform are specified." in str(w.message)
+        ]
+        assert len(targeted) == 0
+        assert len(result) == 50
+
+    def test_no_warning_if_shots_not_updated_set_shots(self):
+        """Test that no warning is raised if set_shots is called but the shots value is unchanged."""
+        dev = qml.device("default.qubit")
+
+        @partial(qml.set_shots, shots=100)
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample(qml.PauliZ(0))
+
+        # No warning should be raised when calling with the same shots value
+        with pytest.warns(
+            UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified."
+        ):
+            result = circuit.update(diff_method="parameter-shift")(shots=50)
+        assert len(result) == 100

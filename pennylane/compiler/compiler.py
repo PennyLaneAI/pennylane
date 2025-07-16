@@ -22,7 +22,7 @@ from sys import version_info
 
 from packaging.version import Version
 
-PL_CATALYST_MIN_VERSION = Version("0.11.0")
+PL_CATALYST_MIN_VERSION = Version("0.12.0")
 
 
 class CompileError(Exception):
