@@ -188,7 +188,7 @@ def register_custom_staging_rule(
         return out_tracer, new_var
 
     def custom_staging_rule(
-        jaxpr_trace: pe.DynamicJaxprTrace, *tracers: pe.DynamicJaxprTracer, **params
+        jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
     ) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
         """
         Add new jaxpr equation to the jaxpr_trace and return new tracers.
