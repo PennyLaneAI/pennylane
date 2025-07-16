@@ -59,6 +59,9 @@
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
 
+* `LinearCombination` instances can be created with `_primitive.impl` when
+  capture is enabled and tracing is active.
+
 <h3>Documentation 📝</h3>
 
 <h3>Bug fixes 🐛</h3>
