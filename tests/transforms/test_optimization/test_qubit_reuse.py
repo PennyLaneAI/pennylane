@@ -16,11 +16,10 @@ Unit tests for the optimization transform ``undo_swaps``.
 """
 from collections import Counter
 
-import pytest
 
 import pennylane as qml
-from pennylane import measure, queuing
-from pennylane.ops import CNOT, Hadamard
+
+from pennylane import queuing
 
 
 class TestQubitReuse:
