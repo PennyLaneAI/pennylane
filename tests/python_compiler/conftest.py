@@ -28,7 +28,9 @@ except ImportError:
     filecheck_available = False
 
 
-def _run_filecheck(program_str, xdsl_module):
+def _run_filecheck_impl(program_str, xdsl_module):
+    """Run filecheck on an xDSL module, comparing it to a program string containing
+    filecheck directives."""
     if not filecheck_available:
         return
 
@@ -43,7 +45,8 @@ def _run_filecheck(program_str, xdsl_module):
 
 @pytest.fixture(scope="function")
 def run_filecheck():
+    """Fixture to run filecheck on an xDSL module."""
     if not filecheck_available:
         pytest.skip("Cannot run lit tests without filecheck.")
 
-    yield _run_filecheck
+    yield _run_filecheck_impl

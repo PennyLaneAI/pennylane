@@ -331,8 +331,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
     # pylint: disable=too-many-arguments
     @DecomposeInterpreter.register_primitive(ctrl_transform_prim)
-    def _(self, *invals, n_control, jaxpr, control_values, work_wires):
-        args = invals[:-n_control]
+    def _(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
+        consts = invals[:n_consts]
+        args = invals[n_consts:-n_control]
         control_wires = invals[-n_control:]
 
         unroller = ControlTransformInterpreter(
@@ -340,7 +341,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         )
 
         def wrapper(*inner_args):
-            return unroller.eval(jaxpr, [], *inner_args)
+            return unroller.eval(jaxpr, consts, *inner_args)
 
         jaxpr = jax.make_jaxpr(wrapper)(*args)
         return self.eval(jaxpr.jaxpr, jaxpr.consts, *args)
@@ -425,6 +426,7 @@ def decompose(
         with no defined decomposition is encountered during decomposition, it will be left in the
         circuit even if it does not belong in the target gate set. In this case, a ``UserWarning``
         will be raised. To suppress this warning, simply add the operator to the gate set.
+        When ``qml.decomposition.enabled_graph()``, PennyLane errors out with a ``DecompositionError``.
 
     .. seealso::
 
@@ -522,20 +524,20 @@ def decompose(
     3: ──H─────────────────╰●──────╰QFT†─┤
 
     >>> print(qml.draw(qml.transforms.decompose(circuit, max_expansion=2))())
-    0: ──H──RZ(11.00)──RY(1.14)─╭X──RY(-1.14)──RZ(-9.42)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X──RY(-1.00)
-    1: ──H──────────────────────╰●───────────────────────╰●────────────────────────────────│────────────
-    2: ──H─────────────────────────────────────────────────────────────────────────────────╰●───────────
-    3: ──H──────────────────────────────────────────────────────────────────────────────────────────────
+    0: ──H──RZ(4.71)──RY(1.14)─╭X──RY(-1.14)──RZ(-3.14)─╭X──RZ(-1.57)──RZ(1.57)──RY(1.00)─╭X ···
+    1: ──H─────────────────────╰●───────────────────────╰●────────────────────────────────│─ ···
+    2: ──H────────────────────────────────────────────────────────────────────────────────╰● ···
+    3: ──H────────────────────────────────────────────────────────────────────────────────── ···
     <BLANKLINE>
-    ───RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X──RZ(4.71)─────────────────
-    ─────────────│────────────────────────────────│────────────────────────│──╭SWAP†────────────────────
-    ─────────────╰●───────────────────────────────│────────────────────────│──│─────────────╭(Rϕ(1.57))†
-    ──────────────────────────────────────────────╰●───────────────────────╰●─╰SWAP†─────H†─╰●──────────
+    0: ··· ──RY(-1.00)──RZ(-6.28)─╭X──RZ(4.71)──RZ(1.57)──RY(0.50)─╭X──RY(-0.50)──RZ(-6.28)─╭X ···
+    1: ··· ───────────────────────│────────────────────────────────│────────────────────────│─ ···
+    2: ··· ───────────────────────╰●───────────────────────────────│────────────────────────│─ ···
+    3: ··· ────────────────────────────────────────────────────────╰●───────────────────────╰● ···
     <BLANKLINE>
-    ────────────────────────────────────┤
-    ──────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
-    ───H†─│────────────╰●───────────────┤
-    ──────╰●────────────────────────────┤
+    0: ··· ──RZ(4.71)────────────────────────────────────────────────────┤
+    1: ··· ─╭SWAP†─────────────────────────╭(Rϕ(0.79))†─╭(Rϕ(1.57))†──H†─┤
+    2: ··· ─│─────────────╭(Rϕ(1.57))†──H†─│────────────╰(Rϕ(1.57))†─────┤
+    3: ··· ─╰SWAP†─────H†─╰(Rϕ(1.57))†─────╰(Rϕ(0.79))†──────────────────┤
 
     .. details::
         :title: Integration with the Graph-Based Decomposition System

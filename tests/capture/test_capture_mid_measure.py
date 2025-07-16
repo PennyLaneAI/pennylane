@@ -23,7 +23,7 @@ import jax.numpy as jnp
 
 from pennylane.capture.primitives import AbstractOperator
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 @pytest.mark.unit
@@ -344,7 +344,7 @@ class TestMidMeasureExecute:
             res = f(phi)
             qml.capture.disable()
             expected = f(phi)
-            qml.capture.enable()
+
             if mp_fn is qml.expval:
                 assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
             elif mp_fn is qml.var:

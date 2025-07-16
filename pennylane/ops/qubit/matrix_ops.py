@@ -516,8 +516,8 @@ class DiagonalQubitUnitary(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, :class:`~.RZ`,
-        :class:`~.IsingZZ`, and/or :class:`~.MultiRZ` depending on the number of wires.
+        ``DiagonalQubitUnitary`` decomposes into :class:`~.DiagonalQubitUnitary`, :class:`~.SelectPauliRot`,
+        :class:`~.RZ`, and/or :class:`~.GlobalPhase` depending on the number of wires.
 
         .. note::
 
@@ -546,11 +546,10 @@ class DiagonalQubitUnitary(Operation):
 
         >>> diag = np.exp(1j * np.array([0.4, 2.1, 0.5, 1.8]))
         >>> qml.DiagonalQubitUnitary.compute_decomposition(diag, wires=[0, 1])
-        [SelectPauliRot(array([1.7, 1.3]), wires=[0, 1]),
-         DiagonalQubitUnitary(array([0.31532236+0.94898462j, 0.40848744+0.91276394j]), wires=[0])]
+        [DiagonalQubitUnitary(array([0.31532236+0.94898462j, 0.40848744+0.91276394j]), wires=[0]),
+        SelectPauliRot(array([1.7, 1.3]), wires=[0, 1])]
 
         .. details::
-
             :title: Finding the parameters
 
             Theorem 7 referenced above only tells us the structure of the circuit, but not the

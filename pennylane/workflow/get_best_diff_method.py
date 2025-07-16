@@ -13,10 +13,16 @@
 # limitations under the License.
 """Contains a function for getting the best differentiation method for a given QNode."""
 
+from __future__ import annotations
+
 from functools import wraps
+from typing import TYPE_CHECKING
 
 import pennylane as qml
-from pennylane.workflow.qnode import QNode, _make_execution_config
+from pennylane.workflow.qnode import _make_execution_config
+
+if TYPE_CHECKING:
+    from pennylane.workflow.qnode import QNode
 
 
 def get_best_diff_method(qnode: QNode):

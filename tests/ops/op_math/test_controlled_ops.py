@@ -91,8 +91,7 @@ class TestControlledQubitUnitary:
         with pytest.raises(TypeError, match="Must specify a set of wires"):
             qml.ControlledQubitUnitary(base_op, wires=None)
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "control_wires, wires",
         [(0, 1), ([0, 1], [2])],
@@ -108,8 +107,7 @@ class TestControlledQubitUnitary:
         assert op.base.wires == Wires(wires)
         assert op.control_wires == Wires(control_wires)
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     def test_pairwise_consistency_with_capture(self):
         """Test that both combinations of control and target wires lead to the same operator"""
         base_op = [[0, 1], [1, 0]]

@@ -97,11 +97,13 @@ class CollectOpsandMeas(FlattenedInterpreter):
 
 
 @CollectOpsandMeas.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, lazy):
+def _(self, *invals, jaxpr, lazy, n_consts):
     """Handle an adjoint transform primitive by collecting the operations in the jaxpr, and
     then applying their adjoint in reverse order."""
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
     child = CollectOpsandMeas()
-    child.eval(jaxpr, [], *invals)
+    child.eval(jaxpr, consts, *args)
     assert child.state
 
     for op in reversed(child.state["ops"]):
@@ -111,15 +113,16 @@ def _(self, *invals, jaxpr, lazy):
 
 
 @CollectOpsandMeas.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, **params):
+def _(self, *invals, n_control, jaxpr, n_consts, **params):
     """Handle a control transform primitive by collecting the operations in the jaxpr,
     and then applying their controlled versions.
     """
-    args = invals[:-n_control]
+    consts = invals[:n_consts]
+    args = invals[n_consts:-n_control]
     control = invals[-n_control:]
 
     child = CollectOpsandMeas()
-    child.eval(jaxpr, [], *args)
+    child.eval(jaxpr, consts, *args)
     assert child.state
 
     for op in child.state["ops"]:
@@ -187,10 +190,13 @@ def _(self, *invals, jaxpr, n_consts, **params):
 
 @CollectOpsandMeas.register_primitive(qnode_prim)
 def _(
-    self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr
+    self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts
 ):  # pylint: disable=too-many-arguments
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+
     child = CollectOpsandMeas()
-    out = child.eval(qfunc_jaxpr, [], *invals)
+    out = child.eval(qfunc_jaxpr, consts, *args)
     assert child.state
     self.state["ops"].extend(child.state["ops"])
     self.state["measurements"].extend(child.state["measurements"])
