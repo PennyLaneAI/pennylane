@@ -173,8 +173,8 @@ class RiemannianGradientOptimizer:
     and the application to quantum circuits
     `Wiersema and Killoran (2022) <https://arxiv.org/abs/2202.06976>`_.
 
-    Args:
-        circuit (.QNode): a user defined circuit that does not take any arguments and returns
+    Parameters:
+        circuit (QNode): a user defined circuit that does not take any arguments and returns
             the expectation value of a ``qml.Hamiltonian``.
         stepsize (float): the user-defined hyperparameter :math:`\epsilon`.
         restriction (.Hamiltonian): Restrict the Lie algebra to a corresponding subspace of

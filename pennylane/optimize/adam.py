@@ -43,7 +43,7 @@ class AdamOptimizer(GradientDescentOptimizer):
 
     For more details, see `arXiv:1412.6980 <https://arxiv.org/abs/1412.6980>`_.
 
-    Args:
+    Parameters:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
         beta1 (float): hyperparameter governing the update of the first and second moment
         beta2 (float): hyperparameter governing the update of the first and second moment

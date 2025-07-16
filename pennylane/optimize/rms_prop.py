@@ -34,7 +34,7 @@ class RMSPropOptimizer(AdagradOptimizer):
     .. math::
         a_i^{(t+1)} = \gamma a_i^{(t)} + (1-\gamma) (\partial_{x_i} f(x^{(t)}))^2.
 
-    Args:
+    Parameters:
         stepsize (float): the user-defined hyperparameter :math:`\eta`
             used in the Adagrad optimization
         decay (float): the learning rate decay :math:`\gamma`

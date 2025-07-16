@@ -32,7 +32,7 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
     * :math:`\eta`: the step size
     * :math:`m`: the momentum
 
-    Args:
+    Parameters:
         stepsize (float): user-defined hyperparameter :math:`\eta`
         momentum (float): user-defined hyperparameter :math:`m`
 

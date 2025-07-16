@@ -46,7 +46,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         The shot adaptive optimizer only supports single QNode objects as objective functions.
         The bound device must also be instantiated with a finite number of shots.
 
-    Args:
+    Parameters:
         min_shots (int): The minimum number of shots used to estimate the expectations
             of each term in the Hamiltonian. Note that this must be larger than 2 for the variance
             of the gradients to be computed.

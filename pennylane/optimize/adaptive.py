@@ -72,7 +72,7 @@ class AdaptiveOptimizer:
     adaptively-built circuit. The adaptive optimizer can be used to implement
     algorithms such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
 
-    Args:
+    Parameters:
         param_steps (int): number of steps for optimizing the parameter of a selected gate
         stepsize (float): step size for optimizing the parameter of a selected gate
 
