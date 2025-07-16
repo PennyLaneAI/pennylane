@@ -71,7 +71,7 @@
 
 * Added a `dialects` submodule to `qml.compiler.python_compiler` which now houses all the xDSL dialects we create.
   Additionally, the `MBQCDialect` and `QuantumDialect` dialects have been renamed to `MBQC` and `Quantum`.
-  [(#)]()
+  [(#7897)](https://github.com/PennyLaneAI/pennylane/pull/7897)
 
 * Update minimum supported `pytest` version to `8.4.1`.
   [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
