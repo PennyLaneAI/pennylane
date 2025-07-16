@@ -80,6 +80,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Docstrings for all optimizers were slightly refactored for consistency and legibility.
+  [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
+
 <h3>Bug fixes 🐛</h3>
 
 * Calling `QNode.update` no longer acts as if `set_shots` has been applied.
