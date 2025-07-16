@@ -20,7 +20,7 @@
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
-  
+
   ```python
   @qml.set_shots(shots=1000)
   @qml.qnode(dev)
@@ -45,7 +45,7 @@
 
 * A combine-global-phase pass has been added to the xDSL Python compiler integration.
   Note that the current implementation can only combine all the global phase operations at
-  the last global phase operation in the same region. In other words, global phase operations inside a control flow region can't be combined with those in their parent 
+  the last global phase operation in the same region. In other words, global phase operations inside a control flow region can't be combined with those in their parent
   region.
   [(#7675)](https://github.com/PennyLaneAI/pennylane/pull/7675)
 
@@ -101,6 +101,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Resolve issues with AutoGraph transforming internal PennyLane library code due to incorrect
+  module attribution of wrapper functions.
+  [(#7889)](https://github.com/PennyLaneAI/pennylane/pull/7889)
+
 * Calling `QNode.update` no longer acts as if `set_shots` has been applied.
   [(#7881)](https://github.com/PennyLaneAI/pennylane/pull/7881)
 
@@ -115,6 +119,7 @@ This release contains contributions from (in alphabetical order):
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
+David Ittah,
 Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
