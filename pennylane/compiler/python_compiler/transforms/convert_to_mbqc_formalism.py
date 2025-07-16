@@ -46,7 +46,7 @@ class ConvertToMBQCFormalismPass(passes.ModulePass):
         ).rewrite_module(module)
 
 
-convert_to_mbqc_formalism = compiler_transform(ConvertToMBQCFormalismPass)
+convert_to_mbqc_formalism_pass = compiler_transform(ConvertToMBQCFormalismPass)
 
 
 class ConvertToMBQCFormalismPattern(
@@ -109,6 +109,16 @@ class ConvertToMBQCFormalismPattern(
                     "RZ",
                     "RotXZX",
                 ]:
+                    if not isinstance(op.operands[0].owner, ExtractOp):
+                        target_qubits_index = op.operands[0].index
+                        target_qubit = ExtractOp(registers_state, target_qubits_index)
+                        rewriter.insert_op(target_qubit, insertion_point=InsertPoint.before(op))
+                        new_op = CustomOp(
+                            in_qubits=target_qubit, gate_name=op.gate_name.data, params=op.params
+                        )
+                        rewriter.replace_op(op, new_op)
+                        op = new_op
+
                     current_op, registers_state = self._swap_qubits(
                         rewriter, registers_state, op, op, num_wires_int, res_idx=0, offset=3
                     )
