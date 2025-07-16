@@ -1067,7 +1067,7 @@ class DefaultQubitLegacy(QubitDevice):
 
             # sample the observables on the first qubit
             probs = (self._einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
-            samples = np.random.uniform(0, 1, size=probs.shape) > probs
+            samples = rng.uniform(0, 1, size=probs.shape) > probs
             outcomes[:, i] = samples
 
             # collapse the state of the remaining qubits; the next qubit in line
