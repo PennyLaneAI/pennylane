@@ -34,6 +34,9 @@
   0.002
   ```
 
+* Enforce various modules to follow modular architecture via `tach`.
+  [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
+  
 * Update minimum supported `pytest` version to `8.4.1`.
   [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
