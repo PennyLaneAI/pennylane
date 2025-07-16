@@ -72,6 +72,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* `DefaultQubitLegacy` uses `seed` correctly now.
+
 * Make `pennylane.io` a tertiary module.
   [(#7877)](https://github.com/PennyLaneAI/pennylane/pull/7877)
 
