@@ -105,7 +105,7 @@ def _validate_level(
         )
         return
 
-    if level is None or isinstance(level, (int, slice)):
+    if isinstance(level, (int, slice)):
         return
 
     if isinstance(level, str):
