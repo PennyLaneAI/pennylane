@@ -80,6 +80,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
+  [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
+
 <h3>Bug fixes 🐛</h3>
 
 * Calling `QNode.update` no longer acts as if `set_shots` has been applied.
