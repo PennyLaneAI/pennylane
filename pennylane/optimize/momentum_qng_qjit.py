@@ -38,9 +38,9 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
           (e.g., ``2 * theta`` as a gate parameter).
 
     Parameters:
-        stepsize=0.01 (float): the stepsize hyperparameter
-        momentum=0.9 (float): the momentum coefficient hyperparameter
-        approx="block-diag" (str): approximation method for the metric tensor.
+        stepsize (float): the stepsize hyperparameter (default value: 0.01).
+        momentum (float): the momentum coefficient hyperparameter (default value: 0.9).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
 
             - If ``None``, the full metric tensor is computed
 
@@ -51,7 +51,7 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
               reducing the classical overhead but not the quantum resources
               (compared to ``"block-diag"``)
 
-        lam=0 (float): metric tensor regularization to be applied at each optimization step
+        lam (float): metric tensor regularization to be applied at each optimization step (default value: 0).
 
     **Example:**
 
