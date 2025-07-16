@@ -33,9 +33,6 @@
   0.002
   ```
 
-* Update minimum supported `pytest` version to `8.4.1`.
-  [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
-
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
   terminal measurements in a program with a single :func:`pennylane.sample` measurement, and adds
@@ -71,6 +68,13 @@
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
+
+* Added a `dialects` submodule to `qml.compiler.python_compiler` which now houses all the xDSL dialects we create.
+  Additionally, the `MBQCDialect` and `QuantumDialect` dialects have been renamed to `MBQC` and `Quantum`.
+  [(#)]()
+
+* Update minimum supported `pytest` version to `8.4.1`.
+  [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
 * Make `pennylane.io` a tertiary module.
   [(#7877)](https://github.com/PennyLaneAI/pennylane/pull/7877)
