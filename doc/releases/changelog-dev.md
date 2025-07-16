@@ -77,6 +77,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead
+  be set on the tape itself.
+  [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
@@ -97,6 +101,9 @@
   the underlying Lie group/algebra homomorphism between the (dense) rotation matrix and the
   performed operations on the target qubits.
   [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
+* Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
+  [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
 <h3>Bug fixes 🐛</h3>
 
