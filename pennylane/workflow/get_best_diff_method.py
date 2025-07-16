@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 
 import pennylane as qml
 from pennylane.workflow.qnode import _make_execution_config
+from pennylane.workflow.resolution import _resolve_execution_config
 
 if TYPE_CHECKING:
     from pennylane.workflow.qnode import QNode
@@ -29,18 +30,16 @@ def get_best_diff_method(qnode: QNode):
     """Returns a function that computes the 'best' differentiation method
     for a particular QNode.
 
-    This method prioritizes differentiation methods in the following order (SPSA-based and Hadamard-based gradients
-    are not included here):
+    This method follows the same resolution logic as the modern PennyLane execution workflow,
+    prioritizing differentiation methods in the following order:
 
-    * ``"device"``
-    * ``"backprop"``
-    * ``"parameter-shift"``
+    1. **Device-provided methods**: If the device supports derivatives natively (e.g., ``"adjoint"``, ``"backprop"``)
+    2. **Parameter-shift**: For hardware-compatible circuits and CV operations
+    3. **Fallback transforms**: As determined by the resolution system
 
-    .. note::
-
-        The first differentiation method that is supported (from top to bottom)
-        will be returned. The order is designed to maximize efficiency, generality,
-        and stability.
+    The method uses the same resolution logic as :func:`~pennylane.workflow.execution.execute` 
+    and :func:`~pennylane.workflow.construct_batch.construct_batch` to ensure consistency
+    across the workflow.
 
     .. seealso::
 
@@ -51,32 +50,35 @@ def get_best_diff_method(qnode: QNode):
         qnode (.QNode): the qnode to get the 'best' differentiation method for.
 
     Returns:
-        str: the gradient transform.
+        str: the gradient method name or transform.
     """
 
     def handle_return(transform):
-        """Helper function to manage the return"""
+        """Helper function to manage the return and normalize transform names"""
         if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
             return "parameter-shift"
+        if hasattr(transform, '__name__'):
+            # For transform functions, return their name
+            return transform.__name__
         return transform
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         device = qnode.device
+        
+        # Construct the tape using the same method as the execution workflow
         tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
-
-        config = _make_execution_config(None, "best")
-
-        if device.supports_derivatives(config, circuit=tape):
-            new_config = device.setup_execution_config(config)
-            transform = new_config.gradient_method
-            return handle_return(transform)
-
-        if tape and any(isinstance(o, qml.operation.CV) for o in tape):
-            transform = qml.gradients.param_shift_cv
-            return handle_return(transform)
-
-        transform = qml.gradients.param_shift
-        return handle_return(transform)
+        
+        # Create execution config with "best" method - this matches the workflow behavior
+        mcm_config = qml.devices.MCMConfig(
+            postselect_mode=qnode.execute_kwargs.get("postselect_mode"),
+            mcm_method=qnode.execute_kwargs.get("mcm_method"),
+        )
+        config = _make_execution_config(qnode, "best", mcm_config)
+        
+        # Use the same resolution logic as execute() and construct_batch()
+        resolved_config = _resolve_execution_config(config, device, [tape])
+        
+        return handle_return(resolved_config.gradient_method)
 
     return wrapper
