@@ -30,14 +30,7 @@ def get_best_diff_method(qnode: QNode):
     """Returns a function that computes the 'best' differentiation method
     for a particular QNode.
 
-    This method follows the same resolution logic as the modern PennyLane execution workflow,
-    prioritizing differentiation methods in the following order:
-
-    1. **Device-provided methods**: If the device supports derivatives natively (e.g., ``"adjoint"``, ``"backprop"``)
-    2. **Parameter-shift**: For hardware-compatible circuits and CV operations
-    3. **Fallback transforms**: As determined by the resolution system
-
-    The method uses the same resolution logic as :func:`~pennylane.workflow.execution.execute` 
+    The method uses the same resolution logic as :func:`~pennylane.workflow.execution.execute`
     and :func:`~pennylane.workflow.construct_batch.construct_batch` to ensure consistency
     across the workflow.
 
@@ -57,28 +50,25 @@ def get_best_diff_method(qnode: QNode):
         """Helper function to manage the return and normalize transform names"""
         if transform in (qml.gradients.param_shift, qml.gradients.param_shift_cv):
             return "parameter-shift"
-        if hasattr(transform, '__name__'):
-            # For transform functions, return their name
-            return transform.__name__
         return transform
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         device = qnode.device
-        
+
         # Construct the tape using the same method as the execution workflow
-        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
-        
+        tape = qml.workflow.construct_tape(qnode, level="user")(*args, **kwargs)
+
         # Create execution config with "best" method - this matches the workflow behavior
         mcm_config = qml.devices.MCMConfig(
             postselect_mode=qnode.execute_kwargs.get("postselect_mode"),
             mcm_method=qnode.execute_kwargs.get("mcm_method"),
         )
         config = _make_execution_config(qnode, "best", mcm_config)
-        
+
         # Use the same resolution logic as execute() and construct_batch()
         resolved_config = _resolve_execution_config(config, device, [tape])
-        
+
         return handle_return(resolved_config.gradient_method)
 
     return wrapper
