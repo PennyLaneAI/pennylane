@@ -26,8 +26,7 @@ class TestQubitReuse:
 
     def test_transform_circuit(self):
         """A simple test case."""
-        num_wires = 9
-        dev = qml.device("default.qubit", wires=num_wires)
+        dev = qml.device("default.qubit")
 
         # define the 5-qubit circuit
         #
