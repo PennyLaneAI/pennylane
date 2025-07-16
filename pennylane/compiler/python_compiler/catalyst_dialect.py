@@ -39,7 +39,7 @@ class CallbackCallOp(IRDLOperation):
 
     callee = prop_def(AnyAttr())
 
-    inputs = var_operand_def(AnyOf((AnyAttr(), AnyAttr())))
+    inputs = var_operand_def(AnyAttr())
 
     arg_attrs = opt_prop_def(AnyAttr())
 
@@ -101,7 +101,7 @@ class LaunchKernelOp(IRDLOperation):
 
     callee = prop_def(AnyAttr())
 
-    inputs = var_operand_def(AnyOf((AnyAttr(), AnyAttr())))
+    inputs = var_operand_def(AnyAttr())
 
     arg_attrs = opt_prop_def(AnyAttr())
 
