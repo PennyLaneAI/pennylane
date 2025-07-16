@@ -1,0 +1,24 @@
+DIRECTORY: VCHLIB
+
+This directory is for storing Vibronic coupling Hamiltonians as pickled Python objects.
+They are read by doing:
+
+```
+import pickle
+
+filehandler = open('NAME.pkl', 'rb')
+omegas, couplings = pickle.load(filehandler)
+```
+
+where omegas is a 1d array of length `p`, and couplings is a list of the coupling arrays. The coupling arrays are 
+ordered in `couplings` by ascending order in Q. Typically:
+
+```
+couplings[0] : (n,n) shaped array of constant couplings 
+couplings[1] : (n,n,p) shaped array of couplings linear in Qs
+couplings[2] : (n,n,p,p) shaped array of couplings quadratic in Qs
+```
+
+where `n` is the number of states and `p` is the number of vibrational modes   
+
+

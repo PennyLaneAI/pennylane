@@ -146,13 +146,13 @@ def get_reduced_model(omegas, couplings, m_max, order_max=2, states=None, strate
     # truncate by states
     if states is not None:  #
         couplings_red = truncate_by_states(couplings_red, states)
-    print(f"m_max: {m_max}")
+    # print(f"m_max: {m_max}")
     mode_measures = rank_modes(omegas, couplings_red, ranking_type=strategy)
     modes_ordered = dict(sorted(mode_measures.items(), key=lambda item: item[1], reverse=True))
-    print(f"{'*'*50}\nMODES SORTED BY IMPORTANCE ({strategy}):")
-    for m in modes_ordered:
-        print(f'Q{m} : {modes_ordered[m]}')
-    print(f"{'*'*50}\n")
+    # print(f"{'*'*50}\nMODES SORTED BY IMPORTANCE ({strategy}):")
+    # for m in modes_ordered:
+    #     print(f'Q{m} : {modes_ordered[m]}')
+    # print(f"{'*'*50}\n")
     modes_keep = list(modes_ordered.keys())[:m_max]
     omegas_red = omegas[modes_keep]
 

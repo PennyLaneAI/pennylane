@@ -1,0 +1,345 @@
+OP_DEFINE-SECTION
+title
+Butatriene full quadratic model with 18 modes
+see: Cattarius et al. JCP 115, 2088-2100 (2001)
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+
+#frequencies
+omega_1       =   0.02670 , ev
+omega_2       =   0.02640 , ev
+omega_3       =   0.02960 , ev
+omega_4       =   0.06060 , ev
+omega_5       =   0.09120 , ev
+omega_6       =   0.10590 , ev
+omega_7       =   0.10000 , ev
+omega_8       =   0.10890 , ev
+omega_9       =   0.12580 , ev
+omega_10      =   0.13140 , ev
+omega_11      =   0.16990 , ev
+omega_12      =   0.17730 , ev
+omega_13      =   0.19940 , ev
+omega_14      =   0.25780 , ev
+omega_15      =   0.37130 , ev
+omega_16      =   0.37120 , ev
+omega_17      =   0.38190 , ev
+omega_18      =   0.37930 , ev
+#vertical energies, ZPE of 1.5573 is subtracted
+E1            =   7.84785 , ev  # 9.40515eV without subtr. of ZPE
+E2            =   8.39095 , ev  # 9.94825eV without subtr. of ZPE
+#linear coupling constants (kappa)
+kappa1_8      =   0.05330 , ev
+kappa2_8      =   0.06060 , ev
+kappa1_12     =   0.01410 , ev
+kappa2_12     =   0.00890 , ev
+kappa1_14     =   0.16250 , ev
+kappa2_14     =  -0.35760 , ev
+kappa1_15     =   0.03800 , ev
+kappa2_15     =  -0.03140 , ev
+#off-diagonal vibronic coupling constants (lambda)
+lambda_5      =   0.27700 , ev
+#bilinear coupling constants (gamma)
+gamma1_1_1    =   0.03652 , ev
+gamma2_1_1    =   0.05451 , ev
+gamma1_1_10   =   0.00760 , ev
+gamma2_1_10   =  -0.00549 , ev
+gamma1_1_17   =  -0.00110 , ev
+gamma2_1_17   =   0.00130 , ev
+gamma1_2_2    =   0.01936 , ev
+gamma2_2_2    =   0.04152 , ev
+gamma1_2_6    =  -0.00310 , ev
+gamma2_2_6    =  -0.00400 , ev
+gamma1_3_3    =   0.06160 , ev
+gamma2_3_3    =   0.06168 , ev
+gamma1_3_9    =   0.00460 , ev
+gamma2_3_9    =  -0.01400 , ev
+gamma1_3_18   =   0.00110 , ev
+gamma2_3_18   =   0.00410 , ev
+gamma1_4_4    =   0.02852 , ev
+gamma2_4_4    =   0.00862 , ev
+gamma1_4_7    =  -0.01020 , ev
+gamma2_4_7    =   0.00040 , ev
+gamma1_5_5    =   0.00000 , ev
+gamma2_5_5    =   0.00000 , ev
+gamma1_6_2    =  -0.00310 , ev
+gamma2_6_2    =  -0.00400 , ev
+gamma1_6_6    =   0.06041 , ev
+gamma2_6_6    =   0.03030 , ev
+gamma1_7_4    =  -0.01020 , ev
+gamma2_7_4    =   0.00040 , ev
+gamma1_7_7    =   0.06480 , ev
+gamma2_7_7    =   0.04051 , ev
+gamma1_8_8    =   0.00240 , ev
+gamma2_8_8    =   0.00580 , ev
+gamma1_8_12   =  -0.00010 , ev
+gamma2_8_12   =   0.00220 , ev
+gamma1_8_14   =  -0.00460 , ev
+gamma2_8_14   =   0.00180 , ev
+gamma1_8_15   =  -0.00360 , ev
+gamma2_8_15   =  -0.00350 , ev
+gamma1_9_3    =   0.00460 , ev
+gamma2_9_3    =  -0.01400 , ev
+gamma1_9_9    =   0.01850 , ev
+gamma2_9_9    =  -0.00320 , ev
+gamma1_9_18   =  -0.00370 , ev
+gamma2_9_18   =   0.00220 , ev
+gamma1_10_1   =   0.00760 , ev
+gamma2_10_1   =  -0.00549 , ev
+gamma1_10_10  =   0.01200 , ev
+gamma2_10_10  =  -0.00910 , ev
+gamma1_10_17  =   0.00010 , ev
+gamma2_10_17  =   0.00521 , ev
+gamma1_11_11  =  -0.00760 , ev
+gamma2_11_11  =   0.01441 , ev
+gamma1_11_13  =  -0.00850 , ev
+gamma2_11_13  =  -0.00010 , ev
+gamma1_11_16  =   0.00270 , ev
+gamma2_11_16  =   0.00250 , ev
+gamma1_12_8   =  -0.00010 , ev
+gamma2_12_8   =   0.00220 , ev
+gamma1_12_12  =   0.01630 , ev
+gamma2_12_12  =   0.00230 , ev
+gamma1_12_14  =   0.00100 , ev
+gamma2_12_14  =   0.00380 , ev
+gamma1_12_15  =   0.00240 , ev
+gamma2_12_15  =   0.00160 , ev
+gamma1_13_11  =  -0.00850 , ev
+gamma2_13_11  =  -0.00010 , ev
+gamma1_13_13  =  -0.00920 , ev
+gamma2_13_13  =   0.01341 , ev
+gamma1_13_16  =  -0.00090 , ev
+gamma2_13_16  =   0.00280 , ev
+gamma1_14_8   =  -0.00460 , ev
+gamma2_14_8   =   0.00180 , ev
+gamma1_14_12  =   0.00100 , ev
+gamma2_14_12  =   0.00380 , ev
+gamma1_14_14  =   0.00020 , ev
+gamma2_14_14  =   0.02380 , ev
+gamma1_14_15  =  -0.00240 , ev
+gamma2_14_15  =   0.00620 , ev
+gamma1_15_8   =  -0.00360 , ev
+gamma2_15_8   =  -0.00350 , ev
+gamma1_15_12  =   0.00240 , ev
+gamma2_15_12  =   0.00160 , ev
+gamma1_15_14  =  -0.00240 , ev
+gamma2_15_14  =   0.00620 , ev
+gamma1_15_15  =   0.01800 , ev
+gamma2_15_15  =   0.02150 , ev
+gamma1_16_11  =   0.00270 , ev
+gamma2_16_11  =   0.00250 , ev
+gamma1_16_13  =  -0.00090 , ev
+gamma2_16_13  =   0.00280 , ev
+gamma1_16_16  =  -0.00670 , ev
+gamma2_16_16  =   0.01591 , ev
+gamma1_17_1   =  -0.00110 , ev
+gamma2_17_1   =   0.00130 , ev
+gamma1_17_10  =   0.00010 , ev
+gamma2_17_10  =   0.00521 , ev
+gamma1_17_17  =  -0.01100 , ev
+gamma2_17_17  =  -0.00800 , ev
+gamma1_18_3   =   0.00110 , ev
+gamma2_18_3   =   0.00410 , ev
+gamma1_18_9   =  -0.00370 , ev
+gamma2_18_9   =   0.00220 , ev
+gamma1_18_18  =  -0.01480 , ev
+gamma2_18_18  =  -0.01110 , ev
+#off-diagonal bilinear vibronic coupling constants (mu)
+mu_1_4        =  -0.00269 , ev
+mu_1_7        =  -0.00460 , ev
+mu_2_3        =   0.00220 , ev
+mu_2_9        =   0.01620 , ev
+mu_2_18       =  -0.00080 , ev
+mu_3_2        =   0.00220 , ev
+mu_3_6        =   0.01150 , ev
+mu_4_1        =  -0.00269 , ev
+mu_4_10       =   0.01720 , ev
+mu_4_17       =   0.00860 , ev
+mu_5_8        =  -0.00220 , ev
+mu_5_12       =   0.00740 , ev
+mu_5_14       =  -0.01290 , ev
+mu_5_15       =  -0.01020 , ev
+mu_6_3        =   0.01150 , ev
+mu_6_9        =  -0.00180 , ev
+mu_6_18       =  -0.00230 , ev
+mu_7_1        =  -0.00460 , ev
+mu_7_10       =   0.01000 , ev
+mu_7_17       =   0.01880 , ev
+mu_8_5        =  -0.00220 , ev
+mu_9_2        =   0.01620 , ev
+mu_9_6        =  -0.00180 , ev
+mu_10_4       =   0.01720 , ev
+mu_10_7       =   0.01000 , ev
+mu_12_5       =   0.00740 , ev
+mu_14_5       =  -0.01290 , ev
+mu_15_5       =  -0.01020 , ev
+mu_17_4       =   0.00860 , ev
+mu_17_7       =   0.01880 , ev
+mu_18_2       =  -0.00080 , ev
+mu_18_6       =  -0.00230 , ev
+end-parameter-section
+
+
+HAMILTONIAN-SECTION
+modes   |  el  |  Q1  |  Q2  |  Q3  |  Q4
+modes   |  Q5  |  Q6  |  Q7  |  Q8  |  Q9
+modes   |  Q10 |  Q11 |  Q12 |  Q13 |  Q14
+modes   |  Q15 |  Q16 |  Q17 |  Q18
+omega_1            |2   KE
+0.5*omega_1        |2   q^2
+omega_2            |3   KE
+0.5*omega_2        |3   q^2
+omega_3            |4   KE
+0.5*omega_3        |4   q^2
+omega_4            |5   KE
+0.5*omega_4        |5   q^2
+omega_5            |6   KE
+0.5*omega_5        |6   q^2
+omega_6            |7   KE
+0.5*omega_6        |7   q^2
+omega_7            |8   KE
+0.5*omega_7        |8   q^2
+omega_8            |9   KE
+0.5*omega_8        |9   q^2
+omega_9            |10   KE
+0.5*omega_9        |10   q^2
+omega_10           |11  KE
+0.5*omega_10       |11  q^2
+omega_11           |12  KE
+0.5*omega_11       |12  q^2
+omega_12           |13  KE
+0.5*omega_12       |13  q^2
+omega_13           |14  KE
+0.5*omega_13       |14  q^2
+omega_14           |15  KE
+0.5*omega_14       |15  q^2
+omega_15           |16  KE
+0.5*omega_15       |16  q^2
+omega_16           |17  KE
+0.5*omega_16       |17  q^2
+omega_17           |18  KE
+0.5*omega_17       |18  q^2
+omega_18           |19  KE
+0.5*omega_18       |19  q^2
+E1                 |1   S1&1
+E2                 |1   S2&2
+
+lambda_5           |1 S1&2        |6   q
+
+kappa1_8           |1 S1&1        |9   q
+kappa2_8           |1 S2&2        |9   q
+kappa1_12          |1 S1&1        |13  q
+kappa2_12          |1 S2&2        |13  q
+kappa1_14          |1 S1&1        |15  q
+kappa2_14          |1 S2&2        |15  q
+kappa1_15          |1 S1&1        |16  q
+kappa2_15          |1 S2&2        |16  q
+
+
+gamma1_1_1         |1 S1&1        |2  q^2
+gamma2_1_1         |1 S2&2        |2  q^2
+2.0*gamma1_1_10    |1 S1&1        |2  q       |11  q
+2.0*gamma2_1_10    |1 S2&2        |2  q       |11  q
+2.0*gamma1_1_17    |1 S1&1        |2  q       |18  q
+2.0*gamma2_1_17    |1 S2&2        |2  q       |18  q
+
+gamma1_2_2         |1 S1&1        |3  q^2
+gamma2_2_2         |1 S2&2        |3  q^2
+2.0*gamma1_2_6     |1 S1&1        |3  q       |7  q
+2.0*gamma2_2_6     |1 S2&2        |3  q       |7  q
+gamma1_3_3         |1 S1&1        |4  q^2
+gamma2_3_3         |1 S2&2        |4  q^2
+2.0*gamma1_3_9     |1 S1&1        |4  q       |10  q
+2.0*gamma2_3_9     |1 S2&2        |4  q       |10  q
+2.0*gamma1_3_18    |1 S1&1        |4  q       |19  q
+2.0*gamma2_3_18    |1 S2&2        |4  q       |19  q
+
+gamma1_4_4         |1 S1&1        |5  q^2
+gamma2_4_4         |1 S2&2        |5  q^2
+2.0*gamma1_4_7     |1 S1&1        |5  q       |8  q
+2.0*gamma2_4_7     |1 S2&2        |5  q       |8  q
+
+gamma1_5_5         |1 S1&1        |6  q^2
+gamma2_5_5         |1 S2&2        |6  q^2
+
+gamma1_6_6         |1 S1&1        |7  q^2
+gamma2_6_6         |1 S2&2        |7  q^2
+
+gamma1_7_7         |1 S1&1        |8  q^2
+gamma2_7_7         |1 S2&2        |8  q^2
+
+gamma1_8_8         |1 S1&1        |9  q^2
+gamma2_8_8         |1 S2&2        |9  q^2
+2.0*gamma1_8_12    |1 S1&1        |9  q       |13  q
+2.0*gamma2_8_12    |1 S2&2        |9  q       |13  q
+2.0*gamma1_8_14    |1 S1&1        |9  q       |15  q
+2.0*gamma2_8_14    |1 S2&2        |9  q       |15  q
+2.0*gamma1_8_15    |1 S1&1        |9  q       |16  q
+2.0*gamma2_8_15    |1 S2&2        |9  q       |16  q
+
+gamma1_9_9         |1 S1&1        |10  q^2
+gamma2_9_9         |1 S2&2        |10  q^2
+2.0*gamma1_9_18    |1 S1&1        |10  q      |19  q
+2.0*gamma2_9_18    |1 S2&2        |10  q      |19  q
+
+gamma1_10_10       |1 S1&1        |11  q^2
+gamma2_10_10       |1 S2&2        |11  q^2
+2.0*gamma1_10_17   |1 S1&1        |11  q      |18  q
+2.0*gamma2_10_17   |1 S2&2        |11  q      |18  q
+
+gamma1_11_11       |1 S1&1        |12  q^2
+gamma2_11_11       |1 S2&2        |12  q^2
+2.0*gamma1_11_13   |1 S1&1        |12  q      |14  q
+2.0*gamma2_11_13   |1 S2&2        |12  q      |14  q
+2.0*gamma1_11_16   |1 S1&1        |12  q      |17  q
+2.0*gamma2_11_16   |1 S2&2        |12  q      |17  q
+
+gamma1_12_12       |1 S1&1        |13  q^2
+gamma2_12_12       |1 S2&2        |13  q^2
+2.0*gamma1_12_14   |1 S1&1        |13  q      |15  q
+2.0*gamma2_12_14   |1 S2&2        |13  q      |15  q
+2.0*gamma1_12_15   |1 S1&1        |13  q      |16  q
+2.0*gamma2_12_15   |1 S2&2        |13  q      |16  q
+
+gamma1_13_13       |1 S1&1        |14  q^2
+gamma2_13_13       |1 S2&2        |14  q^2
+2.0*gamma1_13_16   |1 S1&1        |14  q      |17  q
+2.0*gamma2_13_16   |1 S2&2        |14  q      |17  q
+
+gamma1_14_14       |1 S1&1        |15  q^2
+gamma2_14_14       |1 S2&2        |15  q^2
+2.0*gamma1_14_15   |1 S1&1        |15  q      |16  q
+2.0*gamma2_14_15   |1 S2&2        |15  q      |16  q
+
+gamma1_15_15       |1 S1&1        |16  q^2
+gamma2_15_15       |1 S2&2        |16  q^2
+
+gamma1_16_16       |1 S1&1        |17  q^2
+gamma2_16_16       |1 S2&2        |17  q^2
+
+gamma1_17_17       |1 S1&1        |18  q^2
+gamma2_17_17       |1 S2&2        |18  q^2
+
+gamma1_18_18       |1 S1&1        |19  q^2
+gamma2_18_18       |1 S2&2        |19  q^2
+
+2.0*mu_1_4         |1 S1&2        |2  q       |5  q
+2.0*mu_1_7         |1 S1&2        |2  q       |8  q
+2.0*mu_2_3         |1 S1&2        |3  q       |4  q
+2.0*mu_2_9         |1 S1&2        |3  q       |10  q
+2.0*mu_2_18        |1 S1&2        |3  q       |19  q
+2.0*mu_3_6         |1 S1&2        |4  q       |7  q
+2.0*mu_4_10        |1 S1&2        |5  q       |11  q
+2.0*mu_4_17        |1 S1&2        |5  q       |18  q
+2.0*mu_5_8         |1 S1&2        |6  q       |9  q
+2.0*mu_5_12        |1 S1&2        |6  q       |13  q
+2.0*mu_5_14        |1 S1&2        |6  q       |15  q
+2.0*mu_5_15        |1 S1&2        |6  q       |16  q
+2.0*mu_6_9         |1 S1&2        |7  q       |10  q
+2.0*mu_6_18        |1 S1&2        |7  q       |19  q
+2.0*mu_7_10        |1 S1&2        |8  q       |11  q
+2.0*mu_7_17        |1 S1&2        |8  q       |18  q
+END-HAMILTONIAN-SECTION
+
+END-OPERATOR

@@ -1,0 +1,66 @@
+OP_DEFINE-SECTION
+title
+Henon-Heiles PES
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_X = 1.0
+mass_Y = 1.0
+lambda = 0.2 , au
+cdiss  = 0.2 , au
+end-parameter-section
+
+HAMILTONIAN-SECTION
+-----------------------------
+  modes         |  X   | Y
+-----------------------------
+1.0             |  KE  | 1
+0.5             |  q^2 | 1
+-lambda/3.0     |  q^3 | 1
+lambda^2/16.0   |  q^4 | 1
+1.0             |  1   | KE
+0.5             |  1   | q^2
+lambda^2/16.0   |  1   | q^4
+lambda          |  q   | q^2
+lambda^2/8.0    |  q^2 | q^2
+-----------------------------
+end-hamiltonian-section
+
+
+# This operator ist for the elk_test, nevertheless, it
+# calculates the expectation value <X>.
+HAMILTONIAN-SECTION_elk-operator
+-----------------------------
+  modes         |  X   | Y
+-----------------------------
+1.0             |  q   |  1
+-----------------------------
+end-hamiltonian-section
+
+
+DISSIPATIVE-SECTION
+--------------------------------------
+  modes         | X   | Y   | X   | Y
+--------------------------------------
+pure-left
+-cdiss          | 1   | q   | 1   | q
+-cdiss          | q   | 1   | q   | 1
+--------------------------------------
+pure-right
+-cdiss          | 1   | q   | 1   | q
+-cdiss          | q   | 1   | q   | 1
+--------------------------------------
+left-right
+2.0*cdiss       | 1   | q   | 1   | q
+2.0*cdiss       | q   | 1   | q   | 1
+--------------------------------------
+end-dissipative-section
+
+labels-section
+# multiplication of operators for type I
+q%q = q^2
+end-labels-section
+
+
+end-operator

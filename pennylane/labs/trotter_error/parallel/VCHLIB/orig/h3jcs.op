@@ -1,0 +1,49 @@
+OP_DEFINE-SECTION
+title
+H+H2 Reactive Scattering in Jacobian Coordinates
+Coupled states approximation
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_rd = 1224.0
+mass_rv = 918.0
+jtot    = 0.                # will be overwritten by
+jbf     = 0.                # 'alter parameters' input-file,
+sl0     = 0.                # or via the -p option.
+#cs_cent = Coupled states centrifugal potential strength.
+cs_cent = jtot^2/2.0/mass_rd+jtot/2.0/mass_rd-jbf^2/mass_rd
+ l_cent = sl0^2/2.0/mass_rv+sl0/2.0/mass_rv
+end-parameter-section
+
+HAMILTONIAN-SECTION
+-------------------------------------------
+  modes         |  rd   |  rv  |  theta
+-------------------------------------------
+1.0             |  KE   |  1   |   1
+1.0             |  1    |  KE  |   1
+cs_cent         | q^-2  |  1   |   1
+0.5/mass_rd     | q^-2  |  1   |   j^2
+0.5/mass_rv     |  1    | q^-2 |   j^2
+1.0             |  V
+-------------------------------------------
+end-hamiltonian-section
+
+LABELS-SECTION
+V= lsth {jacobian}
+end-labels-section
+
+# The following one-dimensional hamiltonian is used to determine the
+# eigenstates of H_2. These are then used as initial rv-spf's.
+
+HAMILTONIAN-SECTION_H2
+-------------------------------------
+  modes    |  rd   |  rv   |  theta
+-------------------------------------
+1.0        |  1    |  KE   |   1
+1.0        |  1    |  v:H2 |   1
+l_cent     |  1    | q^-2  |   1
+-------------------------------------
+end-hamiltonian-section
+
+end-operator

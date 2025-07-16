@@ -1,0 +1,57 @@
+##############################################################################
+###                 TUTORIAL                                               ###
+###    H+H2 Reactive Scattering in Jacobian Coordinates.                   ###
+###    Zero total angular momentum (J=0) only.                             ###
+###    Minimum of H_2 potential curve: 4.74746 eV.                         ###
+###    Zero point energy of H_2 vibration: 0.270 eV.                       ###
+##############################################################################
+
+OP_DEFINE-SECTION
+title
+H+H2 Reactive Scattering in Jacobian Coordinates. J=0.
+Minimum of H_2 curve: 4.74746 eV. Zero point energy of vib.: 0.270 eV
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_rd = 0.6666666666667, H-mass    # Reduced mass of H--H2 system
+mass_rv = 0.50, H-mass               # Reduced mass of H2 molecule
+jtot    = 0                          # Total angular momentum
+jbf     = 0                          # Projection on BF axis (K, or Omega).
+sl0     = 0                          # initial j of H_2 fragment
+l_cent  =  sl0^2/2.0/mass_rv+sl0/2.0/mass_rv
+end-parameter-section
+
+HAMILTONIAN-SECTION
+-------------------------------------------
+  modes       |  rd   |  rv  |  theta
+-------------------------------------------
+0.5/mass_rd   |  q^-2 |  1   |   j^2
+0.5/mass_rv   |  1    | q^-2 |   j^2
+1.0           |  KE   |  1   |   1
+1.0           |  1    |  KE  |   1
+1.0           |  V
+-------------------------------------------
+end-hamiltonian-section
+
+
+LABELS-SECTION
+V = lsth {jacobian}
+end-labels-section
+
+
+# The following one-dimensional hamiltonian is used to determine the
+# eigenstates of H_2. These are then used as initial rv-spf's.
+
+HAMILTONIAN-SECTION_H2
+-------------------------------------------
+  modes       |  rd   |  rv  |  theta
+-------------------------------------------
+1.0           |  1    |  KE  |   1
+1.0           |  1    | v:H2 |   1
+l_cent        |  1    | q^-2 |   1
+-------------------------------------------
+end-hamiltonian-section
+
+end-operator
+

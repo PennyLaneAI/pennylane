@@ -1,0 +1,53 @@
+#######################################################################
+###  3 bosonic particles, 1D, in a harmonic trap                    ###
+#######################################################################
+
+OP_DEFINE-SECTION
+title
+  p3d1, 3 one-dimensional bosons in a harmonic trap
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_x1 = 1.0
+mass_x2 = 1.0
+mass_x3 = 1.0
+g       = 1.0 # interaction strength; only dummy value, reset in INP file!
+end-parameter-section
+
+LABELS-SECTION
+  vv = natpot{pot_boson ignore} # pot-fitted interaction potential
+end-labels-section  # 'ignore' is set to ignore the modelabels of the fit
+
+HAMILTONIAN-SECTION
+---------------------------------
+    modes     | x1  | x2  | x3
+---------------------------------
+# Kinetic energy
+ 1.0          | KE  | 1   | 1
+ 1.0          | 1   | KE  | 1
+ 1.0          | 1   | 1   | KE
+
+# Harmonic trap
+ 0.5          | q^2 | 1   | 1
+ 0.5          | 1   | q^2 | 1
+ 0.5          | 1   | 1   | q^2
+
+# Two-particle interaction // N(N-1)/2 entries
+ g            |1&2 vv
+ g            |1&3 vv
+ g            |2&3 vv
+---------------------------------
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_spo
+-----------------------
+    modes     | x1
+-----------------------
+ 1.0          | KE
+ 0.5          | q^2
+-----------------------
+end-hamiltonian-section
+
+end-operator
+

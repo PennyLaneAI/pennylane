@@ -1,0 +1,151 @@
+OP_DEFINE-SECTION
+TITLE
+H2O vibrational Hamiltonian (J=0), 3 modes, valence coordinates
+PES of SAC/SAC-CI fit by Hirsch and Buenker
+END-TITLE
+END-OP_DEFINE-SECTION
+
+PARAMETER-SECTION
+oxygen_mass = 15.99491463,AMU
+hydrog_mass = 1.0,H-mass
+atomA_mass  = hydrog_mass   # mass of atom A in molecule A-C-B
+atomB_mass  = hydrog_mass   # mass of atom B in molecule A-C-B
+atomC_mass  = oxygen_mass   # mass of atom C in molecule A-C-B
+AC_mass     = atomA_mass+atomC_mass          # mass of diatom A-C
+BC_mass     = atomB_mass+atomC_mass          # mass of diatom B-C
+mass_r1     = atomA_mass*atomC_mass/AC_mass  # reduced mass for mode r_1
+mass_r2     = atomB_mass*atomC_mass/BC_mass  # reduced mass for mode r_2
+ar          = 1.095
+r_e         = 1.814326061178   # equilibrium value of r1, r2
+theta_e     = 1.843591288882   # equilibrium value of theta
+ B000 =   0.000075889237
+ B100 =  -0.002345058802
+ B001 =  -0.002345058802
+ B010 =  -0.003025498354
+ B101 =  -0.015458033884
+ B110 =  -0.029650409870
+ B011 =  -0.029650409870
+ B200 =   0.237426565973
+ B002 =   0.237426565973
+ B020 =   0.085171353530
+ B111 =   0.024780861616
+ B201 =  -0.000795814538
+ B210 =  -0.008685122014
+ B102 =  -0.000795814538
+ B012 =  -0.008685122014
+ B120 =  -0.013500303053
+ B021 =  -0.013500303053
+ B300 =  -0.022161716925
+ B003 =  -0.022161716925
+ B030 =   0.009577899904
+ B211 =   0.009236528513
+ B112 =   0.009236528513
+ B121 =   0.016314461065
+ B301 =   0.015337294107
+ B310 =  -0.000596209938
+ B103 =   0.015337294107
+ B013 =  -0.000596209938
+ B130 =  -0.010833098006
+ B031 =  -0.010833098006
+ B202 =  -0.055241077019
+ B220 =  -0.010990137281
+ B022 =  -0.010990137281
+ B400 =   0.018580462665
+ B004 =   0.018580462665
+ B040 =   0.030587716816
+ B212 =  -0.016446919338
+ B122 =  -0.003124220261
+ B221 =  -0.003124220261
+ B311 =   0.018164529954
+ B113 =   0.018164529954
+ B131 =   0.003371390558
+ B302 =  -0.024280872976
+ B320 =  -0.005493066182
+ B203 =  -0.024280872976
+ B023 =  -0.005493066182
+ B230 =  -0.027862214337
+ B032 =  -0.027862214337
+ B401 =  -0.003199322499
+ B410 =   0.010349062585
+ B104 =  -0.003199322499
+ B014 =   0.010349062585
+ B140 =   0.034236227070
+ B041 =   0.034236227070
+END-PARAMETER-SECTION
+
+LABELS-SECTION
+co2r = exp1[-ar,r_e]
+co2t = q[theta_e]
+END-LABELS-SECTION
+
+HAMILTONIAN-SECTION
+-----------------------------------------------
+ modes            | r1     | theta   | r2
+-----------------------------------------------
+ 1.00             | KE     | 1       | 1         # kinetic energy
+ 1.00             | 1      | 1       | KE
+ 0.50/mass_r1     | q^-2   | j^2     | 1
+ 0.50/mass_r2     | 1      | j^2     | q^-2
+-1.00/atomC_mass  | dq     | cos     | dq
+ 1.00/atomC_mass  | q^-1   | dth1    | dq
+ 1.00/atomC_mass  | dq     | dth1    | q^-1
+-0.50/atomC_mass  | q^-1   | cos*j^2 | q^-1
+-0.50/atomC_mass  | q^-1   | j^2*cos | q^-1
+-----------------------------------------------
+ B000             | 1      | 1       | 1
+ B100             | co2r^1 | 1       | 1         # 1st order potential
+ B010             | 1      | co2t^1  | 1
+ B001             | 1      | 1       | co2r^1
+ B200             | co2r^2 | 1       | 1         # 2nd order potential
+ B002             | 1      | 1       | co2r^2
+ B101             | co2r^1 | 1       | co2r^1
+ B020             | 1      | co2t^2  | 1
+ B110             | co2r^1 | co2t^1  | 1
+ B011             | 1      | co2t^1  | co2r^1
+ B300             | co2r^3 | 1       | 1         # 3rd order potential
+ B003             | 1      | 1       | co2r^3
+ B030             | 1      | co2t^3  | 1
+ B210             | co2r^2 | co2t^1  | 1
+ B012             | 1      | co2t^1  | co2r^2
+ B120             | co2r^1 | co2t^2  | 1
+ B021             | 1      | co2t^2  | co2r^1
+ B201             | co2r^2 | 1       | co2r^1
+ B102             | co2r^1 | 1       | co2r^2
+ B111             | co2r^1 | co2t^1  | co2r^1
+ B400             | co2r^4 | 1       | 1         # 4th order potential
+ B004             | 1      | 1       | co2r^4
+ B040             | 1      | co2t^4  | 1
+ B130             | co2r^1 | co2t^3  | 1
+ B031             | 1      | co2t^3  | co2r^1
+ B220             | co2r^2 | co2t^2  | 1
+ B022             | 1      | co2t^2  | co2r^2
+ B121             | co2r^1 | co2t^2  | co2r^1
+ B310             | co2r^3 | co2t^1  | 1
+ B013             | 1      | co2t^1  | co2r^3
+ B211             | co2r^2 | co2t^1  | co2r^1
+ B112             | co2r^1 | co2t^1  | co2r^2
+ B301             | co2r^3 | 1       | co2r^1
+ B103             | co2r^1 | 1       | co2r^3
+ B202             | co2r^2 | 1       | co2r^2
+ B212             | co2r^2 | co2t^1  | co2r^2
+ B122             | co2r^1 | co2t^2  | co2r^2
+ B221             | co2r^2 | co2t^2  | co2r^1
+ B311             | co2r^3 | co2t^1  | co2r^1
+ B113             | co2r^1 | co2t^1  | co2r^3
+ B131             | co2r^1 | co2t^3  | co2r^1
+ B302             | co2r^3 | 1       | co2r^2
+ B320             | co2r^3 | co2t^2  | 1
+ B203             | co2r^2 | 1       | co2r^3
+ B023             | 1      | co2t^2  | co2r^3
+ B230             | co2r^2 | co2t^3  | 1
+ B032             | 1      | co2t^3  | co2r^2
+ B401             | co2r^4 | 1       | co2r^1
+ B410             | co2r^4 | co2t^1  | 1
+ B104             | co2r^1 | 1       | co2r^4
+ B014             | 1      | co2t^1  | co2r^4
+ B140             | co2r^1 | co2t^4  | 1
+ B041             | 1      | co2t^4  | co2r^1
+-----------------------------------------------
+END-HAMILTONIAN-SECTION
+
+END-OPERATOR

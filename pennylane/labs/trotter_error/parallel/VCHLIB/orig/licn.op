@@ -1,0 +1,36 @@
+
+OP_DEFINE-SECTION
+title
+LiCN electronic ground state.
+2D, CN bond length is frozen.
+Potential from: R. Essers et al., Chem. Phys. Lett. 89, 223 (1982).
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_R = 10071.0, au   # Reduced mass of Li + CN
+mass_r = 11779.0, au   # Reduced mass of C + N
+r0     = 2.186, au     # Frozen CN bond length
+end-parameter-section
+
+HAMILTONIAN-SECTION
+-------------------------------------
+modes             | R      | theta
+-------------------------------------
+1.0             | KE      | 1
+0.5/mass_R      | q^-2    | j^2
+0.5/mass_r/r0^2 | 1       | j^2
+1.0             | licn:0  | legth:0
+1.0             | licn:1  | legth:1
+1.0             | licn:2  | legth:2
+1.0             | licn:3  | legth:3
+1.0             | licn:4  | legth:4
+1.0             | licn:5  | legth:5
+1.0             | licn:6  | legth:6
+1.0             | licn:7  | legth:7
+1.0             | licn:8  | legth:8
+1.0             | licn:9  | legth:9
+-------------------------------------
+end-hamiltonian-section
+
+end-operator

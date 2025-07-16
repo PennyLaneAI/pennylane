@@ -1,0 +1,346 @@
+OP_DEFINE-SECTION
+ title
+   HD2O2- Analytic KEO, valence coordinates, d0=1.6
+ end-title
+end-op_define-section
+
+PARAMETER-SECTION
+# mass in me
+mp = 1837.15264514968
+mo = 29156.9456673576
+md = 3671.482934845
+c1=1.0/mo                    #0.000034297145
+c2= c1/2.0                   #0.000017148573
+c3= c2/2.0                   #0.000008574286 , 8.574286307358E-06
+mmp=1.0/mp
+mmd=1.0/md
+c4= c1+mmd                   #0.000306666653  This is related to terminal
+c5= c4/2.0                   #0.000153333327  This is related to terminal
+c6= 2.0/mo                   #0.000068594290
+c7=mmp/2.0+ c3               #0.000280734578   This is related to bridge
+# scaled z
+d0     = 1.6
+twod0  = 2.0*d0
+end-parameter-section
+
+LABELS-SECTION
+# convenient labels (Recall: cos^2 x + sin^2 x = 1)
+ usin = qs[1]           # sin(x);  u=cos(x)  qs[1] = sqrt(1-x^2)
+ usini = qs[1]^-1       # 1/sin(x)
+ usin2 = qs[1]^2        # sin^2(x)
+ usin2i = qs[1]^-2      # 1/sin^2(x)
+# convenient labels 1./(R-2d0)
+ q2d  = q[twod0]
+ q2di = q[twod0]^-1
+ qq2d = q[twod0]^2
+ qq2di = q[twod0]^-2
+# natpot directory
+ V = natpot{pot}
+end-labels-section
+
+HAMILTONIAN-SECTION
+-----------------------------------------------------------
+ modes | dr1 | dr2 | dr4 | r3x | r3y | zpp | u1 | u2 | phi
+-----------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------------------------
+#modes   | R_1^{(BF)} | R_2^{(BF)} | u_2^{(BF)} | R_3^{(BF)} | u_3^{(BF)} | \varphi_3^{(BF)} | x_4^{(BF)} | y_4^{(BF)} | z_4^{(BF)}
+#          3              1           7            2             8             9                4             5            6
+#     This is the output of Tana
+#----------------------------------------------------------------------------------------------------------------------------------------
+
+   -c1  |3  dq^2
+    c2  |3 dq*q2di |6 dq*q
+    c2  |3 dq*q2di |6 q*dq
+    c2  |3 q2di*dq |6 dq*q
+    c2  |3 q2di*dq |6 q*dq
+   -c3  |3 qq2di   |6 q*dq^2*q
+   -c3  |3 qq2di   |6 dq*q^2*dq
+   -c3  |3 qq2di   |6 q*dq*q*dq
+   -c3  |3 qq2di   |6 dq*q*dq*q
+
+   -c1  |3  dq     |1  dq     |7  q
+    c2  |3 q2di    |1 dq      |6  q*dq
+    c2  |3 q2di    |1 dq      |6  dq*q
+
+   -c2  |3  dq     |1  q^-1   |7  qs^2*dq
+    c3  |3 q2di    |1  q^-1   |7  qs^2*dq   |6  q*dq
+    c3  |3 q2di    |1  q^-1   |7  qs^2*dq   |6  dq*q
+
+   -c2  |3  dq     |1  q^-1   |7  dq*qs^2
+    c3  |3 q2di    |1  q^-1   |7  dq*qs^2   |6  q*dq
+    c3  |3 q2di    |1  q^-1   |7  dq*qs^2   |6  dq*q
+
+    c1  |3  dq     |2  dq     |8  q
+   -c2  |3 q2di    |2  dq     |8  q         |6  q*dq
+   -c2  |3 q2di    |2  dq     |8  q         |6  dq*q
+
+    c2  |3  dq     |2  q^-1   |8  qs^2*dq
+   -c3  |3 q2di    |2  q^-1   |8  qs^2*dq   |6  q*dq
+   -c3  |3 q2di    |2  q^-1   |8  qs^2*dq   |6  dq*q
+
+    c2  |3  dq     |2  q^-1   |8  dq*qs^2
+   -c3  |3 q2di    |2  q^-1   |8  dq*qs^2   |6  q*dq
+   -c3  |3 q2di    |2  q^-1   |8  dq*qs^2   |6  dq*q
+
+   -c5  |1  dq^2
+   -c2  |3  q^-1     |1  dq     |7  dq*qs^2
+   -c2  |3  q^-1     |1  dq     |7  qs^2*dq
+   -c2  |3  q^-1     |1  dq     |7  qs     |8  dq*qs     |9  cos
+   -c2  |3  q^-1     |1  dq     |7  qs     |8  qs*dq     |9  cos
+   -c2  |3  q^-1     |1  dq     |7  qs     |8  q*qs^-1     |9  dq*sin
+   -c2  |3  q^-1     |1  dq     |7  qs     |8  q*qs^-1     |9  sin*dq
+    c1  |3  q^-1*q2d     |1  dq     |7  qs     |4  dq     |6  q
+   -c2  |1  dq       |7  qs     |4  dq
+   -c1  |3  q^-1*q2di     |1  dq     |7  qs     |4  q     |6  dq
+   -c2  |1  dq       |3 q2di  |7  q      |6  dq
+   -c5  |1  q^-2     |7  dq*qs^2*dq
+   -c1  |3  q^-2     |7  dq*qs^2*dq
+    c1  |3  q^-1     |1  q^-1     |7  dq*q*qs^2*dq
+    c2  |3  q^-1     |7  dq*qs     |2  dq     |8  qs     |9  cos
+    c2  |3  q^-1     |7  qs*dq     |2  dq     |8  qs     |9  cos
+   -c1  |3  q^-2     |7  dq*qs     |8  qs*dq     |9  cos
+   -c1  |3  q^-2     |7  qs*dq     |8  dq*qs     |9  cos
+    c2  |3  q^-1     |1  q^-1     |7  q*qs*dq     |8  dq*qs     |9  cos
+   -c2  |3  q^-1     |7  dq*qs     |2  q^-1     |8  q*qs*dq     |9  cos
+    c2  |3  q^-1     |1  q^-1     |7  dq*q*qs     |8  qs*dq     |9  cos
+   -c2  |3  q^-1     |7  qs*dq     |2  q^-1     |8  dq*q*qs     |9  cos
+   -c1  |3  q^-2     |7  dq*qs     |8  q*qs^-1     |9  sin*dq
+   -c1  |3  q^-2     |7  qs*dq     |8  q*qs^-1     |9  dq*sin
+    c2  |3  q^-1     |1  q^-1     |7  q*qs*dq     |8  q*qs^-1     |9  dq*sin
+   -c2  |3  q^-1     |7  dq*qs     |2  q^-1     |8  qs     |9  sin*dq
+   -c2  |3  q^-1     |7  dq*qs     |2  q^-1     |8  q^2*qs^-1     |9  sin*dq
+    c2  |3  q^-1     |1  q^-1     |7  dq*q*qs     |8  q*qs^-1     |9  sin*dq
+   -c2  |3  q^-1     |7  qs*dq     |2  q^-1     |8  q^2*qs^-1     |9  dq*sin
+   -c2  |3  q^-1     |7  qs*dq     |2  q^-1     |8  qs     |9  dq*sin
+    c1  |3  q^-2*q2d     |7  dq*qs     |4  dq     |6  q
+    c1  |3  q^-2*q2d     |7  qs*dq     |4  dq     |6  q
+   -c2  |3  q^-1*q2d     |1  q^-1     |7  q*qs*dq     |4  dq     |6  q
+   -c2  |3  q^-1*q2d     |1  q^-1     |7  dq*q*qs     |4  dq     |6  q
+    c3  |1  q^-1     |7  dq*q*qs     |4  dq
+    c3  |1  q^-1     |7  q*qs*dq     |4  dq
+   -c1  |3  q^-2*q2di     |7  dq*qs     |4  q     |6  dq
+   -c1  |3  q^-2*q2di     |7  qs*dq     |4  q     |6  dq
+    c2  |3  q^-1*q2di     |1  q^-1     |7  q*qs*dq     |4  q     |6  dq
+    c2  |3  q^-1*q2di     |1  q^-1     |7  dq*q*qs     |4  q     |6  dq
+   -c3  |1  q^-1     |3 q2di |7  dq*qs^2     |6  dq
+   -c3  |1  q^-1     |3 q2di |7  qs^2*dq     |6  dq
+   -c5  |2  dq^2
+    c2  |3  q^-1     |2  dq     |8  dq*qs^2
+    c2  |3  q^-1     |2  dq     |8  qs^2*dq
+    c2  |3  q^-1     |7  q*qs^-1     |2  dq     |8  qs     |9  dq*sin
+    c2  |3  q^-1     |7  q*qs^-1     |2  dq     |8  qs     |9  sin*dq
+   -c1  |3  q^-1*q2d     |2  dq     |8  qs     |9  cos     |4  dq     |6  q
+   -c1  |3  q^-1     |7  q*qs^-1     |2  dq     |8  qs     |9  sin     |4  dq     |5  q
+   -c2  |2  dq     |8  qs     |9  cos     |4  dq
+    c1  |3  q^-1     |7  q*qs^-1     |2  dq     |8  qs     |9  sin     |4  q     |5  dq
+   -c1  |3  q^-1*q2d     |2  dq     |8  qs     |9  sin     |5  dq     |6  q
+   -c2  |2  dq     |8  qs     |9  sin     |5  dq
+    c1  |3  q^-1*q2di     |2  dq     |8  qs     |9  cos     |4  q     |6  dq
+    c1  |3  q^-1*q2di     |2  dq     |8  qs     |9  sin     |5  q     |6  dq
+   -c2  |3  q2di          |2  dq     |8  q      |6  dq
+   -c5  |2  q^-2     |8  dq*qs^2*dq
+   -c1  |3  q^-2     |8  dq*qs^2*dq
+   -c1  |3  q^-1     |2  q^-1     |8  dq*q*qs^2*dq
+   -c1  |3  q^-2     |7  q*qs^-1     |8  qs*dq     |9  dq*sin
+   -c1  |3  q^-2     |7  q*qs^-1     |8  dq*qs     |9  sin*dq
+    c2  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  dq*qs     |9  sin*dq
+    c2  |3  q^-1     |1  q^-1     |7  qs     |8  dq*qs     |9  sin*dq
+   -c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  q*qs*dq     |9  dq*sin
+    c2  |3  q^-1     |1  q^-1     |7  qs     |8  qs*dq     |9  dq*sin
+    c2  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  qs*dq     |9  dq*sin
+   -c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  dq*q*qs     |9  sin*dq
+    c1  |3  q^-2     |7  q*qs^-1     |8  qs*dq     |9  sin     |4  dq     |5  q
+    c1  |3  q^-2     |7  q*qs^-1     |8  dq*qs     |9  sin     |4  dq     |5  q
+    c1  |3  q^-2*q2d     |8  dq*qs     |9  cos     |4  dq     |6  q
+    c1  |3  q^-2*q2d     |8  qs*dq     |9  cos     |4  dq     |6  q
+   -c2  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  dq*qs     |9  sin     |4  dq     |5  q
+   -c2  |3  q^-1     |1  q^-1     |7  qs     |8  dq*qs     |9  sin     |4  dq     |5  q
+    c2  |3  q^-1*q2d     |2  q^-1     |8  q*qs*dq     |9  cos     |4  dq     |6  q
+    c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  q*qs*dq     |9  sin     |4  dq     |5  q
+   -c2  |3  q^-1     |1  q^-1     |7  qs     |8  qs*dq     |9  sin     |4  dq     |5  q
+   -c2  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  qs*dq     |9  sin     |4  dq     |5  q
+    c2  |3  q^-1*q2d     |2  q^-1     |8  dq*q*qs     |9  cos     |4  dq     |6  q
+    c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  dq*q*qs     |9  sin     |4  dq     |5  q
+    c3  |2  q^-1     |8  dq*q*qs     |9  cos     |4  dq
+    c3  |2  q^-1     |8  q*qs*dq     |9  cos     |4  dq
+   -c1  |3  q^-2     |7  q*qs^-1     |8  qs*dq     |9  sin     |4  q     |5  dq
+   -c1  |3  q^-2     |7  q*qs^-1     |8  dq*qs     |9  sin     |4  q     |5  dq
+    c1  |3  q^-2*q2d     |8  dq*qs     |9  sin     |5  dq     |6  q
+    c1  |3  q^-2*q2d     |8  qs*dq     |9  sin     |5  dq     |6  q
+    c2  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  dq*qs     |9  sin     |4  q     |5  dq
+    c2  |3  q^-1     |1  q^-1     |7  qs     |8  dq*qs     |9  sin     |4  q     |5  dq
+   -c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  q*qs*dq     |9  sin     |4  q     |5  dq
+    c2  |3  q^-1*q2d     |2  q^-1     |8  q*qs*dq     |9  sin     |5  dq     |6  q
+    c2  |3  q^-1     |1  q^-1     |7  qs     |8  qs*dq     |9  sin     |4  q     |5  dq
+    c2  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  qs*dq     |9  sin     |4  q     |5  dq
+   -c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  dq*q*qs     |9  sin     |4  q     |5  dq
+    c2  |3  q^-1*q2d     |2  q^-1     |8  dq*q*qs     |9  sin     |5  dq     |6  q
+    c3  |2  q^-1     |8  dq*q*qs     |9  sin     |5  dq
+    c3  |2  q^-1     |8  q*qs*dq     |9  sin     |5  dq
+   -c1  |3  q^-2*q2di     |8  dq*qs     |9  sin     |5  q     |6  dq
+   -c1  |3  q^-2*q2di     |8  dq*qs     |9  cos     |4  q     |6  dq
+   -c1  |3  q^-2*q2di     |8  qs*dq     |9  sin     |5  q     |6  dq
+   -c1  |3  q^-2*q2di     |8  qs*dq     |9  cos     |4  q     |6  dq
+   -c2  |3  q^-1*q2di     |2  q^-1     |8  q*qs*dq     |9  cos     |4  q     |6  dq
+   -c2  |3  q^-1*q2di     |2  q^-1     |8  q*qs*dq     |9  sin     |5  q     |6  dq
+   -c2  |3  q^-1*q2di     |2  q^-1     |8  dq*q*qs     |9  cos     |4  q     |6  dq
+   -c2  |3  q^-1*q2di     |2  q^-1     |8  dq*q*qs     |9  sin     |5  q     |6  dq
+   -c3  |3  q2di         |2  q^-1     |8  dq*qs^2     |6  dq
+   -c3  |3  q2di         |2  q^-1     |8  qs^2*dq     |6  dq
+   -c5  |2  q^-2     |8  qs^-2     |9  dq^2
+   -c5  |1  q^-2     |7  q^2*qs^-2     |9  dq^2
+   -c5  |1  q^-2     |9  dq^2
+   -c1  |3  q^-2     |8  qs^-2     |9  dq^2
+   -c1  |3  q^-2     |7  q^2*qs^-2     |9  dq^2
+    c6  |3  q^-2     |7  q*qs^-1     |8  q*qs^-1     |9  dq*cos*dq
+    c1  |3  q^-2     |9  dq^2
+    c1  |3  q^-1     |1  q^-1     |7  q^3*qs^-2     |9  dq^2
+    c1  |3  q^-1     |1  q^-1     |7  q     |9  dq^2
+   -c1  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  q*qs^-1     |9  dq*cos*dq
+   -c1  |3  q^-1     |1  q^-1     |7  qs     |8  q*qs^-1     |9  dq*cos*dq
+    c1  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  q^2*qs^-1     |9  dq*cos*dq
+    c1  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  qs     |9  dq*cos*dq
+   -c1  |3  q^-1     |2  q^-1     |8  q     |9  dq^2
+   -c1  |3  q^-1     |2  q^-1     |8  q^3*qs^-2     |9  dq^2
+    c4  |1  q^-2     |7  q^2*qs^-2     |9  dq     |4  dq     |5  q
+    c4  |1  q^-2     |9  dq     |4  dq     |5  q
+    c6  |3  q^-2     |7  q^2*qs^-2     |9  dq     |4  dq     |5  q
+   -c1  |3  q^-2     |7  q*qs^-1     |8  q*qs^-1     |9  cos*dq     |4  dq     |5  q
+   -c1  |3  q^-2     |7  q*qs^-1     |8  q*qs^-1     |9  dq*cos     |4  dq     |5  q
+    c1  |3  q^-2*q2d     |8  q*qs^-1     |9  dq*sin     |4  dq     |6  q
+    c1  |3  q^-2*q2d     |8  q*qs^-1     |9  sin*dq     |4  dq     |6  q
+   -c6  |3  q^-1     |1  q^-1     |7  q^3*qs^-2     |9  dq     |4  dq     |5  q
+   -c6  |3  q^-1     |1  q^-1     |7  q     |9  dq     |4  dq     |5  q
+    c2  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  q*qs^-1     |9  dq*cos     |4  dq     |5  q
+    c2  |3  q^-1     |1  q^-1     |7  qs     |8  q*qs^-1     |9  dq*cos     |4  dq     |5  q
+    c2  |3  q^-1*q2d     |2  q^-1     |8  qs     |9  sin*dq     |4  dq     |6  q
+    c2  |3  q^-1*q2d     |2  q^-1     |8  q^2*qs^-1     |9  sin*dq     |4  dq     |6  q
+   -c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  q^2*qs^-1     |9  cos*dq     |4  dq     |5  q
+   -c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  qs     |9  cos*dq     |4  dq     |5  q
+    c2  |3  q^-1     |1  q^-1     |7  qs     |8  q*qs^-1     |9  cos*dq     |4  dq     |5  q
+    c2  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  q*qs^-1     |9  cos*dq     |4  dq     |5  q
+    c2  |3  q^-1*q2d     |2  q^-1     |8  q^2*qs^-1     |9  dq*sin     |4  dq     |6  q
+    c2  |3  q^-1*q2d     |2  q^-1     |8  qs     |9  dq*sin     |4  dq     |6  q
+   -c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  qs     |9  dq*cos     |4  dq     |5  q
+   -c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  q^2*qs^-1     |9  dq*cos     |4  dq     |5  q
+    c3  |2  q^-1     |8  q^2*qs^-1     |9  dq*sin     |4  dq
+    c3  |2  q^-1     |8  qs     |9  dq*sin     |4  dq
+    c3  |2  q^-1     |8  qs     |9  sin*dq     |4  dq
+    c3  |2  q^-1     |8  q^2*qs^-1     |9  sin*dq     |4  dq
+   -c4  |1  q^-2     |7  q^2*qs^-2     |9  dq     |4  q     |5  dq
+   -c4  |1  q^-2     |9  dq     |4  q     |5  dq
+   -c6  |3  q^-2     |7  q^2*qs^-2     |9  dq     |4  q     |5  dq
+    c1  |3  q^-2     |7  q*qs^-1     |8  q*qs^-1     |9  cos*dq     |4  q     |5  dq
+    c6  |3  q^-2*q2d     |7  q*qs^-1     |9  dq     |5  dq     |6  q
+    c1  |3  q^-2     |7  q*qs^-1     |8  q*qs^-1     |9  dq*cos     |4  q     |5  dq
+   -c1  |3  q^-2*q2d     |8  q*qs^-1     |9  dq*cos     |5  dq     |6  q
+   -c1  |3  q^-2*q2d     |8  q*qs^-1     |9  cos*dq     |5  dq     |6  q
+    c6  |3  q^-1     |1  q^-1     |7  q^3*qs^-2     |9  dq     |4  q     |5  dq
+    c6  |3  q^-1     |1  q^-1     |7  q     |9  dq     |4  q     |5  dq
+   -c2  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  q*qs^-1     |9  dq*cos     |4  q     |5  dq
+   -c2  |3  q^-1     |1  q^-1     |7  qs     |8  q*qs^-1     |9  dq*cos     |4  q     |5  dq
+   -c1  |3  q^-1*q2d     |1  q^-1     |7  q^2*qs^-1     |9  dq     |5  dq     |6  q
+   -c1  |3  q^-1*q2d     |1  q^-1     |7  qs     |9  dq     |5  dq     |6  q
+    c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  q^2*qs^-1     |9  cos*dq     |4  q     |5  dq
+    c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  qs     |9  cos*dq     |4  q     |5  dq
+   -c2  |3  q^-1*q2d     |2  q^-1     |8  q^2*qs^-1     |9  cos*dq     |5  dq     |6  q
+   -c2  |3  q^-1*q2d     |2  q^-1     |8  qs     |9  cos*dq     |5  dq     |6  q
+   -c2  |3  q^-1     |1  q^-1     |7  qs     |8  q*qs^-1     |9  cos*dq     |4  q     |5  dq
+   -c2  |3  q^-1     |1  q^-1     |7  q^2*qs^-1     |8  q*qs^-1     |9  cos*dq     |4  q     |5  dq
+    c2  |1  q^-1     |7  qs     |9  dq     |5  dq
+    c2  |1  q^-1     |7  q^2*qs^-1     |9  dq     |5  dq
+    c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  qs     |9  dq*cos     |4  q     |5  dq
+   -c2  |3  q^-1*q2d     |2  q^-1     |8  qs     |9  dq*cos     |5  dq     |6  q
+    c2  |3  q^-1     |7  q*qs^-1     |2  q^-1     |8  q^2*qs^-1     |9  dq*cos     |4  q     |5  dq
+   -c2  |3  q^-1*q2d     |2  q^-1     |8  q^2*qs^-1     |9  dq*cos     |5  dq     |6  q
+   -c3  |2  q^-1     |8  qs     |9  dq*cos     |5  dq
+   -c3  |2  q^-1     |8  q^2*qs^-1     |9  dq*cos     |5  dq
+   -c3  |2  q^-1     |8  q^2*qs^-1     |9  cos*dq     |5  dq
+   -c3  |2  q^-1     |8  qs     |9  cos*dq     |5  dq
+   -c6  |3  q^-2*q2di    |7  q*qs^-1     |9  dq     |5  q     |6  dq
+    c1  |3  q^-2*q2di    |8  q*qs^-1     |9  dq*cos     |5  q     |6  dq
+   -c1  |3  q^-2*q2di    |8  q*qs^-1     |9  dq*sin     |4  q     |6  dq
+    c1  |3  q^-2*q2di    |8  q*qs^-1     |9  cos*dq     |5  q     |6  dq
+   -c1  |3  q^-2*q2di    |8  q*qs^-1     |9  sin*dq     |4  q     |6  dq
+    c1  |3  q^-1*q2di    |1  q^-1     |7  q^2*qs^-1     |9  dq     |5  q     |6  dq
+    c1  |3  q^-1*q2di    |1  q^-1     |7  qs     |9  dq     |5  q     |6  dq
+   -c2  |3  q^-1*q2di    |2  q^-1     |8  qs     |9  sin*dq     |4  q     |6  dq
+   -c2  |3  q^-1*q2di    |2  q^-1     |8  q^2*qs^-1     |9  sin*dq     |4  q     |6  dq
+    c2  |3  q^-1*q2di    |2  q^-1     |8  q^2*qs^-1     |9  cos*dq     |5  q     |6  dq
+    c2  |3  q^-1*q2di    |2  q^-1     |8  qs     |9  cos*dq     |5  q     |6  dq
+   -c2  |3  q^-1*q2di    |2  q^-1     |8  q^2*qs^-1     |9  dq*sin     |4  q     |6  dq
+   -c2  |3  q^-1*q2di    |2  q^-1     |8  qs     |9  dq*sin     |4  q     |6  dq
+    c2  |3  q^-1*q2di    |2  q^-1     |8  qs     |9  dq*cos     |5  q     |6  dq
+    c2  |3  q^-1*q2di    |2  q^-1     |8  q^2*qs^-1     |9  dq*cos     |5  q     |6  dq
+   -c7  |4  dq^2
+   -c5  |1  q^-2     |7  q^2*qs^-2     |4  dq^2     |5  q^2
+   -c5  |1  q^-2     |4  dq^2     |5  q^2
+   -c1  |3  q^-2*qq2d     |4  dq^2     |6  q^2
+   -c1  |3  q^-2     |7  q^2*qs^-2     |4  dq^2     |5  q^2
+    c1  |3  q^-1     |1  q^-1     |7  q^3*qs^-2     |4  dq^2     |5  q^2
+    c1  |3  q^-1     |1  q^-1     |7  q     |4  dq^2     |5  q^2
+    c5  |1  q^-2     |7  q^2*qs^-2     |4  q*dq     |5  dq*q
+    c5  |1  q^-2     |7  q^2*qs^-2     |4  dq*q     |5  q*dq
+    c5  |1  q^-2     |4  q*dq     |5  dq*q
+    c5  |1  q^-2     |4  dq*q     |5  q*dq
+    c1  |3  q^-2     |7  q^2*qs^-2     |4  q*dq     |5  dq*q
+    c1  |3  q^-2     |7  q^2*qs^-2     |4  dq*q     |5  q*dq
+   -c1  |3  q^-2*q2d     |7  q*qs^-1     |4  dq     |5  q*dq     |6  q
+   -c1  |3  q^-2*q2d     |7  q*qs^-1     |4  dq     |5  dq*q     |6  q
+   -c1  |3  q^-1     |1  q^-1     |7  q^3*qs^-2     |4  q*dq     |5  dq*q
+   -c1  |3  q^-1     |1  q^-1     |7  q     |4  q*dq     |5  dq*q
+   -c1  |3  q^-1     |1  q^-1     |7  q^3*qs^-2     |4  dq*q     |5  q*dq
+   -c1  |3  q^-1     |1  q^-1     |7  q     |4  dq*q     |5  q*dq
+    c2  |3  q^-1*q2d     |1  q^-1     |7  q^2*qs^-1     |4  dq     |5  dq*q     |6  q
+    c2  |3  q^-1*q2d     |1  q^-1     |7  qs     |4  dq     |5  dq*q     |6  q
+    c2  |3  q^-1*q2d     |1  q^-1     |7  qs     |4  dq     |5  q*dq     |6  q
+    c2  |3  q^-1*q2d     |1  q^-1     |7  q^2*qs^-1     |4  dq     |5  q*dq     |6  q
+   -c3  |1  q^-1     |7  qs     |4  dq     |5  q*dq
+   -c3  |1  q^-1     |7  q^2*qs^-1     |4  dq     |5  q*dq
+   -c3  |1  q^-1     |7  q^2*qs^-1     |4  dq     |5  dq*q
+   -c3  |1  q^-1     |7  qs     |4  dq     |5  dq*q
+    c1  |3  q^-2     |4  q*dq     |6  dq*q
+    c1  |3  q^-2     |4  dq*q     |6  q*dq
+    c6  |3  q^-2*q2di    |7  q*qs^-1     |4  dq     |5  q^2     |6  dq
+   -c1  |3  q^-1*q2di    |1  q^-1     |7  q^2*qs^-1     |4  dq     |5  q^2     |6  dq
+   -c1  |3  q^-1*q2di    |1  q^-1     |7  qs     |4  dq     |5  q^2     |6  dq
+   -c7  |5  dq^2
+   -c5  |1  q^-2     |7  q^2*qs^-2     |4  q^2     |5  dq^2
+   -c5  |1  q^-2     |4  q^2     |5  dq^2
+   -c1  |3  q^-2*qq2d     |5  dq^2     |6  q^2
+   -c1  |3  q^-2     |7  q^2*qs^-2     |4  q^2     |5  dq^2
+    c6  |3  q^-2*q2d     |7  q*qs^-1     |4  q     |5  dq^2     |6  q
+    c1  |3  q^-1     |1  q^-1     |7  q^3*qs^-2     |4  q^2     |5  dq^2
+    c1  |3  q^-1     |1  q^-1     |7  q     |4  q^2     |5  dq^2
+   -c1  |3  q^-1*q2d     |1  q^-1     |7  q^2*qs^-1     |4  q     |5  dq^2     |6  q
+   -c1  |3  q^-1*q2d     |1  q^-1     |7  qs     |4  q     |5  dq^2     |6  q
+    c2  |1  q^-1     |7  qs     |4  q     |5  dq^2
+    c2  |1  q^-1     |7  q^2*qs^-1     |4  q     |5  dq^2
+    c1  |3  q^-2     |5  dq*q     |6  q*dq
+    c1  |3  q^-2     |5  q*dq     |6  dq*q
+   -c1  |3  q^-2*q2di     |7  q*qs^-1     |4  q     |5  dq*q     |6  dq
+   -c1  |3  q^-2*q2di     |7  q*qs^-1     |4  q     |5  q*dq     |6  dq
+    c2  |3  q^-1*q2di     |1  q^-1     |7  q^2*qs^-1     |4  q     |5  q*dq     |6  dq
+    c2  |3  q^-1*q2di     |1  q^-1     |7  qs     |4  q     |5  q*dq     |6  dq
+    c2  |3  q^-1*q2di     |1  q^-1     |7  qs     |4  q     |5  dq*q     |6  dq
+    c2  |3  q^-1*q2di     |1  q^-1     |7  q^2*qs^-1     |4  q     |5  dq*q     |6  dq
+   -c7  |3  qq2di     |6  dq^2
+   -c1  |3  q^-2*qq2di     |5  q^2     |6  dq^2
+   -c1  |3  q^-2*qq2di     |4  q^2     |6  dq^2
+   -c1  |3  q^-1     |1  q^-1     |7  q
+    c1  |3  q^-1     |2  q^-1     |8  q
+
+-----------------------------------------------------------
+# modes | dr1 | dr2 | dr4 | r3x | r3y | zpp | u1 | u2 | phi
+-----------------------------------------------------------
+#-----------------------------
+#     The PES
+#-----------------------------
+
+1.0 | V
+
+end-hamiltonian-section
+end-operator
+
+
+

@@ -1,0 +1,86 @@
+OP_DEFINE-SECTION
+title
+CHD3 rotations test
+end-title
+END-OP_DEFINE-SECTION
+
+PARAMETER-SECTION
+ #  masses
+mC = 12., AMU
+mH = 1.00782504672146, AMU
+mD = 2.01410179262146, AMU
+mCH = mC+mH
+mCD3 = mC+3*mD
+mCHD3 = mH+mCD3
+mass_rv = mH*mCD3/mCHD3
+
+ # molecular parameters
+rCH = 0.721077320917, Angst
+rlong = 1.779874195872, Angst
+rCD = 1.2524401491483, Angst
+aHCD = 109.43342, deg
+
+ # conversions for rotational constants
+cd = COS[PI-aHCD]
+sd = SIN[PI-aHCD]
+cdr = rCD*cd
+sdr = rCD*sd
+p0 = 1.5*mD*sdr^2+3*mD*mCH*cdr^2/mCHD3
+p1 = 6*mD*mH*cdr/mCHD3
+p2 = mCD3*mH/mCHD3
+f0 = 3*mD*sdr^2/2.+3*mD*mC*cdr^2/mCD3
+At = p0+p1*rCH+p2*rCH^2
+As = p0+p1*rlong+p2*rlong^2
+Ct = 3.*mD*sdr^2
+rotA = 0.5/At
+rotAl = 0.5/As
+rotC = 0.5/Ct
+rotCmA = rotC-rotA
+
+ # vibrational potential in r
+req = rCH+3*mD*cdr/mCD3
+vibf=4032.772225, cm-1
+PErv = 0.5*mass_rv*vibf^2
+
+ # rotational potential
+c1 = 512.  # beta potential constant, in cm-1
+c2 = 64.   # alpha potential constant, in cm-1
+c3 = 128.  # gamma potential constant, in cm-1
+PEbe = 4*c1/PI^2, cm-1
+PEal = c2/2.0, cm-1
+PEga = c3/2.0, cm-1
+spc = PEal+PEga, cm-1
+END-PARAMETER-SECTION
+
+LABELS-SECTION
+qprv = q[req]^2
+qpbeta = q[PI/2]^2
+ # my1d[par1,par2,par3] = 1./(par1+par2*x^par3)
+rotcon = my1d[f0,mass_rv,2.,0.,0.]
+cosalp = cos
+singam = sin
+END-LABELS-SECTION
+
+HAMILTONIAN-SECTION
+-------------------------------------------------------
+  modes    |   rv   |  beta  |  alpha  |  gamma
+-------------------------------------------------------
+   1.0     |   KE   |   1    |    1    |   1
+   PErv    |  qprv  |   1    |    1    |   1
+ -0.5*vibf  |   1    |   1    |    1    |   1
+
+  0.5     | rotcon |  j^2   |    1    |   1
+  -rotC    |   1    |   1    |  dq^2   |   1
+   0.5     | rotcon |   1    |  dq^2   |   1
+
+#   rotA    |   1   |  j^2   |    1    |   1
+#  -rotCmA  |   1   |   1    |  dq^2   |   1
+#   PEbe    |   1   | qpbeta |    1    |    1
+#   PEal    |   1   |   1    | cosalp  |    1
+#   PEga    |   1   |   1    |    1    | singam
+#   spc     |   1   |   1    |    1    |    1
+-------------------------------------------------------
+END-HAMILTONIAN-SECTION
+
+END-OPERATOR
+

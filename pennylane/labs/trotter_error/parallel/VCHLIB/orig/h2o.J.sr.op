@@ -1,0 +1,77 @@
+#######################################################################
+#                  h2o.J.sr.op                                        #
+# This is an example for a J>0 KEO in binding coordinates.            #
+# A semi-rigid system is assumed, i.e. potential barriers do not      #
+# allow the molecule to reach singular (here linear) configurations.  #
+# The variable u=cos(theta) is used to describe the A-B-C angle.      #
+# The particular example is for the water molecule.                   #
+# See also inputs/h2o.J.sr.inp and pinputs/h2o.sr.pfit.inp            #
+# A KEO for the non-rigid case is given by threeAtomJ.op              #
+#######################################################################
+
+OP_DEFINE-SECTION
+TITLE
+H2O, J>0, semi-rigid
+END-TITLE
+END-OP_DEFINE-SECTION
+
+PARAMETER-SECTION
+hydrogen_mass = 1.0,H-mass
+oxygen_mass = 15.99491463,AMU
+atomA_mass  = hydrogen_mass   # mass of atom A in molecule A-B-C
+atomB_mass  = oxygen_mass     # mass of atom B in molecule A-B-C
+atomC_mass  = hydrogen_mass   # mass of atom C in molecule A-B-C
+
+M11 = 1.0/atomA_mass+1.0/atomB_mass    # inverted mass for vector 1
+M22 = 1.0/atomB_mass+1.0/atomC_mass    # inverted mass for vector 2
+M12 = 1.0/atomB_mass                   # coupling between vector 1 and vector 2
+mass_r1 = 1.0/M11                      # reduced mass for mode r_1
+mass_r2 = 1.0/M22                      # reduced mass for mode r_2
+jtot = 10                              # may be overwritten in inp file
+j_cent = jtot^2/2.d0*M22+jtot/2.d0*M22
+END-PARAMETER-SECTION
+
+LABELS-SECTION
+V = natpot{h2o.sr.pfit}
+qs1 = qs[1.0]
+END-LABELS-SECTION
+
+
+HAMILTONIAN-SECTION
+------------------------------------------------------
+ modes        | r1     | r2    | u          |    k
+------------------------------------------------------
+ 1.0          | KE     | 1     | 1          |    1
+ 1.0          | 1      | KE    | 1          |    1
+-M12          | dq     | dq    | q          |    1
+-M12          | q^-1   | q^-1  | q          |    1
+-M12/2.0      | dq     | q^-1  | dq*qs1^2   |    1
+-M12/2.0      | dq     | q^-1  | qs1^2*dq   |    1
+-M12/2.0      | q^-1   | dq    | dq*qs1^2   |    1
+-M12/2.0      | q^-1   | dq    | qs1^2*dq   |    1
+-M11/2.0      | q^-2   | 1     | dq*qs1^2*dq   | 1
+-M22/2.0      | 1      | q^-2  | dq*qs1^2*dq   | 1
+ M12          | q^-1   | q^-1  | dq*qs1^2*q*dq | 1
+
+-----------------  J>0  ------------------------------
+ j_cent       | 1      | q^-2  | 1          |  1
+-M22          | 1      | q^-2  | 1          |  q^2
+ M11/2.0      | q^-2   |  1    | qs1^-2     |  q^2
+ M22/2.0      | 1      | q^-2  | qs1^-2     |  q^2
+-M12          | q^-1   | q^-1  | q*qs1^-2   |  q^2
+-M12/2.0      | q^-1   | q^-1  | qs1^-1     |  Jx*q
+-M12/2.0      | q^-1   | q^-1  | qs1^-1     |  q*Jx
+ M22/2.0      | 1      | q^-2  | q*qs1^-1   |  Jx*q
+ M22/2.0      | 1      | q^-2  | q*qs1^-1   |  q*Jx
+-M12          | dq     | q^-1  | qs1        |  Jy
+ M12/2.0      | q^-1   | q^-1  | dq*q*qs1   |  Jy
+ M12/2.0      | q^-1   | q^-1  | q*qs1*dq   |  Jy
+-M22/2.0      | 1      | q^-2  | dq*qs1     |  Jy
+-M22/2.0      | 1      | q^-2  | qs1*dq     |  Jy
+
+------------------ Potential -------------------------
+ 1.0          | V
+------------------------------------------------------
+END-HAMILTONIAN-SECTION
+
+END-OPERATOR

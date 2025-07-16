@@ -1,0 +1,60 @@
+OP_DEFINE-SECTION
+title
+H2 surface scattering
+with higher wall
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_Z = 3674.0
+mass_X = 3674.0
+mass_Y = 3674.0
+m2     = 918.5
+r1     = 1.4011
+alpha  = 1.94012
+aaa    = 0.0110247
+beta   = 0.1
+a      = 7.558912
+b      = 3.779456
+
+binv = PI/b
+ainv = PI/a
+mrot = 0.5/m2/r1/r1
+aabe = 2.0*aaa*beta
+end-parameter-section
+
+HAMILTONIAN-SECTION
+----------------------------------------------------
+  modes   |   Z    |   X    |    Y   |  theta | phi
+----------------------------------------------------
+1.0       |   KE   |  1     |    1   |&   1
+1.0       |   1    |  KE    |    1   |&   1
+1.0       |   1    |  1     |    KE  |&   1
+mrot      |   1    |  1     |    1   |&  j^2
+aabe      |   expz |  cosx  |    1   |& chc*csc
+aabe      |   expz |  1     |   cosy |& chc*css
+aabe      |   expz |  sinx  |    1   |& shc*ssc
+aabe      |   expz |  1     |   siny |& shc*sss
+2.0*aaa   |   expz |  1     |    1   |& chc
+----------------------------------------------------
+end-hamiltonian-section
+
+LABELS-SECTION
+expz = exp [-alpha]
+cosx = cos[2.0*ainv]
+cosy = cos[2.0*binv]
+sinx = sin[2.0*ainv]
+siny = sin[2.0*binv]
+
+chc = coshcosth[0.5*alpha*r1]
+shc = sinhcosth[0.5*alpha*r1]
+csc = cossinthcosphi[ainv*r1]
+css = cossinthsinphi[binv*r1]
+ssc = sinsinthcosphi[ainv*r1]
+sss = sinsinthsinphi[binv*r1]
+end-labels-section
+
+end-operator
+
+
+

@@ -1,0 +1,267 @@
+#-----------------------------------------------------------------------
+#  Uwe Manthe fit NOCl S0 and S1 surfaces
+#-----------------------------------------------------------------------
+
+PARAMETER-SECTION
+theta0 = 127.4, deg
+
+bcrv1_1 = -1.9367  bcrv1_2 =  0.422988  bcrv1_4 =  0.000292122
+bcrv1_6 = -0.00000126308  bcrv1_8 = 0.00000000190287  bcrd1_0 = 2.96549
+bcrd1_2 = -0.106174  bcrd1_4 =  0.0043882  bcrd1_6 = -0.0000664259
+bcrd1_8 =  0.000000340745  bcrd2_1 =  0.0018952  bcrd2_3 =  0.00194226
+bcrd2_5 = -0.0000905982  bcrd2_7 =  0.000000874559  bcrv2_3 =  0.000734114
+bcrv2_5 = -0.00000876393  bcrv2_7 =  0.0000000225527
+bct1_0  = -0.0000526179  bct1_2  = -0.000182922  bct2_0  = -0.0000140509
+bct2_2  = -0.0000490258  bct3_0  =  0.0000000275613  bct3_2  =  0.000000150707
+bct4_0  =  0.000000368383  bct4_2  =  0.00000197362  bct5_0  =  0.00224909
+bct5_2  =  0.0037606  bct6_1  = -0.0000572926  bct6_3  = -0.0000349852
+bct7_1  =  0.000000231472  bct7_3  =  0.000000311248  bct8_1  =  0.000000784579
+bct8_3  =  0.00000103559  bct9_0  =  0.000000150606  bct9_2  =  0.00000108598
+bct9_4  =  0.000000401265
+
+c000 = 0.0384816  c001 = 0.0247875  c002 = 0.0270933  c003 = 0.00126791
+  c004 = 0.00541285  c005 = 0.0313629  c006 = 0.0172449
+c010 = 0.00834237  c011 = 0.00398713 c012 = 0.00783319 c013 = 0.0294887
+  c014 = -0.0154387 c015 = -0.0621984 c016 =  -0.0337951
+c020 = 0.00161625  c021 = -0.000156328 c022 = -0.0189982 c023 = -0.00753297
+  c024 = 0.00383665 c025 = -0.00758225 c026 = -0.00904493
+c030 = -0.00101009  c031 = 0.000619148 c032 = -0.0149812 c033 = -0.0199722
+  c034 = 0.00873013 c035 = 0.0376118 c036 = 0.0221523
+c040 = -0.000368904  c041 = 0.000164037 c042 = -0.00331809 c043 = -0.00567787
+  c044 = 0.00268662 c045 = 0.0134483 c046 = 0.0084585
+c100 = -0.0558666  c101 = -0.0276576 c102 = 0.0934932 c103 = -0.0295638
+  c104 = -0.15436 c105 = 0.0796119 c106 = 0.135121
+c110 = 0.0582169  c111 = 0.0384404 c112 = 0.078114 c113 = 0.185556
+  c114 = -0.0641656 c115 = -0.175976 c116 = -0.0104994
+c120 = 0.052285  c121 = 0.0472724 c122 = -0.216008 c123 = -0.147775
+  c124 = 0.349283 c125 = 0.28458 c126 = 0.00384449
+c130 = 0.0212609  c131 = 0.0290597 c132 = -0.109124 c133 = 0.0310445
+  c134 = 0.262513 c135 = -0.250653 c136 = -0.369466
+c140 = 0.00334178  c141 = 0.0039061 c142 = -0.0110452 c143 = 0.0582029
+  c144 = 0.0679524 c145 = -0.16459 c146 = -0.165337
+c200 = -0.163186  c201 = -0.180535 c202 = 0.04692 c203 = 0.471673
+  c204 = 0.403267 c205 = -0.718071 c206 = -0.761199
+c210 = -0.0290674  c211 = -0.0136172 c212 = -0.108952 c213 = -1.68269
+  c214 = -1.2673 c215 = 3.17648 c216 = 2.92793
+c220 = 0.121228  c221 = 0.202308 c222 = 0.483613 c223 = 1.29095
+  c224 = -0.174483 c225 = -2.4605 c226 = -1.36597
+c230 = 0.107233  c231 = 0.115213 c232 = -0.366102 c233 = 0.812662
+  c234 = 1.76038 c235 = -1.19665 c236 = -1.77392
+c240 = 0.0232767  c241 = 0.0304932 c242 = -0.19455 c243 = -0.0307517
+  c244 = 0.539365 c245 = 0.120203 c246 = -0.251289
+c300 = 0.0838975  c301 = 0.198853 c302 = -0.0994766 c303 = -0.822409
+  c304 = -0.586006 c305 = 1.17402 c306 = 1.17378
+c310 = -0.182047  c311 = -0.245637 c312 = 0.130396 c313 = 2.85439
+  c314 = 2.44277 c315 = -5.36406 c316 = -5.22806
+c320 = -0.227493  c321 = -0.470604 c322 = -0.670555 c323 = -1.66997
+  c324 = 0.268677 c325 = 3.71822 c326 = 2.10678
+c330 = -0.13635  c331 = -0.193843 c332 = 0.626076 c333 = -1.55192
+  c334 = -3.22512 c335 = 3.03851 c336 = 4.01364
+c340 = -0.0262554  c341 = -0.0391291 c342 = 0.312858 c343 = -0.122063
+  c344 = -1.03112 c345 = 0.28978 c346 = 0.878604
+end-parameter-section
+
+HAMILTONIAN-SECTION
+-------------------------------------------------------------
+modes         |  el  |  rd           |  rv           | theta
+-------------------------------------------------------------
+1.0           | S1&1 |  1            |  bcrv1_1*q    |  1
+1.0           | S1&1 |  1            |  bcrv1_2*q^2  |  1
+1.0           | S1&1 |  1            |  bcrv1_4*q^4  |  1
+1.0           | S1&1 |  1            |  bcrv1_6*q^6  |  1
+1.0           | S1&1 |  1            |  bcrv1_8*q^8  |  1
+1.0           | S1&1 |  bcrd1_0      |  1            |  1
+1.0           | S1&1 |  bcrd1_2*q^2  |  1            |  1
+1.0           | S1&1 |  bcrd1_4*q^4  |  1            |  1
+1.0           | S1&1 |  bcrd1_6*q^6  |  1            |  1
+1.0           | S1&1 |  bcrd1_8*q^8  |  1            |  1
+1.0           | S1&1 |  bcrd2_1*q    |  q            | cos
+1.0           | S1&1 |  bcrd2_3*q^3  |  q            | cos
+1.0           | S1&1 |  bcrd2_5*q^5  |  q            | cos
+1.0           | S1&1 |  bcrd2_7*q^7  |  q            | cos
+1.0           | S1&1 |  q            |  bcrv2_3*q^3  | cos
+1.0           | S1&1 |  q            |  bcrv2_5*q^5  | cos
+1.0           | S1&1 |  q            |  bcrv2_7*q^7  | cos
+bct1_0        | S1&1 |  q^4          |  q^2          | 1
+bct1_2        | S1&1 |  q^4          |  q^2          | cos^2
+bct2_0        | S1&1 |  q^2          |  q^4          | 1
+bct2_2        | S1&1 |  q^2          |  q^4          | cos^2
+bct3_0        | S1&1 |  q^2          |  q^6          | 1
+bct3_2        | S1&1 |  q^2          |  q^6          | cos^2
+bct4_0        | S1&1 |  q^6          |  q^2          | 1
+bct4_2        | S1&1 |  q^6          |  q^2          | cos^2
+bct5_0        | S1&1 |  q^2          |  q^2          | 1
+bct5_2        | S1&1 |  q^2          |  q^2          | cos^2
+bct6_1        | S1&1 |  q^3          |  q^3          | cos
+bct6_3        | S1&1 |  q^3          |  q^3          | cos^3
+bct7_1        | S1&1 |  q^3          |  q^5          | cos
+bct7_3        | S1&1 |  q^3          |  q^5          | cos^3
+bct8_1        | S1&1 |  q^5          |  q^3          | cos
+bct8_3        | S1&1 |  q^5          |  q^3          | cos^3
+bct9_0        | S1&1 |  q^4          |  q^4          | 1
+bct9_2        | S1&1 |  q^4          |  q^4          | cos^2
+bct9_4        | S1&1 |  q^4          |  q^4          | cos^4
+1.0           | S2&2 |  1          |  v:NO   |   1
+c000          | S2&2 | bcrd^0*1qd  | bcrv^0  | bcw^0
+c001          | S2&2 | bcrd^0*1qd  | bcrv^0  | bcw^1
+c002          | S2&2 | bcrd^0*1qd  | bcrv^0  | bcw^2
+c003          | S2&2 | bcrd^0*1qd  | bcrv^0  | bcw^3
+c004          | S2&2 | bcrd^0*1qd  | bcrv^0  | bcw^4
+c005          | S2&2 | bcrd^0*1qd  | bcrv^0  | bcw^5
+c006          | S2&2 | bcrd^0*1qd  | bcrv^0  | bcw^6
+c010          | S2&2 | bcrd^1*1qd  | bcrv^0  | bcw^0
+c011          | S2&2 | bcrd^1*1qd  | bcrv^0  | bcw^1
+c012          | S2&2 | bcrd^1*1qd  | bcrv^0  | bcw^2
+c013          | S2&2 | bcrd^1*1qd  | bcrv^0  | bcw^3
+c014          | S2&2 | bcrd^1*1qd  | bcrv^0  | bcw^4
+c015          | S2&2 | bcrd^1*1qd  | bcrv^0  | bcw^5
+c016          | S2&2 | bcrd^1*1qd  | bcrv^0  | bcw^6
+c020          | S2&2 | bcrd^2*1qd  | bcrv^0  | bcw^0
+c021          | S2&2 | bcrd^2*1qd  | bcrv^0  | bcw^1
+c022          | S2&2 | bcrd^2*1qd  | bcrv^0  | bcw^2
+c023          | S2&2 | bcrd^2*1qd  | bcrv^0  | bcw^3
+c024          | S2&2 | bcrd^2*1qd  | bcrv^0  | bcw^4
+c025          | S2&2 | bcrd^2*1qd  | bcrv^0  | bcw^5
+c026          | S2&2 | bcrd^2*1qd  | bcrv^0  | bcw^6
+c030          | S2&2 | bcrd^3*1qd  | bcrv^0  | bcw^0
+c031          | S2&2 | bcrd^3*1qd  | bcrv^0  | bcw^1
+c032          | S2&2 | bcrd^3*1qd  | bcrv^0  | bcw^2
+c033          | S2&2 | bcrd^3*1qd  | bcrv^0  | bcw^3
+c034          | S2&2 | bcrd^3*1qd  | bcrv^0  | bcw^4
+c035          | S2&2 | bcrd^3*1qd  | bcrv^0  | bcw^5
+c036          | S2&2 | bcrd^3*1qd  | bcrv^0  | bcw^6
+c040          | S2&2 | bcrd^4*1qd  | bcrv^0  | bcw^0
+c041          | S2&2 | bcrd^4*1qd  | bcrv^0  | bcw^1
+c042          | S2&2 | bcrd^4*1qd  | bcrv^0  | bcw^2
+c043          | S2&2 | bcrd^4*1qd  | bcrv^0  | bcw^3
+c044          | S2&2 | bcrd^4*1qd  | bcrv^0  | bcw^4
+c045          | S2&2 | bcrd^4*1qd  | bcrv^0  | bcw^5
+c046          | S2&2 | bcrd^4*1qd  | bcrv^0  | bcw^6
+c100          | S2&2 | bcrd^0*1qd  | bcrv^1  | bcw^0
+c101          | S2&2 | bcrd^0*1qd  | bcrv^1  | bcw^1
+c102          | S2&2 | bcrd^0*1qd  | bcrv^1  | bcw^2
+c103          | S2&2 | bcrd^0*1qd  | bcrv^1  | bcw^3
+c104          | S2&2 | bcrd^0*1qd  | bcrv^1  | bcw^4
+c105          | S2&2 | bcrd^0*1qd  | bcrv^1  | bcw^5
+c106          | S2&2 | bcrd^0*1qd  | bcrv^1  | bcw^6
+c110          | S2&2 | bcrd^1*1qd  | bcrv^1  | bcw^0
+c111          | S2&2 | bcrd^1*1qd  | bcrv^1  | bcw^1
+c112          | S2&2 | bcrd^1*1qd  | bcrv^1  | bcw^2
+c113          | S2&2 | bcrd^1*1qd  | bcrv^1  | bcw^3
+c114          | S2&2 | bcrd^1*1qd  | bcrv^1  | bcw^4
+c115          | S2&2 | bcrd^1*1qd  | bcrv^1  | bcw^5
+c116          | S2&2 | bcrd^1*1qd  | bcrv^1  | bcw^6
+c120          | S2&2 | bcrd^2*1qd  | bcrv^1  | bcw^0
+c121          | S2&2 | bcrd^2*1qd  | bcrv^1  | bcw^1
+c122          | S2&2 | bcrd^2*1qd  | bcrv^1  | bcw^2
+c123          | S2&2 | bcrd^2*1qd  | bcrv^1  | bcw^3
+c124          | S2&2 | bcrd^2*1qd  | bcrv^1  | bcw^4
+c125          | S2&2 | bcrd^2*1qd  | bcrv^1  | bcw^5
+c126          | S2&2 | bcrd^2*1qd  | bcrv^1  | bcw^6
+c130          | S2&2 | bcrd^3*1qd  | bcrv^1  | bcw^0
+c131          | S2&2 | bcrd^3*1qd  | bcrv^1  | bcw^1
+c132          | S2&2 | bcrd^3*1qd  | bcrv^1  | bcw^2
+c133          | S2&2 | bcrd^3*1qd  | bcrv^1  | bcw^3
+c134          | S2&2 | bcrd^3*1qd  | bcrv^1  | bcw^4
+c135          | S2&2 | bcrd^3*1qd  | bcrv^1  | bcw^5
+c136          | S2&2 | bcrd^3*1qd  | bcrv^1  | bcw^6
+c140          | S2&2 | bcrd^4*1qd  | bcrv^1  | bcw^0
+c141          | S2&2 | bcrd^4*1qd  | bcrv^1  | bcw^1
+c142          | S2&2 | bcrd^4*1qd  | bcrv^1  | bcw^2
+c143          | S2&2 | bcrd^4*1qd  | bcrv^1  | bcw^3
+c144          | S2&2 | bcrd^4*1qd  | bcrv^1  | bcw^4
+c145          | S2&2 | bcrd^4*1qd  | bcrv^1  | bcw^5
+c146          | S2&2 | bcrd^4*1qd  | bcrv^1  | bcw^6
+c200          | S2&2 | bcrd^0*1qd  | bcrv^2  | bcw^0
+c201          | S2&2 | bcrd^0*1qd  | bcrv^2  | bcw^1
+c202          | S2&2 | bcrd^0*1qd  | bcrv^2  | bcw^2
+c203          | S2&2 | bcrd^0*1qd  | bcrv^2  | bcw^3
+c204          | S2&2 | bcrd^0*1qd  | bcrv^2  | bcw^4
+c205          | S2&2 | bcrd^0*1qd  | bcrv^2  | bcw^5
+c206          | S2&2 | bcrd^0*1qd  | bcrv^2  | bcw^6
+c210          | S2&2 | bcrd^1*1qd  | bcrv^2  | bcw^0
+c211          | S2&2 | bcrd^1*1qd  | bcrv^2  | bcw^1
+c212          | S2&2 | bcrd^1*1qd  | bcrv^2  | bcw^2
+c213          | S2&2 | bcrd^1*1qd  | bcrv^2  | bcw^3
+c214          | S2&2 | bcrd^1*1qd  | bcrv^2  | bcw^4
+c215          | S2&2 | bcrd^1*1qd  | bcrv^2  | bcw^5
+c216          | S2&2 | bcrd^1*1qd  | bcrv^2  | bcw^6
+c220          | S2&2 | bcrd^2*1qd  | bcrv^2  | bcw^0
+c221          | S2&2 | bcrd^2*1qd  | bcrv^2  | bcw^1
+c222          | S2&2 | bcrd^2*1qd  | bcrv^2  | bcw^2
+c223          | S2&2 | bcrd^2*1qd  | bcrv^2  | bcw^3
+c224          | S2&2 | bcrd^2*1qd  | bcrv^2  | bcw^4
+c225          | S2&2 | bcrd^2*1qd  | bcrv^2  | bcw^5
+c226          | S2&2 | bcrd^2*1qd  | bcrv^2  | bcw^6
+c230          | S2&2 | bcrd^3*1qd  | bcrv^2  | bcw^0
+c231          | S2&2 | bcrd^3*1qd  | bcrv^2  | bcw^1
+c232          | S2&2 | bcrd^3*1qd  | bcrv^2  | bcw^2
+c233          | S2&2 | bcrd^3*1qd  | bcrv^2  | bcw^3
+c234          | S2&2 | bcrd^3*1qd  | bcrv^2  | bcw^4
+c235          | S2&2 | bcrd^3*1qd  | bcrv^2  | bcw^5
+c236          | S2&2 | bcrd^3*1qd  | bcrv^2  | bcw^6
+c240          | S2&2 | bcrd^4*1qd  | bcrv^2  | bcw^0
+c241          | S2&2 | bcrd^4*1qd  | bcrv^2  | bcw^1
+c242          | S2&2 | bcrd^4*1qd  | bcrv^2  | bcw^2
+c243          | S2&2 | bcrd^4*1qd  | bcrv^2  | bcw^3
+c244          | S2&2 | bcrd^4*1qd  | bcrv^2  | bcw^4
+c245          | S2&2 | bcrd^4*1qd  | bcrv^2  | bcw^5
+c246          | S2&2 | bcrd^4*1qd  | bcrv^2  | bcw^6
+c300          | S2&2 | bcrd^0*1qd  | bcrv^3  | bcw^0
+c301          | S2&2 | bcrd^0*1qd  | bcrv^3  | bcw^1
+c302          | S2&2 | bcrd^0*1qd  | bcrv^3  | bcw^2
+c303          | S2&2 | bcrd^0*1qd  | bcrv^3  | bcw^3
+c304          | S2&2 | bcrd^0*1qd  | bcrv^3  | bcw^4
+c305          | S2&2 | bcrd^0*1qd  | bcrv^3  | bcw^5
+c306          | S2&2 | bcrd^0*1qd  | bcrv^3  | bcw^6
+c310          | S2&2 | bcrd^1*1qd  | bcrv^3  | bcw^0
+c311          | S2&2 | bcrd^1*1qd  | bcrv^3  | bcw^1
+c312          | S2&2 | bcrd^1*1qd  | bcrv^3  | bcw^2
+c313          | S2&2 | bcrd^1*1qd  | bcrv^3  | bcw^3
+c314          | S2&2 | bcrd^1*1qd  | bcrv^3  | bcw^4
+c315          | S2&2 | bcrd^1*1qd  | bcrv^3  | bcw^5
+c316          | S2&2 | bcrd^1*1qd  | bcrv^3  | bcw^6
+c320          | S2&2 | bcrd^2*1qd  | bcrv^3  | bcw^0
+c321          | S2&2 | bcrd^2*1qd  | bcrv^3  | bcw^1
+c322          | S2&2 | bcrd^2*1qd  | bcrv^3  | bcw^2
+c323          | S2&2 | bcrd^2*1qd  | bcrv^3  | bcw^3
+c324          | S2&2 | bcrd^2*1qd  | bcrv^3  | bcw^4
+c325          | S2&2 | bcrd^2*1qd  | bcrv^3  | bcw^5
+c326          | S2&2 | bcrd^2*1qd  | bcrv^3  | bcw^6
+c330          | S2&2 | bcrd^3*1qd  | bcrv^3  | bcw^0
+c331          | S2&2 | bcrd^3*1qd  | bcrv^3  | bcw^1
+c332          | S2&2 | bcrd^3*1qd  | bcrv^3  | bcw^2
+c333          | S2&2 | bcrd^3*1qd  | bcrv^3  | bcw^3
+c334          | S2&2 | bcrd^3*1qd  | bcrv^3  | bcw^4
+c335          | S2&2 | bcrd^3*1qd  | bcrv^3  | bcw^5
+c336          | S2&2 | bcrd^3*1qd  | bcrv^3  | bcw^6
+c340          | S2&2 | bcrd^4*1qd  | bcrv^3  | bcw^0
+c341          | S2&2 | bcrd^4*1qd  | bcrv^3  | bcw^1
+c342          | S2&2 | bcrd^4*1qd  | bcrv^3  | bcw^2
+c343          | S2&2 | bcrd^4*1qd  | bcrv^3  | bcw^3
+c344          | S2&2 | bcrd^4*1qd  | bcrv^3  | bcw^4
+c345          | S2&2 | bcrd^4*1qd  | bcrv^3  | bcw^5
+c346          | S2&2 | bcrd^4*1qd  | bcrv^3  | bcw^6
+------------------------------------------------------
+end-hamiltonian-section
+
+LABELS-SECTION
+bcrd = exp1[-1.5,4.315]
+1qd = exp[-1.5,4.315]
+bcrv = q[2.136]
+bcw=expcos[-1.1,theta0]
+end-labels-section
+
+end-operator
+
+
+
+
+
+
+
+
+
+
+
+

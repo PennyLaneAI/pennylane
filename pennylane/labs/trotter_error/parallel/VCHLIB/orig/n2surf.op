@@ -1,0 +1,84 @@
+OP_DEFINE-SECTION
+title
+N2/LiF (001) surface scattering
+original surface parameters
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_z = 51065.27
+mass_x = 51065.27
+mass_y = 51065.27
+m2     = 12766.32
+r1     = 2.06735
+alpha  = 1.94012
+aaa    = 0.002572451
+beta   = 0.10
+a      = 5.3669
+b      = 5.3669
+
+binv = PI/b
+ainv = PI/a
+mrot = 0.5/m2/r1/r1
+aabe = 2.0*aaa*beta
+end-parameter-section
+
+LABELS-SECTION
+expz = exp [-alpha]
+cosx = cos[2.0*ainv]
+cosy = cos[2.0*binv]
+sinx = sin[2.0*ainv]
+siny = sin[2.0*binv]
+
+chc = coshcosth[0.5*alpha*r1]
+shc = sinhcosth[0.5*alpha*r1]
+csc = cossinthcosphi[ainv*r1]
+css = cossinthsinphi[binv*r1]
+ssc = sinsinthcosphi[ainv*r1]
+sss = sinsinthsinphi[binv*r1]
+end-labels-section
+
+
+HAMILTONIAN-SECTION
+----------------------------------------------------
+  modes   |   z   |   x    |    y   |  theta | phi
+----------------------------------------------------
+1.0       |  KE   |  1     |    1   |&   1
+1.0       |  1    |  KE    |    1   |&   1
+1.0       |  1    |  1     |    KE  |&   1
+mrot      |  1    |  1     |    1   |&  j^2
+aabe      |  expz |  cosx  |    1   |& chc*csc
+aabe      |  expz |  1     |   cosy |& chc*css
+aabe      |  expz |  sinx  |    1   |& shc*ssc
+aabe      |  expz |  1     |   siny |& shc*sss
+2.0*aaa   |  expz |  1     |    1   |& chc
+----------------------------------------------------
+end-hamiltonian-section
+
+
+HAMILTONIAN-SECTION_rot
+------------------------
+  modes   |  theta | phi
+------------------------
+mrot      |&  j^2
+------------------------
+end-hamiltonian-section
+
+
+HAMILTONIAN-SECTION_parallel
+----------------------------
+  modes   |   x    |    y
+----------------------------
+1.0       |  KE    |    1
+1.0       |  1     |    KE
+----------------------------
+end-hamiltonian-section
+
+end-operator
+
+
+
+
+
+
+

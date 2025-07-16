@@ -1,0 +1,18 @@
+OP_DEFINE-SECTION
+title
+1D harmonic oscillator potential
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_x = 1.0 , au
+omega  = 2.0 , au
+end-parameter-section
+
+HAMILTONIAN-SECTION
+  modes             |  x
+1.0                 |  KE
+mass_x*omega^2/2.0  |  q^2
+end-hamiltonian-section
+
+end-operator

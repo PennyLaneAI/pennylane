@@ -1,0 +1,405 @@
+##############################################################
+# H5O2+ kinetic energy operator in                           #
+#       polyspherical coordinates                            #
+#       Jacobi: R = CM(water1) - CM(water2)                  #
+#       see JCP 127, 184302 (2007)                           #
+#                                         OVR, june 2006     #
+##############################################################
+
+OP_DEFINE-SECTION
+title
+H5O2+ polyspherical
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mp = 1.0,h-mass
+mo = 16.0,amu
+mh = 0.973,h-mass
+muR = 9.0,amu
+mur1 = 1.77777,amu
+mur2 = 0.5*mp
+
+cnst = 0.1
+
+e0 = 0.00074387266881904834
+
+R0 = 4.70312537
+R0i = 1.0/R0^2
+r10 = 1.06542383
+r20 = 2.97585504
+r10i = 1.0/r10^2
+r20i = 1.0/r20^2
+lfact = -0.5/muR*R0i - 0.5/mur1*r10i
+end-parameter-section
+
+LABELS-SECTION
+pol2 = qs[1]^2
+pol2i = qs[1]^-2
+sqpol2 = qs[1]
+qs1 = qs[1]
+sqpol2i = qs[1]^-1
+
+sin2a = sin[2.0,0.0]
+cos2a = cos[2.0,0.0]
+gaussexc = gauss[5.0,0.3]
+
+czaxy = readsrf{clusters/v1_clu_zaxy ascii}
+clAlB = readsrf{clusters/v1_clu_lalb ascii}
+cr1r2vA = readsrf{clusters/v1_clu_r1r2vA ascii}
+cr1r2vB = readsrf{clusters/v1_clu_r1r2vB ascii}
+cRuaub = readsrf{clusters/v1_clu_Ruaub ascii}
+
+ Vzaxylalb  = natpot{natpot.zaxy_lalb}
+ Vzaxyr1r2vA = natpot{natpot.zaxy_r1r2vA}
+ Vzaxyr1r2vB = natpot{natpot.zaxy_r1r2vB}
+ VzaxyRuaub = natpot{natpot.zaxy_Ruaub}
+
+ VRuaublalb = natpot{natpot.Ruaub_lalb}
+ VRuaubr1r2vA = natpot{natpot.Ruaub_r1r2vA}
+ VRuaubr1r2vB = natpot{natpot.Ruaub_r1r2vB}
+
+ Vlalbr1r2vA = natpot{natpot.lalb_r1r2vA}
+ Vlalbr1r2vB = natpot{natpot.lalb_r1r2vB}
+
+ Vr1r2vAr1r2vB = natpot{natpot.r1r2vA_r1r2vB}
+
+ VzRuaublalb = natpot{natpot.z_Ruaub_lalb}
+
+end-labels-section
+
+
+------------------------------------------------------------------------------------
+HAMILTONIAN-SECTION
+------------------------------------------------------------------------------------
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+------------------------------------------------------------------------------------
+#            1   2   3   4   5     6     7    8    9   10    11    12   13   14   15
+------------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------
+# Part I: Radial and cartesian part
+-------------------------------------------------------------------------
+
+# x,y,z coordinates of the central proton, the z axis points along
+# the line connecting both water molecules
+-0.5/mh                |1 dq^2
+-0.5/mh                |2 dq^2
+-0.5/mh                |5 dq^2
+
+# Distance between both centers of mass
+-0.5/muR               |4 dq^2
+
+# Wat A vectors
+-0.5/mur1              |6 dq^2
+-0.5/mur2              |7 dq^2
+
+# Wat B vectors
+-0.5/mur1              |11 dq^2
+-0.5/mur2              |12 dq^2
+
+
+
+-------------------------------------------------------------------------
+# Part II: Angular part
+-------------------------------------------------------------------------
+# T_A^2
+-0.5/muR               |4 q^-2     |9 dq*pol2*dq
+
+-0.5/muR               |4 q^-2     |9 pol2i |3 dq^2
+-0.5/muR               |4 q^-2     |9 pol2i |10 dq^2
+-1.0/muR               |4 q^-2     |9 pol2i*q |3 dq |10 dq
+
+-0.5/mur2              |7 q^-2     |9 dq*pol2*dq
+-0.5/mur2              |7 q^-2     |9 pol2i |3 dq^2
+-0.5/mur2              |7 q^-2     |9 pol2i |10 dq^2
+-1.0/mur2              |7 q^-2     |9 pol2i*q |3 dq |10 dq
+
+# Terms in x,y
+
+-0.5/muR               |4 q^-2     |9 pol2i |1 q^2 |2 dq^2
+-0.5/muR               |4 q^-2     |9 pol2i |1 dq^2 |2 q^2
+ 0.5/muR               |4 q^-2     |9 pol2i |1 q*dq |2 dq*q
+ 0.5/muR               |4 q^-2     |9 pol2i |1 dq*q |2 q*dq
+-1.0/muR               |4 q^-2     |9 pol2i |1 q |2 dq |3 dq
+ 1.0/muR               |4 q^-2     |9 pol2i |1 dq |2 q |3 dq
+-1.0/muR               |4 q^-2     |9 pol2i*q |1 q |2 dq |10 dq
+ 1.0/muR               |4 q^-2     |9 pol2i*q |1 dq |2 q |10 dq
+
+-0.5/mur2              |7 q^-2     |9 pol2i |1 q^2 |2 dq^2
+-0.5/mur2              |7 q^-2     |9 pol2i |1 dq^2 |2 q^2
+ 0.5/mur2              |7 q^-2     |9 pol2i |1 q*dq |2 dq*q
+ 0.5/mur2              |7 q^-2     |9 pol2i |1 dq*q |2 q*dq
+-1.0/mur2              |7 q^-2     |9 pol2i  |3 dq |1 q |2 dq
+ 1.0/mur2              |7 q^-2     |9 pol2i  |3 dq |1 dq |2 q
+-1.0/mur2              |7 q^-2     |9 pol2i*q |1 q |2 dq |10 dq
+ 1.0/mur2              |7 q^-2     |9 pol2i*q |1 dq |2 q |10 dq
+
+# T_B^2
+-0.5/muR               |4 q^-2     |14 dq*pol2*dq
+-0.5/muR               |4 q^-2     |14 pol2i |3 dq^2
+-0.5/muR               |4 q^-2     |14 pol2i |15 dq^2
+ 1.0/muR               |4 q^-2     |14 pol2i*q |3 dq |15 dq
+
+##################
+
+-0.5/mur2              |12 q^-2    |14 dq*pol2*dq
+-0.5/mur2              |12 q^-2    |14 pol2i |3 dq^2
+-0.5/mur2              |12 q^-2    |14 pol2i |15 dq^2
+ 1.0/mur2              |12 q^-2    |14 pol2i*q |3 dq |15 dq
+
+# T_2LALB
+ 1.0/muR               |4 q^-2    |3 dq^2
+ 1.0/muR               |4 q^-2    |9 q*sqpol2i |14 q*sqpol2i |3 dq*cos*dq
+-1.0/muR               |4 q^-2    |9 q*sqpol2i |14 sqpol2i |3 cdq |15 dq
+ 1.0/muR               |4 q^-2    |9 sqpol2i   |14 q*sqpol2i |3 cdq |10 dq
+-1.0/muR               |4 q^-2    |3 cos |9 sqpol2i |14 sqpol2i |10 dq |15 dq
+
+# sign
+-0.5/muR               |4 q^-2    |3 sin |9 sqpol2i |14 qs1*dq |10 dq
+-0.5/muR               |4 q^-2    |3 sin |9 sqpol2i |14 dq*qs1 |10 dq
+ 0.5/muR               |4 q^-2    |3 sin |14 sqpol2i |9  qs1*dq |15 dq
+ 0.5/muR               |4 q^-2    |3 sin |14 sqpol2i |9  dq*qs1 |15 dq
+
+-0.5/muR               |4 q^-2    |9 q*sqpol2i |3 dq*sin |14 sqpol2*dq
+-0.5/muR               |4 q^-2    |9 q*sqpol2i |14 dq*sqpol2 |3 sin*dq
+-0.5/muR               |4 q^-2    |14 q*sqpol2i |3 dq*sin |9 sqpol2*dq
+-0.5/muR               |4 q^-2    |14 q*sqpol2i |9 dq*sqpol2 |3 sin*dq
+-0.5/muR               |4 q^-2    |3 cos |9 dq*sqpol2 |14 sqpol2*dq
+-0.5/muR               |4 q^-2    |3 cos |14 dq*sqpol2 |9 sqpol2*dq
+
+#################
+ 1.0/muR               |4 q^-2    |3 dq |1 q |2 dq
+-1.0/muR               |4 q^-2    |3 dq |1 dq |2 q
+ 1.0/muR               |4 q^-2    |9 q*sqpol2i |14 q*sqpol2i |3 cdq |1 q |2 dq
+-1.0/muR               |4 q^-2    |9 q*sqpol2i |14 q*sqpol2i |3 cdq |1 dq |2 q
+-1.0/muR      |4 q^-2    |14 sqpol2i   |9 q*sqpol2i |3 cos |15 dq |1 q |2 dq
+ 1.0/muR      |4 q^-2    |14 sqpol2i   |9 q*sqpol2i |3 cos |15 dq |1 dq |2 q
+-0.5/muR               |4 q^-2    |9 q*sqpol2i  |14 sqpol2*dq |3 sin |1 q |2 dq
+ 0.5/muR               |4 q^-2    |9 q*sqpol2i  |14 sqpol2*dq |3 sin |1 dq |2 q
+-0.5/muR               |4 q^-2    |9 q*sqpol2i  |14 dq*sqpol2 |3 sin |1 q |2 dq
+ 0.5/muR               |4 q^-2    |9 q*sqpol2i  |14 dq*sqpol2 |3 sin |1 dq |2 q
+
+# T_L1AL1A
+-0.5/mur2              |7 q^-2    |8 dq*pol2*dq
+-0.5/mur2              |7 q^-2    |8 pol2i |10 dq^2
+-0.5/mur1              |6 q^-2    |8 dq*pol2*dq
+-0.5/mur1              |6 q^-2    |8 pol2i |10 dq^2
+
+# T_-2LAL1A
+ 1.0/mur2              |7 q^-2    |10 dq^2
+-1.0/mur2              |7 q^-2    |8 q*sqpol2i |9 sqpol2i  |3 dq |10 cdq
+ 0.5/mur2              |7 q^-2    |10 sin |9 sqpol2i  |3 dq |8 qs1*dq
+ 0.5/mur2              |7 q^-2    |10 sin |9 sqpol2i  |3 dq |8 dq*qs1
+-1.0/mur2              |7 q^-2    |8 q*sqpol2i |9 q*sqpol2i |10 dq*cos*dq
+ 0.5/mur2              |7 q^-2    |8 q*sqpol2i |10 dq*sin |9 sqpol2*dq
+ 0.5/mur2              |7 q^-2    |8 q*sqpol2i |9 dq*sqpol2 |10 sin*dq
+ 0.5/mur2              |7 q^-2    |9 q*sqpol2i |10 dq*sin |8 sqpol2*dq
+ 0.5/mur2              |7 q^-2    |9 q*sqpol2i |8 dq*sqpol2 |10 sin*dq
+ 0.5/mur2              |7 q^-2    |10 cos |8 dq*sqpol2 |9 sqpol2*dq
+ 0.5/mur2              |7 q^-2    |10 cos |9 dq*sqpol2 |8 sqpol2*dq
+
+# Terms in x y
+-1.0/mur2              |7 q^-2    |8 q*sqpol2i |9 sqpol2i  |1 q |2 dq |10 cdq
+ 1.0/mur2              |7 q^-2    |8 q*sqpol2i |9 sqpol2i  |1 dq |2 q  |10 cdq
+ 0.5/mur2              |7 q^-2    |10 sin |9 sqpol2i |1 q |2 dq |8 qs1*dq
+-0.5/mur2              |7 q^-2    |10 sin |9 sqpol2i |1 dq |2 q |8 qs1*dq
+ 0.5/mur2              |7 q^-2    |10 sin |9 sqpol2i |1 q |2 dq |8 dq*qs1
+-0.5/mur2              |7 q^-2    |10 sin |9 sqpol2i |1 dq |2 q |8 dq*qs1
+# T_L1BL1B
+-0.5/mur2              |12 q^-2   |13 dq*pol2*dq
+-0.5/mur2              |12 q^-2   |13 pol2i |15 dq^2
+-0.5/mur1              |11 q^-2   |13 dq*pol2*dq
+-0.5/mur1              |11 q^-2   |13 pol2i |15 dq^2
+
+# T_-2LBL1B
+ 1.0/mur2              |12 q^-2   |15 dq^2
+ 1.0/mur2              |12 q^-2   |13 q*sqpol2i |14 sqpol2i  |3 dq |15 cdq
+
+-0.5/mur2              |12 q^-2   |15 sin |14 sqpol2i  |3 dq |13 qs1*dq
+-0.5/mur2              |12 q^-2   |15 sin |14 sqpol2i  |3 dq |13 dq*qs1
+
+-1.0/mur2              |12 q^-2   |13 q*sqpol2i |14 q*sqpol2i |15 dq*cos*dq
+ 0.5/mur2              |12 q^-2   |13 q*sqpol2i |15 dq*sin |14 sqpol2*dq
+ 0.5/mur2              |12 q^-2   |13 q*sqpol2i |14 dq*sqpol2 |15 sin*dq
+ 0.5/mur2              |12 q^-2   |14 q*sqpol2i |15 dq*sin |13 sqpol2*dq
+ 0.5/mur2              |12 q^-2   |14 q*sqpol2i |13 dq*sqpol2 |15 sin*dq
+ 0.5/mur2              |12 q^-2   |15 cos |13 dq*sqpol2 |14 sqpol2*dq
+ 0.5/mur2              |12 q^-2   |15 cos |14 dq*sqpol2 |13 sqpol2*dq
+
+-------------------------------------------------------------------------
+# Part III: Previously missing terms of the central proton
+-------------------------------------------------------------------------
+#################
+ 1.0/muR               |4 q^-2   |1 q^2 |2 dq^2
+ 1.0/muR               |4 q^-2   |1 dq^2 |2 q^2
+-1.0/muR               |4 q^-2   |1 q*dq |2 dq*q
+-1.0/muR               |4 q^-2   |1 dq*q |2 q*dq
+#################
+
+-0.5/muR               |4 q^-2    |2 q^2 |5 dq^2
+-0.5/muR               |4 q^-2    |5 q^2 |2 dq^2
+
+-0.5/muR               |4 q^-2    |1 q^2 |5 dq^2
+-0.5/muR               |4 q^-2    |5 q^2 |1 dq^2
+
+-0.5/muR               |4 q^-2    |1 q^2 |2 dq^2
+-0.5/muR               |4 q^-2    |2 q^2 |1 dq^2
+
+ 0.5/muR               |4 q^-2    |2 q*dq   |5 dq*q
+ 0.5/muR               |4 q^-2    |5 q*dq   |2 dq*q
+
+ 0.5/muR               |4 q^-2    |1 q*dq   |5 dq*q
+ 0.5/muR               |4 q^-2    |5 q*dq   |1 dq*q
+
+ 0.5/muR               |4 q^-2    |1 q*dq   |2 dq*q
+ 0.5/muR               |4 q^-2    |2 q*dq   |1 dq*q
+-------------------------------------------------------------------------
+-1.0/muR               |4 q^-2    |9 q*sqpol2i |3 dq         |2 q  |5 dq
+-1.0/muR               |4 q^-2    |9 sqpol2i |10 dq          |2 q  |5 dq
+ 1.0/muR               |4 q^-2    |14 q*sqpol2i |3 cdq       |2 q  |5 dq
+-0.5/muR               |4 q^-2    |3 sin |14 qs1*dq           |2 q  |5 dq
+-0.5/muR               |4 q^-2    |3 sin |14 dq*qs1           |2 q  |5 dq
+-1.0/muR               |4 q^-2    |3 cos |14 sqpol2i |15 dq  |2 q  |5 dq
+
+ 1.0/muR               |4 q^-2    |9 q*sqpol2i |3 dq         |5 q  |2 dq
+ 1.0/muR               |4 q^-2    |9 sqpol2i |10 dq          |5 q  |2 dq
+-1.0/muR               |4 q^-2    |14 q*sqpol2i |3 cdq       |5 q  |2 dq
+ 0.5/muR               |4 q^-2    |3 sin |14 qs1*dq          |5 q  |2 dq
+ 0.5/muR               |4 q^-2    |3 sin |14 dq*qs1          |5 q  |2 dq
+ 1.0/muR               |4 q^-2    |3 cos |14 sqpol2i |15 dq  |5 q  |2 dq
+
+####################
+-0.5/muR               |4 q^-2    |9 q*sqpol2i      |1 q |2 dq*q |5 dq
+-0.5/muR               |4 q^-2    |9 q*sqpol2i      |1 q |2 q*dq |5 dq
+ 1.0/muR               |4 q^-2    |9 q*sqpol2i      |1 q |2 dq^2 |5 q
+ 1.0/muR               |4 q^-2    |9 q*sqpol2i      |1 dq |2 q^2 |5 dq
+-0.5/muR               |4 q^-2    |9 q*sqpol2i      |1 dq |2 q*dq |5 q
+-0.5/muR               |4 q^-2    |9 q*sqpol2i      |1 dq |2 dq*q |5 q
+####################
+
+ 0.5/muR               |4 q^-2    |9 qs1*dq                 |5 q  |1 dq
+ 0.5/muR               |4 q^-2    |9 dq*qs1                 |5 q  |1 dq
+ 1.0/muR               |4 q^-2    |3 sdq |14 q*sqpol2i      |5 q  |1 dq
+ 0.5/muR               |4 q^-2    |3 cos |14 qs1*dq         |5 q  |1 dq
+ 0.5/muR               |4 q^-2    |3 cos |14 dq*qs1         |5 q  |1 dq
+-1.0/muR               |4 q^-2    |3 sin |14 sqpol2i |15 dq |5 q  |1 dq
+
+-0.5/muR               |4 q^-2    |9 qs1*dq                 |1 q  |5 dq
+-0.5/muR               |4 q^-2    |9 dq*qs1                 |1 q  |5 dq
+-1.0/muR               |4 q^-2    |3 sdq |14 q*sqpol2i      |1 q  |5 dq
+-0.5/muR               |4 q^-2    |3 cos |14 dq*qs1         |1 q  |5 dq
+-0.5/muR               |4 q^-2    |3 cos |14 qs1*dq         |1 q  |5 dq
+ 1.0/muR               |4 q^-2    |3 sin |14 sqpol2i |15 dq |1 q  |5 dq
+
+
+-------------------------------------------------------------------------
+# Part IV: Potential Energy
+-------------------------------------------------------------------------
+
+# Constant reference-point energy
+ e0     | 1  | 1  | 1  | 1  | 1  | 1  | 1  | 1  | 1  | 1  | 1  | 1  | 1  | 1  | 1
+
+# Zeroth order clusters
+ 1.0    |5&3&1&2 czaxy
+ 1.0    |10&15 clAlB
+ 1.0    |6&7&8 cr1r2vA
+ 1.0    |11&12&13 cr1r2vB
+ 1.0    |4&9&14 cRuaub
+
+ 1.0    | VzRuaublalb
+# First order clusters
+ 1.0    | Vzaxylalb
+ 1.0    | Vzaxyr1r2vA
+ 1.0    | Vzaxyr1r2vB
+ 1.0    | VzaxyRuaub
+
+ 1.0    | VRuaublalb
+ 1.0    | VRuaubr1r2vA
+ 1.0    | VRuaubr1r2vB
+
+ 1.0    | Vlalbr1r2vA
+ 1.0    | Vlalbr1r2vB
+
+ 1.0    | Vr1r2vAr1r2vB
+
+end-hamiltonian-section
+
+
+HAMILTONIAN-SECTION_zaxy
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+-0.5/mh                |1 dq^2
+-0.5/mh                |2 dq^2
+-0.5/mh                |5 dq^2
+-1.0/mur2*r20i         |3 dq^2
+ 1.0    |5&3&1&2 czaxy
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_lalb
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+lfact                  |10 dq^2
+lfact                  |15 dq^2
+ 1.0    |10&15 clAlB
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_wata
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+-0.5/mur1              |6 dq^2
+-0.5/mur2              |7 dq^2
+-0.5/mur2              |7 q^-2    |8 dq*pol2*dq
+-0.5/mur1              |6 q^-2    |8 dq*pol2*dq
+ 1.0    |6&7&8 cr1r2vA
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_watb
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+-0.5/mur1              |11 dq^2
+-0.5/mur2              |12 dq^2
+-0.5/mur2              |12 q^-2   |13 dq*pol2*dq
+-0.5/mur1              |11 q^-2   |13 dq*pol2*dq
+ 1.0    |11&12&13 cr1r2vB
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_ruaub
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+-0.5/muR               |4 dq^2
+-0.5/muR               |4 q^-2     |9 dq*pol2*dq
+-0.5/mur2*r20i                     |9 dq*pol2*dq
+-0.5/muR               |4 q^-2     |14 dq*pol2*dq
+-0.5/mur2*r20i                     |14 dq*pol2*dq
+ 1.0    |4&9&14 cRuaub
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_ZLIN
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+  1.0      |5 q
+  1.0      |4 cnst
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_ZGAUSS
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+  1.0      |5 gaussexc
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_SINA
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+  1.0      |3 sin
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_SIN2A
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+  1.0      |3 sin2a
+end-hamiltonian-section
+
+
+HAMILTONIAN-SECTION_COSA
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+  1.0      |3 cos
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_COS2A
+  modes    | x | y | a | R | z | r1a | r2a | va | ua | la | r1b | r2b | vb | ub | lb
+  1.0      |3 cos2a
+end-hamiltonian-section
+
+end-operator

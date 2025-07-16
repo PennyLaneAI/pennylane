@@ -1,0 +1,56 @@
+OP_DEFINE-SECTION
+title
+Henon-Heiles PES
+end-title
+end-op_define-section
+PARAMETER-SECTION
+mass_q1 = 1.0
+mass_q2 = 1.0
+mass_q3 = 1.0
+mass_q4 = 1.0
+mass_q5 = 1.0
+mass_q6 = 1.0
+lambda = 0.111803 , au
+end-parameter-section
+labels-section
+capr = CAP[5.0,1.0,3,1]
+capl = CAP[-6.5,1.0,3,-1]
+end-labels-section
+HAMILTONIAN-SECTION
+  modes      | q1  | q2  | q3  | q4 | q5 | q6
+ 1.0          | KE
+ 1.0          |2 KE
+ 1.0          |3 KE
+ 1.0          |4 KE
+ 1.0          |5 KE
+ 1.0          |6 KE
+ 0.5          | q^2
+ 0.5          |2 q^2
+ 0.5          |3 q^2
+ 0.5          |4 q^2
+ 0.5          |5 q^2
+ 0.5          |6 q^2
+ 1.0          | capr
+ 1.0          | capl
+ 1.0          |2 capr
+ 1.0          |2 capl
+ 1.0          |3 capr
+ 1.0          |3 capl
+ 1.0          |4 capr
+ 1.0          |4 capl
+ 1.0          |5 capr
+ 1.0          |5 capl
+ 1.0          |6 capr
+ 1.0          |6 capl
+ lambda       | q^2 | q
+ -lambda/3.0  |2 q^3
+ lambda       |2 q^2 |3 q
+ -lambda/3.0  |3 q^3
+ lambda       |3 q^2 |4 q
+ -lambda/3.0  |4 q^3
+ lambda       |4 q^2 |5 q
+ -lambda/3.0  |5 q^3
+ lambda       |5 q^2 |6 q
+ -lambda/3.0  |6 q^3
+end-hamiltonian-section
+end-operator

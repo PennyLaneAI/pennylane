@@ -1,0 +1,231 @@
+OP_DEFINE-SECTION
+title
+Pyrazine, extended 4-mode model including dissipation
+end-title
+end-op_define-section
+
+
+PARAMETER-SECTION
+
+# dissipative coefficient
+gamma  = -0.005 , ev
+
+# frequencies
+w10a  = 0.1139  ,ev
+w6a   = 0.0739  ,ev
+w1    = 0.1258  ,ev
+w9a   = 0.1525  ,ev
+
+# energy-gap
+delta =   0.42300 , ev
+E0    =  -4.25100 , ev
+
+# linear, on-diagonal coupling coefficients
+# H(1,1)
+kl_6a_s1  =   0.09806 , ev
+kl_1_s1  =   0.05033 , ev
+kl_9a_s1  =   0.14521 , ev
+# H(2,2)
+kl_6a_s2  =  -0.13545 , ev
+kl_1_s2  =   0.17100 , ev
+kl_9a_s2  =   0.03746 , ev
+
+# quadratic, on-diagonal coupling coefficients
+# H(1,1)
+kq_10a_s1  =  -0.01159 , ev
+kq_6a_s1  =   0.00000 , ev
+kq_1_s1  =   0.00000 , ev
+kq_9a_s1  =  0.00000 , ev
+# H(2,2)
+kq_10a_s2  =  -0.01159 , ev
+kq_6a_s2  =  0.00000 , ev
+kq_1_s2  =   0.00000 , ev
+kq_9a_s2  =   0.00000 , ev
+
+# bilinear, on-diagonal coupling coefficients
+# H(1,1)
+kb_6ax1_s1  =   0.00108 , ev
+kb_1x9a_s1  =  -0.00474 , ev
+kb_6ax9a_s1  =   0.00204 , ev
+# H(2,2)
+kb_6ax1_s2  =  -0.00298 , ev
+kb_1x9a_s2  =  -0.00155 , ev
+kb_6ax9a_s2  =   0.00189 , ev
+
+# linear, off-diagonal coupling coefficients
+lambda =   0.20804 , ev
+
+# bilinear, off-diagonal coupling coefficients
+# H(1,2) and H(2,1)
+kb_1x10a  =   0.00553 , ev
+kb_6ax10a  =  0.01000 , ev
+kb_9ax10a  =   0.00126 , ev
+
+# shift parameters for raising/lowering operators (mode,state)
+s1 = 0.0
+s21 =  0.93827999
+s22 = -1.2960435
+s31 =  0.28289892
+s32 =  0.96117058
+s41 =  0.67330476
+s42 =  0.17369325
+
+
+end-parameter-section
+
+
+HAMILTONIAN-SECTION
+    modes       |  el  | v10a  | v6a  | v1  | v9a
+
+1.0             |2  KE
+1.0             |3  KE
+1.0             |4  KE
+1.0             |5  KE
+
+0.5*w10a^2      |2  q^2
+0.5*w6a^2       |3  q^2
+0.5*w1^2        |4  q^2
+0.5*w9a^2       |5  q^2
+
+-delta          |1 S1&1
+delta           |1 S2&2
+E0              |1 S3&3
+
+kl_6a_s1*w6a^0.5    |1 S1&1  |3 q
+kl_1_s1*w1^0.5      |1 S1&1  |4 q
+kl_9a_s1*w9a^0.5    |1 S1&1  |5 q
+#
+kl_6a_s2*w6a^0.5    |1 S2&2  |3 q
+kl_1_s2*w1^0.5      |1 S2&2  |4 q
+kl_9a_s2*w9a^0.5    |1 S2&2  |5 q
+
+lambda*w10a^0.5     |1 S1&2  |2 q
+
+kq_10a_s1*w10a      |1 S1&1  |2  q^2
+kq_6a_s1*w6a        |1 S1&1  |3  q^2
+kq_1_s1*w1          |1 S1&1  |4  q^2
+kq_9a_s1*w9a        |1 S1&1  |5  q^2
+#
+kq_10a_s2*w10a      |1 S2&2  |2  q^2
+kq_6a_s2*w6a        |1 S2&2  |3  q^2
+kq_1_s2*w1          |1 S2&2  |4  q^2
+kq_9a_s2*w9a        |1 S2&2  |5  q^2
+
+2.0*kb_6ax1_s1*w6a^0.5*w1^0.5        |1 S1&1  |3  q  |4  q
+2.0*kb_6ax9a_s1*w6a^0.5*w9a^0.5      |1 S1&1  |3  q  |5  q
+2.0*kb_1x9a_s1*w1^0.5*w9a^0.5        |1 S1&1  |4  q  |5  q
+#
+2.0*kb_6ax1_s2*w6a^0.5*w1^0.5        |1 S2&2  |3  q  |4  q
+2.0*kb_6ax9a_s2*w6a^0.5*w9a^0.5      |1 S2&2  |3  q  |5  q
+2.0*kb_1x9a_s2*w1^0.5*w9a^0.5        |1 S2&2  |4  q  |5  q
+#
+2.0*kb_6ax10a*w6a^0.5*w10a^0.5       |1 S1&2  |2  q  |3  q
+2.0*kb_1x10a*w1^0.5*w10a^0.5         |1 S1&2  |2  q  |4  q
+2.0*kb_9ax10a*w9a^0.5*w10a^0.5       |1 S1&2  |2  q  |5  q
+
+end-hamiltonian-section
+
+
+DISSIPATIVE-SECTION
+    modes  | el | v10a | v6a | v1 | v9a | el | v10a | v6a | v1 | v9a
+#            1    2      3     4    5     6    7      8     9    10
+
+# MODE v10a
+
+pure-left
+gamma    |1 S1&1 |2 bd1 |6 S1&1 |7 b1
+gamma    |1 S2&2 |2 bd1 |6 S2&2 |7 b1
+
+pure-right
+gamma    |1 S1&1 |2 bd1 |6 S1&1 |7 b1
+gamma    |1 S2&2 |2 bd1 |6 S2&2 |7 b1
+
+left-right
+-2.0*gamma |1 S1&1 |2 b1 |6 S1&1 |7 bd1
+-2.0*gamma |1 S2&2 |2 b1 |6 S1&1 |7 bd1
+-2.0*gamma |1 S1&1 |2 b1 |6 S2&2 |7 bd1
+-2.0*gamma |1 S2&2 |2 b1 |6 S2&2 |7 bd1
+
+# MODE v6a
+
+pure-left
+gamma    |1 S1&1 |3 bd21 |6 S1&1 |8 b21
+gamma    |1 S2&2 |3 bd22 |6 S2&2 |8 b22
+
+pure-right
+gamma    |1 S1&1 |3 bd21 |6 S1&1 |8 b21
+gamma    |1 S2&2 |3 bd22 |6 S2&2 |8 b22
+
+left-right
+-2.0*gamma |1 S1&1 |3 b21 |6 S1&1 |8 bd21
+-2.0*gamma |1 S2&2 |3 b22 |6 S1&1 |8 bd21
+-2.0*gamma |1 S1&1 |3 b21 |6 S2&2 |8 bd22
+-2.0*gamma |1 S2&2 |3 b22 |6 S2&2 |8 bd22
+
+# MODE v1
+
+pure-left
+gamma    |1 S1&1 |4 bd31 |6 S1&1 |9 b31
+gamma    |1 S2&2 |4 bd32 |6 S2&2 |9 b32
+
+pure-right
+gamma    |1 S1&1 |4 bd31 |6 S1&1 |9 b31
+gamma    |1 S2&2 |4 bd32 |6 S2&2 |9 b32
+
+left-right
+-2.0*gamma |1 S1&1 |4 b31 |6 S1&1 |9 bd31
+-2.0*gamma |1 S2&2 |4 b32 |6 S1&1 |9 bd31
+-2.0*gamma |1 S1&1 |4 b31 |6 S2&2 |9 bd32
+-2.0*gamma |1 S2&2 |4 b32 |6 S2&2 |9 bd32
+
+# MODE v9a
+
+pure-left
+gamma    |1 S1&1 |5 bd41 |6 S1&1 |10 b41
+gamma    |1 S2&2 |5 bd42 |6 S2&2 |10 b42
+
+pure-right
+gamma    |1 S1&1 |5 bd41 |6 S1&1 |10 b41
+gamma    |1 S2&2 |5 bd42 |6 S2&2 |10 b42
+
+left-right
+-2.0*gamma |1 S1&1 |5 b41 |6 S1&1 |10 bd41
+-2.0*gamma |1 S2&2 |5 b42 |6 S1&1 |10 bd41
+-2.0*gamma |1 S1&1 |5 b41 |6 S2&2 |10 bd42
+-2.0*gamma |1 S2&2 |5 b42 |6 S2&2 |10 bd42
+
+end-dissipative-section
+
+labels-section
+# shifted raising and lowering operators (mode,state)
+
+b1     = low[1,w10a,s1]
+bd1    = rai[1,w10a,s1]
+bd1%b1 = num[1,w10a,s1]
+
+b21      = low[1,w6a,s21]
+b22      = low[1,w6a,s22]
+bd21     = rai[1,w6a,s21]
+bd22     = rai[1,w6a,s22]
+bd21%b21 = num[1,w6a,s21]
+bd22%b22 = num[1,w6a,s22]
+
+b31      = low[1,w1,s31]
+b32      = low[1,w1,s32]
+bd31     = rai[1,w1,s31]
+bd32     = rai[1,w1,s32]
+bd31%b31 = num[1,w1,s31]
+bd32%b32 = num[1,w1,s32]
+
+b41      = low[1,w9a,s41]
+b42      = low[1,w9a,s42]
+bd41     = rai[1,w9a,s41]
+bd42     = rai[1,w9a,s42]
+bd41%b41 = num[1,w9a,s41]
+bd42%b42 = num[1,w9a,s42]
+
+end-labels-section
+
+end-operator
+
+

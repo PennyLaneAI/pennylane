@@ -1,0 +1,231 @@
+OP_DEFINE-SECTION
+ title
+   Butatriene, linear 5-mode model
+ end-title
+end-op_define-section
+
+PARAMETER-SECTION
+
+# frequencies
+  omega_5   =  0.09120,ev
+  omega_8   =  0.10890,ev
+  omega_12  =  0.17730,ev
+  omega_14  =  0.25780,ev
+  omega_15  =  0.37130,ev
+
+# vertical energies, ZPE of 0.50325 eV is subtracted
+  E1        =  8.90140,ev   # 9.40465 without subtraction of ZPE
+  E2        =  9.44550,ev   # 9.94875 without subtraction of ZPE
+
+# linear coupling constants (kappa)
+  kappa1_8  =  0.05310,ev
+  kappa2_8  =  0.05940,ev
+  kappa1_12 =  0.01150,ev
+  kappa2_12 =  0.01000,ev
+  kappa1_14 =  0.16280,ev
+  kappa2_14 = -0.34220,ev
+  kappa1_15 =  0.04030,ev
+  kappa2_15 = -0.03210,ev
+
+# off-diagonal vibronic coupling constant (lambda)
+  lambda_5  =  0.28800 , ev
+
+  ev=27.21138386
+
+# Energy shifts due to linear coupling
+  es1a = kappa1_8^2/omega_8 + kappa1_12^2/omega_12
+  es1b = kappa1_14^2/omega_14 + kappa1_15^2/omega_15
+  E1shift = 0.5*es1a + 0.5*es1b
+  es2a = kappa2_8^2/omega_8 + kappa2_12^2/omega_12
+  es2b = kappa2_14^2/omega_14 + kappa2_15^2/omega_15
+  E2shift  = 0.5*es2a + 0.5*es2b
+
+end-parameter-section
+
+
+HAMILTONIAN-SECTION
+--------------------------------------------------------
+modes         |  el  | Q5   | Q8   | Q12  | Q14  | Q15
+--------------------------------------------------------
+-0.5*omega_5  | 1    | dq^2 | 1    | 1    | 1    | 1
+ 0.5*omega_5  | 1    |  q^2 | 1    | 1    | 1    | 1
+-0.5*omega_8  | 1    | 1    | dq^2 | 1    | 1    | 1
+ 0.5*omega_8  | 1    | 1    |  q^2 | 1    | 1    | 1
+-0.5*omega_12 | 1    | 1    | 1    | dq^2 | 1    | 1
+ 0.5*omega_12 | 1    | 1    | 1    |  q^2 | 1    | 1
+-0.5*omega_14 | 1    | 1    | 1    | 1    | dq^2 | 1
+ 0.5*omega_14 | 1    | 1    | 1    | 1    |  q^2 | 1
+-0.5*omega_15 | 1    | 1    | 1    | 1    | 1    | dq^2
+ 0.5*omega_15 | 1    | 1    | 1    | 1    | 1    |  q^2
+ E1           | S1&1 | 1    | 1    | 1    | 1    | 1
+ E2           | S2&2 | 1    | 1    | 1    | 1    | 1
+lambda_5      | S1&2 |  q   | 1    | 1    | 1    | 1
+kappa1_8      | S1&1 | 1    |  q   | 1    | 1    | 1
+kappa2_8      | S2&2 | 1    |  q   | 1    | 1    | 1
+kappa1_12     | S1&1 | 1    | 1    |  q   | 1    | 1
+kappa2_12     | S2&2 | 1    | 1    |  q   | 1    | 1
+kappa1_14     | S1&1 | 1    | 1    | 1    |  q   | 1
+kappa2_14     | S2&2 | 1    | 1    | 1    |  q   | 1
+kappa1_15     | S1&1 | 1    | 1    | 1    | 1    |  q
+kappa2_15     | S2&2 | 1    | 1    | 1    | 1    |  q
+--------------------------------------------------------
+end-hamiltonian-section
+
+
+HAMILTONIAN-SECTION_vib  # vibrational energy
+----------------------------------------------------------
+modes            |  el  | Q5   | Q8   | Q12  | Q14  | Q15
+----------------------------------------------------------
+-0.5*ev*omega_5  | 1    | dq^2 | 1    | 1    | 1    | 1
+ 0.5*ev*omega_5  | 1    |  q^2 | 1    | 1    | 1    | 1
+-0.5*ev*omega_8  | 1    | 1    | dq^2 | 1    | 1    | 1
+ 0.5*ev*omega_8  | 1    | 1    |  q^2 | 1    | 1    | 1
+-0.5*ev*omega_12 | 1    | 1    | 1    | dq^2 | 1    | 1
+ 0.5*ev*omega_12 | 1    | 1    | 1    |  q^2 | 1    | 1
+-0.5*ev*omega_14 | 1    | 1    | 1    | 1    | dq^2 | 1
+ 0.5*ev*omega_14 | 1    | 1    | 1    | 1    |  q^2 | 1
+-0.5*ev*omega_15 | 1    | 1    | 1    | 1    | 1    | dq^2
+ 0.5*ev*omega_15 | 1    | 1    | 1    | 1    | 1    |  q^2
+ev*E1shift       | S1&1 | 1    | 1    | 1    | 1    | 1
+ev*E2shift       | S2&2 | 1    | 1    | 1    | 1    | 1
+ev*kappa1_8      | S1&1 | 1    |  q   | 1    | 1    | 1
+ev*kappa2_8      | S2&2 | 1    |  q   | 1    | 1    | 1
+ev*kappa1_12     | S1&1 | 1    | 1    |  q   | 1    | 1
+ev*kappa2_12     | S2&2 | 1    | 1    |  q   | 1    | 1
+ev*kappa1_14     | S1&1 | 1    | 1    | 1    |  q   | 1
+ev*kappa2_14     | S2&2 | 1    | 1    | 1    |  q   | 1
+ev*kappa1_15     | S1&1 | 1    | 1    | 1    | 1    |  q
+ev*kappa2_15     | S2&2 | 1    | 1    | 1    | 1    |  q
+----------------------------------------------------------
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_vib1 # vibrational energy, state 1, B2g
+----------------------------------------------------------
+modes            |  el  | Q5   | Q8   | Q12  | Q14  | Q15
+----------------------------------------------------------
+-0.5*ev*omega_5  | S1&1 | dq^2 | 1    | 1    | 1    | 1
+ 0.5*ev*omega_5  | S1&1 |  q^2 | 1    | 1    | 1    | 1
+-0.5*ev*omega_8  | S1&1 | 1    | dq^2 | 1    | 1    | 1
+ 0.5*ev*omega_8  | S1&1 | 1    |  q^2 | 1    | 1    | 1
+-0.5*ev*omega_12 | S1&1 | 1    | 1    | dq^2 | 1    | 1
+ 0.5*ev*omega_12 | S1&1 | 1    | 1    |  q^2 | 1    | 1
+-0.5*ev*omega_14 | S1&1 | 1    | 1    | 1    | dq^2 | 1
+ 0.5*ev*omega_14 | S1&1 | 1    | 1    | 1    |  q^2 | 1
+-0.5*ev*omega_15 | S1&1 | 1    | 1    | 1    | 1    | dq^2
+ 0.5*ev*omega_15 | S1&1 | 1    | 1    | 1    | 1    |  q^2
+ev*E1shift       | S1&1 | 1    | 1    | 1    | 1    | 1
+ev*kappa1_8      | S1&1 | 1    |  q   | 1    | 1    | 1
+ev*kappa1_12     | S1&1 | 1    | 1    |  q   | 1    | 1
+ev*kappa1_14     | S1&1 | 1    | 1    | 1    |  q   | 1
+ev*kappa1_15     | S1&1 | 1    | 1    | 1    | 1    |  q
+----------------------------------------------------------
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_vib2 # vibrational energy, state 2, B2u
+----------------------------------------------------------
+modes            |  el  | Q5   | Q8   | Q12  | Q14  | Q15
+----------------------------------------------------------
+-0.5*ev*omega_5  | S2&2 | dq^2 | 1    | 1    | 1    | 1
+ 0.5*ev*omega_5  | S2&2 |  q^2 | 1    | 1    | 1    | 1
+-0.5*ev*omega_8  | S2&2 | 1    | dq^2 | 1    | 1    | 1
+ 0.5*ev*omega_8  | S2&2 | 1    |  q^2 | 1    | 1    | 1
+-0.5*ev*omega_12 | S2&2 | 1    | 1    | dq^2 | 1    | 1
+ 0.5*ev*omega_12 | S2&2 | 1    | 1    |  q^2 | 1    | 1
+-0.5*ev*omega_14 | S2&2 | 1    | 1    | 1    | dq^2 | 1
+ 0.5*ev*omega_14 | S2&2 | 1    | 1    | 1    |  q^2 | 1
+-0.5*ev*omega_15 | S2&2 | 1    | 1    | 1    | 1    | dq^2
+ 0.5*ev*omega_15 | S2&2 | 1    | 1    | 1    | 1    |  q^2
+ev*E2shift       | S2&2 | 1    | 1    | 1    | 1    | 1
+ev*kappa2_8      | S2&2 | 1    |  q   | 1    | 1    | 1
+ev*kappa2_12     | S2&2 | 1    | 1    |  q   | 1    | 1
+ev*kappa2_14     | S2&2 | 1    | 1    | 1    |  q   | 1
+ev*kappa2_15     | S2&2 | 1    | 1    | 1    | 1    |  q
+----------------------------------------------------------
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_kin  # 2*kinetic energy
+----------------------------------------------------------
+modes            |  el  | Q5   | Q8   | Q12  | Q14  | Q15
+----------------------------------------------------------
+-ev*omega_5  | 1    | dq^2 | 1    | 1    | 1    | 1
+-ev*omega_8  | 1    | 1    | dq^2 | 1    | 1    | 1
+-ev*omega_12 | 1    | 1    | 1    | dq^2 | 1    | 1
+-ev*omega_14 | 1    | 1    | 1    | 1    | dq^2 | 1
+-ev*omega_15 | 1    | 1    | 1    | 1    | 1    | dq^2
+----------------------------------------------------------
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_kin1 # 2*kinetic energy, state 1, B2g
+----------------------------------------------------------
+modes            |  el  | Q5   | Q8   | Q12  | Q14  | Q15
+----------------------------------------------------------
+-ev*omega_5  | S1&1 | dq^2 | 1    | 1    | 1    | 1
+-ev*omega_8  | S1&1 | 1    | dq^2 | 1    | 1    | 1
+-ev*omega_12 | S1&1 | 1    | 1    | dq^2 | 1    | 1
+-ev*omega_14 | S1&1 | 1    | 1    | 1    | dq^2 | 1
+-ev*omega_15 | S1&1 | 1    | 1    | 1    | 1    | dq^2
+----------------------------------------------------------
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_kin2 # 2*kinetic energy, state 2, B2u
+----------------------------------------------------------
+modes            |  el  | Q5   | Q8   | Q12  | Q14  | Q15
+----------------------------------------------------------
+-ev*omega_5  | S2&2 | dq^2 | 1    | 1    | 1    | 1
+-ev*omega_8  | S2&2 | 1    | dq^2 | 1    | 1    | 1
+-ev*omega_12 | S2&2 | 1    | 1    | dq^2 | 1    | 1
+-ev*omega_14 | S2&2 | 1    | 1    | 1    | dq^2 | 1
+-ev*omega_15 | S2&2 | 1    | 1    | 1    | 1    | dq^2
+----------------------------------------------------------
+end-hamiltonian-section
+
+
+# Old Hamiltonian sections included for back compatibility.
+
+HAMILTONIAN-SECTION_bath
+---------------------------------------------
+modes   |  el | Q5 | Q8 | Q12 | Q14 | Q15
+---------------------------------------------
+omega_5            |2  KE
+0.5*omega_5        |2  q^2
+omega_8            |3  KE
+0.5*omega_8        |3  q^2
+omega_12           |4  KE
+0.5*omega_12       |4  q^2
+omega_14           |5  KE
+0.5*omega_14       |5  q^2
+omega_15           |6  KE
+0.5*omega_15       |6  q^2
+
+lambda_5           |1 S1&2         |2 q
+
+kappa1_8           |1 S1&1         |3  q
+kappa2_8           |1 S2&2         |3  q
+kappa1_12          |1 S1&1         |4  q
+kappa2_12          |1 S2&2         |4  q
+kappa1_14          |1 S1&1         |5  q
+kappa2_14          |1 S2&2         |5  q
+kappa1_15          |1 S1&1         |6  q
+kappa2_15          |1 S2&2         |6  q
+---------------------------------------------
+end-hamiltonian-section
+
+
+HAMILTONIAN-SECTION_oper
+---------------------------------------------
+modes   |  el   | Q5 | Q8 | Q12 | Q14 | Q15
+---------------------------------------------
+0.25    |1 S1&1 |3  s |5 r
+0.25    |1 S1&1 |5  s |3 r
+0.1     |1 S1&2 |2 m
+---------------------------------------------
+end-hamiltonian-section
+
+
+LABELS-SECTION
+s = step[0.5]
+r = rstep[0.5]
+m = morse1[1.0e2,2.20,1.0,1.0]
+end-labels-section
+
+end-operator

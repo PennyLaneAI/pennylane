@@ -1,0 +1,58 @@
+OP_DEFINE-SECTION
+title
+NOCl S1 surface
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_rd = 16.1538, AMU
+mass_rv =  7.4667, AMU
+end-parameter-section
+
+HAMILTONIAN-SECTION
+------------------------------------------
+modes         |  rd    |  rv    | theta
+------------------------------------------
+0.5/mass_rd   |  q^-2  |  1     |  j^2
+0.5/mass_rv   |  1     | q^-2   |  j^2
+-0.5/mass_rd  |  dq^2  |  1     |   1
+-0.5/mass_rv  |  1     |  dq^2  |   1
+1.0           |1&2&3  V
+------------------------------------------
+end-hamiltonian-section
+
+# This operator is used by the elk test.
+# It tests the operate function and the build-in-functions
+# sin^r, cos^r and tan^r; note, this operator is the 2*identity
+# (cos^2 + sin^2 = 1 ; -tan^2 + cos^-2 = 1)
+HAMILTONIAN-SECTION_oper1
+------------------------------------------
+modes         |  rd    |  rv    | theta
+------------------------------------------
+1.0           |  1     |  1     |  sin^2
+1.0           |  1     |  1     |  cos^2
+-1.0          |  1     |  1     |  tan^2
+1.0           |  1     |  1     |  cos^-2
+------------------------------------------
+end-hamiltonian-section
+
+# This operator is used by the elk test to test expect.
+HAMILTONIAN-SECTION_oper2
+------------------------------------------
+modes         |  rd    |  rv    | theta
+------------------------------------------
+1.0/mass_rv   |  1     |  dq^2  |  1
+1.0/mass_rd   |  dq^2  |  1     |  1
+0.1/mass_rv   |  q     |  p     |  sin
+0.1/mass_rd   |  dq^2  |  q     |  cos
+0.1/mass_rv   |  q     |  q     |  j^2
+------------------------------------------
+end-hamiltonian-section
+
+
+LABELS-SECTION
+V = srffile {nocl1um, default}
+end-labels-section
+
+end-operator
+

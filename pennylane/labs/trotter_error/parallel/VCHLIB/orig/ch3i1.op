@@ -1,0 +1,100 @@
+OP_DEFINE-SECTION
+title
+CH3I S1, S2, S3  surfaces
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mh  = 1823.5     # proton mass
+mc  = 21882.0    # carbon mass
+mci = 19991.0    # carbon - iodine reduced mass
+
+e0  = 0.08
+ei  = 0.034646
+e0ei = e0+ei
+end-parameter-section
+
+HAMILTONIAN-SECTION
+--------------------------------------------------------------------
+  modes    |  ri    |   th_i |   phi  |   rh   |  th_h        | el
+--------------------------------------------------------------------
+1.0/mci    | KE     |   1    |   1    |   1    |  1           |  1
+1.0/mci    | q^-2   | sin^-2 |  KE    |   1    |  1           |  1
+1.0/3.0/mh |  1     |   1    |  KE    | q^-2   | MI:invsin2   |  1
+0.5/mci    | q^-2   |  j^2   |   1    |   1    |  1           |  1
+1.0/3.0/mh |  1     |  j^2   |   1    | q^-2   | MI:invsin2   |  1
+1.0/3.0/mh |  1     |   1    |   1    | q^-2   | MI:tm8       |  1
+1.0/mc     |  1     |   1    |   1    | q^-2   | MI:tm4       |  1
+1.0/3.0/mh |  1     |   1    |   1    | KE     |   tm13       |  1
+0.25/mc    |  1     |   1    |   1    | MI:tm6 | MI:tm5       |  1
+-1.0/mc    | dq     | cos    |   1    | dq     | q            |  1
+-1.0/mc    | q^-1   | dth1   |   1    | q^-1   | MI:tm7       |  1
+1.0/mc     | q^-1   | dth1   |   1    | dq     | q            |  1
+1.0/mc     | dq     | cos    |   1    | q^-1   | MI:tm7       |  1
+
+1.0        | MI:eb0 |  1     |   1    |   1    | MI:b0*MI:a50 | S1&1
+1.0        | MI:eb1 |  1     |   1    |   1    | MI:b0*MI:a51 | S1&1
+1.0        | MI:eb2 |  1     |   1    |   1    | MI:b0*MI:a52 | S1&1
+1.0        | MI:rb0 |  1     |   1    |   1    | MI:b1*MI:a50 | S1&1
+1.0        | MI:rb1 |  1     |   1    |   1    | MI:b1*MI:a51 | S1&1
+1.0        | MI:rb2 |  1     |   1    |   1    | MI:b1*MI:a52 | S1&1
+1.0        | MI:eb0 | sin^2  |   1    |   1    | MI:b2*MI:a50 | S1&1
+1.0        | MI:eb1 | sin^2  |   1    |   1    | MI:b2*MI:a51 | S1&1
+1.0        | MI:eb2 | sin^2  |   1    |   1    | MI:b2*MI:a52 | S1&1
+
+1.0        | MI:ea0 |  1     |   1    |   1    | MI:a0*MI:a50 | S2&2
+1.0        | MI:ea1 |  1     |   1    |   1    | MI:a0*MI:a51 | S2&2
+1.0        | MI:ea2 |  1     |   1    |   1    | MI:a0*MI:a52 | S2&2
+1.0        | MI:ra0 |  1     |   1    |   1    | MI:a1*MI:a50 | S2&2
+1.0        | MI:ra1 |  1     |   1    |   1    | MI:a1*MI:a51 | S2&2
+1.0        | MI:ra2 |  1     |   1    |   1    | MI:a1*MI:a52 | S2&2
+1.0        | MI:ea0 | sin^2  |   1    |   1    | MI:a2*MI:a50 | S2&2
+1.0        | MI:ea1 | sin^2  |   1    |   1    | MI:a2*MI:a51 | S2&2
+1.0        | MI:ea2 | sin^2  |   1    |   1    | MI:a2*MI:a52 | S2&2
+2.0        | MI:ea0 | sin    |   1    |   1    | MI:a3*MI:a50 | S2&2
+2.0        | MI:ea1 | sin    |   1    |   1    | MI:a3*MI:a51 | S2&2
+2.0        | MI:ea2 | sin    |   1    |   1    | MI:a3*MI:a52 | S2&2
+
+1.0        | MI:ea0 |  1     |   1    |   1    | MI:a0*MI:a50 | S3&3
+1.0        | MI:ea1 |  1     |   1    |   1    | MI:a0*MI:a51 | S3&3
+1.0        | MI:ea2 |  1     |   1    |   1    | MI:a0*MI:a52 | S3&3
+1.0        | MI:ra0 |  1     |   1    |   1    | MI:a1*MI:a50 | S3&3
+1.0        | MI:ra1 |  1     |   1    |   1    | MI:a1*MI:a51 | S3&3
+1.0        | MI:ra2 |  1     |   1    |   1    | MI:a1*MI:a52 | S3&3
+1.0        | MI:ea0 | sin^2  |   1    |   1    | MI:a2*MI:a50 | S3&3
+1.0        | MI:ea1 | sin^2  |   1    |   1    | MI:a2*MI:a51 | S3&3
+1.0        | MI:ea2 | sin^2  |   1    |   1    | MI:a2*MI:a52 | S3&3
+
+1.0        |  1     |  1     |   1    |   1    | MI:g0        |  1
+1.0        |  1     |  1     |   1    | MI:rg0 | 1            |  1
+1.0        |  1     |  1     |   1    | MI:rg1 | MI:g1        |  1
+1.0        |  1     |  1     |   1    | MI:rg2 | MI:g3        |  1
+
+-e0        |  1     |  1     |   1    |   1    | 1            | S1&1
+-e0ei      |  1     |  1     |   1    |   1    | 1            | S2&2
+-e0ei      |  1     |  1     |   1    |   1    | 1            | S3&3
+
+1.0        | MI:ed0 | sin    | cos3   |   1    | MI:d1*MI:a50 | S1&2
+1.0        | MI:ed1 | sin    | cos3   |   1    | MI:d1*MI:a51 | S1&2
+1.0        | MI:ed2 | sin    | cos3   |   1    | MI:d1*MI:a52 | S1&2
+
+-1.0       | MI:ed0 | sin    | sin3   |   1    | MI:d1*MI:a50 | S1&3
+-1.0       | MI:ed1 | sin    | sin3   |   1    | MI:d1*MI:a51 | S1&3
+-1.0       | MI:ed2 | sin    | sin3   |   1    | MI:d1*MI:a52 | S1&3
+
+1.0        | MI:ea0 | sin    | sin3   |   1    | MI:a3*MI:a50 | S2&3
+1.0        | MI:ea1 | sin    | sin3   |   1    | MI:a3*MI:a51 | S2&3
+1.0        | MI:ea2 | sin    | sin3   |   1    | MI:a3*MI:a52 | S2&3
+--------------------------------------------------------------------
+end-hamiltonian-section
+
+labels-section
+tm13 = MI:tm13[mc,mh]
+sin3 = sin[3.0]
+cos3 = cos[3.0]
+end-labels-section
+
+end-operator
+
+
+

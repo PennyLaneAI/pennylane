@@ -1,0 +1,33 @@
+
+OP_DEFINE-SECTION
+title
+NOCl S0 surface
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_rd = 16.1538, AMU
+mass_rv =  7.4667, AMU
+end-parameter-section
+
+
+HAMILTONIAN-SECTION
+---------------------------------------------------------
+modes         |  rd           |  rv           | theta
+---------------------------------------------------------
+0.5/mass_rd   |  q^-2         |  1            | j^2
+0.5/mass_rv   |  1            | q^-2          | j^2
+1.0           |  KE           |  1            |  1
+1.0           |  1            |  KE           |  1
+1.0           |1&2&3  V
+---------------------------------------------------------
+end-hamiltonian-section
+
+LABELS-SECTION
+V = srffile {nocl0um, default}
+end-labels-section
+
+end-operator
+
+
+

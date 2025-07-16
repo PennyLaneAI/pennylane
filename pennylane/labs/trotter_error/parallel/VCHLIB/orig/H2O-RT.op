@@ -1,0 +1,74 @@
+OP_DEFINE-SECTION
+  TITLE
+     PE-spectrum of water involving three cationic valence states of H2O
+     Eroms and Meyer, J.Phys.Chem.A 114, 9893 (2010)
+  end-title
+END-OP_DEFINE-SECTION
+
+
+PARAMETER-SECTION
+#masses
+ oxygen_mass = 15.9994,AMU
+ hydrog_mass = 1.0,AMU
+ atomA_mass  = hydrog_mass                   # mass of atom A in molecule A-C-B
+ atomB_mass  = hydrog_mass                   # mass of atom B in molecule A-C-B
+ atomC_mass  = oxygen_mass                   # mass of atom C in molecule A-C-B
+ AC_mass     = atomA_mass+atomC_mass         # mass of diatom A-C
+ BC_mass     = atomB_mass+atomC_mass         # mass of diatom B-C
+ mass_r1     = atomA_mass*atomC_mass/AC_mass # reduced mass for mode r_1
+ mass_r2     = atomB_mass*atomC_mass/BC_mass # reduced mass for mode r_2
+ invsqrt     = 2.0^-0.5
+ const       = 2064,ev
+end-parameter-section
+
+
+LABELS-SECTION
+ W11 = natpot{70r1_30th_natpot.W11}
+ W12 = natpot{70r1_30th_natpot.W12}
+ W22 = natpot{70r1_30th_natpot.W22}
+ X   = natpot{70r1_30th_natpot.Xstate}
+end-labels-section
+
+
+HAMILTONIAN-SECTION
+
+---------------------------------------------------
+ modes           |  r1  | r2   |  t      |  k
+---------------------------------------------------
+# KINETIC ENERGY
+ 1.00            | KE   | 1    | 1       |  1
+ 1.00            | 1    | KE   | 1       |  1
+ 0.50/mass_r1    | q^-2 | 1    | j^2     |  1
+ 0.50/mass_r2    | 1    | q^-2 | j^2     |  1
+-1.00/atomC_mass | dq   | dq   | cos     |  1
+ 1.00/atomC_mass | q^-1 | dq   | dth1    |  1
+ 1.00/atomC_mass | dq   | q^-1 | dth1    |  1
+-0.50/atomC_mass | q^-1 | q^-1 | cos*j^2 |  1
+-0.50/atomC_mass | q^-1 | q^-1 | j^2*cos |  1
+---------------------------------------------------
+---------------------------------------------------
+# POTENTIAL ENERGY - CATIONIC STATES
+# modes          |  r1  | r2   |  t      |  k
+---------------------------------------------------
+ 0.5             |1&2&3 W22              |4 S1&1
+ 0.5             |1&2&3  X               |4 S1&1
+
+ 0.5             |1&2&3  W22             |4 S3&3
+ 0.5             |1&2&3  X               |4 S3&3
+
+ 1.0             |1&2&3  W11             |4 S2&2
+
+ 0.5             |1&2&3  W22             |4 S1&3
+-0.5             |1&2&3  X               |4 S1&3
+
+ invsqrt         |1&2&3  W12             |4 S1&2
+ invsqrt         |1&2&3  W12             |4 S2&3
+---------------------------------------------------
+ const           |  1   |  1   |  1      |  1
+---------------------------------------------------
+
+end-hamiltonian-section
+
+end-operator
+
+

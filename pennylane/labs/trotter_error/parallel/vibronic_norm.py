@@ -7,7 +7,10 @@ import scipy as sp
 from pennylane.labs.trotter_error import RealspaceMatrix, RealspaceSum
 from pennylane.labs.trotter_error.realspace.matrix import _position_operator, _momentum_operator
 
-def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int):
+from mode_selector import get_reduced_model
+from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian, vibronic_fragments
+
+def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, batch: list):
     if not _is_pow_2(gridpoints) or gridpoints <= 0:
         raise ValueError(
             f"Number of gridpoints must be a positive power of 2, got {gridpoints}."
@@ -15,15 +18,27 @@ def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int):
 
     padded = RealspaceMatrix(_next_pow_2(rs_mat.states), rs_mat.modes, rs_mat._blocks)
 
-    return _vibronic_norm(padded, gridpoints)
+    norms = np.zeros(shape=(padded.states, padded.states))
 
-def _vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int):
-    norms = np.zeros(shape=(rs_mat.states, rs_mat.states))
+    for i, j in batch:
+        norms[i, j] = _block_norm(padded.block(i, j), gridpoints)
 
-    for i, j in product(range(rs_mat.states), repeat=2):
-        norms[i, j] = _block_norm(rs_mat.block(i, j), gridpoints)
+    return norms
 
-    return _compute_norm(norms)
+
+def build_error_term(freqs, taylor_coeffs, modes):
+    freqs, taylor_coeffs = get_reduced_model(freqs, taylor_coeffs, modes, strategy="PT")
+    states = taylor_coeffs[0].shape[0]
+
+    frags = vibronic_fragments(states, modes, np.array(freqs), taylor_coeffs.values())
+    frags = dict(enumerate(frags))
+    ham = sum(frags.values(), RealspaceMatrix.zero(states, modes))
+
+    frag_labels = list(frags.keys()) + list(frags.keys())[::-1]
+    second_order = ProductFormula(frag_labels, [1/2]*len(frag_labels))
+    eff = effective_hamiltonian(second_order, frags, order=3, timestep=1)
+
+    return (eff - 1j*ham)*(1/1j)
 
 def _compute_norm(norm_mat: np.ndarray):
     if norm_mat.shape == (1, 1):

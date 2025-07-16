@@ -1,0 +1,92 @@
+OP_DEFINE-SECTION
+title
+H2+H2 7D Non-Reactive Scattering in Jacobian Coordinates (J>0)
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+sl0_1 = 0.0   #  All these parameters
+sl0_2 = 0.0   #  will be overwritten
+jtot  = 0.0   #  by the input file (Parameter-Section)
+mass_R   = 1.0, h-mass  # (h+h)(h+h)/(h+h+h+h)
+mass_RAB = 0.5, h-mass
+mass_RCD = 0.5, h-mass
+j_cent  = jtot^2/2.0/mass_R+jtot/2.0/mass_R
+centri1 = sl0_1^2/2.0/mass_RAB+sl0_1/2.0/mass_RAB
+centri2 = sl0_2^2/2.0/mass_RCD+sl0_2/2.0/mass_RCD
+end-parameter-section
+
+
+HAMILTONIAN-SECTION
+-----------------------------------------------------------------------
+  modes             |  R    | RAB  |  RCD |  AL  |  k1  |  BE  |  k2
+--------------------+-- Kinetic Energy --------------------------------
+-0.5/mass_R         |1 q^-2 |4 j_p |5&7 cpp    # These four lines
+-0.5/mass_R         |1 q^-2 |6 j_p |5&7 cpp    # should be removed
+-0.5/mass_R         |1 q^-2 |4 j_m |5&7 cmm    # for J=0
+-0.5/mass_R         |1 q^-2 |6 j_m |5&7 cmm    #
+--------------------+-------+------+-----------------------------------
+ 1.0                |  KE   |  1   |  1   |  1   |  1   |  1   |  1
+ 1.0                |  1    |  KE  |  1   |  1   |  1   |  1   |  1
+ 1.0                |  1    |  1   |  KE  |  1   |  1   |  1   |  1
+ 0.5/mass_R         |  q^-2 |  1   |  1   | j^2  |  1   |  1   |  1
+ 0.5/mass_RAB       |  1    | q^-2 |  1   | j^2  |  1   |  1   |  1
+ 0.5/mass_R         |  q^-2 |  1   |  1   |  1   |  1   | j^2  |  1
+ 0.5/mass_RCD       |  1    |  1   | q^-2 |  1   |  1   | j^2  |  1
+ 0.5/mass_R         |  q^-2 |  1   |  1   | j_p  |  1   | j_m  |  1
+ 0.5/mass_R         |  q^-2 |  1   |  1   | j_m  |  1   | j_p  |  1
+-1.0/mass_R         |  q^-2 |  1   |  1   |  1   | q^2  |  1   |  1
+-1.0/mass_R         |  q^-2 |  1   |  1   |  1   |  1   |  1   | q^2
+-1.0/mass_R         |  q^-2 |  1   |  1   |  1   |  q   |  1   |  q
+ j_cent             |  q^-2 |  1   |  1   |  1   |  1   |  1   |  1
+--------------------+-- Potential Energy --------+-------------+-------
+ 1.0                |1&2&3&4&6  V0               |5 1          |7 1
+ 1.0                |1&2&3&4&6  V1               |5 kp1        |7 km1
+ 1.0                |1&2&3&4&6  V1               |5 km1        |7 kp1
+ 1.0                |1&2&3&4&6  V2               |5 kp2        |7 km2
+ 1.0                |1&2&3&4&6  V2               |5 km2        |7 kp2
+ 1.0                |1&2&3&4&6  V3               |5 kp3        |7 km3
+ 1.0                |1&2&3&4&6  V3               |5 km3        |7 kp3
+-----------------------------------------------------------------------
+end-hamiltonian-section
+
+
+LABELS-SECTION
+V0  = natpot{H4ft0}
+V1  = natpot{H4ft1}
+V2  = natpot{H4ft2}
+V3  = natpot{H4ft3}
+cpp = natpot{H4cpp}
+cmm = natpot{H4cmm}
+kp1 = shift[1]
+km1 = shift[-1]
+kp2 = shift[2]
+km2 = shift[-2]
+kp3 = shift[3]
+km3 = shift[-3]
+end-labels-section
+
+
+HAMILTONIAN-SECTION_H1
+usediag
+------------------------
+  modes       |  RAB
+------------------------
+1.0           |  KE
+1.0           |  v:H2
+centri1       |  q^-2
+------------------------
+END-HAMILTONIAN-SECTION
+
+HAMILTONIAN-SECTION_H2
+usediag
+------------------------
+  modes       |  RCD
+------------------------
+1.0           |  KE
+1.0           |  v:H2
+centri2       |  q^-2
+------------------------
+END-HAMILTONIAN-SECTION
+
+end-operator

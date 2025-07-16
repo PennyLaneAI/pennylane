@@ -1,0 +1,95 @@
+#########################################################################
+### Template of a flexible (KLeg) KEO for J>0, valence coordinates.   ###
+### A tetra-atomic molecule, A-B-C, is assumed.                       ###
+### The two forms, using either sJ* or J*, are equivalent. The former ###
+### is slightly more accurate as the action of sin(theta) is done     ###
+### analytically rather than on the grid.                             ###
+### For a J=0 calculation one should use Leg-DVR and remove the       ###
+### k-column. For J>0 one has to use the KLeg-DVR. See co2.J.inp      ###
+### For an example of a semi-rigid KEO of an three-atom system in     ###
+### valence coordinates (and using u=cos(theta) as coordinate) see    ###
+### h2o.J.sr.op and h2o.J.sr.inp                                      ###
+#########################################################################
+
+
+OP_DEFINE-SECTION
+TITLE
+General ro-vibrational kinetic-energy operator for 3-atoms systems
+Mol. Phys. 58 (1986) 1053,
+J. of Molecular Structure (Theochem) 430 (1998) 201.
+PCCP 1 (1999) 3377
+END-TITLE
+END-OP_DEFINE-SECTION
+
+PARAMETER-SECTION
+# example : HO2 in valence (binding) coordinates.
+atomA_mass  = 15.99491463,AMU          # mass of atom A
+atomB_mass  = 15.99491463,AMU          # mass of atom B
+atomC_mass  = 1.0,H-mass               # mass of atom C
+M11 = 1.0/atomA_mass+1.0/atomB_mass    # inverted mass for vector 1 (A-B)
+M22 = 1.0/atomB_mass+1.0/atomC_mass    # inverted mass for vector 2 (B-C)
+M12 = 1.0/atomC_mass                   # coupling between vector 1 and vector 2
+mass_r1  = 1.0/M11                     # reduced mass for mode r_1
+mass_r2  = 1.0/M22                     # reduced mass for mode r_2
+
+# Other example H3 in Jacobi coordinates :
+# atomA_mass  = 1.0, H-mass
+# atomB_mass  = 1.0, H-mass
+# atomC_mass  = 1.0, H-mass
+# M11 = 1.0/atomA_mass+1.0/atomB_mass
+# massAB = atomA_mass+atomB_mass
+# M22 =  1.0/massAB+1.0/atomC_mass
+# M12 = 0.0
+# mass_r1 = 1.0/M11
+# mass_r2 = 1.0/M22
+
+jtot = 10                              # May be overwritten in ~.inp file.
+j_cent = jtot^2/2.d0*M22+jtot/2.d0*M22
+END-PARAMETER-SECTION
+
+
+HAMILTONIAN-SECTION
+-------------------------------------------------------
+ modes        | r1     |  r2    | theta    |  k
+-------------------------------------------------------
+ 1.0          | KE     |  1     | 1        |  1
+ 1.0          | 1      |  KE    | 1        |  1
+-M12          | dq     |  dq    | cos      |  1
+ M11/2.0      | q^-2   |  1     | j^2      |  1
+ M22/2.0      | 1      | q^-2   | j^2      |  1
+ M12          | q^-1   |  dq    | dth1     |  1
+ M12          | dq     | q^-1   | dth1     |  1
+-M12/2.0      | q^-1   | q^-1   | cos*j^2  |  1
+-M12/2.0      | q^-1   | q^-1   | j^2*cos  |  1
+
+-----------------  J>0  -------------------------------
+-M22/2.0      | 1      | q^-2   | jpm      |  1
+ M12/4.0      | q^-1   | q^-1   | cos*jpm  |  1
+ M12/4.0      | q^-1   | q^-1   | jpm*cos  |  1
+-M12/2.0      | dq     | q^-1   | sJp      |  1
+ M12/2.0      | dq     | q^-1   | sJm      |  1
+-M12/2.0      | q^-1   | q^-1   | sJpk     |  1
+-M12/2.0      | q^-1   | q^-1   | sJmk     |  1
+-M22          | 1      | q^-2   | 1        |  q^2
+ j_cent       | 1      | q^-2   | 1        |  1
+
+## Alternatively one may use ##
+#-----------------  J>0  ------------------------------
+#-M22/2.0      | 1      | q^-2   | jpm      |  1
+# M12/4.0      | q^-1   | q^-1   | cos*jpm  |  1
+# M12/4.0      | q^-1   | q^-1   | jpm*cos  |  1
+#-M12          | dq     | q^-1   | sin      |  Jy
+#-M12/2.0      | q^-1   | q^-1   | sin      |  Jx*q
+#-M12/2.0      | q^-1   | q^-1   | sin      |  q*Jx
+#-M22          | 1      | q^-2   | 1        |  q^2
+# j_cent       | 1      | q^-2   | 1        |  1
+#------------------------------------------------------
+
+
+------------------ Potential --------------------------
+#  Add potential here
+-------------------------------------------------------
+END-HAMILTONIAN-SECTION
+
+END-OPERATOR
+

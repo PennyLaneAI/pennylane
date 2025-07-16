@@ -1,0 +1,150 @@
+#######################################################################
+###     CO2 KEO for J>0, valence coordinates.                       ###
+### PES taken from J. Zuniga et al., J. Mol. Spec. 195, 137 (1999)  ###
+#######################################################################
+
+
+OP_DEFINE-SECTION
+TITLE
+General ro-vibrational kinetic-energy operator for 3-atoms systems
+Mol. Phys. 58 (1986) 1053,
+J. of Molecular Structure (Theochem) 430 (1998) 201.
+PCCP 1 (1999) 3377
+END-TITLE
+END-OP_DEFINE-SECTION
+
+PARAMETER-SECTION
+carbon_mass = 12.0,AMU
+oxygen_mass = 15.99491463,AMU
+atomA_mass  = oxygen_mass   # mass of atom A in molecule A-B-C
+atomB_mass  = carbon_mass   # mass of atom B in molecule A-B-C
+atomC_mass  = oxygen_mass   # mass of atom C in molecule A-B-C
+
+M11 = 1.0/atomA_mass+1.0/atomB_mass    # inverted mass for vector 1
+M22 = 1.0/atomB_mass+1.0/atomC_mass    # inverted mass for vector 2
+M12 = 1.0/atomB_mass                   # coupling between vector 1 and vector 2
+mass_r1  = 1.0/M11                     # reduced mass for mode r_1
+mass_r2  = 1.0/M22                     # reduced mass for mode r_2
+
+jtot = 10
+j_cent = jtot^2/2.d0*M22+jtot/2.d0*M22
+
+ar          = 2.416,Angst-1  # = a1 = a2
+r_e         = 1.16,Angst     # equilibrium value of r1, r2
+theta_e     = PI             # equilibrium value of theta
+K010 =  0.783081,aJ    # = M2
+K200 =  1.371790,aJ    # = M11
+K002 =  K200           # = M33
+K101 =  0.214624,aJ    # = M13
+K020 =  0.372488,aJ    # = M22
+K110 = -0.489770,aJ    # = M12
+K011 =  K110           # = M23
+K300 =  0.060042,aJ    # = M111
+K003 =  K300           # = M333
+K030 =  0.212785,aJ    # = M222
+K210 = -0.144929,aJ    # = M112
+K012 =  K210           # = M233
+K120 = -0.363860,aJ    # = M122
+K021 =  K120           # = M223
+K201 = -0.448250,aJ    # = M113
+K102 =  K201           # = M133
+K111 =  0.810834,aJ    # = M123
+K400 =  0.119865,aJ    # = M1111
+K004 =  K400           # = M3333
+K040 =  0.0716051,aJ   # = M2222
+K130 = -0.127082,aJ    # = M1222
+K031 =  K130           # = M2223
+K220 = -0.0246856,aJ   # = M1122
+K022 =  K220           # = M2233
+K121 =  1.007238,aJ    # = M1223
+K310 = -0.271867,aJ    # = M1112
+K013 =  K310           # = M2333
+K211 = -0.0715754,aJ   # = M1123
+K112 =  K211           # = M1233
+K301 =  0.379820,aJ    # = M1113
+K103 =  K301           # = M1333
+K202 =  0.154753,aJ    # = M1133
+END-PARAMETER-SECTION
+
+LABELS-SECTION
+co2r = exp1[-ar r_e]        #   1 - exp(-ar*(r-r_e))
+co2t = cos1[1.0 theta_e]    #   cos(theta) - cos(theta_e)
+END-LABELS-SECTION
+
+
+
+HAMILTONIAN-SECTION
+------------------------------------------------------
+ modes        | r1     |  r2    | theta    |  k
+------------------------------------------------------
+ 1.0          | KE     |  1     | 1        |  1
+ 1.0          | 1      |  KE    | 1        |  1
+-M12          | dq     |  dq    | cos      |  1
+ M11/2.0      | q^-2   |  1     | j^2      |  1
+ M22/2.0      | 1      | q^-2   | j^2      |  1
+ M12          | q^-1   |  dq    | dth1     |  1
+ M12          | dq     | q^-1   | dth1     |  1
+-M12/2.0      | q^-1   | q^-1   | cos*j^2  |  1
+-M12/2.0      | q^-1   | q^-1   | j^2*cos  |  1
+
+-----------------  J>0  ------------------------------
+-M22/2.0      | 1      | q^-2   | jpm      |  1
+ M12/4.0      | q^-1   | q^-1   | cos*jpm  |  1
+ M12/4.0      | q^-1   | q^-1   | jpm*cos  |  1
+-M12/2.0      | dq     | q^-1   | sJp      |  1
+ M12/2.0      | dq     | q^-1   | sJm      |  1
+-M12/2.0      | q^-1   | q^-1   | sJpk     |  1
+-M12/2.0      | q^-1   | q^-1   | sJmk     |  1
+-M22          | 1      | q^-2   | 1        |  q^2
+ j_cent       | 1      | q^-2   | 1        |  1
+
+------------------ Potential -------------------------
+ K010         | 1      | 1      | co2t^1   # 1st order potential
+ K200         | co2r^2 | 1      | 1        # 2nd order potential
+ K002         | 1      | co2r^2 | 1
+ K101         | co2r^1 | co2r^1 | 1
+ K020         | 1      | 1      | co2t^2
+ K110         | co2r^1 | 1      | co2t^1
+ K011         | 1      | co2r^1 | co2t^1
+ K300         | co2r^3 | 1      | 1        # 3rd order potential
+ K003         | 1      | co2r^3 | 1
+ K030         | 1      | 1      | co2t^3
+ K210         | co2r^2 | 1      | co2t^1
+ K012         | 1      | co2r^2 | co2t^1
+ K120         | co2r^1 | 1      | co2t^2
+ K021         | 1      | co2r^1 | co2t^2
+ K201         | co2r^2 | co2r^1 | 1
+ K102         | co2r^1 | co2r^2 | 1
+ K111         | co2r^1 | co2r^1 | co2t^1
+ K400         | co2r^4 | 1      | 1        # 4th order potential
+ K004         | 1      | co2r^4 | 1
+ K040         | 1      | 1      | co2t^4
+ K130         | co2r^1 | 1      | co2t^3
+ K031         | 1      | co2r^1 | co2t^3
+ K220         | co2r^2 | 1      | co2t^2
+ K022         | 1      | co2r^2 | co2t^2
+ K121         | co2r^1 | co2r^1 | co2t^2
+ K310         | co2r^3 | 1      | co2t^1
+ K013         | 1      | co2r^3 | co2t^1
+ K211         | co2r^2 | co2r^1 | co2t^1
+ K112         | co2r^1 | co2r^2 | co2t^1
+ K301         | co2r^3 | co2r^1 | 1
+ K103         | co2r^1 | co2r^3 | 1
+ K202         | co2r^2 | co2r^2 | 1
+----------------------------------------------------------
+END-HAMILTONIAN-SECTION
+
+
+HAMILTONIAN-SECTION_cos
+usediag
+--------------------------------------------------------
+ modes        | r1     |   r2    | theta    |   k
+--------------------------------------------------------
+ M11          | 1      |   1     | j^2      |  1
+ 1.0          | 1      |   1     | cos      |  1
+ 0.01*M11     | 1      |   1     | sJp      |  1
+ 0.01*M11     | 1      |   1     | sJm      |  1
+--------------------------------------------------------
+END-HAMILTONIAN-SECTION
+
+END-OPERATOR

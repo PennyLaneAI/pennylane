@@ -1,0 +1,49 @@
+OP_DEFINE-SECTION
+title
+H+H2 (H+D2) Reactive Scattering in Jacobian Coordinates
+J>0, KLeg, exact kinetic energy.
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_rd = 1224.0     #  All these parameters
+mass_rv =  918.0     #  will be overwritten
+jtot    = 4          #  by the input file
+sl0     = 0          #  or by options.
+j_cent  = jtot^2/2.0/mass_rd+jtot/2.0/mass_rd
+l_cent  =  sl0^2/2.0/mass_rv+sl0/2.0/mass_rv
+end-parameter-section
+
+HAMILTONIAN-SECTION
+--------------------------------------------------
+  modes         |  rd   |  rv  |  theta |  k
+--------------------------------------------------
+ 1.0            |  KE   |  1   |  1     |  1
+ 1.0            |  1    |  KE  |  1     |  1
+ 0.5/mass_rd    |  q^-2 |  1   |  j^2   |  1
+ 0.5/mass_rv    |  1    | q^-2 |  j^2   |  1
+#-0.5/mass_rd    |  q^-2 |  1   |  j_p   | c_p
+#-0.5/mass_rd    |  q^-2 |  1   |  j_m   | c_m
+-0.5/mass_rd    |  q^-2 |  1   |  jpm   |  1
+-1.0/mass_rd    |  q^-2 |  1   |  1     | q^2
+ j_cent         |  q^-2 |  1   |  1     |  1
+ 1.0            |  V
+--------------------------------------------------
+end-hamiltonian-section
+
+
+LABELS-SECTION
+V = lsth{jacobian}
+end-labels-section
+
+HAMILTONIAN-SECTION_H2
+------------------------------------------
+  modes   |  rd   |  rv  |  theta  |  k
+------------------------------------------
+ 1.0      |  1    |  KE  |   1     |  1
+ 1.0      |  1    | v:H2 |   1     |  1
+l_cent    |  1    | q^-2 |   1     |  1
+------------------------------------------
+END-HAMILTONIAN-SECTION
+
+end-operator

@@ -1,0 +1,203 @@
+#######################################################################
+###           Linear 24-mode VC model for Pyrazine
+###  4-mode model of Domcke et al +  20-mode oscillator bath
+###   Worth, Meyer and Cederbaum. J.Chem.Phys. 109 (1998) 3518
+#######################################################################
+
+OP_DEFINE-SECTION
+title
+Pyrazine 24-mode model with linear bath.
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+w10a    = 0.09357 , ev
+w6a   = 0.0740  , ev
+w1    = 0.1273  , ev
+w9a   = 0.1568  , ev
+w1b   = 0.0400  ,ev
+w2b   = 0.0589  ,ev
+w3b   = 0.0778  ,ev
+w4b   = 0.0968  ,ev
+w5b   = 0.1157  ,ev
+w6b   = 0.1347  ,ev
+w7b   = 0.1536  ,ev
+w8b   = 0.1726  ,ev
+w9b   = 0.1915  ,ev
+w10b   = 0.2105  ,ev
+w11b   = 0.2294  ,ev
+w12b   = 0.2484  ,ev
+w13b   = 0.2673  ,ev
+w14b   = 0.2863  ,ev
+w15b   = 0.3052  ,ev
+w16b   = 0.3242  ,ev
+w17b   = 0.3431  ,ev
+w18b   = 0.3621  ,ev
+w19b   = 0.3810  ,ev
+w20b   = 0.4000  ,ev
+
+delta = 0.46165 , ev
+lambda = 0.1825 , ev
+
+k6a1   = -0.0964 , ev     k6a2  = 0.1194 , ev
+k11    = 0.0470 , ev      k12   = 0.2012 , ev
+k9a1   = 0.1594 , ev      k9a2   = 0.0484 , ev
+k1b1   = 0.0069 , ev      k1b2   = -0.0069 , ev
+k2b1   = 0.0112 , ev      k2b2   = -0.0112 , ev
+k3b1   = 0.0102 , ev      k3b2   = -0.0102 , ev
+k4b1   = 0.0188 , ev      k4b2   = -0.0188 , ev
+k5b1   = 0.0261 , ev      k5b2   = -0.0261 , ev
+k6b1   = 0.0308 , ev      k6b2   = -0.0308 , ev
+k7b1   = 0.0210 , ev      k7b2   = -0.0210 , ev
+k8b1   = 0.0265 , ev      k8b2   = -0.0265 , ev
+k9b1   = 0.0196 , ev      k9b2   = -0.0196 , ev
+k10b1   = 0.0281 , ev     k10b2   = -0.0281 , ev
+k11b1   = 0.0284 , ev     k11b2   = -0.0284 , ev
+k12b1   = 0.0361 , ev     k12b2   = -0.0361 , ev
+k13b1   = 0.0560 , ev     k13b2   = -0.0560 , ev
+k14b1   = 0.0433 , ev     k14b2   = -0.0433 , ev
+k15b1   = 0.0625 , ev     k15b2   = -0.0625 , ev
+k16b1   = 0.0717 , ev     k16b2   = -0.0717 , ev
+k17b1   = 0.0782 , ev     k17b2   = -0.0782 , ev
+k18b1   = 0.0780 , ev     k18b2   = -0.0780 , ev
+k19b1   = 0.0269 , ev     k19b2   = -0.0269 , ev
+k20b1   = 0.0306 , ev     k20b2   = -0.0306 , ev
+end-parameter-section
+
+HAMILTONIAN-SECTION
+modes  |  el  | v10a  | v6a  | v1  | v9a
+modes  |  1b  | 2b    | 3b   | 4b  | 5b   | 6b  | 7b  | 8b  | 9b  | 10b
+modes  | 11b  | 12b   | 13b  | 14b | 15b  | 16b | 17b | 18b | 19b | 20b
+
+1.0*w10a        |2  KE
+1.0*w6a         |3  KE
+1.0*w1          |4  KE
+1.0*w9a         |5  KE
+1.0*w1b         |6  KE
+1.0*w2b         |7  KE
+1.0*w3b         |8  KE
+1.0*w4b         |9  KE
+1.0*w5b         |10 KE
+1.0*w6b         |11 KE
+1.0*w7b         |12 KE
+1.0*w8b         |13 KE
+1.0*w9b         |14 KE
+1.0*w10b        |15 KE
+1.0*w11b        |16 KE
+1.0*w12b        |17 KE
+1.0*w13b        |18 KE
+1.0*w14b        |19 KE
+1.0*w15b        |20 KE
+1.0*w16b        |21 KE
+1.0*w17b        |22 KE
+1.0*w18b        |23 KE
+1.0*w19b        |24 KE
+1.0*w20b        |25 KE
+
+0.5*w10a        |2  q^2
+0.5*w6a         |3  q^2
+0.5*w1          |4  q^2
+0.5*w9a         |5  q^2
+0.5*w1b         |6  q^2
+0.5*w2b         |7  q^2
+0.5*w3b         |8  q^2
+0.5*w4b         |9  q^2
+0.5*w5b         |10 q^2
+0.5*w6b         |11 q^2
+0.5*w7b         |12 q^2
+0.5*w8b         |13 q^2
+0.5*w9b         |14 q^2
+0.5*w10b        |15 q^2
+0.5*w11b        |16 q^2
+0.5*w12b        |17 q^2
+0.5*w13b        |18 q^2
+0.5*w14b        |19 q^2
+0.5*w15b        |20 q^2
+0.5*w16b        |21 q^2
+0.5*w17b        |22 q^2
+0.5*w18b        |23 q^2
+0.5*w19b        |24 q^2
+0.5*w20b        |25 q^2
+
+-delta          |1 S1&1
+lambda          |1 S1&2  |2 q
+delta           |1 S2&2
+
+k6a1            |1 S1&1  |3 q
+k6a2            |1 S2&2  |3 q
+k11             |1 S1&1  |4 q
+k12             |1 S2&2  |4 q
+k9a1            |1 S1&1  |5 q
+k9a2            |1 S2&2  |5 q
+k1b1            |1 S1&1  |6 q
+k1b2            |1 S2&2  |6 q
+k2b1            |1 S1&1  |7 q
+k2b2            |1 S2&2  |7 q
+k3b1            |1 S1&1  |8 q
+k3b2            |1 S2&2  |8 q
+k4b1            |1 S1&1  |9 q
+k4b2            |1 S2&2  |9 q
+k5b1            |1 S1&1  |10 q
+k5b2            |1 S2&2  |10 q
+k6b1            |1 S1&1  |11 q
+k6b2            |1 S2&2  |11 q
+k7b1            |1 S1&1  |12 q
+k7b2            |1 S2&2  |12 q
+k8b1            |1 S1&1  |13 q
+k8b2            |1 S2&2  |13 q
+k9b1            |1 S1&1  |14 q
+k9b2            |1 S2&2  |14 q
+k10b1           |1 S1&1  |15 q
+k10b2           |1 S2&2  |15 q
+k11b1           |1 S1&1  |16 q
+k11b2           |1 S2&2  |16 q
+k12b1           |1 S1&1  |17 q
+k12b2           |1 S2&2  |17 q
+k13b1           |1 S1&1  |18 q
+k13b2           |1 S2&2  |18 q
+k14b1           |1 S1&1  |19 q
+k14b2           |1 S2&2  |19 q
+k15b1           |1 S1&1  |20 q
+k15b2           |1 S2&2  |20 q
+k16b1           |1 S1&1  |21 q
+k16b2           |1 S2&2  |21 q
+k17b1           |1 S1&1  |22 q
+k17b2           |1 S2&2  |22 q
+k18b1           |1 S1&1  |23 q
+k18b2           |1 S2&2  |23 q
+k19b1           |1 S1&1  |24 q
+k19b2           |1 S2&2  |24 q
+k20b1           |1 S1&1  |25 q
+k20b2           |1 S2&2  |25 q
+end-hamiltonian-section
+
+# The following two operators are used by the elk-test.
+
+# this operator is for the elk-test
+HAMILTONIAN-SECTION_gauss
+modes  |  el  | v10a  | v6a  | v1
+1.0      |1 S1&1  |2  gauss
+1.0      |1 S2&2  |2  g1
+0.5      |1 S1&1  |3  g2
+0.5      |1 S2&2  |4  g3
+end-hamiltonian-section
+
+
+# this operator is for the elk-test
+HAMILTONIAN-SECTION_oper2
+modes  |  el  | v10a  | v6a  | v1  | v9a
+1.0    |1 S1&1  |2 q
+0.5    |1 S2&2  |2 q
+0.3    |1 S1&1 |3 q^2   |5 dq^2
+0.3    |1 S2&2 |5 dq^2  |3 q^2
+end-hamiltonian-section
+
+
+LABELS-SECTION
+g1 = gauss[1.0,0.0]
+g2 = gauss[2.0,0.0]
+g3 = gauss[2.0,-1.0]
+end-labels-section
+
+
+end-operator

@@ -1,0 +1,34 @@
+#############################################################
+#     Operator for HCN in Jacobi coordinates                #
+#     We use utheta = cos(theta) instead of theta           #
+#############################################################
+
+OP_DEFINE-SECTION
+title
+HCN S0 surface
+end-title
+end-op_define-section
+
+PARAMETER-SECTION
+mass_rd =  0.96296, AMU
+mass_rv =  6.46154, AMU
+end-parameter-section
+
+HAMILTONIAN-SECTION
+---------------------------------------------
+modes         |  rd    |  rv    | utheta
+---------------------------------------------
+1.0           |  KE    |  1     |  1
+1.0           |  1     |  KE    |  1
+-0.5/mass_rd  |  q^-2  |  1     | dq*qs^2*dq
+-0.5/mass_rv  |  1     | q^-2   | dq*qs^2*dq
+1.0           |  V
+---------------------------------------------
+end-hamiltonian-section
+
+LABELS-SECTION
+V = natpot{HCN}
+end-labels-section
+
+end-operator
+

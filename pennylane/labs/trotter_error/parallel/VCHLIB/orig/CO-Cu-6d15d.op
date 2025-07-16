@@ -1,0 +1,243 @@
+OP_DEFINE-section
+title
+6D Marquardt's SAP PES for CO/Cu(100)
+Meng and Meyer, JCP 146, 184305 (2017)
+end-title
+end-OP_DEFINE-section
+
+PARAMETER-SECTION
+mass1    = 28.00, AMU      # Total mass of CO molecule
+mass2    = 63.546, AMU     # Mass of copper atom
+mu       = 6.857, AMU      # Reduced mass of CO molecule
+mass_x   = mass1
+mass_y   = mass1
+mass_z   = mass1
+mass_r = mu
+mass_q1x = mass2
+mass_q1y = mass2
+mass_q1z = mass2
+mass_q3x = mass2
+mass_q3y = mass2
+mass_q3z = mass2
+mass_q5x = mass2
+mass_q5y = mass2
+mass_q5z = mass2
+mass_q6x = mass2
+mass_q6y = mass2
+mass_q6z = mass2
+mass_q8x = mass2
+mass_q8y = mass2
+mass_q8z = mass2
+alpha2   = 2.0d0*alpha
+end-PARAMETER-section
+
+HAMILTONIAN-section
+------------------------------------------------------
+  modes      |  x  |  y  |  z  |  r  |  theta  |  phi
+#  No.          1     2     3     4       5        6
+  modes      | q1x | q1y | q1z | q3x | q3y | q3z | q5x | q5y | q5z | q6x | q6y | q6z | q8x | q8y | q8z
+#  No.          7     8     9     10    11    12    13    14    15    16    17   18    19    20     21
+  modes      | Time
+# No.           22
+--------------------------------------------------------------------------------------------------------
+1.0          |1     KE
+1.0          |2     KE
+1.0          |3     KE
+1.0          |4     KE
+0.5/mu       |4     qr^-2    |5&6    j^2
+1.0          |7     KE
+1.0          |8     KE
+1.0          |9     KE
+1.0          |10    KE
+1.0          |11    KE
+1.0          |12    KE
+1.0          |13    KE
+1.0          |14    KE
+1.0          |15    KE
+1.0          |16    KE
+1.0          |17    KE
+1.0          |18    KE
+1.0          |19    KE
+1.0          |20    KE
+1.0          |21    KE
+1.0          |1&2&3&4&5&6   VSAP
+21.0*D       |1     1
+
+1.0   |1&2&3&4&5&6    V1X    |7    q
+1.0   |1&2&3&4&5&6    V1Y    |8    q
+1.0   |1&2&3&4&5&6    V1Z    |9    q
+1.0   |1&2&3&4&5&6    V3X    |10   q
+1.0   |1&2&3&4&5&6    V3Y    |11   q
+1.0   |1&2&3&4&5&6    V3Z    |12   q
+1.0   |1&2&3&4&5&6    V5X    |13   q
+1.0   |1&2&3&4&5&6    V5Y    |14   q
+1.0   |1&2&3&4&5&6    V5Z    |15   q
+1.0   |1&2&3&4&5&6    V6X    |16   q
+1.0   |1&2&3&4&5&6    V6Y    |17   q
+1.0   |1&2&3&4&5&6    V6Z    |18   q
+1.0   |1&2&3&4&5&6    V8X    |19   q
+1.0   |1&2&3&4&5&6    V8Y    |20   q
+1.0   |1&2&3&4&5&6    V8Z    |21   q
+
+0.5   |1&2&3&4&5&6    V1XX   |7    q^2
+0.5   |1&2&3&4&5&6    V1YY   |8    q^2
+0.5   |1&2&3&4&5&6    V1ZZ   |9    q^2
+1.0   |1&2&3&4&5&6    V1XY   |7    q    |8   q
+1.0   |1&2&3&4&5&6    V1XZ   |7    q    |9   q
+1.0   |1&2&3&4&5&6    V1YZ   |8    q    |9   q
+
+# M(x3)+M(x1-x3)+M(x8-x1)+M(-x8)
+# M(x3)
+ 1.0*D   |10    mexp2
+-2.0*D   |10    mexp
+# M(x1-x3)
+ 1.0*D   |7    mexp2   |10   pexp2
+-2.0*D   |7    mexp    |10   pexp
+# M(x8-x1)
+ 1.0*D   |7    pexp2   |19   mexp2
+-2.0*D   |7    pexp    |19   mexp
+# M(-x8)
+ 1.0*D   |19   pexp2
+-2.0*D   |19   pexp
+
+# M(x5)+M(-x5)
+ 1.0*D   |13    mexp2
+-2.0*D   |13    mexp
+ 1.0*D   |13    pexp2
+-2.0*D   |13    pexp
+
+# M(x6)+M(-x6)
+ 1.0*D   |16    mexp2
+-2.0*D   |16    mexp
+ 1.0*D   |16    pexp2
+-2.0*D   |16    pexp
+
+# M(y5)+M(y1-y5)+M(y6-y1)+M(-y6)
+# M(y5)
+ 1.0*D   |14   mexp2
+-2.0*D   |14   mexp
+# M(y1-y5)
+ 1.0*D   |8   mexp2   |14   pexp2
+-2.0*D   |8   mexp    |14   pexp
+# M(y6-y1)
+ 1.0*D   |8   pexp2   |17   mexp2
+-2.0*D   |8   pexp    |17   mexp
+# M(-y6)
+ 1.0*D   |17  pexp2
+-2.0*D   |17  pexp
+
+# M(y3)+M(-y3)
+ 1.0*D   |11     mexp2
+-2.0*D   |11     mexp
+ 1.0*D   |11     pexp2
+-2.0*D   |11     pexp
+
+# M(y8)+M(-y8)
+ 1.0*D   |20    mexp2
+-2.0*D   |20    mexp
+ 1.0*D   |20    pexp2
+-2.0*D   |20    pexp
+
+# M(z1)
+ 1.0*D   |9   mexp2
+-2.0*D   |9   mexp
+
+# M(z3)
+ 1.0*D   |12   mexp2
+-2.0*D   |12   mexp
+
+# M(z5)
+ 1.0*D   |15   mexp2
+-2.0*D   |15   mexp
+
+# M(z6)
+ 1.0*D   |18   mexp2
+-2.0*D   |18   mexp
+
+# M(z8)
+ 1.0*D   |21   mexp2
+-2.0*D   |21   mexp
+
+# coupling
+#0.5*k*(z1-z3)^2
+ 0.5*k    |9    q^2
+ 0.5*k    |12   q^2
+-1.0*k    |9    q   |12    q
+
+#0.5*k*(z1-z5)^2
+ 0.5*k    |9    q^2
+ 0.5*k    |15   q^2
+-1.0*k    |9    q   |15   q
+
+#0.5*k*(z1-z6)^2
+ 0.5*k    |9    q^2
+ 0.5*k    |18   q^2
+-1.0*k    |9    q   |18   q
+
+#0.5*k*(z1-z8)^2
+ 0.5*k    |9    q^2
+ 0.5*k    |21   q^2
+-1.0*k    |9    q   |21   q
+
+strong    |3    stp*sn^3    |22    stpt
+end-HAMILTONIAN-section
+
+LABELS-section
+stp=step[zcap]
+sn=sin[PI/6.0,zcap]
+stpt=step[tatt]
+qr=q[-2.1731849]
+
+VSAP=natpot{/home/meng/work/mode-spec/6d-pot/v0}
+
+V1X =natpot{/home/meng/work/mode-spec/6d-pot/v1/1x}
+V1Y =natpot{/home/meng/work/mode-spec/6d-pot/v1/1y}
+V1Z =natpot{/home/meng/work/mode-spec/6d-pot/v1/1z}
+V3X =natpot{/home/meng/work/mode-spec/6d-pot/v1/3x}
+V3Y =natpot{/home/meng/work/mode-spec/6d-pot/v1/3y}
+V3Z =natpot{/home/meng/work/mode-spec/6d-pot/v1/3z}
+V5X =natpot{/home/meng/work/mode-spec/6d-pot/v1/5x}
+V5Y =natpot{/home/meng/work/mode-spec/6d-pot/v1/5y}
+V5Z =natpot{/home/meng/work/mode-spec/6d-pot/v1/5z}
+V6X =natpot{/home/meng/work/mode-spec/6d-pot/v1/6x}
+V6Y =natpot{/home/meng/work/mode-spec/6d-pot/v1/6y}
+V6Z =natpot{/home/meng/work/mode-spec/6d-pot/v1/6z}
+V8X =natpot{/home/meng/work/mode-spec/6d-pot/v1/8x}
+V8Y =natpot{/home/meng/work/mode-spec/6d-pot/v1/8y}
+V8Z =natpot{/home/meng/work/mode-spec/6d-pot/v1/8z}
+
+V1XX=natpot{/home/meng/work/mode-spec/6d-pot/v2/1xx}
+V1XY=natpot{/home/meng/work/mode-spec/6d-pot/v2/1xy}
+V1XZ=natpot{/home/meng/work/mode-spec/6d-pot/v2/1xz}
+V1YY=natpot{/home/meng/work/mode-spec/6d-pot/v2/1yy}
+V1YZ=natpot{/home/meng/work/mode-spec/6d-pot/v2/1yz}
+V1ZZ=natpot{/home/meng/work/mode-spec/6d-pot/v2/1zz}
+
+mexp2 = exp[-alpha2,0.0d0]
+mexp  = exp[-alpha,0.0d0]
+pexp2 = exp[alpha2,0.0d0]
+pexp  = exp[alpha,0.0d0]
+
+VCO  = external1d{/home/meng/work/mode-spec/1d-pot/1d-vco.dat}
+expzp = Exp[kp,0.0d0]
+end-LABELS-section
+
+HAMILTONIAN-SECTION_initp
+----------------
+  modes   |   z
+-----------------
+1.0       |  expzp
+-----------------
+end-hamiltonian-section
+
+HAMILTONIAN-SECTION_CO
+usediag
+----------------
+  modes  |  r
+----------------
+1.0      |  KE
+1.0      |  VCO
+----------------
+end-hamiltonian-section
+
+end-operator

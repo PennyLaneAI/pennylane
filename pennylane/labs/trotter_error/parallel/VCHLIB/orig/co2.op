@@ -1,0 +1,175 @@
+OP_DEFINE-SECTION
+TITLE
+CO2 vibrational Hamiltonian (J=0), 3 modes, valence coordinates
+PES taken from J. Zuniga et al., J. Mol. Spec. 195, 137 (1999)
+END-TITLE
+END-OP_DEFINE-SECTION
+
+PARAMETER-SECTION
+carbon_mass = 12.0,AMU
+oxygen_mass = 15.99491463,AMU
+atomA_mass  = oxygen_mass   # mass of atom A in molecule A-C-B
+atomB_mass  = oxygen_mass   # mass of atom B in molecule A-C-B
+atomC_mass  = carbon_mass   # mass of atom C in molecule A-C-B
+AC_mass     = atomA_mass+atomC_mass          # mass of diatom A-C
+BC_mass     = atomB_mass+atomC_mass          # mass of diatom B-C
+mass_r1     = atomA_mass*atomC_mass/AC_mass  # reduced mass for mode r_1
+mass_r2     = atomB_mass*atomC_mass/BC_mass  # reduced mass for mode r_2
+ar          = 2.416,Angst-1  # = a1 = a2
+r_e         = 1.16,Angst     # equilibrium value of r1, r2
+theta_e     = PI             # equilibrium value of theta
+omr         = 0.30, eV
+sh1         = mass_r1*omr*0.50
+s1          = -r_e*sh1^0.5
+inertia     = 1.0/mass_r1/r_e/r_e - 1.0/atomC_mass/r_e/r_e
+#alpha       = (K010/inertia)^0.5 = 82.8543
+#om_bend     = 650,cm-1
+#alpha       = om_bend*2.0/inertia
+alpha       = 83.0
+beta        = -0.75  # Upper Fermi value
+# beta      = 0.4    # Lower Fermi value (between -300 and -400 is ok)
+K010 =  0.783081,aJ    # = M2
+K200 =  1.371790,aJ    # = M11
+K002 =  K200           # = M33
+K101 =  0.214624,aJ    # = M13
+K020 =  0.372488,aJ    # = M22
+K110 = -0.489770,aJ    # = M12
+K011 =  K110           # = M23
+K300 =  0.060042,aJ    # = M111
+K003 =  K300           # = M333
+K030 =  0.212785,aJ    # = M222
+K210 = -0.144929,aJ    # = M112
+K012 =  K210           # = M233
+K120 = -0.363860,aJ    # = M122
+K021 =  K120           # = M223
+K201 = -0.448250,aJ    # = M113
+K102 =  K201           # = M133
+K111 =  0.810834,aJ    # = M123
+K400 =  0.119865,aJ    # = M1111
+K004 =  K400           # = M3333
+K040 =  0.0716051,aJ   # = M2222
+K130 = -0.127082,aJ    # = M1222
+K031 =  K130           # = M2223
+K220 = -0.0246856,aJ   # = M1122
+K022 =  K220           # = M2233
+K121 =  1.007238,aJ    # = M1223
+K310 = -0.271867,aJ    # = M1112
+K013 =  K310           # = M2333
+K211 = -0.0715754,aJ   # = M1123
+K112 =  K211           # = M1233
+K301 =  0.379820,aJ    # = M1113
+K103 =  K301           # = M1333
+K202 =  0.154753,aJ    # = M1133
+END-PARAMETER-SECTION
+
+LABELS-SECTION
+co2r = exp1[-ar r_e]        #   1 - exp(-ar*(r-r_e))
+co2t = cos1[1.0 theta_e]    #   cos(theta) - cos(theta_e)
+apr  = rai[mass_r1 omr s1]  #   HO-raising operator (a-dagger)
+END-LABELS-SECTION
+
+
+HAMILTONIAN-SECTION
+-----------------------------------------------
+ modes            | r1     | theta   | r2
+-----------------------------------------------
+ 1.0              | KE     | 1       | 1         # kinetic energy
+ 1.0              | 1      | 1       | KE
+ 0.5/mass_r1      | q^-2   | j^2     | 1
+ 0.5/mass_r2      | 1      | j^2     | q^-2
+-1.0/atomC_mass   | dq     | cos     | dq
+ 1.0/atomC_mass   | q^-1   | dth1    | dq
+ 1.0/atomC_mass   | dq     | dth1    | q^-1
+-0.5/atomC_mass   | q^-1   | cos*j^2 | q^-1
+-0.5/atomC_mass   | q^-1   | j^2*cos | q^-1
+-----------------------------------------------
+ K010             | 1      | co2t^1  | 1         # 1st order potential
+ K200             | co2r^2 | 1       | 1         # 2nd order potential
+ K002             | 1      | 1       | co2r^2
+ K101             | co2r^1 | 1       | co2r^1
+ K020             | 1      | co2t^2  | 1
+ K110             | co2r^1 | co2t^1  | 1
+ K011             | 1      | co2t^1  | co2r^1
+ K300             | co2r^3 | 1       | 1         # 3rd order potential
+ K003             | 1      | 1       | co2r^3
+ K030             | 1      | co2t^3  | 1
+ K210             | co2r^2 | co2t^1  | 1
+ K012             | 1      | co2t^1  | co2r^2
+ K120             | co2r^1 | co2t^2  | 1
+ K021             | 1      | co2t^2  | co2r^1
+ K201             | co2r^2 | 1       | co2r^1
+ K102             | co2r^1 | 1       | co2r^2
+ K111             | co2r^1 | co2t^1  | co2r^1
+ K400             | co2r^4 | 1       | 1         # 4th order potential
+ K004             | 1      | 1       | co2r^4
+ K040             | 1      | co2t^4  | 1
+ K130             | co2r^1 | co2t^3  | 1
+ K031             | 1      | co2t^3  | co2r^1
+ K220             | co2r^2 | co2t^2  | 1
+ K022             | 1      | co2t^2  | co2r^2
+ K121             | co2r^1 | co2t^2  | co2r^1
+ K310             | co2r^3 | co2t^1  | 1
+ K013             | 1      | co2t^1  | co2r^3
+ K211             | co2r^2 | co2t^1  | co2r^1
+ K112             | co2r^1 | co2t^1  | co2r^2
+ K301             | co2r^3 | 1       | co2r^1
+ K103             | co2r^1 | 1       | co2r^3
+ K202             | co2r^2 | 1       | co2r^2
+-----------------------------------------------
+END-HAMILTONIAN-SECTION
+
+
+HAMILTONIAN-SECTION_asym
+--------------------------------------------
+ modes            | r1     | theta   | r2
+--------------------------------------------
+  0.707107        | apr    | 1       | 1
+ -0.707107        | 1      | 1       | apr
+--------------------------------------------
+END-HAMILTONIAN-SECTION
+
+
+HAMILTONIAN-SECTION_sym
+--------------------------------------------
+ modes            | r1     | theta   | r2
+--------------------------------------------
+  1.0             | apr    | 1       | 1
+  1.0             | 1      | 1       | apr
+ 0.5*beta*alpha   | 1      | sin^2   | 1
+-0.5*beta/alpha   | 1      | j^2     | 1
+     beta         | 1      | dth1    | 1
+--------------------------------------------
+END-HAMILTONIAN-SECTION
+
+
+HAMILTONIAN-SECTION_th
+--------------------------------------------
+ modes           | r1     | theta   | r2
+--------------------------------------------
+    0.50*alpha   | 1      | sin^2   | 1
+   -0.50/alpha   | 1      | j^2     | 1
+     1.0         | 1      | dth1    | 1
+--------------------------------------------
+END-HAMILTONIAN-SECTION
+
+
+HAMILTONIAN-SECTION_rot
+-----------------------------------------
+ modes            | r1  | theta   | r2
+-----------------------------------------
+ inertia          |  1  | j^2     | 1
+ K010             |  1  | co2t^1  | 1
+ K020             |  1  | co2t^2  | 1
+ K030             |  1  | co2t^3  | 1
+ K040             |  1  | co2t^4  | 1
+-----------------------------------------
+END-HAMILTONIAN-SECTION
+
+
+END-OPERATOR
+
+
+
+
+
+

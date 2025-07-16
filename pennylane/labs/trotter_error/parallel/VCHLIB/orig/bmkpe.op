@@ -1,0 +1,88 @@
+# Projection - Example Input (3/3)
+# 11/2005 FO
+# 08/2006 FO - adjust for new FT method
+
+# This example will produce the "BMKPE" expansion of the BMKP H4 surface,
+# as suggested by Pogrebnya & Clary [CPL 363 (2002) 523, Section 2.2],
+# using the "projection" program.
+# This example actually consists of several files:
+# 1. pinputs/bmkpe_proj.inp
+#    creates the expansion coefficients as vpot files
+# 2. pinputs/bmkpe_fit_000.inp ... pinputs/bmkpe_fit_222.inp
+#    transforms these vpot files into natpots
+# 3. operators/bmkpe.op
+#    shows how to use these natpots in an MCTDH operator file
+
+
+OP_DEFINE-SECTION
+  title
+  BMKPE in Jacobian coordinates
+  end-title
+end-op_define-section
+
+
+PARAMETER-SECTION
+  mass_R   = 1.0d0, h-mass
+  mass_RAB = 0.5d0, h-mass
+  mass_RCD = 0.5d0, h-mass
+  jtot  = 0 # usually overridden by the input file
+  j1    = 0
+  j2    = 0
+  j_cent  = jtot^2/2.0/mass_R+jtot/2.0/mass_R
+  centri1 = j1^2/2.0/mass_RAB+j1/2.0/mass_RAB
+  centri2 = j2^2/2.0/mass_RCD+j2/2.0/mass_RCD
+end-parameter-section
+
+
+HAMILTONIAN-SECTION
+-----------------------------------------------------------------------
+  modes             |  R    |  RAB |  RCD |  AL  |  k1  |  BE  |  k2
+-----------------------------------------------------------------------
+# --- Kinetic Energy ---
+-0.5/mass_R         |1 q^-2 |4 j_p |5&7 cpp
+-0.5/mass_R         |1 q^-2 |6 j_p |5&7 cpp
+-0.5/mass_R         |1 q^-2 |4 j_m |5&7 cmm
+-0.5/mass_R         |1 q^-2 |6 j_m |5&7 cmm
+ 1.0                |  KE   |  1   |  1   |  1   |  1   |  1   |  1
+ 1.0                |  1    |  KE  |  1   |  1   |  1   |  1   |  1
+ 1.0                |  1    |  1   |  KE  |  1   |  1   |  1   |  1
+ 0.5/mass_R         |  q^-2 |  1   |  1   | j^2  |  1   |  1   |  1
+ 0.5/mass_RAB       |  1    | q^-2 |  1   | j^2  |  1   |  1   |  1
+ 0.5/mass_R         |  q^-2 |  1   |  1   |  1   |  1   | j^2  |  1
+ 0.5/mass_RCD       |  1    |  1   | q^-2 |  1   |  1   | j^2  |  1
+ 0.5/mass_R         |  q^-2 |  1   |  1   | j_p  |  1   | j_m  |  1
+ 0.5/mass_R         |  q^-2 |  1   |  1   | j_m  |  1   | j_p  |  1
+-1.0/mass_R         |  q^-2 |  1   |  1   |  1   | q^2  |  1   |  1
+-1.0/mass_R         |  q^-2 |  1   |  1   |  1   |  1   |  1   | q^2
+-1.0/mass_R         |  q^-2 |  1   |  1   |  1   |  q   |  1   |  q
+ j_cent             |  q^-2 |  1   |  1   |  1   |  1   |  1   |  1
+
+# --- Potential Energy ---
+ 1.0                |  A000 |  1   |  1   | aslegth:0_0 |  1  | aslegth:0_0 |  1
+ 1.0                |  A200 |  1   |  1   | aslegth:2_0 |  1  | aslegth:0_0 |  1
+ 1.0                |  A020 |  1   |  1   | aslegth:0_0 |  1  | aslegth:2_0 |  1
+ 1.0                |  A220 |  1   |  1   | aslegth:2_0 |  1  | aslegth:2_0 |  1
+ 1.0                |  A221 |  1   |  1   | aslegth:2_1 | kp1 | aslegth:2_1 | km1
+ 1.0                |  A221 |  1   |  1   | aslegth:2_1 | km1 | aslegth:2_1 | kp1
+ 1.0                |  A222 |  1   |  1   | aslegth:2_2 | kp2 | aslegth:2_2 | km2
+ 1.0                |  A222 |  1   |  1   | aslegth:2_2 | km2 | aslegth:2_2 | kp2
+-----------------------------------------------------------------------
+end-hamiltonian-section
+
+
+LABELS-SECTION
+  A000 = natpot{a000}
+  A200 = natpot{a200}
+  A020 = natpot{a020}
+  A220 = natpot{a220}
+  A221 = natpot{a221}
+  A222 = natpot{a222}
+  # the natpots referenced here were produced by the input files
+  # bmkpe_fit_000.inp ... bmkpe_fit_222.inp
+  kp1 = shift[1]
+  km1 = shift[-1]
+  kp2 = shift[2]
+  km2 = shift[-2]
+end-labels-section
+
+end-operator
