@@ -90,16 +90,7 @@ def test_assembly_format(run_filecheck):
     %mres4, %out_qubit4 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 1 : i1, !quantum.bit
     """
 
-    ctx = xdsl.context.Context()
-
-    ctx.load_dialect(builtin.Builtin)
-    ctx.load_dialect(test.Test)
-    ctx.load_dialect(QuantumDialect)
-    ctx.load_dialect(MBQCDialect)
-
-    module = xdsl.parser.Parser(ctx, program).parse_module()
-
-    run_filecheck(program, module)
+    run_filecheck(program)
 
 
 class TestMeasureInBasisOp:

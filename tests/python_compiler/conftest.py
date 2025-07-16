@@ -38,7 +38,7 @@ except (ImportError, ModuleNotFoundError):
     deps_available = False
 
 
-def _run_filecheck_impl(program_str, pipeline):
+def _run_filecheck_impl(program_str, pipeline=()):
     """Run filecheck on an xDSL module, comparing it to a program string containing
     filecheck directives."""
     if not deps_available:
@@ -88,15 +88,15 @@ def _get_filecheck_directives(qjit_fn):
     return "\n".join(filecheck_directives)
 
 
-def _run_filecheck_qjit_impl(fn):
+def _run_filecheck_qjit_impl(qjit_fn):
     """Run filecheck on a qjit-ed function, using FileCheck directives in its inline
     comments to assert correctness."""
     if not deps_available:
         return
 
-    checks = _get_filecheck_directives(fn)
+    checks = _get_filecheck_directives(qjit_fn)
     compiler = Compiler()
-    mlir_module = compiler.run(fn.mlir_module)
+    mlir_module = compiler.run(qjit_fn.mlir_module)
 
     # The following is done because ``mlir_module`` will be in the generic syntax, and
     # we want as many ops to be pretty printed as possible.
