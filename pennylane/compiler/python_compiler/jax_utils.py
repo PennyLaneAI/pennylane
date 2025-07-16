@@ -52,6 +52,18 @@ class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-
             that should be loaded into the context before parsing.
     """
 
+    default_dialects: tuple[xDialect] = (
+        xarith.Arith,
+        xbuiltin.Builtin,
+        xfunc.Func,
+        xscf.Scf,
+        xstablehlo.StableHLO,
+        xtensor.Tensor,
+        xtransform.Transform,
+        Quantum,
+        MBQC,
+    )
+
     def __init__(
         self,
         ctx: xContext,
@@ -62,19 +74,7 @@ class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-
         super().__init__(ctx, input, name)
 
         extra_dialects = extra_dialects or ()
-        dialects = (
-            xarith.Arith,
-            xbuiltin.Builtin,
-            xfunc.Func,
-            xscf.Scf,
-            xstablehlo.StableHLO,
-            xtensor.Tensor,
-            xtransform.Transform,
-            Quantum,
-            MBQC,
-        ) + tuple(extra_dialects)
-
-        for dialect in dialects:
+        for dialect in self.default_dialects + tuple(extra_dialects):
             self.ctx.load_dialect(dialect)
 
 

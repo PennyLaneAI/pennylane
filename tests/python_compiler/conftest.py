@@ -116,7 +116,37 @@ def _run_filecheck_qjit_impl(qjit_fn):
 
 @pytest.fixture(scope="function")
 def run_filecheck_qjit():
-    """Fixture to run filecheck on a qjit-ed function."""
+    """Fixture to run filecheck on a qjit-ed function.
+
+    This fixture yields a function that takes a QJIT object as input, parses its
+    MLIR, applies any passes that are present, and uses FileCheck to check the
+    output IR against FileCheck directives that may be present in the source
+    function as inline comments.
+
+    An example showing how to use the fixture is shown below. We apply the
+    ``merge_rotations_pass`` and check that there is only one rotation in
+    the final IR:
+
+    .. code-block:: python
+
+        def test_qjit(self, run_filecheck_qjit):
+            # Test that the merge_rotations_pass works as expected when used with `qjit`
+            dev = qml.device("lightning.qubit", wires=2)
+
+            @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+            @merge_rotations_pass
+            @qml.qnode(dev)
+            def circuit(x: float, y: float):
+                # CHECK: [[phi:%.*]] = arith.addf
+                # CHECK: quantum.custom "RX"([[phi]])
+                # CHECK-NOT: quantum.custom
+                qml.RX(x, 0)
+                qml.RX(y, 0)
+                return qml.state()
+
+            run_filecheck_qjit(circuit)
+
+    """
     if not deps_available:
         pytest.skip("Cannot run lit tests without xDSL and filecheck.")
 
