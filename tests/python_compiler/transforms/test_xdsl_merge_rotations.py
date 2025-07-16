@@ -196,11 +196,11 @@ class TestMergeRotationsPass:
 
 # pylint: disable=too-few-public-methods
 @pytest.mark.usefixtures("enable_disable_plxpr")
-class TestIterativeCancelInversesIntegration:
-    """Integration tests for the IterativeCancelInversesPass."""
+class TestMergeRotationsIntegration:
+    """Integration tests for the MergeRotationsPass."""
 
     def test_qjit(self, run_filecheck_qjit):
-        """Test that the IterativeCancelInversesPass works correctly with qjit."""
+        """Test that the MergeRotationsPass works correctly with qjit."""
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit(target="mlir")
