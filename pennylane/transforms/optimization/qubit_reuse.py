@@ -39,13 +39,13 @@ def _build_wire_map(tape):
     """
     wire_map = {}
     previous = -1
-    found_wires = []
+    found_wires = set()
 
     for op in tape.operations:
         for wire in op.wires:
-            found_wires.append(wire)
+            found_wires.add(wire)
 
-    for wire in sorted(set(found_wires)):
+    for wire in sorted(found_wires):
         if isinstance(wire, int):
             wire_map[wire] = wire
             previous = wire
