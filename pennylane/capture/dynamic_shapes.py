@@ -195,7 +195,9 @@ def register_custom_staging_rule(
         """
         if not jax.config.jax_dynamic_shapes:
             # fallback to normal behavior
-            return jaxpr_trace.default_process_primitive(primitive, tracers, params)
+            return jaxpr_trace.default_process_primitive(
+                primitive, tracers, params, source_info=source_info
+            )
         outvars = get_outvars_from_params(params)
 
         env: dict[jax.extend.core.Var, jax.extend.core.Var] = {}  # branch var to new equation var

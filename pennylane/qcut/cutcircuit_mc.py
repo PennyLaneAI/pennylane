@@ -15,7 +15,6 @@
 Function cut_circuit_mc for cutting a quantum circuit into smaller circuit fragments using a
     Monte Carlo method, at its auxillary functions"""
 
-import inspect
 from collections.abc import Callable
 from functools import partial
 
@@ -23,12 +22,11 @@ import numpy as np
 from networkx import MultiDiGraph
 
 from pennylane import ops
-from pennylane.measurements import SampleMP, Shots, sample
+from pennylane.measurements import SampleMP, sample
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
-from pennylane.workflow import QNode
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
@@ -54,7 +52,6 @@ def _cut_circuit_mc_expand(
     tape: QuantumScript,
     classical_processing_fn: Callable | None = None,
     max_depth: int = 1,
-    shots: int | None = None,
     device_wires: Wires | None = None,
     auto_cutter: bool | Callable = False,
     **kwargs,
@@ -76,7 +73,6 @@ def cut_circuit_mc(
     classical_processing_fn: Callable | None = None,
     auto_cutter: bool | Callable = False,
     max_depth: int = 1,
-    shots: int | None = None,
     device_wires: Wires | None = None,
     **kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
@@ -446,6 +442,13 @@ def cut_circuit_mc(
                 "supports measurements in the computational basis. Please only specify "
                 "wires to be sampled within qml.sample(), do not pass observables."
             )
+    if "shots" in kwargs:
+        raise ValueError(
+            "shots has been removed from cut_circuit_mc. Please specify the shots on the tape."
+        )
+
+    if not tape.shots:
+        raise ValueError("cut_circuit_mc requires finite shots.")
 
     g = tape_to_graph(tape)
 
@@ -470,7 +473,7 @@ def cut_circuit_mc(
 
     seed = kwargs.get("seed", None)
     configurations, settings = expand_fragment_tapes_mc(
-        fragment_tapes, communication_graph, shots=shots, seed=seed
+        fragment_tapes, communication_graph, shots=tape.shots.total_shots, seed=seed
     )
 
     tapes = tuple(tape for c in configurations for tape in c)
@@ -482,7 +485,7 @@ def cut_circuit_mc(
                 results,
                 communication_graph=communication_graph,
                 settings=settings,
-                shots=shots,
+                shots=tape.shots.total_shots,
                 classical_processing_fn=classical_processing_fn,
             )
 
@@ -492,7 +495,7 @@ def cut_circuit_mc(
 
         def processing_fn(results):
             results = qcut_processing_fn_sample(
-                results, communication_graph=communication_graph, shots=shots
+                results, communication_graph=communication_graph, shots=tape.shots.total_shots
             )
 
             return results[0]
@@ -500,62 +503,14 @@ def cut_circuit_mc(
     return tapes, processing_fn
 
 
-class CustomQNode(QNode):
-    """
-    A subclass with a custom __call__ method. The custom QNode transform returns an instance
-    of this class.
-    """
-
-    def __call__(self, *args, **kwargs):
-        shots = kwargs.pop("shots", False)
-        shots = shots or self.device.shots
-
-        if not shots:
-            raise ValueError(
-                "A shots value must be provided in the device "
-                "or when calling the QNode to be cut"
-            )
-        if isinstance(shots, Shots):
-            shots = shots.total_shots
-
-        # find the qcut transform inside the transform program and set the shots argument
-        qcut_tc = [
-            tc for tc in self.transform_program if tc.transform.__name__ == "cut_circuit_mc"
-        ][-1]
-        qcut_tc._kwargs["shots"] = shots
-
-        kwargs["shots"] = 1
-        return super().__call__(*args, **kwargs)
-
-
 @cut_circuit_mc.custom_qnode_transform
 def _qnode_transform_mc(self, qnode, targs, tkwargs):
     """Here, we overwrite the QNode execution wrapper in order
     to access the device wires."""
-    if tkwargs.get("shots", False):
-        raise ValueError(
-            "Cannot provide a 'shots' value directly to the cut_circuit_mc "
-            "decorator when transforming a QNode. Please provide the number of shots in "
-            "the device or when calling the QNode."
-        )
-
-    if "shots" in inspect.signature(qnode.func).parameters:
-        raise ValueError(
-            "Detected 'shots' as an argument of the quantum function to transform. "
-            "The 'shots' argument name is reserved for overriding the number of shots "
-            "taken by the device."
-        )
-
     tkwargs.setdefault("device_wires", qnode.device.wires)
 
-    execute_kwargs = getattr(qnode, "execute_kwargs", {}).copy()
-    execute_kwargs["cache"] = False
-
     new_qnode = self.default_qnode_transform(qnode, targs, tkwargs)
-    new_qnode.__class__ = CustomQNode
-    new_qnode.execute_kwargs = execute_kwargs
-
-    return new_qnode
+    return new_qnode.update(cache=False)
 
 
 MC_STATES = [
