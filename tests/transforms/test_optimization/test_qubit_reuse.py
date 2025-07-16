@@ -14,8 +14,8 @@
 """
 Unit tests for the optimization transform ``undo_swaps``.
 """
+import random
 from collections import Counter
-
 
 import pennylane as qml
 
@@ -48,22 +48,23 @@ class TestQubitReuse:
             qml.CNOT(wires=[3, 4])
             return qml.expval(qml.PauliZ(0))
 
-        # apply the transform to get the new circuit i.e.
+        # apply the transform to get the new 3-qubit circuit i.e.
         #
-        # 0: ──H─╭●──┤↗│  │0⟩─╭●──┤↗│  │0⟩─╭●──┤↗│  │0⟩────────────────────────┤
-        # 1: ────╰X───────────╰X───────────│──╭●─────────┤↗│  │0⟩─╭●──┤↗│  │0⟩─┤
-        # 2: ──────────────────────────────╰X─╰X──────────────────╰X───────────┤
+        # 0: ──H─╭X───────────╭●──┤↗│  │0⟩───────────╭●──┤↗│  │0⟩───────────┤
+        # 1: ────╰●──┤↗│  │0⟩─╰X─╭●─────────┤↗│  │0⟩─│──╭●─────────┤↗│  │0⟩─┤
+        # 2: ────────────────────╰X──────────────────╰X─╰X──────────────────┤
 
+        random.seed(10)  # for test reproducibility
         new_circuit = qml.transforms.qubit_reuse(circuit)
 
         # execute the circuit
         with queuing.AnnotatedQueue() as q:
             new_circuit()
 
-        # check that we now use less wires
+        # check that we now use less (3) wires
         found_wires = Counter()
         for op in q.queue:
             for wire in op.wires:
                 found_wires[wire] += 1
 
-        assert len(found_wires) < 5
+        assert len(found_wires) == 3
