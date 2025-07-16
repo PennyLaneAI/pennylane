@@ -24,7 +24,7 @@ xdsl = pytest.importorskip("xdsl")
 from xdsl.context import Context
 from xdsl.dialects import arith, func, test
 
-from pennylane.compiler.python_compiler import Quantum
+from pennylane.compiler.python_compiler.dialects import Quantum
 from pennylane.compiler.python_compiler.transforms import IterativeCancelInversesPass
 
 
