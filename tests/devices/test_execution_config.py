@@ -88,13 +88,21 @@ class TestExecutionConfig:
         config = ExecutionConfig(gradient_method=method)
         assert config.gradient_method == method
 
-    def test_invalid_gradient_method(self):
+    @pytest.mark.parametrize(
+        "invalid_method",
+        [
+            123,
+            lambda grad_fn: True,
+            True,
+        ],
+    )
+    def test_invalid_gradient_method(self, invalid_method):
         """Test that invalid types for gradient_method raise an error."""
         with pytest.raises(
             ValueError,
-            match=r"Differentiation method 123 must be a str, TransformDispatcher, or None",
+            match=r"Differentiation method .* must be a str, TransformDispatcher, or None",
         ):
-            _ = ExecutionConfig(gradient_method=123)
+            _ = ExecutionConfig(gradient_method=invalid_method)
 
     def test_immutability(self):
         """Test that ExecutionConfig instances are immutable if frozen."""
