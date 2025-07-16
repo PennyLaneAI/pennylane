@@ -109,14 +109,14 @@ def split_non_commuting(
     Internally, the QNode is split into multiple circuits when executed:
 
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)─┤ ╭<Z@Z>  <Z>
-    1: ──RX(0.79)─┤ ╰<Z@Z>
+    0: ──RY(0.79)─┤  <X> ╭<X@Z>
+    1: ──RX(0.79)─┤      ╰<X@Z>
     <BLANKLINE>
-    0: ──RY(0.79)─┤  <X>
+    0: ──RY(0.79)─┤
     1: ──RX(0.79)─┤  <Y>
     <BLANKLINE>
-    0: ──RY(0.79)─┤ ╭<X@Z>
-    1: ──RX(0.79)─┤ ╰<X@Z>
+    0: ──RY(0.79)─┤ ╭<Z@Z>  <Z>
+    1: ──RX(0.79)─┤ ╰<Z@Z>
 
     Note that the observable ``Y(1)`` occurs twice in the original QNode, but only once in the
     transformed circuits. When there are multiple expectation value measurements that rely on
@@ -128,7 +128,10 @@ def split_non_commuting(
     the expectation values.
 
     >>> circuit([np.pi/4, np.pi/4])
-    [0.7071067811865475, -0.7071067811865475, 0.5, 0.5]
+    [0.7071067811865475,
+     -0.7071067811865475,
+     0.49999999999999994,
+     0.8535533905932737]
 
     There are two algorithms used to compute disjoint groups of commuting observables: ``"qwc"``
     grouping uses :func:`~pennylane.pauli.group_observables` which computes groups of qubit-wise

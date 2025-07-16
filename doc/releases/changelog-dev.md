@@ -4,16 +4,39 @@
 
 <h3>New features since last release</h3>
 
-<h4>OpenQASM 🤝 PennyLane</h4>
-
-* More functionality within :func:`qml.from_qasm3` has been added, which converts more complex OpenQASM 3.0 circuits 
-  into quantum functions that can be subsequently loaded into QNodes and executed. For more details, 
-  please consult the documentation for :func:`qml.from_qasm3`.
-  [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
-  [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
-
 <h3>Improvements 🛠</h3>
 
+<h4>OpenQASM-PennyLane interoperability</h4>
+
+* The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
+  subroutines, constants, and built-in mathematical functions.
+  [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
+  [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
+  [(#7676)](https://github.com/PennyLaneAI/pennylane/pull/7676)
+  [(#7679)](https://github.com/PennyLaneAI/pennylane/pull/7679)
+  [(#7677)](https://github.com/PennyLaneAI/pennylane/pull/7677)
+
+<h4>Other improvements</h4>
+
+* The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
+  [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
+  
+  ```python
+  @qml.set_shots(shots=1000)
+  @qml.qnode(dev)
+  def circuit():
+      qml.H(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit()
+  0.002
+  ```
+
+* Enforce various modules to follow modular architecture via `tach`.
+  [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
+  
 * Update minimum supported `pytest` version to `8.4.1`.
   [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
 
@@ -48,6 +71,10 @@
 * Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been removed. Please import these objects from the new ``pennylane.exceptions`` module.
   [(#7874)](https://github.com/PennyLaneAI/pennylane/pull/7874)
 
+* `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead
+  be set on the tape itself.
+  [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
+
 <h3>Deprecations 👋</h3>
 
 <h3>Internal changes ⚙️</h3>
@@ -64,7 +91,13 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
+  [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
+
 <h3>Bug fixes 🐛</h3>
+
+* Calling `QNode.update` no longer acts as if `set_shots` has been applied.
+  [(#7881)](https://github.com/PennyLaneAI/pennylane/pull/7881)
 
 * Fixes attributes and types in the quantum dialect.
   This allows for types to be inferred correctly when parsing.
