@@ -64,6 +64,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead
+  be set on the tape itself.
+  [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
+
 <h3>Deprecations 👋</h3>
 
 * The `level=None` argument in the :func:`pennylane.get_transform_program` and :func:`pennylane.transforms.add_noise` transform is deprecated and will be removed in a future release.
