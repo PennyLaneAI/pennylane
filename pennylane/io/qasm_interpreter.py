@@ -919,17 +919,16 @@ class QasmInterpreter:
             func_context.context["return"] = None
 
             # bind subroutine arguments
-            evald_args = [
-                (
-                    self.visit(raw_arg, context)
-                    if not (
-                        isinstance(raw_arg, ast.Identifier)
-                        and _resolve_name(raw_arg) in (context.wires + list(context.registers))
-                    )
-                    else _resolve_name(raw_arg)
-                )
-                for raw_arg in node.arguments
-            ]
+            evald_args = []
+            for raw_arg in node.arguments:
+                if not (
+                    isinstance(raw_arg, ast.Identifier)
+                    and _resolve_name(raw_arg) in (context.wires + list(context.registers))
+                ):
+                    evald_args.append(self.visit(raw_arg, context))
+                else:
+                    evald_args.append(_resolve_name(raw_arg))
+
             for evald_arg, param in list(zip(evald_args, func_context.params)):
                 if isinstance(evald_arg, str):  # this would indicate a quantum parameter
                     reg = False
