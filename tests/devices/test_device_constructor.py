@@ -1,8 +1,8 @@
+"""Tests for ``device_constructor``"""
 import numpy as np
 import pytest
 
 import pennylane as qml
-
 
 def test_my_feature_is_deprecated():
     """Test that custom_decomps is deprecated."""
