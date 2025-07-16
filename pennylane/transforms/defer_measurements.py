@@ -19,6 +19,7 @@ from typing import Callable, Optional, Sequence, Union
 from warnings import warn
 
 import pennylane as qml
+from pennylane.exceptions import TransformError
 from pennylane.measurements import (
     CountsMP,
     MeasurementValue,
@@ -30,7 +31,7 @@ from pennylane.measurements import (
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError, transform
+from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -419,7 +420,6 @@ def _get_plxpr_defer_measurements():
                 for branch, value in condition.items():
                     # When reduce_postselected is True, some branches can be ()
                     cur_consts = invals[consts_slices[i]]
-                    jaxpr = jaxpr.replace(constvars=(), invars=jaxpr.constvars + jaxpr.invars)
                     qml.cond(value, ctrl_transform_prim.bind)(
                         *cur_consts,
                         *args,
@@ -428,6 +428,7 @@ def _get_plxpr_defer_measurements():
                         n_control=len(control_wires),
                         control_values=branch,
                         work_wires=None,
+                        n_consts=len(cur_consts),
                     )
 
         return [None] * len(jaxpr_branches[0].outvars)

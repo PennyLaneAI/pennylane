@@ -288,15 +288,16 @@ def _get_ctrl_qfunc_prim():
     ctrl_prim.prim_type = "higher_order"
 
     @ctrl_prim.def_impl
-    def _(*args, n_control, jaxpr, control_values, work_wires):
+    def _(*args, n_control, jaxpr, control_values, work_wires, n_consts):
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
+        consts = args[:n_consts]
         control_wires = args[-n_control:]
-        args = args[:-n_control]
+        args = args[n_consts:-n_control]
 
         collector = CollectOpsandMeas()
         with qml.QueuingManager.stop_recording():
-            collector.eval(jaxpr, [], *args)
+            collector.eval(jaxpr, consts, *args)
 
         for op in collector.state["ops"]:
             ctrl(op, control_wires, control_values, work_wires)
@@ -323,18 +324,17 @@ def _capture_ctrl_transform(qfunc: Callable, control, control_values, work_wires
             *args
         )
         flat_args = jax.tree_util.tree_leaves(args)
-        jaxpr, new_args = qml.capture.promote_consts(
-            jaxpr, tuple(abstract_shapes) + tuple(flat_args)
-        )
-
         control_wires = qml.wires.Wires(control)  # make sure is iterable
         ctrl_prim.bind(
-            *new_args,
+            *jaxpr.consts,
+            *abstract_shapes,
+            *flat_args,
             *control_wires,
-            jaxpr=jaxpr,
+            jaxpr=jaxpr.jaxpr,
             n_control=len(control_wires),
             control_values=control_values,
             work_wires=work_wires,
+            n_consts=len(jaxpr.consts),
         )
 
     return new_qfunc

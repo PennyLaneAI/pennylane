@@ -25,8 +25,7 @@ from pennylane.devices.qubit import sampling
 from pennylane.transforms.defer_measurements import DeferMeasurementsInterpreter
 
 pytestmark = [
-    pytest.mark.jax,
-    pytest.mark.usefixtures("enable_disable_plxpr"),
+    pytest.mark.capture,
     pytest.mark.integration,
 ]
 

@@ -256,12 +256,17 @@ def pytest_collection_modifyitems(items, config):
                     "finite-diff",
                     "param-shift",
                     "external",
+                    "capture",
                 ]
                 for elem in markers
             )
             or not markers
         ):
             item.add_marker(pytest.mark.core)
+        if "capture" in markers:
+            item.fixturenames.append("enable_disable_plxpr")
+            if "jax" not in markers:
+                item.add_marker(pytest.mark.jax)
 
 
 def pytest_runtest_setup(item):

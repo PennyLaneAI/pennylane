@@ -136,6 +136,9 @@ def test_assembly_format():
       // CHECK: quantum.yield %arg0
       quantum.yield %arg0: !quantum.reg
     }
+
+    // CHECK: [[mres2:%.+]], [[out_qubit2:%.+]] = quantum.measure [[QUBIT]] postselect 0 : i1, !quantum.bit
+    %mres2, %out_qubit2 = quantum.measure %qubit postselect 0 : i1, !quantum.bit
     """
 
     ctx = xdsl.context.Context()

@@ -139,6 +139,7 @@ def _test_decomposition_rule(op, rule: DecompositionRule, heuristic_resources=Fa
     if not rule.is_applicable(**op.resource_params):
         return
 
+    print(rule)
     # Test that the resource function is correct
     resources = rule.compute_resources(**op.resource_params)
     gate_counts = resources.gate_counts
@@ -440,8 +441,8 @@ def _check_wires(op, skip_wire_mapping):
 def assert_valid(
     op: qml.operation.Operator,
     *,
-    skip_differentiation=False,
     skip_deepcopy=False,
+    skip_differentiation=False,
     skip_pickle=False,
     skip_wire_mapping=False,
     skip_new_decomp=False,

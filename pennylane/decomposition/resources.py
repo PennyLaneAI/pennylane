@@ -157,7 +157,9 @@ def _make_hashable(d):
             sorted(((str(k), _make_hashable(v)) for k, v in d.items()), key=lambda x: x[0])
         )
     if hasattr(d, "tolist"):
-        return d.tolist()
+        d = d.tolist()
+    if isinstance(d, list):
+        return tuple(_make_hashable(v) for v in d)
     return d
 
 
@@ -285,10 +287,14 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
         return pow_resource_rep(**params)
     if op_type is qml.ops.ControlledOp:
         op_type = qml.ops.Controlled
+    if op_type is qml.ops.Controlled:
+        base_rep = resource_rep(params["base_class"], **params["base_params"])
+        params["base_class"] = base_rep.op_type
+        params["base_params"] = base_rep.params
     return CompressedResourceOp(op_type, params)
 
 
-def controlled_resource_rep(  # pylint: disable=too-many-arguments
+def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
     base_class: Type[Operator],
     base_params: dict,
     num_control_wires: int,
@@ -442,7 +448,7 @@ def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, wor
     return "clean"
 
 
-def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments
+def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
     base_class,
     base_params,
     num_control_wires,
@@ -479,7 +485,7 @@ def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments
     )
 
 
-def _controlled_x_rep(  # pylint: disable=too-many-arguments
+def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
     base_class,
     base_params,
     num_control_wires,

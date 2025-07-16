@@ -429,7 +429,7 @@ def vscf_integrals(h_integrals, d_integrals=None, modals=None, cutoff=None, cuto
 
         The ``h_integral`` tensor must have one of these dimensions:
 
-        - 1-mode coupled integrals: `(n, m)`
+        - 1-mode coupled integrals: `(n, m, m)`
         - 2-mode coupled integrals: `(n, n, m, m, m, m)`
         - 3-mode coupled integrals: `(n, n, n, m, m, m, m, m, m)`
 
