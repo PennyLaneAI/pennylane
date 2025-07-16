@@ -207,8 +207,8 @@ class TestMergeRotationsIntegration:
         @merge_rotations_pass
         @qml.qnode(dev)
         def circuit(x: float, y: float):
-            # CHECK: [[phi:%.*]] arith.addf
-            # CHECK: quantum.custom "RX"([[phi:%.*]])
+            # CHECK: [[phi:%.*]] = arith.addf
+            # CHECK: quantum.custom "RX"([[phi]])
             # CHECK-NOT: quantum.custom
             qml.RX(x, 0)
             qml.RX(y, 0)
