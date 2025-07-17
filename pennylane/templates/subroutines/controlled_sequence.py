@@ -77,7 +77,7 @@ class ControlledSequence(SymbolicOp, Operation):
 
     grad_method = None
 
-    resource_keys = {"base", "base_params", "num_control_wires"}
+    resource_keys = {"base_class", "base_params", "num_control_wires"}
 
     def _flatten(self):
         return (self.base,), (self.control,)
