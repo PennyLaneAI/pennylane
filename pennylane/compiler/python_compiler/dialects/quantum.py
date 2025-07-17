@@ -106,7 +106,7 @@ class QuregType(ParametrizedAttribute, TypeAttribute):
 class ResultType(ParametrizedAttribute, TypeAttribute):
     """A quantum measurement result.
 
-    This is unused but define in Catalyst. May be scheduled for deletion.
+    This is unused but defined in Catalyst. May be scheduled for deletion.
     """
 
     name = "quantum.res"
