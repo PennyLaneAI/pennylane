@@ -32,6 +32,7 @@ def wraps(target):
     """
     return functools.wraps(target, assigned=AUTOGRAPH_WRAPPER_ASSIGNMENTS)
 
+
 __all__ = (
     "autograph_source",
     "run_autograph",
