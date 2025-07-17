@@ -56,6 +56,8 @@ class ResourceUniformStatePrep(ResourceOperator):
       {'Hadamard': 16, 'X': 12, 'CNOT': 4, 'Toffoli': 4, 'T': 88}
     """
 
+    resource_keys = {"num_states"}
+
     def __init__(self, num_states, wires=None):
         self.num_states = num_states
         k = (num_states & -num_states).bit_length() - 1
@@ -161,6 +163,8 @@ class ResourceAliasSampling(ResourceOperator):
      Gate breakdown:
       {'Hadamard': 730, 'X': 421, 'CNOT': 4.530E+3, 'Toffoli': 330, 'T': 88}
     """
+
+    resource_keys = {"num_coeffs", "precision"}
 
     def __init__(self, num_coeffs, precision=None, wires=None):
         self.num_coeffs = num_coeffs
