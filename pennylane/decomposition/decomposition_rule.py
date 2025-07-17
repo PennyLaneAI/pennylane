@@ -341,7 +341,8 @@ def register_resources(
     def _decorator(_qfunc) -> DecompositionRule:
         if isinstance(_qfunc, DecompositionRule):
             _qfunc.set_resources(ops)
-            _qfunc.set_work_wire_spec(work_wires)
+            if work_wires:
+                _qfunc.set_work_wire_spec(work_wires)
             return _qfunc
         return DecompositionRule(_qfunc, resources=ops, work_wires=work_wires)
 
