@@ -61,7 +61,7 @@ def ctrl(
     control: Any,
     control_values: Sequence[bool | int] | None = None,
     work_wires: Any | None = None,
-    work_wire_type: str | None = "dirty",
+    work_wire_type: Literal["clean", "dirty"] = "dirty",
 ) -> Callable: ...
 def ctrl(op, control: Any, control_values=None, work_wires=None, work_wire_type="dirty"):
     r"""Create a method that applies a controlled version of the provided op.
