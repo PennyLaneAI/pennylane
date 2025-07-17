@@ -74,9 +74,9 @@ def get_times_table():
                     print(f"  {func_name}: hit_count={stats['hit_count']}, total_time={stats['total_time']:.4f}s, avg_time={stats['avg_time']:.4f}s")
                     # precision print for runs > 0.1s
                     if stats['avg_time'] > 0.01:
-                        print(f"  Runs: ", end="")
+                        print(f"     Runs: ", end="")
                         for run in stats['runs']:
-                            print(f"{run:6.4f}s,", end=" ")
+                            print(f"{run:7.4f}s,", end=" ")
                         print()
 
         return global_times
@@ -132,6 +132,7 @@ def _compute_norm(norm_mat: np.ndarray):
     return norm1 + norm2
 
 @timeit
+@profile
 def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
     mode_groups = {}
 
@@ -161,11 +162,14 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
             except KeyError:
                 mode_groups[group] = mat
 
+    return sum_get_eigenvalue(mode_groups)
+
+@timeit
+def sum_get_eigenvalue(mode_groups):
+    """Sum the eigenvalues of the matrices in mode_groups."""
     return sum(_get_eigenvalue(mat) for mat in mode_groups.values())
 
-
 def _get_eigenvalue(mat):
-    rank =  MPI.COMM_WORLD.Get_rank()
     
     _, _, values = sp.sparse.find(mat)
     if np.allclose(values, 0):

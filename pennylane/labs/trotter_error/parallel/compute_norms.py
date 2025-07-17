@@ -11,7 +11,7 @@ from vibronic_norm import _compute_norm, build_error_term, vibronic_norm, finali
 # FILE, GRIDPOINTS, MODES
 jobs = [
     # ("VCHLIB/maleimide_5s_24m.pkl", 4, 6),
-    ("no4a_sf.pkl", 4, 19),
+    ("no4a_sf.pkl", 2, 8),
 ]
 
 
@@ -46,6 +46,9 @@ if __name__ == "__main__":
 
     # Scatter the batches
     batch = comm.scatter(batches, root=0)
+    
+    print(f"Rank {rank} processing batch of size {len(batch)}")
+    print(f"Batch: {batch}")
 
     # Each process computes a batch of matrix elements
     local_result = vibronic_norm(err, gridpoints, batch)
