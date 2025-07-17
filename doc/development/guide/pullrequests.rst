@@ -71,6 +71,8 @@ merged.
 
       tach check
 
+  If you see a `✅ All modules validated!` message, then the module dependencies are valid.
+
 To make sure that the formatting and the quality of the new piece of code is up
 to `PEP8 <https://www.python.org/dev/peps/pep-0008/>`_ dedicated tools
 (``black``, ``isort`` and ``pylint``) should be run locally.
