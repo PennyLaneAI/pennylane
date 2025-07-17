@@ -248,7 +248,7 @@ def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_wor
     return {
         resource_rep(
             qml.ControlledSequence,
-            base=qml.Multiplier,
+            base_class=qml.Multiplier,
             base_params={
                 "num_x_wires": num_output_wires,
                 "num_work_wires": num_work_wires,
