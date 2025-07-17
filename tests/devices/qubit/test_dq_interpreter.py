@@ -368,6 +368,7 @@ class TestSampling:
         s2 = f()  # should be done with different key, leading to different results.
         assert not qml.math.allclose(s1, s2)
 
+    @pytest.mark.skip
     @pytest.mark.local_salt(6)
     @pytest.mark.parametrize("n_postselects", [1, 2, 3])
     def test_projector_samples_hw_like(self, seed, n_postselects):

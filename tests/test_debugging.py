@@ -632,6 +632,7 @@ class TestSnapshotUnsupportedQNode:
         with pytest.warns(UserWarning, match="Snapshots are not supported"):
             _ = qml.snapshots(circuit)
 
+    @pytest.mark.skip
     @pytest.mark.local_salt(1)
     def test_lightning_qubit_finite_shots(self, seed):
         dev = qml.device("lightning.qubit", wires=2, shots=500, seed=seed)

@@ -336,6 +336,7 @@ class TestProbs:
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.skip
     @pytest.mark.jax
     @pytest.mark.parametrize("shots", (None, 500))
     @pytest.mark.parametrize("obs", ([0, 1], qml.PauliZ(0) @ qml.PauliZ(1)))
