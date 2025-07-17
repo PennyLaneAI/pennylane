@@ -49,7 +49,6 @@ from ..jax_utils import xdsl_module
 from .api import compiler_transform
 
 
-
 @dataclass(frozen=True)
 class MeasurementsFromSamplesPass(passes.ModulePass):
     """Pass that replaces all terminal measurements in a program with a single
