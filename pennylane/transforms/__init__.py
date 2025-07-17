@@ -14,6 +14,13 @@
 """
 This subpackage contains PennyLane transforms and their building blocks.
 
+.. warning::
+
+    The transforms ``add_noise``, ``insert``, ``mitigate_with_zne``, ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
+    ``exponential_extrapolate`` have been moved to the :mod:`pennylane.noise` module.
+    Accessing these transforms from the :mod:`pennylane.transforms` module is deprecated
+    and will be removed in v0.44.
+
 .. currentmodule:: pennylane
 
 .. _transforms:
