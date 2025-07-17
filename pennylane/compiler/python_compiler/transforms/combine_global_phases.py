@@ -22,7 +22,7 @@ from xdsl.dialects import arith, builtin, func
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
 
-from ..quantum_dialect import GlobalPhaseOp
+from ..dialects.quantum import GlobalPhaseOp
 from .api import compiler_transform
 
 

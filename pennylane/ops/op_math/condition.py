@@ -15,12 +15,12 @@
 Contains the condition transform.
 """
 import functools
-from functools import wraps
 from typing import Callable, Optional, Sequence, Type, Union
 
 import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.capture import FlatFn
+from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.exceptions import ConditionalTransformError
 from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates

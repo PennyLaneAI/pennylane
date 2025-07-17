@@ -42,10 +42,12 @@ from xdsl.dialects import arith, builtin, func, tensor
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern
 from xdsl.rewriter import InsertPoint
 
-from pennylane.compiler.python_compiler import quantum_dialect as quantum
-from pennylane.compiler.python_compiler.jax_utils import xdsl_module
-from pennylane.compiler.python_compiler.transforms.api import compiler_transform
 from pennylane.exceptions import CompileError
+
+from ..dialects import quantum
+from ..jax_utils import xdsl_module
+from .api import compiler_transform
+
 
 
 @dataclass(frozen=True)
