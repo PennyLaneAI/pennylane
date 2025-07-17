@@ -287,9 +287,8 @@ def _multiplier_decomposition_resources(
         }
     )
 
-    for _ in range(num_x_wires):
-        rep = resource_rep(qml.SWAP)
-        resources[rep] += 1
+    rep = resource_rep(qml.SWAP)
+    resources[rep] = num_x_wires
 
     return dict(resources)
 
