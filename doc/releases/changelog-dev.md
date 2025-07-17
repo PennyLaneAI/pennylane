@@ -67,6 +67,10 @@
   `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
   [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
 
+* Added state of the art resources for the `ResourceUniformStatePrep`,
+  and `ResourceAliasSampling` templates.
+  [(#7883)](https://github.com/PennyLaneAI/pennylane/pull/7883)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead

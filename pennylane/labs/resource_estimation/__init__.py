@@ -136,6 +136,8 @@ Templates:
     ~ResourceTrotterVibrational
     ~ResourceTrotterVibronic
     ~ResourceQubitizeTHC
+    ~ResourceUniformStatePrep
+    ~ResourceAliasSampling
 
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -230,4 +232,6 @@ from .templates import (
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
     ResourceQubitizeTHC,
+    ResourceUniformStatePrep,
+    ResourceAliasSampling,
 )
