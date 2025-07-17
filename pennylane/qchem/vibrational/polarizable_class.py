@@ -19,6 +19,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from ..openfermion_pyscf import _import_pyscf
+from pyscf import tddft
 
 # pylint: disable=import-outside-toplevel, unused-variable, too-many-instance-attributes, too-many-arguments
 
@@ -319,8 +320,8 @@ def _get_dipole(scf_result, method):
     return _get_uhf_dipole(scf_result)
 
 def _excited_states(scf_result, excited_method='tddft', num_states=10):
-    if es_method == "tddft":
-        td = pyscf.tddft.TDDFT(scf_result)
+    if excited_method == "tddft":
+        td = tddft.TDDFT(scf_result)
         td.nstates = num_states
         td.kernel()
 

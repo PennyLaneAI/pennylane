@@ -146,7 +146,7 @@ def _local_pes_onemode(
 
     if placzek:
         local_placzek_onebody = np.zeros((nmodes, len(jobs_on_rank), 6), dtype=float)
-        ref_placzek = _get_placzek(scf_result, method, excited_method, omega_I, num_states)
+        ref_placzek = _get_placzek(scf_result, method, excited_method, omega_I, excited_states)
     for mode in range(nmodes):
         vec = vectors[mode]
         if (freqs[mode].imag) > 1e-6:
@@ -171,7 +171,7 @@ def _local_pes_onemode(
 
             local_pes_onebody[mode][job_idx] = displ_scf.e_tot - scf_result.e_tot
             if placzek:
-                local_placzek_onebody[mode, job_idx, :] = _get_placzek(displ_scf, method, excited_method, omega_I, num_states) - ref_placzek
+                local_placzek_onebody[mode, job_idx, :] = _get_placzek(displ_scf, method, excited_method, omega_I, excited_states) - ref_placzek
 
     _write_data(path, rank, "v1data", "V1_PES", local_pes_onebody)
     if placzek:
