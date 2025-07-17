@@ -266,26 +266,24 @@ def _multiplier_decomposition_resources(
     else:
         num_wires_aux = num_x_wires
 
-    resources = Counter(
-        {
-            resource_rep(qml.QFT, num_wires=num_wires_aux): 2,
-            resource_rep(
-                qml.ControlledSequence,
-                base=qml.PhaseAdder,
-                base_params={"num_x_wires": num_wires_aux, "mod": mod},
-                num_control_wires=num_x_wires,
-            ): 1,
-            adjoint_resource_rep(
-                qml.ControlledSequence,
-                {
-                    "base": qml.PhaseAdder,
-                    "base_params": {"num_x_wires": num_wires_aux, "mod": mod},
-                    "num_control_wires": num_x_wires,
-                },
-            ): 1,
-            adjoint_resource_rep(qml.QFT, {"num_wires": num_wires_aux}): 2,
-        }
-    )
+    resources = {
+        resource_rep(qml.QFT, num_wires=num_wires_aux): 2,
+        resource_rep(
+            qml.ControlledSequence,
+            base=qml.PhaseAdder,
+            base_params={"num_x_wires": num_wires_aux, "mod": mod},
+            num_control_wires=num_x_wires,
+        ): 1,
+        adjoint_resource_rep(
+            qml.ControlledSequence,
+            {
+                "base": qml.PhaseAdder,
+                "base_params": {"num_x_wires": num_wires_aux, "mod": mod},
+                "num_control_wires": num_x_wires,
+            },
+        ): 1,
+        adjoint_resource_rep(qml.QFT, {"num_wires": num_wires_aux}): 2,
+    }
 
     rep = resource_rep(qml.SWAP)
     resources[rep] = num_x_wires
