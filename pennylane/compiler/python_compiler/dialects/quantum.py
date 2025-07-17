@@ -159,20 +159,24 @@ class AdjointOp(IRDLOperation):
 
     .. code-block:: python
 
-        qml.adjoint([qml.Hadamard(0), qml.S(0)])
+        def my_ops():
+            qml.Hadamard(0)
+            qml.S(0)
+
+        qml.adjoint(my_ops)()
 
     are equivalent to
 
     .. code-block:: mlir
 
         %register_0 = quantum.alloc(1) : !quantum.reg
-        %register_3 = quantum.adjoint(%register_0) {
 
+        %register_3 = quantum.adjoint(%register_0) {
         ^bb0(%register_1: !quantum.reg):
-          %qubit_0 = quantum.extract %register_1[0] : !quantum.bit
+          %qubit_0 = quantum.extract %register_1[ 0] : !quantum.reg -> !quantum.bit
           %qubit_1 = quantum.custom "Hadamard"() %qubit_0 : !quantum.bit
           %qubit_2 = quantum.custom "S"() %qubit_1 : !quantum.bit
-          %register_2 = quantum.insert %register_1[0], %qubit_2 : !quantum.reg, !quantum.bit
+          %register_2 = quantum.insert %register_1[ 0], %qubit_2 : !quantum.reg, !quantum.bit
           quantum.yield %register_2
         }
 
