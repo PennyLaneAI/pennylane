@@ -17,6 +17,8 @@ from copy import deepcopy
 from functools import lru_cache
 from math import pi as PI
 
+import jax.numpy as jnp
+
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.rings import _SQRT2, DyadicMatrix, SO3Matrix, ZOmega
 
@@ -130,7 +132,7 @@ def _parity_transforms() -> dict:
 
 def _ma_normal_form(
     op: SO3Matrix, compressed=False
-) -> tuple[qml.operation.Operator, float] | tuple[int, tuple[int, ...], int, float]:
+) -> tuple[qml.operation.Operator, float] | tuple[int, jnp.array, int, float]:
     r"""Decompose an SO(3) matrix into Matsumoto-Amano normal form.
 
     A Matsumoto-Amano normal form - :math:`(T | \epsilon) (HT | SHT)^* \mathcal{C}`, consists of a rightmost
@@ -194,5 +196,6 @@ def _ma_normal_form(
 
     t_bit = int(decomposition[0] == qml.T(0))
     c_bit = max(0, cl_index)
+    syllable_sequence = jnp.array(tuple(rep_bits[t_bit:]))
 
-    return ((t_bit, tuple(rep_bits[t_bit:]), c_bit), g_phase)
+    return ((t_bit, syllable_sequence, c_bit), g_phase)

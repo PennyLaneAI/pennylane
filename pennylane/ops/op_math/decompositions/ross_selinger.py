@@ -99,7 +99,6 @@ def _jit_rs_decomposition(wire, decomposition_info):
     """
     ops = []
     has_leading_t, syllable_sequence, clifford_op_idx = decomposition_info
-    syllable_sequence = jnp.array(syllable_sequence)
 
     # Optional leading T gate
     if has_leading_t:
@@ -133,7 +132,9 @@ def _jit_rs_decomposition(wire, decomposition_info):
     return ops
 
 
-def rs_decomposition(op, epsilon, *, max_search_trials=20, max_factoring_trials=1000):
+def rs_decomposition(
+    op, epsilon, is_qjit=False, *, max_search_trials=20, max_factoring_trials=1000
+):
     r"""Approximate a phase shift rotation gate in the Clifford+T basis using the `Ross-Selinger algorithm <https://arxiv.org/abs/1403.2975>`_.
 
     This method implements the Ross-Selinger decomposition algorithm that approximates any arbitrary
