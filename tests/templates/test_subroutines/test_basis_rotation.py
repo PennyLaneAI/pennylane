@@ -22,15 +22,35 @@ import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
-def test_standard_validity():
+@pytest.mark.parametrize(
+    "rotation",
+    [
+        np.array(
+            [
+                [0.1478133, 0.58295722, 0.79661853, 0.06091815],
+                [-0.34142933, -0.60933128, 0.54474544, -0.46410538],
+                [-0.76014658, 0.01047548, 0.0841176, 0.64419847],
+                [0.53268604, -0.53737001, 0.24814422, 0.60489958],
+            ]
+        ),  # orthogonal matrix with determinant -1
+        np.array(
+            [
+                [-0.25619233, 0.81407233, 0.52120219],
+                [-0.72789572, -0.5172592, 0.45012302],
+                [0.63602933, -0.26406278, 0.72507761],
+            ]
+        ),  # orthogonal matrix with determinant 1
+        np.array(
+            [
+                [-0.618452, -0.68369054 - 0.38740723j],
+                [-0.78582258, 0.53807284 + 0.30489424j],
+            ]
+        ),  # unitary matrix
+    ],
+)
+def test_standard_validity(rotation):
     """Run standard tests of operation validity."""
-    weights = np.array(
-        [
-            [-0.618452, -0.68369054 - 0.38740723j],
-            [-0.78582258, 0.53807284 + 0.30489424j],
-        ]
-    )
-    op = qml.BasisRotation(wires=range(2), unitary_matrix=weights)
+    op = qml.BasisRotation(wires=range(len(rotation)), unitary_matrix=rotation)
     qml.ops.functions.assert_valid(op, heuristic_resources=True)
 
 
@@ -42,7 +62,7 @@ class TestDecomposition:
         [
             (
                 2,
-                qml.math.array(
+                np.array(
                     [
                         [-0.618452, -0.68369054 - 0.38740723j],
                         [-0.78582258, 0.53807284 + 0.30489424j],
@@ -53,7 +73,7 @@ class TestDecomposition:
             ),
             (
                 3,
-                qml.math.array(
+                np.array(
                     [
                         [0.51378719 + 0.0j, 0.0546265 + 0.79145487j, -0.2051466 + 0.2540723j],
                         [0.62651582 + 0.0j, -0.00828925 - 0.60570321j, -0.36704948 + 0.32528067j],
@@ -72,7 +92,7 @@ class TestDecomposition:
             ),
         ],
     )
-    def test_basis_rotation_operations(self, num_wires, unitary_matrix, givens, diags):
+    def test_basis_rotation_operations_complex(self, num_wires, unitary_matrix, givens, diags):
         """Test the correctness of the BasisRotation template including the gate count
         and their order, the wires the operation acts on and the correct use of parameters
         in the circuit."""
@@ -86,6 +106,74 @@ class TestDecomposition:
             gate_wires.append(list(indices))
 
         op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=unitary_matrix)
+        queue = op.decomposition()
+
+        assert len(queue) == len(gate_ops)  # number of gates
+
+        for idx, _op in enumerate(queue):
+            assert isinstance(_op, gate_ops[idx])  # gate operation
+            assert np.allclose(_op.parameters[0], gate_angles[idx])  # gate parameter
+            assert list(_op.wires) == gate_wires[idx]  # gate wires
+
+        # Tests the decomposition rule defined with the new system
+        for rule in qml.list_decomps(qml.BasisRotation):
+            _test_decomposition_rule(op, rule, heuristic_resources=True)
+
+    @pytest.mark.parametrize(
+        ("num_wires", "ortho_matrix", "givens"),
+        [
+            (
+                2,
+                np.array(
+                    [  # A single Givens matrix obtained from sin(0.61246) and cos(0.61246)
+                        [0.8182362852252838, 0.5748820588092205],
+                        [-0.5748820588092205, 0.8182362852252838],
+                    ]
+                ),
+                [([0, 1], 2 * 0.61246)],
+            ),
+            (
+                2,
+                np.array(
+                    [  # Same as above with flipped first row
+                        [-0.8182362852252838, -0.5748820588092205],
+                        [-0.5748820588092205, 0.8182362852252838],
+                    ]
+                ),
+                [([0, 1], -2 * 0.61246), ([0], np.pi)],
+            ),
+            (
+                3,
+                np.array(
+                    [  # Random orthogonal matrix with determinant -1
+                        [0.41938787, 0.36647513, 0.83054789],
+                        [-0.83748936, 0.50924661, 0.19819045],
+                        [0.35032183, 0.77869369, -0.52049088],
+                    ]
+                ),
+                [
+                    ([0, 1], 2 * 0.42275745323754343),
+                    ([1, 2], -2 * 2.118222067141928),
+                    ([0, 1], -2 * 1.805041881040138),
+                    ([0], np.pi),
+                ],
+            ),
+        ],
+    )
+    def test_basis_rotation_operations_real(self, num_wires, ortho_matrix, givens):
+        """Test the correctness of the BasisRotation template including the gate count
+        and their order, the wires the operation acts on and the correct use of parameters
+        in the circuit."""
+
+        gate_ops, gate_angles, gate_wires = [], [], []
+
+        for indices, angle in givens[::-1]:
+            g_op = qml.PhaseShift if len(indices) == 1 else qml.SingleExcitation
+            gate_ops.append(g_op)
+            gate_angles.append(qml.numpy.array(angle))
+            gate_wires.append(list(indices))
+
+        op = qml.BasisRotation(wires=range(num_wires), unitary_matrix=ortho_matrix)
         queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
@@ -442,6 +530,7 @@ class TestInterfaces:
 
         assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.slow
     @pytest.mark.tf
     def test_tf(self, tol):
         """Test the tf interface."""

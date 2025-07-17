@@ -4,6 +4,13 @@
 
 <h3>New features since last release</h3>
 
+<h4>State of the art templates and decompositions 🐝</h4>
+
+* The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
+  with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. This uses the fact that
+  no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant :math:`\pm 1`.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 <h3>Improvements 🛠</h3>
 
 <h4>OpenQASM-PennyLane interoperability</h4>
@@ -17,6 +24,12 @@
   [(#7677)](https://github.com/PennyLaneAI/pennylane/pull/7677)
 
 <h4>Other improvements</h4>
+
+* The matrix factorization using :func:`~.math.decomposition.givens_decomposition` has
+  been optimized to factor out the redundant sign in the diagonal phase matrix for the
+  real-valued (orthogonal) rotation matrices. For example, in case the determinant of a matrix is
+  :math:`-1`, only a single element of the phase matrix is required.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
@@ -121,6 +134,11 @@
 
 <h3>Documentation 📝</h3>
 
+* The theoretical background section of :class:`~.BasisRotation` has been extended to explain
+  the underlying Lie group/algebra homomorphism between the (dense) rotation matrix and the
+  performed operations on the target qubits.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
@@ -143,7 +161,6 @@
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
-
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
@@ -151,4 +168,5 @@ David Ittah,
 Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,
-Jake Zaia
+Jake Zaia,
+David Wierichs,
