@@ -57,6 +57,9 @@
   complete global phase information when used for decomposing a phase gate to Clifford+T basis.
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
 
+* `default.qubit` will default to the tree-traversal MCM method when `mcm_method="device"`.
+  [(#7885)](https://github.com/PennyLaneAI/pennylane/pull/7885)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
@@ -74,9 +77,13 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `level=None` argument in the :func:`pennylane.workflow.get_transform_program` and :func:`pennylane.workflow.construct_batch` transform is deprecated and will be removed in a future release.
+* The `level=None` argument in the :func:`pennylane.workflow.get_transform_program` and :func:`pennylane.workflow.construct_batch` transform is deprecated and will be removed in v0.43.
   Please use `level='device'` instead to apply the noise model at the device level.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
+
+* The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43.
+  Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
+  [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
 
@@ -100,6 +107,10 @@
 * Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
+
+* `LinearCombination` instances can be created with `_primitive.impl` when
+  capture is enabled and tracing is active.
+  [(#7893)](https://github.com/PennyLaneAI/pennylane/pull/7893)
 
 <h3>Documentation 📝</h3>
 
