@@ -288,7 +288,7 @@ def _multiplier_decomposition_resources(
     rep = resource_rep(qml.SWAP)
     resources[rep] = num_x_wires
 
-    return dict(resources)
+    return resources
 
 
 @register_resources(_multiplier_decomposition_resources)
