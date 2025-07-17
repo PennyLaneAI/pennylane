@@ -11,14 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Python Compiler API for integration of Catalyst with xDSL."""
 
-from .compiler import Compiler
-from .jax_utils import QuantumParser
-from .transforms.api import compiler_transform
+"""This submodule contains xDSL dialects for the Python compiler."""
+
+from .mbqc import MBQC
+from .quantum import Quantum
 
 __all__ = [
-    "Compiler",
-    "compiler_transform",
-    "QuantumParser",
+    "MBQC",
+    "Quantum",
 ]
