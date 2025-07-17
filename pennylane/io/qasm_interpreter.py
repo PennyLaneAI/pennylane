@@ -5,12 +5,13 @@ This submodule contains the interpreter for OpenQASM 3.0.
 import copy
 import functools
 from dataclasses import dataclass
-from functools import partial
+from functools import partial, reduce
 from typing import Any, Callable, Iterable
 
 import numpy as np
 from numpy import uint
 from openqasm3 import ast
+from openqasm3.ast import FunctionCall
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
@@ -209,6 +210,52 @@ class Variable:
     scope: str = "global"
 
 
+def _rotate(var: Variable | int, n: int, dir="left"):
+    """
+    Rotates a BitType variable left by n bits. Not we need a Variable b/c we need to know
+    the size of the register.
+
+    Args:
+        var (Variable | int): the variable to be rotated.
+        n (int): number of bits to rotate.
+        dir (Optional[str]): The direction of the rotation.
+
+    Returns:
+        int: the rotated value.
+
+    Raises:
+        TypeError: if the variable is not of BitType.
+    """
+    bits = _get_bit_type_val(var)
+    if dir == "left":
+        new_bits = bits[n:] + bits[:n]
+    else:
+        new_bits = bits[-n:] + bits[:-n]
+    return int(new_bits, 2)
+
+
+FUNCTIONS = {
+    "arccos": np.arccos,
+    "arcsin": np.arcsin,
+    "arctan": np.arctan,
+    "ceiling": np.ceil,
+    "cos": np.cos,
+    "exp": np.exp,
+    "floor": np.floor,
+    "log": np.log,
+    "mod": np.mod,
+    "popcount": lambda bit_val: reduce(
+        lambda acc, next: int(acc) + int(next == "1"), _get_bit_type_val(bit_val)
+    ),
+    "rotl": _rotate,
+    "rotr": partial(_rotate, dir="right"),
+    "sin": np.sin,
+    "sqrt": np.sqrt,
+    "tan": np.tan,
+    # the parser doesn't seem to support pow()
+}
+
+
 class Context:
     """Class with helper methods for managing, updating, checking context."""
 
@@ -381,7 +428,13 @@ class Context:
 
 
 def _get_bit_type_val(var):
-    return bin(var.val)[2:].zfill(var.size)
+    if isinstance(var, Variable) and var.ty == "BitType":
+        return bin(var.val)[2:].zfill(var.size)
+    if isinstance(var, Variable) and var.ty == "IntType":
+        return bin(var.val)[2:].zfill(int(np.floor(np.log2(var.val))) + 1)
+    if isinstance(var, int):
+        return bin(var)[2:].zfill(int(np.floor(np.log2(var))) + 1)
+    raise TypeError(f"Cannot convert {type(var)} to bitstring.")
 
 
 def _resolve_name(node: QASMNode):
@@ -808,25 +861,18 @@ class QasmInterpreter:
 
         # custom gates do not return a value
 
-    @visit.register(ast.FunctionCall)
-    def visit_function_call(self, node: ast.FunctionCall, context: Context):
+    def _execute_function(self, name: str, node: FunctionCall, context: Context):
         """
-        Registers a function call. The node must refer to a subroutine that has been defined and
-        is available in the current scope.
+        Executes a subroutine.
 
         Args:
-            node (FunctionCall): The FunctionCall QASMNode.
-            context (Context): The current context.
+            name (str): the name of the subroutine.
+            node (FunctionCall): the subroutine call.
+            context (Context): the current context.
 
-        Raises:
-            NameError: When the subroutine is not defined.
+        Returns:
+            Any: anything returned by the subroutine.
         """
-        name = _resolve_name(node)  # str or Identifier
-        if name not in context.scopes["subroutines"]:
-            raise NameError(
-                f"Reference to subroutine {name} not available in calling namespace "
-                f"on line {node.span.start_line}."
-            )
         func_context = context.scopes["subroutines"][name]
 
         # reset return
@@ -860,6 +906,39 @@ class QasmInterpreter:
 
         # the return value
         return getattr(func_context, "return")
+
+    @visit.register(ast.FunctionCall)
+    def visit_function_call(self, node: ast.FunctionCall, context: Context):
+        """
+        Registers a function call. The node must refer to a subroutine that has been defined and
+        is available in the current scope.
+
+        Args:
+            node (FunctionCall): The FunctionCall QASMNode.
+            context (Context): The current context.
+
+        Raises:
+            NameError: When the subroutine is not defined.
+        """
+        name = _resolve_name(node)  # str or Identifier
+
+        if name in context.scopes["subroutines"]:
+            return self._execute_function(name, node, context)
+
+        if name in FUNCTIONS:
+            # special handling since there is a loss of information when the parser encodes a bit string as an int
+            if name in ("rotr", "rotl"):
+                if isinstance(node.arguments[0], ast.Identifier):
+                    var = context.retrieve_variable(_resolve_name(node.arguments[0]))
+                    if var.ty == "BitType":
+                        return FUNCTIONS[name](var, self.visit(node.arguments[1], context))
+                    return FUNCTIONS[name](var.val, self.visit(node.arguments[1], context))
+            return FUNCTIONS[name](*(self.visit(raw_arg, context) for raw_arg in node.arguments))
+
+        raise NameError(
+            f"Reference to subroutine {name} not available in calling namespace "
+            f"on line {node.span.start_line}."
+        )
 
     @visit.register(ast.RangeDefinition)
     def visit_range(self, node: ast.RangeDefinition, context: Context):

@@ -30,7 +30,7 @@ catalyst = pytest.importorskip("catalyst")
 from catalyst.passes import xdsl_plugin
 
 import pennylane as qml
-from pennylane.compiler.python_compiler import quantum_dialect as quantum
+from pennylane.compiler.python_compiler.dialects import Quantum
 from pennylane.compiler.python_compiler.transforms import (
     MeasurementsFromSamplesPass,
     measurements_from_samples_pass,
@@ -47,7 +47,7 @@ def fixture_context_and_pipeline():
     ctx.load_dialect(func.Func)
     ctx.load_dialect(tensor.Tensor)
     ctx.load_dialect(arith.Arith)
-    ctx.load_dialect(quantum.QuantumDialect)
+    ctx.load_dialect(Quantum)
 
     pipeline = xdsl.passes.PipelinePass((MeasurementsFromSamplesPass(),))
 
