@@ -13,8 +13,8 @@
 # limitations under the License.
 """Pytest configuration for tests for the pennylane.compiler.python_compiler submodule."""
 
-import inspect
-import io
+from inspect import getsource
+from io import StringIO
 
 import pytest
 
@@ -54,9 +54,11 @@ def _run_filecheck_impl(program_str, pipeline=()):
     matcher = Matcher(
         opts,
         FInput("no-name", str(xdsl_module)),
-        Parser(opts, io.StringIO(program_str), *pattern_for_opts(opts)),
+        Parser(opts, StringIO(program_str), *pattern_for_opts(opts)),
     )
-    assert matcher.run() == 0
+
+    exit_code = matcher.run()
+    assert exit_code == 0, f"filecheck failed with exit code {exit_code}"
 
 
 @pytest.fixture(scope="function")
@@ -71,7 +73,7 @@ def run_filecheck():
 def _get_filecheck_directives(qjit_fn):
     """Return a string containing all FileCheck directives in the source function."""
     try:
-        src = inspect.getsource(qjit_fn)
+        src = getsource(qjit_fn)
     except Exception as e:
         raise RuntimeError(f"Could not get source for {qjit_fn}") from e
 
@@ -109,9 +111,11 @@ def _run_filecheck_qjit_impl(qjit_fn):
     matcher = Matcher(
         opts,
         FInput("no-name", str(xdsl_module)),
-        Parser(opts, io.StringIO(checks), *pattern_for_opts(opts)),
+        Parser(opts, StringIO(checks), *pattern_for_opts(opts)),
     )
-    assert matcher.run() == 0
+
+    exit_code = matcher.run()
+    assert exit_code == 0, f"filecheck failed with exit code {exit_code}"
 
 
 @pytest.fixture(scope="function")

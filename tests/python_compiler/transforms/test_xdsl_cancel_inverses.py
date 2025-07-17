@@ -210,6 +210,25 @@ class TestIterativeCancelInversesIntegration:
 
         run_filecheck_qjit(circuit)
 
+    def test_qjit_no_cancellation(self, run_filecheck_qjit):
+        """Test that the IterativeCancelInversesPass works correctly with qjit when
+        there are no operations that can be cancelled."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+        @iterative_cancel_inverses_pass
+        @qml.qnode(dev)
+        def circuit():
+            # CHECK-NOT: quantum.custom
+            qml.H(1)
+            qml.X(1)
+            qml.X(0)
+            qml.H(0)
+            return qml.state()
+
+        with pytest.raises(AssertionError, match="filecheck failed"):
+            run_filecheck_qjit(circuit)
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
