@@ -606,7 +606,7 @@ def measurements_from_samples(tape):
            [1, 0]])
 
     >>> fn((res,))
-    (-0.2, array([0.6, 0.4]))
+    [-0.2, array([0.6, 0.4])]
     """
     if not tape.shots:
         return (tape,), null_postprocessing
@@ -686,7 +686,7 @@ def measurements_from_counts(tape):
     >>> measurements = [qml.expval(qml.Y(0)), qml.probs(wires=[1])]
     >>> tape = qml.tape.QuantumScript(ops, measurements, shots=10)
 
-    We can apply the transform to diagonalize and convert the two measurements to a single sample:
+    We can apply the transform to diagonalize and convert the two measurements to a single `counts` measurement:
 
     >>> (new_tape, ), fn = qml.devices.preprocess.measurements_from_counts(tape)
     >>> new_tape.measurements
@@ -708,7 +708,7 @@ def measurements_from_counts(tape):
     And these can be post-processed to get the originally requested measurements:
 
     >>> fn((res,))
-    (-0.19999999999999996, array([0.7, 0.3]))
+    [-0.19999999999999996, array([0.7, 0.3])]
     """
     if tape.shots.total_shots is None:
         return (tape,), null_postprocessing
