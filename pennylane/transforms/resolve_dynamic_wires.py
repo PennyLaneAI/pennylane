@@ -114,6 +114,14 @@ def resolve_dynamic_wires(
       #. If no wires exist in the ``zeroed`` or ``any_state`` registers and ``min_int`` is not ``None``,
          we increment ``min_int`` and add a new wire
 
+    This transform uses a combination of two different modes: one with fixed registers specified by ``zeroed`` and
+    ``any_state``, and one with a dynamically sized register characterized by the integer ``min_int``.  We assume
+    that the upfront cost associated with using more wires has already been paid for anything in ``zeroed`` and
+    ``any_state``. Whether or not we use them, they will still be there. In this case, using a fresh wire is cheaper
+    than reset.  For the dynamically sized register, we assume that we have to pay an
+    additional cost each time we allocate a new wire. For the dynamically sized register, applying a reset
+    operation is therefor cheaper than allocating a new wire.
+
     This approach minimizes the width of the circuit at the cost of more reset operations.
 
     .. code-block:: python
