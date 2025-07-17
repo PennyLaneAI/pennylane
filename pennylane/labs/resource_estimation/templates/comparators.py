@@ -22,7 +22,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable=arguments-differ,protected-access,too-many-arguments,unused-argument,super-init-not-called
+# pylint: disable=arguments-differ,unused-argument
 
 
 class ResourceSingleQubitCompare(ResourceOperator):
@@ -400,10 +400,10 @@ class ResourceRegisterComparator(ResourceOperator):
     >>> register_compare = plre.ResourceRegisterComparator(4, 6)
     >>> print(plre.estimate_resources(register_compare))
     --- Resources: ---
-     Total qubits: 20
+     Total qubits: 11
      Total gates : 89
      Qubit breakdown:
-      clean qubits: 9, dirty qubits: 0, algorithmic qubits: 11
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 11
      Gate breakdown:
       {'Toffoli': 17, 'CNOT': 51, 'X': 18, 'Hadamard': 3}
     """
@@ -477,7 +477,6 @@ class ResourceRegisterComparator(ResourceOperator):
 
         gate_list = []
         compare_size = min(a_num_qubits, b_num_qubits)
-        gate_list.append(AllocWires(2 * compare_size))
 
         one_qubit_compare = resource_rep(plre.ResourceSingleQubitCompare)
         two_qubit_compare = resource_rep(plre.ResourceTwoQubitCompare)
@@ -501,7 +500,6 @@ class ResourceRegisterComparator(ResourceOperator):
 
             gate_list.append(GateCount(resource_rep(plre.ResourceX), 1))
             gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 1))
-            gate_list.append(FreeWires(a_num_qubits + b_num_qubits))
 
             return gate_list
 
@@ -550,6 +548,5 @@ class ResourceRegisterComparator(ResourceOperator):
 
         if geq:
             gate_list.append(GateCount(resource_rep(plre.ResourceX), 1))
-        gate_list.append(FreeWires(2 * compare_size))
 
         return gate_list
