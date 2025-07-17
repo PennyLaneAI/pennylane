@@ -74,8 +74,10 @@ class ZSqrtTwo:
             return ZSqrtTwo(self.a * int(other), self.b * int(other))
         raise TypeError(f"Unsupported type {type(other)} for multiplication with ZSqrtTwo")
 
+    def __rsub__(self, other: ZSqrtTwo | int | float) -> ZSqrtTwo:
+        return other + (-self)
+
     __radd__ = __add__
-    __rsub__ = __sub__
     __rmul__ = __mul__
 
     def __pow__(self, power: int) -> ZSqrtTwo:
@@ -238,10 +240,10 @@ class ZOmega:
             return ZOmega(self.a, self.b, self.c, self.d + int(other))
         raise TypeError(f"Unsupported type {type(other)} for addition with ZOmega")
 
-    def __sub__(self, other):
+    def __sub__(self, other: ZOmega | int | float) -> ZOmega:
         return self + (-other)
 
-    def __rsub__(self, other):
+    def __rsub__(self, other: ZOmega | int | float) -> ZOmega:
         return other + (-self)
 
     __radd__ = __add__

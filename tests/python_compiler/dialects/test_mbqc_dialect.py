@@ -26,12 +26,10 @@ pytestmark = pytest.mark.external
 from xdsl.dialects import builtin, test
 from xdsl.utils.exceptions import VerifyException
 
-from pennylane.compiler.python_compiler import mbqc_dialect as mbqc
-from pennylane.compiler.python_compiler.mbqc_dialect import MBQCDialect
-from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
+from pennylane.compiler.python_compiler.dialects import Quantum, mbqc
 
-all_ops = list(MBQCDialect.operations)
-all_attrs = list(MBQCDialect.attributes)
+all_ops = list(mbqc.MBQC.operations)
+all_attrs = list(mbqc.MBQC.attributes)
 
 expected_ops_names = {
     "MeasureInBasisOp": "mbqc.measure_in_basis",
@@ -44,7 +42,7 @@ expected_attrs_names = {
 
 def test_mbqc_dialect_name():
     """Test that the MBQCDialect name is correct."""
-    assert MBQCDialect.name == "mbqc"
+    assert mbqc.MBQC.name == "mbqc"
 
 
 @pytest.mark.parametrize("op", all_ops)
@@ -94,8 +92,8 @@ def test_assembly_format(run_filecheck):
 
     ctx.load_dialect(builtin.Builtin)
     ctx.load_dialect(test.Test)
-    ctx.load_dialect(QuantumDialect)
-    ctx.load_dialect(MBQCDialect)
+    ctx.load_dialect(Quantum)
+    ctx.load_dialect(mbqc.MBQC)
 
     module = xdsl.parser.Parser(ctx, program).parse_module()
 
@@ -120,8 +118,8 @@ class TestMeasureInBasisOp:
 
         ctx.load_dialect(builtin.Builtin)
         ctx.load_dialect(test.Test)
-        ctx.load_dialect(QuantumDialect)
-        ctx.load_dialect(MBQCDialect)
+        ctx.load_dialect(Quantum)
+        ctx.load_dialect(mbqc.MBQC)
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
 
@@ -151,8 +149,8 @@ class TestMeasureInBasisOp:
 
         ctx.load_dialect(builtin.Builtin)
         ctx.load_dialect(test.Test)
-        ctx.load_dialect(QuantumDialect)
-        ctx.load_dialect(MBQCDialect)
+        ctx.load_dialect(Quantum)
+        ctx.load_dialect(mbqc.MBQC)
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
 
