@@ -19,8 +19,9 @@ import sys
 from collections.abc import Callable, Sequence
 from typing import TypeVar, Union
 
-from autograd.numpy.numpy_boxes import ArrayBox
 import numpy as np
+from autograd.numpy.numpy_boxes import ArrayBox
+
 
 class InterfaceTensorMeta(type):
     """defines dunder methods for the ``isinstance`` and ``issubclass`` checks.
