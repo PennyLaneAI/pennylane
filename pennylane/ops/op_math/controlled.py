@@ -23,7 +23,7 @@ import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
 from inspect import signature
-from typing import Any, overload
+from typing import Any, overload, Literal
 
 import numpy as np
 from scipy import sparse
