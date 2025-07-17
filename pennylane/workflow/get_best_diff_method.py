@@ -52,7 +52,7 @@ def get_best_diff_method(qnode: QNode):
         qnode (.QNode): the qnode to get the 'best' differentiation method for.
 
     Returns:
-        str: the gradient method name or transform.
+        str: the gradient method name.
     """
 
     def handle_return(transform):
