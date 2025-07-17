@@ -74,7 +74,10 @@
 
 <h3>Deprecations 👋</h3>
 
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
+* Access to `add_noise`, `insert` and noise mitigation transforms from the `pennylane.transforms` module is deprecated.
+  Instead, these functions should be imported from the `pennylane.noise` module.
+  [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
+
   Instead, these functions should be imported from the ``pennylane.noise`` module.
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
 
