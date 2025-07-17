@@ -267,6 +267,8 @@ class DefaultMixed(Device):
         circuits: QuantumScript,
         execution_config: Optional[ExecutionConfig] = None,
     ) -> Union[Result, ResultBatch]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(
             simulate(
                 c,
@@ -298,7 +300,7 @@ class DefaultMixed(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
-        execution_config.interface = get_canonical_interface_name(execution_config.interface)
+        updated_values["interface"] = get_canonical_interface_name(execution_config.interface)
 
         # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy
