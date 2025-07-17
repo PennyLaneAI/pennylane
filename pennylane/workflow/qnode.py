@@ -654,6 +654,11 @@ class QNode:
     def add_transform(self, transform_container: TransformContainer):
         """Add a transform (container) to the transform program.
 
+        .. warning::
+
+            This method is deprecated and will be removed in v0.43. Instead, please use
+            :meth:`QNode.transform_program.push_back` to add transforms to the transform program.
+
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
         warnings.warn(
