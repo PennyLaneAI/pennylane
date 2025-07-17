@@ -479,6 +479,8 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
     for item in coeffs_dic:
 
         if not (1 in item):
+            # `num_output_adder_mod` will always correspond to log2(mod) so we don't need to provide
+            # `mod` to the `PhaseAdder` in the decomposition.
             rep = resource_rep(qml.PhaseAdder, num_x_wires=num_output_adder_mod, mod=mod)
             resources[rep] += 1
         else:
