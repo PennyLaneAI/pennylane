@@ -187,7 +187,7 @@ class TestValidateDeviceWires:
         assert batch[0] is tape1
 
     def test_fill_in_wires(self):
-        """Tests that if the wires are provided, measurements without wires take them gain them."""
+        """Tests that if the wires are provided, measurements without wires gain them."""
         tape1 = qml.tape.QuantumScript([qml.S("b")], [qml.state(), qml.probs()], shots=52)
 
         wires = qml.wires.Wires(["a", "b", "c"])

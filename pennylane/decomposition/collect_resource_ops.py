@@ -35,23 +35,26 @@ class CollectResourceOps(FlattenedInterpreter):
 
 
 @CollectResourceOps.register_primitive(adjoint_transform_prim)
-def _(self, *invals, jaxpr, lazy):  # pylint: disable=unused-argument
+def _(self, *invals, jaxpr, lazy, n_consts):  # pylint: disable=unused-argument
     """Collect all operations in the base plxpr and create adjoint resource ops with them."""
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
     child = CollectResourceOps()
-    child.eval(jaxpr, [], *invals)
+    child.eval(jaxpr, consts, *args)
     for op in child.state["ops"]:
         self.state["ops"].add(adjoint_resource_rep(op.op_type, op.params))
     return []
 
 
 @CollectResourceOps.register_primitive(ctrl_transform_prim)
-def _(self, *invals, n_control, jaxpr, **params):
+def _(self, *invals, n_control, jaxpr, n_consts, **params):
     """Collect all operations in the target plxpr and create controlled resource ops with them."""
 
-    args = invals[:-n_control]
+    consts = invals[:n_consts]
+    args = invals[n_consts:-n_control]
     control = invals[-n_control:]
     child = CollectResourceOps()
-    child.eval(jaxpr, [], *args)
+    child.eval(jaxpr, consts, *args)
 
     # Extract the resource parameters of this control transform
     control_values = params.get("control_values")

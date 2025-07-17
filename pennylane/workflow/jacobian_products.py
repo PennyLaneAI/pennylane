@@ -14,22 +14,26 @@
 """
 Defines classes that take the vjps, jvps, and jacobians of circuits.
 """
+from __future__ import annotations
+
 import abc
 import inspect
 import logging
 from collections.abc import Callable, Sequence
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from cachetools import LRUCache
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.tape import QuantumScriptBatch
-from pennylane.typing import ResultBatch, TensorLike
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+if TYPE_CHECKING:
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.typing import ResultBatch, TensorLike
 
 
 def _compute_vjps(jacs, dys, tapes):
