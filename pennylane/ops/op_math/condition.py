@@ -16,11 +16,11 @@ Contains the condition transform.
 """
 import functools
 from collections.abc import Callable, Sequence
-from functools import wraps
 
 import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.capture import FlatFn
+from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates
 from pennylane.operation import Operation, Operator

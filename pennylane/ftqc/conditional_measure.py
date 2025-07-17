@@ -15,9 +15,9 @@
 Contains the condition transform.
 """
 from collections.abc import Callable
-from functools import wraps
 
 from pennylane import capture
+from pennylane.capture.autograph import wraps
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops.op_math.condition import CondCallable, Conditional, cond
 from pennylane.queuing import QueuingManager

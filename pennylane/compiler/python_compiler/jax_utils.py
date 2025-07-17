@@ -34,7 +34,7 @@ from xdsl.dialects import transform as xtransform
 from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
-from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
+from .dialects import quantum
 
 JaxJittedFunction: TypeAlias = jaxlib.xla_extension.PjitFunction
 
@@ -81,7 +81,7 @@ def parse_generic_to_xdsl_module(program: str) -> xbuiltin.ModuleOp:  # pragma: 
     ctx.load_dialect(xstablehlo.StableHLO)
     ctx.load_dialect(xtensor.Tensor)
     ctx.load_dialect(xtransform.Transform)
-    ctx.load_dialect(QuantumDialect)
+    ctx.load_dialect(quantum.Quantum)
     moduleOp: xbuiltin.ModuleOp = xParser(ctx, program).parse_module()
     return moduleOp
 
