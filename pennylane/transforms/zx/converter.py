@@ -256,11 +256,10 @@ def to_zx(tape, expand_measurements=False):
 
     .. note::
 
-        Prior to being added to the graph, Toffolis and CCZ gates are replaced by particular decompositions. These decompositions 
-        are described in detail in: J. Welch, A. Bocharov, and K. Svore, “Efficient Approximation of Diagonal Unitaries over the Clifford+T Basis,” 
+        Prior to being added to the graph, Toffoli and CCZ gates are replaced by particular decompositions. These decompositions
+        are described in detail in: J. Welch, A. Bocharov, and K. Svore, “Efficient Approximation of Diagonal Unitaries over the Clifford+T Basis,”
         Quantum information & computation, vol. 16, Dec. 2014, doi: 10.26421/QIC16.1-2-6.
-
-        This is necessary because...
+        This is necessary because Toffoli and CCZ gates are not directly supported in PyZX.
 
         Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
     """
