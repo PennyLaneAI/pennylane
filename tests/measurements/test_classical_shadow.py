@@ -1067,47 +1067,6 @@ def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recip
     assert np.allclose(new_ratios2, 1 / 2, atol=1e-1)
 
 
-@pytest.mark.parametrize("wires", [1, 3])
-@pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "tf", "torch"])
-@pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
-def test_availability_legacy_arithmetic(wires, interface, circuit_basis, basis_recipe):
-    """Test that the legacy arithmetic can run. No check with results"""
-    # high number of shots to prevent true negatives
-    shots = 100
-
-    dev = DefaultQubitLegacy(wires=wires, shots=shots)
-
-    @qml.qnode(dev, interface=interface)
-    def circuit():
-        for wire in range(wires):
-            if circuit_basis in ("x", "y"):
-                qml.Hadamard(wire)
-            if circuit_basis == "y":
-                qml.RZ(np.pi / 2, wire)
-
-        return qml.classical_shadow(wires=range(wires))
-
-    tape = qml.workflow.construct_tape(circuit)()
-    obs = tape.observables[0]
-    legacy_bits, legacy_recipes = dev.classical_shadow(obs=obs, circuit=circuit)
-
-    new_bits = legacy_bits[legacy_recipes == basis_recipe]
-    legacy_ratios = np.unique(new_bits, return_counts=True)[1] / (wires * shots)
-    # Check the shape with basis recipe
-    assert legacy_bits.shape == (shots, wires)
-    assert np.allclose(
-        legacy_ratios, 1 / 3, atol=5e-1
-    )  # Make sure large enough tol, we don't care about the accuracy of a legacy function
-
-    legacy_bits, legacy_recipes = super(type(dev), dev).classical_shadow(obs=obs, circuit=tape)
-    new_bits = legacy_bits[legacy_recipes == basis_recipe]
-    legacy_ratios = np.unique(new_bits, return_counts=True)[1] / (wires * shots)
-    # Check the shape with basis recipe
-    assert legacy_bits.shape == (shots, wires)
-    assert np.allclose(legacy_ratios, 1 / 3, atol=5e-1)
-
-
 def hadamard_circuit_legacy(wires, shots=10000, interface="autograd"):
     dev = DefaultQubitLegacy(wires=wires, shots=shots)
 

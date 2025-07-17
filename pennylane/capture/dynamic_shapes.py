@@ -188,14 +188,16 @@ def register_custom_staging_rule(
         return out_tracer, new_var
 
     def custom_staging_rule(
-        jaxpr_trace: pe.DynamicJaxprTrace, *tracers: pe.DynamicJaxprTracer, **params
+        jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
     ) -> Union[Sequence[pe.DynamicJaxprTracer], pe.DynamicJaxprTracer]:
         """
         Add new jaxpr equation to the jaxpr_trace and return new tracers.
         """
         if not jax.config.jax_dynamic_shapes:
             # fallback to normal behavior
-            return jaxpr_trace.default_process_primitive(primitive, tracers, params)
+            return jaxpr_trace.default_process_primitive(
+                primitive, tracers, params, source_info=source_info
+            )
         outvars = get_outvars_from_params(params)
 
         env: dict[jax.extend.core.Var, jax.extend.core.Var] = {}  # branch var to new equation var
