@@ -19,7 +19,6 @@ import copy
 from collections import Counter
 
 import numpy as np
-from jax.tools.jax_to_ir import set_up_flags
 
 import pennylane as qml
 from pennylane.decomposition import (
