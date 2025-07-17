@@ -545,7 +545,7 @@ def _out_poly_decomposition(
                 control=controls,
             )
 
-    qml.adjoint(qml.QFT)(wires=output_adder_mod)
+    qml.adjoint(qml.QFT(wires=output_adder_mod))
 
 
 add_decomps(OutPoly, _out_poly_decomposition)

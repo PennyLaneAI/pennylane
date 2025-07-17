@@ -247,7 +247,7 @@ def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__
 
     qml.QFT(qft_wires)
     qml.PhaseAdder(k, qft_wires, mod, work_wire)
-    qml.adjoint(qml.QFT)(qft_wires)
+    qml.adjoint(qml.QFT(qft_wires))
 
 
 add_decomps(Adder, _adder_decomposition)
@@ -301,7 +301,7 @@ def _controlled_adder_decomposition(
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    qml.adjoint(qml.QFT)(qft_wires)
+    qml.adjoint(qml.QFT(qft_wires))
 
 
 add_decomps("C(Adder)", _controlled_adder_decomposition)

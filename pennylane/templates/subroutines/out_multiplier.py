@@ -343,7 +343,7 @@ def _out_multiplier_decomposition(
         ),
         control=y_wires,
     )
-    qml.adjoint(qml.QFT)(wires=qft_output_wires)
+    qml.adjoint(qml.QFT(wires=qft_output_wires))
 
 
 add_decomps(OutMultiplier, _out_multiplier_decomposition)
