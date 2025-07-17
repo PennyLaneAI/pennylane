@@ -338,7 +338,7 @@ def _to_zx_transform(
         expanded_operations = []
         for op in mapped_tape.operations:
             if op.name == "Toffoli":
-                # explicit list of ops given by op.decomposition, replacing Adjoint(T) with PhaseShift(-π/4)
+                # Explicit list of ops given by op.decomposition, replacing Adjoint(T) with PhaseShift(-π/4)
                 decomp = [
                     qml.Hadamard(wires=op.wires[2]),
                     qml.CNOT(wires=[op.wires[1], op.wires[2]]),
@@ -359,7 +359,7 @@ def _to_zx_transform(
                 expanded_operations.extend(decomp)
             elif op.name == "CCZ":
                 decomp = [
-                    # explicit list of ops given by op.decomposition, replacing Adjoint(T) with PhaseShift(-π/4)
+                    # Explicit list of ops given by op.decomposition, replacing Adjoint(T) with PhaseShift(-π/4)
                     qml.CNOT(wires=[op.wires[1], op.wires[2]]),
                     qml.PhaseShift(-np.pi / 4, wires=op.wires[2]),
                     qml.CNOT(wires=[op.wires[0], op.wires[2]]),
