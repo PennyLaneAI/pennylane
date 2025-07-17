@@ -331,7 +331,7 @@ def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **
     qml.ControlledSequence(qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
 
     qml.ControlledSequence(qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
-    qml.adjoint(qml.QFT)(wires=qft_new_output_wires)
+    qml.adjoint(qml.QFT(wires=qft_new_output_wires))
 
 
 add_decomps(OutAdder, _out_adder_decomposition)

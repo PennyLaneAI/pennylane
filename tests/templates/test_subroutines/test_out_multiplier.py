@@ -244,20 +244,8 @@ class TestOutMultiplier:
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires"),
         [
-            (
-                [0, 1, 2],
-                [3, 5],
-                [6, 8],
-                3,
-                [9, 10],
-            ),
-            (
-                [0, 1, 2],
-                [3, 6],
-                [5, 8],
-                4,
-                [9, 10],
-            ),
+            ([0, 1, 2], [3, 5], [6, 8], 3, [9, 10]),
+            ([0, 1, 2], [3, 6], [5, 8], 4, [9, 10]),
         ],
     )
     def test_decomposition_new(

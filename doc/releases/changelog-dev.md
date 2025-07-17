@@ -14,15 +14,15 @@
     
     * :class:`~.ControlledSequence`
   
+    * :class:`~.ModExp`
+
+    * :class:`~.Multiplier`
+
     * :class:`~.OutAdder`
 
     * :class:`~.OutMultiplier`
 
     * :class:`~.OutPoly`
-
-    * :class:`~.Multiplier`
-    
-    * :class:`~.ModExp`
 
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all

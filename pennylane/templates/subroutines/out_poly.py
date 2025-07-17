@@ -492,10 +492,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
                 num_work_wires=int(num_work_wires > 0),
                 work_wire_type="dirty",
             )
-            if ctrl_phase_rep in resources:
-                resources[ctrl_phase_rep] += 1
-            else:
-                resources[ctrl_phase_rep] = 1
+            resources[ctrl_phase_rep] += 1
 
     resources[adjoint_resource_rep(qml.QFT, {"num_wires": num_output_adder_mod})] = 1
 
