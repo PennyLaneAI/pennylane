@@ -28,7 +28,7 @@ from xdsl.parser import Parser
 from xdsl.passes import PipelinePass
 from xdsl.printer import Printer
 
-from .quantum_dialect import QuantumDialect as Quantum
+from .dialects import Quantum
 from .transforms.api import ApplyTransformSequence
 
 
