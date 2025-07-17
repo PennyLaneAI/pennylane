@@ -76,7 +76,7 @@ def get_best_diff_method(qnode: QNode):
         config = _make_execution_config(qnode, "best", mcm_config)
 
         # Use the same resolution logic as execute() and construct_batch()
-        resolved_config = _resolve_execution_config(config, device, [tape])
+        resolved_config = _resolve_execution_config(config, device, batch)
 
         return handle_return(resolved_config.gradient_method)
 
