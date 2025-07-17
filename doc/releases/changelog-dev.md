@@ -78,6 +78,10 @@
   Instead, these functions should be imported from the ``pennylane.noise`` module.
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
 
+* The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43.
+  Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
+  [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
+
 <h3>Internal changes ⚙️</h3>
 
 * Added a `dialects` submodule to `qml.compiler.python_compiler` which now houses all the xDSL dialects we create.
