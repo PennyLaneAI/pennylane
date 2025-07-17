@@ -155,11 +155,11 @@ class ResourceAliasSampling(ResourceOperator):
     >>> print(plre.estimate_resources(alias_sampling))
     --- Resources: ---
      Total qubits: 81
-     Total gates : 6.132E+3
+     Total gates : 6.099E+3
      Qubit breakdown:
       clean qubits: 66, dirty qubits: 8, algorithmic qubits: 7
      Gate breakdown:
-      {'Hadamard': 710, 'X': 413, 'CNOT': 4.572E+3, 'Toffoli': 349, 'T': 88}
+      {'Hadamard': 730, 'X': 421, 'CNOT': 4.530E+3, 'Toffoli': 330, 'T': 88}
     """
 
     def __init__(self, num_coeffs, precision=None, wires=None):
@@ -191,7 +191,7 @@ class ResourceAliasSampling(ResourceOperator):
         return CompressedResourceOp(cls, {"num_coeffs": num_coeffs, "precision": precision})
 
     @classmethod
-    def default_resource_decomp(cls, num_coeffs, precision=None, **kwargs):
+    def default_resource_decomp(cls, num_coeffs, precision=None, **kwargs) -> list[GateCount]:
         r"""Returns a dictionary representing the resources of the operator. The
         keys are the operators and the associated values are the counts.
 
@@ -217,9 +217,9 @@ class ResourceAliasSampling(ResourceOperator):
         num_prec_wires = abs(math.floor(math.log2(precision)))
 
         gate_lst.append(AllocWires(logl + 2 * num_prec_wires + 1))
-        print("num_prec_wires", logl + 2 * num_prec_wires + 1)
+
         gate_lst.append(
-            GateCount(resource_rep(plre.ResourceUniformStatePrep, {"num_states": logl}), 1)
+            GateCount(resource_rep(plre.ResourceUniformStatePrep, {"num_states": num_coeffs}), 1)
         )
         gate_lst.append(GateCount(resource_rep(plre.ResourceHadamard), num_prec_wires))
         gate_lst.append(
@@ -240,6 +240,6 @@ class ResourceAliasSampling(ResourceOperator):
                 1,
             )
         )
-        gate_lst.append(GateCount(resource_rep(plre.ResourceCSWAP), num_prec_wires))
+        gate_lst.append(GateCount(resource_rep(plre.ResourceCSWAP), logl))
 
         return gate_lst
