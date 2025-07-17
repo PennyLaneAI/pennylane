@@ -62,22 +62,22 @@ TensorLike = Union[
 ]
 """A type for all tensor-like data.
 
-   TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor, 
-   including lists and tuples. Any argument accepted by ``qml.numpy.array`` is tensor-like.
+TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor, 
+including lists and tuples. Any argument accepted by ``qml.numpy.array`` is tensor-like.
 
-   **Examples**
+**Examples**
 
-   >>> from pennylane.typing import TensorLike
-   >>> isinstance(4, TensorLike)
-   True
-   >>> isinstance([2, 6, 8], TensorLike)
-   True
-   >>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
-   True
-   >>> issubclass(list, TensorLike)
-   True
-   >>> issubclass(jax.Array, TensorLike)
-   True
+>>> from pennylane.typing import TensorLike
+>>> isinstance(4, TensorLike)
+True
+>>> isinstance([2, 6, 8], TensorLike)
+True
+>>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
+True
+>>> issubclass(list, TensorLike)
+True
+>>> issubclass(jax.Array, TensorLike)
+True
 
 """
 
