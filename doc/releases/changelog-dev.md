@@ -6,6 +6,12 @@
 
 <h3>Improvements 🛠</h3>
 
+* Decomposition rules that can be accessed with the new graph-based decomposition system are
+  implemented. The following decompositions have been added:
+    [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
+
+    * :class:`~.Reflection`
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
