@@ -21,7 +21,7 @@ from pennylane import math
 
 def create_initial_state(
     wires: qml.wires.Wires | Iterable,
-    prep_operation: qml.operation.StatePrepBase | qml.QubitDensityMatrix = None,
+    prep_operation: qml.operation.StatePrepBase | qml.QubitDensityMatrix | None = None,
     like: str = None,
 ):
     r"""
