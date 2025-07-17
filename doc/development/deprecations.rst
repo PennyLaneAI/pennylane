@@ -9,10 +9,9 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* ``custom_decomps=`` keywords param to ``qml.device`` has been deprecated and will be removed in 0.44. Please implement
-  a custom decomposition (i.e. ``U_decomp``) of an operator or template ``U`` as a quantum function and register it with
-  ``qml.decomposition.add_decomps(U, U_decomp)``. This requires that the graph based decomposition system be enabled with
-  ``qml.decomposition.enable_graph()``.
+* The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
+  in 0.44. Instead, with ``qml.decomposition.enable_graph()``, define custom decomposition rules as a
+  quantum function, and register it with ``qml.add_decomps``.
 
 * Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
   and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
