@@ -212,7 +212,7 @@ class PrintOp(IRDLOperation):
     print_descriptor = prop_def(EqAttrConstraint(UnitAttr()))
 
 
-Catalyst_Dialect = Dialect(
+Catalyst = Dialect(
     "catalyst",
     [
         AssertionOp,
