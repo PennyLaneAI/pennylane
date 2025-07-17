@@ -220,7 +220,7 @@ def _ctrl_seq_decomposition_resources(base, base_params, num_control_wires) -> d
     powers_of_two = [2**i for i in range(num_control_wires)]
 
     for z in powers_of_two[::-1]:
-        controlled_rep = controlled_resource_rep(base, base_params, 1, 0, 0, "dirty")
+        controlled_rep = controlled_resource_rep(base, base_params, 1)
         rep = pow_resource_rep(
             base_class=controlled_rep.op_type,
             base_params=controlled_rep.params,
