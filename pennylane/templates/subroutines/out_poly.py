@@ -478,7 +478,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
 
     for item in coeffs_dic:
 
-        if not 1 in item:
+        if not (1 in item):
             rep = resource_rep(qml.PhaseAdder, num_x_wires=num_output_adder_mod, mod=mod)
             resources[rep] += 1
         else:
