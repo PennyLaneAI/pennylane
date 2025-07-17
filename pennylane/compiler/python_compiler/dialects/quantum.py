@@ -176,7 +176,8 @@ class AdjointOp(IRDLOperation):
           quantum.yield %register_2
         }
 
-    When the transformation `--adjoint-lowering` is applied, then the adjoint
+    When the transformation `--adjoint-lowering` is applied, then the ``AdjointOp`` is replaced
+    by individual adjoint gates in reverse order.
 
     .. code-block:: mlir
 
