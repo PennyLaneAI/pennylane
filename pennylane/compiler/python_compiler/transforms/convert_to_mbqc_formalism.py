@@ -18,8 +18,9 @@ written using xDSL."""
 from dataclasses import dataclass
 
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import arith, builtin, func, memref, vector
+from xdsl.dialects import arith, builtin, func, memref, tensor, vector
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
+from xdsl.ir.core import SSAValue
 from xdsl.rewriter import InsertPoint
 
 from ..mbqc_dialect import MeasureInBasisOp
@@ -57,7 +58,7 @@ class ConvertToMBQCFormalismPattern(
     def _swap_qubits(
         self, rewriter, registers_state, op, current_op, num_wires_int, res_idx, offset
     ):
-        # FIXME: The index here is wrong 
+        # FIXME: The index here is wrong
         # NOTE: The following logic mimic the QubitMgr class defined in the `ftqc.utils` module
         # 1. Extract the target wire and the result wires in the auxiliary registers
         target_qubits_index = op.results[res_idx].index
@@ -110,38 +111,26 @@ class ConvertToMBQCFormalismPattern(
                     "RZ",
                     "RotXZX",
                 ]:
-                    if not isinstance(op.operands[0].owner, ExtractOp):
-                        # FIXME: The index here is wrong 
-                        target_qubits_index = op.operands[0].index
-                        target_qubit = ExtractOp(registers_state, target_qubits_index)
-                        rewriter.insert_op(target_qubit, insertion_point=InsertPoint.before(op))
-                        new_op = CustomOp(
-                            in_qubits=target_qubit, gate_name=op.gate_name.data, params=op.params
-                        )
-                        rewriter.replace_op(op, new_op)
-                        op = new_op
+                    idx = self.get_op_wire_idx(op)
+                    print("idx:", idx)
 
-                    current_op, registers_state = self._swap_qubits(
-                        rewriter, registers_state, op, op, num_wires_int, res_idx=0, offset=3
-                    )
-                elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
-                    if not isinstance(op.operands[0].owner, ExtractOp) or not isinstance(
-                        op.operands[1].owner, ExtractOp
-                    ):
-                        # FIXME: The index here is wrong 
-                        target_qubits_index = op.operands[0].index
-                        print("+++++",op.in_qubits[0])
+    def get_op_wire_idx(self, op):
+        """Get the wire index from a CustomOp for 1-wire gate set."""
 
-                    current_op, registers_state = self._swap_qubits(
-                        rewriter, registers_state, op, op, num_wires_int, res_idx=0, offset=11
-                    )
-                    current_op, registers_state = self._swap_qubits(
-                        rewriter,
-                        registers_state,
-                        op,
-                        current_op,
-                        num_wires_int,
-                        res_idx=1,
-                        offset=12,
-                    )
-                # Add a branch for NamedObs
+        def _walk_back_to_wire_def(op):
+            if isinstance(op, CustomOp) and isinstance(op.in_qubits[0].owner, ExtractOp):
+                qubit_extract_op = op.in_qubits[0].owner
+                idx_extract_op = qubit_extract_op.idx.owner
+                assert isinstance(idx_extract_op, tensor.ExtractOp)
+                idx_constant_op = idx_extract_op.operands[0].owner
+                idx_value_attribute: builtin.DenseIntOrFPElementsAttr = idx_constant_op.properties[
+                    "value"
+                ]
+                idx_int_values = idx_value_attribute.get_values()
+                return idx_int_values[0]
+
+            if isinstance(op, CustomOp):
+                return _walk_back_to_wire_def(op.in_qubits[0].owner)
+
+        idx = _walk_back_to_wire_def(op)
+        return idx
