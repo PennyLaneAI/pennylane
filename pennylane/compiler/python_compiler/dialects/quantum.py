@@ -159,7 +159,7 @@ class AdjointOp(IRDLOperation):
 
     .. code-block:: python
 
-        qml.adjoint(qml.Hadamard(0))
+        qml.adjoint([qml.Hadamard(0), qml.S(0)])
 
     are equivalent to
 
@@ -960,7 +960,7 @@ class NamedObsOp(IRDLOperation):
     """Define a Named observable for use in measurements.
 
     The ``quantum.namedobs`` operation defines a quantum observable to be used by measurement
-    processes. The specific observable defined here represents one of 5 named observables -- 
+    processes. The specific observable defined here represents one of 5 named observables --
     Identity, PauliX, PauliY, PauliZ, Hadamard -- on a qubit. The arguments are the qubit to
     measure as well as an encoding operator for the qubit as an integer between 0-4 inclusive.
 
