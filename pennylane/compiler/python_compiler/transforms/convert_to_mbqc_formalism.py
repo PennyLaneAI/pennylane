@@ -56,16 +56,14 @@ class ConvertToMBQCFormalismPattern(
     """RewritePattern for pre-allocate 13 more aux wires."""
 
     def _swap_qubits(
-        self, rewriter, registers_state, op, current_op, num_wires_int, res_idx, offset
+        self, rewriter, registers_state, current_op, num_wires_int, target_qubits_index, offset
     ):
-        # FIXME: The index here is wrong
         # NOTE: The following logic mimic the QubitMgr class defined in the `ftqc.utils` module
         # 1. Extract the target wire and the result wires in the auxiliary registers
-        target_qubits_index = op.results[res_idx].index
         target_qubit = ExtractOp(registers_state, target_qubits_index)
         rewriter.insert_op(target_qubit, insertion_point=InsertPoint.after(current_op))
         current_op = target_qubit
-        result_qubits_index = num_wires_int + offset
+        result_qubits_index = num_wires_int + offset - 1
         res_qubit = ExtractOp(registers_state, result_qubits_index)
         rewriter.insert_op(res_qubit, insertion_point=InsertPoint.after(current_op))
         current_op = res_qubit
@@ -112,7 +110,18 @@ class ConvertToMBQCFormalismPattern(
                     "RotXZX",
                 ]:
                     idx = self.get_op_wire_idx(op, 0)
-                    print(idx)
+                    offset = 0 + 4
+                    _, registers_state = self._swap_qubits(
+                        rewriter, registers_state, op, num_wires_int, idx, offset
+                    )
+                elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
+                    current_op = op
+                    for i in range(len(current_op.in_qubits)):
+                        offset = i + 12
+                        idx = self.get_op_wire_idx(op, i)
+                        current_op, registers_state = self._swap_qubits(
+                            rewriter, registers_state, current_op, num_wires_int, idx, offset
+                        )
 
     def get_op_wire_idx(self, op, i):
         """Get the wire index from a CustomOp for ith-wire."""
@@ -122,12 +131,13 @@ class ConvertToMBQCFormalismPattern(
                 qubit_extract_op = op.in_qubits[i].owner
                 idx_extract_op = qubit_extract_op.idx.owner
                 assert isinstance(idx_extract_op, tensor.ExtractOp)
-                idx_constant_op = idx_extract_op.operands[i].owner
+                # TODOs: Add safe guard
+                idx_constant_op = idx_extract_op.operands[0].owner
                 idx_value_attribute: builtin.DenseIntOrFPElementsAttr = idx_constant_op.properties[
                     "value"
                 ]
                 idx_int_values = idx_value_attribute.get_values()
-                return idx_int_values[i]
+                return idx_int_values[0]
 
             if isinstance(op, CustomOp):
                 return _walk_back_to_wire_def(op.in_qubits[i].owner, i)
