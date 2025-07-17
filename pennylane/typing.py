@@ -19,7 +19,6 @@ import sys
 from collections.abc import Callable, Sequence
 from typing import TypeVar, Union
 
-import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 from numpy.typing import ArrayLike
 
