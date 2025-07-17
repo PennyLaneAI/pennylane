@@ -572,7 +572,7 @@ class Controlled(SymbolicOp):
         control_wires: WiresLike,
         control_values=None,
         work_wires: WiresLike = None,
-        work_wire_type: str | None = "dirty",
+        work_wire_type: Literal["clean", "dirty"] = "dirty",
         id=None,
     ):
         control_wires = Wires(control_wires)
