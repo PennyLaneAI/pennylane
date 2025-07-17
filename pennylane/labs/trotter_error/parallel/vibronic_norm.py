@@ -1,5 +1,5 @@
 import math
-from itertools import product
+from functools import cache
 
 import numpy as np
 import scipy as sp
@@ -140,22 +140,15 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
         for index, coeff in op.coeffs.nonzero().items():
             group = frozenset(index)
 
-            mode_mats = {i: sp.sparse.eye(gridpoints, dtype=np.complex128) for i in group}
+            mode_strs = {i: "" for i in group}
             for i, mat in zip(index, op.ops):
                 if mat == "P":
-                    mode_mats[i] @= _momentum_operator(gridpoints, basis="harmonic", sparse=True)
+                    mode_strs[i] += "P"
                 elif mat == "Q":
-                    mode_mats[i] @= _position_operator(gridpoints, basis="harmonic", sparse=True)
+                    mode_strs[i] += "Q"
 
-            sorted_group = sorted(group)
-            if len(sorted_group) == 0:
-                mat = sp.sparse.eye(gridpoints)
-            else:
-                mat = mode_mats[sorted_group[0]]
-                for i in sorted_group[1:]:
-                    mat = sp.sparse.kron(mat, mode_mats[i], format="csr")
-
-            mat = coeff * mat
+            sorted_ops = tuple(mode_strs[i] for i in sorted(group))
+            mat = coeff * build_mat(gridpoints, sorted_ops)
 
             try:
                 mode_groups[group] += mat
@@ -168,6 +161,28 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
 def sum_get_eigenvalue(mode_groups):
     """Sum the eigenvalues of the matrices in mode_groups."""
     return sum(_get_eigenvalue(mat) for mat in mode_groups.values())
+
+
+@cache
+def build_mat(gridpoints, ops):
+    if len(ops) == 0:
+        return sp.sparse.eye(gridpoints)
+
+    mats = [sp.sparse.eye(gridpoints, dtype=np.complex128)] * len(ops)
+    for i, op in enumerate(ops):
+        for ch in op:
+            if ch == "P":
+                mats[i] @= _momentum_operator(gridpoints, basis="harmonic", sparse=True)
+            elif ch == "Q":
+                mats[i] @= _position_operator(gridpoints, basis="harmonic", sparse=True)
+
+    ret = mats[0]
+
+    for mat in mats[1:]:
+        ret = sp.sparse.kron(ret, mat, format="csr")
+
+    return ret
+
 
 def _get_eigenvalue(mat):
     
