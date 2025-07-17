@@ -22,7 +22,7 @@ xdsl = pytest.importorskip("xdsl")
 from xdsl.context import Context
 from xdsl.dialects import arith, func, scf, test
 
-from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect as Quantum
+from pennylane.compiler.python_compiler.dialects import Quantum
 from pennylane.compiler.python_compiler.transforms import CombineGlobalPhasesPass
 
 
