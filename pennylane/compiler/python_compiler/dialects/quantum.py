@@ -151,7 +151,7 @@ class AdjointOp(IRDLOperation):
         qreg (QuregSSAValue | Operation): input quantum register. If it is an operation
             then this operation must return a single value
             and that value must be a quantum register.
-        region: operations that will be adjointed.
+        region: operations to convert to adjoints.
 
     **Example**
 
@@ -264,7 +264,7 @@ class AllocOp(IRDLOperation):
 
 @irdl_op_definition
 class ComputationalBasisOp(IRDLOperation):
-    """Define a pseudo-obeservable of the computational basis for use in measurements.
+    """Define a pseudo-obeservable in the computational basis for use in measurements.
 
     Args:
         qubits (Sequence[SSAValue] | None): Qubits that make up the computational basis.
@@ -303,9 +303,8 @@ class CountsOp(IRDLOperation):
 
     Args:
         obs (Observable): The only SSA argument is an observable that must be defined by an
-            operation in the local scope. from an observable on the current quantum state.
-            The number of samples to draw is determined by the device shots argument in the device
-            initialization operation in the local scope.
+            operation in the local scope. The number of samples to draw is determined by the
+            device shots argument in the device initialization operation in the local scope.
 
     Returns:
         eigvals: An array for the eigenvalues. These are the possible bitstrings one could measure
@@ -314,10 +313,10 @@ class CountsOp(IRDLOperation):
 
     .. note::
 
-        in_eigvals and in_counts will in general not be required when working
+        ``in_eigvals`` and ``in_counts`` will in general not be required when working
         with xDSL. This is due to an implementation detail in Catalyst.
         These inputs correspond to the input memory that will hold the output
-        eigvals and counts.
+        ``eigvals`` and ``counts``.
 
     **Example**
 
@@ -370,14 +369,14 @@ class CustomOp(IRDLOperation):
     """A generic quantum gate on n qubits with m floating point parameters.
 
     This operation represents an quantum operation acting on wires.
-    This operation may be adjointed, or may be controlled.
+    This operation may be adjoint, or may be controlled.
 
     Args:
         name (string | StringAttr): The operation's name. E.g., Hadamard.
         params (Sequence[SSAValue]): The classical parameters.
         in_qubits (Sequence[SSAValue]): The qubits the operation acts on.
-        adjoint (UnitAttr | bool | None): Denotes whether the operation is adjointed.
-            If a UnitAttr or True value is passed, then the operation is adjointed.
+        adjoint (UnitAttr | bool | None): Denotes whether the operation is an adjoint.
+            If a ``UnitAttr`` or ``True`` value is passed, then the operation is an adjoint.
         in_ctrl_qubits (Sequence[SSAValue]): Control qubits.
         in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be True or False.
 
@@ -388,9 +387,10 @@ class CustomOp(IRDLOperation):
     .. note::
 
         We say that an operation is "controlled" if it has in_ctrl_qubits. Therefore a CNOT
-        operation is not controlled in this context.
+        operation is not controlled in this context since both its control and target wires are
+        contained within ``in_qubits``.
 
-        The same number of in_ctrl_qubits and in_ctrl_values are required.
+        The same number of ``in_ctrl_qubits`` and ``in_ctrl_values`` are required.
 
         The semantics of these gates are given by the runtime.
 
@@ -487,7 +487,7 @@ class DeallocOp(IRDLOperation):
     """Deallocate a quantum register.
 
     Args:
-        qreg (SSAValue): The quantum register to deallocate
+        qreg (QregSSAValue): The quantum register to deallocate
     """
 
     name = "quantum.dealloc"
@@ -546,11 +546,10 @@ class DeviceReleaseOp(IRDLOperation):
 class ExpvalOp(IRDLOperation):
     """Compute the expectation value of the given observable for the current state.
 
-    The `quantum.expval` operation represents the measurement process of computing the
+    The ``quantum.expval`` operation represents the measurement process of computing the
     expectation value of an observable on the current quantum state. While this quantity can
     be computed analytically on simulators, for hardware execution or shot noise
-    simulation, the shots attached to the device
-    in the local scope is used.
+    simulation, the shots attached to the device in the local scope are used.
 
     Args:
         obs (SSAValue): an observable that must be defined by an operation in the local scope.
@@ -586,7 +585,7 @@ class ExtractOp(IRDLOperation):
     """Extract a qubit value from a register.
 
     Args:
-        qreg (SSAValue): The quantum register containing the qubit to be extracted.
+        qreg (QregSSAValue): The quantum register containing the qubit to be extracted.
         idx (SSAValue | None): An index that may correspond to an unknown wire.
         idx_attr (IntegerAttr | int): An index that is statically known.
 
@@ -635,7 +634,7 @@ class FinalizeOp(IRDLOperation):
     """Teardown the quantum runtime.
 
     Executing this instruction concretely corresponds to executing the
-    `__catalyst__rt__finalize` function in the runtime which is expected
+    ``__catalyst__rt__finalize`` function in the runtime which is expected
     to be the very last thing executed by the library.
     """
 
@@ -725,11 +724,11 @@ class GlobalPhaseOp(IRDLOperation):
 class HamiltonianOp(IRDLOperation):
     """Define a Hamiltonian observable for use in measurements.
 
-    The `quantum.hamiltonian` operation defines a quantum observable to be used by other
+    The ``quantum.hamiltonian`` operation defines a quantum observable to be used by other
     operations such as measurement processes. The specific observable defined here represents
-    the hamiltonian of observables. The arguments are a set of coefficients and a set of
-    `quantum.Observable` generated by `quantum.namedobs`, `quantum.hermitian`,
-    or `quantum.tensorobs`.
+    a linear combination of observables. The arguments are a set of coefficients and a set of
+    ``quantum.Observable`` generated by ``quantum.namedobs``, ``quantum.hermitian``,
+    or ``quantum.tensorobs``.
 
     **Example**
 
@@ -760,11 +759,11 @@ class HamiltonianOp(IRDLOperation):
 class HermitianOp(IRDLOperation):
     """Define a Hermitian observable for use in measurements.
 
-    The `quantum.hermitian` operation defines a quantum observable to be used by measurement
+    The ``quantum.hermitian`` operation defines a quantum observable to be used by measurement
     processes. The specific observable defined here represents the Hermitian observable on a
-    set of qubits. The arguments are a set of qubits to measure as well as a row-major flatten
+    set of qubits. The arguments are a set of qubits to measure as well as a row-major flattened
     matrix of complex numbers that represents a Hermitian matrix that must be of size
-    2^(number of qubits) * 2^(number of qubits).
+    :math:`2^{num_qubits} \times 2^{n_qubits}`.
     """
 
     name = "quantum.hermitian"
@@ -785,7 +784,7 @@ class InitializeOp(IRDLOperation):
     """Initialize the quantum runtime.
 
     The execution of this operation corresponds to the execution of Catalyst's runtime function
-    __catalyst__rt__initialize which is the first function that will be called for the duration
+    ``__catalyst__rt__initialize`` which is the first function that will be called for the duration
     of the whole compiled object.
     """
 
@@ -800,8 +799,8 @@ class InsertOp(IRDLOperation):
 
     Args:
         in_qreg (SSAValue): Input quantum register that will contain the inserted qubit.
-        idx (SSAValue): The index in which to insert the qubit. Possibly unknown at compile time.
-        idx_attr (IntegerAttr): The index in which to insert the qubits. Known at compile time.
+        idx (SSAValue | Operation | int | IntegerAttr): The index in which to insert the qubit. Possibly
+            unknown at compile time.
         qubit (SSAValue): The qubit to store at position given by the index.
 
     Results:
@@ -809,8 +808,8 @@ class InsertOp(IRDLOperation):
 
     .. note::
 
-        The value of in_qreg should never be used again once it has been updated. All
-        future uses should refer to out_qreg.
+        The value of ``in_qreg`` should never be used again once it has been updated. All
+        future uses should refer to ``out_qreg``.
     """
 
     name = "quantum.insert"
@@ -853,12 +852,13 @@ class MeasureOp(IRDLOperation):
     """A single-qubit projective measurement in the computational basis.
 
     Args:
-        in_qubit (SSAValue): The qubit to measured.
-        postselect (int | IntegerAttr | None): Either 0 or 1.
+        in_qubit (SSAValue): The qubit to measure.
+        postselect (int | IntegerAttr | None): Which computational basis state to postselect (either 0 or 1).
+            ``None`` by default.
 
     Results:
         mres (SSAValue): The measurement result given as a boolean value.
-        out_qubit (SSAValue): The output qubit in either |0> or |1> state.
+        out_qubit (SSAValue): The output qubit in either the :math:`|0\rangle` or :math:`|1\rangle` state.
     """
 
     name = "quantum.measure"
@@ -903,13 +903,15 @@ class MeasureOp(IRDLOperation):
 class MultiRZOp(IRDLOperation):
     """Apply an arbitrary multi Z rotation.
 
-    The `quantum.multirz` operation applies an arbitrary multi Z rotation to the state-vector.
+    The ``quantum.multirz`` operation applies an arbitrary multi Z rotation to the state-vector.
 
     Args:
         theta (SSAValue): rotation angle
         in_qubits (Sequence[SSAValue]): the set of qubits the operation acts on
+        adjoint (UnitAttr | bool | None): Denotes whether the operation is an adjoint.
+            If a ``UnitAttr`` or ``True`` value is passed, then the operation is an adjoint.
         in_ctrl_qubits (Sequence[SSAValue]): Control qubits.
-        in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be True or False.
+        in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be ``True`` or ``False``.
 
     Results:
         out_qubits (Sequence[SSAValue]): The output qubits.
@@ -918,7 +920,7 @@ class MultiRZOp(IRDLOperation):
     .. note::
 
         This operation is one of the few quantum operations that is not applied via
-        quantum.custom. The reason for this is that it needs to be handled in a special
+        ``quantum.custom``. The reason for this is that it needs to be handled in a special
         way during the lowering due to its C function being variadic on the number of qubits.
     """
 
@@ -957,10 +959,10 @@ class MultiRZOp(IRDLOperation):
 class NamedObsOp(IRDLOperation):
     """Define a Named observable for use in measurements.
 
-    The `quantum.namedobs` operation defines a quantum observable to be used by measurement
-    processes. The specific observable defined here represents one of 5 named observables
-    {Identity, PauliX, PauliY, PauliZ, Hadamard} on a qubit. The arguments are a qubit to
-    measure as well as an encoding operator for the qubit as an integer between 0-4.
+    The ``quantum.namedobs`` operation defines a quantum observable to be used by measurement
+    processes. The specific observable defined here represents one of 5 named observables -- 
+    Identity, PauliX, PauliY, PauliZ, Hadamard -- on a qubit. The arguments are the qubit to
+    measure as well as an encoding operator for the qubit as an integer between 0-4 inclusive.
 
     **Example**
 
@@ -996,11 +998,12 @@ class NamedObsOp(IRDLOperation):
 class ProbsOp(IRDLOperation):
     """Compute computational basis probabilities for the current state.
 
-    The `quantum.probs` operation represents the measurement process of computing probabilities
+    The ``quantum.probs`` operation represents the measurement process of computing probabilities
     for measurement outcomes in the computational basis for a set of qubits.
-    Marginal probabilities are supported, that is the provided qubits do not need to make up the
-    entire statevector.
-    The result array contains one element for each possible bitstring, i.e. 2^n where n is the
+    Marginal probabilities are supported, that is, the provided qubits do not need to make up the
+    entire state vector.
+
+    The result array contains one element for each possible bitstring, i.e. ``2^n`` where ``n`` is the
     number of qubits.
 
     **Example**
@@ -1041,10 +1044,10 @@ class QubitUnitaryOp(IRDLOperation):
     Args:
         matrix (SSAValue): matrix to be applied
         in_qubits (Sequence[SSAValue]): The qubits the operation acts on.
-        adjoint (UnitAttr | bool | None): Denotes whether the operation is adjointed.
-            If a UnitAttr or True value is passed, then the operation is adjointed.
+        adjoint (UnitAttr | bool | None): Denotes whether the operation is an adjoint.
+            If a ``UnitAttr`` or ``True`` value is passed, then the operation is an adjoint.
         in_ctrl_qubits (Sequence[SSAValue]): Control qubits.
-        in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be True or False.
+        in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be ``True`` or ``False``.
 
     Returns:
         out_qubits (Sequence[SSAValue]): The output qubits.
@@ -1086,14 +1089,14 @@ class QubitUnitaryOp(IRDLOperation):
 class SampleOp(IRDLOperation):
     """Sample eigenvalues from the given observable for the current state.
 
-    The `quantum.sample` operation represents the measurement process of sampling eigenvalues
+    The ``quantum.sample`` operation represents the measurement process of sampling eigenvalues
     from an observable on the current quantum state.
 
     Args:
         obs (SSAValue): an observable that must be defined by an operation in the local scope.
 
     Results:
-        samples (SSAVAlue): The number of samples to draw is determined by the device shots argument in the device initialization operation in the local scope.
+        samples (SSAValue): The number of samples to draw is determined by the device shots argument in the device initialization operation in the local scope.
 
 
     .. note::
@@ -1104,7 +1107,7 @@ class SampleOp(IRDLOperation):
 
     .. note::
 
-        The in_data field is needed only after bufferization. It is an implementation detail that
+        The ``in_data`` field is needed only after bufferization. It is an implementation detail that
         transform writers are unlikely to be worried about.
 
     **Example**
@@ -1207,13 +1210,13 @@ class SetStateOp(IRDLOperation):
 class StateOp(IRDLOperation):
     """Return the current statevector.
 
-    The `quantum.state` operation represents the measurement process of returning the current
+    The ``quantum.state`` operation represents the measurement process of returning the current
     statevector in the computational basis. Typically reserved for simulator devices, although
     in principle also achievable on hardware via tomography techniques.
     While marginal states are supported, the operation is only well-defined if the provided
     qubits are not entangled with the rest of the quantum state.
-    The result array contains one (complex) element for each possible bitstring, i.e. 2^n where
-    n is the number of qubits.
+    The result array contains one (complex) element for each possible bitstring, i.e. ``2^n`` where
+    ``n`` is the number of qubits.
 
     **Example**
 
@@ -1249,10 +1252,14 @@ class StateOp(IRDLOperation):
 class TensorOp(IRDLOperation):
     """Define a tensor product of observables for use in measurements.
 
-    The `quantum.tensor` operation defines a quantum observable to be used by other
+    The ``quantum.tensor`` operation defines a quantum observable to be used by other
     operations such as measurement processes. The specific observable defined here represents
     the tensor product of observables on a set of qubits. The arguments are a set of
-    `quantum.Observable` generated by `quantum.namedobs` and `quantum.hermitian`.
+    ``quantum.obs`` generated by ``quantum.namedobs`` and ``quantum.hermitian``.
+
+    Args:
+        obs (Sequence[SSAValue[ObservableType] | Operation]): observables that must be defined by
+            operations in the local scope.
 
     **Example**
 
@@ -1283,11 +1290,13 @@ class TensorOp(IRDLOperation):
 class VarianceOp(IRDLOperation):
     """Compute the variance of the given observable for the current state
 
-    The `quantum.var` operation represents the measurement process of computing the variance of
+    The ``quantum.var`` operation represents the measurement process of computing the variance of
     an observable on the current quantum state. While this quantity can be computed analytically on simulators, for hardware execution or shot noise
-    simulation, the shots attached to the device in the local scope is used.
+    simulation, the shots attached to the device in the local scope are used.
 
-    The only SSA argument is an observable that must be defined by an operation in the local scope.
+    Args:
+        obs (SSAValue[ObservableType] | Operation): an observable that must be defined by
+            an operation in the local scope.
 
     **Example**
 
@@ -1319,7 +1328,7 @@ class YieldOp(IRDLOperation):
 
     .. note::
 
-        This operation must be a child of quantum.adjoint
+        This operation must be a child of ``quantum.adjoint``
     """
 
     name = "quantum.yield"
