@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * The ``level=None`` argument in the ``get_transform_program`` and ``construct_batch`` is deprecated and will be removed in v0.43.
   Please use ``level='device'`` instead to apply the noise model at the device level.
 
