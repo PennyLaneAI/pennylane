@@ -68,7 +68,8 @@ resource_config = {
     "error_rx": 1e-9,
     "error_ry": 1e-9,
     "error_rz": 1e-9,
-    "precision_multiplexer": 1e-9,
+    "precision_select_pauli_rot": 1e-9,
+    "precision_qubit_unitary": 1e-9,
     "precision_qrom_state_prep": 1e-9,
 }
 

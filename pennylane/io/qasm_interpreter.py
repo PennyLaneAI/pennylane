@@ -11,6 +11,7 @@ from typing import Any, Callable, Iterable
 import numpy as np
 from numpy import uint
 from openqasm3 import ast
+from openqasm3.ast import FunctionCall
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
@@ -231,16 +232,11 @@ def _rotate(var: Variable | int, n: int, dir="left"):
         TypeError: if the variable is not of BitType.
     """
     bits = _get_bit_type_val(var)
-    new_bits = {}
-    for i, bit in enumerate(bits):
-        if dir == "left":
-            new_bits[(i + len(bits) + 1 - n) % len(bits) - 1] = bit
-        else:
-            new_bits[(i + n + 1) % len(bits) - 1] = bit
-    new_bit_str = ["" for _ in range(len(bits))]
-    for j in new_bits:
-        new_bit_str[j] = new_bits[j]
-    return int("".join(new_bit_str), 2)
+    if dir == "left":
+        new_bits = bits[n:] + bits[:n]
+    else:
+        new_bits = bits[-n:] + bits[:-n]
+    return int(new_bits, 2)
 
 
 FUNCTIONS = {
@@ -901,10 +897,52 @@ class QasmInterpreter:
 
         # custom gates do not return a value
 
+    def _execute_function(self, name: str, node: FunctionCall, context: Context):
+        """
+        Executes a subroutine.
+
+        Args:
+            name (str): the name of the subroutine.
+            node (FunctionCall): the subroutine call.
+            context (Context): the current context.
+
+        Returns:
+            Any: anything returned by the subroutine.
+        """
+
+        func_context = context.scopes["subroutines"][name]
+
+        # reset return
+        func_context.context["return"] = None
+
+        # bind subroutine arguments
+        evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
+        for evald_arg, param in list(zip(evald_args, func_context.params)):
+            if isinstance(evald_arg, str):  # this would indicate a quantum parameter
+                self._bind_quantum_parameter(param, evald_arg, func_context, context)
+            else:
+                func_context.vars[param] = Variable(
+                    evald_arg.__class__.__name__,
+                    evald_arg,
+                    None,
+                    node.span.start_line,
+                    False,
+                    func_context.name,
+                )
+
+        # execute the subroutine
+        self.visit(func_context.body, func_context)
+
+        # reset context
+        func_context.vars = {
+            k: v for k, v in func_context.vars.items() if (v.scope == context.name) and v.constant
+        }
+
+        # the return value
+        return getattr(func_context, "return")
+
     @visit.register(ast.FunctionCall)
-    def visit_function_call(  # pylint: disable=inconsistent-return-statements
-        self, node: ast.FunctionCall, context: Context
-    ):
+    def visit_function_call(self, node: ast.FunctionCall, context: Context):
         """
         Registers a function call. The node must refer to a subroutine that has been defined and
         is available in the current scope.
@@ -918,55 +956,8 @@ class QasmInterpreter:
         """
         name = _resolve_name(node)  # str or Identifier
 
-        if not (name in context.scopes["subroutines"] or name in FUNCTIONS):
-            raise NameError(
-                f"Reference to subroutine {name} not available in calling namespace "
-                f"on line {node.span.start_line}."
-            )
-
         if name in context.scopes["subroutines"]:
-
-            func_context = context.scopes["subroutines"][name]
-
-            # reset return
-            func_context.context["return"] = None
-
-            # bind subroutine arguments
-            evald_args = []
-            for raw_arg in node.arguments:
-                if not (
-                    isinstance(raw_arg, ast.Identifier)
-                    and _resolve_name(raw_arg) in (context.wires + list(context.registers))
-                ):
-                    evald_args.append(self.visit(raw_arg, context))
-                else:
-                    evald_args.append(_resolve_name(raw_arg))
-
-            for evald_arg, param in list(zip(evald_args, func_context.params)):
-                if isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                    self._bind_quantum_parameter(param, evald_arg, func_context, context)
-                else:
-                    func_context.vars[param] = Variable(
-                        evald_arg.__class__.__name__,
-                        evald_arg,
-                        None,
-                        node.span.start_line,
-                        False,
-                        func_context.name,
-                    )
-
-            # execute the subroutine
-            self.visit(func_context.body, func_context)
-
-            # reset context
-            func_context.vars = {
-                k: v
-                for k, v in func_context.vars.items()
-                if (v.scope == context.name) and v.constant
-            }
-
-            # the return value
-            return getattr(func_context, "return")
+            return self._execute_function(name, node, context)
 
         if name in FUNCTIONS:
             # special handling since there is a loss of information when the parser encodes a bit string as an int
@@ -976,7 +967,12 @@ class QasmInterpreter:
                     if var.ty == "BitType":
                         return FUNCTIONS[name](var, self.visit(node.arguments[1], context))
                     return FUNCTIONS[name](var.val, self.visit(node.arguments[1], context))
-            return FUNCTIONS[name](*[self.visit(raw_arg, context) for raw_arg in node.arguments])
+            return FUNCTIONS[name](*(self.visit(raw_arg, context) for raw_arg in node.arguments))
+
+        raise NameError(
+            f"Reference to subroutine {name} not available in calling namespace "
+            f"on line {node.span.start_line}."
+        )
 
     @visit.register(ast.RangeDefinition)
     def visit_range(self, node: ast.RangeDefinition, context: Context):
@@ -1279,7 +1275,7 @@ class QasmInterpreter:
             gates_dict = PARAMETERIZED_GATES
         elif name in NON_PARAMETERIZED_GATES:
             gates_dict = NON_PARAMETERIZED_GATES
-        elif name in list(map(lambda n: n.upper(), context.scopes["custom_gates"].keys())):
+        elif name in [n.upper() for n in context.scopes["custom_gates"].keys()]:
             self.execute_custom_gate(node, context)
             return
         else:
