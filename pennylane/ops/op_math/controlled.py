@@ -53,7 +53,7 @@ def ctrl(
     control: Any,
     control_values: Sequence[bool | int] | None = None,
     work_wires: Any | None = None,
-    work_wire_type: str | None = "dirty",
+    work_wire_type: Literal["clean", "dirty"] = "dirty",
 ) -> Operator: ...
 @overload
 def ctrl(
