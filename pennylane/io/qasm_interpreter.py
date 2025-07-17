@@ -1325,11 +1325,14 @@ class QasmInterpreter:
             elif len(node.qubits[q].indices) == 1 and len(node.qubits[q].indices[0]) == 1:
                 register = _resolve_name(node.qubits[q])
                 require_wires.append(register)
-                wires.append(
-                    context.retrieve_variable(register)[
-                        self.visit(node.qubits[q].indices[0][0], context)
-                    ]
-                )
+                reg_var = context.retrieve_variable(register)
+                index = self.visit(node.qubits[q].indices[0][0], context)
+                if index < len(reg_var):
+                    wires.append(reg_var[index])
+                else:
+                    raise IndexError(
+                        f"Index {index} into register {register} of length {len(reg_var)} out of bounds on line {node.span.start_line}."
+                    )
             else:
                 raise (
                     NotImplementedError(

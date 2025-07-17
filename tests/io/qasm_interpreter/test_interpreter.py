@@ -833,6 +833,20 @@ class TestExpressions:
 @pytest.mark.external
 class TestRegisters:
 
+    def test_index_out_of_bounds(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit[3] q;
+            id q[4];
+            """
+        )
+
+        with pytest.raises(
+            IndexError, match="Index 4 into register q of length 3 out of bounds on line 3"
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "out-of-bounds"})
+
     def test_unsupported_register_index(self):
         # parse the QASM program
         ast = parse(
