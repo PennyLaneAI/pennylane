@@ -121,7 +121,7 @@ class TestConvertersZX:
     def test_circuit(self, decompose):
         """Test a simple circuit."""
 
-        I = qml.math.eye(2**2)
+        I = qml.math.eye(2**3)
 
         operations = [
             qml.RZ(5 / 4 * np.pi, wires=0),
@@ -135,6 +135,8 @@ class TestConvertersZX:
             qml.CNOT(wires=[0, 1]),
             qml.CNOT(wires=[1, 0]),
             qml.SWAP(wires=[0, 1]),
+            qml.Toffoli(wires=[0, 1, 2]),
+            qml.CCZ(wires=[0, 1, 2]),
         ]
 
         qs = QuantumScript(operations, [])
