@@ -101,6 +101,10 @@
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
 
+* `LinearCombination` instances can be created with `_primitive.impl` when
+  capture is enabled and tracing is active.
+  [(#7893)](https://github.com/PennyLaneAI/pennylane/pull/7893)
+
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
