@@ -24,7 +24,7 @@ from xdsl.ir.core import SSAValue
 from xdsl.rewriter import InsertPoint
 
 from ..mbqc_dialect import MeasureInBasisOp
-from ..quantum_dialect import AllocOp, CustomOp, ExtractOp, InsertOp
+from ..quantum_dialect import AllocOp, CustomOp, ExtractOp, InsertOp, NamedObsOp
 from .api import compiler_transform
 
 
@@ -109,7 +109,7 @@ class ConvertToMBQCFormalismPattern(
                     "RZ",
                     "RotXZX",
                 ]:
-                    idx = self.get_op_wire_idx(op, 0)
+                    idx = self.get_custom_op_wire_idx(op, 0)
                     offset = 0 + 4
                     _, registers_state = self._swap_qubits(
                         rewriter, registers_state, op, num_wires_int, idx, offset
@@ -118,17 +118,27 @@ class ConvertToMBQCFormalismPattern(
                     current_op = op
                     for i in range(len(current_op.in_qubits)):
                         offset = i + 12
-                        idx = self.get_op_wire_idx(op, i)
+                        idx = self.get_custom_op_wire_idx(op, i)
                         current_op, registers_state = self._swap_qubits(
                             rewriter, registers_state, current_op, num_wires_int, idx, offset
                         )
+                elif isinstance(op, NamedObsOp):
+                    current_op = op
+                    idx = self.get_obs_wire_idx(op)
+                    target_qubit = ExtractOp(registers_state, idx)
+                    rewriter.insert_op(target_qubit, insertion_point=InsertPoint.before(current_op))
+                    current_op = target_qubit
+                    new_obs = NamedObsOp(target_qubit, op.properties["type"])
+                    rewriter.replace_op(op, new_obs)
 
-    def get_op_wire_idx(self, op, i):
+    def get_custom_op_wire_idx(self, op, i):
         """Get the wire index from a CustomOp for ith-wire."""
 
+        assert (isinstance(op, CustomOp), "The op should be CustomOp")
+
         def _walk_back_to_wire_def(op, i):
-            if isinstance(op, CustomOp) and isinstance(op.in_qubits[i].owner, ExtractOp):
-                qubit_extract_op = op.in_qubits[i].owner
+            if isinstance(op, ExtractOp):
+                qubit_extract_op = op
                 idx_extract_op = qubit_extract_op.idx.owner
                 assert isinstance(idx_extract_op, tensor.ExtractOp)
                 # TODOs: Add safe guard
@@ -143,4 +153,28 @@ class ConvertToMBQCFormalismPattern(
                 return _walk_back_to_wire_def(op.in_qubits[i].owner, i)
 
         idx = _walk_back_to_wire_def(op, i)
+        return idx
+
+    def get_obs_wire_idx(self, obs):
+        assert (isinstance(obs, NamedObsOp), "The op should be CustomOp")
+
+        def _walk_back_to_wire_def(op):
+            if isinstance(op, ExtractOp):
+                qubit_extract_op = op
+                idx_extract_op = qubit_extract_op.idx.owner
+                assert isinstance(idx_extract_op, tensor.ExtractOp)
+                # TODOs: Add safe guard
+                idx_constant_op = idx_extract_op.operands[0].owner
+                idx_value_attribute: builtin.DenseIntOrFPElementsAttr = idx_constant_op.properties[
+                    "value"
+                ]
+                idx_int_values = idx_value_attribute.get_values()
+                return idx_int_values[0]
+
+            if isinstance(op, CustomOp):
+                return _walk_back_to_wire_def(op.in_qubits[0].owner)
+            if isinstance(op, NamedObsOp):
+                return _walk_back_to_wire_def(op.qubit.owner)
+
+        idx = _walk_back_to_wire_def(obs)
         return idx
