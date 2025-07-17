@@ -24,6 +24,7 @@ from copy import copy
 import pennylane as qml
 from pennylane.operation import Operator
 
+from .sprod import SProd
 from .sum import Sum
 
 
@@ -150,7 +151,8 @@ class LinearCombination(Sum):
         self._hyperparameters = {"ops": self._ops}
 
         with qml.QueuingManager.stop_recording():
-            operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
+            # type.__call__ valid when capture is enabled and creating an instance
+            operands = tuple(type.__call__(SProd, c, op) for c, op in zip(coeffs, observables))
 
         super().__init__(
             *operands,

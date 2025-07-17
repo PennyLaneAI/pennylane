@@ -101,6 +101,10 @@
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
 
+* `LinearCombination` instances can be created with `_primitive.impl` when
+  capture is enabled and tracing is active.
+  [(#7893)](https://github.com/PennyLaneAI/pennylane/pull/7893)
+
 <h3>Documentation 📝</h3>
 
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
