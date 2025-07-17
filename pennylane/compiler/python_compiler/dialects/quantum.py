@@ -151,7 +151,7 @@ class AdjointOp(IRDLOperation):
         qreg (QuregSSAValue | Operation): input quantum register. If it is an operation
             then this operation must return a single value
             and that value must be a quantum register.
-        region: operations to convert to adjoints.
+        region: operations to convert to adjoints. May include control flow and classical operations.
 
     **Example**
 
@@ -195,6 +195,107 @@ class AdjointOp(IRDLOperation):
         %qubit_2 = quantum.custom "Hadamard"() %qubit_1 adj : !quantum.bit
 
         %register_1 = quantum.insert %original_register[0], %qubit_2 : !quantum.reg, !quantum.bit
+
+
+    **Example**
+
+    Below is an example with control flow and classical operations:
+
+    .. code-block:: python
+
+        import pennylane as qml
+        from catalyst import cond
+
+        @qml.qjit
+        @qml.qnode(qml.device("null.qubit", wires=1))
+        def foo(x: bool):
+
+        def my_ops(x):
+
+            @cond(x)
+            def conditional():
+                y = 1.
+                qml.RX(y, wires=[0])
+
+            @conditional.otherwise
+            def false_path():
+                z = 2.
+                qml.RX(z, wires=[0])
+
+            conditional()
+
+        qml.adjoint(my_ops)(x)
+        return qml.probs()
+
+    This produces the following IR (only showing the relevant pieces):
+
+
+    .. code-block:: mlir
+
+        %1 = quantum.adjoint(%0) : !quantum.reg {
+        ^bb0(%arg1: !quantum.reg):
+            %extracted_1 = tensor.extract %arg0[] : tensor<i1>
+            %4 = scf.if %extracted_1 -> (!quantum.reg) {
+                // ... snip ...
+                scf.yield %6 : !quantum.reg
+            } else {
+                // ... snip ...
+                scf.yield %6 : !quantum.reg
+            }
+            quantum.yield %4 : !quantum.reg
+        }
+        %2 = quantum.compbasis qreg %1 : !quantum.obs
+
+
+    When the transformation `--adjoint-lowering` is applied, then the classical parameters are stored in a list
+    as it executes the classical components first. Parameters will then be popped from the end of this list
+    to obtain them in reverse order.
+
+    .. code-block:: mlir
+
+        // parameters
+        %dyn_params = catalyst.list_init : <f64>
+        // wires
+        %dyn_wires = catalyst.list_init : <i64>
+        // conditional variable
+        %conditionals = catalyst.list_init : <index>
+
+        // Execution of classical operations in correct order.
+        // %x here corresponds to the x variable
+        // in Python
+        catalyst.list_push %x, %conditionals : <index>
+
+        scf.if %x {
+            // %cst here corresponds to y
+            catalyst.list_push %cst, %dyn_params : <f64>
+        } else {
+            // %cst_0 here corresponds to z
+            catalyst.list_push %cst_0, %dyn_params : <f64>
+        }
+
+        // popping happens in reverse order.
+        %5 = catalyst.list_pop %conditionals : <index>
+        %6 = index.casts %5 : index to i1
+
+        // quantum execution in reverse order.
+        %7 = scf.if %6 -> (!quantum.reg) {
+            %10 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
+            %11 = catalyst.list_pop %1 : <f64>
+            %out_qubits = quantum.custom "RX"(%11) %10 adj : !quantum.bit
+            %12 = quantum.insert %0[ 0], %out_qubits : !quantum.reg, !quantum.bit
+            scf.yield %12 : !quantum.reg
+        } else {
+            %10 = quantum.extract %0[ 0] : !quantum.reg -> !quantum.bit
+            %11 = catalyst.list_pop %1 : <f64>
+            %out_qubits = quantum.custom "RX"(%11) %10 adj : !quantum.bit
+            %12 = quantum.insert %0[ 0], %out_qubits : !quantum.reg, !quantum.bit
+            scf.yield %12 : !quantum.reg
+        }
+
+        // Deallocating memory needed for the parameters and wires.
+        catalyst.list_dealloc %dyn_params : <f64>
+        catalyst.list_dealloc %dyn_wires : <i64>
+        catalyst.list_dealloc %conditionals : <index>
 
     """
 
