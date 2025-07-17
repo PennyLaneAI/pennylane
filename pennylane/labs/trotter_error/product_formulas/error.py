@@ -29,6 +29,111 @@ from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
 
+class _CommutatorCache:
+    """Cache for storing computed commutator applications to avoid redundant calculations.
+
+    This cache stores the results of applying commutators to states to avoid redundant
+    calculations during sampling. The cache uses a robust key generation mechanism
+    and includes memory management to prevent unbounded growth.
+    """
+
+    def __init__(self, max_size: int = 10000):
+        """Initialize the cache with optional size limit.
+
+        Args:
+            max_size: Maximum number of entries to store. When exceeded,
+                     oldest entries are removed (LRU-like behavior).
+        """
+        self._cache = {}
+        self._access_order = []  # Track access order for LRU eviction
+        self._hits = 0
+        self._misses = 0
+        self._max_size = max_size
+
+    def get_cache_key(self, commutator: Tuple[Hashable | Set], state_id: int) -> str:
+        """Generate a unique cache key for a commutator-state pair.
+
+        Uses a more robust key generation that avoids hash collisions by
+        creating a deterministic string representation.
+        """
+        # Convert commutator to a deterministic hashable representation
+        def make_hashable(item):
+            if isinstance(item, frozenset):
+                # Sort frozenset items for deterministic ordering
+                sorted_items = sorted(str(x) for x in item)
+                return f"fs({','.join(sorted_items)})"
+            if isinstance(item, tuple):
+                return f"t({','.join(make_hashable(x) for x in item)})"
+            return str(item)
+
+        # Create deterministic string key instead of using hash()
+        comm_str = make_hashable(commutator)
+        return f"s{state_id}_c{comm_str}"
+
+    def get(self, commutator: Tuple[Hashable | Set], state_id: int):
+        """Retrieve cached result if available."""
+        try:
+            key = self.get_cache_key(commutator, state_id)
+            if key in self._cache:
+                self._hits += 1
+                # Update access order for LRU
+                if key in self._access_order:
+                    self._access_order.remove(key)
+                self._access_order.append(key)
+                return self._cache[key]
+            self._misses += 1
+            return None
+        except (TypeError, ValueError, AttributeError):
+            # If key generation fails, count as miss and continue
+            self._misses += 1
+            return None
+
+    def put(self, commutator: Tuple[Hashable | Set], state_id: int, result):
+        """Store result in cache with LRU eviction if needed."""
+        try:
+            key = self.get_cache_key(commutator, state_id)
+
+            # Remove oldest entries if cache is full
+            while len(self._cache) >= self._max_size and self._access_order:
+                oldest_key = self._access_order.pop(0)
+                if oldest_key in self._cache:
+                    del self._cache[oldest_key]
+
+            # Store new entry
+            self._cache[key] = result
+            if key in self._access_order:
+                self._access_order.remove(key)
+            self._access_order.append(key)
+
+        except (TypeError, ValueError, AttributeError):
+            # If caching fails, silently continue (cache is optional optimization)
+            pass
+
+    def clear(self):
+        """Clear the cache and reset statistics."""
+        self._cache.clear()
+        self._access_order.clear()
+        self._hits = 0
+        self._misses = 0
+
+    def get_stats(self):
+        """Get cache hit/miss statistics."""
+        total = self._hits + self._misses
+        hit_rate = self._hits / total if total > 0 else 0.0
+        return {
+            'hits': self._hits,
+            'misses': self._misses,
+            'total': total,
+            'hit_rate': hit_rate,
+            'size': len(self._cache),
+            'max_size': self._max_size
+        }
+
+    def __len__(self):
+        """Return current cache size."""
+        return len(self._cache)
+
+
 class _AdditiveIdentity:
     """Only used to initialize accumulators for summing Fragments"""
 
@@ -123,6 +228,10 @@ def perturbation_error(
     target_relative_error: float = 1.,
     min_sample_size: int = 10,
     max_sample_size: int = 10000,
+    convergence_sampling: bool = False,
+    convergence_tolerance: float = 1e-6,
+    convergence_window: int = 10,
+    min_convergence_checks: int = 3,
 ) -> List[float]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
@@ -147,24 +256,35 @@ def perturbation_error(
         sample_size (Optional[int]): Number of commutators to sample for fixed-size sampling.
             If None (default), uses all commutators exactly without sampling for maximum accuracy.
             Only when a specific number is provided will fixed-size sampling be applied.
-            This parameter is ignored if adaptive_sampling is True.
+            This parameter is ignored if adaptive_sampling or convergence_sampling is True.
         sampling_method (str): Sampling strategy to use. Options are "random" for uniform random sampling
             or "importance" for importance sampling based on commutator magnitudes.
-            Only used when sample_size is specified or adaptive_sampling is True.
+            Only used when sample_size is specified, adaptive_sampling is True, or convergence_sampling is True.
         random_seed (Optional[int]): Random seed for reproducibility in sampling methods.
         adaptive_sampling (bool): If True, uses adaptive sampling that dynamically determines
             the optimal sample size based on variance convergence criteria. When enabled,
             the sample_size parameter is ignored since the algorithm determines the required
             number of samples automatically. Note: adaptive sampling is only compatible with
-            backend='serial' and num_workers=1.
+            backend='serial' and num_workers=1. Cannot be used simultaneously with convergence_sampling.
         confidence_level (float): Confidence level for adaptive sampling (e.g., 0.95 for 95% confidence).
             Only used when adaptive_sampling is True.
-        target_error (float): Target relative error for adaptive sampling (epsilon in :math:`N \geq z^2\sigma^2/\varepsilon^2`).
+        target_relative_error (float): Target relative error for adaptive sampling (epsilon in :math:`N \geq z^2\sigma^2/\varepsilon^2`).
             Only used when adaptive_sampling is True.
-        min_sample_size (int): Minimum sample size for adaptive sampling.
-            Only used when adaptive_sampling is True.
-        max_sample_size (int): Maximum sample size for adaptive sampling to prevent infinite loops.
-            Only used when adaptive_sampling is True.
+        min_sample_size (int): Minimum sample size for adaptive sampling or convergence sampling.
+            Only used when adaptive_sampling or convergence_sampling is True.
+        max_sample_size (int): Maximum sample size for adaptive sampling or convergence sampling to prevent infinite loops.
+            Only used when adaptive_sampling or convergence_sampling is True.
+        convergence_sampling (bool): If True, uses convergence sampling that stops when the mean has converged
+            to a certain precision. When enabled, the sample_size parameter is ignored since the algorithm
+            determines when to stop based on mean convergence. Note: convergence sampling is only compatible with
+            backend='serial' and num_workers=1. Cannot be used simultaneously with adaptive_sampling.
+        convergence_tolerance (float): Relative tolerance for mean convergence in convergence sampling (default: 1e-6).
+            The algorithm stops when the relative change in the mean over the convergence window is below this threshold.
+            Only used when convergence_sampling is True.
+        convergence_window (int): Number of samples to look back for convergence check in convergence sampling (default: 10).
+            Only used when convergence_sampling is True.
+        min_convergence_checks (int): Minimum number of consecutive convergence checks that must pass before stopping
+            in convergence sampling (default: 3). Only used when convergence_sampling is True.
 
     Returns:
         List[float]: the list of expectation values computed from the Trotter error operator and the input states
@@ -207,6 +327,10 @@ def perturbation_error(
 
     commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order))
 
+    # Check for conflicting sampling methods
+    if adaptive_sampling and convergence_sampling:
+        raise ValueError("adaptive_sampling and convergence_sampling cannot be used simultaneously")
+
     # Handle adaptive sampling first (it has priority)
     if adaptive_sampling:
         if sample_size is not None:
@@ -233,6 +357,39 @@ def perturbation_error(
             sampling_method=sampling_method,
             confidence_level=confidence_level,
             target_error=target_relative_error,
+            min_sample_size=min_sample_size,
+            max_sample_size=max_sample_size,
+            random_seed=random_seed,
+            gridpoints=gridpoints or 10,  # Default gridpoints if not found
+        )
+
+    # Handle convergence sampling
+    if convergence_sampling:
+        if sample_size is not None:
+            warnings.warn("sample_size is ignored when convergence_sampling=True", UserWarning)
+
+        # Convergence sampling is only compatible with serial execution
+        if backend != "serial":
+            raise ValueError("Convergence sampling is only compatible with backend='serial'")
+        if num_workers != 1:
+            raise ValueError("Convergence sampling requires num_workers=1")
+
+        # Get gridpoints from the first state (all states should have the same gridpoints)
+        if states and hasattr(states[0], 'gridpoints'):
+            gridpoints = states[0].gridpoints
+        else:
+            gridpoints = None
+
+        # Perform convergence sampling for each state
+        return _convergence_sampling(
+            commutators=commutators,
+            fragments=fragments,
+            states=states,
+            timestep=timestep,
+            sampling_method=sampling_method,
+            convergence_tolerance=convergence_tolerance,
+            convergence_window=convergence_window,
+            min_convergence_checks=min_convergence_checks,
             min_sample_size=min_sample_size,
             max_sample_size=max_sample_size,
             random_seed=random_seed,
@@ -270,7 +427,13 @@ def perturbation_error(
     )
 
 
-def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
+def _get_expval_state(
+    commutators,
+    fragments,
+    state: AbstractState,
+    cache: Optional[_CommutatorCache] = None,
+    state_id: Optional[int] = None
+) -> float:
     """
     Returns the expectation value of a state with respect to the operator obtained
     by substituting fragments into commutators.
@@ -279,6 +442,8 @@ def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
         commutators: List of commutator tuples
         fragments: Dictionary mapping fragment keys to Fragment objects
         state: The quantum state to compute expectation value for
+        cache: Optional cache to store/retrieve computed results
+        state_id: Optional state identifier for caching
 
     Returns:
         float: The expectation value
@@ -286,7 +451,7 @@ def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
 
     new_state = _AdditiveIdentity()
     for commutator in commutators:
-        new_state += _apply_commutator(commutator, fragments, state)
+        new_state += _apply_commutator(commutator, fragments, state, cache, state_id)
 
     # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
     if isinstance(new_state, _AdditiveIdentity):
@@ -298,7 +463,11 @@ def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
 
 
 def _apply_commutator(
-    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment], state: AbstractState
+    commutator: Tuple[Hashable],
+    fragments: Dict[Hashable, Fragment],
+    state: AbstractState,
+    cache: Optional[_CommutatorCache] = None,
+    state_id: Optional[int] = None
 ) -> AbstractState:
     """
     Returns the state obtained from applying a commutator to a state.
@@ -307,10 +476,17 @@ def _apply_commutator(
         commutator: Tuple representing a commutator structure
         fragments: Dictionary mapping fragment keys to Fragment objects
         state: The quantum state to apply the commutator to
+        cache: Optional cache to store/retrieve computed results
+        state_id: Optional state identifier for caching (required if cache is provided)
 
     Returns:
         AbstractState: The state after applying the commutator
     """
+    # Try to get from cache first
+    if cache is not None and state_id is not None:
+        cached_result = cache.get(commutator, state_id)
+        if cached_result is not None:
+            return cached_result
 
     new_state = _AdditiveIdentity()
 
@@ -332,6 +508,10 @@ def _apply_commutator(
             tmp_state = frag.apply(tmp_state)
 
         new_state += coeff * tmp_state
+
+    # Store in cache if available
+    if cache is not None and state_id is not None:
+        cache.put(commutator, state_id, new_state)
 
     return new_state
 
@@ -516,9 +696,12 @@ def _adaptive_sampling(
         timestep: Time step for simulation
         sampling_method: "random" or "importance"
         confidence_level: Confidence level for z-score calculation
-        target_error: Target relative error (epsilon)
-        min_sample_size: Minimum number of samples
-        max_sample_size: Maximum number of samples
+        target_error: Target relative error for adaptive sampling (epsilon in :math:`N \geq z^2\sigma^2/\varepsilon^2`).
+            Only used when adaptive_sampling is True.
+        min_sample_size: Minimum sample size for adaptive sampling.
+            Only used when adaptive_sampling is True.
+        max_sample_size: Maximum sample size for adaptive sampling to prevent infinite loops.
+            Only used when adaptive_sampling is True.
         random_seed: Random seed for reproducibility
 
     Returns:
@@ -583,7 +766,7 @@ def _setup_importance_probabilities(
     gridpoints: int,
     sampling_method: str,
 ) -> Optional[np.ndarray]:
-    """
+    r"""
     Setup probabilities for importance sampling.
 
     Args:
@@ -642,15 +825,21 @@ def _adaptive_sample_single_state(
         probabilities: Pre-calculated probabilities for importance sampling (None for random)
         sampling_method: "random" or "importance"
         z_score: Z-score for confidence interval calculation
-        target_error: Target relative error for convergence
-        min_sample_size: Minimum number of samples before checking convergence
-        max_sample_size: Maximum number of samples (stopping criterion)
+        target_error: Target relative error for adaptive sampling (epsilon in :math:`N \\geq z^2\\sigma^2/\\varepsilon^2`).
+            Only used when adaptive_sampling is True.
+        min_sample_size: Minimum sample size for adaptive sampling.
+            Only used when adaptive_sampling is True.
+        max_sample_size: Maximum sample size for adaptive sampling to prevent infinite loops.
+            Only used when adaptive_sampling is True.
 
     Returns:
         float: Final expectation value estimate
     """
     state_start_time = time.time()
     print(f"\n=== Processing State {state_idx + 1} ===")
+
+    # Initialize cache for this state
+    cache = _CommutatorCache()
 
     # Initialize statistics for this state
     n_samples = 0
@@ -673,8 +862,8 @@ def _adaptive_sample_single_state(
             weight = 1.0 / probabilities[idx]  # Importance weight
             commutator = commutators[idx]
 
-        # Compute the contribution of this commutator
-        applied_state = _apply_commutator(commutator, fragments, state)
+        # Compute the contribution of this commutator using cache
+        applied_state = _apply_commutator(commutator, fragments, state, cache, state_idx)
         if isinstance(applied_state, _AdditiveIdentity):
             contribution = 0.0
         else:
@@ -695,9 +884,12 @@ def _adaptive_sample_single_state(
             variance_abs = abs(variance)
             std_dev = np.sqrt(variance_abs)
 
+            # Add cache statistics to progress reporting
+            cache_stats = cache.get_stats()
             print(f"  Sample {n_samples:4d}: "
                   f"mean={mean:8.3e}, "
                   f"std={std_dev:8.3e}, "
+                  f"cache_hit_rate={cache_stats['hit_rate']:.1%}, "
                   f"time={sample_time:.3f}s")
 
             last_report_time = current_time
@@ -722,24 +914,29 @@ def _adaptive_sample_single_state(
 
                 if n_samples >= required_samples:
                     convergence_time = time.time() - state_start_time
+                    cache_stats = cache.get_stats()
                     print(f"  ✓ CONVERGED after {n_samples} samples in {convergence_time:.2f}s")
                     print(f"    Required samples: {required_samples:.1f}")
                     print(f"    Final mean: {mean:.6e}")
                     print(f"    Final std: {std_dev:.6e}")
                     print(f"    Relative error: {relative_error:.6e} (target: {target_error:.6e})")
+                    print(f"    Cache performance: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({cache_stats['hit_rate']:.1%} hit rate)")
                     break
             else:
                 # If mean is very close to zero, use absolute error criterion
                 if std_dev < target_error:
                     convergence_time = time.time() - state_start_time
+                    cache_stats = cache.get_stats()
                     print(f"  ✓ CONVERGED after {n_samples} samples in {convergence_time:.2f}s (mean ≈ 0)")
                     print(f"    Final std: {std_dev:.6e} (target: {target_error:.6e})")
+                    print(f"    Cache performance: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({cache_stats['hit_rate']:.1%} hit rate)")
                     break
 
     final_mean = sum_values / n_samples if n_samples > 0 else 0.0
     state_time = time.time() - state_start_time
 
     if n_samples >= max_sample_size:
+        cache_stats = cache.get_stats()
         print(f"  ⚠ STOPPED at maximum samples ({max_sample_size}) for state {state_idx + 1}")
         print(f"    Time spent: {state_time:.2f}s")
         print(f"    Final mean: {final_mean:.6e}")
@@ -750,6 +947,223 @@ def _adaptive_sample_single_state(
         if abs(final_mean) > 1e-12:
             rel_err = std_dev / abs(final_mean)
             print(f"    Achieved relative error: {rel_err:.6e} (target: {target_error:.6e})")
+        print(f"    Cache performance: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({cache_stats['hit_rate']:.1%} hit rate)")
+
+    print(f"  State {state_idx + 1} completed in {state_time:.2f}s")
+    return final_mean
+
+
+def _convergence_sampling(
+    commutators: List[Tuple[Hashable | Set]],
+    fragments: Dict[Hashable, Fragment],
+    states: Sequence[AbstractState],
+    timestep: float,
+    sampling_method: str,
+    convergence_tolerance: float = 1e-6,
+    convergence_window: int = 10,
+    min_convergence_checks: int = 3,
+    min_sample_size: int = 10,
+    max_sample_size: int = 10000,
+    random_seed: Optional[int] = None,
+    gridpoints: int = 10,
+) -> List[float]:
+    r"""
+    Convergence-based sampling that stops when the mean has converged to a certain precision.
+
+    Uses the criterion: :math:`|\mu_n - \mu_{n-w}| < \varepsilon \cdot |\mu_n|` where:
+
+    - :math:`\mu_n` is the current mean estimate at sample n
+    - :math:`\mu_{n-w}` is the mean estimate w samples ago (where w is the convergence window)
+    - :math:`\varepsilon` is the convergence tolerance (relative to current mean)
+
+    Args:
+        commutators: List of all available commutators
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        states: States to compute expectation values for
+        timestep: Time step for simulation
+        sampling_method: "random" or "importance"
+        convergence_tolerance: Relative tolerance for mean convergence (default: 1e-6)
+        convergence_window: Number of samples to look back for convergence check (default: 10)
+        min_convergence_checks: Minimum number of convergence checks that must pass (default: 3)
+        min_sample_size: Minimum number of samples before checking convergence
+        max_sample_size: Maximum number of samples (stopping criterion)
+        random_seed: Random seed for reproducibility
+        gridpoints: Number of gridpoints for norm calculations
+
+    Returns:
+        List of expectation values for each state
+    """
+    if random_seed is not None:
+        np.random.seed(random_seed)
+
+    # Setup probabilities for sampling
+    probabilities = _setup_importance_probabilities(
+        commutators, fragments, timestep, gridpoints, sampling_method
+    )
+
+    # Process each state with convergence-based sampling
+    expectations = []
+
+    for state_idx, state in enumerate(states):
+        expectation = _convergence_sample_single_state(
+            state=state,
+            state_idx=state_idx,
+            commutators=commutators,
+            fragments=fragments,
+            probabilities=probabilities,
+            sampling_method=sampling_method,
+            convergence_tolerance=convergence_tolerance,
+            convergence_window=convergence_window,
+            min_convergence_checks=min_convergence_checks,
+            min_sample_size=min_sample_size,
+            max_sample_size=max_sample_size,
+        )
+        expectations.append(expectation)
+
+    return expectations
+
+
+def _convergence_sample_single_state(
+    state: AbstractState,
+    state_idx: int,
+    commutators: List[Tuple[Hashable | Set]],
+    fragments: Dict[Hashable, Fragment],
+    probabilities: Optional[np.ndarray],
+    sampling_method: str,
+    convergence_tolerance: float,
+    convergence_window: int,
+    min_convergence_checks: int,
+    min_sample_size: int,
+    max_sample_size: int,
+) -> float:
+    """
+    Perform convergence-based sampling for a single state until mean converges.
+
+    Args:
+        state: The quantum state to compute expectation value for
+        state_idx: Index of the state (for logging)
+        commutators: List of all commutators
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        probabilities: Pre-calculated probabilities for importance sampling (None for random)
+        sampling_method: "random" or "importance"
+        convergence_tolerance: Relative tolerance for mean convergence
+        convergence_window: Number of samples to look back for convergence check
+        min_convergence_checks: Minimum number of convergence checks that must pass
+        min_sample_size: Minimum number of samples before checking convergence
+        max_sample_size: Maximum number of samples (stopping criterion)
+
+    Returns:
+        float: Final expectation value estimate
+    """
+    state_start_time = time.time()
+    print(f"\n=== Processing State {state_idx + 1} (Convergence Sampling) ===")
+
+    # Initialize cache for this state
+    cache = _CommutatorCache()
+
+    # Initialize statistics for this state
+    n_samples = 0
+    sum_values = 0.0
+    last_report_time = time.time()
+    report_interval = 10  # Report every 10 samples initially
+
+    # Keep track of mean history for convergence checking
+    mean_history = []
+    convergence_checks_passed = 0
+
+    # Start sampling
+    while n_samples < max_sample_size:
+        sample_start_time = time.time()
+
+        # Sample one commutator and compute its contribution
+        if sampling_method == "random":
+            idx = np.random.choice(len(commutators))
+            weight = len(commutators)  # Scaling factor for uniform sampling
+            commutator = commutators[idx]
+        else:  # importance sampling
+            idx = np.random.choice(len(commutators), p=probabilities)
+            weight = 1.0 / probabilities[idx]  # Importance weight
+            commutator = commutators[idx]
+
+        # Compute the contribution of this commutator using cache
+        applied_state = _apply_commutator(commutator, fragments, state, cache, state_idx)
+        if isinstance(applied_state, _AdditiveIdentity):
+            contribution = 0.0
+        else:
+            contribution = weight * state.dot(applied_state)
+
+        # Update running statistics
+        n_samples += 1
+        sum_values += contribution
+        current_mean = sum_values / n_samples
+        mean_history.append(current_mean)
+
+        sample_time = time.time() - sample_start_time
+
+        # Progress reporting
+        current_time = time.time()
+        if (n_samples % report_interval == 0) or (current_time - last_report_time > 5.0):
+            # Add cache statistics to progress reporting
+            cache_stats = cache.get_stats()
+            print(f"  Sample {n_samples:4d}: "
+                  f"mean={current_mean:8.3e}, "
+                  f"cache_hit_rate={cache_stats['hit_rate']:.1%}, "
+                  f"time={sample_time:.3f}s")
+
+            last_report_time = current_time
+
+            # Adaptive reporting interval: start with 10, then 50, then 100
+            if n_samples >= 50 and report_interval == 10:
+                report_interval = 50
+            elif n_samples >= 200 and report_interval == 50:
+                report_interval = 100
+
+        # Check convergence criterion after minimum samples
+        if n_samples >= min_sample_size and len(mean_history) > convergence_window:
+            # Get mean from convergence_window samples ago
+            previous_mean = mean_history[-convergence_window-1]
+
+            # Calculate relative change in mean
+            if abs(current_mean) > 1e-12:
+                relative_change = abs(current_mean - previous_mean) / abs(current_mean)
+            else:
+                # For very small means, use absolute change
+                relative_change = abs(current_mean - previous_mean)
+
+            # Check if convergence criterion is satisfied
+            if relative_change < convergence_tolerance:
+                convergence_checks_passed += 1
+            else:
+                convergence_checks_passed = 0  # Reset counter if criterion not met
+
+            # Stop if we've had enough consecutive convergence checks
+            if convergence_checks_passed >= min_convergence_checks:
+                convergence_time = time.time() - state_start_time
+                cache_stats = cache.get_stats()
+                print(f"  ✓ CONVERGED after {n_samples} samples in {convergence_time:.2f}s")
+                print(f"    Convergence checks passed: {convergence_checks_passed}")
+                print(f"    Final mean: {current_mean:.6e}")
+                print(f"    Previous mean: {previous_mean:.6e}")
+                print(f"    Relative change: {relative_change:.6e} (tolerance: {convergence_tolerance:.6e})")
+                print(f"    Cache performance: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({cache_stats['hit_rate']:.1%} hit rate)")
+                break
+
+    final_mean = sum_values / n_samples if n_samples > 0 else 0.0
+    state_time = time.time() - state_start_time
+
+    if n_samples >= max_sample_size:
+        cache_stats = cache.get_stats()
+        print(f"  ⚠ STOPPED at maximum samples ({max_sample_size}) for state {state_idx + 1}")
+        print(f"    Time spent: {state_time:.2f}s")
+        print(f"    Final mean: {final_mean:.6e}")
+        if len(mean_history) > convergence_window:
+            previous_mean = mean_history[-convergence_window-1]
+            if abs(final_mean) > 1e-12:
+                rel_change = abs(final_mean - previous_mean) / abs(final_mean)
+            else:
+                rel_change = abs(final_mean - previous_mean)
+            print(f"    Final relative change: {rel_change:.6e} (tolerance: {convergence_tolerance:.6e})")
+        print(f"    Cache performance: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({cache_stats['hit_rate']:.1%} hit rate)")
 
     print(f"  State {state_idx + 1} completed in {state_time:.2f}s")
     return final_mean
@@ -899,10 +1313,14 @@ def _compute_expectation_values(
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
-        for state in states:
+
+        # Create a cache for each state to store computed commutator applications
+        for state_idx, state in enumerate(states):
+            cache = _CommutatorCache()
             new_state = _AdditiveIdentity()
-            for weight, commutator in tqdm(zip(weights, commutators), desc="Processing commutators", total=len(commutators)):
-                weighted_state = weight * _apply_commutator(commutator, fragments, state)
+
+            for weight, commutator in tqdm(zip(weights, commutators), desc=f"Processing commutators for state {state_idx+1}", total=len(commutators)):
+                weighted_state = weight * _apply_commutator(commutator, fragments, state, cache, state_idx)
                 new_state += weighted_state
 
             # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
@@ -910,6 +1328,10 @@ def _compute_expectation_values(
                 expectations.append(0.0)
             else:
                 expectations.append(state.dot(new_state))
+
+            # Print cache statistics for this state
+            cache_stats = cache.get_stats()
+            print(f"State {state_idx+1} cache performance: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({cache_stats['hit_rate']:.1%} hit rate)")
 
         return expectations
 
@@ -952,6 +1374,7 @@ def _compute_state_expectation(commutators, weights, fragments, state):
     """Helper function to compute state expectation for parallel processing.
 
     This replaces the lambda function to make it pickleable for MPI.
+    Note: Caching is disabled in parallel mode for thread safety.
     """
     new_state = sum((weight * _apply_commutator(commutator, fragments, state)
                     for commutator, weight in zip(commutators, weights)),
@@ -970,5 +1393,6 @@ def _apply_weighted_commutator(commutator, weight, fragments, state):
     """Helper function to apply weighted commutator for parallel processing.
 
     This replaces the lambda function to make it pickleable for MPI.
+    Note: Caching is disabled in parallel mode for thread safety.
     """
     return weight * _apply_commutator(commutator, fragments, state)

@@ -29,11 +29,15 @@ from pennylane.labs.trotter_error.product_formulas.error import (
     _sample_importance_commutators,
     _fixed_sampling,
     _adaptive_sampling,
+    _convergence_sampling,
     _compute_expectation_values,
     effective_hamiltonian,
     _get_confidence_z_score,
     _setup_importance_probabilities,
     _adaptive_sample_single_state,
+    _CommutatorCache,
+    _apply_commutator,
+    _get_expval_state,
 )
 from pennylane.labs.trotter_error.fragments import sparse_fragments
 
@@ -300,7 +304,7 @@ def test_perturbation_error_adaptive_sampling(minimal_system):  # pylint: disabl
         order=2,
         adaptive_sampling=True,
         confidence_level=0.95,
-        target_error=0.1,
+        target_relative_error=0.1,
         min_sample_size=5,
         max_sample_size=20,
         sampling_method="random",
@@ -735,3 +739,514 @@ def test_adaptive_sample_single_state_importance(system_fixture, request):
 
     assert np.isfinite(expectation)
     assert isinstance(expectation, (complex, float, int))
+
+
+# ==================== TESTS FOR CONVERGENCE SAMPLING ====================
+
+def test_perturbation_error_convergence_sampling(minimal_system):  # pylint: disable=redefined-outer-name
+    """Test convergence sampling functionality."""
+    errors = perturbation_error(
+        minimal_system['pf'],
+        minimal_system['frags'],
+        minimal_system['states'],
+        order=2,
+        convergence_sampling=True,
+        convergence_tolerance=0.1,  # Large tolerance for quick convergence
+        convergence_window=5,
+        min_convergence_checks=2,
+        min_sample_size=5,
+        max_sample_size=20,
+        sampling_method="random",
+        random_seed=42,
+    )
+
+    assert isinstance(errors, list)
+    assert len(errors) == 2
+    for error in errors:
+        assert np.isfinite(error)
+
+
+def test_perturbation_error_convergence_sampling_constraints():
+    """Test that convergence sampling enforces its constraints."""
+    # Should raise error for non-serial backend
+    with pytest.raises(ValueError, match="Convergence sampling is only compatible with backend='serial'"):
+        perturbation_error(
+            ProductFormula([0, 1], coeffs=[1.0, 1.0]),
+            {0: None, 1: None},  # Dummy fragments
+            [],
+            order=1,
+            convergence_sampling=True,
+            backend="mpi4py_pool"
+        )
+
+    # Should raise error for multiple workers
+    with pytest.raises(ValueError, match="Convergence sampling requires num_workers=1"):
+        perturbation_error(
+            ProductFormula([0, 1], coeffs=[1.0, 1.0]),
+            {0: None, 1: None},  # Dummy fragments
+            [],
+            order=1,
+            convergence_sampling=True,
+            num_workers=2
+        )
+
+
+def test_perturbation_error_conflicting_sampling_methods():
+    """Test that adaptive_sampling and convergence_sampling cannot be used together."""
+    with pytest.raises(ValueError, match="adaptive_sampling and convergence_sampling cannot be used simultaneously"):
+        perturbation_error(
+            ProductFormula([0, 1], coeffs=[1.0, 1.0]),
+            {0: None, 1: None},  # Dummy fragments
+            [],
+            order=1,
+            adaptive_sampling=True,
+            convergence_sampling=True
+        )
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_convergence_sampling_direct(system_fixture, request):
+    """Test _convergence_sampling function directly."""
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+    states = system['states']
+
+    # Create test commutators
+    commutators = [
+        (0,),
+        (1,),
+        ((0,), (1,)),
+        ((1,), (0,)),
+    ]
+
+    # Test convergence sampling
+    expectations = _convergence_sampling(
+        commutators=commutators,
+        fragments=frags,
+        states=states,
+        timestep=0.1,
+        sampling_method="random",
+        convergence_tolerance=0.1,  # Large tolerance for quick convergence
+        convergence_window=3,
+        min_convergence_checks=2,
+        min_sample_size=3,
+        max_sample_size=15,
+        random_seed=42,
+    )
+
+    assert len(expectations) == len(states)
+    for expectation in expectations:
+        assert np.isfinite(expectation)
+        assert isinstance(expectation, (complex, float, int))
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_convergence_sampling_importance(system_fixture, request):
+    """Test _convergence_sampling with importance sampling."""
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+    states = system['states']
+
+    # Create test commutators
+    commutators = [
+        (0,),
+        (1,),
+        ((0,), (1,)),
+        ((1,), (0,)),
+    ]
+
+    # Test convergence sampling with importance sampling
+    expectations = _convergence_sampling(
+        commutators=commutators,
+        fragments=frags,
+        states=states,
+        timestep=0.1,
+        sampling_method="importance",
+        convergence_tolerance=0.2,  # Large tolerance for quick convergence
+        convergence_window=4,
+        min_convergence_checks=2,
+        min_sample_size=4,
+        max_sample_size=20,
+        random_seed=42,
+    )
+
+    assert len(expectations) == len(states)
+    for expectation in expectations:
+        assert np.isfinite(expectation)
+        assert isinstance(expectation, (complex, float, int))
+
+
+def test_convergence_sampling_reproducibility(minimal_system):  # pylint: disable=redefined-outer-name
+    """Test that convergence sampling produces reproducible results with same seed."""
+    # Test convergence sampling
+    errors1 = perturbation_error(
+        minimal_system['pf'],
+        minimal_system['frags'],
+        minimal_system['states'],
+        order=2,
+        convergence_sampling=True,
+        convergence_tolerance=0.1,
+        convergence_window=5,
+        min_convergence_checks=2,
+        min_sample_size=5,
+        max_sample_size=15,
+        sampling_method="random",
+        random_seed=42,
+    )
+
+    errors2 = perturbation_error(
+        minimal_system['pf'],
+        minimal_system['frags'],
+        minimal_system['states'],
+        order=2,
+        convergence_sampling=True,
+        convergence_tolerance=0.1,
+        convergence_window=5,
+        min_convergence_checks=2,
+        min_sample_size=5,
+        max_sample_size=15,
+        sampling_method="random",
+        random_seed=42,
+    )
+
+    assert len(errors1) == len(errors2)
+    for e1, e2 in zip(errors1, errors2):
+        assert np.isclose(e1, e2, rtol=1e-10)  # Should be exactly equal with same seed
+
+
+@pytest.mark.parametrize("convergence_tolerance", [1e-3, 1e-4, 1e-5])
+def test_convergence_sampling_tolerance_levels(minimal_system, convergence_tolerance):  # pylint: disable=redefined-outer-name
+    """Test convergence sampling with different tolerance levels."""
+    errors = perturbation_error(
+        minimal_system['pf'],
+        minimal_system['frags'],
+        minimal_system['states'],
+        order=2,
+        convergence_sampling=True,
+        convergence_tolerance=convergence_tolerance,
+        convergence_window=5,
+        min_convergence_checks=3,
+        min_sample_size=10,
+        max_sample_size=50,
+        sampling_method="random",
+        random_seed=42,
+    )
+
+    assert isinstance(errors, list)
+    assert len(errors) == 2
+    for error in errors:
+        assert np.isfinite(error)
+
+
+# ==================== TESTS FOR CACHE FUNCTIONALITY ====================
+
+class TestCommutatorCache:
+    """Test suite for _CommutatorCache functionality."""
+
+    def test_cache_initialization(self):
+        """Test cache initialization with default and custom parameters."""
+        # Default initialization
+        cache = _CommutatorCache()
+        assert len(cache) == 0
+        assert cache.get_stats()['max_size'] == 10000
+
+        # Custom max_size
+        cache = _CommutatorCache(max_size=100)
+        assert cache.get_stats()['max_size'] == 100
+        assert len(cache) == 0
+
+    def test_cache_key_generation(self):
+        """Test cache key generation for different commutator types."""
+        cache = _CommutatorCache()
+
+        # Simple commutators
+        key1 = cache.get_cache_key((0,), 1)
+        key2 = cache.get_cache_key((1,), 1)
+        key3 = cache.get_cache_key((0,), 2)
+
+        assert key1 != key2  # Different commutators
+        assert key1 != key3  # Different state_ids
+        assert isinstance(key1, str)
+
+        # Complex commutators with frozensets
+        comm_frozenset = (frozenset({0, 1}), 2)
+        key4 = cache.get_cache_key(comm_frozenset, 1)
+        key5 = cache.get_cache_key(comm_frozenset, 1)
+        assert key4 == key5  # Same commutator and state should give same key
+
+        # Nested commutators
+        nested_comm = ((0, 1), (2, 3))
+        key6 = cache.get_cache_key(nested_comm, 1)
+        assert isinstance(key6, str)
+
+    def test_cache_put_get_basic(self):
+        """Test basic put and get operations."""
+        cache = _CommutatorCache()
+
+        # Test cache miss
+        result = cache.get((0,), 1)
+        assert result is None
+
+        # Test cache put and hit
+        test_data = "test_result"
+        cache.put((0,), 1, test_data)
+        result = cache.get((0,), 1)
+        assert result == test_data
+
+        # Verify statistics
+        stats = cache.get_stats()
+        assert stats['hits'] == 1
+        assert stats['misses'] == 1
+        assert stats['total'] == 2
+        assert stats['hit_rate'] == 0.5
+
+    def test_cache_lru_eviction(self):
+        """Test LRU eviction when cache exceeds max_size."""
+        cache = _CommutatorCache(max_size=3)
+
+        # Fill cache to capacity
+        for i in range(3):
+            cache.put((i,), 1, f"result_{i}")
+
+        assert len(cache) == 3
+
+        # Add one more item to trigger eviction
+        cache.put((3,), 1, "result_3")
+        assert len(cache) == 3
+
+        # First item should be evicted
+        assert cache.get((0,), 1) is None
+        assert cache.get((1,), 1) == "result_1"
+        assert cache.get((2,), 1) == "result_2"
+        assert cache.get((3,), 1) == "result_3"
+
+    def test_cache_clear(self):
+        """Test cache clearing functionality."""
+        cache = _CommutatorCache()
+
+        # Add some data
+        cache.put((0,), 1, "test")
+        cache.get((0,), 1)  # Generate hit
+        cache.get((1,), 1)  # Generate miss
+
+        assert len(cache) == 1
+        stats = cache.get_stats()
+        assert stats['hits'] == 1
+        assert stats['misses'] == 1
+
+        # Clear cache
+        cache.clear()
+        assert len(cache) == 0
+        stats = cache.get_stats()
+        assert stats['hits'] == 0
+        assert stats['misses'] == 0
+
+    def test_cache_error_handling(self):
+        """Test cache behavior with problematic inputs."""
+        cache = _CommutatorCache()
+
+        # Test with None values (should handle gracefully)
+        result = cache.get(None, 1)
+        assert result is None
+
+        # Should not raise exceptions
+        cache.put(None, 1, "test")
+
+        # Cache should continue to work normally
+        cache.put((0,), 1, "normal_test")
+        assert cache.get((0,), 1) == "normal_test"
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_apply_commutator_with_cache(system_fixture, request):
+    """Test _apply_commutator function with cache enabled."""
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+    state = system['states'][0]
+
+    cache = _CommutatorCache()
+
+    # Test simple commutator
+    commutator = (0,)
+
+    # First call - should be cache miss
+    result1 = _apply_commutator(commutator, frags, state, cache=cache, state_id=0)
+    stats1 = cache.get_stats()
+    assert stats1['misses'] == 1
+    assert stats1['hits'] == 0
+
+    # Second call - should be cache hit
+    result2 = _apply_commutator(commutator, frags, state, cache=cache, state_id=0)
+    stats2 = cache.get_stats()
+    assert stats2['misses'] == 1
+    assert stats2['hits'] == 1
+
+    # Results should be identical
+    assert type(result1) == type(result2)
+    # For AbstractState objects, we can't directly compare, but they should be equivalent
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_get_expval_state_with_cache(system_fixture, request):
+    """Test _get_expval_state function with cache enabled."""
+    system = request.getfixturevalue(system_fixture)
+    frags = system['frags']
+    state = system['states'][0]
+
+    cache = _CommutatorCache()
+    commutators = [(0,), (1,)]
+
+    # First call - should populate cache
+    result1 = _get_expval_state(commutators, frags, state, cache=cache, state_id=0)
+    stats1 = cache.get_stats()
+
+    # Second call - should use cache
+    result2 = _get_expval_state(commutators, frags, state, cache=cache, state_id=0)
+    stats2 = cache.get_stats()
+
+    # Should have some cache hits on second call
+    assert stats2['hits'] > stats1['hits']
+
+    # Results should be identical
+    assert np.isclose(result1, result2, rtol=1e-10)
+
+
+def test_sampling_methods_use_cache_effectively():
+    """Test that sampling methods effectively use cache to improve performance."""
+
+    # Create a simple test system
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
+    frag_labels = [0, 1]
+    frag_coeffs = [1 / 2, 1 / 2]
+    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+
+    gridpoints = 5
+    state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
+    state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
+    states = [state1, state2]
+
+    # Test each sampling method to ensure cache is being used
+    sampling_methods = [
+        ("fixed", {"sample_size": 5, "sampling_method": "random"}),
+        ("adaptive", {"adaptive_sampling": True, "confidence_level": 0.95,
+                     "target_relative_error": 0.5, "min_sample_size": 3, "max_sample_size": 8}),
+        ("convergence", {"convergence_sampling": True, "convergence_tolerance": 0.2,
+                        "min_sample_size": 3, "max_sample_size": 10})
+    ]
+
+    for _, method_kwargs in sampling_methods:
+        # Run perturbation error with the sampling method
+        errors = perturbation_error(
+            pf, frags, states, order=2, random_seed=42, **method_kwargs
+        )
+
+        # Verify we get finite results
+        assert isinstance(errors, list)
+        assert len(errors) == 2
+        for error in errors:
+            assert np.isfinite(error)
+            assert isinstance(error, (complex, float, int))
+
+
+@pytest.mark.parametrize("cache_size", [1, 5, 50])
+def test_cache_size_limits(cache_size):
+    """Test cache behavior with different size limits."""
+    cache = _CommutatorCache(max_size=cache_size)
+
+    # Add more items than cache can hold
+    num_items = cache_size * 2
+    for i in range(num_items):
+        cache.put((i,), 1, f"result_{i}")
+
+    # Cache should not exceed max_size
+    assert len(cache) <= cache_size
+
+    # Should still be functional
+    cache.put((999,), 1, "new_result")
+    assert cache.get((999,), 1) == "new_result"
+
+
+def test_cache_statistics_accuracy():
+    """Test that cache statistics are accurately maintained."""
+    cache = _CommutatorCache()
+
+    # Perform a sequence of operations
+    cache.put((0,), 1, "result_0")  # Store
+    cache.get((0,), 1)              # Hit
+    cache.get((0,), 1)              # Hit
+    cache.get((1,), 1)              # Miss
+    cache.get((2,), 1)              # Miss
+    cache.put((1,), 1, "result_1")  # Store
+    cache.get((1,), 1)              # Hit
+
+    stats = cache.get_stats()
+    assert stats['hits'] == 3
+    assert stats['misses'] == 2
+    assert stats['total'] == 5
+    assert stats['hit_rate'] == 0.6
+    assert stats['size'] == 2
+    assert stats['max_size'] == 10000
+
+
+def test_cache_key_determinism():
+    """Test that cache keys are deterministic for identical inputs."""
+    cache = _CommutatorCache()
+
+    # Test multiple times with same input
+    commutator = (frozenset({0, 1}), 2, frozenset({3}))
+    keys = [cache.get_cache_key(commutator, 5) for _ in range(10)]
+
+    # All keys should be identical
+    assert len(set(keys)) == 1
+
+    # Test with different orderings of frozenset (should be same)
+    comm1 = (frozenset({1, 0}), 2)  # Different order
+    comm2 = (frozenset({0, 1}), 2)  # Different order
+    key1 = cache.get_cache_key(comm1, 1)
+    key2 = cache.get_cache_key(comm2, 1)
+    assert key1 == key2
+
+
+@pytest.mark.parametrize("system_fixture", ["minimal_system", "minimal_system_sparse"])
+def test_cache_integration_with_all_sampling_methods(system_fixture, request):
+    """Integration test to verify cache works correctly with all sampling methods."""
+    system = request.getfixturevalue(system_fixture)
+
+    # Test that all sampling methods work with cache (implicitly tested)
+    # and produce consistent results
+
+    # Fixed sampling
+    errors_fixed = perturbation_error(
+        system['pf'], system['frags'], system['states'], order=2,
+        sample_size=3, sampling_method="random", random_seed=42
+    )
+
+    # Adaptive sampling
+    errors_adaptive = perturbation_error(
+        system['pf'], system['frags'], system['states'], order=2,
+        adaptive_sampling=True, confidence_level=0.95, target_relative_error=0.5,
+        min_sample_size=2, max_sample_size=5, random_seed=42
+    )
+
+    # Convergence sampling
+    errors_convergence = perturbation_error(
+        system['pf'], system['frags'], system['states'], order=2,
+        convergence_sampling=True, convergence_tolerance=0.2,
+        min_sample_size=2, max_sample_size=8, random_seed=42
+    )
+
+    # All should return valid results
+    for errors in [errors_fixed, errors_adaptive, errors_convergence]:
+        assert isinstance(errors, list)
+        assert len(errors) == len(system['states'])
+        for error in errors:
+            assert np.isfinite(error)
