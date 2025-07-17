@@ -657,7 +657,7 @@ class QNode:
         .. warning::
 
             This method is deprecated and will be removed in v0.43. Instead, please use :meth:`~.TransformProgram.push_back` on
-            `QNode.transform_program` to add transforms to the transform program.
+            the ``QNode.transform_program`` property to add transforms to the transform program.
 
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
