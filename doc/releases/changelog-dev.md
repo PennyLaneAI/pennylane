@@ -57,6 +57,9 @@
   complete global phase information when used for decomposing a phase gate to Clifford+T basis.
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
 
+* `default.qubit` will default to the tree-traversal MCM method when `mcm_method="device"`.
+  [(#7885)](https://github.com/PennyLaneAI/pennylane/pull/7885)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
