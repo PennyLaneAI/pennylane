@@ -111,26 +111,26 @@ class ConvertToMBQCFormalismPattern(
                     "RZ",
                     "RotXZX",
                 ]:
-                    idx = self.get_op_wire_idx(op)
-                    print("idx:", idx)
+                    idx = self.get_op_wire_idx(op, 0)
+                    print(idx)
 
-    def get_op_wire_idx(self, op):
-        """Get the wire index from a CustomOp for 1-wire gate set."""
+    def get_op_wire_idx(self, op, i):
+        """Get the wire index from a CustomOp for ith-wire."""
 
-        def _walk_back_to_wire_def(op):
-            if isinstance(op, CustomOp) and isinstance(op.in_qubits[0].owner, ExtractOp):
-                qubit_extract_op = op.in_qubits[0].owner
+        def _walk_back_to_wire_def(op, i):
+            if isinstance(op, CustomOp) and isinstance(op.in_qubits[i].owner, ExtractOp):
+                qubit_extract_op = op.in_qubits[i].owner
                 idx_extract_op = qubit_extract_op.idx.owner
                 assert isinstance(idx_extract_op, tensor.ExtractOp)
-                idx_constant_op = idx_extract_op.operands[0].owner
+                idx_constant_op = idx_extract_op.operands[i].owner
                 idx_value_attribute: builtin.DenseIntOrFPElementsAttr = idx_constant_op.properties[
                     "value"
                 ]
                 idx_int_values = idx_value_attribute.get_values()
-                return idx_int_values[0]
+                return idx_int_values[i]
 
             if isinstance(op, CustomOp):
-                return _walk_back_to_wire_def(op.in_qubits[0].owner)
+                return _walk_back_to_wire_def(op.in_qubits[i].owner, i)
 
-        idx = _walk_back_to_wire_def(op)
+        idx = _walk_back_to_wire_def(op, i)
         return idx
