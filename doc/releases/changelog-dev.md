@@ -127,6 +127,9 @@
   `Toffoli` and `CCZ` gates conversion into their ZX-graph representation.
   [(#7899)](https://github.com/PennyLaneAI/pennylane/pull/7899)
 
+* `get_best_diff_method` now correctly aligns with `execute` and `construct_batch` logic in workflows.
+  [(#7898)](https://github.com/PennyLaneAI/pennylane/pull/7898)
+
 * Resolve issues with AutoGraph transforming internal PennyLane library code due to incorrect
   module attribution of wrapper functions.
   [(#7889)](https://github.com/PennyLaneAI/pennylane/pull/7889)
