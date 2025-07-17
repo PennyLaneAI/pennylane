@@ -139,21 +139,22 @@ def resolve_dynamic_wires(
     If we provide two zeroed qubits to the transform, we can see that the two operations have been
     assigned to both wires known to be in the zero state.
 
-    >>> assigned_two_zeroed = qml.transforms.resolve_dynamic_wires(circuit, zeroed=("a", "b"))
+    >>> from pennylane.transforms import resolve_dynamic_wires
+    >>> assigned_two_zeroed = resolve_dynamic_wires(circuit, zeroed=("a", "b"))
     >>> print(qml.draw(assigned_two_zeroed)())
     a: ──Y─┤
     b: ──X─┤
 
     If we only provide one zeroed wire, we perform a reset on that wire before reusing for the ``Y`` operation.
 
-    >>> assigned_one_zeroed = qml.transforms.resolve_dynamic_wires(circuit, zeroed=("a",))
+    >>> assigned_one_zeroed = resolve_dynamic_wires(circuit, zeroed=("a",))
     >>> print(qml.draw(assigned_one_zeroed)())
     a: ──X──┤↗│  │0⟩──Y─┤
 
     If we only provide ``any_state`` qubits with unknown states, then they will be reset to zero before being used
     in an operation that requires a zero state.
 
-    >>> assigned_any_state = qml.transforms.resolve_dynamic_wires(circuit, any_state=("a", "b"))
+    >>> assigned_any_state = resolve_dynamic_wires(circuit, any_state=("a", "b"))
     >>> print(qml.draw(assigned_any_state)())
     b: ──┤↗│  │0⟩──X──┤↗│  │0⟩──Y─|
 
@@ -167,7 +168,7 @@ def resolve_dynamic_wires(
     the first integer to start allocating wires to.  Whenever we have no qubits available to allocate, we increment the integer
     and add a new wire to the pool:
 
-    >>> circuit_integers = qml.transforms.resolve_dynamic_wires(circuit, min_int=0)
+    >>> circuit_integers = resolve_dynamic_wires(circuit, min_int=0)
     >>> print(qml.draw(circuit_integers)())
     0: ──X──┤↗│  │0⟩──Y─┤
 
@@ -181,7 +182,7 @@ def resolve_dynamic_wires(
             with qml.allocation.allocate(3) as wires:
                 qml.Toffoli(wires)
 
-    >>> circuit_integers2 = qml.transforms.resolve_dynamic_wires(multiple_allocations, min_int=0)
+    >>> circuit_integers2 = resolve_dynamic_wires(multiple_allocations, min_int=0)
     >>> print(qml.draw(circuit_integers2)())
     0: ──X──┤↗│  │0⟩─╭●─┤
     1: ──────────────├●─┤
@@ -191,7 +192,7 @@ def resolve_dynamic_wires(
     explicit wires are loaned out. Below, ``"a"`` is extracted and used first, but then wires
     are extracted starting from ``0``.
 
-    >>> zeroed_and_min_int = qml.transforms.resolve_dynamic_wires(multiple_allocations, zeroed=("a",), min_int=0)
+    >>> zeroed_and_min_int = resolve_dynamic_wires(multiple_allocations, zeroed=("a",), min_int=0)
     >>> print(qml.draw(zeroed_and_min_int)())
     a: ──X──┤↗│  │0⟩─╭●─┤
     0: ──────────────├●─┤
