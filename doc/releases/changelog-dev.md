@@ -33,6 +33,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
+  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
+  [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
+
 <h3>Internal changes ⚙️</h3>
 
 * Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
