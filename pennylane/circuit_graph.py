@@ -15,6 +15,7 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an Operator queue.
 """
+import warnings
 from collections import defaultdict, namedtuple
 from functools import cached_property
 from typing import Optional, Sequence, Union
@@ -22,6 +23,7 @@ from typing import Optional, Sequence, Union
 import numpy as np
 import rustworkx as rx
 
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.ops.identity import I
@@ -352,6 +354,11 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators, topologically ordered
         """
+        warnings.warn(
+            "``CircuitGraph.ancestors_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.ancestors(ops, sort=True)``",
+            PennyLaneDeprecationWarning,
+        )
         return self.ancestors(ops, sort=True)
 
     def descendants_in_order(self, ops):
@@ -365,6 +372,11 @@ class CircuitGraph:
         Returns:
             list[Operator]: descendants of the given operators, topologically ordered
         """
+        warnings.warn(
+            "``CircuitGraph.descendants_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.descendants(ops, sort=True)``",
+            PennyLaneDeprecationWarning,
+        )
         return self.descendants(ops, sort=True)
 
     def nodes_between(self, a, b):
