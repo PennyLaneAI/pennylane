@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``shots=`` in ``QNode`` calls is deprecated and will be removed in v0.44.
+  Instead, please use the ``qml.workflow.set_shots`` transform to set the number of shots for a ``QNode``.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.43.
   Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
 
