@@ -15,7 +15,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-
 * ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
   provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
   ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
