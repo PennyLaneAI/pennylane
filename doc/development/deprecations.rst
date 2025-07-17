@@ -119,7 +119,7 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` 
   is now removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
 
   - Deprecated in v0.42
