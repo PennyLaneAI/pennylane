@@ -30,7 +30,7 @@ from pennylane import BasisState, Snapshot, StatePrep
 from pennylane._version import __version__
 from pennylane.devices._qubit_device import QubitDevice
 from pennylane.devices.qubit import measure
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import ExpectationMP
 from pennylane.operation import Operation
 from pennylane.ops import Sum
@@ -235,6 +235,10 @@ class DefaultQubitLegacy(QubitDevice):
             "Toffoli": self._apply_toffoli,
         }
         self._seed = seed
+        # Counter for sampling calls to ensure different seeds each time
+        # This gets reset only during true device initialization, not during
+        # intermediate resets (like in classical shadow protocol)
+        self._sample_call_count = 0
 
     @property
     def stopping_condition(self):
@@ -958,6 +962,8 @@ class DefaultQubitLegacy(QubitDevice):
         # init the state vector to |00..0>
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+        # Don't reset _sample_call_count here as it needs to persist across 
+        # intermediate resets during classical shadow measurements
 
     def analytic_probability(self, wires=None):
         if self._state is None:
@@ -999,8 +1005,16 @@ class DefaultQubitLegacy(QubitDevice):
                 "when using sample-based measurements."
             )
         seed = self._seed or np.random.randint(0, 2**31)  # pylint:disable=protected-access
+        
+        # Create a locally rolling seed by using the current shot context
+        # We can use the size of state_probability array as a proxy for different
+        # sampling contexts, combined with a persistent counter
+        context_variation = hash((len(state_probability), id(state_probability))) % (2**16)
+        effective_seed = (seed + self._sample_call_count + context_variation) % (2**31)
+        self._sample_call_count += 1
+        
         shots = self.shots
-        rng = np.random.default_rng(seed)
+        rng = np.random.default_rng(effective_seed)
 
         basis_states = np.arange(number_of_states)
         # pylint:disable = import-outside-toplevel
