@@ -22,10 +22,8 @@ from typing import TypeVar, Union
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
-_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic]
 
-
-class TensorLikeMETA(type):
+class InterfaceTensorMeta(type):
     """TensorLike metaclass that defines dunder methods for the ``isinstance`` and ``issubclass``
     checks.
 
@@ -35,8 +33,7 @@ class TensorLikeMETA(type):
     def __instancecheck__(cls, other):
         """Dunder method used to check if an object is a `TensorLike` instance."""
         return (
-            isinstance(other, _TensorLike)
-            or _is_jax(other)
+            _is_jax(other)
             or _is_torch(other)
             or _is_tensorflow(other)
         )
@@ -44,14 +41,13 @@ class TensorLikeMETA(type):
     def __subclasscheck__(cls, other):
         """Dunder method that checks if a class is a subclass of ``TensorLike``."""
         return (
-            issubclass(other, _TensorLike)
-            or _is_jax(other, subclass=True)
+            _is_jax(other, subclass=True)
             or _is_torch(other, subclass=True)
             or _is_tensorflow(other, subclass=True)
         )
 
 
-class TensorLike(metaclass=TensorLikeMETA):
+class InterfaceTensorLike(metaclass=InterfaceTensorMeta):
     """Returns a ``Union`` of all tensor-like types, which includes any scalar or sequence
     that can be interpreted as a pennylane tensor, including lists and tuples. Any argument
     accepted by ``qml.numpy.array`` is tensor-like.
@@ -71,6 +67,8 @@ class TensorLike(metaclass=TensorLikeMETA):
     True
     """
 
+
+TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic, InterfaceTensorLike]
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
