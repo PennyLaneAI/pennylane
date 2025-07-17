@@ -29,6 +29,11 @@ class SquaredErrorLoss:
     Combines an ansatz circuit with some target observables and calculates
     the squared error between their expectation values and a target.
 
+    .. warning::
+        This class is deprecated and will be removed in version v0.44.
+        Instead, this hybrid workflow can be accomplished with a function like
+        ``loss = lambda *args: (circuit(*args) - target)**2``.
+
     Args:
         ansatz (callable): The ansatz for the circuit before the final measurement step.
             Note that the ansatz **must** have the following signature:
