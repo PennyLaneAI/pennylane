@@ -223,6 +223,8 @@ class ResourceIntegerComparator(ResourceOperator):
       {'X': 8, 'Toffoli': 3, 'Hadamard': 6, 'CNOT': 2}
     """
 
+    resource_keys = {"val", "register_size", "geq"}
+
     def __init__(self, val, register_size, geq=False, wires=None):
         self.val = val
         self.register_size = register_size
@@ -407,6 +409,8 @@ class ResourceRegisterComparator(ResourceOperator):
      Gate breakdown:
       {'Toffoli': 17, 'CNOT': 51, 'X': 18, 'Hadamard': 3}
     """
+
+    resource_keys = {"a_num_qubits", "b_num_qubits", "geq"}
 
     def __init__(self, a_num_qubits, b_num_qubits, geq=False, wires=None):
         self.a_num_qubits = a_num_qubits
