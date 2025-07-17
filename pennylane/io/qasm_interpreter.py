@@ -849,6 +849,27 @@ class QasmInterpreter:
         else:
             measure(context.wire_map.get(wires, wires), reset=True)
 
+    @staticmethod
+    def _bind_quantum_parameter(param, evald_arg, inner_context, context):
+        """
+        Binds a quantum parameter in a subroutine or custom gate context.
+
+        Args:
+            param (str): the name of the quantum parameter to bind.
+            evald_arg (str): the name of the qubit.
+            inner_context (Context): the custom gate or subroutine context.
+            context (Context): the outer context.
+        """
+        reg = False
+        if evald_arg in context.registers:
+            reg = True
+            del inner_context.wires[inner_context.wires.index(param)]
+            inner_context.registers[param] = context.registers[evald_arg]
+        elif evald_arg in context.wire_map:
+            evald_arg = context.wire_map[evald_arg]
+        if param != evald_arg and not reg:
+            inner_context.wire_map[param] = evald_arg
+
     def execute_custom_gate(self, node: ast.QuantumGate, context: Context):
         """
         Executes a custom gate.
@@ -870,15 +891,7 @@ class QasmInterpreter:
                     evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
                 )
             else:
-                reg = False
-                if evald_arg in context.registers:
-                    reg = True
-                    del gate_context.wires[gate_context.wires.index(param)]
-                    gate_context.registers[param] = context.registers[evald_arg]
-                elif evald_arg in context.wire_map:
-                    evald_arg = context.wire_map[evald_arg]
-                if param != evald_arg and not reg:
-                    gate_context.wire_map[param] = evald_arg
+                self._bind_quantum_parameter(param, evald_arg, gate_context, context)
 
         # execute the subroutine
         self.visit(gate_context.body, gate_context)
@@ -931,15 +944,7 @@ class QasmInterpreter:
 
             for evald_arg, param in list(zip(evald_args, func_context.params)):
                 if isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                    reg = False
-                    if evald_arg in context.registers:
-                        reg = True
-                        del func_context.wires[func_context.wires.index(param)]
-                        func_context.registers[param] = context.registers[evald_arg]
-                    elif evald_arg in context.wire_map:
-                        evald_arg = context.wire_map[evald_arg]
-                    if evald_arg != param and not reg:
-                        func_context.wire_map[param] = evald_arg
+                    self._bind_quantum_parameter(param, evald_arg, func_context, context)
                 else:
                     func_context.vars[param] = Variable(
                         evald_arg.__class__.__name__,
