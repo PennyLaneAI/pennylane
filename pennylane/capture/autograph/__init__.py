@@ -31,7 +31,6 @@ def wraps(target):
     should be preserved in order for the AutoGraph conversion allow/block listing to work properly.
     """
     return functools.wraps(target, assigned=AUTOGRAPH_WRAPPER_ASSIGNMENTS)
-  
 
 __all__ = (
     "autograph_source",
