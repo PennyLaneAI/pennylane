@@ -19,8 +19,9 @@ from __future__ import annotations
 import inspect
 from collections import Counter, defaultdict
 from collections.abc import Callable
+from dataclasses import dataclass
 from textwrap import dedent
-from typing import NamedTuple, Type, overload
+from typing import Type, overload
 
 from pennylane.operation import Operator
 
@@ -28,134 +29,24 @@ from .resources import CompressedResourceOp, Resources, resource_rep
 from .utils import translate_op_alias
 
 
-class WorkWireSpec(NamedTuple):
-    """The work-wire requirements of a decomposition rule."""
+@dataclass(frozen=True)
+class WorkWireSpec:
+    """The number of each type of work wires that a decomposition rule requires."""
 
-    num_wires: int
-    """int: the number of work wires required."""
+    zeroed: int = 0
+    r"""Zeroed wires are guaranteed to be in the :math:`|0\rangle` state initially, and they
+    must be restored to the :math:`|0\rangle>` state before deallocation."""
 
-    require_zeros: bool
-    """bool: whether the work wires must be in the zeroed state."""
+    borrowed: int = 0
+    """Borrowed wires could be allocated in any state, and they must be restored to their
+    initial state before deallocation."""
 
-    restored: bool
-    """bool: whether the decomposition will restore work wires before deallocation."""
+    burnable: int = 0
+    r"""Burnable wires are guaranteed to be in the :math:`|0\rangle` state initially, and they
+    could be deallocated in any arbitrary state."""
 
-
-@overload
-def require_work_wires(
-    num_work_wires: int | Callable[..., int],
-    *,
-    require_zeros: bool = True,
-    restored: bool = True,
-) -> Callable[[Callable], DecompositionRule]: ...
-@overload
-def require_work_wires(
-    num_work_wires: int | Callable[..., int],
-    qfunc: Callable,
-    require_zeros: bool = True,
-    restored: bool = True,
-) -> DecompositionRule: ...
-def require_work_wires(
-    num_work_wires: int | Callable[..., int],
-    qfunc: Callable | None = None,
-    require_zeros: bool = True,
-    restored: bool = True,
-) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
-    r"""Declares the number of work wires that the decomposition rule requires
-
-    .. note::
-
-        This function is only relevant when the new experimental graph-based decomposition system
-        (introduced in v0.41) is enabled via :func:`~pennylane.decomposition.enable_graph`. This new way of
-        performing decompositions is generally more resource-efficient and accommodates multiple alternative
-        decomposition rules for an operator. In this new system, custom decomposition rules are
-        defined as quantum functions, and it is currently required that every decomposition rule
-        declares its required resources using :func:`~.register_resources`.
-
-    Args:
-        num_work_wires (int or Callable): The number of work wires required to perform this
-            decomposition. This can be an integer or a function that takes the resource params
-            of an operator as input and returns an integer.
-        qfunc (Callable): The quantum function that implements the decomposition.
-
-    Keyword Args:
-        require_zeros (bool): Whether the work wires are required to be in the :math:`|0\rangle` state,
-            defaults to ``True``.
-        restored (bool): Whether this decomposition will uncompute the work wires (i.e., restore them to
-            the original state) before deallocation, defaults to ``True``.
-
-    Returns:
-        DecompositionRule:
-            a data structure that represents a decomposition rule, which contains a PennyLane
-            quantum function representing the decomposition, and its resource function.
-
-    **Example**
-
-    This function can be used as a decorator to register the number of work wires used in a
-    quantum function that implements a decomposition rule.
-
-    .. code-block:: python
-
-        import pennylane as qml
-        from pennylane.decomposition import adjoint_resource_rep
-        from pennylane.allocation import allocate
-
-        @qml.require_work_wires(2, require_zeros=True, restored=True)
-        @qml.register_resources({
-            qml.CNOT: 9,
-            qml.Hadamard: 3,
-            qml.T: 2,
-            adjoint_resource_rep(qml.T): 2,
-            qml.S: 1,
-            qml.CZ: 1,
-        })
-        def _toffoli_with_work_wire(wires, **__):
-
-            c1 = wires[0]
-            c2 = wires[1]
-            target = wires[2]
-
-            with qml.allocation.allocate(2, require_zeros=True, restored=True) as work_wires:
-
-                aux1 = work_wires[0]
-                aux2 = work_wires[1]
-
-                def _cnots():
-                    qml.CNOT(c1, aux1)
-                    qml.H(aux2)
-                    qml.CNOT(aux2, c2)
-                    qml.CNOT(aux2, c1)
-                    qml.CNOT(c2, aux1)
-                    qml.CNOT(c2, aux1)
-
-                _cnots()
-                qml.adjoint(qml.T(c1))
-                qml.adjoint(qml.T(c2))
-                qml.T(aux1)
-                qml.T(aux2)
-                qml.adjoint(_cnots, lazy=False)()
-
-                qml.S(aux2)
-                qml.CNOT(aux2, target)
-                qml.H(aux2)
-
-                def _cz():
-                    qml.CZ(c1, c2)
-
-                m = qml.measure(aux2, reset=True)
-                qml.cond(m == 1, _cz)
-
-        qml.add_decomps(qml.Toffoli, _toffoli_with_work_wire)
-
-    """
-
-    def _decorator(_qfunc) -> DecompositionRule:
-        if not isinstance(_qfunc, DecompositionRule):
-            _qfunc = DecompositionRule(_qfunc)
-        _qfunc.set_work_wire_requirement(num_work_wires, require_zeros, restored)
-        return _qfunc
-
-    return _decorator(qfunc) if qfunc else _decorator
+    garbage: int = 0
+    """Garbage wires could be allocated in any state, and can be deallocated in any state."""
 
 
 @overload
@@ -227,13 +118,20 @@ def register_condition(
 
 
 @overload
-def register_resources(resources: Callable | dict) -> Callable[[Callable], DecompositionRule]: ...
-@overload
-def register_resources(resources: Callable | dict, qfunc: Callable) -> DecompositionRule: ...
 def register_resources(
-    resources: Callable | dict, qfunc: Callable | None = None
+    ops: Callable | dict, *, work_wires: Callable | dict | None = None
+) -> Callable[[Callable], DecompositionRule]: ...
+@overload
+def register_resources(
+    ops: Callable | dict, qfunc: Callable, *, work_wires: Callable | dict | None = None
+) -> DecompositionRule: ...
+def register_resources(
+    ops: Callable | dict,
+    qfunc: Callable | None = None,
+    *,
+    work_wires: Callable | dict | None = None,
 ) -> Callable[[Callable], DecompositionRule] | DecompositionRule:
-    """Binds a quantum function to its required resources.
+    r"""Binds a quantum function to its required resources.
 
     .. note::
 
@@ -245,10 +143,14 @@ def register_resources(
         declares its required resources using ``qml.register_resources``.
 
     Args:
-        resources (dict or Callable): a dictionary mapping unique operators within the given
-            ``qfunc`` to their number of occurrences therein. If a function is provided instead
-            of a static dictionary, a dictionary must be returned from the function. For more
-            information, consult the "Quantum Functions as Decomposition Rules" section below.
+        ops (dict or Callable): a dictionary mapping unique operators within the given ``qfunc``
+            to their number of occurrences therein. If a function is provided instead of a static
+            dictionary, a dictionary must be returned from the function. For more information,
+            consult the "Quantum Functions as Decomposition Rules" section below.
+        work_wires (dict or Callable): a dictionary declaring the number of each type of work wires
+            required to perform this decomposition. Accepted work wire types include ``"zeroed"``,
+            ``"borrowed"``, ``"burnable"``, and ``"garbage"``. For more information, consult the
+            "Dynamic Allocation of Work Wires" section below.
         qfunc (Callable): the quantum function that implements the decomposition. If ``None``,
             returns a decorator for acting on a function.
 
@@ -375,13 +277,73 @@ def register_resources(
 
             :func:`~pennylane.resource_rep`
 
+    .. details:
+       :title: Dynamic Allocation of Work Wires
+
+       Some decomposition rules make use of work wires, which can be dynamically requested within
+       the quantum function using :func:`~pennylane.allocation.allocate`. Such decomposition rules
+       should register the number of work wires they require so that the decomposition algorithm
+       is able to budget the use of work wires across decomposition rules.
+
+       There are four types of work wires:
+
+       - "zeroed" wires are guaranteed to be in the :math:`|0\rangle` state initially, and they
+         must be restored to the :math:`|0\rangle>` state before deallocation.
+
+       - "borrowed" wires could be allocated in any state, and they must be restored to their
+         initial state before deallocation.
+
+       - "burnable" wires are guaranteed to be in the :math:`|0\rangle` state initially, and they
+         could be deallocated in any arbitrary state.
+
+       - "garbage" wires could be allocated in any state, and can be deallocated in any state.
+
+       Here's a decomposition for a multi-controlled `Rot` that uses a zeroed work wire:
+
+       .. code-block: python
+
+          from functools import partial
+          import pennylane as qml
+          from pennylane.allocation import allocate
+          from pennylane.decomposition import controlled_resource_rep
+
+          qml.decomposition.enable_graph()
+
+          def _ops_fn(num_control_wires, **_):
+            return {
+                controlled_resource_rep(qml.X, {}, num_control_wires): 2,
+                qml.CRot: 1
+            }
+
+          @qml.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
+          @qml.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
+          def _controlled_rot_decomp(*params, wires, **_):
+            with allocate(1, require_zeros=True, restored=True) as work_wires:
+                qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
+                qml.CRot(*params, wires=[work_wires[0], wires[-1]])
+                qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
+
+          @partial(qml.transforms.decompose, fixed_decomps={"C(Rot)": _controlled_rot_decomp})
+          @qml.qnode(qml.device("default.qubit"))
+          def circuit():
+              qml.ctrl(qml.Rot(0.1, 0.2, 0.3, wires=3), control=[0, 1, 2])
+              return qml.probs(wires=[0, 1, 2, 3])
+
+       >>> print(qml.draw(circuit)())
+       <DynamicWire>: ──Allocate─╭X─╭●───────────────────╭X──Deallocate─┤
+                   0: ───────────├●─│────────────────────├●─────────────┤ ╭Probs
+                   1: ───────────├●─│────────────────────├●─────────────┤ ├Probs
+                   2: ───────────╰●─│────────────────────╰●─────────────┤ ├Probs
+                   3: ──────────────╰Rot(0.10,0.20,0.30)────────────────┤ ╰Probs
+
     """
 
     def _decorator(_qfunc) -> DecompositionRule:
         if isinstance(_qfunc, DecompositionRule):
-            _qfunc.set_resources(resources)
+            _qfunc.set_resources(ops)
+            _qfunc.set_work_wire_spec(work_wires)
             return _qfunc
-        return DecompositionRule(_qfunc, resources=resources)
+        return DecompositionRule(_qfunc, resources=ops, work_wires=work_wires)
 
     return _decorator(qfunc) if qfunc else _decorator
 
@@ -389,7 +351,12 @@ def register_resources(
 class DecompositionRule:
     """Represents a decomposition rule for an operator."""
 
-    def __init__(self, func: Callable, resources: Callable | dict | None = None):
+    def __init__(
+        self,
+        func: Callable,
+        resources: Callable | dict | None = None,
+        work_wires: Callable | dict | None = None,
+    ):
 
         self._impl = func
 
@@ -409,8 +376,7 @@ class DecompositionRule:
             self._compute_resources = resources
 
         self._condition = None
-        self._num_work_wires: Callable | int = 0
-        self._work_wire_req = WorkWireSpec(0, True, True)
+        self._work_wire_spec = work_wires or {}
 
     def __call__(self, *args, **kwargs):
         return self._impl(*args, **kwargs)
@@ -436,16 +402,11 @@ class DecompositionRule:
             return True
         return self._condition(*args, **kwargs)
 
-    def work_wire_requirement(self, *args, **kwargs) -> WorkWireSpec:
-        """Returns the number of work wires required by this rule and whether
-        the work wires must be in the zeroed state"""
-        num_work_wires = (
-            self._num_work_wires(*args, **kwargs)
-            if isinstance(self._num_work_wires, Callable)
-            else self._num_work_wires
-        )
-        req = self._work_wire_req
-        return WorkWireSpec(num_work_wires, req.require_zeros, req.restored)
+    def work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
+        """Gets the work wire requirements of this decomposition rule"""
+        if isinstance(self._work_wire_spec, dict):
+            return WorkWireSpec(**self._work_wire_spec)
+        return WorkWireSpec(**self._work_wire_spec(*args, **kwargs))
 
     def set_condition(self, condition: Callable[..., bool]) -> None:
         """Sets the condition for this decomposition rule."""
@@ -463,12 +424,9 @@ class DecompositionRule:
         else:
             self._compute_resources = resources
 
-    def set_work_wire_requirement(
-        self, num_work_wires: int | Callable, require_zeros: bool, restored: bool
-    ) -> None:
-        """Sets the work wire requirement for this decomposition rule"""
-        self._num_work_wires = num_work_wires
-        self._work_wire_req = WorkWireSpec(0, require_zeros, restored)
+    def set_work_wire_spec(self, work_wires: Callable | dict) -> None:
+        """Sets the work wire usage of this decomposition rule."""
+        self._work_wire_spec = work_wires
 
 
 def _auto_wrap(op_type):

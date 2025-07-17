@@ -59,7 +59,7 @@
 
 <h4>Resource-efficient decompositions 🔎</h4>
 
-* Added support for decomposition rules that dynamically allocate work wires.
+* Added support for decomposition rules that use dynamically allocated work wires.
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
