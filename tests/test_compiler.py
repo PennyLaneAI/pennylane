@@ -26,6 +26,7 @@ import pennylane as qml
 from pennylane import numpy as np
 from pennylane.compiler.compiler import CompileError
 from pennylane.transforms.dynamic_one_shot import fill_in_value
+from tests.transforms.test_split_to_single_terms import partial
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
@@ -753,8 +754,9 @@ class TestCatalystSample:
     def test_sample_measure(self):
         """Test that qml.sample can be used with catalyst.measure."""
 
-        dev = qml.device("lightning.qubit", wires=1, shots=1)
+        dev = qml.device("lightning.qubit", wires=1)
 
+        @partial(qml.set_shots, shots=1)
         @qml.qjit
         @qml.qnode(dev)
         def circuit(x):
@@ -794,8 +796,9 @@ class TestCatalystMCMs:
 
         shots = 8000
 
-        dq = qml.device("default.qubit", shots=shots, seed=seed)
+        dq = qml.device("default.qubit", seed=seed)
 
+        @partial(qml.set_shots, shots=shots)
         @qml.defer_measurements
         @qml.qnode(dq)
         def ref_func(x, y):
@@ -810,8 +813,9 @@ class TestCatalystMCMs:
                 kwargs["all_outcomes"] = True
             return measure_f(**kwargs)
 
-        dev = qml.device("lightning.qubit", wires=2, shots=shots)
+        dev = qml.device("lightning.qubit", wires=2)
 
+        @partial(qml.set_shots, shots=shots)
         @qml.qjit
         @qml.qnode(dev, mcm_method="one-shot")
         def func(x, y):

@@ -84,8 +84,9 @@ class SemiAdder(Operation):
 
         wires = qml.registers({"x":3, "y":6, "work":5})
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @partial(qml.set_shots, shots=1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=wires["x"])
@@ -109,8 +110,9 @@ class SemiAdder(Operation):
 
         wires = qml.registers({"x":3, "y":2, "work":1})
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @partial(qml.set_shots, shots=1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=wires["x"])
