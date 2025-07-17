@@ -77,6 +77,13 @@
 
 <h3>Deprecations 👋</h3>
 
+* Access to `add_noise`, `insert` and noise mitigation transforms from the `pennylane.transforms` module is deprecated.
+  Instead, these functions should be imported from the `pennylane.noise` module.
+  [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
+
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
+  [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
+
 * The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43.
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
