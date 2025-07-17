@@ -84,7 +84,7 @@ def _get_filecheck_directives(qjit_fn):
             continue
 
         line = line[1:].strip()
-        if line.startswith(("CHECK", "COM")):
+        if line.startswith("CHECK"):
             filecheck_directives.append("// " + line)
 
     return "\n".join(filecheck_directives)
