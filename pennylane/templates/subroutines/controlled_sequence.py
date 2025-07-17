@@ -213,14 +213,14 @@ class ControlledSequence(SymbolicOp, Operation):
         return ops
 
 
-def _ctrl_seq_decomposition_resources(base, base_params, num_control_wires) -> dict:
+def _ctrl_seq_decomposition_resources(base_class, base_params, num_control_wires) -> dict:
 
     resources = {}
 
     powers_of_two = [2**i for i in range(num_control_wires)]
 
     for z in powers_of_two[::-1]:
-        controlled_rep = controlled_resource_rep(base, base_params, 1)
+        controlled_rep = controlled_resource_rep(base_class, base_params, 1)
         rep = pow_resource_rep(
             base_class=controlled_rep.op_type,
             base_params=controlled_rep.params,
