@@ -76,7 +76,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument, too-many-arguments, too-many-instance-attributes
 class DefaultQubitLegacy(QubitDevice):
     r"""Default qubit device for PennyLane.
 
