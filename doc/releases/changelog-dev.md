@@ -65,6 +65,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been removed. Please import these objects from the new ``pennylane.exceptions`` module.
+  [(#7874)](https://github.com/PennyLaneAI/pennylane/pull/7874)
+
 * `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead
   be set on the tape itself.
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
