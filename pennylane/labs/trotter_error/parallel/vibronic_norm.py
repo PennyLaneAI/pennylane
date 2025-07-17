@@ -14,7 +14,6 @@ from pennylane.labs.trotter_error import (
 )
 from pennylane.labs.trotter_error.realspace.matrix import _momentum_operator, _position_operator
 
-
 def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, batch: list):
     if not _is_pow_2(gridpoints) or gridpoints <= 0:
         raise ValueError(f"Number of gridpoints must be a positive power of 2, got {gridpoints}.")
@@ -65,7 +64,7 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
     mode_groups = {}
 
     for op in rs_sum.ops:
-        for index, coeff in op.coeffs.nonzero().items():
+        for index, coeff in op.coeffs.nonzero(threshold=10e-8).items():
             group = frozenset(index)
 
             mode_strs = {i: "" for i in group}
@@ -84,7 +83,6 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
                 mode_groups[group] = mat
 
     return sum(_get_eigenvalue(mat) for mat in mode_groups.values())
-
 
 @cache
 def build_mat(gridpoints, ops):
@@ -105,7 +103,6 @@ def build_mat(gridpoints, ops):
         ret = sp.sparse.kron(ret, mat, format="csr")
 
     return ret
-
 
 def _get_eigenvalue(mat):
     _, _, values = sp.sparse.find(mat)
