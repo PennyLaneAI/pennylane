@@ -9,6 +9,24 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
+  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
+* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.43.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
   provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
   ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
