@@ -254,6 +254,14 @@ def to_zx(tape, expand_measurements=False):
         It is a PennyLane adapted and reworked `circuit_to_graph <https://github.com/Quantomatic/pyzx/blob/master/pyzx/circuit/graphparser.py>`_
         function.
 
+    .. note::
+
+        Prior to being added to the graph, Toffolis and CCZ gates are replaced by particular decompositions. These decompositions 
+        are described in detail in: J. Welch, A. Bocharov, and K. Svore, “Efficient Approximation of Diagonal Unitaries over the Clifford+T Basis,” 
+        Quantum information & computation, vol. 16, Dec. 2014, doi: 10.26421/QIC16.1-2-6.
+
+        This is necessary because...
+
         Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
     """
     # If it is a simple operation just transform it to a tape
