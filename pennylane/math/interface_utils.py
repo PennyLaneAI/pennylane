@@ -15,7 +15,7 @@
 
 import warnings
 from enum import Enum
-from typing import Literal, Optional
+from typing import Literal
 
 import autoray as ar
 
