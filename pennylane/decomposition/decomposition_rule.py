@@ -310,18 +310,18 @@ def register_resources(
           qml.decomposition.enable_graph()
 
           def _ops_fn(num_control_wires, **_):
-            return {
-                controlled_resource_rep(qml.X, {}, num_control_wires): 2,
-                qml.CRot: 1
-            }
+              return {
+                  controlled_resource_rep(qml.X, {}, num_control_wires): 2,
+                  qml.CRot: 1
+              }
 
           @qml.register_condition(lambda num_control_wires, **_: num_control_wires > 1)
           @qml.register_resources(ops=_ops_fn, work_wires={"zeroed": 1})
           def _controlled_rot_decomp(*params, wires, **_):
-            with allocate(1, require_zeros=True, restored=True) as work_wires:
-                qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
-                qml.CRot(*params, wires=[work_wires[0], wires[-1]])
-                qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
+              with allocate(1, require_zeros=True, restored=True) as work_wires:
+                  qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
+                  qml.CRot(*params, wires=[work_wires[0], wires[-1]])
+                  qml.ctrl(qml.X(work_wires[0]), control=wires[:-1])
 
           @partial(qml.transforms.decompose, fixed_decomps={"C(Rot)": _controlled_rot_decomp})
           @qml.qnode(qml.device("default.qubit"))
