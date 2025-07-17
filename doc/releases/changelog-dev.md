@@ -65,11 +65,18 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been removed. Please import these objects from the new ``pennylane.exceptions`` module.
+  [(#7874)](https://github.com/PennyLaneAI/pennylane/pull/7874)
+
 * `qml.cut_circuit_mc` no longer accepts a `shots` keyword argument. The shots should instead
   be set on the tape itself.
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 <h3>Deprecations 👋</h3>
+
+* The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43.
+  Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
+  [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
 
@@ -93,6 +100,10 @@
 * Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
+
+* `LinearCombination` instances can be created with `_primitive.impl` when
+  capture is enabled and tracing is active.
+  [(#7893)](https://github.com/PennyLaneAI/pennylane/pull/7893)
 
 <h3>Documentation 📝</h3>
 
