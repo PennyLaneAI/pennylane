@@ -74,6 +74,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
+  Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
+  
+
 * The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43.
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
