@@ -107,11 +107,9 @@ def device(name, *args, **kwargs):
             that contains global and/or device specific configurations.
 
         .. warning::
-            The ``custom_decomps`` keyword param is deprecated and will be removed in version 0.44.
-            Instead, please implement a custom decomposition (i.e. ``U_decomp``) of an operator or
-            template ``U`` as a quantum function and register it with ``qml.decomposition.add_decomps(U, U_decomp)``.
-            This requires that the graph based decomposition system be enabled with
-            ``qml.decomposition.enable_graph()``.
+            The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed
+            in 0.44. Instead, with ``qml.decomposition.enable_graph()``, define custom decomposition rules as a
+            quantum function, and register it with ``qml.add_decomps``.
 
         custom_decomps (Dict[Union(str, Operator), Callable]): Custom
             decompositions to be applied by the device at runtime.
@@ -281,10 +279,9 @@ def device(name, *args, **kwargs):
         # any custom decompositions were specified.
         if custom_decomps is not None:
             warnings.warn(
-                "The custom_decomps keyword param is deprecated and will be removed in version 0.44. "
-                "Instead, please implement a custom decomposition (i.e. U_decomp) of an operator or template U as a "
-                "quantum function and register it with qml.decomposition.add_decomps(U, U_decomp). This requires that "
-                "the graph based decomposition system be enabled with qml.decomposition.enable_graph().",
+                """The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
+                in 0.44. Instead, with ``qml.decomposition.enable_graph()``, define custom decomposition rules as a
+                quantum function, and register it with ``qml.add_decomps``.""",
                 qml.exceptions.PennyLaneDeprecationWarning,
             )
             if isinstance(dev, qml.devices.LegacyDevice):
