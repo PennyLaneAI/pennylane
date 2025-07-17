@@ -101,6 +101,9 @@
   [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
   [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
 
+* The `TensorLike` type is now compatible with static type checkers.
+  [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
+
 <h3>Documentation 📝</h3>
 
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
