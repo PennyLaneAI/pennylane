@@ -336,42 +336,42 @@ def _to_zx_transform(
         )
 
         expanded_operations = []
-
-        # Define specific decompositions
         for op in mapped_tape.operations:
             if op.name == "Toffoli":
+                # explicit list of ops given by op.decomposition, replacing Adjoint(T) with PhaseShift(-π/4)
                 decomp = [
                     qml.Hadamard(wires=op.wires[2]),
                     qml.CNOT(wires=[op.wires[1], op.wires[2]]),
                     qml.PhaseShift(-np.pi / 4, wires=op.wires[2]),
                     qml.CNOT(wires=[op.wires[0], op.wires[2]]),
-                    qml.PhaseShift(np.pi / 4, wires=op.wires[2]),
+                    qml.T(wires=op.wires[2]),
                     qml.CNOT(wires=[op.wires[1], op.wires[2]]),
                     qml.PhaseShift(-np.pi / 4, wires=op.wires[2]),
                     qml.CNOT(wires=[op.wires[0], op.wires[2]]),
-                    qml.PhaseShift(np.pi / 4, wires=op.wires[2]),
-                    qml.PhaseShift(np.pi / 4, wires=op.wires[1]),
+                    qml.T(wires=op.wires[2]),
+                    qml.T(wires=op.wires[1]),
                     qml.CNOT(wires=[op.wires[0], op.wires[1]]),
                     qml.Hadamard(wires=op.wires[2]),
-                    qml.PhaseShift(np.pi / 4, wires=op.wires[0]),
+                    qml.T(wires=op.wires[0]),
                     qml.PhaseShift(-np.pi / 4, wires=op.wires[1]),
                     qml.CNOT(wires=[op.wires[0], op.wires[1]]),
                 ]
                 expanded_operations.extend(decomp)
             elif op.name == "CCZ":
                 decomp = [
+                    # explicit list of ops given by op.decomposition, replacing Adjoint(T) with PhaseShift(-π/4)
                     qml.CNOT(wires=[op.wires[1], op.wires[2]]),
                     qml.PhaseShift(-np.pi / 4, wires=op.wires[2]),
                     qml.CNOT(wires=[op.wires[0], op.wires[2]]),
-                    qml.PhaseShift(np.pi / 4, wires=op.wires[2]),
+                    qml.T(wires=op.wires[2]),
                     qml.CNOT(wires=[op.wires[1], op.wires[2]]),
                     qml.PhaseShift(-np.pi / 4, wires=op.wires[2]),
                     qml.CNOT(wires=[op.wires[0], op.wires[2]]),
-                    qml.PhaseShift(np.pi / 4, wires=op.wires[2]),
-                    qml.PhaseShift(np.pi / 4, wires=op.wires[1]),
+                    qml.T(wires=op.wires[2]),
+                    qml.T(wires=op.wires[1]),
                     qml.CNOT(wires=[op.wires[0], op.wires[1]]),
                     qml.Hadamard(wires=op.wires[2]),
-                    qml.PhaseShift(np.pi / 4, wires=op.wires[0]),
+                    qml.T(wires=op.wires[0]),
                     qml.PhaseShift(-np.pi / 4, wires=op.wires[1]),
                     qml.CNOT(wires=[op.wires[0], op.wires[1]]),
                     qml.Hadamard(wires=op.wires[2]),
