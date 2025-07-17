@@ -22,7 +22,6 @@ import functools
 import warnings
 from collections.abc import Callable, Sequence
 from copy import copy
-from functools import wraps
 from inspect import signature
 from typing import Any, Optional, overload
 
@@ -31,6 +30,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
+from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.decomposition.resources import resolve_work_wire_type
 from pennylane.operation import (
