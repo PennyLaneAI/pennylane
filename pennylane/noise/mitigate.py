@@ -216,7 +216,7 @@ def fold_global_tape(circuit, scale_factor):
     # Generate base_circuit without measurements
     # Treat all circuits as lists of operations, build new tape in the end
     base_ops = circuit.operations
-    if any((isinstance(op, Channel) for op in base_ops)):
+    if any(isinstance(op, Channel) for op in base_ops):
         raise ValueError(
             "Circuits containing quantum channels cannot be folded with mitigate_with_zne. "
             "To use zero-noise extrapolation on the circuit with channel noise, "
@@ -265,7 +265,7 @@ def _polyfit(x, y, order):
     y = math.stack(y)
 
     # scale X to improve condition number and solve
-    scale = math.sum(math.sqrt((X * X)), axis=0)
+    scale = math.sum(math.sqrt(X * X), axis=0)
     X = X / scale
 
     # Compute coeffs:
