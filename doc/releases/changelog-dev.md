@@ -71,6 +71,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* ``custom_decomps=`` keywords param to ``qml.device`` has been deprecated and will be removed in 0.44. Please implement
+  a custom decomposition (i.e. ``U_decomp``) of an operator or template ``U`` as a quantum function and register it with
+  ``qml.decomposition.add_decomps(U, U_decomp)``. This requires that the graph based decomposition system be enabled with
+  ``qml.decomposition.enable_graph()``.
+
 <h3>Internal changes ⚙️</h3>
 
 * Added a `dialects` submodule to `qml.compiler.python_compiler` which now houses all the xDSL dialects we create.
