@@ -68,6 +68,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
+  should instead indicate that the `Operator` does not need wire validation.
+  [(#7911)](https://github.com/PennyLaneAI/pennylane/pull/7911)
+
 * Removed `QNode.get_gradient_fn` method. Instead, use `qml.workflow.get_best_diff_method` to obtain the differentiation method.
   [(#7907)](https://github.com/PennyLaneAI/pennylane/pull/7907)
 
