@@ -20,8 +20,7 @@ from collections.abc import Callable, Sequence
 from typing import TypeVar, Union
 
 from autograd.numpy.numpy_boxes import ArrayBox
-from numpy.typing import ArrayLike
-
+import numpy as np
 
 class InterfaceTensorMeta(type):
     """defines dunder methods for the ``isinstance`` and ``issubclass`` checks.
@@ -47,7 +46,7 @@ class InterfaceTensor(metaclass=InterfaceTensorMeta):
     """Adds support for runtime instance checking of interface-specific tensor-like data"""
 
 
-TensorLike = Union[ArrayLike, InterfaceTensor, ArrayBox]
+TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, np.generic, ArrayBox]
 """A type for all tensor-like data.
 
 TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
