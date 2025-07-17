@@ -28,7 +28,7 @@ from xdsl.parser import Parser
 from xdsl.passes import PipelinePass
 from xdsl.printer import Printer
 
-from .dialects import Quantum
+from .dialects import Catalyst, Quantum
 from .transforms.api import ApplyTransformSequence
 
 
@@ -57,6 +57,7 @@ class Compiler:
         ctx.load_dialect(tensor.Tensor)
         ctx.load_dialect(transform.Transform)
         ctx.load_dialect(Quantum)
+        ctx.load_dialect(Catalyst)
 
         xmod: builtin.ModuleOp = Parser(ctx, gentxtmod).parse_module()
         pipeline = PipelinePass((ApplyTransformSequence(),))
