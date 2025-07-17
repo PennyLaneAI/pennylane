@@ -152,7 +152,7 @@ class CircuitGraph:
         serialization_string = ""
         delimiter = "!"
 
-        for op in self.operations_in_order:
+        for op in self.operations:
             serialization_string += op.name
 
             for param in op.data:
@@ -166,7 +166,7 @@ class CircuitGraph:
         # name of the operation and wires
         serialization_string += "|||"
 
-        for mp in self.observables_in_order:
+        for mp in self.observables:
             obs = mp.obs or mp
             data, name = ([], "Identity") if obs is mp else (obs.data, str(obs.name))
             serialization_string += mp.__class__.__name__
@@ -200,6 +200,11 @@ class CircuitGraph:
         Returns:
             list[Union[MeasurementProcess, Operator]]: observables
         """
+        warnings.warn(
+            "``CircuitGraph.observables_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.observables``",
+            PennyLaneDeprecationWarning,
+        )
         return self._observables
 
     @property
@@ -219,6 +224,11 @@ class CircuitGraph:
         Returns:
             list[Operation]: operations
         """
+        warnings.warn(
+            "``CircuitGraph.operations_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.operations``",
+            PennyLaneDeprecationWarning,
+        )
         return self._operations
 
     @property
