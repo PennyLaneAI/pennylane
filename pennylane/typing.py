@@ -21,6 +21,7 @@ from typing import TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
+from numpy.typing import ArrayLike
 
 
 class InterfaceTensorMeta(type):
@@ -47,19 +48,7 @@ class InterfaceTensor(metaclass=InterfaceTensorMeta):
     """Adds support for runtime instance checking of interface-specific tensor-like data"""
 
 
-TensorLike = Union[
-    int,
-    float,
-    bool,
-    complex,
-    bytes,
-    list,
-    tuple,
-    np.ndarray,
-    ArrayBox,
-    np.generic,
-    InterfaceTensor,
-]
+TensorLike = Union[ArrayLike, InterfaceTensor, ArrayBox]
 """A type for all tensor-like data.
 
 TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor, 
