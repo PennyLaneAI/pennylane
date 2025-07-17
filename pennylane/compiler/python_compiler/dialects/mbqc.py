@@ -37,7 +37,7 @@ from xdsl.irdl import (
 from xdsl.utils.exceptions import VerifyException
 from xdsl.utils.str_enum import StrEnum  # StrEnum is standard in Python>=3.11
 
-from pennylane.compiler.python_compiler.quantum_dialect import QubitType
+from .quantum import QubitType
 
 QubitSSAValue: TypeAlias = SSAValue[QubitType]
 
@@ -115,7 +115,7 @@ class MeasureInBasisOp(IRDLOperation):
             raise VerifyException("'postselect' must be 0 or 1.")
 
 
-MBQCDialect = Dialect(
+MBQC = Dialect(
     "mbqc",
     [
         MeasureInBasisOp,

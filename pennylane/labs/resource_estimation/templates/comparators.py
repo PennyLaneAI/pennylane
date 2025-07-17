@@ -22,7 +22,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable=arguments-differ,protected-access,too-many-arguments,unused-argument,super-init-not-called
+# pylint: disable=arguments-differ,unused-argument
 
 
 class ResourceSingleQubitCompare(ResourceOperator):
@@ -223,6 +223,8 @@ class ResourceIntegerComparator(ResourceOperator):
       {'X': 8, 'Toffoli': 3, 'Hadamard': 6, 'CNOT': 2}
     """
 
+    resource_keys = {"val", "register_size", "geq"}
+
     def __init__(self, val, register_size, geq=False, wires=None):
         self.val = val
         self.register_size = register_size
@@ -408,6 +410,8 @@ class ResourceRegisterComparator(ResourceOperator):
       {'Toffoli': 17, 'CNOT': 51, 'X': 18, 'Hadamard': 3}
     """
 
+    resource_keys = {"a_num_qubits", "b_num_qubits", "geq"}
+
     def __init__(self, a_num_qubits, b_num_qubits, geq=False, wires=None):
         self.a_num_qubits = a_num_qubits
         self.b_num_qubits = b_num_qubits
@@ -500,7 +504,6 @@ class ResourceRegisterComparator(ResourceOperator):
 
             gate_list.append(GateCount(resource_rep(plre.ResourceX), 1))
             gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 1))
-            gate_list.append(FreeWires(a_num_qubits + b_num_qubits))
 
             return gate_list
 
