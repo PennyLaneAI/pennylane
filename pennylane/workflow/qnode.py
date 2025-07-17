@@ -654,8 +654,18 @@ class QNode:
     def add_transform(self, transform_container: TransformContainer):
         """Add a transform (container) to the transform program.
 
+        .. warning::
+
+            This method is deprecated and will be removed in v0.43. Instead, please use :meth:`~.TransformProgram.push_back` on
+            the ``QNode.transform_program`` property to add transforms to the transform program.
+
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
+        warnings.warn(
+            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43. "
+            "Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.",
+            PennyLaneDeprecationWarning,
+        )
         self._transform_program.push_back(transform_container=transform_container)
 
     def update(self, **kwargs) -> QNode:
@@ -734,7 +744,11 @@ class QNode:
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
-        updated_qn._set_shots(old_shots)  # pylint: disable=protected-access
+        # pylint: disable=protected-access
+        if updated_qn._shots != old_shots:
+            updated_qn._set_shots(old_shots)
+        if self._shots_override_device:
+            updated_qn._shots_override_device = True
 
         # pylint: disable=protected-access
         updated_qn._transform_program = qml.transforms.core.TransformProgram(self.transform_program)

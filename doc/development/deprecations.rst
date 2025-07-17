@@ -9,11 +9,17 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
-  and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
 
-  - Deprecated in v0.42
-  - Will be removed in v0.43
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
+* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.43.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
 * ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
   provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
@@ -124,6 +130,12 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` 
+  is now removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
+
+  - Deprecated in v0.42
+  - Remove in v0.43
 
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is now removed in v0.42.
   The gradient keyword arguments should be passed to the new keyword argument ``gradient_kwargs`` via an explicit 

@@ -23,6 +23,7 @@ from copy import copy
 
 import pennylane as qml
 from pennylane import capture, math
+from pennylane.capture.autograph import wraps
 from pennylane.exceptions import TransformError
 from pennylane.queuing import AnnotatedQueue, QueuingManager, apply
 from pennylane.typing import ResultBatch
@@ -366,7 +367,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         qnode = copy(qnode)
 
         if self.expand_transform:
-            qnode.add_transform(
+            qnode.transform_program.push_back(
                 TransformContainer(
                     self._expand_transform,
                     args=targs,
@@ -374,7 +375,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                     use_argnum=self._use_argnum_in_expand,
                 )
             )
-        qnode.add_transform(
+        qnode.transform_program.push_back(
             TransformContainer(
                 self._transform,
                 args=targs,
@@ -390,7 +391,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     def _capture_callable_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function when program capture is enabled"""
 
-        @functools.wraps(qfunc)
+        @wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
             import jax  # pylint: disable=import-outside-toplevel
 
@@ -423,7 +424,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
     def _qfunc_transform(self, qfunc, targs, tkwargs):
         """Apply the transform on a quantum function."""
 
-        @functools.wraps(qfunc)
+        @wraps(qfunc)
         def qfunc_transformed(*args, **kwargs):
             with AnnotatedQueue() as q:
                 qfunc_output = qfunc(*args, **kwargs)
