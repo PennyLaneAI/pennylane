@@ -144,7 +144,7 @@ class AdjointOp(IRDLOperation):
     """Calculate the adjoint of the enclosed operations.
 
     This operation takes as an input a quantum register and outputs
-    an updated quantum register. Its body may contain arbitrary
+    an updated quantum register. Its body may contain classical and
     quantum operations, including nested adjoint operations.
 
     Args:
