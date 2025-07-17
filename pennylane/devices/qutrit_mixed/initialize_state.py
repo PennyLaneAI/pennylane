@@ -23,7 +23,7 @@ from .utils import QUDIT_DIM
 
 def create_initial_state(
     wires: qml.wires.Wires | Iterable,
-    prep_operation: StatePrepBase = None,
+    prep_operation: StatePrepBase | None = None,
     like: str = None,
 ):
     r"""
