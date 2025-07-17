@@ -28,7 +28,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 class ResourceUniformStatePrep(ResourceOperator):
     r"""Resource class for preparing a uniform superposition:
 
-    ::math:
+    .. math:
         \frac{1}{\sqrt{2^{k}L}} \sum_{l=0}^{2^{k}L-1} |l\rangle
 
     where :math:`L` is odd, starting from the :math:`|0\rangle` state.
