@@ -2241,11 +2241,15 @@ class TestSetShots:
 
         # Then try to pass shots parameter when calling the QNode
         with pytest.warns(
-            UserWarning,
-            match="Both 'shots=' parameter and 'set_shots' transform are specified. "
-            "The transform will take precedence over",
+            PennyLaneDeprecationWarning,
+            match="'shots' as an argument to the quantum function is deprecated",
         ):
-            result = modified_circuit(shots=25)
+            with pytest.warns(
+                UserWarning,
+                match="Both 'shots=' parameter and 'set_shots' transform are specified. "
+                "The transform will take precedence over",
+            ):
+                result = modified_circuit(shots=25)
 
         # Verify that the set_shots value (50) was used, not the parameter value (25)
         assert len(result) == 50
@@ -2518,8 +2522,5 @@ class TestSetShots:
             return qml.sample(qml.PauliZ(0))
 
         # No warning should be raised when calling with the same shots value
-        with pytest.warns(
-            UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified."
-        ):
-            result = circuit.update(diff_method="parameter-shift")(shots=50)
+        result = circuit.update(diff_method="parameter-shift")()
         assert len(result) == 100
