@@ -916,7 +916,18 @@ class QasmInterpreter:
         func_context.context["return"] = None
 
         # bind subroutine arguments
-        evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
+        evald_args = [
+            # visit will resolve a qubit name to itself, but a register name to a list of its member qubits,
+            # we don't want to dereference yet... to behave consistently with execute_custom_gate
+            (
+                _resolve_name(raw_arg)
+                if isinstance(raw_arg, str)
+                or isinstance(raw_arg, ast.Identifier)
+                and _resolve_name(raw_arg) in context.registers
+                else self.visit(raw_arg, context)
+            )
+            for raw_arg in node.arguments
+        ]
         for evald_arg, param in list(zip(evald_args, func_context.params)):
             if isinstance(evald_arg, str):  # this would indicate a quantum parameter
                 self._bind_quantum_parameter(param, evald_arg, func_context, context)
@@ -1322,8 +1333,6 @@ class QasmInterpreter:
                 register = _resolve_name(node.qubits[q])
                 require_wires.append(register)
                 reg_var = context.retrieve_variable(register)
-                if isinstance(reg_var, Variable):
-                    reg_var = reg_var.val
                 index = self.visit(node.qubits[q].indices[0][0], context)
                 if index < len(reg_var):
                     wires.append(reg_var[index])
