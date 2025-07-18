@@ -221,7 +221,6 @@ import abc
 import copy
 import warnings
 from collections.abc import Callable, Hashable, Iterable
-from enum import IntEnum
 from functools import lru_cache
 from typing import Any, Literal, Optional, Union
 
@@ -1049,7 +1048,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         raise TermsUndefinedError
 
-    num_wires: int | _WiresEnum | None = None
+    num_wires: int | None = None
     """Number of wires the operator acts on."""
 
     @property
