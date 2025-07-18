@@ -4,6 +4,9 @@ from functools import cache
 import numpy as np
 import scipy as sp
 from mode_selector import get_reduced_model
+import itertools
+
+from mpi4py import MPI
 
 from pennylane.labs.trotter_error import (
     ProductFormula,
@@ -14,19 +17,68 @@ from pennylane.labs.trotter_error import (
 )
 from pennylane.labs.trotter_error.realspace.matrix import _momentum_operator, _position_operator
 
+import time
 
-def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, batch: list):
-    if not _is_pow_2(gridpoints) or gridpoints <= 0:
-        raise ValueError(f"Number of gridpoints must be a positive power of 2, got {gridpoints}.")
+def chunkify(lst, n):
+    """Split list into n chunks and preserve order."""
+    size = len(lst) // n
+    remainder = len(lst) % n
+    chunks = []
+    start = 0
+    for i in range(n):
+        end = start + size + (1 if i < remainder else 0)
+        chunks.append(lst[start:end])
+        start = end
+    return chunks
 
-    padded = RealspaceMatrix(_next_pow_2(rs_mat.states), rs_mat.modes, rs_mat._blocks)
+def _get_eigenvalue_batch(batch_matrices, gridpoints):
+    """Compute eigvals for a batch of matrices."""
+    # t1 = time.time()
+    eigenvalue_batch = np.array([_get_eigenvalue(group_ops, gridpoints) for group_ops in batch_matrices])
+    # t2 = time.time()
+    # print('--------batch', t2 - t1)
+    return eigenvalue_batch
 
-    norms = np.zeros(shape=(padded.states, padded.states))
+# def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, numbers: list):
+#     if not _is_pow_2(gridpoints) or gridpoints <= 0:
+#         raise ValueError(f"Number of gridpoints must be a positive power of 2, got {gridpoints}.")
 
-    for i, j in batch:
-        norms[i, j] = _block_norm(padded.block(i, j), gridpoints)
+#     comm = MPI.COMM_WORLD
+#     rank = comm.Get_rank()
+#     size = comm.Get_size()
 
-    return norms
+#     padded = RealspaceMatrix(_next_pow_2(rs_mat.states), rs_mat.modes, rs_mat._blocks)
+#     norms = np.zeros(shape=(padded.states, padded.states))
+   
+#     if rank == 0:
+
+#         all_matrices = [_block_norm(padded.block(i, j), gridpoints) for i, j in numbers]
+#         list_lens = [len(m) for m in all_matrices]
+#         flat_matrices = [vals for m in all_matrices for vals in m.values()]
+#         batches = chunkify(flat_matrices, size)
+        
+#     else:
+#         batches = None
+
+#     batch = comm.scatter(batches, root=0)
+
+#     print(rank, size, len(batch))
+ 
+#     local_result = _get_eigenvalue_batch(batch, gridpoints)
+
+#     all_results = comm.gather(local_result, root=0)
+
+#     if rank == 0:
+
+#         all_eigvals = np.concatenate(all_results)
+
+#         grouped_eigvals = zip([0] + list(itertools.accumulate(list_lens))[: -1], list_lens)
+        
+#         grouped_sums = [sum(all_eigvals[i: i + n]) for i, n in grouped_eigvals]
+    
+#         norms[tuple(zip(*numbers))] = grouped_sums
+    
+#     return norms
 
 
 def build_error_term(freqs, taylor_coeffs, modes):
@@ -45,6 +97,7 @@ def build_error_term(freqs, taylor_coeffs, modes):
 
 
 def _compute_norm(norm_mat: np.ndarray):
+    
     if norm_mat.shape == (1, 1):
         return norm_mat[0, 0]
 
@@ -83,8 +136,8 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
             except KeyError:
                 mode_groups[group] = {"ops": [sorted_ops], "coeffs": [coeff]}
 
-    return sum(_get_eigenvalue(group_ops, gridpoints) for group_ops in mode_groups.values())
 
+    return mode_groups
 
 @cache
 def build_mat(gridpoints, ops):

@@ -6,19 +6,24 @@ from itertools import product
 
 import numpy as np
 from mpi4py import MPI
-from vibronic_norm import _compute_norm, build_error_term, vibronic_norm
+from vibronic_norm import _compute_norm, build_error_term#, vibronic_norm
+from pennylane.labs.trotter_error import (
+    ProductFormula,
+    RealspaceMatrix,
+    RealspaceSum,
+    effective_hamiltonian,
+    vibronic_fragments,
+)
+
+import itertools
+
+from vibronic_norm import _next_pow_2, _block_norm, chunkify, _get_eigenvalue_batch
 
 # FILE, GRIDPOINTS, MODES
 jobs = [
     # ("VCHLIB/maleimide_5s_24m.pkl", 4, 6),
-    ("no4a_sf.pkl", 4, 19),
+    ("no4a_sf.pkl", 4, 16),
 ]
-
-
-def chunkify(lst, n):
-    """Split list of indices into n roughly equal chunks."""
-    return [lst[i::n] for i in range(n)]
-
 
 if __name__ == "__main__":
 
@@ -27,49 +32,55 @@ if __name__ == "__main__":
     size = comm.Get_size()
 
     for file, gridpoints, modes in jobs:
-        path = f"hamiltonians/{file}"
-        with open(path, "rb") as f:
+        with open(file, "rb") as f:
             freqs, taylor_coeffs = pickle.load(f)
-
         err = build_error_term(freqs, taylor_coeffs, modes)
 
+    numbers = list(i for i in product(range(err.states), repeat=2))
+
+# --------------------------------------------------------------------------
+
+    start = MPI.Wtime()
+    
+    rs_mat = err
+
+    padded = RealspaceMatrix(_next_pow_2(rs_mat.states), rs_mat.modes, rs_mat._blocks)
+    norms = np.zeros(shape=(padded.states, padded.states))
+   
     if rank == 0:
 
-        tt1 = time.time()
-
-        numbers = list(i for i in product(range(err.states), repeat=2))
-
-        batches = chunkify(numbers, size)
-
+        all_matrices = [_block_norm(padded.block(i, j), gridpoints) for i, j in numbers]
+        list_lens = [len(m) for m in all_matrices]
+        flat_matrices = [vals for m in all_matrices for vals in m.values()]
+        batches = chunkify(flat_matrices, size)
+        
     else:
         batches = None
 
-    # Scatter the batches
     batch = comm.scatter(batches, root=0)
 
-    # Each process computes a batch of matrix elements
-    local_result = vibronic_norm(err, gridpoints, batch)
+    print(rank, size, len(batch))
+ 
+    local_result = _get_eigenvalue_batch(batch, gridpoints)
 
-    # Collect all matrices
     all_results = comm.gather(local_result, root=0)
 
     if rank == 0:
 
-        tt3 = time.time()
-        # Sum the resulting matrices to obtain the final matrix
-        final_result = sum(all_results)
+        all_eigvals = np.concatenate(all_results)
 
-        # Compute the norm of the matrix
-        norm = _compute_norm(final_result)
+        grouped_eigvals = zip([0] + list(itertools.accumulate(list_lens))[: -1], list_lens)
+        
+        grouped_sums = [sum(all_eigvals[i: i + n]) for i, n in grouped_eigvals]
+    
+        norms[tuple(zip(*numbers))] = grouped_sums
 
-        tt2 = time.time()
-        print(tt2 - tt1, tt2 - tt3)
+    norm = _compute_norm(norms)
 
-        with open("output.csv", "a+") as output:
-            csv_writer = csv.writer(output)
-            csv_writer.writerow((file, gridpoints, modes, norm))
+    comm.Barrier()
 
-        path = f"norms/{file}_g{gridpoints}_m{modes}.pkl"
-        os.makedirs("norms", exist_ok=True)
-        with open(path, "wb+") as f:
-            pickle.dump(final_result[: err.states, : err.states], f)
+    end = MPI.Wtime()
+
+    if MPI.COMM_WORLD.Get_rank() == 0:
+
+        print(f"Norm: {norm} | Time: {end - start:.4f}")
