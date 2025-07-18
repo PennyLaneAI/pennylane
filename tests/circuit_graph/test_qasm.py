@@ -33,12 +33,7 @@ class TestToQasmUnitTests:
         """Test that an empty circuit graph is properly
         serialized into an empty QASM program."""
         circuit = qml.tape.QuantumScript()
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = circuit.to_openqasm()
-
+        res = to_openqasm(circuit)
         expected = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
         assert res == expected
 
