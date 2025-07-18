@@ -178,6 +178,6 @@ David Ittah,
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
-Shuli, Shu
+Shuli Shu,
 Jay Soni,
 Jake Zaia
