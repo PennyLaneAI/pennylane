@@ -369,6 +369,35 @@ class DeviceReleaseOp(IRDLOperation):
 
 
 @irdl_op_definition
+class AllocQubitOp(IRDLOperation):
+    name = "quantum.alloc_qb"
+
+    assembly_format = " attr-dict `:` type(results)"
+
+    qubit = result_def(QubitType)
+
+    def __init__(self):
+        super().__init__(
+            result_types=(QubitType(),),
+        )
+
+
+@irdl_op_definition
+class DeallocQubitOp(IRDLOperation):
+    name = "quantum.dealloc_qb"
+
+    assembly_format = " $qubit attr-dict `:` type(operands)"
+
+    qubit = operand_def(QubitType)
+
+    def __init__(self, qubit: QubitSSAValue | Operation):
+        super().__init__(
+            operands=(qubit,),
+            result_types=(QubitType(),),
+        )
+
+
+@irdl_op_definition
 class ExpvalOp(IRDLOperation):
     """Compute the expectation value of the given observable for the current state"""
 
