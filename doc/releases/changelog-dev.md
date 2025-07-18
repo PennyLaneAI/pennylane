@@ -9,7 +9,7 @@
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
-  subroutines, constants, and built-in mathematical functions.
+  subroutines, constants, all remaining stdlib gates, and built-in mathematical functions.
   [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
   [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
   [(#7676)](https://github.com/PennyLaneAI/pennylane/pull/7676)
@@ -108,6 +108,7 @@ This release contains contributions from (in alphabetical order):
 
 Utkarsh Azad,
 Joey Carter,
+Marcus Edwards
 Erick Ochoa,
 Andrija Paurevic,
 Jay Soni,

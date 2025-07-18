@@ -25,7 +25,6 @@ from pennylane import (
     U1,
     U2,
     U3,
-    GlobalPhase,
     Hadamard,
     Identity,
     PauliX,
@@ -1537,9 +1536,8 @@ class TestGates:
             CRX(0.2, wires=["q0", "q1"]),
             CRY(0.1, wires=["q0", "q1"]),
             CRZ(0.3, wires=Wires(["q1", "q0"])),
-            Controlled(
-                GlobalPhase(0.4, wires=[]) @ U3(0.1, 0.2, 0.3, wires=["q1"]), control_wires=["q0"]
-            ),
+            PhaseShift(0.4, wires=["q0"])
+            @ (Controlled(U3(0.1, 0.2, 0.3, wires=["q1"]), control_wires=["q0"])),
         ]
 
     def test_interprets_multi_qubit_gates(self):
