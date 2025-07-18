@@ -31,7 +31,7 @@ from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import WireError
+from pennylane.wires import WireError, Wires
 
 from .execution_config import MCMConfig
 
@@ -178,6 +178,40 @@ def validate_device_wires(
                 measurements[m_idx] = new_mp
         if modified:
             tape = tape.copy(ops=new_ops, measurements=measurements)
+
+    return (tape,), null_postprocessing
+
+
+@transform
+def validate_max_wires(
+    tape: QuantumScript,
+    max_wires: int | None = None,
+    wires: Wires | None = None,
+    name: str = "device",
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Validates the tape follows the ``max_wires`` restriction and warns about the presence of wires not in ``wires``
+    when ``max_wires`` is not specified.
+
+    Args:
+        tape (QuantumScript): the circuit to validate
+        max_wires (int | None): the maximum number of wires that can exist in the circuit.
+        wires (Wires | None): definition TBD
+        name (str): name of device to use in error messages.
+
+    """
+    if max_wires:
+        if (num_wires := len(tape.wires)) > max_wires:
+            raise WireError(
+                f"Provided tape has {num_wires} wires for device {name} with a max_wires of {max_wires}."
+            )
+        return (tape,), null_postprocessing
+    if wires and any(w not in wires for w in tape.wires):
+        warnings.warn(
+            "Preprocessed circuit contains wires not specified in device wires. This may be due to the"
+            " addition of work wires. To set an upper limit"
+            " on the number of wires used in simulations, set the device _max_wires.",
+            UserWarning,
+        )
 
     return (tape,), null_postprocessing
 
