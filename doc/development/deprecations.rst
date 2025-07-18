@@ -98,11 +98,6 @@ Pending deprecations
         except TermsUndefinedError:
             return False
 
-* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
-
- - Deprecated in v0.40
- - Will be removed in v0.41
-
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
 
@@ -130,6 +125,11 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
+
+ - Deprecated in v0.40
+ - Removed in v0.41
 
 * ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
   on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
