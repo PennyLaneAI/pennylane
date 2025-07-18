@@ -22,6 +22,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.transforms.core.transform_dispatcher import TransformContainer
 from pennylane.transforms.core.transform_program import TransformProgram
 from pennylane.workflow import construct_batch, get_transform_program
@@ -113,8 +114,12 @@ class TestTransformProgramGetter:
         p_dev = get_transform_program(circuit, level="device")
         assert isinstance(p_grad, TransformProgram)
         p_default = get_transform_program(circuit)
-        p_none = get_transform_program(circuit, None)
         assert p_dev == p_default
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="`level=None` is deprecated",
+        ):
+            p_none = get_transform_program(circuit, None)
         assert p_none == p_dev
         assert len(p_dev) == 9
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
@@ -326,14 +331,13 @@ class TestConstructBatch:
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
-    @pytest.mark.parametrize("level", ("device", None))
-    def test_device_transforms(self, level):
+    def test_device_transforms(self):
         """Test that all device transforms can be run with the device keyword."""
 
         weights = np.array([[1.0, 2.0]])
         order = [2, 1, 0]
 
-        batch, fn = construct_batch(circuit1, level=level)(weights, order)
+        batch, fn = construct_batch(circuit1, level="device")(weights, order)
 
         expected = qml.tape.QuantumScript(
             [qml.RY(1, 0), qml.RX(2, 1), qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))]
@@ -342,8 +346,7 @@ class TestConstructBatch:
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
-    @pytest.mark.parametrize("level", ("device", None))
-    def test_device_transforms_legacy_interface(self, level):
+    def test_device_transforms_legacy_interface(self):
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
@@ -354,7 +357,7 @@ class TestConstructBatch:
             qml.X(0)
             return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
 
-        batch, fn = qml.workflow.construct_batch(circuit, level=level)((2, 1, 0))
+        batch, fn = qml.workflow.construct_batch(circuit, level="device")((2, 1, 0))
 
         expected0 = qml.tape.QuantumScript(
             [qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))], shots=50
@@ -368,8 +371,21 @@ class TestConstructBatch:
 
         assert fn((1.0, 2.0)) == ((1.0, 2.0),)
 
+    def test_level_none_deprecated(self):
+        """Test that level=None raises a deprecation warning."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="`level=None` is deprecated",
+        ):
+            construct_batch(circuit, level=None)
+
     def test_final_transform(self):
-        """Test that the final transform is included when level=None."""
+        """Test that the final transform is included when level="device"."""
 
         @qml.gradients.param_shift
         @qml.transforms.merge_rotations
@@ -379,7 +395,7 @@ class TestConstructBatch:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        batch, fn = construct_batch(circuit, level=None)(0.5)
+        batch, fn = construct_batch(circuit, level="device")(0.5)
         assert len(batch) == 2
         expected0 = qml.tape.QuantumScript(
             [qml.RX(1.0 + np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
@@ -457,7 +473,7 @@ class TestConstructBatch:
         with pytest.warns(
             UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified"
         ):
-            batch, fn = construct_batch(circuit, level=None)(shots=2)
+            batch, fn = construct_batch(circuit, level="device")(shots=2)
 
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(

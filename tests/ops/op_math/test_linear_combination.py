@@ -2000,3 +2000,17 @@ class TestLinearCombinationDifferentiation:
             match="not supported on adjoint",
         ):
             grad_fn(coeffs, param)
+
+
+# pylint: disable=protected-access
+@pytest.mark.capture
+def test_create_instance_while_tracing():
+    """Test that a LinearCombination instance can be created while tracing."""
+
+    def f(a, b):
+        op1 = qml.X._primitive.impl(0, n_wires=1)
+        op2 = qml.Y._primitive.impl(0, n_wires=1)
+        op = qml.ops.LinearCombination._primitive.impl(a, b, op1, op2, n_obs=2)
+        assert isinstance(op, qml.ops.LinearCombination)
+
+    jax.make_jaxpr(f)(1, 2)

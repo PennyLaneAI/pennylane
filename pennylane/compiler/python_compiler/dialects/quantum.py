@@ -856,7 +856,7 @@ class YieldOp(IRDLOperation):
     retvals = var_operand_def(QuregType)
 
 
-QuantumDialect = Dialect(
+Quantum = Dialect(
     "quantum",
     [
         AdjointOp,
