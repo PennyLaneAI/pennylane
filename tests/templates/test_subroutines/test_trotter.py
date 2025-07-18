@@ -24,6 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.resource import Resources
 from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.trotter import (
@@ -1638,6 +1639,30 @@ class TestTrotterizedQfuncIntegration:
         )
 
         assert op.decomposition() == expected_decomp
+
+    @pytest.mark.parametrize("reverse, order, expected_decomp", expected_decomps_order_reverse)
+    def test_decomposition_new(self, reverse, order, expected_decomp):
+        """Tests the decomposition rule implemented with the new system."""
+
+        def first_order_expansion(time, theta, wires, flip=False):
+            "This is the first order expansion (U_1)."
+            qml.RX(time * theta, wires[0])
+            qml.RY(time * theta, wires[0])
+            if flip:
+                qml.CNOT(wires)
+
+        op = TrotterizedQfunc(
+            0.1,
+            1.23,
+            qfunc=first_order_expansion,
+            reverse=reverse,
+            order=order,
+            wires=["a", "b"],
+            flip=True,
+        )
+
+        for rule in qml.list_decomps(qml.TrotterProduct):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("reverse, order, expected_decomp", expected_decomps_order_reverse)
     def test_private_recursive_qfunc(self, reverse, order, expected_decomp):

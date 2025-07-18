@@ -15,7 +15,9 @@
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 import copy
-from collections import defaultdict
+from collections import defaultdict, Counter
+
+from pennylane.decomposition import resource_rep, register_resources, add_decomps
 
 import pennylane as qml
 from pennylane.capture.autograph import wraps
@@ -234,6 +236,8 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
     """
 
+    resource_keys = {"time", "n", "order", "ops"}
+
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         # accepts no wires, so bypasses the wire processing.
@@ -288,6 +292,15 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         }
 
         super().__init__(*hamiltonian.data, time, wires=hamiltonian.wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "time": self.data[-1],
+            "n": self.hyperparameters["n"],
+            "order": self.hyperparameters["order"],
+            "ops": self.hyperparameters["base"].operands
+        }
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -470,7 +483,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             Operations making up the decomposition should be queued within the
             ``compute_decomposition`` method.
 
-        .. seealso:: :meth:`~.Operator.decomposition`.
+        .. seealso:: :math:`~.Operator.decomposition`.
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
@@ -492,6 +505,71 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
                 qml.apply(op)
 
         return decomp
+
+def _trotter_product_decomposition_resources(time, n, order, ops):
+    def _recursive(x, order, ops):
+        reps = Counter()
+        if order == 1:
+            for op in ops:
+                reps[resource_rep(qml.exp(op, x * 1j))] += 1
+            return reps
+
+        if order == 2:
+            for op in ops + ops[::-1]:
+                reps[qml.exp(op, x * 0.5j)] += 1
+            return reps
+
+        scalar_1 = _scalar(order)
+        scalar_2 = 1 - 4 * scalar_1
+
+        ops_ctr_1 = _recursive(scalar_1 * x, order - 2, ops)
+        ops_ctr_2 = _recursive(scalar_2 * x, order - 2, ops)
+
+        return (2 * ops_ctr_1) + ops_ctr_2 + (2 * ops_ctr_1)
+
+    resources = _recursive(time / n, order, ops)[::-1] * n
+
+    if qml.QueuingManager.recording():
+        for op in resources:  # apply operators in reverse order of expression
+            resources[op] += 1
+
+    return resources
+
+@register_resources(_trotter_product_decomposition_resources)
+def _trotter_product_decomposition(*args, **kwargs):
+    time = args[-1]
+    n = kwargs["n"]
+    order = kwargs["order"]
+    ops = kwargs["base"].operands
+
+    def _recursive(x, order, ops):
+        applied = []
+        if order == 1:
+            for op in ops:
+                applied.append(qml.exp(op, x * 1j))
+            return applied
+
+        if order == 2:
+            for op in ops + ops[::-1]:
+                applied.append(qml.exp(op, x * 0.5j))
+            return applied
+
+        scalar_1 = _scalar(order)
+        scalar_2 = 1 - 4 * scalar_1
+
+        ops_ctr_1 = _recursive(scalar_1 * x, order - 2, ops)
+        ops_ctr_2 = _recursive(scalar_2 * x, order - 2, ops)
+
+        return (2 * ops_ctr_1) + ops_ctr_2 + (2 * ops_ctr_1)
+
+    decomp = _recursive(time / n, order, ops)[::-1] * n
+
+    if qml.QueuingManager.recording():
+        for op in decomp:  # apply operators in reverse order of expression
+            qml.apply(op)
+
+
+add_decomps(TrotterProduct, _trotter_product_decomposition)
 
 
 class TrotterizedQfunc(Operation):
@@ -593,6 +671,8 @@ class TrotterizedQfunc(Operation):
 
     """
 
+    resource_keys = {"n", "order", "qfunc", "reverse", "time", "qfunc_args"}
+
     # pylint: disable = too-many-arguments
     def __init__(
         self,
@@ -627,6 +707,18 @@ class TrotterizedQfunc(Operation):
         self._hyperparameters["reverse"] = reverse
 
         super().__init__(time, *trainable_args, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "n": self._hyperparameters["n"],
+            "order": self._hyperparameters["order"],
+            "qfunc": self._hyperparameters["qfunc"],
+            "reverse": self._hyperparameters["reverse"],
+            "time": self.parameters[0],
+            "wires": {},
+            "qfunc_args": self.parameters[1:],
+        }
 
     def decomposition(self) -> list[Operator]:
         """The decomposition"""
@@ -683,6 +775,47 @@ class TrotterizedQfunc(Operation):
         operation with ``Operator._unflatten``.
         """
         return cls(*data, **dict(metadata))
+
+
+def _trotterized_qfunc_decomposition_resources(n, order, qfunc, reverse, time, qfunc_args, wires, **qfunc_kwargs):
+    base_hyper_params = ("n", "order", "qfunc", "reverse")
+    qfunc_kwargs = {k: v for k, v in qfunc_kwargs if not k in base_hyper_params}
+
+    def _recursive():
+        if order == 1:
+            tape = qml.tape.make_qscript(qfunc)(time, *qfunc_args, wires=wires, **qfunc_kwargs)
+            return tape.operations[::-1] if reverse else tape.operations
+
+        if order == 2:
+            tape = qml.tape.make_qscript(qfunc)(time / 2, *qfunc_args, wires=wires, **qfunc_kwargs)
+            return (
+                tape.operations[::-1] + tape.operations
+                if reverse
+                else tape.operations + tape.operations[::-1]
+            )
+
+        scalar_1 = _scalar(order)
+        scalar_2 = 1 - 4 * scalar_1
+
+        ops_lst_1 = _recursive_qfunc(
+            scalar_1 * time, order - 2, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
+        )
+        ops_lst_2 = _recursive_qfunc(
+            scalar_2 * time, order - 2, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
+        )
+
+        return (2 * ops_lst_1) + ops_lst_2 + (2 * ops_lst_1)
+
+    decomp = (
+        _recursive(
+            time / n, order, qfunc, wires, reverse, *qfunc_args, **qfunc_kwargs
+        )
+        * n
+    )
+
+    if qml.QueuingManager.recording():
+        for op in decomp:
+            qml.apply(op)
 
 
 def trotterize(qfunc, n=1, order=2, reverse=False):
