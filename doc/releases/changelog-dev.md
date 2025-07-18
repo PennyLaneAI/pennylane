@@ -81,6 +81,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
+  Top level import and usage is advised.
+
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
   should instead indicate that the `Operator` does not need wire validation.
   [(#7911)](https://github.com/PennyLaneAI/pennylane/pull/7911)
