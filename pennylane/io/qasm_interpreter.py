@@ -921,7 +921,7 @@ class QasmInterpreter:
             # we don't want to dereference yet... to behave consistently with execute_custom_gate
             (
                 _resolve_name(raw_arg)
-                if (isinstance(raw_arg, str) or isinstance(raw_arg, ast.Identifier))
+                if isinstance(raw_arg, (str, ast.Identifier))
                 and _resolve_name(raw_arg) in context.registers
                 else self.visit(raw_arg, context)
             )
