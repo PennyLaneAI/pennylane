@@ -20,7 +20,7 @@
 
 * The error message raised when using Python compiler transforms with :func:`pennylane.qjit` has been updated
   with suggested fixes.
-  [(#)]()
+  [(#7916)](https://github.com/PennyLaneAI/pennylane/pull/7916)
 
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
