@@ -142,6 +142,9 @@
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
+* Update xDSL supported version to `0.45`.
+  [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
+
 <h3>Documentation 📝</h3>
 
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
