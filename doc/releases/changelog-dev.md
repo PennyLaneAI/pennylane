@@ -77,7 +77,7 @@
 <h3>Internal changes ⚙️</h3>
 
 * Removed `pytest-benchmark` as a developer-facing dependency from `requirements-dev.txt`.
-  [(#)]()
+  [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
 
 * Make `pennylane.io` a tertiary module.
   [(#7877)](https://github.com/PennyLaneAI/pennylane/pull/7877)
