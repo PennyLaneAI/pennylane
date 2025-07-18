@@ -89,7 +89,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* The `level=None` argument in the :func:`pennylane.workflow.get_transform_program` and :func:`pennylane.workflow.construct_batch` transform is deprecated and will be removed in v0.43.
+* The `level=None` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, `qml.draw`, `qml.draw_mpl`, and `qml.specs` transforms is deprecated and will be removed in v0.43.
   Please use `level='device'` instead to apply the noise model at the device level.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
 
