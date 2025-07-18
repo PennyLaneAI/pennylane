@@ -19,11 +19,22 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MutualInfoMP, Shots, StateMP, VnEntropyMP
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
 # pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
+
+
+def test_to_openqasm_deprecation():
+    """Test deprecation of the ``QuantumScript.to_openqasm`` method."""
+    circuit = qml.tape.QuantumScript()
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
+    ):
+        circuit.to_openqasm(circuit)
 
 
 class TestInitialization:
