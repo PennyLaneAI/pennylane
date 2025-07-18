@@ -236,9 +236,9 @@ def draw(
         1: ─╰RandomLayers(M0)─├Permute─┤
         2: ───────────────────╰Permute─┤
 
-        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level="device"``:
 
-        >>> print(qml.draw(circ, level=None, show_matrices=False)(weights, order))
+        >>> print(qml.draw(circ, level="device", show_matrices=False)(weights, order))
         0: ──RY(1.00)──╭SWAP─┤  <X>
         1: ──RX(20.00)─│─────┤
         2: ────────────╰SWAP─┤
@@ -694,11 +694,11 @@ def draw_mpl(
             :width: 60%
             :target: javascript:void(0);
 
-        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level="device"``:
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circ, level=None)()
+            fig, ax = qml.draw_mpl(circ, level="device")()
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/level_none.png
