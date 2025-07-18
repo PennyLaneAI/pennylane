@@ -22,6 +22,7 @@ from functools import wraps
 from typing import TYPE_CHECKING, Literal, Optional
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 from ._setup_transform_program import _setup_transform_program
 from .qnode import _make_execution_config
@@ -95,7 +96,16 @@ def _validate_level(
     Raises:
         ValueError: If the level is not recognized
     """
-    if level is None or isinstance(level, (int, slice)):
+    if level is None:
+        warnings.warn(
+            "Using `level=None` is deprecated and will be removed in a future release. "
+            "Please use `level='device'` to include all transforms.",
+            PennyLaneDeprecationWarning,
+            stacklevel=2,
+        )
+        return
+
+    if isinstance(level, (int, slice)):
         return
 
     if isinstance(level, str):
@@ -184,7 +194,7 @@ def _get_inner_transform_slice(
 
 def get_transform_program(
     qnode: QNode,
-    level: Optional[Literal["top", "user", "device", "gradient"] | int | slice] = None,
+    level: Optional[Literal["top", "user", "device", "gradient"] | int | slice] = "device",
     gradient_fn="unset",
 ) -> "qml.transforms.core.TransformProgram":
     """Extract a transform program at a designated level.
@@ -229,7 +239,7 @@ def get_transform_program(
             def circuit():
                 return qml.expval(qml.Z(0))
 
-        By default, we get the full transform program. This can be manually specified by ``level=None``.
+        By default, we get the full transform program. This can be explicitly specified by ``level="device"``.
 
         >>> qml.workflow.get_transform_program(circuit)
         TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor,
@@ -249,14 +259,6 @@ def get_transform_program(
 
         >>> qml.workflow.get_transform_program(circuit, level="gradient")
         TransformProgram(cancel_inverses, merge_rotations, _expand_metric_tensor, _expand_transform_param_shift, metric_tensor)
-
-        ``"device"`` is equivalent to ``level=None`` and includes all transforms. Semantically, this usually
-        corresponds to the circuits that will be sent to the device to execute.
-
-        >>> qml.workflow.get_transform_program(circuit, level="device")
-        TransformProgram(cancel_inverses, merge_rotations, _expand_transform_param_shift,
-        validate_device_wires, defer_measurements, decompose, validate_measurements,
-        validate_observables, metric_tensor)
 
         ``"top"`` and ``0`` both return empty transform programs.
 
