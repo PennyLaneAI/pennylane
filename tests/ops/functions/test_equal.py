@@ -1885,19 +1885,6 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
-    def test_adjoint_observable_with_non_adjoint(self):
-        """Test that comparing an adjoint observable with a non-adjoint operation returns False"""
-
-        base = qml.X(0)
-        adj_op = qml.adjoint(base)
-
-        # if we get rid of Observable or stop having adjoint(Observable) be an Observable,
-        # this test is no longer relevant. Ref: https://github.com/PennyLaneAI/pennylane/pull/7107/
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert isinstance(adj_op, qml.operation.Observable)
-
-        assert not qml.equal(adj_op, qml.exp(base, 2))
-
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     def test_conditional_base_operator_wire_comparison(self, wire1, wire2, res):
         """Test that equal compares operator wires for Conditional operators"""

@@ -17,7 +17,7 @@ This submodule contains the qutrit quantum observables.
 import numpy as np
 
 import pennylane as qml
-from pennylane._deprecated_observable import Observable
+from pennylane.operation import Operator
 from pennylane.ops.qubit import Hermitian
 from pennylane.ops.qutrit import QutritUnitary
 
@@ -150,7 +150,7 @@ class THermitian(Hermitian):
         return [QutritUnitary(eigenvectors.conj().T, wires=wires)]
 
 
-class GellMann(Observable):
+class GellMann(Operator):
     r"""
     The Gell-Mann observables for qutrits
 

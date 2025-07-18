@@ -25,15 +25,14 @@ import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
-from pennylane._deprecated_observable import Observable
-from pennylane.operation import Operation
+from pennylane.operation import Operation, Operator
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .matrix_ops import QubitUnitary
 
 
-class Hermitian(Observable):
+class Hermitian(Operator):
     r"""
     An arbitrary Hermitian observable.
 
@@ -73,6 +72,10 @@ class Hermitian(Observable):
     # Qubit case
     _num_basis_states = 2
     _eigs = {}
+
+    def queue(self, context=qml.QueuingManager):
+        """Append the operator to the Operator queue."""
+        return self
 
     def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
         A = np.array(A) if isinstance(A, list) else A
@@ -263,7 +266,7 @@ class Hermitian(Observable):
         return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
-class SparseHamiltonian(Observable):
+class SparseHamiltonian(Operator):
     r"""
     A Hamiltonian represented directly as a sparse matrix in Compressed Sparse Row (CSR) format.
 
@@ -306,6 +309,10 @@ class SparseHamiltonian(Observable):
     """int: Number of trainable parameters that the operator depends on."""
 
     grad_method = None
+
+    def queue(self, context=qml.QueuingManager):
+        """Append the operator to the Operator queue."""
+        return self
 
     def __init__(self, H: csr_matrix, wires: WiresLike, id: Optional[str] = None):
         if not isinstance(H, csr_matrix):
@@ -406,7 +413,7 @@ class SparseHamiltonian(Observable):
         return H
 
 
-class Projector(Observable):
+class Projector(Operator):
     r"""Projector(state, wires, id=None)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
@@ -458,6 +465,10 @@ class Projector(Observable):
 
     ndim_params = (1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
+
+    def queue(self, context=qml.QueuingManager):
+        """Append the operator to the Operator queue."""
+        return self
 
     def __new__(cls, state: TensorLike, wires: WiresLike, **_):
         """Changes parents based on the state representation.

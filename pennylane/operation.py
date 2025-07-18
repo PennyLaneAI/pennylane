@@ -110,7 +110,6 @@ Operator Types
 
     ~Operator
     ~Operation
-    ~Observable
     ~CV
     ~CVObservable
     ~CVOperation
@@ -2575,17 +2574,6 @@ def gen_is_multi_term_hamiltonian(obj):
 
 def __getattr__(name):
     """To facilitate StatePrep rename"""
-    if name == "Observable":
-        from ._deprecated_observable import Observable  # pylint: disable=import-outside-toplevel
-
-        warnings.warn(
-            "Observable is deprecated and will be removed in v0.43. "
-            "A generic Operator class should be used instead. "
-            "If defining an Operator, set the is_hermitian property to True. "
-            "If checking if an Operator is Hermitian, check the is_hermitian property. ",
-            PennyLaneDeprecationWarning,
-        )
-        return Observable
     if name == "StatePrep":
         return StatePrepBase
     raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")
