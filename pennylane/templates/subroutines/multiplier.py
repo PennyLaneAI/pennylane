@@ -285,8 +285,7 @@ def _multiplier_decomposition_resources(
         adjoint_resource_rep(qml.QFT, {"num_wires": num_wires_aux}): 2,
     }
 
-    rep = resource_rep(qml.SWAP)
-    resources[rep] = num_x_wires
+    resources[qml.SWAP] = num_x_wires
 
     return resources
 
