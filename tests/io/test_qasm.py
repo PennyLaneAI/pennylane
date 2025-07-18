@@ -22,7 +22,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.wires import Wires
 
 
@@ -50,11 +49,7 @@ class TestToQasmUnitTests:
             qml.PauliX(wires=1)
 
         circuit = qml.tape.QuantumScript.from_queue(q_circuit)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = circuit.to_openqasm()
+        res = qml.to_openqasm(circuit)
 
         expected = dedent(
             """\
@@ -84,11 +79,7 @@ class TestToQasmUnitTests:
             qml.CNOT(wires=[1, 0])
 
         circuit = qml.tape.QuantumScript.from_queue(q_circuit)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = circuit.to_openqasm(wires=Wires([0, 1, 2, 3, 4]))
+        res = qml.to_openqasm(circuit, wires=Wires([0, 1, 2, 3, 4]))
 
         expected = dedent(
             """\
@@ -110,20 +101,10 @@ class TestToQasmUnitTests:
 
     def test_to_ApproxTimeEvolution(self):
         """Test for case that requires a decomposition depth of 3 to successfully convert to a MutliRZ"""
-        H = qml.Hamiltonian(
-            [
-                1,
-            ],
-            [
-                qml.PauliZ(0) @ qml.PauliZ(1),
-            ],
-        )
-        circuit = qml.tape.QuantumScript([qml.ApproxTimeEvolution(H, 1, n=1)])
+        H = qml.Hamiltonian([1], [qml.PauliZ(0) @ qml.PauliZ(1)])
 
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = circuit.to_openqasm(wires=Wires([0, 1]))
+        circuit = qml.tape.QuantumScript([qml.ApproxTimeEvolution(H, 1, n=1)])
+        res = qml.to_openqasm(circuit, wires=Wires([0, 1]))
 
         expected = dedent(
             """\
@@ -148,21 +129,13 @@ class TestToQasmUnitTests:
             qml.Rot(0.3, 0.1, 0.2, wires=1)
 
         circuit1 = qml.tape.QuantumScript.from_queue(q1)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            qasm1 = circuit1.to_openqasm(wires=Wires([0, 1]))
+        qasm1 = qml.to_openqasm(circuit1, wires=Wires([0, 1]))
 
         with qml.queuing.AnnotatedQueue() as q2:
             qml.Rot.compute_decomposition(0.3, 0.1, 0.2, wires=1)
 
         circuit2 = qml.tape.QuantumScript.from_queue(q2)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]))
+        qasm2 = qml.to_openqasm(circuit2, wires=Wires([0, 1]))
 
         expected = dedent(
             """\
@@ -190,21 +163,13 @@ class TestToQasmUnitTests:
             qml.StatePrep(psi, wires=[0, 1])
 
         circuit1 = qml.tape.QuantumScript.from_queue(q1)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            qasm1 = circuit1.to_openqasm(precision=11)
+        qasm1 = qml.to_openqasm(circuit1, precision=11)
 
         with qml.queuing.AnnotatedQueue() as q2:
             qml.StatePrep.compute_decomposition(psi, wires=[0, 1])
 
         circuit2 = qml.tape.QuantumScript.from_queue(q2)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            qasm2 = circuit2.to_openqasm(wires=Wires([0, 1]), precision=11)
+        qasm2 = qml.to_openqasm(circuit2, wires=Wires([0, 1]), precision=11)
 
         expected = dedent(
             """\
@@ -237,21 +202,13 @@ class TestToQasmUnitTests:
             qml.BasisState(basis_state, wires=[0, 1, 2, 3])
 
         circuit1 = qml.tape.QuantumScript.from_queue(q1)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            qasm1 = circuit1.to_openqasm()
+        qasm1 = qml.to_openqasm(circuit1)
 
         with qml.queuing.AnnotatedQueue() as q2:
             qml.BasisState.compute_decomposition(basis_state, wires=[0, 1, 2, 3])
 
         circuit2 = qml.tape.QuantumScript.from_queue(q2)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            qasm2 = circuit2.to_openqasm(wires=[0, 1, 2, 3])
+        qasm2 = qml.to_openqasm(circuit2, wires=[0, 1, 2, 3])
 
         expected = dedent(
             """\
@@ -283,11 +240,7 @@ class TestToQasmUnitTests:
             qml.expval(qml.Hadamard(2))
 
         circuit = qml.tape.QuantumScript.from_queue(q_circuit)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = circuit.to_openqasm()
+        res = qml.to_openqasm(circuit)
 
         expected = dedent(
             """\
@@ -313,11 +266,7 @@ class TestToQasmUnitTests:
             _ = [o.queue() for o in ops2]
 
         circuit2 = qml.tape.QuantumScript.from_queue(q2)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            qasm2 = circuit2.to_openqasm()
+        qasm2 = qml.to_openqasm(circuit2)
 
         assert res == qasm2
 
@@ -336,11 +285,7 @@ class TestToQasmUnitTests:
             qml.expval(qml.PauliZ(2))
 
         circuit = qml.tape.QuantumScript.from_queue(q_circuit)
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = circuit.to_openqasm(measure_all=False)
+        res = qml.to_openqasm(circuit, measure_all=False)
 
         expected = dedent(
             """\
@@ -371,11 +316,7 @@ class TestQNodeQasmIntegrationTests:
         """Test that an empty tape is properly
         serialized into an empty QASM program."""
         tape = qml.tape.QuantumScript([], [qml.expval(qml.PauliZ(0))])
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = tape.to_openqasm()
+        res = qml.to_openqasm(tape)
 
         expected = dedent(
             """\
@@ -403,11 +344,7 @@ class TestQNodeQasmIntegrationTests:
             ],
             [qml.expval(qml.PauliZ(0))],
         )
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = tape.to_openqasm()
+        res = qml.to_openqasm(tape)
 
         expected = dedent(
             """\
@@ -521,11 +458,7 @@ class TestQNodeQasmIntegrationTests:
         tape = qml.tape.QuantumScript(
             [qml.Hadamard(wires=4), qml.CNOT(wires=[1, 0])], [qml.expval(qml.PauliZ(0))]
         )
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = tape.to_openqasm(wires=dev.wires)
+        res = qml.to_openqasm(tape, wires=dev.wires)
 
         expected = dedent(
             """\
@@ -553,11 +486,7 @@ class TestQNodeQasmIntegrationTests:
         tape = qml.tape.QuantumScript(
             [qml.Rot(0.3, 0.1, 0.2, wires=1)], [qml.expval(qml.PauliZ(0))]
         )
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = tape.to_openqasm(wires=dev.wires)
+        res = qml.to_openqasm(tape, wires=dev.wires)
 
         expected = dedent(
             """\
@@ -651,11 +580,7 @@ class TestQNodeQasmIntegrationTests:
                 qml.expval(qml.Hadamard(2)),
             ],
         )
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = tape.to_openqasm()
+        res = qml.to_openqasm(tape)
 
         expected = dedent(
             """\
@@ -712,11 +637,7 @@ class TestQNodeQasmIntegrationTests:
     def test_precision(self):
         """Test that the QASM serializer takes into account the desired precision."""
         tape = qml.tape.QuantumScript([qml.RX(np.pi, 0)], [qml.expval(qml.PauliZ(0))])
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
-        ):
-            res = tape.to_openqasm(precision=4)
+        res = qml.to_openqasm(tape, precision=4)
 
         expected = dedent(
             """\
