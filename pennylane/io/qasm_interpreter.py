@@ -603,10 +603,10 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         wires = self.visit(node.measure.qubit, context)
-        if not isinstance(wires, list):
-            res = measure(context.wire_map.get(wires, wires))
-        else:
+        if isinstance(wires, list):
             res = [measure(context.wire_map.get(wire, wire)) for wire in wires]
+        else:
+            res = measure(context.wire_map.get(wires, wires))
         if node.target is not None:
             name = _resolve_name(node.target)  # str or Identifier
             context.vars[name].val = res
