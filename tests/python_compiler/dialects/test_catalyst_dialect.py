@@ -23,7 +23,6 @@ filecheck = pytest.importorskip("filecheck")
 
 pytestmark = pytest.mark.external
 
-from xdsl.dialects import builtin, func, test
 from pennylane.compiler.python_compiler.dialects import Catalyst
 
 all_ops = list(Catalyst.operations)
@@ -106,12 +105,5 @@ def test_assembly_format(run_filecheck):
     %callback_result = catalyst.callback_call @callback_func(%val) : (f64) -> f64
     """
 
-    ctx = xdsl.context.Context()
 
-    ctx.load_dialect(builtin.Builtin)
-    ctx.load_dialect(func.Func)
-    ctx.load_dialect(test.Test)
-    ctx.load_dialect(Catalyst)
-
-    module = xdsl.parser.Parser(ctx, program).parse_module()
-    run_filecheck(program, module)
+    run_filecheck(program)
