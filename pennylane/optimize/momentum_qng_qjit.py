@@ -56,39 +56,42 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
     **Example:**
 
     Consider a hybrid workflow to optimize an objective function defined by a quantum circuit.
-    To make the optimization faster, the entire workflow can be just-in-time compiled using
-    the :func:`~.qjit` decorator:
+    To make the entire workflow faster, the update step function and the whole optimization function
+    can be just-in-time compiled using the :func:`~.qjit` decorator:
 
     .. code-block:: python
 
         import pennylane as qml
         import jax.numpy as jnp
 
-        @qml.qjit(autograph=True)
-        def workflow():
-            dev = qml.device("lightning.qubit", wires=2)
+        dev = qml.device("lightning.qubit", wires=2)
 
-            @qml.qnode(dev)
-            def circuit(params):
-                qml.RX(params[0], wires=0)
-                qml.RY(params[1], wires=1)
-                return qml.expval(qml.Z(0) + qml.X(1))
+        @qml.qnode(dev)
+        def circuit(params):
+            qml.RX(params[0], wires=0)
+            qml.RY(params[1], wires=1)
+            return qml.expval(qml.Z(0) + qml.X(1))
 
-            opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
+        opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
 
-            params = jnp.array([0.1, 0.2])
+        @qml.qjit
+        def update_step_qjit(i, args):
+            params, state = args
+            return opt.step(circuit, params, state)
+
+        @qml.qjit
+        def optimization_qjit(params, iters):
             state = opt.init(params)
-            for _ in range(100):
-                params, state = opt.step(circuit, params, state)
-
+            args = (params, state)
+            params, state = qml.for_loop(0, iters)(update_step_qjit)(args)
             return params
 
-    >>> workflow()
+    >>> params = jnp.array([0.1, 0.2])
+    >>> iters = 1000
+    >>> optimization_qjit(params=params, iters=iters)
     Array([ 3.14159265, -1.57079633], dtype=float64)
 
-    Make sure you are using the ``lightning.qubit`` device along with ``qml.qjit`` with ``autograph`` enabled.
-    Using ``qml.qjit`` on the whole workflow with ``autograph`` not enabled may lead to a substantial increase
-    in compilation time and no runtime benefits.
+    Make sure you are using the ``lightning.qubit`` device along with ``qml.qjit``.
     """
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):
