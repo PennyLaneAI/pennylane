@@ -65,14 +65,17 @@ coverage:
 	@echo "Generating coverage report..."
 	$(PYTHON) $(TESTRUNNER) $(COVERAGE)
 
+# Get the minimum Python version required from pyproject.toml
+MINIMUM_PYTHON_VERSION = $(shell grep 'requires-python' pyproject.toml | sed 's/.*"\(.*\)"/\1/' | sed 's/>=//' | sed 's/\.//g')
+
 .PHONY:format
 format:
 ifdef check
-	$(PYTHON) -m isort --py 311 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests --check
-	$(PYTHON) -m black -t py311 -l 100 ./pennylane ./tests --check
+	$(PYTHON) -m isort --py $(MINIMUM_PYTHON_VERSION) --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests --check
+	$(PYTHON) -m black -t py$(MINIMUM_PYTHON_VERSION) -l 100 ./pennylane ./tests --check
 else
-	$(PYTHON) -m isort --py 311 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
-	$(PYTHON) -m black -t py311 -l 100 ./pennylane ./tests
+	$(PYTHON) -m isort --py $(MINIMUM_PYTHON_VERSION) --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
+	$(PYTHON) -m black -t py$(MINIMUM_PYTHON_VERSION) -l 100 ./pennylane ./tests
 endif
 
 .PHONY: lint
