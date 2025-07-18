@@ -24,7 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane.exceptions import DeviceError
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
-from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
+from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
 
@@ -170,12 +170,9 @@ These operators need to break PL conventions, and each one's reason is specified
 
 _ABSTRACT_OR_META_TYPES = {
     Adjoint,
-    AdjointOpObs,
     AdjointOperation,
-    AdjointObs,
     Operator,
     Operation,
-    Observable,
     Channel,
     qml.ops.Projector,
     qml.ops.SymbolicOp,
