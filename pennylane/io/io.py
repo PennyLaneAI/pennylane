@@ -750,13 +750,13 @@ def to_openqasm(
 ) -> Callable[[Any], str]:
     """Convert a circuit to an OpenQASM 2.0 program.
 
-    .. note::
-      Terminal measurements are assumed to be performed on all qubits in the computational basis.
-      An optional ``rotations`` argument can be provided so that the output of the OpenQASM circuit
-      is diagonal in the eigenbasis of the quantum circuit's observables.
-      The measurement outputs can be restricted to only those specified in the circuit by setting ``measure_all=False``.
+    Terminal measurements are assumed to be performed on all qubits in the computational basis.
+    An optional ``rotations`` argument can be provided so that the output of the OpenQASM circuit
+    is diagonal in the eigenbasis of the quantum circuit's observables.
+    The measurement outputs can be restricted to only those specified in the circuit by setting ``measure_all=False``.
 
     Args:
+        qnode (QNode or QuantumScript): the quantum circuit to be serialized.
         wires (Wires or None): the wires to use when serializing the circuit.
             Default is ``None``, such that all device wires from the QNode are used for serialization.
         rotations (bool): if ``True``, add gates that diagonalize the measured wires to the eigenbasis
@@ -774,10 +774,8 @@ def to_openqasm(
 
     .. code-block:: python
 
-        from functools import partial
         dev = qml.device("default.qubit", wires=2)
 
-        @partial(qml.set_shots, shots=100)
         @qml.qnode(dev)
         def circuit(theta, phi):
             qml.RX(theta, wires=0)
@@ -805,10 +803,8 @@ def to_openqasm(
 
         .. code-block:: python
 
-            from functools import partial
             dev = qml.device("default.qubit", wires=2)
 
-            @partial(qml.set_shots, shots=100)
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(0)
@@ -829,10 +825,8 @@ def to_openqasm(
 
         .. code-block:: python
 
-            from functools import partial
             dev = qml.device("default.qubit", wires=2)
 
-            @partial(qml.set_shots, shots=100)
             @qml.qnode(dev)
             def circuit():
                 qml.Hadamard(0)
