@@ -30,7 +30,7 @@ from pennylane import BasisState, Snapshot, StatePrep
 from pennylane._version import __version__
 from pennylane.devices._qubit_device import QubitDevice
 from pennylane.devices.qubit import measure
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError
 from pennylane.measurements import ExpectationMP
 from pennylane.operation import Operation
 from pennylane.ops import Sum
@@ -1013,7 +1013,7 @@ class DefaultQubitLegacy(QubitDevice):
             array[int]: the sampled basis states
         """
         if self.shots is None:
-            raise QuantumFunctionError(
+            raise ValueError(
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements."
             )
