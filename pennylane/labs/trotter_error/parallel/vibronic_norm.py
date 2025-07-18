@@ -17,8 +17,6 @@ from pennylane.labs.trotter_error import (
 )
 from pennylane.labs.trotter_error.realspace.matrix import _momentum_operator, _position_operator
 
-import time
-
 from mpi4py import MPI
 import time
 
@@ -76,7 +74,7 @@ def get_times_table():
             for func_name in sorted(data.keys()):
                 stats = data[func_name]
                 if "total_time" in stats and "avg_time" in stats:
-                    print(f"  {func_name}: hit_count={stats['hit_count']}, total_time={stats['total_time']:.4f}s, avg_time={stats['avg_time']:.4f}s")
+                    print(f"  {func_name}: hit_count={stats['hit_count']}, total_time={stats['total_time']:.4f}s, avg_time={stats['avg_time']:.4f}s, min_run={min(stats['runs']):.4f}s, max_run={max(stats['runs']):.4f}s")
                     
                     if False and stats['avg_time'] > 0.01:
                         print(f"     Runs: ", end="")
@@ -87,6 +85,27 @@ def get_times_table():
         return global_times
     else:
         return None        
+
+def finalize_timing():
+    """Call this at the end of your program to collect and print all timing data."""
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    
+    # Synchronize all ranks before collecting timing data
+    comm.Barrier()
+    
+    if rank == 0:
+        print("\n" + "="*50)
+        print("FINAL TIMING STATISTICS")
+        print("="*50)
+    
+    global_times = get_times_table()
+    
+    if rank == 0:
+        print("="*50 + "\n")
+        return global_times
+    
+    return None
     
 
 
@@ -101,13 +120,10 @@ def chunkify(lst, n):
         chunks.append(lst[start:end])
         start = end
     return chunks
-
+@timeit
 def _get_eigenvalue_batch(batch_matrices, gridpoints):
     """Compute eigvals for a batch of matrices."""
-    # t1 = time.time()
     eigenvalue_batch = np.array([_get_eigenvalue(group_ops, gridpoints) for group_ops in batch_matrices])
-    # t2 = time.time()
-    # print('--------batch', t2 - t1)
     return eigenvalue_batch
 
 # def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, numbers: list):
@@ -152,6 +168,7 @@ def _get_eigenvalue_batch(batch_matrices, gridpoints):
 #     return norms
 
 
+@timeit
 def build_error_term(freqs, taylor_coeffs, modes):
     freqs, taylor_coeffs = get_reduced_model(freqs, taylor_coeffs, modes, strategy="PT")
     states = taylor_coeffs[0].shape[0]
@@ -184,7 +201,7 @@ def _compute_norm(norm_mat: np.ndarray):
 
     return norm1 + norm2
 
-
+@timeit
 def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
     mode_groups = {}
 
@@ -201,11 +218,11 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
 
             sorted_ops = tuple(mode_strs[i] for i in sorted(group))
 
-            try:
+            if group not in mode_groups:
+                mode_groups[group] = {"ops": [sorted_ops], "coeffs": [coeff]}
+            else:
                 mode_groups[group]["ops"].append(sorted_ops)
                 mode_groups[group]["coeffs"].append(coeff)
-            except KeyError:
-                mode_groups[group] = {"ops": [sorted_ops], "coeffs": [coeff]}
 
 
     return mode_groups
@@ -231,6 +248,7 @@ def build_mat(gridpoints, ops):
     return ret
 
 
+@timeit
 def _get_eigenvalue(group_ops, gridpoints):
     ops, coeffs = group_ops["ops"], group_ops["coeffs"]
     mat = coeffs[0] * build_mat(gridpoints, ops[0])

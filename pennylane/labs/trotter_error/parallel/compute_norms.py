@@ -7,7 +7,7 @@ from itertools import product
 import numpy as np
 np.set_printoptions(linewidth=100, suppress=True, precision=6)
 from mpi4py import MPI
-from vibronic_norm import _compute_norm, build_error_term#, vibronic_norm
+from vibronic_norm import _compute_norm, build_error_term, finalize_timing#, vibronic_norm
 from pennylane.labs.trotter_error import (
     ProductFormula,
     RealspaceMatrix,
@@ -23,7 +23,7 @@ from vibronic_norm import _next_pow_2, _block_norm, chunkify, _get_eigenvalue_ba
 # FILE, GRIDPOINTS, MODES
 jobs = [
     # ("VCHLIB/maleimide_5s_24m.pkl", 4, 6),
-    ("no4a_dimer.pkl", 4, 4),
+    ("no4a_dimer.pkl", 4, 10),
 ]
 
 if __name__ == "__main__":
@@ -99,3 +99,6 @@ if __name__ == "__main__":
             os.makedirs("norms", exist_ok=True)
             with open(path, "wb+") as f:
                 pickle.dump(norms[: err.states, : err.states], f)
+
+    print("Execution complete")
+    finalize_timing()
