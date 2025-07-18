@@ -33,44 +33,6 @@ from pennylane.queuing import AnnotatedQueue, process_queue
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
-OPENQASM_GATES = {
-    "CNOT": "cx",
-    "CZ": "cz",
-    "U3": "u3",
-    "U2": "u2",
-    "U1": "u1",
-    "Identity": "id",
-    "PauliX": "x",
-    "PauliY": "y",
-    "PauliZ": "z",
-    "Hadamard": "h",
-    "S": "s",
-    "Adjoint(S)": "sdg",
-    "T": "t",
-    "Adjoint(T)": "tdg",
-    "RX": "rx",
-    "RY": "ry",
-    "RZ": "rz",
-    "CRX": "crx",
-    "CRY": "cry",
-    "CRZ": "crz",
-    "SWAP": "swap",
-    "Toffoli": "ccx",
-    "CSWAP": "cswap",
-    "PhaseShift": "u1",
-}
-"""
-dict[str, str]: Maps PennyLane gate names to equivalent QASM gate names.
-
-Note that QASM has two native gates:
-
-- ``U`` (equivalent to :class:`~.U3`)
-- ``CX`` (equivalent to :class:`~.CNOT`)
-
-All other gates are defined in the file stdgates.inc:
-https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
-"""
-
 QS = TypeVar("QS", bound="QuantumScript")
 
 
@@ -1221,72 +1183,13 @@ class QuantumScript:
         Returns:
             str: OpenQASM serialization of the circuit
         """
-        wires = wires or self.wires
-
-        # add the QASM headers
-        qasm_str = 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
-
-        if self.num_wires == 0:
-            # empty circuit
-            return qasm_str
-
-        # create the quantum and classical registers
-        qasm_str += f"qreg q[{len(wires)}];\n"
-        qasm_str += f"creg c[{len(wires)}];\n"
-
-        # get the user applied circuit operations without interface information
-        [transformed_tape], _ = qml.transforms.convert_to_numpy_parameters(self)
-        operations = transformed_tape.operations
-
-        if rotations:
-            # if requested, append diagonalizing gates corresponding
-            # to circuit observables
-            operations += self.diagonalizing_gates
-
-        # decompose the queue
-
-        just_ops = QuantumScript(operations)
-        operations = just_ops.expand(
-            depth=10, stop_at=lambda obj: obj.name in OPENQASM_GATES
-        ).operations
-
-        # create the QASM code representing the operations
-        for op in operations:
-            try:
-                gate = OPENQASM_GATES[op.name]
-            except KeyError as e:
-                raise ValueError(f"Operation {op.name} not supported by the QASM serializer") from e
-
-            wire_labels = ",".join([f"q[{wires.index(w)}]" for w in op.wires.tolist()])
-            params = ""
-
-            if op.num_params > 0:
-                # If the operation takes parameters, construct a string
-                # with parameter values.
-                if precision is not None:
-                    params = "(" + ",".join([f"{p:.{precision}}" for p in op.parameters]) + ")"
-                else:
-                    # use default precision
-                    params = "(" + ",".join([str(p) for p in op.parameters]) + ")"
-
-            qasm_str += f"{gate}{params} {wire_labels};\n"
-
-        # apply computational basis measurements to each quantum register
-        # NOTE: This is not strictly necessary, we could inspect self.observables,
-        # and then only measure wires which are requested by the user. However,
-        # some devices which consume QASM require all registers be measured, so
-        # measure all wires by default to be safe.
-        if measure_all:
-            for wire in range(len(wires)):
-                qasm_str += f"measure q[{wire}] -> c[{wire}];\n"
-        else:
-            measured_wires = Wires.all_wires([m.wires for m in self.measurements])
-
-            for w in measured_wires:
-                wire_indx = self.wires.index(w)
-                qasm_str += f"measure q[{wire_indx}] -> c[{wire_indx}];\n"
-
-        return qasm_str
+        return qml.to_openqasm(
+            self,
+            wires=wires,
+            rotations=rotations,
+            measure_all=measure_all,
+            precision=precision,
+        )
 
     @classmethod
     def from_queue(
