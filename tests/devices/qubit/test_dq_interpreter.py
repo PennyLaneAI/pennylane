@@ -369,6 +369,7 @@ class TestSampling:
         assert not qml.math.allclose(s1, s2)
 
     # 20 % failure rate; need to revise and fix soon
+    # FIXME: [sc-95722]
     @pytest.mark.local_salt(8)
     @pytest.mark.parametrize("n_postselects", [1, 2, 3])
     def test_projector_samples_hw_like(self, seed, n_postselects):

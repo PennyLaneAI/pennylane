@@ -1593,6 +1593,7 @@ class TestMidMeasurements:
             assert qml.math.allclose(combined_measurement, expected)
 
     # Near 10% failure rate; need revise and fix soon
+    # FIXME: [sc-95724]
     @pytest.mark.local_salt(9)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize(
