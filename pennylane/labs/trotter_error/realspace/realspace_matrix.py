@@ -140,7 +140,7 @@ class RealspaceMatrix(Fragment):
                 f"Index out of bounds. Got {(row, col)} but there are only {self.states} states."
             )
 
-        if rs_sum._is_zero:
+        if rs_sum.is_zero:
             return
 
         self._blocks[(row, col)] = rs_sum
@@ -487,6 +487,11 @@ class RealspaceMatrix(Fragment):
 
     def __repr__(self):
         return f"RealspaceMatrix({self._blocks})"
+
+    @property
+    def is_zero(self) -> bool:
+        """Returns True if the object is a representation of the zero matrix"""
+        return all(rs_sum.is_zero for rs_sum in self._blocks.values())
 
 
 def _is_pow_2(k: int) -> bool:

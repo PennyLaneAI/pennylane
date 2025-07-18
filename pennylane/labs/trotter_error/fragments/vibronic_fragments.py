@@ -66,17 +66,22 @@ def vibronic_fragments(
     ]
     frags.append(_momentum_fragment(states, modes, freqs))
 
-    return frags
+    return list(filter(lambda x: not x.is_zero, frags))
 
 
 def _position_fragment(
     i: int, states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
 ) -> RealspaceMatrix:
     """Return the ``i``th position fragment"""
-    blocks = {
-        (j, i ^ j): _realspace_sum(j, i ^ j, states, modes, freqs, taylor_coeffs)
-        for j in range(_next_pow_2(states))
-    }
+
+    blocks = {}
+    for j in range(states):
+        xor = i ^ j
+        if xor >= states:
+            continue
+
+        blocks[(j, xor)] = _realspace_sum(j, xor, states, modes, freqs, taylor_coeffs)
+
     return RealspaceMatrix(states, modes, blocks)
 
 
