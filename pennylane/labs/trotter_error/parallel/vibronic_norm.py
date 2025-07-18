@@ -14,6 +14,7 @@ from pennylane.labs.trotter_error import (
 )
 from pennylane.labs.trotter_error.realspace.matrix import _momentum_operator, _position_operator
 
+
 def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, batch: list):
     if not _is_pow_2(gridpoints) or gridpoints <= 0:
         raise ValueError(f"Number of gridpoints must be a positive power of 2, got {gridpoints}.")
@@ -64,7 +65,7 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
     mode_groups = {}
 
     for op in rs_sum.ops:
-        for index, coeff in op.coeffs.nonzero(threshold=10e-8).items():
+        for index, coeff in op.coeffs.nonzero().items():
             group = frozenset(index)
 
             mode_strs = {i: "" for i in group}
@@ -75,14 +76,17 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
                     mode_strs[i] += "Q"
 
             sorted_ops = tuple(mode_strs[i] for i in sorted(group))
-            mat = coeff * build_mat(gridpoints, sorted_ops)
 
             try:
-                mode_groups[group] += mat
+                mode_groups[group]["ops"].append(sorted_ops)
+                mode_groups[group]["coeffs"].append(coeff)
             except KeyError:
-                mode_groups[group] = mat
+                mode_groups[group] = {"ops": [sorted_ops], "coeffs": [coeff]}
 
-    return sum(_get_eigenvalue(mat) for mat in mode_groups.values())
+    print(len(mode_groups))
+
+    return sum(_get_eigenvalue(group_ops, gridpoints) for group_ops in mode_groups.values())
+
 
 @cache
 def build_mat(gridpoints, ops):
@@ -104,13 +108,30 @@ def build_mat(gridpoints, ops):
 
     return ret
 
-def _get_eigenvalue(mat):
+
+def _get_eigenvalue(group_ops, gridpoints):
+    ops, coeffs = group_ops["ops"], group_ops["coeffs"]
+    mat = coeffs[0] * build_mat(gridpoints, ops[0])
+
+    for op, coeff in zip(ops[1:], coeffs[1:]):
+        mat += coeff * build_mat(gridpoints, op)
+
     _, _, values = sp.sparse.find(mat)
     if np.allclose(values, 0):
         return 0
 
-    eigvals, _ = sp.sparse.linalg.eigs(mat, k=1)
-    return np.abs(eigvals[0])
+    try:
+        eigvals, _ = sp.sparse.linalg.eigs(mat, k=1)
+        return np.abs(eigvals[0])
+    except Exception:
+        pass
+
+    try:
+        return sp.sparse.linalg.norm(mat, ord=2)
+    except Exception:
+        pass
+
+    return 0
 
 
 def _is_pow_2(k: int) -> bool:
