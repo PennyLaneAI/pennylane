@@ -64,6 +64,7 @@ class TestTwoQubitCompare:
             AllocWires(1),
             GateCount(resource_rep(plre.ResourceCSWAP), 2),
             GateCount(resource_rep(plre.ResourceCNOT), 3),
+            GateCount(resource_rep(plre.ResourceX), 1),
             FreeWires(1),
         ]
         assert plre.ResourceTwoQubitCompare.resource_decomp() == expected

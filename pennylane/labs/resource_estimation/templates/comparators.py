@@ -114,7 +114,7 @@ class ResourceTwoQubitCompare(ResourceOperator):
         The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
         <https://arxiv.org/abs/1711.10460>`_. Specifically,
         the resources are given as :math:`1` ancilla, :math:`2` controlled SWAP gates,
-        and :math:`3` CNOT gates.
+        :math:`3` CNOT gates, and :math:`1` X gate.
 
     **Example**
 
@@ -175,6 +175,7 @@ class ResourceTwoQubitCompare(ResourceOperator):
         gate_list.append(AllocWires(1))
         gate_list.append(GateCount(resource_rep(plre.ResourceCSWAP), 2))
         gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 3))
+        gate_list.append(GateCount(resource_rep(plre.ResourceX), 1))
         gate_list.append(FreeWires(1))
 
         return gate_list
@@ -480,7 +481,7 @@ class ResourceRegisterComparator(ResourceOperator):
         """
 
         gate_list = []
-        compare_size = min(a_num_qubits, b_num_qubits)
+        compare_register = min(a_num_qubits, b_num_qubits)
 
         one_qubit_compare = resource_rep(plre.ResourceSingleQubitCompare)
         two_qubit_compare = resource_rep(plre.ResourceTwoQubitCompare)
@@ -509,13 +510,13 @@ class ResourceRegisterComparator(ResourceOperator):
 
         diff = abs(a_num_qubits - b_num_qubits)
 
-        gate_list.append(GateCount(two_qubit_compare, compare_size - 1))
+        gate_list.append(GateCount(two_qubit_compare, compare_register - 1))
         gate_list.append(GateCount(one_qubit_compare, 1))
 
         gate_list.append(
             GateCount(
                 resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": two_qubit_compare}),
-                compare_size - 1,
+                compare_register - 1,
             )
         )
         gate_list.append(
