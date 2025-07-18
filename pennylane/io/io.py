@@ -24,7 +24,7 @@ from typing import Any, Optional
 
 from pennylane.tape import QuantumScript
 from pennylane.transforms import convert_to_numpy_parameters
-from pennylane.wires import Wires, WiresLike  # pylint: disable=ungrouped-imports
+from pennylane.wires import Wires, WiresLike
 from pennylane.workflow import construct_tape
 
 has_openqasm = True
