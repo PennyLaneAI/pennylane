@@ -825,7 +825,7 @@ class TestVectorValuedJIT:
 
         res = jax.jit(cost, static_argnums=1)(params, cache=None)
 
-        assert res.shape == (dev.shots.total_shots,)
+        assert res.shape == (dev.shots.total_shots, 1)
 
     def test_multiple_expvals_grad(self, execute_kwargs):
         """Tests computing multiple expectation values in a tape."""

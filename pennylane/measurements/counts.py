@@ -22,6 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement
@@ -247,7 +248,7 @@ class CountsMP(SampleMeasurement):
 
     def process_samples(
         self,
-        samples: Sequence[complex],
+        samples: TensorLike,
         wire_order: Wires,
         shot_range: Optional[tuple[int, ...]] = None,
         bin_size: Optional[int] = None,
@@ -320,12 +321,11 @@ class CountsMP(SampleMeasurement):
         outcomes = []
 
         # if an observable was provided, batched samples will have shape (batch_size, shots)
-        batched_ndims = 2
+        batched_ndims = 3
         shape = qml.math.shape(samples)
 
         if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
-            batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
 
             # remove nans
             mask = qml.math.isnan(samples)

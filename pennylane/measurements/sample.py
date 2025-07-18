@@ -22,6 +22,7 @@ import numpy as np
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .measurements import MeasurementShapeError, SampleMeasurement
@@ -215,12 +216,7 @@ class SampleMP(SampleMeasurement):
         else:
             dim = n_wires
 
-        shape = []
-        if shots != 1:
-            shape.append(shots)
-        if dim != 1:
-            shape.append(dim)
-        return tuple(shape), dtype
+        return (shots, dim), dtype
 
     @property
     def numeric_type(self):
@@ -242,20 +238,14 @@ class SampleMP(SampleMeasurement):
         else:
             # one value per wire
             num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires
-
-        shape = []
-        if shots != 1:
-            shape.append(shots)
-        if num_values_per_shot != 1:
-            shape.append(num_values_per_shot)
-        return tuple(shape)
+        return (shots, num_values_per_shot)
 
     def process_samples(
         self,
-        samples: Sequence[complex],
+        samples: TensorLike,
         wire_order: Wires,
-        shot_range: tuple[int, ...] = None,
-        bin_size: int = None,
+        shot_range: None | tuple[int, ...] = None,
+        bin_size: None | int = None,
     ):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
@@ -290,7 +280,7 @@ class SampleMP(SampleMeasurement):
             # special handling for observables with eigvals +1/-1
             # (this is JIT-compatible, the next block is not)
             # type should be float
-            samples = 1.0 - 2 * qml.math.squeeze(samples, axis=-1)
+            samples = 1.0 - 2 * samples
         else:
             # Replace the basis state in the computational basis with the correct eigenvalue.
             # Extract only the columns of the basis samples required based on ``wires``.
@@ -303,6 +293,7 @@ class SampleMP(SampleMeasurement):
                 samples = qml.math.take(eigvals, indices, like=indices)
             else:
                 samples = eigvals[indices]
+            samples = qml.math.expand_dims(samples, -1)
 
         return samples if bin_size is None else samples.reshape((bin_size, -1))
 

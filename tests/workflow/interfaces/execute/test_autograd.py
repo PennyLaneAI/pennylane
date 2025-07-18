@@ -204,7 +204,7 @@ class TestAutogradExecuteIntegration:
             ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
             tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
 
-            return execute([tape1, tape2], device, **execute_kwargs)
+            return qml.execute([tape1, tape2], device, **execute_kwargs)
 
         a = pnp.array(0.1, requires_grad=True)
         b = pnp.array(0.2, requires_grad=False)

@@ -823,9 +823,9 @@ class TestQubitIntegration:
         assert isinstance(res, tuple)
 
         assert isinstance(res[0], jax.Array)
-        assert res[0].shape == (10,)  # pylint:disable=comparison-with-callable
+        assert res[0].shape == (10, 1)  # pylint:disable=comparison-with-callable
         assert isinstance(res[1], jax.Array)
-        assert res[1].shape == (10,)  # pylint:disable=comparison-with-callable
+        assert res[1].shape == (10, 1)  # pylint:disable=comparison-with-callable
 
     def test_counts(self, dev_name, diff_method, grad_on_execution, device_vjp, seed):
         """Test counts works as expected"""
