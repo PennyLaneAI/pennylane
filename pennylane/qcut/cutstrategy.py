@@ -91,7 +91,7 @@ class CutStrategy:
     #: Number of wires for the smallest available device.
     min_free_wires: int = None
     #: The potential (range of) number of fragments for the partitioner to attempt.
-    num_fragments_probed: int | Sequence[int] = None
+    num_fragments_probed: None | int | Sequence[int] = None
     #: Maximum allowed circuit depth for the deepest available device.
     max_free_gates: int = None
     #: Maximum allowed circuit depth for the shallowest available device.
