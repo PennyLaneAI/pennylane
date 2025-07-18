@@ -1609,10 +1609,6 @@ class TestCriteria:
     stiff_rot = qml.Rot(0.1, -0.7, 0.2, wires=0)
     exp = qml.expval(qml.PauliZ(0))
 
-    def test_docstring(self):
-        expected = "Returns ``True`` if an operator has a generator defined."
-        assert expected in qml.operation.has_gen.__doc__
-
     def test_is_trainable(self):
         """Test is_trainable criterion."""
         assert qml.operation.is_trainable(self.rx)
