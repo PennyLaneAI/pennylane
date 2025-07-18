@@ -21,7 +21,7 @@ from jaxlib.mlir.dialects import stablehlo
 from jaxlib.mlir.ir import Context as jaxContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jaxModule  # pylint: disable=no-name-in-module
 from xdsl.context import Context as xContext
-from xdsl.passes import PipelinePass
+from xdsl.passes import PassPipeline
 from xdsl.printer import Printer
 
 from .jax_utils import QuantumParser
@@ -46,7 +46,7 @@ class Compiler:
         ctx = xContext(allow_unregistered=True)
         parser = QuantumParser(ctx, gentxtmod)
         xmod = parser.parse_module()
-        pipeline = PipelinePass((ApplyTransformSequence(),))
+        pipeline = PassPipeline((ApplyTransformSequence(),))
         # xmod is modified in place
         pipeline.apply(ctx, xmod)
 

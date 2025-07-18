@@ -61,6 +61,10 @@
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
 
+* The `AllocQubitOp` and `DeallocQubitOp` operations have been added to the `Quantum` dialect in the
+  Python compiler.
+  [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
+
 * The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
   complete global phase information when used for decomposing a phase gate to Clifford+T basis.
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
@@ -142,6 +146,9 @@
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
+* Update xDSL supported version to `0.45`.
+  [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
+
 <h3>Documentation 📝</h3>
 
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
@@ -174,5 +181,6 @@ David Ittah,
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
+Shuli Shu,
 Jay Soni,
 Jake Zaia
