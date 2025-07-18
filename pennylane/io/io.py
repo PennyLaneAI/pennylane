@@ -22,7 +22,10 @@ from importlib import metadata
 from sys import version_info
 from typing import Any, Optional
 
-from pennylane.wires import WiresLike  # pylint: disable=ungrouped-imports
+from pennylane.tape import QuantumScript
+from pennylane.transforms import convert_to_numpy_parameters
+from pennylane.wires import Wires, WiresLike  # pylint: disable=ungrouped-imports
+from pennylane.workflow import construct_tape
 
 has_openqasm = True
 try:
@@ -91,12 +94,6 @@ https://github.com/Qiskit/openqasm/blob/master/examples/stdgates.inc
 
 def _tape_openqasm(tape, wires, rotations, measure_all, precision):
     """Helper function to serialize a tape as an OpenQASM 2.0 program."""
-
-    # pylint: disable=import-outside-toplevel
-    from pennylane.tape import QuantumScript
-    from pennylane.transforms import convert_to_numpy_parameters
-    from pennylane.wires import Wires
-
     wires = wires or tape.wires
 
     # add the QASM headers
@@ -847,11 +844,6 @@ def to_openqasm(
         measure q[0] -> c[0];
         measure q[1] -> c[1];
     """
-
-    # pylint: disable=import-outside-toplevel
-    from pennylane.tape import QuantumScript
-    from pennylane.workflow import construct_tape
-
     if isinstance(qnode, QuantumScript):
         return _tape_openqasm(
             qnode,
