@@ -264,32 +264,13 @@ class TestControlFlow:
         )
 
         # run the program
-        with queuing.AnnotatedQueue() as q:
+        with pytest.raises(
+            NotImplementedError,
+            match="End statements in measurement conditioned branches are not supported.",
+        ):
             QasmInterpreter().interpret(
                 ast, context={"name": "meas-ctrl-branch-nested-end", "wire_map": None}
             )
-
-        # circuit should look like:
-        # 0: ──RY(0.10)──X²─────────────X─┤ < Z >
-        # 1: ──RX(0.20)───────RZ(1.00)──║─┤
-        # 2: ──H─────────┤↗├──║─────────║─┤
-        #                 ╚═══╩═════════╝
-
-        assert q.queue[:4] == [
-            RY(0.1, wires=["q0"]),
-            RX(0.2, wires=["q1"]),
-            PauliX("q0") ** 2,
-            Hadamard("q2"),
-        ]
-
-        assert isinstance(q.queue[4], MidMeasureMP)
-        assert q.queue[4].wires == Wires(["q2"])
-        assert isinstance(q.queue[5], Conditional)
-        assert q.queue[5].data == (1,)  # control on one
-        assert q.queue[5].base == RZ(1, wires=["q1"])
-        assert isinstance(q.queue[6], Conditional)
-        assert q.queue[6].data == ()  # control on zero
-        assert q.queue[6].base == PauliX(wires=["q0"])
 
     def test_nested_end(self):
         # parse the QASM

@@ -432,8 +432,8 @@ class QasmInterpreter:
                     # this will end the interpretation of the QASM...
                     # not good if we're building a qscript for a controlled branch
                     raise e
-                # this will end the construction of the qscript for this controlled branch
-                break
+                # we are in the construction of the qscript for a controlled branch
+                raise NotImplementedError("End statements in measurement conditioned branches are not supported.")
 
     def interpret(self, node: QASMNode, context: dict):
         """
