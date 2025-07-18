@@ -38,8 +38,8 @@ def kahypar_cut(
     fragment_weights: list[int | float] = None,
     hyperwire_weight: int = 1,
     seed: int = None,
-    config_path: str | Path = None,
-    trial: int = None,
+    config_path: None | str | Path = None,
+    trial: None | int = None,
     verbose: bool = False,
 ) -> list[tuple[Operation, Any]]:
     """Calls `KaHyPar <https://kahypar.org/>`__ to partition a graph.
