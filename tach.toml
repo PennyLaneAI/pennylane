@@ -160,6 +160,10 @@ path = "pennylane.allocation"
 layer = "core"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
+[[modules]]
+path = "pennylane.measurements"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
+
 ## AUXILIARY module(s)
 # These modules can only import from CORE modules and within their layer.
 
@@ -335,9 +339,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.pyth
 path = "pennylane.capture"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
-[[modules]]
-path = "pennylane.measurements"
-cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
 [[modules]]
 path = "pennylane.pauli"

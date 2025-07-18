@@ -15,10 +15,11 @@
 """
 This module contains the qml.purity measurement.
 """
-from collections.abc import Sequence
 from typing import Optional
 
-import pennylane as qml
+from pennylane.math import dm_from_state_vector
+from pennylane.math import purity as math_purity
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .measurements import StateMeasurement
@@ -89,13 +90,13 @@ class PurityMP(StateMeasurement):
     def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
         return ()
 
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
+    def process_state(self, state: TensorLike, wire_order: Wires):
         wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
         indices = [wire_map[w] for w in self.wires]
-        state = qml.math.dm_from_state_vector(state)
-        return qml.math.purity(state, indices=indices, c_dtype=state.dtype)
+        state = dm_from_state_vector(state)
+        return math_purity(state, indices=indices, c_dtype=state.dtype)
 
-    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
         indices = [wire_map[w] for w in self.wires]
-        return qml.math.purity(density_matrix, indices=indices, c_dtype=density_matrix.dtype)
+        return math_purity(density_matrix, indices=indices, c_dtype=density_matrix.dtype)

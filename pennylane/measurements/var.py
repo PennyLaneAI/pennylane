@@ -18,53 +18,16 @@ This module contains the qml.var measurement.
 from collections.abc import Sequence
 from typing import Optional, Union
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operator
+from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
+from .probs import probs
 from .sample import SampleMP
-
-
-def var(op: Union[Operator, MeasurementValue]) -> "VarianceMP":
-    r"""Variance of the supplied observable.
-
-    Args:
-        op (Union[Operator, MeasurementValue]): a quantum observable object.
-            To get variances for mid-circuit measurements, ``op`` should be a
-            ``MeasurementValue``.
-
-    Returns:
-        VarianceMP: Measurement process instance
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.Y(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    0.7701511529340698
-    """
-    if isinstance(op, MeasurementValue):
-        return VarianceMP(obs=op)
-
-    if isinstance(op, Sequence):
-        raise ValueError(
-            "qml.var does not support measuring sequences of measurements or observables"
-        )
-
-    return VarianceMP(obs=op)
 
 
 class VarianceMP(SampleMeasurement, StateMeasurement):
@@ -102,7 +65,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     ):
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
-        with qml.queuing.QueuingManager.stop_recording():
+        with QueuingManager.stop_recording():
             samples = SampleMP(
                 obs=op,
                 eigvals=self._eigvals,
@@ -115,34 +78,36 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2
         # TODO: do we need to squeeze here? Maybe remove with new return types
-        return qml.math.squeeze(qml.math.var(samples, axis=axis))
+        return math.squeeze(math.var(samples, axis=axis))
 
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
+    def process_state(self, state: TensorLike, wire_order: Wires):
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
         # we use ``wires`` instead of ``op`` because the observable was
         # already applied to the state
-        with qml.queuing.QueuingManager.stop_recording():
-            prob = qml.probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
+        with QueuingManager.stop_recording():
+            prob = probs(wires=self.wires).process_state(state=state, wire_order=wire_order)
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return self._calculate_variance(prob)
 
-    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         # This also covers statistics for mid-circuit measurements manipulated using
         # arithmetic operators
         # we use ``wires`` instead of ``op`` because the observable was
         # already applied to the state
-        with qml.queuing.QueuingManager.stop_recording():
-            prob = qml.probs(wires=self.wires).process_density_matrix(
+        with QueuingManager.stop_recording():
+            prob = probs(wires=self.wires).process_density_matrix(
                 density_matrix=density_matrix, wire_order=wire_order
             )
         # In case of broadcasting, `prob` has two axes and these are a matrix-vector products
         return self._calculate_variance(prob)
 
     def process_counts(self, counts: dict, wire_order: Wires):
-        with qml.QueuingManager.stop_recording():
-            probs = qml.probs(wires=self.wires).process_counts(counts=counts, wire_order=wire_order)
-        return self._calculate_variance(probs)
+        with QueuingManager.stop_recording():
+            probabilities = probs(wires=self.wires).process_counts(
+                counts=counts, wire_order=wire_order
+            )
+        return self._calculate_variance(probabilities)
 
     def _calculate_variance(self, probabilities):
         """
@@ -151,5 +116,45 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         Args:
             probabilities (array): the probabilities of collapsing to eigen states
         """
-        eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
-        return qml.math.dot(probabilities, (eigvals**2)) - qml.math.dot(probabilities, eigvals) ** 2
+        eigvals = math.asarray(self.eigvals(), dtype="float64")
+        return math.dot(probabilities, (eigvals**2)) - math.dot(probabilities, eigvals) ** 2
+
+
+def var(op: Union[Operator, MeasurementValue]) -> VarianceMP:
+    r"""Variance of the supplied observable.
+
+    Args:
+        op (Union[Operator, MeasurementValue]): a quantum observable object.
+            To get variances for mid-circuit measurements, ``op`` should be a
+            ``MeasurementValue``.
+
+    Returns:
+        VarianceMP: Measurement process instance
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.Y(0))
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    0.7701511529340698
+    """
+    if isinstance(op, MeasurementValue):
+        return VarianceMP(obs=op)
+
+    if isinstance(op, Sequence):
+        raise ValueError(
+            "qml.var does not support measuring sequences of measurements or observables"
+        )
+
+    return VarianceMP(obs=op)
