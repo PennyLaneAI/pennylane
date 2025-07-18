@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.exceptions import DeviceError
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
-from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
+from pennylane.ops.op_math.pow import PowOperation
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
 
 
@@ -186,9 +186,7 @@ _ABSTRACT_OR_META_TYPES = {
     StatePrepBase,
     qml.resource.ResourcesOperation,
     qml.resource.ErrorOperation,
-    PowOpObs,
     PowOperation,
-    PowObs,
     qml.StatePrep,
     qml.FromBloq,
     qml.allocation.Allocate,  # no integer wires
