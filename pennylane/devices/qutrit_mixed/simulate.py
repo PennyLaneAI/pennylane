@@ -45,7 +45,10 @@ def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     circuit = circuit.map_to_standard_wires()
 
     prep = None
-    if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
+    if len(circuit) > 0 and (
+        isinstance(circuit[0], qml.operation.StatePrepBase)
+        or isinstance(circuit[0], qml.QubitDensityMatrix)
+    ):
         prep = circuit[0]
 
     interface = get_canonical_interface_name(interface)
