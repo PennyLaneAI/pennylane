@@ -31,18 +31,26 @@ if __name__ == "__main__":
     rank = comm.Get_rank()
     size = comm.Get_size()
 
-    for file, gridpoints, modes in jobs:
-        with open(file, "rb") as f:
-            freqs, taylor_coeffs = pickle.load(f)
-        err = build_error_term(freqs, taylor_coeffs, modes)
-
-    numbers = list(i for i in product(range(err.states), repeat=2))
-
-# --------------------------------------------------------------------------
-
     start = MPI.Wtime()
+
+    if rank == 0:
+
+        for file, gridpoints, modes in jobs:
+            path = f"hamiltonians/{file}"
+            with open(path, "rb") as f:
+                freqs, taylor_coeffs = pickle.load(f)
     
-    rs_mat = err
+            err = build_error_term(freqs, taylor_coeffs, modes)
+            numbers = list(i for i in product(range(err.states), repeat=2))
+
+    else:
+        err, numbers, gridpoints, modes = None, None, None, None
+
+    rs_mat = comm.bcast(err, root=0)
+    numbers = comm.bcast(numbers, root=0)
+    gridpoints = comm.bcast(gridpoints, root=0)
+        
+# --------------------------------------------------------------------------
 
     padded = RealspaceMatrix(_next_pow_2(rs_mat.states), rs_mat.modes, rs_mat._blocks)
     norms = np.zeros(shape=(padded.states, padded.states))
@@ -65,6 +73,8 @@ if __name__ == "__main__":
 
     all_results = comm.gather(local_result, root=0)
 
+    comm.Barrier()
+
     if rank == 0:
 
         all_eigvals = np.concatenate(all_results)
@@ -75,12 +85,17 @@ if __name__ == "__main__":
     
         norms[tuple(zip(*numbers))] = grouped_sums
 
-    norm = _compute_norm(norms)
+        norm = _compute_norm(norms)
 
-    comm.Barrier()
-
-    end = MPI.Wtime()
-
-    if MPI.COMM_WORLD.Get_rank() == 0:
+        end = MPI.Wtime()
 
         print(f"Norm: {norm} | Time: {end - start:.4f}")
+
+        with open("output.csv", "a+") as output:
+            csv_writer = csv.writer(output)
+            csv_writer.writerow((file, gridpoints, modes, norm))
+
+        path = f"norms/{file}_g{gridpoints}_m{modes}.pkl"
+        os.makedirs("norms", exist_ok=True)
+        with open(path, "wb+") as f:
+            pickle.dump(norms[: err.states, : err.states], f)
