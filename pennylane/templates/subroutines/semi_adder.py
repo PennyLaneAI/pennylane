@@ -243,6 +243,10 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
 
+    if num_y_wires == 1:
+        qml.CNOT([x_wires[0], y_wires[0]])
+        return
+
     x_wires_pl = x_wires[::-1][:num_y_wires]
     y_wires_pl = y_wires[::-1]
     work_wires_pl = work_wires[::-1]
