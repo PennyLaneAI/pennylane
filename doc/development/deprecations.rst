@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``shots=`` in ``QNode`` calls is deprecated and will be removed in v0.44.
+  Instead, please use the ``qml.workflow.set_shots`` transform to set the number of shots for a ``QNode``.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
   with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
 

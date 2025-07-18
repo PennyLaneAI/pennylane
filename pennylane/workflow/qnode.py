@@ -788,6 +788,10 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
         if "shots" in kwargs and self._shots_override_device:
+            warnings.warn(
+                "'shots' as an argument to the quantum function is deprecated and will be removed in v0.44. ",
+                PennyLaneDeprecationWarning,
+            )
             _kwargs_shots = kwargs.pop("shots")
             warnings.warn(
                 "Both 'shots=' parameter and 'set_shots' transform are specified. "

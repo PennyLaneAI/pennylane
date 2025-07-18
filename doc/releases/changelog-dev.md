@@ -97,6 +97,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
+  Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
+  [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
+  
 * The `level=None` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, `qml.draw`, `qml.draw_mpl`, and `qml.specs` transforms is deprecated and will be removed in v0.43.
   Please use `level='device'` instead to apply the noise model at the device level.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
