@@ -131,7 +131,15 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
+)
+from pennylane.noise import (
     add_noise,
+    insert,
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
 )
 from pennylane.ops.functions import (
     dot,
@@ -191,19 +199,6 @@ default_config = Configuration("config.toml")
 
 
 def __getattr__(name):
-    if name in {
-        "DeviceError",
-        "PennyLaneDeprecationWarning",
-        "QuantumFunctionError",
-        "ExperimentalWarning",
-    }:  # pragma: no cover
-        warnings.warn(
-            f"pennylane.{name} is no longer accessible at top-level \
-                and must be imported as pennylane.exceptions.{name}. \
-                    Support for top-level access will be removed in v0.43.",
-            pennylane.exceptions.PennyLaneDeprecationWarning,
-        )
-        return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices
