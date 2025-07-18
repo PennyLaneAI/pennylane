@@ -562,10 +562,6 @@ class QNode:
 
         if "shots" in inspect.signature(func).parameters:
             warnings.warn(
-                "'shots' as an argument to the quantum function is deprecated and will be removed in v0.44. ",
-                PennyLaneDeprecationWarning,
-            )
-            warnings.warn(
                 "Detected 'shots' as an argument to the given quantum function. "
                 "The 'shots' argument name is reserved for overriding the number of shots "
                 "taken by the device. Its use outside of this context should be avoided.",
