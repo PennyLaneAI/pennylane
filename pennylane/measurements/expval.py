@@ -19,6 +19,7 @@ from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.operation import Operator
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .measurements import SampleMeasurement, StateMeasurement
@@ -103,7 +104,7 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
 
     def process_samples(
         self,
-        samples: Sequence[complex],
+        samples: TensorLike,
         wire_order: Wires,
         shot_range: Optional[tuple[int, ...]] = None,
         bin_size: Optional[int] = None,
@@ -120,11 +121,11 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             ).process_samples(
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
+        print(samples)
 
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
-        axis = -1 if bin_size is None else -2
-        # TODO: do we need to squeeze here? Maybe remove with new return types
+        axis = -2 if bin_size is None else -3
         return qml.math.squeeze(qml.math.mean(samples, axis=axis))
 
     def process_state(self, state: Sequence[complex], wire_order: Wires):

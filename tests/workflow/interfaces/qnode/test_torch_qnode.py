@@ -1479,10 +1479,10 @@ class TestSample:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert tuple(res[0].shape) == (10,)
+        assert tuple(res[0].shape) == (10, 1)
         assert isinstance(res[0], torch.Tensor)
 
-        assert tuple(res[1].shape) == (10,)
+        assert tuple(res[1].shape) == (10, 1)
         assert isinstance(res[1], torch.Tensor)
 
     def test_sampling_expval(self):
@@ -1500,7 +1500,7 @@ class TestSample:
         assert isinstance(res, tuple)
 
         assert isinstance(res[0], torch.Tensor)
-        assert res[0].shape == (10,)
+        assert res[0].shape == (10, 1)
         assert isinstance(res[1], torch.Tensor)
         assert res[1].shape == ()
 
@@ -1536,7 +1536,7 @@ class TestSample:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        assert np.array_equal(result[0].shape, (10,))
+        assert np.array_equal(result[0].shape, (10, 1))
         assert result[1].shape == ()
         assert isinstance(result[1], torch.Tensor)
         assert result[2].shape == ()
@@ -1554,7 +1554,7 @@ class TestSample:
         result = circuit(shots=10)
 
         assert isinstance(result, torch.Tensor)
-        assert np.array_equal(result.shape, (10,))
+        assert np.array_equal(result.shape, (10, 1))
 
     def test_multi_wire_sample_regular_shape(self):
         """Test the return type and shape of sampling multiple wires
@@ -1568,9 +1568,9 @@ class TestSample:
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tuple)
-        assert tuple(result[0].shape) == (10,)
-        assert tuple(result[1].shape) == (10,)
-        assert tuple(result[2].shape) == (10,)
+        assert tuple(result[0].shape) == (10, 1)
+        assert tuple(result[1].shape) == (10, 1)
+        assert tuple(result[2].shape) == (10, 1)
         assert result[0].dtype == torch.float64
         assert result[1].dtype == torch.float64
         assert result[2].dtype == torch.float64

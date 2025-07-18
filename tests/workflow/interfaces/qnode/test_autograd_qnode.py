@@ -1649,10 +1649,10 @@ class TestSample:
         assert isinstance(res, tuple)
         assert len(res) == 2
 
-        assert res[0].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert res[0].shape == (10, 1)  # pylint: disable=comparison-with-callable
         assert isinstance(res[0], np.ndarray)
 
-        assert res[1].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert res[1].shape == (10, 1)  # pylint: disable=comparison-with-callable
         assert isinstance(res[1], np.ndarray)
 
     def test_sample_combination(self):
@@ -1673,7 +1673,7 @@ class TestSample:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        assert np.array_equal(result[0].shape, (n_sample,))
+        assert np.array_equal(result[0].shape, (n_sample, 1))
         assert isinstance(result[1], (float, np.ndarray))
         assert isinstance(result[2], (float, np.ndarray))
         assert result[0].dtype == np.dtype("float")
@@ -1693,7 +1693,7 @@ class TestSample:
         result = circuit(shots=n_sample)
 
         assert isinstance(result, np.ndarray)
-        assert np.array_equal(result.shape, (n_sample,))
+        assert np.array_equal(result.shape, (n_sample, 1))
 
     def test_multi_wire_sample_regular_shape(self):
         """Test the return type and shape of sampling multiple wires
@@ -1712,13 +1712,13 @@ class TestSample:
         assert isinstance(result, tuple)
         assert len(result) == 3
 
-        assert result[0].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert result[0].shape == (10, 1)  # pylint: disable=comparison-with-callable
         assert isinstance(result[0], np.ndarray)
 
-        assert result[1].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert result[1].shape == (10, 1)  # pylint: disable=comparison-with-callable
         assert isinstance(result[1], np.ndarray)
 
-        assert result[2].shape == (10,)  # pylint: disable=comparison-with-callable
+        assert result[2].shape == (10, 1)  # pylint: disable=comparison-with-callable
         assert isinstance(result[2], np.ndarray)
 
 
