@@ -711,18 +711,6 @@ class TrotterizedQfunc(Operation):
 
         super().__init__(time, *trainable_args, wires=wires, id=id)
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "n": self._hyperparameters["n"],
-            "order": self._hyperparameters["order"],
-            "qfunc": self._hyperparameters["qfunc"],
-            "reverse": self._hyperparameters["reverse"],
-            "time": self.parameters[0],
-            "wires": {},
-            "qfunc_args": self.parameters[1:],
-        }
-
     def decomposition(self) -> list[Operator]:
         """The decomposition"""
         n = self.hyperparameters["n"]
