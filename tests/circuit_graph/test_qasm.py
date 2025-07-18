@@ -277,19 +277,6 @@ class TestToQasmUnitTests:
         assert qasm1 == expected
         assert qasm1 == qasm2
 
-    def test_unsupported_gate(self):
-        """Test an exception is raised if an unsupported operation is
-        applied."""
-        with qml.queuing.AnnotatedQueue() as q_circuit:
-            qml.S(wires=0)
-            qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])
-
-        circuit = qml.tape.QuantumScript.from_queue(q_circuit)
-        with pytest.raises(
-            ValueError, match="DoubleExcitationPlus not supported by the QASM serializer"
-        ):
-            circuit.to_openqasm()
-
     def test_rotations(self):
         """Test that observable rotations are correctly applied."""
 
@@ -517,6 +504,20 @@ class TestQNodeQasmIntegrationTests:
         )
 
         assert res == expected
+
+    def test_unsupported_gate(self):
+        """Test an exception is raised if an unsupported operation is applied."""
+        dev = qml.device("default.qubit", wires=4)
+
+        @qml.qnode(dev)
+        def qnode():
+            qml.DoubleExcitationPlus(0.5, wires=[0, 1, 2, 3])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(
+            ValueError, match="DoubleExcitationPlus not supported by the QASM serializer"
+        ):
+            qml.to_openqasm(qnode)()
 
     def test_unused_wires(self):
         """Test that unused wires are correctly taken into account"""
