@@ -11,6 +11,8 @@
     [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
 
     * :class:`~.Reflection`
+  
+    * :class:`~.TrotterProduct`
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
@@ -136,6 +138,7 @@ This release contains contributions from (in alphabetical order):
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
+Marcus Edwards,
 David Ittah,
 Erick Ochoa,
 Andrija Paurevic,
