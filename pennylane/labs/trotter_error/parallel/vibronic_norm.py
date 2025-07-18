@@ -19,6 +19,77 @@ from pennylane.labs.trotter_error.realspace.matrix import _momentum_operator, _p
 
 import time
 
+from mpi4py import MPI
+import time
+
+TIMES_TABLE = {(MPI.COMM_WORLD.Get_rank()): {}}
+
+def timeit(func):
+    def wrapper(*args, **kwargs):
+        rank = MPI.COMM_WORLD.Get_rank()
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        end = time.perf_counter()
+        # print(f"Rank {rank} finished {func.__name__} in {end - start} seconds")
+        
+        if func.__name__ not in TIMES_TABLE[rank]:
+            TIMES_TABLE[rank][func.__name__] = {"hit_count": 0, "runs": []}
+        TIMES_TABLE[rank][func.__name__]["hit_count"] += 1
+        TIMES_TABLE[rank][func.__name__]["runs"].append(end - start)
+        
+        return result
+    return wrapper
+
+def get_times_table():
+    """Return the times table for all ranks merged in rank 0."""
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    
+    # First, compute total and average times for local data
+    for rank_id, data in TIMES_TABLE.items():
+        for func_name, stats in data.items():
+            if "runs" in stats and stats["runs"]:
+                total_time = sum(stats["runs"])
+                avg_time = total_time / stats["hit_count"]
+                stats["total_time"] = total_time
+                stats["avg_time"] = avg_time
+    
+    # Gather all timing data to rank 0
+    all_times_tables = comm.gather(TIMES_TABLE, root=0)
+    
+    if rank == 0:
+        # Merge all ranks' data into a single global table
+        global_times = {}
+        
+        for rank_data in all_times_tables:
+            for rank_id, timing_data in rank_data.items():
+                global_times[rank_id] = timing_data
+        
+        # Print the merged times table
+        print("Global Times Table (merged from all ranks):")
+        for rank_id in sorted(global_times.keys()):
+            data = global_times[rank_id]
+            print("-" * 150)
+            print(f"Rank {rank_id}:")
+            # for func_name, stats in data.items():
+            for func_name in sorted(data.keys()):
+                stats = data[func_name]
+                if "total_time" in stats and "avg_time" in stats:
+                    print(f"  {func_name}: hit_count={stats['hit_count']}, total_time={stats['total_time']:.4f}s, avg_time={stats['avg_time']:.4f}s")
+                    
+                    if False and stats['avg_time'] > 0.01:
+                        print(f"     Runs: ", end="")
+                        for run in stats['runs']:
+                            print(f"{run:7.4f}s,", end=" ")
+                        print()
+
+        return global_times
+    else:
+        return None        
+    
+
+
 def chunkify(lst, n):
     """Split list into n chunks and preserve order."""
     size = len(lst) // n
