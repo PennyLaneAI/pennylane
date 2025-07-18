@@ -307,6 +307,7 @@ class TestDecompositionRule:
                 "borrowed": num_wires - num_wires // 2,
             },
         )
+        @register_condition(lambda num_wires: num_wires > 2)
         def custom_decomp_2(*_, **__):
             raise NotImplementedError
 
