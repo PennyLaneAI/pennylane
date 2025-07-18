@@ -67,7 +67,7 @@ class TestSpecsTransform:
 
     @pytest.mark.parametrize(
         "level,expected_gates,exptected_train_params",
-        [(0, 6, 1), (1, 4, 3), (2, 3, 3), (3, 1, 1), (None, 2, 2)],
+        [(0, 6, 1), (1, 4, 3), (2, 3, 3), (3, 1, 1), ("device", 2, 2)],
     )
     def test_int_specs_level(self, level, expected_gates, exptected_train_params):
         circ = self.sample_circuit()
@@ -85,7 +85,6 @@ class TestSpecsTransform:
             (0, slice(0, 0)),
             ("user", 3),
             ("user", slice(0, 3)),
-            (None, slice(0, None)),
             (-1, slice(0, -1)),
             ("device", slice(0, None)),
         ],
