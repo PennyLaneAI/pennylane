@@ -534,7 +534,7 @@ def _trotter_product_decomposition_resources(time, n, order, ops):
 
     resources = _recursive(time / n, order, ops)
 
-    for _ in range(n):
+    for _ in range(n - 1):
         for key in resources:
             resources[key] += 1
 
@@ -567,7 +567,7 @@ def _trotter_product_decomposition(*args, **kwargs):
 
         return (2 * ops_ctr_1) + ops_ctr_2 + (2 * ops_ctr_1)
 
-    decomp = _recursive(time / n, order, ops)[::-1] * n
+    decomp = _recursive(time / n, order, ops)[::-1] * (n - 1)
 
     for op in decomp:  # apply operators in reverse order of expression
         qml.apply(op)
