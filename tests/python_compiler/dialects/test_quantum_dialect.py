@@ -123,8 +123,14 @@ def test_assembly_format():
     // CHECK: [[PARAM:%.+]] = "test.op"() : () -> f64
     %cst = "test.op"() : () -> f64
 
-    // CHECK: [[QUBIT:%.+]] = "quantum.extract"([[QREG]])
-    %qubit = "quantum.extract"(%qreg) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+    // CHECK: [[QUBIT:%.+]] = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
+    %qubit = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
+
+    // CHECK: [[WIRE_DYN:%.+]] = "test.op"() : () -> i64
+    %cst2 = "test.op"() : () -> i64
+
+    // CHECK: [[QUBIT_DYN:%.+]] = quantum.extract %qreg[%cst2] : !quantum.reg -> !quantum.bit
+    %qubit_dyn = quantum.extract %qreg[%cst2] : !quantum.reg -> !quantum.bit
 
     // CHECK: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
     %out_qubit = quantum.custom "RX"(%cst) %qubit : !quantum.bit
