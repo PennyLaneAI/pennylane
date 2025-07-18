@@ -221,7 +221,6 @@ import abc
 import copy
 import warnings
 from collections.abc import Hashable, Iterable
-from enum import IntEnum
 from functools import lru_cache
 from typing import Any, Callable, Literal, Optional, Type, Union
 
@@ -298,44 +297,6 @@ class GeneratorUndefinedError(OperatorPropertyUndefined):
 class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
     """Exception used to indicate that an operator
     does not have parameter_frequencies"""
-
-
-# =============================================================================
-# Wire types
-# =============================================================================
-
-
-class _WiresEnum(IntEnum):
-    """Integer enumeration class
-    to represent the number of wires
-    an operation acts on.
-
-    .. warning::
-
-        This class is deprecated ``Operator.num_wires=None`` should now be used to indicate
-        that an operator can exist on any number of wires.
-
-    """
-
-    AnyWires = -1
-    """A enumeration that represents that an operator can act on any number of wires.
-
-    .. warning::
-
-        ``AnyWires`` is deprecated ``Operator.num_wires=None`` should now be used to indicate
-        that an operator can exist on any number of wires.
-
-    """
-
-    AllWires = -2
-    """A enumeration that represents that an operator acts on all wires in the system.
-
-    .. warning::
-
-        ``AllWires`` is deprecated ``Operator.num_wires=None`` should now be used to indicate
-        that an operator can exist on any number of wires.
-
-    """
 
 
 # =============================================================================
@@ -1087,7 +1048,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """
         raise TermsUndefinedError
 
-    num_wires: Optional[Union[int, _WiresEnum]] = None
+    num_wires: None | int = None
     """Number of wires the operator acts on."""
 
     @property
@@ -1250,9 +1211,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         self._wires: Wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if (self.num_wires is not None and not isinstance(self.num_wires, _WiresEnum)) and len(
-            self._wires
-        ) != self.num_wires:
+        if (self.num_wires is not None) and len(self._wires) != self.num_wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
@@ -2627,27 +2586,6 @@ def __getattr__(name):
             PennyLaneDeprecationWarning,
         )
         return Observable
-    if name == "AnyWires":
-        warnings.warn(
-            "AnyWires is deprecated and will be removed in v0.43. "
-            " If your operation accepts any number of wires, set num_wires=None instead.",
-            PennyLaneDeprecationWarning,
-        )
-        return _WiresEnum.AllWires
-    if name == "AllWires":
-        warnings.warn(
-            "AllWires is deprecated and will be removed in v0.43. "
-            " If your operation accepts any number of wires, set num_wires=None instead.",
-            PennyLaneDeprecationWarning,
-        )
-        return _WiresEnum.AllWires
-    if name == "WiresEnum":
-        warnings.warn(
-            "WiresEnum is deprecated and will be removed in v0.43. "
-            " If your operation accepts any number of wires, set num_wires=None instead.",
-            PennyLaneDeprecationWarning,
-        )
-        return _WiresEnum
     if name == "StatePrep":
         return StatePrepBase
     raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")
