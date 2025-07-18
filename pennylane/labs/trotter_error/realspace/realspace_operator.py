@@ -122,10 +122,10 @@ class RealspaceOperator:
         return final_matrix
 
     def __add__(self, other: RealspaceOperator) -> RealspaceOperator:
-        if self._is_zero:
+        if self.is_zero:
             return other
 
-        if other._is_zero:
+        if other.is_zero:
             return self
 
         if self.ops != other.ops:
@@ -139,10 +139,10 @@ class RealspaceOperator:
         return RealspaceOperator(self.modes, self.ops, self.coeffs + other.coeffs)
 
     def __sub__(self, other: RealspaceOperator) -> RealspaceOperator:
-        if self._is_zero:
+        if self.is_zero:
             return (-1) * other
 
-        if other._is_zero:
+        if other.is_zero:
             return self
 
         if self.ops != other.ops:
@@ -188,7 +188,7 @@ class RealspaceOperator:
         return self.coeffs == other.coeffs
 
     @property
-    def _is_zero(self) -> bool:
+    def is_zero(self) -> bool:
         """Always returns true when the operator is zero, but with false positives
 
         Returns:
@@ -275,8 +275,7 @@ class RealspaceSum(Fragment):
         for op in ops:
             assert op.coeffs is not None
 
-        ops = tuple(filter(lambda op: not op._is_zero, ops))
-        self._is_zero = len(ops) == 0
+        ops = tuple(filter(lambda op: not op.is_zero, ops))
 
         self.modes = modes
 
@@ -381,6 +380,11 @@ class RealspaceSum(Fragment):
 
         """
         return RealspaceSum(modes, [RealspaceOperator.zero(modes)])
+
+    @property
+    def is_zero(self) -> bool:
+        """True if the object represents the zero operator"""
+        return all(op.is_zero for op in self.ops)
 
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
