@@ -20,8 +20,9 @@ from collections.abc import Callable
 from functools import wraps
 from importlib import metadata
 from sys import version_info
-from typing import Any, Optional
+from typing import Any, Optional, overload
 
+from pennylane import QNode
 from pennylane.tape import QuantumScript
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.wires import Wires, WiresLike
@@ -738,13 +739,29 @@ def from_qasm(quantum_circuit: str, measurements=None):
     return plugin_converter(quantum_circuit, measurements=measurements)
 
 
+@overload
 def to_openqasm(
-    circuit,
-    wires: Optional[WiresLike] = None,
+    circuit: QuantumScript,
+    wires: WiresLike | None = None,
     rotations: bool = True,
     measure_all: bool = True,
-    precision: Optional[int] = None,
-) -> Callable[[Any], str]:
+    precision: int | None = None,
+) -> str: ...
+@overload
+def to_openqasm(
+    circuit: QNode,
+    wires: WiresLike | None = None,
+    rotations: bool = True,
+    measure_all: bool = True,
+    precision: int | None = None,
+) -> Callable[[Any], str]: ...
+def to_openqasm(
+    circuit,
+    wires=None,
+    rotations=True,
+    measure_all=True,
+    precision=None,
+):
     """Convert a circuit to an OpenQASM 2.0 program.
 
     Terminal measurements are assumed to be performed on all qubits in the computational basis.
