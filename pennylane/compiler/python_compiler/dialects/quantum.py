@@ -372,7 +372,7 @@ class DeviceReleaseOp(IRDLOperation):
 class AllocQubitOp(IRDLOperation):
     name = "quantum.alloc_qb"
 
-    assembly_format = " attr-dict `:` type(results)"
+    assembly_format = """attr-dict `:` type(results)"""
 
     qubit = result_def(QubitType)
 
@@ -386,14 +386,13 @@ class AllocQubitOp(IRDLOperation):
 class DeallocQubitOp(IRDLOperation):
     name = "quantum.dealloc_qb"
 
-    assembly_format = " $qubit attr-dict `:` type(operands)"
+    assembly_format = """$qubit attr-dict `:` type(operands)"""
 
     qubit = operand_def(QubitType)
 
     def __init__(self, qubit: QubitSSAValue | Operation):
         super().__init__(
             operands=(qubit,),
-            result_types=(QubitType(),),
         )
 
 
@@ -889,10 +888,12 @@ Quantum = Dialect(
     "quantum",
     [
         AdjointOp,
+        AllocQubitOp,
         AllocOp,
         ComputationalBasisOp,
         CountsOp,
         CustomOp,
+        DeallocQubitOp,
         DeallocOp,
         DeviceInitOp,
         DeviceReleaseOp,
