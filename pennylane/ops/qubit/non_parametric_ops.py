@@ -26,7 +26,6 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import math
-from pennylane._deprecated_observable import Observable
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -48,7 +47,7 @@ from pennylane.wires import Wires, WiresLike
 INV_SQRT2 = 1 / qml.math.sqrt(2)
 
 
-class Hadamard(Observable, Operation):
+class Hadamard(Operation):
     r"""Hadamard(wires)
     The Hadamard operator
 
@@ -92,6 +91,15 @@ class Hadamard(Observable, Operation):
         if isinstance(wire, str):
             return f"H('{wire}')"
         return f"H({wire})"
+
+    @property
+    def _queue_category(self):
+        return "_ops" if isinstance(self, Operation) else None
+
+    @property
+    def is_hermitian(self) -> bool:
+        """All observables must be hermitian"""
+        return True
 
     @property
     def name(self) -> str:
@@ -306,7 +314,7 @@ def _controlled_hadamard(wires, control_wires, work_wires, work_wire_type, **__)
 add_decomps("C(Hadamard)", flip_zero_control(_controlled_hadamard))
 
 
-class PauliX(Observable, Operation):
+class PauliX(Operation):
     r"""
     The Pauli X operator
 
@@ -589,7 +597,7 @@ def _controlled_x_decomp(
 add_decomps("C(PauliX)", _controlled_x_decomp)
 
 
-class PauliY(Observable, Operation):
+class PauliY(Operation):
     r"""
     The Pauli Y operator
 
@@ -846,7 +854,7 @@ def _controlled_y_decomp(*_, wires, control_wires, work_wires, work_wire_type, *
 add_decomps("C(PauliY)", flip_zero_control(_controlled_y_decomp))
 
 
-class PauliZ(Observable, Operation):
+class PauliZ(Operation):
     r"""
     The Pauli Z operator
 
