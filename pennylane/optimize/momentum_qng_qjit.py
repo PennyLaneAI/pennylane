@@ -56,7 +56,7 @@ class MomentumQNGOptimizerQJIT(QNGOptimizerQJIT):
     **Example:**
 
     Consider a hybrid workflow to optimize an objective function defined by a quantum circuit.
-    To make the entire workflow faster, the update step function and the whole optimization function
+    To make the entire workflow faster, the update step and the whole optimization
     can be just-in-time compiled using the :func:`~.qjit` decorator:
 
     .. code-block:: python
