@@ -13,7 +13,6 @@
 # limitations under the License.
 """This file contains convenience functions for pulse programming."""
 from collections.abc import Callable
-from typing import Optional, Union
 
 import numpy as np
 
@@ -80,9 +79,7 @@ def constant(scalar, time):
     return scalar
 
 
-def rect(
-    x: Union[float, Callable], windows: Optional[Union[tuple[float], list[tuple[float]]]] = None
-):
+def rect(x: float | Callable, windows: tuple[float] | list[tuple[float]] | None = None):
     """Takes a scalar or a scalar-valued function, x, and applies a rectangular window to it, such that the
     returned function is x inside the window and 0 outside it.
 

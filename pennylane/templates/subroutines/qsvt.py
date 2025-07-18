@@ -17,8 +17,9 @@ Contains the QSVT template and qsvt wrapper function.
 
 import copy
 import math
+from collections.abc import Sequence
 from functools import reduce
-from typing import Literal, Sequence, Union
+from typing import Literal
 
 import numpy as np
 import scipy
@@ -105,7 +106,7 @@ def _tensorlike_process(A, poly, encoding_wires, block_encoding, angle_solver="r
 
 
 def qsvt(
-    A: Union[Operator, TensorLike],
+    A: Operator | TensorLike,
     poly: TensorLike,
     encoding_wires: Sequence,
     block_encoding: Literal[None, "prepselprep", "qubitization", "embedding", "fable"] = None,

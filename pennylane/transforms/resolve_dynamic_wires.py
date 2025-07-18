@@ -15,7 +15,6 @@
 This submodule contains a transform for resolving dynamic wires into real wires.
 """
 from collections.abc import Hashable, Sequence
-from typing import Optional
 
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.measurements import measure
@@ -78,7 +77,7 @@ def resolve_dynamic_wires(
     tape: QuantumScript,
     zeroed: Sequence[Hashable] = (),
     any_state: Sequence[Hashable] = (),
-    min_int: Optional[int] = None,
+    min_int: int | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Map dynamic wires to concrete values determined by the provided ``zeroed`` and ``any_state`` registers.
 

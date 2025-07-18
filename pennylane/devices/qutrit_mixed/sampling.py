@@ -15,7 +15,7 @@
 Code relevant for sampling a qutrit mixed state.
 """
 import functools
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 

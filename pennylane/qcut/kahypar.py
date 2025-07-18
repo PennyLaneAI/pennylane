@@ -19,7 +19,7 @@ Functions for partitioning a graph using KaHyPar.
 from collections.abc import Sequence
 from itertools import compress
 from pathlib import Path
-from typing import Any, Union
+from typing import Any
 
 import numpy as np
 from networkx import MultiDiGraph
@@ -33,13 +33,13 @@ def kahypar_cut(
     graph: MultiDiGraph,
     num_fragments: int,
     imbalance: int = None,
-    edge_weights: list[Union[int, float]] = None,
-    node_weights: list[Union[int, float]] = None,
-    fragment_weights: list[Union[int, float]] = None,
+    edge_weights: None | list[int | float] = None,
+    node_weights: None | list[int | float] = None,
+    fragment_weights: None | list[int | float] = None,
     hyperwire_weight: int = 1,
     seed: int = None,
-    config_path: Union[str, Path] = None,
-    trial: int = None,
+    config_path: None | str | Path = None,
+    trial: None | int = None,
     verbose: bool = False,
 ) -> list[tuple[Operation, Any]]:
     """Calls `KaHyPar <https://kahypar.org/>`__ to partition a graph.
@@ -169,7 +169,7 @@ def _graph_to_hmetis(
     graph: MultiDiGraph,
     hyperwire_weight: int = 0,
     edge_weights: Sequence[int] = None,
-) -> tuple[list[int], list[int], list[Union[int, float]]]:
+) -> tuple[list[int], list[int], list[int | float]]:
     """Converts a ``MultiDiGraph`` into the
     `hMETIS hypergraph input format <http://glaros.dtc.umn.edu/gkhome/fetch/sw/hmetis/manual.pdf>`__
     conforming to KaHyPar's calling signature.

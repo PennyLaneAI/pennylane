@@ -25,7 +25,6 @@ from collections import defaultdict
 from dataclasses import replace
 from functools import lru_cache, singledispatch
 from numbers import Number
-from typing import Optional, Union
 
 import numpy as np
 
@@ -57,14 +56,14 @@ RESOURCES_FNAME_PREFIX = "__pennylane_resources_data_"
 
 @singledispatch
 def zero_measurement(
-    mp: MeasurementProcess, num_device_wires, shots: Optional[int], batch_size: int, interface: str
+    mp: MeasurementProcess, num_device_wires, shots: int | None, batch_size: int, interface: str
 ):
     """Create all-zero results for various measurement processes."""
     return _zero_measurement(mp, num_device_wires, shots, batch_size, interface)
 
 
 def _zero_measurement(
-    mp: MeasurementProcess, num_device_wires: int, shots: Optional[int], batch_size, interface
+    mp: MeasurementProcess, num_device_wires: int, shots: int | None, batch_size, interface
 ):
     shape = mp.shape(shots, num_device_wires)
     if batch_size is not None:
@@ -80,7 +79,7 @@ def _cached_zero_return(shape, interface, dtype):
 
 
 @zero_measurement.register
-def _(mp: ClassicalShadowMP, num_device_wires, shots: Optional[int], batch_size, interface):
+def _(mp: ClassicalShadowMP, num_device_wires, shots: int | None, batch_size, interface):
     if batch_size is not None:
         # shapes = [(batch_size,) + shape for shape in shapes]
         raise ValueError(
@@ -118,9 +117,9 @@ zero_measurement.register(DensityMatrixMP)(_zero_measurement)
 @zero_measurement.register(StateMP)
 @zero_measurement.register(ProbabilityMP)
 def _(
-    mp: Union[StateMP, ProbabilityMP],
+    mp: StateMP | ProbabilityMP,
     num_device_wires: int,
-    shots: Optional[int],
+    shots: int | None,
     batch_size,
     interface,
 ):
@@ -389,7 +388,7 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+    ) -> Result | ResultBatch:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",

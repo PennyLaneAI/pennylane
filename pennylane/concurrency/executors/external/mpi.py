@@ -18,7 +18,7 @@ Contains concurrent executor abstractions for task-based workloads backed by mpi
 """
 
 from collections.abc import Callable, Sequence
-from typing import Any, Optional
+from typing import Any
 
 from ..base import ExecBackendConfig, ExtExec
 
@@ -47,7 +47,7 @@ class MPIPoolExec(ExtExec):  # pragma: no cover
 
     """
 
-    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: int | None = None, persist: bool = False, **kwargs):
         if persist:
             raise RuntimeError("The MPIPoolExec backend does not currently support persistence.")
         super().__init__(max_workers=max_workers, **kwargs)

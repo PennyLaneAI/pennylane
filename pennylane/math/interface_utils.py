@@ -15,7 +15,7 @@
 
 import warnings
 from enum import Enum
-from typing import Literal, Union
+from typing import Literal
 
 import autoray as ar
 
@@ -56,7 +56,7 @@ class Interface(Enum):
         return super().__hash__()
 
 
-InterfaceLike = Union[str, Interface, None]
+InterfaceLike = str | Interface | None
 
 
 INTERFACE_MAP = {

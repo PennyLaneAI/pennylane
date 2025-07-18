@@ -14,7 +14,7 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-from typing import Optional, Union
+from typing import Optional
 
 import pytest
 
@@ -329,7 +329,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -364,7 +364,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -407,7 +407,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -460,7 +460,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()

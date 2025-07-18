@@ -14,8 +14,8 @@
 """Functionality to compute the Cartan subalgebra"""
 # pylint: disable=too-many-arguments, too-many-positional-arguments, possibly-used-before-assignment
 import copy
+from collections.abc import Iterable
 from itertools import combinations, combinations_with_replacement
-from typing import Iterable, List, Union
 
 from scipy.linalg import null_space, sqrtm
 
@@ -283,10 +283,10 @@ def horizontal_cartan_subalgebra(
     if return_adjvec:
         return np_newg, np_k, np_mtilde, np_a, new_adj
 
-    newg, k, mtilde, a = [
+    newg, k, mtilde, a = (
         adjvec_to_op(adjvec, g_copy, is_orthogonal=is_orthogonal)
         for adjvec in [np_newg, np_k, np_mtilde, np_a]
-    ]
+    )
 
     return newg, k, mtilde, a, new_adj
 
@@ -389,8 +389,8 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
 
 
 def op_to_adjvec(
-    ops: Iterable[Union[PauliSentence, Operator, TensorLike]],
-    basis: Union[PauliSentence, Operator, TensorLike],
+    ops: Iterable[PauliSentence | Operator | TensorLike],
+    basis: PauliSentence | Operator | TensorLike,
     is_orthogonal: bool = True,
 ):
     r"""Decompose a batch of operators into a given operator basis.
@@ -514,7 +514,7 @@ def change_basis_ad_rep(adj: TensorLike, basis_change: TensorLike):
     return math.einsum("mnp,ip->mni", new_adj, basis_change)
 
 
-def check_abelian(ops: List[Union[PauliSentence, TensorLike, Operator]]):
+def check_abelian(ops: list[PauliSentence | TensorLike | Operator]):
     r"""Helper function to check if all operators in ``ops`` commute, i.e., form an Abelian set of operators.
 
     .. warning:: This function is expensive to compute

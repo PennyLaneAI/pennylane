@@ -16,7 +16,6 @@ This module contains the functions for converting between OpenFermion and PennyL
 """
 
 from functools import singledispatch
-from typing import Union
 
 import pennylane as qml
 from pennylane import numpy as np
@@ -105,7 +104,7 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
 
 
 def to_openfermion(
-    pennylane_op: Union[Sum, LinearCombination, FermiWord, FermiSentence], wires=None, tol=1.0e-16
+    pennylane_op: Sum | LinearCombination | FermiWord | FermiSentence, wires=None, tol=1.0e-16
 ):
     r"""Convert a PennyLane operator to OpenFermion
     `QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__ or

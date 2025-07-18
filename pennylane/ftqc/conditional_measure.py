@@ -14,7 +14,7 @@
 """
 Contains the condition transform.
 """
-from typing import Callable, Union
+from collections.abc import Callable
 
 from pennylane import capture
 from pennylane.capture.autograph import wraps
@@ -24,7 +24,7 @@ from pennylane.queuing import QueuingManager
 
 
 def cond_measure(
-    condition: Union[MeasurementValue, bool],
+    condition: MeasurementValue | bool,
     true_fn: Callable,
     false_fn: Callable,
 ):

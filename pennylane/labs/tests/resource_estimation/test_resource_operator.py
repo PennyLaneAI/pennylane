@@ -15,8 +15,8 @@
 Test the base and abstract Resource class
 """
 from collections import defaultdict
+from collections.abc import Hashable
 from dataclasses import dataclass
-from typing import Hashable, List
 
 import numpy as np
 import pytest
@@ -159,7 +159,7 @@ class TestCompressedResourceOp:
     def test_type_error(self):
         """Test that an error is raised if wrong type is provided for op_type."""
         with pytest.raises(TypeError, match="op_type must be a subclass of ResourceOperator."):
-            CompressedResourceOp(type(1))
+            CompressedResourceOp(int)
 
 
 @dataclass(frozen=True)
@@ -191,7 +191,7 @@ class DummyOp(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, x) -> List:
+    def default_resource_decomp(cls, x) -> list:
         return [x]
 
 
@@ -207,7 +207,7 @@ class DummyOp_no_resource_rep(ResourceOperator):
         return DummyCmprsRep({"x": self.x})
 
     @classmethod
-    def default_resource_decomp(cls, x) -> List:
+    def default_resource_decomp(cls, x) -> list:
         return [x]
 
 
@@ -223,7 +223,7 @@ class DummyOp_no_resource_params(ResourceOperator):
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, x) -> List:
+    def default_resource_decomp(cls, x) -> list:
         return [x]
 
 

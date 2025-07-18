@@ -26,7 +26,6 @@ import itertools
 import logging
 import warnings
 from collections import defaultdict
-from typing import Union
 
 import numpy as np
 
@@ -158,7 +157,7 @@ class QubitDevice(Device):
         "Prod",
     }
 
-    measurement_map = defaultdict(lambda: "")  # e.g. {SampleMP: "sample"}
+    measurement_map = defaultdict(str)  # e.g. {SampleMP: "sample"}
     """Mapping used to override the logic of measurement processes. The dictionary maps a
     measurement class to a string containing the name of a device's method that overrides the
     measurement process. The method defined by the device should have the following arguments:
@@ -543,7 +542,7 @@ class QubitDevice(Device):
 
     def _measure(
         self,
-        measurement: Union[SampleMeasurement, StateMeasurement],
+        measurement: SampleMeasurement | StateMeasurement,
         shot_range=None,
         bin_size=None,
     ):

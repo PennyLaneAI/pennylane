@@ -16,7 +16,6 @@
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
-from typing import Union
 
 import numpy as np
 
@@ -550,15 +549,7 @@ SYMMETRIC_REAL_OPS = (
 
 
 def apply_symmetric_real_op(
-    op: Union[
-        qml.CNOT,
-        qml.MultiControlledX,
-        qml.Toffoli,
-        qml.SWAP,
-        qml.CSWAP,
-        qml.CZ,
-        qml.CH,
-    ],
+    op: qml.CNOT | qml.MultiControlledX | qml.Toffoli | qml.SWAP | qml.CSWAP | qml.CZ | qml.CH,
     state,
     is_state_batched: bool = False,
     debugger=None,

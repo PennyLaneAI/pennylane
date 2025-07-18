@@ -14,7 +14,7 @@
 """
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
-from typing import Callable, Sequence, Union
+from collections.abc import Callable, Sequence
 
 has_jax = True
 try:
@@ -189,7 +189,7 @@ def register_custom_staging_rule(
 
     def custom_staging_rule(
         jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
-    ) -> Union[Sequence[pe.DynamicJaxprTracer], pe.DynamicJaxprTracer]:
+    ) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
         """
         Add new jaxpr equation to the jaxpr_trace and return new tracers.
         """

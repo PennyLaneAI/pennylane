@@ -173,26 +173,26 @@ class Resources:
             else defaultdict(int, gate_types)
         )
 
-    def __add__(self, other: "Resources") -> "Resources":
+    def __add__(self, other: Resources) -> Resources:
         """Add two resources objects in series"""
         assert isinstance(other, self.__class__)
         return add_in_series(self, other)
 
-    def __and__(self, other: "Resources") -> "Resources":
+    def __and__(self, other: Resources) -> Resources:
         """Add two resources objects in parallel"""
         assert isinstance(other, self.__class__)
         return add_in_parallel(self, other)
 
-    def __eq__(self, other: "Resources") -> bool:
+    def __eq__(self, other: Resources) -> bool:
         """Determine if two resources objects are equal"""
         return (self.gate_types == other.gate_types) and (self.qubit_manager == other.qubit_manager)
 
-    def __mul__(self, scalar: int) -> "Resources":
+    def __mul__(self, scalar: int) -> Resources:
         """Scale a resources object in series"""
         assert isinstance(scalar, int)
         return mul_in_series(self, scalar)
 
-    def __matmul__(self, scalar: int) -> "Resources":
+    def __matmul__(self, scalar: int) -> Resources:
         """Scale a resources object in parallel"""
         assert isinstance(scalar, int)
         return mul_in_parallel(self, scalar)

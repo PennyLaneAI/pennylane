@@ -110,7 +110,7 @@ class FirstQuantization(Operation):
             )
 
         if self.vectors is not None:
-            self.omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
+            self.omega = np.abs(np.sum(np.cross(vectors[0], vectors[1]) * vectors[2]))
             recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
                 2
                 * np.pi
@@ -719,7 +719,7 @@ class FirstQuantization(Operation):
         Returns:
             float: 1-norm of a first-quantized Hamiltonian in the plane-wave basis
         """
-        omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
+        omega = np.abs(np.sum(np.cross(vectors[0], vectors[1]) * vectors[2]))
 
         recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
             2
@@ -848,7 +848,7 @@ class FirstQuantization(Operation):
             vectors,
         )
 
-        omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
+        omega = np.abs(np.sum(np.cross(vectors[0], vectors[1]) * vectors[2]))
 
         recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
             2
@@ -949,7 +949,7 @@ class FirstQuantization(Operation):
             vectors,
         )
 
-        omega = np.abs(np.sum((np.cross(vectors[0], vectors[1]) * vectors[2])))
+        omega = np.abs(np.sum(np.cross(vectors[0], vectors[1]) * vectors[2]))
 
         recip_vectors = (  # taken from Eq. (35) of arXiv:2302.07981v1 (2023)
             2

@@ -22,7 +22,8 @@ from concurrent import futures
 from functools import lru_cache
 from pathlib import Path
 from time import sleep
-from typing import Any, Iterable, Mapping, Optional, Union
+from typing import Any, Optional
+from collections.abc import Iterable, Mapping
 
 from requests import get, head
 
@@ -67,10 +68,10 @@ S3_URL = "https://datasets.cloud.pennylane.ai/datasets/h5"
 def _download_partial(  # pylint: disable=too-many-arguments
     s3_url: str,
     dest: Path,
-    attributes: Optional[Iterable[str]],
+    attributes: Iterable[str] | None,
     overwrite: bool,
     block_size: int,
-    pbar_task: Optional[progress.Task],
+    pbar_task: progress.Task | None,
 ) -> None:
     """Download the requested attributes of the Dataset at ``s3_path`` into ``dest``.
 
@@ -113,7 +114,7 @@ def _download_partial(  # pylint: disable=too-many-arguments
         pbar_task.update(completed=file_size, total=file_size)
 
 
-def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: Optional[progress.Task]):
+def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: progress.Task | None):
     """Download the full dataset file at ``s3_url`` to ``path``."""
     resp = get(s3_url, timeout=5.0, stream=True)
     resp.raise_for_status()
@@ -131,10 +132,10 @@ def _download_full(s3_url: str, dest: Path, block_size: int, pbar_task: Optional
 def _download_dataset(  # pylint: disable=too-many-arguments
     dataset_url: str,
     dest: Path,
-    attributes: Optional[Iterable[str]],
+    attributes: Iterable[str] | None,
     block_size: int,
     force: bool,
-    pbar_task: Optional[progress.Task],
+    pbar_task: progress.Task | None,
 ) -> None:
     """Downloads the dataset at ``dataset_url`` to ``dest``, optionally downloading
     only requested attributes. If ``attributes`` is not provided, every attribute
@@ -164,11 +165,11 @@ def _download_datasets(  # pylint: disable=too-many-arguments
     folder_path: Path,
     dataset_urls: list[str],
     dataset_ids: list[str],
-    attributes: Optional[Iterable[str]],
+    attributes: Iterable[str] | None,
     force: bool,
     block_size: int,
     num_threads: int,
-    pbar: Optional[progress.Progress],
+    pbar: progress.Progress | None,
 ) -> list[Path]:
     """Downloads the datasets with given ``dataset_urls`` to ``folder_path``.
 
@@ -180,7 +181,7 @@ def _download_datasets(  # pylint: disable=too-many-arguments
     file_names = [dataset_id + ".h5" for dataset_id in dataset_ids]
     dest_paths = [folder_path / data_name / data_id for data_id in file_names]
 
-    for path_parents in set(path.parent for path in dest_paths):
+    for path_parents in {path.parent for path in dest_paths}:
         path_parents.mkdir(parents=True, exist_ok=True)
 
     if pbar is not None:
@@ -237,13 +238,13 @@ def _validate_attributes(data_name: str, attributes: Iterable[str]):
 
 def load(  # pylint: disable=too-many-arguments
     data_name: str,
-    attributes: Optional[Iterable[str]] = None,
+    attributes: Iterable[str] | None = None,
     folder_path: Path = Path("./datasets/"),
     force: bool = False,
     num_threads: int = 50,
     block_size: int = 8388608,
-    progress_bar: Optional[bool] = None,
-    **params: Union[ParamArg, str, list[str]],
+    progress_bar: bool | None = None,
+    **params: ParamArg | str | list[str],
 ):
     r"""Downloads the data if it is not already present in the directory and returns it as a list of
     :class:`~pennylane.data.Dataset` objects. For the full list of available datasets, please see

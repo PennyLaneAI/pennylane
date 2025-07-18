@@ -19,7 +19,6 @@ import logging
 # pylint: disable=unused-argument
 from collections import Counter
 from functools import partial, singledispatch
-from typing import Optional
 
 import numpy as np
 from numpy.random import default_rng
@@ -283,7 +282,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
 def simulate(
     circuit: qml.tape.QuantumScript,
     debugger=None,
-    state_cache: Optional[dict] = None,
+    state_cache: dict | None = None,
     **execution_kwargs,
 ) -> Result:
     """Simulate a single quantum script.

@@ -13,11 +13,11 @@
 # limitations under the License.
 """A function to compute the Lie closure of a set of operators"""
 import warnings
+from collections.abc import Iterable
 from copy import copy
 
 # pylint: disable=too-many-arguments
 from itertools import product
-from typing import Iterable, Union
 
 import numpy as np
 
@@ -36,14 +36,14 @@ from pennylane.wires import Wires
 
 
 def lie_closure(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, TensorLike]],
+    generators: Iterable[PauliWord | PauliSentence | Operator | TensorLike],
     *,  # force non-positional kwargs of the following
     max_iterations: int = 10000,
     verbose: bool = False,
     pauli: bool = False,
     matrix: bool = False,
     tol: float = None,
-) -> Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]]:
+) -> Iterable[PauliWord | PauliSentence | Operator | np.ndarray]:
     r"""Compute the (dynamical) Lie algebra from a set of generators.
 
     The Lie closure, pronounced "Lee" closure, is a way to compute the so-called dynamical Lie algebra (DLA) of a set of generators :math:`\mathcal{G} = \{G_1, .. , G_N\}`.
@@ -247,7 +247,7 @@ def _hermitian_basis(matrices: Iterable[np.ndarray], tol: float = None, subbasis
 
 
 def _lie_closure_matrix(
-    generators: Iterable[Union[PauliWord, PauliSentence, Operator, np.ndarray]],
+    generators: Iterable[PauliWord | PauliSentence | Operator | np.ndarray],
     max_iterations: int = 10000,
     verbose: bool = False,
     tol: float = None,

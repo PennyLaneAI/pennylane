@@ -301,7 +301,7 @@ def sign_expand(
 
     """
     path_str = path.dirname(__file__)
-    with open(path_str + "/sign_expand_data.json", "r", encoding="utf-8") as f:
+    with open(path_str + "/sign_expand_data.json", encoding="utf-8") as f:
         data = json.load(f)
     phis = list(filter(lambda data: data["delta"] == delta and data["order"] == J, data))[0][
         "opt_params"

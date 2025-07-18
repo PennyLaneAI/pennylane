@@ -338,7 +338,7 @@ def _local_pes_twomode(
     nmodes = len(freqs)
 
     all_mode_combos = [(mode_a, mode_b) for mode_a in range(nmodes) for mode_b in range(mode_a)]
-    local_pes_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank)))
+    local_pes_twobody = np.zeros(len(all_mode_combos) * len(jobs_on_rank))
 
     if dipole:
         local_dipole_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank), 3), dtype=float)
@@ -411,9 +411,9 @@ def _load_pes_twomode(num_proc, nmodes, quad_order, path, dipole=False):
 
     final_shape = (nmodes, nmodes, quad_order, quad_order)
     nmode_combos = int(nmodes * (nmodes - 1) / 2)
-    pes_twobody = np.zeros((final_shape))
+    pes_twobody = np.zeros(final_shape)
     if dipole:
-        dipole_twobody = np.zeros((final_shape + (3,)))
+        dipole_twobody = np.zeros(final_shape + (3,))
 
     mode_combo = 0
     for mode_a in range(nmodes):
@@ -688,7 +688,7 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, path, dipole):
     final_shape = (nmodes, nmodes, nmodes, quad_order, quad_order, quad_order)
     nmode_combos = int(nmodes * (nmodes - 1) * (nmodes - 2) / 6)
     pes_threebody = np.zeros(final_shape)
-    dipole_threebody = np.zeros((final_shape + (3,))) if dipole else None
+    dipole_threebody = np.zeros(final_shape + (3,)) if dipole else None
 
     mode_combo = 0
     for mode_a in range(nmodes):

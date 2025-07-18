@@ -70,7 +70,7 @@ class BoseWord(dict):
     @property
     def wires(self):
         r"""Return wires in a BoseWord."""
-        return set(i[1] for i in self.sorted_dic.keys())
+        return {i[1] for i in self.sorted_dic.keys()}
 
     def __missing__(self, key):
         r"""Return empty string for a missing key in BoseWord."""

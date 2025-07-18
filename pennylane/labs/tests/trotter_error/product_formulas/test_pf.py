@@ -174,7 +174,7 @@ def test_matrix(fragment_dict):
 
     pfs = [
         second_order(u) ** 2,
-        second_order((1 - (4 * u))),
+        second_order(1 - (4 * u)),
         second_order(u) ** 2,
     ]
 

@@ -15,7 +15,6 @@
 This module contains the qml.counts measurement.
 """
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 
@@ -194,10 +193,10 @@ class CountsMP(SampleMeasurement):
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
-        obs: Optional[Operator] = None,
+        obs: Operator | None = None,
         wires=None,
         eigvals=None,
-        id: Optional[str] = None,
+        id: str | None = None,
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
@@ -223,9 +222,9 @@ class CountsMP(SampleMeasurement):
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ) -> tuple:
         raise NotImplementedError(
@@ -249,8 +248,8 @@ class CountsMP(SampleMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Optional[tuple[int, ...]] = None,
-        bin_size: Optional[int] = None,
+        shot_range: tuple[int, ...] | None = None,
+        bin_size: int | None = None,
     ):
         with qml.queuing.QueuingManager.stop_recording():
             samples = qml.sample(op=self.obs or self.mv, wires=self._wires).process_samples(

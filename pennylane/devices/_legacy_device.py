@@ -376,7 +376,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         return Wires(ordered_subset_lst)
 
-    @lru_cache()
+    @lru_cache
     def map_wires(self, wires):
         """Map the wire labels of wires using this device's wire map.
 

@@ -14,8 +14,8 @@
 """
 Helper function for expanding transforms with program capture
 """
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable
 
 from .base_interpreter import PlxprInterpreter
 

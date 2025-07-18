@@ -15,7 +15,6 @@
 This module contains the qml.state measurement.
 """
 from collections.abc import Sequence
-from typing import Optional
 
 import pennylane as qml
 from pennylane.typing import TensorLike
@@ -140,15 +139,15 @@ class StateMP(StateMeasurement):
 
     _shortname = "state"
 
-    def __init__(self, wires: Optional[Wires] = None, id: Optional[str] = None):
+    def __init__(self, wires: Wires | None = None, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ):
         n_wires = n_wires or num_device_wires
@@ -159,7 +158,7 @@ class StateMP(StateMeasurement):
     def numeric_type(self):
         return complex
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int]:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int]:
         num_wires = len(self.wires) if self.wires else num_device_wires
         return (2**num_wires,)
 
@@ -221,22 +220,22 @@ class DensityMatrixMP(StateMP):
             where the instance has to be identified
     """
 
-    def __init__(self, wires: Wires, id: Optional[str] = None):
+    def __init__(self, wires: Wires, id: str | None = None):
         super().__init__(wires=wires, id=id)
 
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ):
         n_wires = n_wires or num_device_wires
         shape = (2**n_wires, 2**n_wires)
         return shape, complex
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int]:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, int]:
         dim = 2 ** len(self.wires)
         return (dim, dim)
 

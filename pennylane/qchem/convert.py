@@ -718,9 +718,9 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     size_ab = size_a * size_b
 
     cumul = np.cumsum([0, 1, size_a, size_b, size_ab, size_aa, size_bb])
-    c0, c1a, c1b, c2ab, c2aa, c2bb = [
+    c0, c1a, c1b, c2ab, c2aa, c2bb = (
         cisdvec[cumul[idx] : cumul[idx + 1]] for idx in range(len(cumul) - 1)
-    ]
+    )
     c2ab = (
         c2ab.reshape(nelec_a, nelec_b, nvir_a, nvir_b)
         .transpose(0, 2, 1, 3)

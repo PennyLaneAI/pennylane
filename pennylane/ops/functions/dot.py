@@ -18,7 +18,6 @@ a vector and a list of operators.
 
 from collections import defaultdict
 from collections.abc import Callable, Sequence
-from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -27,12 +26,12 @@ from pennylane.pulse import ParametrizedHamiltonian
 
 
 def dot(
-    coeffs: Sequence[Union[float, Callable]],
-    ops: Sequence[Union[Operator, PauliWord, PauliSentence]],
+    coeffs: Sequence[float | Callable],
+    ops: Sequence[Operator | PauliWord | PauliSentence],
     pauli=False,
     grouping_type=None,
     method="lf",
-) -> Union[Operator, ParametrizedHamiltonian, PauliSentence]:
+) -> Operator | ParametrizedHamiltonian | PauliSentence:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
     This function returns the following linear combination: :math:`\sum_{k} c_k O_k`, where
@@ -184,7 +183,7 @@ def dot(
 def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
     """Compute dot when operators are a mix of pennylane operators, PauliWord and PauliSentence by turning them all into a PauliSentence instance.
     Returns a PauliSentence instance"""
-    pauli_words = defaultdict(lambda: 0)
+    pauli_words = defaultdict(int)
     for coeff, op in zip(coeffs, ops):
         sentence = qml.pauli.pauli_sentence(op)
         for pw in sentence:
@@ -193,6 +192,6 @@ def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
     return qml.pauli.PauliSentence(pauli_words)
 
 
-def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[Union[PauliWord, PauliSentence]]):
+def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[PauliWord | PauliSentence]):
     """Faster computation of dot when all ops are PauliSentences or PauliWords"""
     return sum((c * op for c, op in zip(coeffs[1:], ops[1:])), start=coeffs[0] * ops[0])
