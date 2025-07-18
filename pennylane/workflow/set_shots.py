@@ -17,7 +17,6 @@ This module contains the set_shots decorator.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from functools import singledispatch
 from typing import TYPE_CHECKING, Optional, overload
 
 from .qnode import QNode
@@ -34,12 +33,14 @@ _SHOTS_NOT_PROVIDED = object()
 def set_shots(qnode: QNode, shots: Shots | int | Sequence[int | tuple[int, int]]) -> QNode: ...
 
 
-@overload  
+@overload
 def set_shots(shots: Shots | int | Sequence[int | tuple[int, int]]) -> Callable[[QNode], QNode]: ...
 
 
 @overload
-def set_shots(*, shots: Shots | int | Sequence[int | tuple[int, int]]) -> Callable[[QNode], QNode]: ...
+def set_shots(
+    *, shots: Shots | int | Sequence[int | tuple[int, int]]
+) -> Callable[[QNode], QNode]: ...
 
 
 def set_shots(*args, shots=_SHOTS_NOT_PROVIDED):
@@ -47,8 +48,7 @@ def set_shots(*args, shots=_SHOTS_NOT_PROVIDED):
     # Keyword-only case: @set_shots(shots=500) or @set_shots(shots=None)
     if len(args) == 0 and shots is not _SHOTS_NOT_PROVIDED:
         return _create_keyword_decorator(shots)
-    
-    # Dispatch to singledispatch for other cases
+
     if len(args) == 1 and shots is not _SHOTS_NOT_PROVIDED:
         # Direct application: set_shots(qnode, shots=500) or set_shots(qnode, shots=None)
         return _apply_shots_to_qnode(args[0], shots)
@@ -59,24 +59,30 @@ def set_shots(*args, shots=_SHOTS_NOT_PROVIDED):
         raise ValueError(f"Invalid arguments to set_shots: {args=}, {shots=}")
 
 
-@singledispatch
 def _set_shots_dispatch(shots_value) -> Callable[[QNode], QNode]:
     """Default case: @set_shots(500) - positional shots value"""
+
     def positional_decorator(qnode_func: QNode) -> QNode:
         return qnode_func.update_shots(shots_value)
+
     return positional_decorator
 
 
 def _apply_shots_to_qnode(qnode: QNode, shots) -> QNode:
     """Handle direct application to a QNode: set_shots(qnode, shots=500)"""
+    if not isinstance(qnode, QNode):
+        raise ValueError("set_shots can only be applied to QNodes")
     return qnode.update_shots(shots)
 
 
 def _create_keyword_decorator(shots) -> Callable[[QNode], QNode]:
     """Handle keyword-only decorator: @set_shots(shots=500)"""
+
     def decorator(qnode_func: QNode) -> QNode:
         return qnode_func.update_shots(shots)
+
     return decorator
+
 
 # Add comprehensive docstring and examples
 set_shots.__doc__ = """Transform used to set or update a circuit's shots.
