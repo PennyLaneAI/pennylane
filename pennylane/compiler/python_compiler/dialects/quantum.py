@@ -384,6 +384,7 @@ class AllocQubitOp(IRDLOperation):
 
 @irdl_op_definition
 class DeallocQubitOp(IRDLOperation):
+    """Deallocate a single qubit."""
     name = "quantum.dealloc_qb"
 
     assembly_format = """$qubit attr-dict `:` type(operands)"""
