@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit test module for pennylane/compiler/python_compiler/quantum_dialect.py."""
+"""Unit test module for pennylane/compiler/python_compiler/dialects/quantum.py."""
 
 import io
 

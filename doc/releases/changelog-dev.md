@@ -79,6 +79,9 @@
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
+* The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
+  [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
@@ -180,6 +183,7 @@ Joey Carter,
 Yushao Chen,
 Marcus Edwards,
 David Ittah,
+Mehrdad Malekmohammadi
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
