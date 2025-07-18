@@ -103,7 +103,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Upgraded source code to use Python 3.11+ language features.
+* Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
 
 * Added a `dialects` submodule to `qml.compiler.python_compiler` which now houses all the xDSL dialects we create.
