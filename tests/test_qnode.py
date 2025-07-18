@@ -2177,7 +2177,7 @@ class TestSetShots:
             set_shots(invalid_input, shots=100)
 
     @pytest.mark.parametrize(
-        "args,kwargs,expected_pattern",
+        "args,kwargs",
         [
             ((), {}),  # set_shots() with no arguments
             ((100, 200), {}),  # Multiple positional args
