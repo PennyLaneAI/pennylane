@@ -17,74 +17,141 @@ This module contains the set_shots decorator.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Optional
+from functools import singledispatch
+from typing import TYPE_CHECKING, Optional, overload
 
 from .qnode import QNode
-
-# Sentinel value to distinguish decorator mode from direct calls
-_DECORATOR_MODE = object()
 
 if TYPE_CHECKING:
     from pennylane.measurements import Shots
 
 
-def set_shots(
-    qnode: QNode | object = _DECORATOR_MODE,
-    shots: Optional[Shots | int | Sequence[int | tuple[int, int]]] = None,
-) -> QNode | Callable[[QNode], QNode]:
-    """Transform used to set or update a circuit's shots.
+# Sentinel value to detect when shots parameter is not provided
+_SHOTS_NOT_PROVIDED = object()
 
-    Args:
-        qnode (QNode): The QNode to transform. If not provided, `set_shots` can be used as a decorator directly.
-        shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
-            number of shots (or a shots vector) that the transformed circuit will execute.
 
-    Returns:
-        QNode or callable: The transformed QNode with updated shots, or a wrapper function
-        if qnode is not provided.
+@overload
+def set_shots(qnode: QNode, shots: Shots | int | Sequence[int | tuple[int, int]]) -> QNode: ...
 
-    There are three ways to specify shot values (see :func:`qml.measurements.Shots <pennylane.measurements.Shots>` for more details):
 
-    * The value ``None``: analytic mode, no shots
-    * A positive integer: a fixed number of shots
-    * A sequence consisting of either positive integers or a tuple-pair of positive integers of the form ``(shots, copies)``
+@overload  
+def set_shots(shots: Shots | int | Sequence[int | tuple[int, int]]) -> Callable[[QNode], QNode]: ...
 
-    **Examples**
 
-    Set the number of shots as a decorator:
+@overload
+def set_shots(*, shots: Shots | int | Sequence[int | tuple[int, int]]) -> Callable[[QNode], QNode]: ...
 
-    .. code-block:: python
 
-        @qml.set_shots(shots=2)
-        @qml.qnode(qml.device("default.qubit", wires=1))
-        def circuit():
-            qml.RX(1.23, wires=0)
-            return qml.sample(qml.Z(0))
+def set_shots(*args, shots=_SHOTS_NOT_PROVIDED):
+    """Transform used to set or update a circuit's shots."""
+    # Keyword-only case: @set_shots(shots=500) or @set_shots(shots=None)
+    if len(args) == 0 and shots is not _SHOTS_NOT_PROVIDED:
+        return _create_keyword_decorator(shots)
+    
+    # Dispatch to singledispatch for other cases
+    if len(args) == 1 and shots is not _SHOTS_NOT_PROVIDED:
+        # Direct application: set_shots(qnode, shots=500) or set_shots(qnode, shots=None)
+        return _apply_shots_to_qnode(args[0], shots)
+    elif len(args) == 1 and shots is _SHOTS_NOT_PROVIDED:
+        # Positional decorator: @set_shots(500) or @set_shots(None)
+        return _set_shots_dispatch(args[0])
+    else:
+        raise ValueError(f"Invalid arguments to set_shots: {args=}, {shots=}")
 
-    Run the circuit:
 
-    >>> circuit()
-    array([1., -1.])
+@singledispatch
+def _set_shots_dispatch(shots_value) -> Callable[[QNode], QNode]:
+    """Default case: @set_shots(500) - positional shots value"""
+    def positional_decorator(qnode_func: QNode) -> QNode:
+        return qnode_func.update_shots(shots_value)
+    return positional_decorator
 
-    Update the shots in-line for an existing circuit:
 
-    >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
-    >>> new_circ()
-    (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
+def _apply_shots_to_qnode(qnode: QNode, shots) -> QNode:
+    """Handle direct application to a QNode: set_shots(qnode, shots=500)"""
+    return qnode.update_shots(shots)
 
-    """
-    # When used as decorator with arguments: @set_shots(shots=...)
-    # This happens when qnode parameter is not provided (decorator mode)
-    if qnode is _DECORATOR_MODE:
 
-        def decorator(qnode_func):
-            return set_shots(qnode_func, shots)
+def _create_keyword_decorator(shots) -> Callable[[QNode], QNode]:
+    """Handle keyword-only decorator: @set_shots(shots=500)"""
+    def decorator(qnode_func: QNode) -> QNode:
+        return qnode_func.update_shots(shots)
+    return decorator
 
-        return decorator
+# Add comprehensive docstring and examples
+set_shots.__doc__ = """Transform used to set or update a circuit's shots.
 
-    # When called directly with a QNode
-    if isinstance(qnode, QNode):
-        return qnode.update_shots(shots)
+Args:
+    qnode (QNode): The QNode to transform. If not provided, `set_shots` can be used as a decorator directly.
+    shots (None or int or Sequence[int] or Sequence[tuple[int, int]] or pennylane.shots.Shots): The
+        number of shots (or a shots vector) that the transformed circuit will execute.
 
-    # If qnode is not a QNode (including explicit None), raise error
-    raise ValueError("set_shots can only be applied to QNodes")
+Returns:
+    QNode or callable: The transformed QNode with updated shots, or a wrapper function
+    if qnode is not provided.
+
+There are three ways to specify shot values (see :func:`qml.measurements.Shots <pennylane.measurements.Shots>` for more details):
+
+* The value ``None``: analytic mode, no shots
+* A positive integer: a fixed number of shots  
+* A sequence consisting of either positive integers or a tuple-pair of positive integers of the form ``(shots, copies)``
+
+**Examples**
+
+Set the number of shots as a decorator (positional argument):
+
+.. code-block:: python
+
+    @qml.set_shots(500)
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit():
+        qml.RX(1.23, wires=0)
+        return qml.expval(qml.Z(0))
+
+Set analytic mode as a decorator (positional argument):
+
+.. code-block:: python
+
+    @qml.set_shots(None)
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit():
+        qml.RX(1.23, wires=0)
+        return qml.expval(qml.Z(0))
+
+Set the number of shots as a decorator (keyword argument):
+
+.. code-block:: python
+
+    @qml.set_shots(shots=2)
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit():
+        qml.RX(1.23, wires=0)
+        return qml.sample(qml.Z(0))
+
+Set analytic mode as a decorator (keyword argument):
+
+.. code-block:: python
+
+    @qml.set_shots(shots=None)
+    @qml.qnode(qml.device("default.qubit", wires=1))
+    def circuit():
+        qml.RX(1.23, wires=0)
+        return qml.expval(qml.Z(0))
+
+Run the circuit:
+
+>>> circuit()
+array([1., -1.])
+
+Update the shots in-line for an existing circuit:
+
+>>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
+>>> new_circ()
+(array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
+
+Set analytic mode in-line for an existing circuit:
+
+>>> analytic_circ = qml.set_shots(circuit, shots=None)
+>>> analytic_circ()
+0.5403023058681398
+"""
