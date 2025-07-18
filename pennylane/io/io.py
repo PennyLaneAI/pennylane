@@ -739,7 +739,7 @@ def from_qasm(quantum_circuit: str, measurements=None):
 
 
 def to_openqasm(
-    qnode,
+    circuit,
     wires: Optional[WiresLike] = None,
     rotations: bool = True,
     measure_all: bool = True,
@@ -753,9 +753,9 @@ def to_openqasm(
     The measurement outputs can be restricted to only those specified in the circuit by setting ``measure_all=False``.
 
     Args:
-        qnode (QNode or QuantumScript): the quantum circuit to be serialized.
+        circuit (QNode or QuantumScript): the quantum circuit to be serialized.
         wires (Wires or None): the wires to use when serializing the circuit.
-            Default is ``None``, such that all device wires from the QNode are used for serialization.
+            Default is ``None``, such that all the wires of the circuit are used for serialization.
         rotations (bool): if ``True``, add gates that diagonalize the measured wires to the eigenbasis
             of the circuit's observables. Default is ``True``.
         measure_all (bool): if ``True``, add a computational basis measurement on all the qubits.
@@ -795,7 +795,7 @@ def to_openqasm(
         :title: Usage Details
 
         By default, the resulting OpenQASM code will have terminal measurements on all qubits, where all the measurements are performed in the computational basis.
-        However, if terminal measurements in the QNode act only on a subset of the qubits and ``measure_all=False``,
+        However, if terminal measurements in the circuit act only on a subset of the qubits and ``measure_all=False``,
         the OpenQASM code will include measurements on those specific qubits only.
 
         .. code-block:: python
@@ -817,7 +817,7 @@ def to_openqasm(
         cx q[0],q[1];
         measure q[1] -> c[1];
 
-        If the QNode returns an expectation value of a given observable and ``rotations=True``, the OpenQASM 2.0 program will also
+        If the circuit returns an expectation value of a given observable and ``rotations=True``, the OpenQASM 2.0 program will also
         include the gates that diagonalize the measured wires such that they are in the eigenbasis of the measured observable.
 
         .. code-block:: python
@@ -844,18 +844,18 @@ def to_openqasm(
         measure q[0] -> c[0];
         measure q[1] -> c[1];
     """
-    if isinstance(qnode, QuantumScript):
+    if isinstance(circuit, QuantumScript):
         return _tape_openqasm(
-            qnode,
+            circuit,
             wires=wires,
             rotations=rotations,
             measure_all=measure_all,
             precision=precision,
         )
 
-    @wraps(qnode)
+    @wraps(circuit)
     def wrapper(*args, **kwargs) -> str:
-        tape = construct_tape(qnode)(*args, **kwargs)
+        tape = construct_tape(circuit)(*args, **kwargs)
         return _tape_openqasm(
             tape,
             wires=wires,
