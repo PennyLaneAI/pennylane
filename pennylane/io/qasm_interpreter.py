@@ -1322,6 +1322,8 @@ class QasmInterpreter:
                 register = _resolve_name(node.qubits[q])
                 require_wires.append(register)
                 reg_var = context.retrieve_variable(register)
+                if isinstance(reg_var, Variable):
+                    reg_var = reg_var.val
                 index = self.visit(node.qubits[q].indices[0][0], context)
                 if index < len(reg_var):
                     wires.append(reg_var[index])
