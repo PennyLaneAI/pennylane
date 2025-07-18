@@ -17,7 +17,7 @@ Class CutStrategy, for executing (large) circuits on available (comparably small
 
 import warnings
 from collections.abc import Sequence
-from dataclasses import InitVar, dataclass
+from dataclasses import dataclass
 from typing import Any, ClassVar
 
 from networkx import MultiDiGraph
@@ -84,7 +84,7 @@ class CutStrategy:
     # pylint: disable=too-many-instance-attributes
 
     #: Initialization argument only, used to derive ``max_free_wires`` and ``min_free_wires``.
-    devices: None | InitVar[SupportedDeviceAPIs | Sequence[SupportedDeviceAPIs]] = None
+    devices: None | SupportedDeviceAPIs = None
 
     #: Number of wires for the largest available device.
     max_free_wires: int = None
