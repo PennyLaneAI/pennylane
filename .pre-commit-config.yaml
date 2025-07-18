@@ -6,6 +6,8 @@ repos:
       args: [
               "--line-length=100",
               "-t", "py311",
+              "-t", "py312",
+              "-t", "py313",
             ]
       exclude: ^doc/
 -   repo: https://github.com/PyCQA/isort
