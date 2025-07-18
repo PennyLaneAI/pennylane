@@ -20,9 +20,9 @@ from collections.abc import Sequence
 from threading import RLock
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import DecompositionUndefinedError, QuantumFunctionError
 from pennylane.measurements import CountsMP, MeasurementProcess, ProbabilityMP, SampleMP
-from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
+from pennylane.operation import Operator, StatePrepBase
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 

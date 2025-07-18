@@ -18,8 +18,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.io.qualtran_io import _get_op_call_graph, _get_to_pl_op, _map_to_bloq, _QReg
-from pennylane.operation import DecompositionUndefinedError
 
 
 @pytest.fixture
@@ -81,7 +81,7 @@ class TestFromBloq:
 
         from qualtran.bloqs.phase_estimation import RectangularWindowState
 
-        from pennylane.operation import MatrixUndefinedError
+        from pennylane.exceptions import MatrixUndefinedError
 
         with pytest.raises(MatrixUndefinedError):
             qml.FromBloq(RectangularWindowState(3), [0, 1, 2]).matrix()

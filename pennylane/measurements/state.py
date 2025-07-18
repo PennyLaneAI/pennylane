@@ -18,8 +18,9 @@ from collections.abc import Sequence
 from typing import Optional
 
 import pennylane as qml
+from pennylane.exceptions import WireError
 from pennylane.typing import TensorLike
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 from .measurements import StateMeasurement
 

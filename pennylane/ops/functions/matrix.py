@@ -21,8 +21,8 @@ from typing import Union
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.exceptions import TransformError
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.exceptions import MatrixUndefinedError, TransformError
+from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, TensorLike

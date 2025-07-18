@@ -24,7 +24,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import X, Y, Z, math
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.exceptions import MatrixUndefinedError
+from pennylane.operation import Operator
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 

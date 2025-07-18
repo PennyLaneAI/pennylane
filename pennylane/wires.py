@@ -23,6 +23,7 @@ from typing import Union
 import numpy as np
 
 from pennylane import math
+from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
 
 if util.find_spec("jax") is not None:
@@ -35,10 +36,6 @@ else:
 if jax_available:
     # pylint: disable=unnecessary-lambda
     setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
-
-
-class WireError(Exception):
-    """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
 
 
 def _process(wires):

@@ -23,7 +23,6 @@ from conftest import decompositions, to_resources
 
 import pennylane as qml
 from pennylane.decomposition import (
-    DecompositionError,
     DecompositionGraph,
     adjoint_resource_rep,
     controlled_resource_rep,
@@ -31,6 +30,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.decomposition.decomposition_graph import _to_name
+from pennylane.exceptions import DecompositionError
 
 # pylint: disable=protected-access,no-name-in-module
 

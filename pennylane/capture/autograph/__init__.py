@@ -18,7 +18,7 @@ Public/internal API for the AutoGraph module.
 
 import functools
 
-from .ag_primitives import AutoGraphWarning
+from pennylane.exceptions import AutoGraphWarning
 from .transformer import autograph_source, run_autograph
 
 AUTOGRAPH_WRAPPER_ASSIGNMENTS = tuple(
