@@ -371,6 +371,7 @@ class DeviceReleaseOp(IRDLOperation):
 @irdl_op_definition
 class AllocQubitOp(IRDLOperation):
     """Allocate a single qubit."""
+
     name = "quantum.alloc_qb"
 
     assembly_format = """attr-dict `:` type(results)"""
@@ -386,6 +387,7 @@ class AllocQubitOp(IRDLOperation):
 @irdl_op_definition
 class DeallocQubitOp(IRDLOperation):
     """Deallocate a single qubit."""
+
     name = "quantum.dealloc_qb"
 
     assembly_format = """$qubit attr-dict `:` type(operands)"""
@@ -890,13 +892,13 @@ Quantum = Dialect(
     "quantum",
     [
         AdjointOp,
-        AllocQubitOp,
         AllocOp,
+        AllocQubitOp,
         ComputationalBasisOp,
         CountsOp,
         CustomOp,
-        DeallocQubitOp,
         DeallocOp,
+        DeallocQubitOp,
         DeviceInitOp,
         DeviceReleaseOp,
         ExpvalOp,
