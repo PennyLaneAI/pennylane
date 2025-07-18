@@ -1442,7 +1442,7 @@ class MultiControlledX(ControlledOp):
     def __init__(
         self,
         wires: WiresLike = (),
-        control_values: bool | list[bool] | int | list[int] = None,
+        control_values: None | bool | list[bool] | int | list[int] = None,
         work_wires: WiresLike = (),
         work_wire_type: Literal["clean", "dirty"] = "dirty",
     ):
