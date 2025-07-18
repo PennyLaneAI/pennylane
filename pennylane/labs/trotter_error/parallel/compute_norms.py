@@ -5,6 +5,7 @@ import time
 from itertools import product
 
 import numpy as np
+np.set_printoptions(linewidth=100, suppress=True, precision=6)
 from mpi4py import MPI
 from vibronic_norm import _compute_norm, build_error_term#, vibronic_norm
 from pennylane.labs.trotter_error import (
@@ -22,7 +23,7 @@ from vibronic_norm import _next_pow_2, _block_norm, chunkify, _get_eigenvalue_ba
 # FILE, GRIDPOINTS, MODES
 jobs = [
     # ("VCHLIB/maleimide_5s_24m.pkl", 4, 6),
-    ("no4a_sf.pkl", 4, 16),
+    ("no4a_dimer.pkl", 4, 4),
 ]
 
 if __name__ == "__main__":
@@ -32,7 +33,7 @@ if __name__ == "__main__":
     size = comm.Get_size()
 
     for file, gridpoints, modes in jobs:
-        with open(file, "rb") as f:
+        with open("hamiltonians/" + file, "rb") as f:
             freqs, taylor_coeffs = pickle.load(f)
         err = build_error_term(freqs, taylor_coeffs, modes)
 
@@ -64,6 +65,8 @@ if __name__ == "__main__":
     local_result = _get_eigenvalue_batch(batch, gridpoints)
 
     all_results = comm.gather(local_result, root=0)
+
+    print(f"Rank {rank} finished computing. Results: {all_results}")
 
     if rank == 0:
 
