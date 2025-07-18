@@ -29,6 +29,7 @@ from pennylane.devices.preprocess import (
     null_postprocessing,
     validate_adjoint_trainable_params,
     validate_device_wires,
+    validate_max_wires,
     validate_measurements,
     validate_multiprocessing_workers,
     validate_observables,
@@ -791,3 +792,41 @@ def test_validate_multiprocessing_workers_None():
     )
     device = qml.devices.DefaultQubit()
     validate_multiprocessing_workers(qs, None, device)
+
+
+class TestValidateMaxWires:
+
+    @pytest.mark.parametrize(
+        "wires", (None, qml.wires.Wires((0, 1)), qml.wires.Wires(list(range(8))))
+    )
+    def test_over_max_wires_error(self, wires):
+        """Test that an error is thrown if the circuit has more than max_wires."""
+
+        tape = qml.tape.QuantumScript([qml.X(i) for i in range(5)])
+
+        with pytest.raises(qml.wires.WireError, match="has 5 wires"):
+            validate_max_wires(tape, max_wires=3, wires=wires)
+
+    @pytest.mark.parametrize(
+        "wires", (None, qml.wires.Wires((0, 1)), qml.wires.Wires(list(range(8))))
+    )
+    def test_no_error_under_max_wires(self, wires):
+        """Test that no errors are raised if number of wires is under capacity."""
+
+        tape = qml.tape.QuantumScript([qml.X(i) for i in range(5)])
+
+        (new_tape,), fn = validate_max_wires(tape, max_wires=6, wires=wires)
+
+        assert new_tape is tape
+        assert fn(("a",))
+
+    def test_warning_if_wires_not_on_device(self):
+        """Test that a warning is raised if tape has wires not in device wires."""
+
+        tape = qml.tape.QuantumScript([qml.X(i) for i in range(5)])
+
+        with pytest.warns(UserWarning, match="contains wires not specified in device wires"):
+            (new_tape,), fn = validate_max_wires(tape, wires=qml.wires.Wires((0, 1)))
+
+        assert tape is new_tape
+        assert fn(("a",)) == "a"
