@@ -92,6 +92,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `level=None` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, `qml.draw`, `qml.draw_mpl`, and `qml.specs` transforms is deprecated and will be removed in v0.43.
+  Please use `level='device'` instead to apply the noise model at the device level.
+  [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
+
 * `qml.qnn.cost.SquaredErrorLoss` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
   with a function like `loss = lambda *args: (circuit(*args) - target)**2`.
   [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
@@ -134,6 +138,9 @@
 * `LinearCombination` instances can be created with `_primitive.impl` when
   capture is enabled and tracing is active.
   [(#7893)](https://github.com/PennyLaneAI/pennylane/pull/7893)
+
+* The `TensorLike` type is now compatible with static type checkers.
+  [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
 <h3>Documentation 📝</h3>
 
