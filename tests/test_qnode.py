@@ -2176,6 +2176,18 @@ class TestSetShots:
         with pytest.raises(ValueError, match=expected_error):
             set_shots(invalid_input, shots=100)
 
+    @pytest.mark.parametrize(
+        "args,kwargs,expected_pattern",
+        [
+            ((), {}),  # set_shots() with no arguments
+            ((100, 200), {}),  # Multiple positional args
+        ],
+    )
+    def test_set_shots_error_on_invalid_argument_patterns(self, args, kwargs):
+        """Test that set_shots raises ValueError for invalid argument patterns."""
+        with pytest.raises(ValueError, match="Invalid arguments to set_shots"):
+            set_shots(*args, **kwargs)
+
     def test_set_shots_with_measurements_requiring_shots(self):
         """Test set_shots works correctly with measurements that require shots."""
         dev = qml.device("default.qubit", wires=2)
