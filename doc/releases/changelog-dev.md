@@ -72,6 +72,11 @@
 * `default.qubit` will default to the tree-traversal MCM method when `mcm_method="device"`.
   [(#7885)](https://github.com/PennyLaneAI/pennylane/pull/7885)
 
+<h4>Resource-efficient decompositions 🔎</h4>
+
+* Added support for decomposition rules that use dynamically allocated work wires.
+  [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
