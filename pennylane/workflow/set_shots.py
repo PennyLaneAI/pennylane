@@ -17,7 +17,7 @@ This module contains the set_shots decorator.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Optional, overload
+from typing import TYPE_CHECKING, overload
 
 from .qnode import QNode
 
@@ -52,11 +52,11 @@ def set_shots(*args, shots=_SHOTS_NOT_PROVIDED):
     if len(args) == 1 and shots is not _SHOTS_NOT_PROVIDED:
         # Direct application: set_shots(qnode, shots=500) or set_shots(qnode, shots=None)
         return _apply_shots_to_qnode(args[0], shots)
-    elif len(args) == 1 and shots is _SHOTS_NOT_PROVIDED:
+    if len(args) == 1 and shots is _SHOTS_NOT_PROVIDED:
         # Positional decorator: @set_shots(500) or @set_shots(None)
         return _set_shots_dispatch(args[0])
-    else:
-        raise ValueError(f"Invalid arguments to set_shots: {args=}, {shots=}")
+
+    raise ValueError(f"Invalid arguments to set_shots: {args=}, {shots=}")
 
 
 def _set_shots_dispatch(shots_value) -> Callable[[QNode], QNode]:
