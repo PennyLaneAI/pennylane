@@ -126,18 +126,25 @@ class CircuitGraph:
         # observables per wire
         self._max_simultaneous_measurements = None
 
+    def __str__(self):
+        """The string representation of the class."""
+        string = "Operations\n==========\n"
+        string += "\n".join(repr(op) for op in self.operations)
+
+        string += "\n\nObservables\n===========\n"
+        string += "\n".join(repr(obs) for obs in self.observables)
+        string += "\n"
+
+        return string
+
     def print_contents(self):
         """Prints the contents of the quantum circuit."""
-
-        print("Operations")
-        print("==========")
-        for op in self.operations:
-            print(repr(op))
-
-        print("\nObservables")
-        print("===========")
-        for op in self.observables:
-            print(repr(op))
+        warnings.warn(
+            "``CircuitGraph.print_contents`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``print(circuit_graph_obj)``.",
+            PennyLaneDeprecationWarning,
+        )
+        print(self)
 
     def serialize(self) -> str:
         """Serialize the quantum circuit graph based on the operations and

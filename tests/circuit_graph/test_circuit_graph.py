@@ -25,6 +25,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
 
@@ -338,7 +339,10 @@ class TestCircuitGraph:
 
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            circuit_w_wires.print_contents()
+            with pytest.warns(
+                PennyLaneDeprecationWarning, match="``CircuitGraph.print_contents`` is deprecated"
+            ):
+                circuit_w_wires.print_contents()
         out = f.getvalue().strip()
 
         expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
