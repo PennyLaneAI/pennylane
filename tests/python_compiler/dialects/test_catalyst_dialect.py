@@ -37,6 +37,8 @@ expected_ops_names = {
     "ListDeallocOp": "catalyst.list_dealloc",
     "ListInitOp": "catalyst.list_init",
     "ListLoadDataOp": "catalyst.list_load_data",
+    "ListPopOp": "catalyst.list_pop",
+    "ListPushOp": "catalyst.list_push",
     "PrintOp": "catalyst.print",
 }
 
@@ -74,17 +76,23 @@ def test_all_attributes_names(attr):
 
 def test_assembly_format(run_filecheck):
     program = """
-    // CHECK: [[LIST:%.+]] = catalyst.list_init : !catalyst.arraylist
-    %list = catalyst.list_init : !catalyst.arraylist
+    // CHECK: [[LIST:%.+]] = catalyst.list_init : !catalyst.arraylist<f64>
+    %list = catalyst.list_init : !catalyst.arraylist<f64>
 
-    // CHECK: [[DATA:%.+]] = catalyst.list_load_data [[LIST]] : !catalyst.arraylist -> memref<*xf64>
-    %data = catalyst.list_load_data %list : !catalyst.arraylist -> memref<*xf64>
-
-    // CHECK: catalyst.list_dealloc [[LIST]] : !catalyst.arraylist
-    catalyst.list_dealloc %list : !catalyst.arraylist
+    // CHECK: [[DATA:%.+]] = catalyst.list_load_data [[LIST]] : !catalyst.arraylist<f64> -> memref<*xf64>
+    %data = catalyst.list_load_data %list : !catalyst.arraylist<f64> -> memref<*xf64>
 
     // CHECK: [[VAL:%.+]] = "test.op"() : () -> f64
     %val = "test.op"() : () -> f64
+
+    // CHECK: [[POP_RESULT:%.+]] = catalyst.list_pop [[LIST]] : !catalyst.arraylist<f64>
+    %pop_result = catalyst.list_pop %list : !catalyst.arraylist<f64>
+
+    // CHECK: catalyst.list_push [[VAL]], [[LIST]] : !catalyst.arraylist<f64>
+    catalyst.list_push %val, %list : !catalyst.arraylist<f64>
+
+    // CHECK: catalyst.list_dealloc [[LIST]] : !catalyst.arraylist<f64>
+    catalyst.list_dealloc %list : !catalyst.arraylist<f64>
 
     // CHECK: [[CUSTOM_RESULT:%.+]] = catalyst.custom_call fn("custom_function") ([[VAL]]) : (f64) -> f64
     %custom_result = catalyst.custom_call fn("custom_function")(%val) : (f64) -> f64
@@ -105,5 +113,4 @@ def test_assembly_format(run_filecheck):
     ctx.load_dialect(Catalyst)
 
     module = xdsl.parser.Parser(ctx, program).parse_module()
-
     run_filecheck(program, module)

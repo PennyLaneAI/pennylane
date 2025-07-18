@@ -23,17 +23,19 @@ It contains data structures that support core compiler functionality.
 
 # ruff: noqa: F403, F405
 
+from typing import ClassVar
 from xdsl.dialects.builtin import *
 from xdsl.ir import *
 from xdsl.irdl import *
 
 
 @irdl_attr_definition
-class ArrayListType(ParametrizedAttribute, TypeAttribute):
+class ArrayListType(Generic[AttributeCovT], ParametrizedAttribute, TypeAttribute):
     """a dynamically resizable array"""
 
     name = "catalyst.arraylist"
 
+    element_type: AttributeCovT
 
 @irdl_op_definition
 class AssertionOp(IRDLOperation):
@@ -167,36 +169,33 @@ class ListLoadDataOp(IRDLOperation):
 
     data = result_def(AnyAttr())
 
-# TODO: The following class has been modified from the original xDSL generated code.
-# The modification was unsuccessfully modified to capture the functionality of TypesMatchWith in
-# MLIR to match the type of result and the type of the list elements.
-#
-# @irdl_op_definition
-# class ListPopOp(IRDLOperation):
-#     """Remove an element from the end of an array list and return it."""
+@irdl_op_definition
+class ListPopOp(IRDLOperation):
+    """Remove an element from the end of an array list and return it."""
 
-#     name = "catalyst.list_pop"
+    name = "catalyst.list_pop"
 
-#     assembly_format = """ $list attr-dict `:` type($list) """
+    assembly_format = """ $list attr-dict `:` type($list) """
 
-#     T = VarConstraint("T", AnyAttr())
+    T: ClassVar = VarConstraint("T", AnyAttr())
 
-#     list = operand_def(BaseAttr(ArrayListType(T)))
+    list = operand_def(base(ArrayListType[T]))
 
-#     result = result_def(T)
+    result = result_def(T)
 
+@irdl_op_definition
+class ListPushOp(IRDLOperation):
+    """Append an element to the end of an array list."""
 
-# @irdl_op_definition
-# class ListPushOp(IRDLOperation):
-#     """Append an element to the end of an array list."""
+    name = "catalyst.list_push"
 
-#     name = "catalyst.list_push"
+    assembly_format = """ $value `,` $list attr-dict `:` type($list) """
 
-#     assembly_format = """ $value `,` $list attr-dict `:` type($list) """
+    T: ClassVar = VarConstraint("T", AnyAttr())
 
-#     value = operand_def(AnyAttr())
+    value = operand_def(T)
 
-#     list = operand_def(BaseAttr(ArrayListType))
+    list = operand_def(base(ArrayListType[T]))
 
 
 @irdl_op_definition
@@ -223,8 +222,8 @@ Catalyst = Dialect(
         ListDeallocOp,
         ListInitOp,
         ListLoadDataOp,
-        # ListPopOp,
-        # ListPushOp,
+        ListPopOp,
+        ListPushOp,
         PrintOp,
     ],
     [
