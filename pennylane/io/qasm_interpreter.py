@@ -26,7 +26,7 @@ NON_PARAMETERIZED_GATES = {
     "Y": ops.PauliY,
     "Z": ops.PauliZ,
     "S": ops.S,
-    "SDG": lambda *args, **kwargs: ops.adjoint(ops.S(*args, **kwargs)),
+    "SDG": qml.adjoint(ops.S),
     "T": ops.T,
     "TDG": lambda *args, **kwargs: ops.adjoint(ops.T(*args, **kwargs)),
     "SX": ops.SX,
