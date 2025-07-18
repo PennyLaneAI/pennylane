@@ -22,8 +22,7 @@ from vibronic_norm import _next_pow_2, _block_norm, chunkify, _get_eigenvalue_ba
 
 # FILE, GRIDPOINTS, MODES
 jobs = [
-    # ("VCHLIB/maleimide_5s_24m.pkl", 4, 6),
-    ("no4a_dimer.pkl", 4, 10),
+    ("no4a_monomer.pkl", 4, 19),
 ]
 
 if __name__ == "__main__":
@@ -72,8 +71,7 @@ if __name__ == "__main__":
         all_results = comm.gather(local_result, root=0)
 
         comm.Barrier()
-        print(f"Rank {rank} finished computing. Results: {all_results}")
-        comm.Barrier()
+        print(f"Rank {rank} finished computing eigenvalues.")
 
         if rank == 0:
 
