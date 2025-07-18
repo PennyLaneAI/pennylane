@@ -16,7 +16,7 @@ This module contains the set_shots decorator.
 """
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import TYPE_CHECKING, overload
 
 from .qnode import QNode
