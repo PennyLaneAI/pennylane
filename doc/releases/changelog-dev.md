@@ -18,6 +18,11 @@
 
 <h4>Other improvements</h4>
 
+* A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
+  qubit allocation.
+  [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
+
+
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
 
@@ -68,6 +73,13 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
+  should instead indicate that the `Operator` does not need wire validation.
+  [(#7911)](https://github.com/PennyLaneAI/pennylane/pull/7911)
+
+* Removed `QNode.get_gradient_fn` method. Instead, use `qml.workflow.get_best_diff_method` to obtain the differentiation method.
+  [(#7907)](https://github.com/PennyLaneAI/pennylane/pull/7907)
+
 * Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been removed. Please import these objects from the new ``pennylane.exceptions`` module.
   [(#7874)](https://github.com/PennyLaneAI/pennylane/pull/7874)
 
@@ -77,11 +89,12 @@
 
 <h3>Deprecations 👋</h3>
 
+* `qml.qnn.cost.SquaredErrorLoss` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
+  with a function like `loss = lambda *args: (circuit(*args) - target)**2`.
+  [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
+  
 * Access to `add_noise`, `insert` and noise mitigation transforms from the `pennylane.transforms` module is deprecated.
   Instead, these functions should be imported from the `pennylane.noise` module.
-  [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
-
-  Instead, these functions should be imported from the ``pennylane.noise`` module.
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
 
 * The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43.
@@ -124,6 +137,9 @@
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
 <h3>Bug fixes 🐛</h3>
+
+* `get_best_diff_method` now correctly aligns with `execute` and `construct_batch` logic in workflows.
+  [(#7898)](https://github.com/PennyLaneAI/pennylane/pull/7898)
 
 * Resolve issues with AutoGraph transforming internal PennyLane library code due to incorrect
   module attribution of wrapper functions.
