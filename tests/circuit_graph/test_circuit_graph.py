@@ -188,6 +188,20 @@ class TestCircuitGraph:
         with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
             graph.descendants([op], sort=sort)
 
+    def test_ancestors_and_descendents_in_order_deprecation(self):
+        op = qml.X(0)
+        ops = [op, qml.Y(0), qml.Z(0)]
+        graph = CircuitGraph(ops, [], qml.wires.Wires([0, 1, 2]))
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``CircuitGraph.ancestors_in_order`` is deprecated"
+        ):
+            graph.ancestors_in_order([op])
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``CircuitGraph.descendants_in_order`` is deprecated"
+        ):
+            graph.descendants_in_order([op])
+
     @pytest.mark.parametrize("sort", [True, False])
     def test_ancestors_and_descendents_single_op_error(self, sort):
         """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
