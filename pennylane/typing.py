@@ -17,10 +17,11 @@ import contextlib
 # pylint: disable=import-outside-toplevel,too-few-public-methods
 import sys
 from collections.abc import Callable, Sequence
-from typing import Optional, TypeVar
+from typing import Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
+
 
 class InterfaceTensorMeta(type):
     """defines dunder methods for the ``isinstance`` and ``issubclass`` checks.
@@ -81,7 +82,7 @@ def _is_jax(other, subclass=False):
             from jax.numpy import ndarray
 
             JaxTensor = ndarray | (
-                jax.Array  
+                jax.Array
                 if hasattr(jax, "Array")
                 else jaxlib.xla_extension.DeviceArray | jax.core.Tracer
             )
