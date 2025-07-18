@@ -78,6 +78,10 @@
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
+* Added state of the art resources for the `ResourceSingleQubitCompare`, `ResourceTwoQubitCompare`,
+  `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
+  [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)

@@ -125,6 +125,10 @@ Templates:
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
+    ~ResourceSingleQubitCompare
+    ~ResourceTwoQubitCompare
+    ~ResourceIntegerComparator
+    ~ResourceRegisterComparator
     ~ResourceSelectPauliRot
     ~ResourceQubitUnitary
     ~ResourceTrotterCDF
@@ -214,6 +218,10 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceTwoQubitCompare,
+    ResourceIntegerComparator,
+    ResourceSingleQubitCompare,
+    ResourceRegisterComparator,
     ResourceQubitUnitary,
     ResourceSelectPauliRot,
     ResourceTrotterCDF,
