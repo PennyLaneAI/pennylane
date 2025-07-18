@@ -5,9 +5,9 @@ repos:
     - id: black
       args: [
               "--line-length=100",
-              "-t", "py39",
-              "-t", "py310",
               "-t", "py311",
+              "-t", "py312",
+              "-t", "py313",
             ]
       exclude: ^doc/
 -   repo: https://github.com/PyCQA/isort
@@ -18,6 +18,10 @@ repos:
         [
           "--py",
           "311",
+          "--py",
+          "312",
+          "--py",
+          "313",
           "--profile",
           "black",
           "-l",
