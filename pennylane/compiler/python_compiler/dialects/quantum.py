@@ -369,6 +369,38 @@ class DeviceReleaseOp(IRDLOperation):
 
 
 @irdl_op_definition
+class AllocQubitOp(IRDLOperation):
+    """Allocate a single qubit."""
+
+    name = "quantum.alloc_qb"
+
+    assembly_format = """attr-dict `:` type(results)"""
+
+    qubit = result_def(QubitType)
+
+    def __init__(self):
+        super().__init__(
+            result_types=(QubitType(),),
+        )
+
+
+@irdl_op_definition
+class DeallocQubitOp(IRDLOperation):
+    """Deallocate a single qubit."""
+
+    name = "quantum.dealloc_qb"
+
+    assembly_format = """$qubit attr-dict `:` type(operands)"""
+
+    qubit = operand_def(QubitType)
+
+    def __init__(self, qubit: QubitSSAValue | Operation):
+        super().__init__(
+            operands=(qubit,),
+        )
+
+
+@irdl_op_definition
 class ExpvalOp(IRDLOperation):
     """Compute the expectation value of the given observable for the current state"""
 
@@ -856,15 +888,17 @@ class YieldOp(IRDLOperation):
     retvals = var_operand_def(QuregType)
 
 
-QuantumDialect = Dialect(
+Quantum = Dialect(
     "quantum",
     [
         AdjointOp,
         AllocOp,
+        AllocQubitOp,
         ComputationalBasisOp,
         CountsOp,
         CustomOp,
         DeallocOp,
+        DeallocQubitOp,
         DeviceInitOp,
         DeviceReleaseOp,
         ExpvalOp,

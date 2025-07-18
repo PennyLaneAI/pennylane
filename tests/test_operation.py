@@ -22,7 +22,6 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -40,19 +39,6 @@ from pennylane.wires import Wires
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
-
-
-def test_wires_enum_deprecation():
-    """Test that WiresEnum, AllWires, and AnyWires are deprecated."""
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="is deprecated"):
-        _ = qml.operation.WiresEnum
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="is deprecated"):
-        _ = qml.operation.AllWires
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="is deprecated"):
-        _ = qml.operation.AnyWires
 
 
 class TestOperatorConstruction:
