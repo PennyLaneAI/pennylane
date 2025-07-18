@@ -92,6 +92,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
+  Instead, the ``qml.to_openqasm`` function should be used.
+
 * `qml.qnn.cost.SquaredErrorLoss` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
   with a function like `loss = lambda *args: (circuit(*args) - target)**2`.
   [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
