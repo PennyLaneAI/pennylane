@@ -115,6 +115,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Equipped `DefaultQubitLegacy` with seeded sampling.
+  This allows for reproducible sampling results across CI.
+  [(#7903)](https://github.com/PennyLaneAI/pennylane/pull/7903)
+
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
