@@ -29,6 +29,52 @@ from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
+def _toffoli_clifford_t_decomp(wires):
+    """Return the explicit Clifford+T decomposition of the Toffoli gate,
+    replacing Adjoint(T) with PhaseShift(-π/4)."""
+
+    return [
+        qml.Hadamard(wires=wires[2]),
+        qml.CNOT(wires=[wires[1], wires[2]]),
+        qml.PhaseShift(-np.pi / 4, wires=wires[2]),
+        qml.CNOT(wires=[wires[0], wires[2]]),
+        qml.T(wires=wires[2]),
+        qml.CNOT(wires=[wires[1], wires[2]]),
+        qml.PhaseShift(-np.pi / 4, wires=wires[2]),
+        qml.CNOT(wires=[wires[0], wires[2]]),
+        qml.T(wires=wires[2]),
+        qml.T(wires=wires[1]),
+        qml.CNOT(wires=[wires[0], wires[1]]),
+        qml.Hadamard(wires=wires[2]),
+        qml.T(wires=wires[0]),
+        qml.PhaseShift(-np.pi / 4, wires=wires[1]),
+        qml.CNOT(wires=[wires[0], wires[1]]),
+    ]
+
+
+def _ccz_clifford_t_decomp(wires):
+    """Return the explicit Clifford+T decomposition of the CCZ gate,
+    replacing Adjoint(T) with PhaseShift(-π/4)."""
+
+    return [
+        qml.CNOT(wires=[wires[1], wires[2]]),
+        qml.PhaseShift(-np.pi / 4, wires=wires[2]),
+        qml.CNOT(wires=[wires[0], wires[2]]),
+        qml.T(wires=wires[2]),
+        qml.CNOT(wires=[wires[1], wires[2]]),
+        qml.PhaseShift(-np.pi / 4, wires=wires[2]),
+        qml.CNOT(wires=[wires[0], wires[2]]),
+        qml.T(wires=wires[2]),
+        qml.T(wires=wires[1]),
+        qml.CNOT(wires=[wires[0], wires[1]]),
+        qml.Hadamard(wires=wires[2]),
+        qml.T(wires=wires[0]),
+        qml.PhaseShift(-np.pi / 4, wires=wires[1]),
+        qml.CNOT(wires=[wires[0], wires[1]]),
+        qml.Hadamard(wires=wires[2]),
+    ]
+
+
 class VertexType:  # pylint: disable=too-few-public-methods
     """Type of a vertex in the graph.
 
@@ -254,6 +300,13 @@ def to_zx(tape, expand_measurements=False):
         It is a PennyLane adapted and reworked `circuit_to_graph <https://github.com/Quantomatic/pyzx/blob/master/pyzx/circuit/graphparser.py>`_
         function.
 
+    .. note::
+
+        Prior to being added to the graph, Toffoli and CCZ gates are replaced by particular decompositions. These decompositions
+        are described in detail in: J. Welch, A. Bocharov, and K. Svore, “Efficient Approximation of Diagonal Unitaries over the Clifford+T Basis,”
+        Quantum information & computation, vol. 16, Dec. 2014, doi: 10.26421/QIC16.1-2-6.
+        This is necessary because Toffoli and CCZ gates are not directly supported in PyZX.
+
         Copyright (C) 2018 - Aleks Kissinger and John van de Wetering
     """
     # If it is a simple operation just transform it to a tape
@@ -284,17 +337,22 @@ def _to_zx_transform(
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     gate_types = {
-        "PauliX": pyzx.circuit.gates.NOT,
-        "PauliZ": pyzx.circuit.gates.Z,
+        "X": pyzx.circuit.gates.NOT,
+        "Y": pyzx.circuit.gates.Y,
+        "Z": pyzx.circuit.gates.Z,
         "S": pyzx.circuit.gates.S,
         "T": pyzx.circuit.gates.T,
         "Hadamard": pyzx.circuit.gates.HAD,
         "RX": pyzx.circuit.gates.XPhase,
+        "RY": pyzx.circuit.gates.YPhase,
         "RZ": pyzx.circuit.gates.ZPhase,
         "PhaseShift": pyzx.circuit.gates.ZPhase,
         "SWAP": pyzx.circuit.gates.SWAP,
         "CNOT": pyzx.circuit.gates.CNOT,
+        "CY": pyzx.circuit.gates.CY,
         "CZ": pyzx.circuit.gates.CZ,
+        "CRX": pyzx.circuit.gates.CRX,
+        "CRY": pyzx.circuit.gates.CRY,
         "CRZ": pyzx.circuit.gates.CRZ,
         "CH": pyzx.circuit.gates.CHAD,
         "CCZ": pyzx.circuit.gates.CCZ,
@@ -331,17 +389,12 @@ def _to_zx_transform(
         )
 
         expanded_operations = []
-
-        # Define specific decompositions
         for op in mapped_tape.operations:
-            if op.name == "RY":
-                theta = op.data[0]
-                decomp = [
-                    qml.RX(np.pi / 2, wires=op.wires),
-                    qml.RZ(theta + np.pi, wires=op.wires),
-                    qml.RX(np.pi / 2, wires=op.wires),
-                    qml.RZ(3 * np.pi, wires=op.wires),
-                ]
+            if op.name == "Toffoli":
+                decomp = _toffoli_clifford_t_decomp(op.wires)
+                expanded_operations.extend(decomp)
+            elif op.name == "CCZ":
+                decomp = _ccz_clifford_t_decomp(op.wires)
                 expanded_operations.extend(decomp)
             else:
                 expanded_operations.append(op)
