@@ -275,38 +275,14 @@ class TestRegisterComparator:
                             plre.ResourceMultiControlledX,
                             {"num_ctrl_wires": 2, "num_ctrl_values": 2},
                         ),
-                        1,
-                    ),
-                    GateCount(
-                        resource_rep(
-                            plre.ResourceAdjoint,
-                            {
-                                "base_cmpr_op": resource_rep(
-                                    plre.ResourceMultiControlledX,
-                                    {"num_ctrl_wires": 2, "num_ctrl_values": 2},
-                                )
-                            },
-                        ),
-                        1,
+                        2,
                     ),
                     GateCount(
                         resource_rep(
                             plre.ResourceMultiControlledX,
                             {"num_ctrl_wires": 2, "num_ctrl_values": 1},
                         ),
-                        1,
-                    ),
-                    GateCount(
-                        resource_rep(
-                            plre.ResourceAdjoint,
-                            {
-                                "base_cmpr_op": resource_rep(
-                                    plre.ResourceMultiControlledX,
-                                    {"num_ctrl_wires": 2, "num_ctrl_values": 1},
-                                )
-                            },
-                        ),
-                        1,
+                        2,
                     ),
                 ],
             ),
@@ -336,38 +312,14 @@ class TestRegisterComparator:
                             plre.ResourceMultiControlledX,
                             {"num_ctrl_wires": 2, "num_ctrl_values": 2},
                         ),
-                        1,
-                    ),
-                    GateCount(
-                        resource_rep(
-                            plre.ResourceAdjoint,
-                            {
-                                "base_cmpr_op": resource_rep(
-                                    plre.ResourceMultiControlledX,
-                                    {"num_ctrl_wires": 2, "num_ctrl_values": 2},
-                                )
-                            },
-                        ),
-                        1,
+                        2,
                     ),
                     GateCount(
                         resource_rep(
                             plre.ResourceMultiControlledX,
                             {"num_ctrl_wires": 2, "num_ctrl_values": 1},
                         ),
-                        1,
-                    ),
-                    GateCount(
-                        resource_rep(
-                            plre.ResourceAdjoint,
-                            {
-                                "base_cmpr_op": resource_rep(
-                                    plre.ResourceMultiControlledX,
-                                    {"num_ctrl_wires": 2, "num_ctrl_values": 1},
-                                )
-                            },
-                        ),
-                        1,
+                        2,
                     ),
                     GateCount(resource_rep(plre.ResourceX), 1),
                 ],

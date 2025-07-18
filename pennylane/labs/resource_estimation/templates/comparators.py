@@ -525,29 +525,15 @@ class ResourceRegisterComparator(ResourceOperator):
         mcx = resource_rep(
             plre.ResourceMultiControlledX, {"num_ctrl_wires": diff, "num_ctrl_values": diff}
         )
-        gate_list.append(GateCount(mcx, 1))
-        gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": mcx}), 1))
+        gate_list.append(GateCount(mcx, 2))
 
         # collecting the results
         gate_list.append(
             GateCount(
                 resource_rep(
                     plre.ResourceMultiControlledX, {"num_ctrl_wires": 2, "num_ctrl_values": 1}
-                )
-            )
-        )
-        gate_list.append(
-            GateCount(
-                resource_rep(
-                    plre.ResourceAdjoint,
-                    {
-                        "base_cmpr_op": resource_rep(
-                            plre.ResourceMultiControlledX,
-                            {"num_ctrl_wires": 2, "num_ctrl_values": 1},
-                        )
-                    },
                 ),
-                1,
+                2,
             )
         )
 
