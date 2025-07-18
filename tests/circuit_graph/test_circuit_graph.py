@@ -25,6 +25,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.circuit_graph import CircuitGraph
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.resource import Resources, ResourcesOperation
 from pennylane.wires import Wires
 
@@ -174,7 +175,8 @@ class TestCircuitGraph:
         assert descendants == [queue[8]]
         assert descendants_index == [queue[8]]
 
-    def test_ancestors_and_descendents_repeated_op(self):
+    @pytest.mark.parametrize("sort", [True, False])
+    def test_ancestors_and_descendents_repeated_op(self, sort):
         """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
 
         op = qml.X(0)
@@ -182,15 +184,26 @@ class TestCircuitGraph:
         graph = CircuitGraph(ops, [], qml.wires.Wires([0, 1, 2]))
 
         with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
-            graph.ancestors([op])
+            graph.ancestors([op], sort=sort)
         with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
-            graph.descendants([op])
-        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+            graph.descendants([op], sort=sort)
+
+    def test_ancestors_and_descendents_in_order_deprecation(self):
+        op = qml.X(0)
+        ops = [op, qml.Y(0), qml.Z(0)]
+        graph = CircuitGraph(ops, [], qml.wires.Wires([0, 1, 2]))
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``CircuitGraph.ancestors_in_order`` is deprecated"
+        ):
             graph.ancestors_in_order([op])
-        with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``CircuitGraph.descendants_in_order`` is deprecated"
+        ):
             graph.descendants_in_order([op])
 
-    def test_ancestors_and_descendents_single_op_error(self):
+    @pytest.mark.parametrize("sort", [True, False])
+    def test_ancestors_and_descendents_single_op_error(self, sort):
         """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
 
         op = qml.Z(0)
@@ -199,19 +212,11 @@ class TestCircuitGraph:
         with pytest.raises(
             ValueError, match=r"CircuitGraph.ancestors accepts an iterable of operators"
         ):
-            graph.ancestors(op)
+            graph.ancestors(op, sort=sort)
         with pytest.raises(
             ValueError, match=r"CircuitGraph.descendants accepts an iterable of operators"
         ):
-            graph.descendants(op)
-        with pytest.raises(
-            ValueError, match=r"CircuitGraph.ancestors accepts an iterable of operators"
-        ):
-            graph.ancestors_in_order(op)
-        with pytest.raises(
-            ValueError, match=r"CircuitGraph.descendants accepts an iterable of operators"
-        ):
-            graph.descendants_in_order(op)
+            graph.descendants(op, sort=sort)
 
     def test_update_node(self, ops, obs):
         """Changing nodes in the graph."""
@@ -348,7 +353,10 @@ class TestCircuitGraph:
 
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            circuit_w_wires.print_contents()
+            with pytest.warns(
+                PennyLaneDeprecationWarning, match="``CircuitGraph.print_contents`` is deprecated"
+            ):
+                circuit_w_wires.print_contents()
         out = f.getvalue().strip()
 
         expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
