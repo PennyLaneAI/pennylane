@@ -329,9 +329,9 @@ class AllocOp(IRDLOperation):
 
     Args:
         nqubits (int | IntegerAttr | SSAValue): Quantity of wires/qubits in the state vector.
-            If the value for `nqubits` is either an Python integer
-            or an IntegerAttr, then the number is known at compile time.
-            If it is an SSAValue, then it is likely that this value is
+            If the value for ``nqubits`` is either an Python integer
+            or an ``IntegerAttr``, then the number is known at compile time.
+            If it is an ``SSAValue``, then it is likely that this value is
             computed at runtime.
 
     Results:
@@ -411,7 +411,7 @@ class ComputationalBasisOp(IRDLOperation):
 class CountsOp(IRDLOperation):
     """Compute sample counts for the given observable for the current state.
 
-    The `quantum.counts` operation represents the measurement process of sampling eigenvalues
+    The ``quantum.counts`` operation represents the measurement process of sampling eigenvalues
     from an observable on the current quantum state and counting the frequency of each
     eigenvalue.
 
@@ -492,7 +492,7 @@ class CustomOp(IRDLOperation):
         adjoint (UnitAttr | bool | None): Denotes whether the operation is an adjoint.
             If a ``UnitAttr`` or ``True`` value is passed, then the operation is an adjoint.
         in_ctrl_qubits (Sequence[SSAValue]): Control qubits.
-        in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be True or False.
+        in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be ``True`` or ``False``.
 
     Results:
         out_qubits (Sequence[SSAValue]): The output qubits.
@@ -628,7 +628,7 @@ class DeviceInitOp(IRDLOperation):
     Args:
         shots (SSAValue | None): number of shots requested by the user.
         lib (StringAttr): The location of the shared object that contains the implementation of
-            the QuantumDevice interface.
+            the ``QuantumDevice`` interface.
         device_name (StringAttr): Name of the device.
         kwargs (StringAttr): Static input to the device that can be helpful for passing options.
     """
@@ -1098,7 +1098,7 @@ class NamedObsOp(IRDLOperation):
     processes. The specific observable defined here represents one of 5 named observables --
     Identity, PauliX, PauliY, PauliZ, Hadamard -- on a qubit. The arguments are the qubit to
     measure as well as an encoding operator for the qubit as an integer between 0-4 inclusive.
-    This integer is NamedObservableAttr.
+    This integer is a ``NamedObservableAttr``.
 
     Args:
         qubit (SSAQubitValue): The qubit to be observed.
@@ -1376,7 +1376,8 @@ class StateOp(IRDLOperation):
     ``n`` is the number of qubits.
 
     Args:
-        obs (ObservableSSAValue):
+        obs (ObservableSSAValue): An observable representing the qubits for which to
+            extract the quantum state.
         dynamic_shape (SSAValue | None): Optional variable used during dynamic register allocation
             to denote how many elements will be available in the probabilities tensor output.
     Results:
