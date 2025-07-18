@@ -76,19 +76,6 @@ from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
 from pennylane.registers import registers
-from pennylane.io import (
-    from_pyquil,
-    from_qasm,
-    to_openqasm,
-    from_qiskit,
-    from_qiskit_noise,
-    from_qiskit_op,
-    from_quil,
-    from_quil_file,
-    FromBloq,
-    bloq_registers,
-    from_qasm3,
-)
 from pennylane.measurements import (
     counts,
     density_matrix,
@@ -115,7 +102,21 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute
+from pennylane.workflow import QNode, qnode, execute, set_shots
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    to_openqasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+    from_qasm3,
+    to_bloq,
+)
 from pennylane.transforms import (
     transform,
     batch_params,
@@ -130,8 +131,15 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
+)
+from pennylane.noise import (
     add_noise,
-    set_shots,
+    insert,
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
 )
 from pennylane.ops.functions import (
     dot,
@@ -191,19 +199,6 @@ default_config = Configuration("config.toml")
 
 
 def __getattr__(name):
-    if name in {
-        "DeviceError",
-        "PennyLaneDeprecationWarning",
-        "QuantumFunctionError",
-        "ExperimentalWarning",
-    }:  # pragma: no cover
-        warnings.warn(
-            f"pennylane.{name} is no longer accessible at top-level \
-                and must be imported as pennylane.exceptions.{name}. \
-                    Support for top-level access will be removed in v0.43.",
-            pennylane.exceptions.PennyLaneDeprecationWarning,
-        )
-        return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
         return pennylane.devices.device_constructor.plugin_devices

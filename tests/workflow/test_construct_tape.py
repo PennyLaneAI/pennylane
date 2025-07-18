@@ -90,7 +90,7 @@ class TestConstructTape:
             return qml.expval(qml.PauliZ(0))
 
         with pytest.raises(ValueError, match="Level requested corresponds to more than one tape."):
-            construct_tape(circuit, level=None)(0.5)
+            construct_tape(circuit, level="device")(0.5)
 
     def test_handle_qfunc_with_dynamic_shots(self):
         """Tests that dynamic shots can be handled properly."""

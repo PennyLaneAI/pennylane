@@ -656,8 +656,13 @@ class DefaultQubit(Device):
             if option not in updated_values["device_options"]:
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
 
+        mcm_config = config.mcm_config
+
+        if mcm_config.mcm_method == "device":
+            mcm_config = replace(mcm_config, mcm_method="tree-traversal")
+
         if qml.capture.enabled():
-            mcm_config = config.mcm_config
+
             mcm_updated_values = {}
             mcm_method = mcm_config.mcm_method
 
@@ -670,8 +675,9 @@ class DefaultQubit(Device):
                 mcm_updated_values["postselect_mode"] = None
             if mcm_method is None:
                 mcm_updated_values["mcm_method"] = "deferred"
-            updated_values["mcm_config"] = replace(mcm_config, **mcm_updated_values)
+            mcm_config = replace(mcm_config, **mcm_updated_values)
 
+        updated_values["mcm_config"] = mcm_config
         return replace(config, **updated_values)
 
     @debug_logger
@@ -1005,7 +1011,6 @@ class DefaultQubit(Device):
             key=key,
             execution_config=execution_config,
         )
-
         return interpreter.eval(jaxpr, consts, *args)
 
     def _backprop_jvp(self, jaxpr, args, tangents, execution_config=None):
