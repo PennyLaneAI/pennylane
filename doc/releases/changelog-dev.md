@@ -76,6 +76,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
+  [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
+
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
   should instead indicate that the `Operator` does not need wire validation.
   [(#7911)](https://github.com/PennyLaneAI/pennylane/pull/7911)
@@ -109,9 +112,6 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
-
-* Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
-  [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
