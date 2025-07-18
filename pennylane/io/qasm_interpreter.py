@@ -26,7 +26,9 @@ NON_PARAMETERIZED_GATES = {
     "Y": ops.PauliY,
     "Z": ops.PauliZ,
     "S": ops.S,
+    "SDG": ops.adjoint(ops.S),
     "T": ops.T,
+    "TDG": ops.adjoint(ops.T),
     "SX": ops.SX,
     "CX": ops.CNOT,
     "CY": ops.CY,
@@ -46,6 +48,8 @@ PARAMETERIZED_GATES = {
     "U1": ops.U1,
     "U2": ops.U2,
     "U3": ops.U3,
+    "CU": lambda theta, phi, delta, gamma, wires: ops.PhaseShift(gamma, wires[0])
+    @ ops.ctrl(ops.U3(theta, phi, delta, wires[1]), wires[0]),
     "CP": ops.CPhase,
     "CPHASE": ops.CPhase,
     "CRX": ops.CRX,
@@ -873,6 +877,7 @@ class QasmInterpreter:
         Returns:
             Any: anything returned by the subroutine.
         """
+
         func_context = context.scopes["subroutines"][name]
 
         # reset return
