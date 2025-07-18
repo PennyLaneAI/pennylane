@@ -23,6 +23,7 @@ filecheck = pytest.importorskip("filecheck")
 
 pytestmark = pytest.mark.external
 
+from xdsl.dialects import builtin, func, test
 from pennylane.compiler.python_compiler.dialects import Catalyst
 
 all_ops = list(Catalyst.operations)
@@ -75,6 +76,7 @@ def test_all_attributes_names(attr):
 
 
 def test_assembly_format(run_filecheck):
+    """Test the assembly format of the catalyst ops."""
     program = """
     // CHECK: [[LIST:%.+]] = catalyst.list_init : !catalyst.arraylist<f64>
     %list = catalyst.list_init : !catalyst.arraylist<f64>
@@ -105,7 +107,6 @@ def test_assembly_format(run_filecheck):
     """
 
     ctx = xdsl.context.Context()
-    from xdsl.dialects import builtin, func, test
 
     ctx.load_dialect(builtin.Builtin)
     ctx.load_dialect(func.Func)

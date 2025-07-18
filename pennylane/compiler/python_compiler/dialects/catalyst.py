@@ -24,9 +24,27 @@ It contains data structures that support core compiler functionality.
 # ruff: noqa: F403, F405
 
 from typing import ClassVar
-from xdsl.dialects.builtin import *
-from xdsl.ir import *
-from xdsl.irdl import *
+from xdsl.dialects.builtin import IntegerAttr, IntegerType, StringAttr, UnitAttr
+from xdsl.ir import AttributeCovT, Dialect, Generic, ParametrizedAttribute, TypeAttribute
+from xdsl.irdl import (
+    AnyAttr,
+    BaseAttr,
+    EqAttrConstraint,
+    IRDLOperation,
+    ParsePropInAttrDict,
+    VarConstraint,
+    base,
+    irdl_attr_definition,
+    irdl_op_definition,
+    operand_def,
+    opt_operand_def,
+    opt_prop_def,
+    prop_def,
+    region_def,
+    result_def,
+    var_operand_def,
+    var_result_def,
+)
 
 
 @irdl_attr_definition
@@ -50,6 +68,8 @@ class AssertionOp(IRDLOperation):
 
 @irdl_op_definition
 class CallbackCallOp(IRDLOperation):
+    """CallbackCallOp operation."""
+
     name = "catalyst.callback_call"
 
     assembly_format = """
@@ -116,6 +136,8 @@ class CustomCallOp(IRDLOperation):
 
 @irdl_op_definition
 class LaunchKernelOp(IRDLOperation):
+    """LaunchKernelOp operation."""
+
     name = "catalyst.launch_kernel"
 
     assembly_format = """
