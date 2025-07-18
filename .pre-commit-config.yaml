@@ -35,6 +35,11 @@ repos:
     rev: v0.28.5
     hooks:
     -   id: tach
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.16.0
+    hooks:
+    -   id: pyupgrade
+        args: [--py311-plus]
 - repo: local
   hooks:
     - id: pylint
