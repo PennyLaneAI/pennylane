@@ -20,13 +20,12 @@ from collections.abc import Callable
 from functools import wraps
 from importlib import metadata
 from sys import version_info
-from typing import Any, Optional, overload
+from typing import Any, overload
 
-from pennylane import QNode
 from pennylane.tape import QuantumScript
 from pennylane.transforms import convert_to_numpy_parameters
 from pennylane.wires import Wires, WiresLike
-from pennylane.workflow import construct_tape
+from pennylane.workflow import QNode, construct_tape
 
 has_openqasm = True
 try:
