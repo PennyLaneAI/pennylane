@@ -777,6 +777,14 @@ class TestDecomposition:
         for op1, op2 in zip(decomp, true_decomp):
             qml.assert_equal(op1, op2)
 
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    def test_decomposition_new(self, hamiltonian, hamiltonian_index, order):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.TrotterProduct(hamiltonian, 4.2, order=order)
+        for rule in qml.list_decomps(qml.TrotterProduct):
+            _test_decomposition_rule(op, rule)
+
     @pytest.mark.parametrize("order", (1, 2))
     @pytest.mark.parametrize("num_steps", (1, 2, 3))
     def test_compute_decomposition_n_steps(self, num_steps, order):
@@ -1639,30 +1647,6 @@ class TestTrotterizedQfuncIntegration:
         )
 
         assert op.decomposition() == expected_decomp
-
-    @pytest.mark.parametrize("reverse, order, expected_decomp", expected_decomps_order_reverse)
-    def test_decomposition_new(self, reverse, order, expected_decomp):
-        """Tests the decomposition rule implemented with the new system."""
-
-        def first_order_expansion(time, theta, wires, flip=False):
-            "This is the first order expansion (U_1)."
-            qml.RX(time * theta, wires[0])
-            qml.RY(time * theta, wires[0])
-            if flip:
-                qml.CNOT(wires)
-
-        op = TrotterizedQfunc(
-            0.1,
-            1.23,
-            qfunc=first_order_expansion,
-            reverse=reverse,
-            order=order,
-            wires=["a", "b"],
-            flip=True,
-        )
-
-        for rule in qml.list_decomps(qml.TrotterProduct):
-            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("reverse, order, expected_decomp", expected_decomps_order_reverse)
     def test_private_recursive_qfunc(self, reverse, order, expected_decomp):

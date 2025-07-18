@@ -511,12 +511,12 @@ def _trotter_product_decomposition_resources(time, n, order, ops):
         reps = Counter()
         if order == 1:
             for op in ops:
-                reps[resource_rep(qml.exp(op, x * 1j))] += 1
+                reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] += 1
             return reps
 
         if order == 2:
             for op in ops + ops[::-1]:
-                reps[qml.exp(op, x * 0.5j)] += 1
+                reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] += 1
             return reps
 
         scalar_1 = _scalar(order)
@@ -525,13 +525,18 @@ def _trotter_product_decomposition_resources(time, n, order, ops):
         ops_ctr_1 = _recursive(scalar_1 * x, order - 2, ops)
         ops_ctr_2 = _recursive(scalar_2 * x, order - 2, ops)
 
-        return (2 * ops_ctr_1) + ops_ctr_2 + (2 * ops_ctr_1)
+        for key in ops_ctr_1:
+            ops_ctr_1[key] = ops_ctr_1[key] * 4
 
-    resources = _recursive(time / n, order, ops)[::-1] * n
+        ops_ctr_1.update(ops_ctr_2)
 
-    if qml.QueuingManager.recording():
-        for op in resources:  # apply operators in reverse order of expression
-            resources[op] += 1
+        return ops_ctr_1
+
+    resources = _recursive(time / n, order, ops)
+
+    for _ in range(n):
+        for key in resources:
+            resources[key] += 1
 
     return resources
 
@@ -564,9 +569,8 @@ def _trotter_product_decomposition(*args, **kwargs):
 
     decomp = _recursive(time / n, order, ops)[::-1] * n
 
-    if qml.QueuingManager.recording():
-        for op in decomp:  # apply operators in reverse order of expression
-            qml.apply(op)
+    for op in decomp:  # apply operators in reverse order of expression
+        qml.apply(op)
 
 
 add_decomps(TrotterProduct, _trotter_product_decomposition)
