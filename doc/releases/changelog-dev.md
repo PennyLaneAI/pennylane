@@ -61,7 +61,8 @@
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
 
-* Add `AllocQubitOp` and `DeallocQubitOp` to the quantum dialect in Python compiler.
+* The `AllocQubitOp` and `DeallocQubitOp` operations have been added to the quantum dialect in the
+  Python compiler.
   [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
 
 * The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
