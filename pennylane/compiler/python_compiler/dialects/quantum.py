@@ -370,6 +370,7 @@ class DeviceReleaseOp(IRDLOperation):
 
 @irdl_op_definition
 class AllocQubitOp(IRDLOperation):
+    """Allocate a single qubit."""
     name = "quantum.alloc_qb"
 
     assembly_format = """attr-dict `:` type(results)"""
