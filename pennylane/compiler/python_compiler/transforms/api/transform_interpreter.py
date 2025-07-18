@@ -67,7 +67,7 @@ class TransformFunctionsExt(TransformFunctions):
         # pragma: no cover
         buffer = io.StringIO()
 
-        Printer(stream=buffer, print_generic_format=True).print(args[0])
+        Printer(stream=buffer, print_generic_format=True).print_op(args[0])
         schedule = f"--{pass_name}"
         modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
 

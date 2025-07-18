@@ -39,6 +39,9 @@
   0.002
   ```
 
+* Added a `QuantumParser` class to the `qml.compiler.python_compiler` submodule that automatically loads relevant dialects.
+  [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
+
 * Enforce various modules to follow modular architecture via `tach`.
   [(#7847)](https://github.com/PennyLaneAI/pennylane/pull/7847)
 
@@ -103,6 +106,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
+  `qml.compiler.python_compiler` submodule.
+  [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
+
 * Added a `dialects` submodule to `qml.compiler.python_compiler` which now houses all the xDSL dialects we create.
   Additionally, the `MBQCDialect` and `QuantumDialect` dialects have been renamed to `MBQC` and `Quantum`.
   [(#7897)](https://github.com/PennyLaneAI/pennylane/pull/7897)
@@ -158,6 +165,7 @@ Joey Carter,
 Yushao Chen,
 David Ittah,
 Erick Ochoa,
+Mudit Pandey,
 Andrija Paurevic,
 Jay Soni,
 Jake Zaia

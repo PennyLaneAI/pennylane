@@ -16,14 +16,17 @@ import pytest
 
 pytestmark = pytest.mark.external
 
-xdsl = pytest.importorskip("xdsl")
+pytest.importorskip("xdsl")
+pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
-from xdsl.context import Context
-from xdsl.dialects import arith, func, scf, test
+from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
-from pennylane.compiler.python_compiler.dialects import Quantum
-from pennylane.compiler.python_compiler.transforms import CombineGlobalPhasesPass
+import pennylane as qml
+from pennylane.compiler.python_compiler.transforms import (
+    CombineGlobalPhasesPass,
+    combine_global_phases_pass,
+)
 
 
 class TestCombineGlobalPhasesPass:
@@ -45,16 +48,8 @@ class TestCombineGlobalPhasesPass:
             }
         """
 
-        ctx = Context()
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (CombineGlobalPhasesPass(),)
+        run_filecheck(program, pipeline)
 
     def test_combinable_ops_with_control_flow(self, run_filecheck):
         """Test that combines global phases in a func with control flow."""
@@ -87,20 +82,8 @@ class TestCombineGlobalPhasesPass:
             }
         """
 
-        ctx = Context()
-        # Load scf.Scf dialects to ensure operations (scf.if) in the program str are registered.
-        ctx.load_dialect(scf.Scf)
-        # Load arith.Arith dialects to ensure operations (arith.constant, f64) in the program str are registered.
-        ctx.load_dialect(arith.Arith)
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
-
-        pipeline.apply(ctx, module)
-        run_filecheck(program, module)
+        pipeline = (CombineGlobalPhasesPass(),)
+        run_filecheck(program, pipeline)
 
     def test_combinable_ops_in_control_flow_if(self, run_filecheck):
         """Test that combines global phases in a func without control a flow.
@@ -148,20 +131,8 @@ class TestCombineGlobalPhasesPass:
             }
         """
 
-        ctx = Context()
-        # Load scf.Scf dialects to ensure operations (scf.if) in the program str are registered.
-        ctx.load_dialect(scf.Scf)
-        # Load arith.Arith dialects to ensure operations (arith.constant, f64) in the program str are registered.
-        ctx.load_dialect(arith.Arith)
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
-
-        pipeline.apply(ctx, module)
-        run_filecheck(program, module)
+        pipeline = (CombineGlobalPhasesPass(),)
+        run_filecheck(program, pipeline)
 
     def test_combinable_ops_in_control_flow_for(self, run_filecheck):
         """Test that combines global phases in a func with a control flow.
@@ -197,20 +168,8 @@ class TestCombineGlobalPhasesPass:
             }
         """
 
-        ctx = Context()
-        # Load scf.Scf dialects to ensure operations (scf.if) in the program str are registered.
-        ctx.load_dialect(scf.Scf)
-        # Load arith.Arith dialects to ensure operations (arith.constant, f64) in the program str are registered.
-        ctx.load_dialect(arith.Arith)
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
-
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
-
-        pipeline.apply(ctx, module)
-        run_filecheck(program, module)
+        pipeline = (CombineGlobalPhasesPass(),)
+        run_filecheck(program, pipeline)
 
     def test_combinable_ops_in_control_flow_while(self, run_filecheck):
         """Test that combines global phases in a func with control flow.
@@ -250,20 +209,31 @@ class TestCombineGlobalPhasesPass:
             }
         """
 
-        ctx = Context()
-        # Load scf.Scf dialects to ensure operations (scf.if) in the program str are registered.
-        ctx.load_dialect(scf.Scf)
-        # Load arith.Arith dialects to ensure operations (arith.constant, f64) in the program str are registered.
-        ctx.load_dialect(arith.Arith)
-        ctx.load_dialect(func.Func)
-        ctx.load_dialect(test.Test)
-        ctx.load_dialect(Quantum)
+        pipeline = (CombineGlobalPhasesPass(),)
+        run_filecheck(program, pipeline)
 
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline = xdsl.passes.PipelinePass((CombineGlobalPhasesPass(),))
 
-        pipeline.apply(ctx, module)
-        run_filecheck(program, module)
+# pylint: disable=too-few-public-methods
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestCombineGlobalPhasesIntegration:
+    """Integration tests for the CombineGlobalPhasesPass."""
+
+    def test_qjit(self, run_filecheck_qjit):
+        """Test that the CombineGlobalPhasesPass works correctly with qjit."""
+        dev = qml.device("lightning.qubit", wires=2)
+
+        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
+        @combine_global_phases_pass
+        @qml.qnode(dev)
+        def circuit(x: float, y: float):
+            # CHECK: [[phi:%.+]] = arith.addf
+            # CHECK: quantum.gphase([[phi]])
+            # CHECK-NOT: quantum.gphase
+            qml.GlobalPhase(x)
+            qml.GlobalPhase(y)
+            return qml.state()
+
+        run_filecheck_qjit(circuit)
 
 
 if __name__ == "__main__":
