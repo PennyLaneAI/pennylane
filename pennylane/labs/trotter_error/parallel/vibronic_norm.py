@@ -83,8 +83,6 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
             except KeyError:
                 mode_groups[group] = {"ops": [sorted_ops], "coeffs": [coeff]}
 
-    print(len(mode_groups))
-
     return sum(_get_eigenvalue(group_ops, gridpoints) for group_ops in mode_groups.values())
 
 
