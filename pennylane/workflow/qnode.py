@@ -869,7 +869,7 @@ class QNode:
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
-        if "shots" in kwargs and self._shots_override_device:            
+        if "shots" in kwargs and self._shots_override_device:
             warnings.warn(
                 "'shots' as an argument to the quantum function is deprecated and will be removed in v0.44. ",
                 PennyLaneDeprecationWarning,
