@@ -1173,6 +1173,11 @@ class QuantumScript:
             The serialized OpenQASM program assumes that gate definitions
             in ``qelib1.inc`` are available.
 
+        .. warning::
+
+            The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in v0.44.
+            Instead, please use the :func:`~.to_openqasm` function.
+
         Args:
             wires (Wires or None): the wires to use when serializing the circuit
             rotations (bool): in addition to serializing user-specified
