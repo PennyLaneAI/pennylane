@@ -65,6 +65,7 @@ class Hadamard(Operation):
     """
 
     is_hermitian = True
+    _queue_category = "_ops"
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -91,15 +92,6 @@ class Hadamard(Operation):
         if isinstance(wire, str):
             return f"H('{wire}')"
         return f"H({wire})"
-
-    @property
-    def _queue_category(self):
-        return "_ops" if isinstance(self, Operation) else None
-
-    @property
-    def is_hermitian(self) -> bool:
-        """All observables must be hermitian"""
-        return True
 
     @property
     def name(self) -> str:
@@ -346,6 +338,7 @@ class PauliX(Operation):
     batch_size = None
 
     _queue_category = "_ops"
+    is_hermitian = True
 
     @property
     def pauli_rep(self):
@@ -872,6 +865,7 @@ class PauliZ(Operation):
     """
 
     is_hermitian = True
+    _queue_category = "_ops"
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""

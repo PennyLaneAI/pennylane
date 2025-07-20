@@ -941,23 +941,13 @@ class TestObservableConstruction:
         class DummyObserv(qml.operation.Operator):
             r"""Dummy custom observable"""
 
+            _queue_category = None
+
             num_wires = 1
             grad_method = None
 
         ob = DummyObserv([1])
         assert ob.wires == qml.wires.Wires(1)
-
-    def test_observable_is_operation_as_well(self):
-        """Check that the Observable class inherits from an Operator class as well"""
-
-        class DummyObserv(qml.operation.Operator):
-            r"""Dummy custom observable"""
-
-            num_wires = 1
-            grad_method = None
-
-        assert issubclass(DummyObserv, qml.operation.Operator)
-        assert issubclass(DummyObserv, qml.operation.Operation)
 
     def test_tensor_n_multiple_modes(self):
         """Checks that the TensorN operator was constructed correctly when
