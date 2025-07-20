@@ -25,14 +25,14 @@ import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
-from pennylane.operation import Operation, Operator
+from pennylane.operation import Operation
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .matrix_ops import QubitUnitary
 
 
-class Hermitian(Operator):
+class Hermitian(Operation):
     r"""
     An arbitrary Hermitian observable.
 
@@ -58,7 +58,7 @@ class Hermitian(Operator):
         id (str or None): String representing the operation (optional)
     """
 
-    _queue_category = "_ops"
+    _queue_category = None
 
     is_hermitian = True
     num_params = 1
@@ -262,7 +262,7 @@ class Hermitian(Operator):
         return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
-class SparseHamiltonian(Operator):
+class SparseHamiltonian(Operation):
     r"""
     A Hamiltonian represented directly as a sparse matrix in Compressed Sparse Row (CSR) format.
 
@@ -299,7 +299,7 @@ class SparseHamiltonian(Operator):
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
 
-    _queue_category = "_ops"
+    _queue_category = None
     is_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -405,7 +405,7 @@ class SparseHamiltonian(Operator):
         return H
 
 
-class Projector(Operator):
+class Projector(Operation):
     r"""Projector(state, wires, id=None)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
@@ -453,12 +453,11 @@ class Projector(Operator):
     is_hermitian = True
     name = "Projector"
     num_params = 1
+    _queue_category = None
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
-
-    _queue_category = "_ops"
 
     def __new__(cls, state: TensorLike, wires: WiresLike, **_):
         """Changes parents based on the state representation.
@@ -507,6 +506,7 @@ class BasisStateProjector(Projector, Operation):
     :math:`\phi` denotes a basis state."""
 
     grad_method = None
+    _queue_category = "_ops"
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
