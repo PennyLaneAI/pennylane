@@ -58,7 +58,7 @@ class Hermitian(Operator):
         id (str or None): String representing the operation (optional)
     """
 
-    _queue_category = None
+    _queue_category = "_ops"
 
     is_hermitian = True
     num_params = 1
@@ -299,7 +299,7 @@ class SparseHamiltonian(Operator):
     >>> H_sparse = qml.SparseHamiltonian(Hmat, wires)
     """
 
-    _queue_category = None
+    _queue_category = "_ops"
     is_hermitian = True
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
@@ -458,7 +458,7 @@ class Projector(Operator):
     ndim_params = (1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    _queue_category = None
+    _queue_category = "_ops"
 
     def __new__(cls, state: TensorLike, wires: WiresLike, **_):
         """Changes parents based on the state representation.
@@ -507,7 +507,6 @@ class BasisStateProjector(Projector, Operation):
     :math:`\phi` denotes a basis state."""
 
     grad_method = None
-    _queue_category = None
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
@@ -690,7 +689,6 @@ class StateVectorProjector(Projector):
     :math:`\phi` denotes a state."""
 
     grad_method = None
-    _queue_category = None
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
