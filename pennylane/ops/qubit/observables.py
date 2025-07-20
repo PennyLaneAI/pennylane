@@ -73,10 +73,6 @@ class Hermitian(Operator):
     _num_basis_states = 2
     _eigs = {}
 
-    def queue(self, context=qml.QueuingManager):
-        """Append the operator to the Operator queue."""
-        return self
-
     def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
         A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
@@ -310,10 +306,6 @@ class SparseHamiltonian(Operator):
 
     grad_method = None
 
-    def queue(self, context=qml.QueuingManager):
-        """Append the operator to the Operator queue."""
-        return self
-
     def __init__(self, H: csr_matrix, wires: WiresLike, id: Optional[str] = None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
@@ -466,9 +458,7 @@ class Projector(Operator):
     ndim_params = (1,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
-    def queue(self, context=qml.QueuingManager):
-        """Append the operator to the Operator queue."""
-        return self
+    _queue_category = None
 
     def __new__(cls, state: TensorLike, wires: WiresLike, **_):
         """Changes parents based on the state representation.
@@ -517,6 +507,7 @@ class BasisStateProjector(Projector, Operation):
     :math:`\phi` denotes a basis state."""
 
     grad_method = None
+    _queue_category = None
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
@@ -699,6 +690,7 @@ class StateVectorProjector(Projector):
     :math:`\phi` denotes a state."""
 
     grad_method = None
+    _queue_category = None
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.

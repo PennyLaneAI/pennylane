@@ -922,7 +922,7 @@ class TestOperationConstruction:
     def test_is_hermitian(self):
         """Test that is_hermitian defaults to False for an Operator"""
 
-        class DummyOp(qml.operation.Operator):
+        class DummyOp(qml.operation.Operation):
             r"""Dummy custom operation"""
 
             num_wires = 1
@@ -950,7 +950,7 @@ class TestObservableConstruction:
     def test_observable_is_operation_as_well(self):
         """Check that the Observable class inherits from an Operator class as well"""
 
-        class DummyObserv(qml.operation.Operation):
+        class DummyObserv(qml.operation.Operator):
             r"""Dummy custom observable"""
 
             num_wires = 1
