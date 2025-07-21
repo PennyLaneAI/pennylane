@@ -119,6 +119,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
+  [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
+
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
