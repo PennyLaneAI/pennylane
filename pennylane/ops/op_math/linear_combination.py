@@ -16,7 +16,6 @@ LinearCombination class
 """
 import itertools
 import numbers
-import warnings
 
 # pylint: disable=too-many-arguments,protected-access
 from copy import copy
