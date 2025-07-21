@@ -85,6 +85,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Remove support for Python 3.10.
+  [(#)]()
+
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
   should instead indicate that the `Operator` does not need wire validation.
   [(#7911)](https://github.com/PennyLaneAI/pennylane/pull/7911)
