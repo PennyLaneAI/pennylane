@@ -14,8 +14,12 @@
 """
 This submodule contains frequently used loss and cost functions.
 """
-# pylint: disable=too-many-arguments
+import warnings
+
 from pennylane import measurements
+
+# pylint: disable=too-many-arguments
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.workflow.qnode import qnode
 
 
@@ -24,6 +28,11 @@ class SquaredErrorLoss:
 
     Combines an ansatz circuit with some target observables and calculates
     the squared error between their expectation values and a target.
+
+    .. warning::
+        This class is deprecated and will be removed in version v0.44.
+        Instead, this hybrid workflow can be accomplished with a function like
+        ``loss = lambda *args: (circuit(*args) - target)**2``.
 
     Args:
         ansatz (callable): The ansatz for the circuit before the final measurement step.
@@ -99,6 +108,12 @@ class SquaredErrorLoss:
         diff_method="best",
         **kwargs,
     ):
+        warnings.warn(
+            "qml.qnn.cost.SquaredErrorLoss is deprecated and will be removed in version v0.44. "
+            "Instead, this hybrid workflow can be accomplished with a function like "
+            "`loss = lambda *args: (circuit(*args) - target)**2`.",
+            PennyLaneDeprecationWarning,
+        )
 
         @qnode(device, diff_method=diff_method, interface=interface, *kwargs)
         def qn(params, **circuit_kwargs):

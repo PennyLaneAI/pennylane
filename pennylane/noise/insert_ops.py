@@ -14,14 +14,14 @@
 """
 Provides transforms for inserting operations into quantum circuits.
 """
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from types import FunctionType
-from typing import Type, Union
 
-import pennylane as qml
-from pennylane.operation import Operation
+from pennylane import templates
+from pennylane.devices.preprocess import decompose
+from pennylane.operation import DecompositionUndefinedError, Operation, Operator
 from pennylane.ops.op_math import Adjoint
-from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.tape import QuantumScript, QuantumScriptBatch, make_qscript
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
@@ -54,9 +54,9 @@ def _check_position(position):
 @transform
 def insert(
     tape: QuantumScript,
-    op: Union[callable, Type[Operation]],
-    op_args: Union[tuple, float],
-    position: Union[str, list, Type[Operation]] = "all",
+    op: Callable | type[Operation],
+    op_args: tuple | float,
+    position: str | list | type[Operation] = "all",
     before: bool = False,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Insert an operation into specified points in an input circuit.
@@ -105,7 +105,7 @@ def insert(
 
         dev = qml.device("default.mixed", wires=2)
 
-        @partial(qml.transforms.insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
+        @partial(qml.noise.insert, op=qml.AmplitudeDamping, op_args=0.2, position="end")
         @qml.qnode(dev)
         def f(w, x, y, z):
             qml.RX(w, wires=0)
@@ -208,7 +208,7 @@ def insert(
 
         However, noise can be easily added to the device:
 
-        >>> dev_noisy = qml.transforms.insert(dev, qml.AmplitudeDamping, 0.2)
+        >>> dev_noisy = qml.noise.insert(dev, qml.AmplitudeDamping, 0.2)
         >>> qnode_noisy = qml.QNode(f, dev_noisy)
         >>> qnode_noisy(0.9, 0.4, 0.5, 0.6)
         tensor(0.72945434, requires_grad=True)
@@ -216,15 +216,15 @@ def insert(
 
     # decompose templates and their adjoints to fix a bug in the tutorial_error_mitigation demo
     def stop_at(obj):
-        if not isinstance(obj, qml.operation.Operator):
+        if not isinstance(obj, Operator):
             return True
         if not obj.has_decomposition:
             return True
-        return not (hasattr(qml.templates, obj.name) or isinstance(obj, Adjoint))
+        return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
 
-    error_type = (qml.operation.DecompositionUndefinedError,)
-    decompose = qml.devices.preprocess.decompose
-    [tape], _ = decompose(tape, stopping_condition=stop_at, name="insert", error=error_type)
+    [tape], _ = decompose(
+        tape, stopping_condition=stop_at, name="insert", error=DecompositionUndefinedError
+    )
 
     if not isinstance(op, FunctionType) and op.num_wires != 1:
         raise ValueError("Only single-qubit operations can be inserted into the circuit")
@@ -244,7 +244,7 @@ def insert(
 
     if position == "start":
         for w in tape.wires:
-            sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+            sub_tape = make_qscript(op)(*op_args, wires=w)
             new_operations.extend(sub_tape.operations)
 
     for circuit_op in tape.operations[tape.num_preps :]:
@@ -253,14 +253,14 @@ def insert(
 
         if position == "all":
             for w in circuit_op.wires:
-                sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+                sub_tape = make_qscript(op)(*op_args, wires=w)
                 new_operations.extend(sub_tape.operations)
 
         if req_ops:
             for operation in req_ops:
                 if operation == type(circuit_op):
                     for w in circuit_op.wires:
-                        sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+                        sub_tape = make_qscript(op)(*op_args, wires=w)
                         new_operations.extend(sub_tape.operations)
 
         if before:
@@ -268,7 +268,7 @@ def insert(
 
     if position == "end":
         for w in tape.wires:
-            sub_tape = qml.tape.make_qscript(op)(*op_args, wires=w)
+            sub_tape = make_qscript(op)(*op_args, wires=w)
             new_operations.extend(sub_tape.operations)
 
     new_tape = tape.copy(operations=new_operations)
