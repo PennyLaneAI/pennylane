@@ -2092,6 +2092,24 @@ class TestSetShots:
         result = circuit()
         assert len(result) == 50
 
+    def test_set_shots_direct_application_argshots(self):
+        """Test applying set_shots directly to an existing QNode."""
+        dev = qml.device("default.qubit", wires=1, shots=10)
+
+        @qml.qnode(dev)
+        def original_circuit():
+            qml.RX(1.0, wires=0)
+            return qml.sample(qml.PauliZ(0))
+
+        # Apply set_shots directly
+        new_circuit = set_shots(original_circuit, 75)
+
+        assert original_circuit._shots == qml.measurements.Shots(10)
+        assert new_circuit._shots == qml.measurements.Shots(75)
+
+        result = new_circuit()
+        assert len(result) == 75
+
     def test_set_shots_direct_application(self):
         """Test applying set_shots directly to an existing QNode."""
         dev = qml.device("default.qubit", wires=1, shots=10)
@@ -2177,15 +2195,15 @@ class TestSetShots:
             set_shots(invalid_input, shots=100)
 
     @pytest.mark.parametrize(
-        "args,kwargs",
+        "args,kwargs,error_message",
         [
-            ((), {}),  # set_shots() with no arguments
-            ((100, 200), {}),  # Multiple positional args
+            ((), {}, "Invalid arguments to set_shots"),
+            ((100, 200), {}, "set_shots can only be applied to QNodes"),
         ],
     )
-    def test_set_shots_error_on_invalid_argument_patterns(self, args, kwargs):
+    def test_set_shots_error_on_invalid_argument_patterns(self, args, kwargs, error_message):
         """Test that set_shots raises ValueError for invalid argument patterns."""
-        with pytest.raises(ValueError, match="Invalid arguments to set_shots"):
+        with pytest.raises(ValueError, match=error_message):
             set_shots(*args, **kwargs)
 
     def test_set_shots_with_measurements_requiring_shots(self):

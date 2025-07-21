@@ -120,7 +120,8 @@ def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
     if len(args) == 1 and shots is _SHOTS_NOT_PROVIDED:
         # Positional decorator: @set_shots(500) or @set_shots(None)
         return _set_shots_dispatch(args[0])
-
+    if len(args) == 2 and shots is _SHOTS_NOT_PROVIDED:
+        return _apply_shots_to_qnode(*args)
     raise ValueError(f"Invalid arguments to set_shots: {args=}, {shots=}")
 
 
