@@ -9,14 +9,19 @@
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
-  subroutines, constants, and built-in mathematical functions.
+  subroutines, constants, all remaining stdlib gates, and built-in mathematical functions.
   [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
   [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
   [(#7676)](https://github.com/PennyLaneAI/pennylane/pull/7676)
   [(#7679)](https://github.com/PennyLaneAI/pennylane/pull/7679)
   [(#7677)](https://github.com/PennyLaneAI/pennylane/pull/7677)
+  [(#7690)](https://github.com/PennyLaneAI/pennylane/pull/7690)
 
 <h4>Other improvements</h4>
+
+* The error message raised when using Python compiler transforms with :func:`pennylane.qjit` has been updated
+  with suggested fixes.
+  [(#7916)](https://github.com/PennyLaneAI/pennylane/pull/7916)
 
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
@@ -61,6 +66,10 @@
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
 
+* The `AllocQubitOp` and `DeallocQubitOp` operations have been added to the `Quantum` dialect in the
+  Python compiler.
+  [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
+
 * The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
   complete global phase information when used for decomposing a phase gate to Clifford+T basis.
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
@@ -92,6 +101,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
+  Instead, the `qml.to_openqasm` function should be used.
+  [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
+
 * The `level=None` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, `qml.draw`, `qml.draw_mpl`, and `qml.specs` transforms is deprecated and will be removed in v0.43.
   Please use `level='device'` instead to apply the noise model at the device level.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
@@ -109,6 +122,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
+  [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
 
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
@@ -142,6 +158,9 @@
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
+* Update xDSL supported version to `0.45`.
+  [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
+
 <h3>Documentation 📝</h3>
 
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
@@ -174,9 +193,11 @@ This release contains contributions from (in alphabetical order):
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
+Marcus Edwards,
 David Ittah,
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
+Shuli Shu,
 Jay Soni,
 Jake Zaia
