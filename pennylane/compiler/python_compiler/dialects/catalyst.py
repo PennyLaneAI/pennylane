@@ -94,7 +94,7 @@ class CallbackCallOp(IRDLOperation):
 
     res_attrs = opt_prop_def(AnyAttr())
 
-    v1 = var_result_def(AnyAttr())
+    callback_results = var_result_def(AnyAttr())
 
     irdl_options = [ParsePropInAttrDict()]
 
@@ -139,7 +139,7 @@ class CustomCallOp(IRDLOperation):
 
     number_original_arg = opt_prop_def(AnyAttr())
 
-    v2 = var_result_def(AnyAttr())
+    custom_results = var_result_def(AnyAttr())
 
     irdl_options = [ParsePropInAttrDict()]
 
@@ -162,7 +162,7 @@ class LaunchKernelOp(IRDLOperation):
 
     res_attrs = opt_prop_def(AnyAttr())
 
-    v3 = var_result_def(AnyAttr())
+    kernel_results = var_result_def(AnyAttr())
 
     irdl_options = [ParsePropInAttrDict()]
 
