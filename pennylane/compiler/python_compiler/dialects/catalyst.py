@@ -52,7 +52,7 @@ from xdsl.irdl import (
 
 @irdl_attr_definition
 class ArrayListType(Generic[AttributeCovT], ParametrizedAttribute, TypeAttribute):
-    """a dynamically resizable array"""
+    """A dynamically resizable array"""
 
     name = "catalyst.arraylist"
 
