@@ -26,12 +26,13 @@ from pennylane.labs.resource_estimation.resource_operator import (
 
 # pylint: disable=arguments-differ, unused-argument
 class ResourceUniformStatePrep(ResourceOperator):
-    r"""Resource class for preparing a uniform superposition:
+    r"""Resource class for preparing a uniform superposition, :
 
     .. math:
         \frac{1}{\sqrt{2^{k}L}} \sum_{l=0}^{2^{k}L-1} |l\rangle
 
     where :math:`L` is odd, starting from the :math:`|0\rangle` state.
+    This operation uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states, where :math:`l` is not a power of 2.
 
     Args:
         num_states (int): the number of states over which the uniform superposition is being prepared
@@ -39,7 +40,7 @@ class ResourceUniformStatePrep(ResourceOperator):
 
     Resources:
         The resources are obtained from Figure 12 in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
-        The circuit uses amplitude amplification to prepare a uniform superposition over l basis states, where :math:`l = 2^{k}L`.
+        The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states, where :math:`l = 2^{k}L`.
 
     **Example**
 
@@ -90,8 +91,8 @@ class ResourceUniformStatePrep(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, num_states, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
 
         Args:
             num_states (int): the number of states over which the uniform superposition is being prepared
@@ -196,8 +197,8 @@ class ResourceAliasSampling(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, num_coeffs, precision=None, **kwargs) -> list[GateCount]:
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
 
         Args:
             num_coeffs (int): the number of unique coefficients in the state
