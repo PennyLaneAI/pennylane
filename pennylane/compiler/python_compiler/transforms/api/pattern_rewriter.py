@@ -28,7 +28,7 @@ class PLPatternRewriter(PatternRewriter):
     quantum compilation passes.
     """
 
-    def erase_quantum_op(self, op: Operation) -> None:
+    def erase_quantum_gate_op(self, op: Operation) -> None:
         """Erase a quantum gate.
 
         Safely erase a quantum gate from the module being transformed. This method automatically
