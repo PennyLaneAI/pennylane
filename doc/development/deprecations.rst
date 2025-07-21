@@ -87,8 +87,7 @@ for details on how to port your legacy code to the new system. The following fun
 Completed deprecation cycles
 ----------------------------
 
-* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for alternate code to
-  use instead.
+* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for an example of alternative code to use.
   These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
   ``is_measurement``, ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
 
@@ -96,6 +95,8 @@ Completed deprecation cycles
   - Removed in v0.43
 
 .. code-block:: python
+
+    from pennylane.operation import TermsUndefinedError, Operator
 
     def not_tape(obj):
         return not isinstance(obj, qml.tape.QuantumScript)
