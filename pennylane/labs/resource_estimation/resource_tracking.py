@@ -88,9 +88,9 @@ resource_config: dict = {
 r"""A configuration dictionary which stores the default values of certain parameters
 (e.g. error thresholds).
 
-The default :code:`config` argument used in
-:func:`~.pennylane.labs.resource_estimation.estimate_resources`. This allows users to have
-top level access to change the default value of certain parameters if none were provided
+The default :code:`config` argument used in the
+:func:`~.pennylane.labs.resource_estimation.estimate_resources` function. This allows users to
+have top level access to change the default value of certain parameters if none were provided
 in the circuit.
 """
 
