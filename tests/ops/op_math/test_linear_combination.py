@@ -708,54 +708,6 @@ class TestLinearCombination:
         (qml.ops.LinearCombination([1.0], [X(0) @ X(1)]), X(0) @ X(1)),
     )
 
-    @pytest.mark.parametrize("H, op", COMPARE_WITH_OPS)
-    def test_compare_to_simple_ops(self, H, op):
-        with pytest.raises(qml.exceptions.PennyLaneDeprecationWarning):
-            assert H.compare(op)
-
-    def test_compare_raises_error(self):
-        op = qml.ops.LinearCombination([], [])
-        with pytest.raises(qml.exceptions.PennyLaneDeprecationWarning):
-            with pytest.raises(ValueError, match="Can only compare a LinearCombination"):
-                op.compare(0)
-
-    @pytest.mark.xfail
-    def test_compare_gell_mann(self):
-        """Tests that the compare method returns the correct result for LinearCombinations
-        with qml.GellMann present."""
-        H1 = qml.ops.LinearCombination([1], [qml.GellMann(wires=2, index=2)])
-        H2 = qml.ops.LinearCombination(
-            [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)]
-        )
-        H3 = qml.ops.LinearCombination([1], [qml.GellMann(wires=2, index=1)])
-        H4 = qml.ops.LinearCombination(
-            [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)]
-        )
-
-        assert H1.compare(qml.GellMann(wires=2, index=2))
-        assert H1.compare(qml.GellMann(wires=2, index=1))
-        assert H1.compare(H3)
-        assert H2.compare(qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2))
-        assert not H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2))
-        assert not H2.compare(H4)
-
-    def test_LinearCombination_equal_error(self):
-        """Tests that the correct error is raised when compare() is called on invalid type"""
-
-        H = qml.ops.LinearCombination([1], [Z(0)])
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            with pytest.raises(
-                ValueError,
-                match=r"Can only compare a LinearCombination and an Operator.",
-            ):
-                _ = H.compare([[1, 0], [0, -1]])
-
-    @pytest.mark.parametrize(("H1", "H2", "res"), equal_LinearCombinations)
-    def test_LinearCombination_equal(self, H1, H2, res):
-        """Tests that equality can be checked between LinearCombinations"""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert H1.compare(H2) == res
-
     @pytest.mark.parametrize(("H1", "H2", "H"), add_LinearCombinations)
     def test_LinearCombination_add(self, H1, H2, H):
         """Tests that LinearCombinations are added correctly"""
