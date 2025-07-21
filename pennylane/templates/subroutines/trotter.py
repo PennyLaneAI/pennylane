@@ -235,7 +235,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         (tensor(0.00961064, requires_grad=True), tensor(-0.12338274, requires_grad=True), tensor(-5.43401259, requires_grad=True))
     """
 
-    resource_keys = {"time", "n", "order", "ops"}
+    resource_keys = {"n", "order", "ops"}
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -295,7 +295,6 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     @property
     def resource_params(self) -> dict:
         return {
-            "time": self.data[-1],
             "n": self.hyperparameters["n"],
             "order": self.hyperparameters["order"],
             "ops": self.hyperparameters["base"].operands,
@@ -506,7 +505,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         return decomp
 
 
-def _trotter_product_decomposition_resources(time, n, order, ops):
+def _trotter_product_decomposition_resources(n, order, ops):
     def _recursive(order, ops):
         reps = Counter()
         if order == 1:
