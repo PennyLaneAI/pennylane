@@ -348,7 +348,7 @@ class MPSPrep(Operation):
             ]
     """
 
-    resource_keys = {"num_sites", "num_work_wires"}
+    resource_keys = {"bond_dimensions", "num_sites", "num_work_wires"}
 
     def __init__(
         self, mps, wires, work_wires=None, right_canonicalize=False, id=None
@@ -389,6 +389,7 @@ class MPSPrep(Operation):
     @property
     def resource_params(self) -> dict:
         return {
+            "bond_dimensions": [data.shape[-1] for data in self.data],
             "num_sites": len(self.data),
             "num_work_wires": len(self.hyperparameters["work_wires"]),
         }
@@ -511,34 +512,36 @@ if MPSPrep._primitive is not None:  # pylint: disable=protected-access
         return type.__call__(MPSPrep, args, **kwargs)
 
 
-def _mps_prep_decomposition_resources(num_sites, num_work_wires):
+def _mps_prep_decomposition_resources(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
     resources = Counter({})
 
-    for i in range(num_sites):
+    for _ in range(num_sites):
         resources[resource_rep(qml.QubitUnitary, num_wires=1 + num_work_wires)] += 1
 
     return resources
 
 
+def _work_wires_condition(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
+    return num_work_wires is not None and num_work_wires > 0
+
+
+def _bond_dimension_condition(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
+    max_bond_dimension = 0
+    for i in range(num_sites - 1):
+        bond_dim = bond_dimensions[i]
+        max_bond_dimension = max(max_bond_dimension, bond_dim)
+
+    return max_bond_dimension > 2 ** num_work_wires
+
+
+@qml.register_condition(_bond_dimension_condition)
+@qml.register_condition(_work_wires_condition)
 @register_resources(_mps_prep_decomposition_resources)
 def _mps_prep_decomposition(*mps, **kwargs):
     wires = kwargs["wires"]
     work_wires = kwargs["work_wires"]
     right_canonicalize = kwargs["right_canonicalize"]
     mps = list(mps)
-
-    if work_wires is None:
-        raise ValueError("The qml.MPSPrep decomposition requires `work_wires` to be specified.")
-
-    max_bond_dimension = 0
-    for i in range(len(mps) - 1):
-        bond_dim = mps[i].shape[-1]
-        max_bond_dimension = max(max_bond_dimension, bond_dim)
-
-    if max_bond_dimension > 2 ** len(work_wires):
-        raise ValueError(
-            f"Incorrect number of `work_wires`. At least {int(qml.math.ceil(qml.math.log2(max_bond_dimension)))} `work_wires` must be provided."
-        )
 
     n_wires = len(work_wires) + 1
 
