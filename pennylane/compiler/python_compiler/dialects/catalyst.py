@@ -29,6 +29,7 @@ from typing import ClassVar
 
 from xdsl.dialects.builtin import (
     ArrayAttr,
+    DenseArrayBase,
     DictionaryAttr,
     FlatSymbolRefAttrConstr,
     FunctionType,
@@ -37,6 +38,7 @@ from xdsl.dialects.builtin import (
     StringAttr,
     SymbolRefAttr,
     UnitAttr,
+    i32,
 )
 from xdsl.ir import AttributeCovT, Dialect, Generic, ParametrizedAttribute, TypeAttribute
 from xdsl.irdl import (
@@ -141,7 +143,7 @@ class CustomCallOp(IRDLOperation):
 
     call_target_name = prop_def(BaseAttr(StringAttr))
 
-    number_original_arg = opt_prop_def(AnyAttr())
+    number_original_arg = opt_prop_def(DenseArrayBase.constr(i32))
 
     custom_results = var_result_def(AnyAttr())
 
