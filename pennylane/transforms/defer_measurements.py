@@ -782,7 +782,7 @@ def defer_measurements(
     # classically controlled operations
     control_wires = {}
     cur_wire = (
-        (max(integer_wires) if integer_wires else -1) + 1
+        (max(integer_wires) + 1 if integer_wires else 0)
         if reused_measurement_wires or any_repeated_measurements
         else None
     )
