@@ -33,6 +33,7 @@ from xdsl.dialects.builtin import (
     IntegerAttr,
     IntegerType,
     StringAttr,
+    SymbolRefAttr,
     UnitAttr,
 )
 from xdsl.ir import AttributeCovT, Dialect, Generic, ParametrizedAttribute, TypeAttribute
@@ -155,7 +156,7 @@ class LaunchKernelOp(IRDLOperation):
         $callee `(` $inputs `)` attr-dict `:` functional-type($inputs, results)
       """
 
-    callee = prop_def(AnyAttr())
+    callee = prop_def(SymbolRefAttr)
 
     inputs = var_operand_def(AnyAttr())
 
