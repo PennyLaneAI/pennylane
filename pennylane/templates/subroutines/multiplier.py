@@ -269,14 +269,14 @@ def _multiplier_decomposition_resources(
         resource_rep(qml.QFT, num_wires=num_wires_aux): 2,
         resource_rep(
             qml.ControlledSequence,
-            base=qml.PhaseAdder,
+            base_class=qml.PhaseAdder,
             base_params={"num_x_wires": num_wires_aux, "mod": mod},
             num_control_wires=num_x_wires,
         ): 1,
         adjoint_resource_rep(
             qml.ControlledSequence,
             {
-                "base": qml.PhaseAdder,
+                "base_class": qml.PhaseAdder,
                 "base_params": {"num_x_wires": num_wires_aux, "mod": mod},
                 "num_control_wires": num_x_wires,
             },

@@ -24,6 +24,42 @@
 
     * :class:`~.OutPoly`
 
+  ```python
+  import pennylane as qml
+  from functools import partial
+  
+  qml.decomposition.enable_graph()
+  
+  x = 3
+  k = 4
+  mod = 7
+  
+  x_wires = [0,1,2]
+  work_wires = [3,4,5,6,7]
+  
+  dev = qml.device("default.qubit")
+  
+  @partial(qml.transforms.decompose)
+  @partial(qml.set_shots, shots=1)
+  @qml.qnode(dev)
+  def circuit():
+      qml.BasisEmbedding(x, wires=x_wires)
+      qml.Multiplier(k, x_wires, mod, work_wires)
+      return qml.sample(wires=x_wires)
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+  0: ───────────────────────────────────────────────────────────────────────────────╭●──────── ···
+  1: ──X────────────────────────────────────────────────────────────────────────────│───────── ···
+  2: ──X────────────────────────────────────────────────────────────────────────────│───────── ···
+  3: ───────────────────────────────────────────────────────────────────────────────│───────── ···
+  4: ──H─╭Rϕ(1.57)─╭Rϕ(0.79)─╭Rϕ(0.39)────────────────────────────────────────╭SWAP─╰Rϕ(12.57) ···
+  5: ────╰●────────│─────────│──────────H─╭Rϕ(1.57)─╭Rϕ(0.79)─────────────────│─────╭SWAP───── ···
+  6: ──────────────╰●────────│────────────╰●────────│──────────H─╭Rϕ(1.57)────│─────╰SWAP───── ···
+  7: ────────────────────────╰●─────────────────────╰●───────────╰●─────────H─╰SWAP─────────── ···
+  ```
+
 * A compilation pass written with xDSL called `qml.compiler.python_compiler.transforms.MeasurementsFromSamplesPass`
   has been added for the experimental xDSL Python compiler integration. This pass replaces all
   terminal measurements in a program with a single :func:`pennylane.sample` measurement, and adds

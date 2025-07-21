@@ -193,8 +193,7 @@ class TestMultiplier:
             qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
-        ("k", "x_wire", "mod", "work_wires"),
-        [(3, [1], 1, [2, 3, 4]), (3, [1], 2, [2, 3, 4])]
+        ("k", "x_wire", "mod", "work_wires"), [(3, [1], 1, [2, 3, 4]), (3, [1], 2, [2, 3, 4])]
     )
     def test_decomposition_new(
         self, k, x_wire, mod, work_wires
