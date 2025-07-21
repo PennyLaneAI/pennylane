@@ -17,7 +17,7 @@ This module contains the set_shots decorator.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from .qnode import QNode
 
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 
 def set_shots(
     qnode: QNode | object = _DECORATOR_MODE,
-    shots: Optional[Shots | int | Sequence[int | tuple[int, int]]] = None,
+    shots: Shots | int | Sequence[int | tuple[int, int]] | None = None,
 ) -> QNode | Callable[[QNode], QNode]:
     """Transform used to set or update a circuit's shots.
 
