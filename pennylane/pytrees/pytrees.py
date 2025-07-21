@@ -16,7 +16,7 @@ An internal module for working with pytrees.
 """
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 import autograd
 
@@ -190,7 +190,7 @@ class PyTreeStructure:
     A leaf is defined as just a ``PyTreeStructure`` with ``type_=None``.
     """
 
-    type_: Optional[type[Any]] = None
+    type_: type[Any] | None = None
     """The type corresponding to the node. If ``None``, then the structure is a leaf."""
 
     metadata: Metadata = ()
@@ -220,7 +220,7 @@ leaf = PyTreeStructure(None, (), [])
 
 
 def flatten(
-    obj: Any, is_leaf: Optional[Callable[[Any], bool]] = None
+    obj: Any, is_leaf: Callable[[Any], bool] | None = None
 ) -> tuple[list[Any], PyTreeStructure]:
     """Flattens a pytree into leaves and a structure.
 

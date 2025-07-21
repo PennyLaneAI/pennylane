@@ -488,7 +488,7 @@ def set_decomposition(custom_decomps, dev):
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(0))
 
-    >>> print(qml.draw(circuit, level=None)())
+    >>> print(qml.draw(circuit, level="device")())
     0: ─╭●─┤  <Z>
     1: ─╰X─┤
 
