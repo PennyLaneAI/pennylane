@@ -10,8 +10,8 @@ Pending deprecations
 --------------------
 
 * The `custom_decomps` keyword argument to `qml.device` has been deprecated and will be removed 
-  in 0.44. Instead, with `qml.decomposition.enable_graph()`, define custom decomposition rules as a
-  quantum function, and register it with `qml.add_decomps`.
+  in 0.44. Instead, `qml.decomposition.enable_graph()`, new decomposition rules can be defined as 
+  quantum functions with registered resources. See :mod:`pennylane.decomposition` for more details.
 
 * Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
   and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
