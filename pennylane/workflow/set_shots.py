@@ -87,4 +87,4 @@ def set_shots(
         return qnode.update_shots(shots)
 
     # If qnode is not a QNode (including explicit None), raise error
-    raise ValueError("set_shots can only be applied to QNodes")
+    raise ValueError(f"set_shots can only be applied to QNodes, not {type(qnode)} provided.")
