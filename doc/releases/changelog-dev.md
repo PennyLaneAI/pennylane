@@ -218,6 +218,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
+  [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
+
 * Fixes issue related to :func:`~.transforms.to_zx` adding the support for
   `Toffoli` and `CCZ` gates conversion into their ZX-graph representation.
   [(#7899)](https://github.com/PennyLaneAI/pennylane/pull/7899)
