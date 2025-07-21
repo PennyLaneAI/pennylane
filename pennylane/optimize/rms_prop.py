@@ -39,7 +39,7 @@ class RMSPropOptimizer(AdagradOptimizer):
             used in the Adagrad optimization (default value: 0.01).
         decay (float): the learning rate decay :math:`\gamma` (default value: 0.9).
         eps (float): offset :math:`\epsilon` added for numerical stability (default value: 1e-08).
-            See :class:`Adagrad <pennylane.optimize.AdagradOptimizer>` for more information
+            See :class:`Adagrad <pennylane.optimize.AdagradOptimizer>` for more information.
 
     """
 

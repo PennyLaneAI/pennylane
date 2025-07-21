@@ -45,8 +45,8 @@ class AdamOptimizer(GradientDescentOptimizer):
 
     Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.1).
-        beta1 (float): a hyperparameter governing the update of the first and second moment (default value: 0.9).
-        beta2 (float): a hyperparameter governing the update of the first and second moment (default value: 0.99).
+        beta1 (float): a hyperparameter governing the first and second moment updates (default value: 0.9).
+        beta2 (float): a hyperparameter governing the first and second moment updates (default value: 0.99).
         eps (float): offset :math:`\epsilon` added for numerical stability (default value: 1e-08).
 
     .. note::

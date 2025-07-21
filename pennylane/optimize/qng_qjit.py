@@ -51,11 +51,11 @@ class QNGOptimizerQJIT:
             - If ``None``, the full metric tensor is computed
 
             - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
-              the number of evaluated circuits significantly
+              the number of evaluated circuits significantly.
 
             - If ``"diag"``, the diagonal approximation is computed, slightly
               reducing the classical overhead but not the quantum resources
-              (compared to ``"block-diag"``)
+              (compared to ``"block-diag"``).
 
         lam (float): metric tensor regularization to be applied at each optimization step (default value: 0).
 

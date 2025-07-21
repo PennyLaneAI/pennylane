@@ -106,7 +106,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
         approx (str): approximation method for the metric tensor (default value: "block-diag").
 
-            - If ``None``, the full metric tensor is computed
+            - If ``None``, the full metric tensor is computed.
 
             - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
               the number of evaluated circuits significantly.

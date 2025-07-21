@@ -48,7 +48,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
         momentum (float): the user-defined hyperparameter :math:`\rho` (default value: 0.9).
         approx (str): approximation method for the metric tensor (default value: "block-diag").
 
-            - If ``None``, the full metric tensor is computed
+            - If ``None``, the full metric tensor is computed.
 
             - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
               the number of evaluated circuits significantly.

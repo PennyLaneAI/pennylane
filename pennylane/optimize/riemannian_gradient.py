@@ -183,7 +183,7 @@ class RiemannianGradientOptimizer:
         exact (bool): a flag that indicates whether we approximate the Riemannian gradient with a
             Trotterization (False) or calculate the exact evolution via a matrix exponential (True). The latter is
             not hardware friendly and can only be done in simulation (default value: False).
-        trottersteps (int): the number of trotter steps to perform when ``exact = False`` (default value: 1)
+        trottersteps (int): the number of trotter steps to perform when ``exact = False`` (default value: 1).
 
     **Examples**
 
