@@ -130,7 +130,7 @@ class TestSingleMatrix:
 
     identity = csr_matrix([[1, 0], [0, 1]])
     frag = SparseFragment(identity)
-    states = [SparseState(csr_matrix([[1], [0]])), SparseState(csr_matrix([[0], [1]]))]
+    states = [SparseState(csr_matrix([[1, 0]])), SparseState(csr_matrix([[0, 1]]))]
 
     @pytest.mark.parametrize("frag, states", [(frag, states)])
     def test_expectation_identity(self, frag, states):
@@ -181,7 +181,7 @@ class TestMultipleMatrices:
     ham = _sparse_hamiltonian(matrices)
 
     # Basis states |0⟩ and |1⟩
-    states = [SparseState(csr_matrix([[1], [0]])), SparseState(csr_matrix([[0], [1]]))]
+    states = [SparseState(csr_matrix([[1, 0]])), SparseState(csr_matrix([[0, 1]]))]
 
     @pytest.mark.parametrize("ham, states", [(ham, states)])
     def test_hamiltonian_expectation(self, ham, states):
@@ -223,15 +223,15 @@ class TestLinearCombinations:
     frag = SparseFragment(pauli_x)
 
     # Basis states |0⟩ and |1⟩
-    basis_states = [SparseState(csr_matrix([[1], [0]])), SparseState(csr_matrix([[0], [1]]))]
+    basis_states = [SparseState(csr_matrix([[1, 0]])), SparseState(csr_matrix([[0, 1]]))]
 
     @pytest.mark.parametrize("frag, basis_states", [(frag, basis_states)])
     def test_linear_combination_pauli_x(self, frag, basis_states):  # pylint: disable=unused-argument
         """Test expectation values with linear combinations for Pauli-X"""
 
         # Create superposition states |+⟩ = (|0⟩ + |1⟩)/√2 and |-⟩ = (|0⟩ - |1⟩)/√2
-        plus_state = SparseState(csr_matrix([[1/np.sqrt(2)], [1/np.sqrt(2)]]))
-        minus_state = SparseState(csr_matrix([[1/np.sqrt(2)], [-1/np.sqrt(2)]]))
+        plus_state = SparseState(csr_matrix([[1/np.sqrt(2), 1/np.sqrt(2)]]))
+        minus_state = SparseState(csr_matrix([[1/np.sqrt(2), -1/np.sqrt(2)]]))
 
         # Test that ⟨+|X|+⟩ = 1 and ⟨-|X|-⟩ = -1
         expectation_plus = frag.expectation(plus_state, plus_state)
@@ -285,24 +285,24 @@ class TestSparseState:
     def test_state_arithmetic(self):
         """Test basic arithmetic operations on SparseStates"""
 
-        state1 = SparseState(csr_matrix([[1], [0]]))
-        state2 = SparseState(csr_matrix([[0], [1]]))
+        state1 = SparseState(csr_matrix([[1, 0]]))
+        state2 = SparseState(csr_matrix([[0, 1]]))
 
         # Test addition
         sum_state = state1 + state2
-        expected_sum = csr_matrix([[1], [1]])
+        expected_sum = csr_matrix([[1, 1]])
         assert np.allclose(sum_state.csr_matrix.toarray(), expected_sum.toarray())
 
         # Test subtraction
         diff_state = state1 - state2
-        expected_diff = csr_matrix([[1], [-1]])
+        expected_diff = csr_matrix([[1, -1]])
         assert np.allclose(diff_state.csr_matrix.toarray(), expected_diff.toarray())
 
         # Test scalar multiplication
         scaled_state = state1 * 2.0
         scaled_state_rmul = 3.0 * state1
-        expected_scaled = csr_matrix([[2], [0]])
-        expected_scaled_rmul = csr_matrix([[3], [0]])
+        expected_scaled = csr_matrix([[2, 0]])
+        expected_scaled_rmul = csr_matrix([[3, 0]])
 
         assert np.allclose(scaled_state.csr_matrix.toarray(), expected_scaled.toarray())
         assert np.allclose(scaled_state_rmul.csr_matrix.toarray(), expected_scaled_rmul.toarray())
@@ -310,9 +310,9 @@ class TestSparseState:
     def test_dot_product(self):
         """Test dot product between SparseStates"""
 
-        state1 = SparseState(csr_matrix([[1], [0]]))
-        state2 = SparseState(csr_matrix([[0], [1]]))
-        state3 = SparseState(csr_matrix([[1], [1]]))
+        state1 = SparseState(csr_matrix([[1, 0]]))
+        state2 = SparseState(csr_matrix([[0, 1]]))
+        state3 = SparseState(csr_matrix([[1, 1]]))
 
         # Test orthogonal states
         dot_12 = state1.dot(state2)

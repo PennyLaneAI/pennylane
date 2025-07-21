@@ -106,7 +106,7 @@ class SparseFragment(Fragment):
 
     def expectation(self, left: SparseState, right: Any) -> complex:
         """Compute the expectation value using the underlying object's ``__matmul__`` method."""
-        result = left.csr_matrix.conjugate().transpose().dot(self.fragment.dot(right.csr_matrix))
+        result = left.csr_matrix.conjugate().dot(self.fragment.dot(right.csr_matrix.transpose()))
         # Convert to scalar - handle both sparse matrix and array cases
         return complex(result.toarray().flatten()[0])
 
