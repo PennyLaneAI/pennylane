@@ -42,7 +42,7 @@ from pennylane import (
 )
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
-from pennylane.ops.op_math.pow import PowOperation, PowOpObs
+from pennylane.ops.op_math.pow import PowOperation
 from pennylane.wires import Wires
 
 try:
@@ -1475,7 +1475,7 @@ class TestGates:
             RX(0.5, wires=["q0"]),
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
-            PowOpObs(PauliX(wires=["q0"]), 2),
+            PowOperation(PauliX(wires=["q0"]), 2),
             CNOT(wires=["q1", "q0"]),
         ]
 
