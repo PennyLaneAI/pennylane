@@ -18,7 +18,6 @@ Functions handling quantum tapes for circuit cutting, and their auxillary functi
 import copy
 from collections.abc import Callable, Sequence
 from itertools import product
-from typing import Union
 
 from networkx import MultiDiGraph
 
@@ -397,7 +396,7 @@ def _get_measurements(
 def _qcut_expand_fn(
     tape: QuantumScript,
     max_depth: int = 1,
-    auto_cutter: Union[bool, Callable] = False,
+    auto_cutter: bool | Callable = False,
 ):
     """Expansion function for circuit cutting.
 

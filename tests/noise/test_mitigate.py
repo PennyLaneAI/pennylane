@@ -22,6 +22,7 @@ from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.noise.insert_ops import insert
 from pennylane.noise.mitigate import (
     _polyfit,
@@ -420,7 +421,11 @@ class TestMitiqIntegration:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        res_mitigated = mitigated_circuit(w1, w2)
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
+        ):
+            res_mitigated = mitigated_circuit(w1, w2)
+
         res_ideal = ideal_circuit(w1, w2)
 
         assert res_mitigated.shape == res_ideal.shape
