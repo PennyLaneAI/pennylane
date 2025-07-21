@@ -115,6 +115,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Removed `pytest-benchmark` as a developer-facing dependency from `requirements-dev.txt`.
+  [(#7900)](https://github.com/PennyLaneAI/pennylane/pull/7900)
+
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
