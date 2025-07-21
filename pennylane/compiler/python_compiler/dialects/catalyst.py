@@ -28,6 +28,8 @@ It contains data structures that support core compiler functionality.
 from typing import ClassVar
 
 from xdsl.dialects.builtin import (
+    ArrayAttr,
+    DictionaryAttr,
     FlatSymbolRefAttrConstr,
     FunctionType,
     IntegerAttr,
@@ -92,9 +94,9 @@ class CallbackCallOp(IRDLOperation):
 
     inputs = var_operand_def(AnyAttr())
 
-    arg_attrs = opt_prop_def(AnyAttr())
+    arg_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
-    res_attrs = opt_prop_def(AnyAttr())
+    res_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
     callback_results = var_result_def(AnyAttr())
 
@@ -117,9 +119,9 @@ class CallbackOp(IRDLOperation):
 
     resc = prop_def(IntegerAttr.constr(type=EqAttrConstraint(IntegerType(64))))
 
-    arg_attrs = opt_prop_def(AnyAttr())
+    arg_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
-    res_attrs = opt_prop_def(AnyAttr())
+    res_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
     body = region_def()
 
@@ -160,9 +162,9 @@ class LaunchKernelOp(IRDLOperation):
 
     inputs = var_operand_def(AnyAttr())
 
-    arg_attrs = opt_prop_def(AnyAttr())
+    arg_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
-    res_attrs = opt_prop_def(AnyAttr())
+    res_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
     kernel_results = var_result_def(AnyAttr())
 
