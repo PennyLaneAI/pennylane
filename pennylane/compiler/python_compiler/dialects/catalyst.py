@@ -14,7 +14,7 @@
 """
 This file contains the Catalyst dialect for the Python compiler.
 
-This file is was originally ported automatically by xDSL and modified manually
+This file was originally ported automatically by xDSL (using the ``xdsl-tblgen`` tool) and modified manually
 to support the Python compiler.
 
 The catalyst dialect serves as a standard library for the Catalyst compiler.
