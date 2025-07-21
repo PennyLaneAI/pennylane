@@ -27,7 +27,7 @@ try:
     from filecheck.parser import Parser, pattern_for_opts
     from xdsl.context import Context
     from xdsl.dialects import test
-    from xdsl.passes import PipelinePass
+    from xdsl.passes import PassPipeline
 
     from pennylane.compiler.python_compiler import Compiler
     from pennylane.compiler.python_compiler.jax_utils import (
@@ -47,7 +47,7 @@ def _run_filecheck_impl(program_str, pipeline=()):
     ctx = Context(allow_unregistered=True)
     xdsl_module = QuantumParser(ctx, program_str, extra_dialects=(test.Test,)).parse_module()
 
-    pipeline = PipelinePass(pipeline)
+    pipeline = PassPipeline(pipeline)
     pipeline.apply(ctx, xdsl_module)
 
     opts = parse_argv_options(["filecheck", __file__])
