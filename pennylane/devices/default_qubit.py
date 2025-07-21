@@ -45,6 +45,7 @@ from .preprocess import (
     no_sampling,
     validate_adjoint_trainable_params,
     validate_device_wires,
+    validate_max_wires,
     validate_measurements,
     validate_multiprocessing_workers,
     validate_observables,
@@ -474,15 +475,13 @@ class DefaultQubit(Device):
     # pylint:disable = too-many-arguments
     @debug_logger_init
     def __init__(
-        self,
-        wires=None,
-        shots=None,
-        seed="global",
-        max_workers=None,
+        self, wires=None, shots=None, seed="global", max_workers=None, _max_wires: None | int = None
     ) -> None:
         super().__init__(wires=wires, shots=shots)
         self._max_workers = max_workers
         seed = np.random.randint(0, high=10000000) if seed == "global" else seed
+        self._max_wires = _max_wires
+
         if qml.math.get_interface(seed) == "jax":
             self._prng_seed = seed
             self._prng_key = seed
@@ -557,11 +556,12 @@ class DefaultQubit(Device):
 
         if config.interface == qml.math.Interface.JAX_JIT:
             transform_program.add_transform(no_counts)
+        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+
         transform_program.add_transform(
             mid_circuit_measurements, device=self, mcm_config=config.mcm_config
         )
-        # validate_device_wires needs to be after defer_measurement has added more wires.
-        transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+
         transform_program.add_transform(
             decompose,
             stopping_condition=stopping_condition,
@@ -590,6 +590,9 @@ class DefaultQubit(Device):
                 transform_program, device_vjp=config.use_device_jacobian_product
             )
 
+        transform_program.add_transform(
+            validate_max_wires, wires=self.wires, max_wires=self._max_wires, name="default.qubit"
+        )
         return transform_program
 
     # pylint: disable = too-many-branches
