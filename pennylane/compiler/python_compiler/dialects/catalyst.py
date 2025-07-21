@@ -23,6 +23,8 @@ It contains data structures that support core compiler functionality.
 
 # ruff: noqa: F403, F405
 
+# pylint: disable=too-few-public-methods
+
 from typing import ClassVar
 
 from xdsl.dialects.builtin import IntegerAttr, IntegerType, StringAttr, UnitAttr
