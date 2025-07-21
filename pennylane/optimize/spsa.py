@@ -76,7 +76,7 @@ class SPSAOptimizer:
           Therefore, in case of using ``step_and_cost`` method instead of ``step``, the number
           of executions will include the cost function evaluations.
 
-    Parameters:
+    Args:
         maxiter (int): the maximum number of iterations expected to be performed.
             Used to determine :math:`A`, if :math:`A` is not supplied, otherwise ignored.
         alpha (float): a hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}`

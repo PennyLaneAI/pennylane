@@ -82,7 +82,7 @@ class QNSPSAOptimizer:
 
     You can also find a walkthrough of the implementation in this `tutorial <demos/qnspsa>`__.
 
-    Parameters:
+    Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default value: 1e-3).
         regularization (float): regularization term :math:`\beta` to the Fubini-Study metric tensor
             for numerical stability (default value: 1e-3).

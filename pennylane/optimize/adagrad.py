@@ -40,7 +40,7 @@ class AdagradOptimizer(GradientDescentOptimizer):
 
     :math:`\eta` is the step size, a user defined parameter.
 
-    Parameters:
+    Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.1).
         eps (float): offset :math:`\epsilon` added for numerical stability (default value: 1e-08).
 

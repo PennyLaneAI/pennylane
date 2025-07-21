@@ -44,7 +44,7 @@ class QNGOptimizerQJIT:
             - ``QNGOptimizerQJIT`` does not work correctly if there is any classical processing in the QNode circuit
               (e.g., ``2 * theta`` as a gate parameter).
 
-    Parameters:
+    Args:
         stepsize (float): the user-defined stepsize hyperparameter (default value: 0.01).
         approx (str): approximation method for the metric tensor (default value: "block-diag").
 

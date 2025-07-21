@@ -32,7 +32,7 @@ class MomentumOptimizer(GradientDescentOptimizer):
     * :math:`\eta`: the step size
     * :math:`m`: the momentum
 
-    Parameters:
+    Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
         momentum (float): the user-defined hyperparameter :math:`m` (default value: 0.9).
 

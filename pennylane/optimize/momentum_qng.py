@@ -43,7 +43,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
     is an expectation value of some observable measured on the variational
     quantum circuit :math:`U(x^{(t)})`.
 
-    Parameters:
+    Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
         momentum (float): the user-defined hyperparameter :math:`\rho` (default value: 0.9).
         approx (str): approximation method for the metric tensor (default value: "block-diag").

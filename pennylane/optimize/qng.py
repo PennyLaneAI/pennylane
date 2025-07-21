@@ -102,7 +102,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         * For multi-QNode models, we don't know what geometry is appropriate
           if a parameter is shared amongst several QNodes.
 
-    Parameters:
+    Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
         approx (str): approximation method for the metric tensor (default value: "block-diag").
 

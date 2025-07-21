@@ -156,7 +156,7 @@ class RotosolveOptimizer:
         or PyTorch. ``RotosolveOptimizer`` is not yet implemented to work in a stable
         manner with TensorFlow or JAX.
 
-    Parameters:
+    Args:
         substep_optimizer (str or callable): optimizer to use for the substeps of Rotosolve
             that carries out a univariate (i.e., single-parameter) global optimization.
             *Only used if there are more than one frequency for a given parameter* (default value: "brute").

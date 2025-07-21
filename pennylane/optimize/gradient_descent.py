@@ -29,7 +29,7 @@ class GradientDescentOptimizer:
 
     where :math:`\eta` is a user-defined hyperparameter corresponding to step size.
 
-    Parameters:
+    Args:
         stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
 
     .. note::
