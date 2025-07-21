@@ -30,9 +30,9 @@ from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
     ProbabilityMP,
-    SampleMP,
     StateMP,
     VarianceMP,
+    sample,
 )
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
@@ -303,7 +303,7 @@ class TestExtractStatistics:
         [
             ExpectationMP(obs=qml.PauliX(0)),
             VarianceMP(obs=qml.PauliX(0)),
-            SampleMP(obs=qml.PauliX(0)),
+            sample(op=qml.PauliX(0)),
             ProbabilityMP(obs=qml.PauliX(0)),
             StateMP(),
             CountsMP(),
