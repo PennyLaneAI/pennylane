@@ -402,26 +402,27 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_HilbertSchmidt(self, device, tol):
         """Test the HilbertSchmidt template."""
         dev = device(2)
-        u_tape = qml.tape.QuantumScript([qml.Hadamard(0)])
+        u_ops = [qml.Hadamard(0)]
+        u_wires = qml.tape.QuantumScript(u_ops).wires
 
         def v_function(params):
             qml.RZ(params[0], wires=1)
 
         @qml.qnode(dev)
-        def hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
-            return qml.probs(u_tape.wires + v_wires)
+        def hilbert_test(v_params, v_function, v_wires, u_ops):
+            qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_ops=u_ops)
+            return qml.probs(u_wires + v_wires)
 
-        def cost_hst(parameters, v_function, v_wires, u_tape):
+        def cost_hst(parameters, v_function, v_wires, u_ops):
             # pylint:disable=unsubscriptable-object
             return (
                 1
                 - hilbert_test(
-                    v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape
+                    v_params=parameters, v_function=v_function, v_wires=v_wires, u_ops=u_ops
                 )[0]
             )
 
-        res = cost_hst([0], v_function=v_function, v_wires=[1], u_tape=u_tape)
+        res = cost_hst([0], v_function=v_function, v_wires=[1], u_ops=u_ops)
         expected = 1.0
         assert np.isclose(res, expected, atol=tol(dev.shots))
 
@@ -458,7 +459,8 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_LocalHilbertSchmidt(self, device, tol):
         """Test the LocalHilbertSchmidt template."""
         dev = device(4)
-        u_tape = qml.tape.QuantumScript([qml.CZ(wires=(0, 1))])
+        u_ops = [qml.CZ(wires=(0, 1))]
+        u_wires = qml.tape.QuantumScript(u_ops).wires
 
         def v_function(params):
             qml.RZ(params[0], wires=2)
@@ -468,16 +470,16 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[2, 3])
 
         @qml.qnode(dev)
-        def local_hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
-            return qml.probs(u_tape.wires + v_wires)
+        def local_hilbert_test(v_params, v_function, v_wires, u_ops):
+            qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_ops=u_ops)
+            return qml.probs(u_wires + v_wires)
 
-        def cost_lhst(parameters, v_function, v_wires, u_tape):
+        def cost_lhst(parameters, v_function, v_wires, u_ops):
             # pylint:disable=unsubscriptable-object
             return (
                 1
                 - local_hilbert_test(
-                    v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape
+                    v_params=parameters, v_function=v_function, v_wires=v_wires, u_ops=u_ops
                 )[0]
             )
 
@@ -485,7 +487,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2],
             v_function=v_function,
             v_wires=[2, 3],
-            u_tape=u_tape,
+            u_ops=u_ops,
         )
         expected = 0.5
         assert np.isclose(res, expected, atol=tol(dev.shots))

@@ -48,14 +48,13 @@ class HilbertSchmidt(Operation):
         *params (array): Parameters for the quantum function `V`.
         v_function (callable): Quantum function that represents the approximate compiled unitary `V`.
         v_wires (int or Iterable[Number, str]]): The wire(s) on which the approximate compiled unitary acts.
-        u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
+        u_ops (list[Operation]): The operations that represent the unitary `U`.
 
     Raises:
-        QuantumFunctionError: The argument ``u_tape`` must be a ``QuantumTape``.
         QuantumFunctionError: ``v_function`` is not a valid quantum function.
         QuantumFunctionError: ``U`` and ``V`` do not have the same number of wires.
         QuantumFunctionError: The wires ``v_wires`` are a subset of ``V`` wires.
-        QuantumFunctionError: ``u_tape`` and ``v_tape`` must act on distinct wires.
+        QuantumFunctionError: Operations in ``u_ops`` must act on distinct wires from those in ``v_wires``.
 
     **Reference**
 
@@ -75,8 +74,8 @@ class HilbertSchmidt(Operation):
 
         .. code-block:: python
 
-            with qml.QueuingManager.stop_recording():
-                u_tape = qml.tape.QuantumTape([qml.Hadamard(0)])
+            u_ops = [qml.Hadamard(0)]
+            u_wires = qml.tape.QuantumScript(u_ops).wires
 
             def v_function(params):
                 qml.RZ(params[0], wires=1)
@@ -84,16 +83,16 @@ class HilbertSchmidt(Operation):
             dev = qml.device("default.qubit", wires=2)
 
             @qml.qnode(dev)
-            def hilbert_test(v_params, v_function, v_wires, u_tape):
-                qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
-                return qml.probs(u_tape.wires + v_wires)
+            def hilbert_test(v_params, v_function, v_wires, u_ops):
+                qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_ops=u_ops)
+                return qml.probs(u_wires + v_wires)
 
-            def cost_hst(parameters, v_function, v_wires, u_tape):
-                return (1 - hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape)[0])
+            def cost_hst(parameters, v_function, v_wires, u_ops):
+                return (1 - hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u_ops=u_ops)[0])
 
         Now that the cost function has been defined it can be called for specific parameters:
 
-        >>> cost_hst([0], v_function = v_function, v_wires = [1], u_tape = u_tape)
+        >>> cost_hst([0], v_function = v_function, v_wires = [1], u_ops = u_ops)
         tensor(1., requires_grad=True)
 
     """
@@ -104,28 +103,27 @@ class HilbertSchmidt(Operation):
         metadata = (
             ("v_function", self.hyperparameters["v_function"]),
             ("v_wires", self.hyperparameters["v_wires"]),
-            ("u_tape", self.hyperparameters["u_tape"]),
+            ("u_ops", self.hyperparameters["u_ops"]),
         )
         return self.data, metadata
 
     @classmethod
-    def _primitive_bind_call(cls, *params, v_function, v_wires, u_tape, id=None):
+    def _primitive_bind_call(cls, *params, v_function, v_wires, u_ops, id=None):
         # pylint: disable=arguments-differ
-        kwargs = {"v_function": v_function, "v_wires": v_wires, "u_tape": u_tape, "id": id}
+        kwargs = {"v_function": v_function, "v_wires": v_wires, "u_ops": u_ops, "id": id}
         return cls._primitive.bind(*params, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 
-    def __init__(self, *params, v_function, v_wires, u_tape, id=None):
+    def __init__(self, *params, v_function, v_wires, u_ops, id=None):
+
         self._num_params = len(params)
+        self.hyperparameters["u_ops"] = u_ops
 
-        if not isinstance(u_tape, qml.tape.QuantumScript):
-            raise QuantumFunctionError("The argument u_tape must be a QuantumTape.")
-
-        u_wires = u_tape.wires
-        self.hyperparameters["u_tape"] = u_tape
+        u_script = qml.tape.QuantumScript(u_ops)
+        u_wires = u_script.wires
 
         if not callable(v_function):
             raise QuantumFunctionError(
@@ -134,19 +132,19 @@ class HilbertSchmidt(Operation):
 
         self.hyperparameters["v_function"] = v_function
 
-        v_tape = qml.tape.make_qscript(v_function)(*params)
-        self.hyperparameters["v_tape"] = v_tape
+        v_script = qml.tape.make_qscript(v_function)(*params)
+        self.hyperparameters["v_ops"] = v_script.operations
         self.hyperparameters["v_wires"] = qml.wires.Wires(v_wires)
 
         if len(u_wires) != len(v_wires):
             raise QuantumFunctionError("U and V must have the same number of wires.")
 
-        if not qml.wires.Wires(v_wires).contains_wires(v_tape.wires):
-            raise QuantumFunctionError("All wires in v_tape must be in v_wires.")
+        if not qml.wires.Wires(v_wires).contains_wires(v_script.wires):
+            raise QuantumFunctionError("All wires in v_script must be in v_wires.")
 
         # Intersection of wires
-        if len(qml.wires.Wires.shared_wires([u_tape.wires, v_tape.wires])) != 0:
-            raise QuantumFunctionError("u_tape and v_tape must act on distinct wires.")
+        if len(qml.wires.Wires.shared_wires([u_script.wires, v_script.wires])) != 0:
+            raise QuantumFunctionError("operations in u and v must act on distinct wires.")
 
         wires = qml.wires.Wires(u_wires + v_wires)
 
@@ -161,11 +159,14 @@ class HilbertSchmidt(Operation):
 
     @staticmethod
     def compute_decomposition(
-        params, wires, u_tape, v_tape, v_function=None, v_wires=None
+        params, wires, u_ops, v_ops, v_function=None, v_wires=None
     ):  # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
         r"""Representation of the operator as a product of other operators."""
 
-        n_wires = len(u_tape.wires + v_tape.wires)
+        u_script = qml.tape.QuantumScript(u_ops)
+        v_script = qml.tape.QuantumScript(v_ops)
+
+        n_wires = len(u_script.wires + v_script.wires)
         first_range = range(n_wires // 2)
         second_range = range(n_wires // 2, n_wires)
 
@@ -177,7 +178,7 @@ class HilbertSchmidt(Operation):
         )
 
         # Unitary U
-        for op_u in u_tape.operations:
+        for op_u in u_script.operations:
             # The operation has been defined outside of this function, to queue it we call qml.apply.
             if qml.QueuingManager.recording():
                 qml.apply(op_u)
@@ -189,7 +190,7 @@ class HilbertSchmidt(Operation):
         # using the QubitUnitary operation.
         decomp_ops.extend(
             qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires)
-            for op_v in v_tape.operations
+            for op_v in v_script.operations
         )
 
         # CNOT second layer
@@ -219,14 +220,13 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         params (array): Parameters for the quantum function `V`.
         v_function (Callable): Quantum function that represents the approximate compiled unitary `V`.
         v_wires (int or Iterable[Number, str]]): the wire(s) on which the approximate compiled unitary acts.
-        u_tape (.QuantumTape): `U`, the unitary to be compiled as a ``qml.tape.QuantumTape``.
+        u_ops (list[Operation]): The operations that represent the unitary `U`.
 
     Raises:
-        QuantumFunctionError: The argument u_tape must be a QuantumTape
         QuantumFunctionError: ``v_function`` is not a valid Quantum function.
         QuantumFunctionError: `U` and `V` do not have the same number of wires.
         QuantumFunctionError: The wires ``v_wires`` are a subset of `V` wires.
-        QuantumFunctionError: u_tape and v_tape must act on distinct wires.
+        QuantumFunctionError: Operations in ``u_ops`` must act on distinct wires from those in ``v_wires``.
 
     **Reference**
 
@@ -276,11 +276,14 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
     @staticmethod
     def compute_decomposition(
-        params, wires, u_tape, v_tape, v_function=None, v_wires=None
+        params, wires, u_ops, v_ops, v_function=None, v_wires=None
     ):  # pylint: disable=too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
 
-        n_wires = len(u_tape.wires + v_tape.wires)
+        u_script = qml.tape.QuantumScript(u_ops)
+        v_script = qml.tape.QuantumScript(v_ops)
+
+        n_wires = len(u_script.wires + v_script.wires)
         first_range = range(n_wires // 2)
         second_range = range(n_wires // 2, n_wires)
 
@@ -293,17 +296,16 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         # Unitary U
         if qml.QueuingManager.recording():
-            decomp_ops.extend(qml.apply(op_u) for op_u in u_tape.operations)
+            decomp_ops.extend(qml.apply(op_u) for op_u in u_ops)
         else:
-            decomp_ops.extend(u_tape.operations)
+            decomp_ops.extend(u_ops)
 
         # Unitary V conjugate
         # Since we don't currently have an easy way to apply the complex conjugate of a tape, we manually
         # apply the complex conjugate of each operation in the V tape and append it to the decomposition
         # using the QubitUnitary operation.
         decomp_ops.extend(
-            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires)
-            for op_v in v_tape.operations
+            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v_ops
         )
         # Single qubit measurement
         decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
