@@ -787,20 +787,22 @@ class QNode:
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
-        if "shots" in kwargs and self._shots_override_device:
-            # NOTE: at removal, remember to remove the userwarning below as well; without allowing 
+        if "shots" in kwargs:
+            # NOTE: at removal, remember to remove the userwarning below as well; without allowing
             # qnode call kwarg, users should be free to define their own `shots` kwarg in qfunc definition
             warnings.warn(
                 "'shots' as an argument to the quantum function is deprecated and will be removed in v0.44. ",
                 PennyLaneDeprecationWarning,
-            )
-            _kwargs_shots = kwargs.pop("shots")
-            warnings.warn(
-                "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                f"The transform will take precedence over 'shots={_kwargs_shots}.'",
-                UserWarning,
                 stacklevel=2,
             )
+            if self._shots_override_device:
+                _kwargs_shots = kwargs.pop("shots")
+                warnings.warn(
+                    "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                    f"The transform will take precedence over 'shots={_kwargs_shots}.'",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
         if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode._shots precedency:
             shots = self._shots
