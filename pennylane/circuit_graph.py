@@ -17,8 +17,8 @@ representation of a quantum circuit from an Operator queue.
 """
 import warnings
 from collections import defaultdict, namedtuple
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Optional, Sequence, Union
 
 import numpy as np
 import rustworkx as rx
@@ -99,11 +99,11 @@ class CircuitGraph:
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
-        ops: list[Union[Operator, MeasurementProcess]],
-        obs: list[Union[MeasurementProcess, Operator]],
+        ops: list[Operator | MeasurementProcess],
+        obs: list[MeasurementProcess | Operator],
         wires: Wires,
-        par_info: Optional[list[dict]] = None,
-        trainable_params: Optional[set[int]] = None,
+        par_info: list[dict] | None = None,
+        trainable_params: set[int] | None = None,
     ):
         self._operations = ops
         self._observables = obs

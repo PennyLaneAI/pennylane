@@ -21,7 +21,7 @@ import pennylane as qml
 from pennylane.operation import Operation
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def _state_preparation_pauli_words(num_wires):
     """Pauli words necessary for a state preparation.
 
