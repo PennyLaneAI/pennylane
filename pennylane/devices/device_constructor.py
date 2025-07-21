@@ -281,7 +281,8 @@ def device(name, *args, **kwargs):
             warnings.warn(
                 """The ``custom_decomps`` keyword argument to ``qml.device`` has been deprecated and will be removed 
                 in v0.44. Instead, use the graph-based system with ``qml.decomposition.enable_graph()``, and define new decomposition rules as
-                quantum functions with registered resources. See https://docs.pennylane.ai/en/stable/code/qml_decomposition.html for more details.""",
+                quantum functions with registered resources. See `Decomposition <https://docs.pennylane.ai/en/stable/code/qml_decomposition.html>`_. 
+                for more details.""",
                 qml.exceptions.PennyLaneDeprecationWarning,
             )
             if isinstance(dev, qml.devices.LegacyDevice):
