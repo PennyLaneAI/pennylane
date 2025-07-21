@@ -1323,23 +1323,23 @@ class QasmInterpreter:
         # setup wires
         wires = []
         require_wires = []
-        for q in range(len(node.qubits)):
-            if (not hasattr(node.qubits[q], "indices")) or node.qubits[q].indices is None:
+        for qubit in node.qubits:
+            if (not hasattr(qubit, "indices")) or qubit.indices is None:
                 # we are dealing with a wire label directly
-                wire = _resolve_name(node.qubits[q])
+                wire = _resolve_name(qubit)
                 # require the qubit to have been declared
                 require_wires.append(wire)
                 # resolve any wire relabelling (mapping pennylane wires to qasm wires, or renaming between func contexts)
                 wires.append(context.wire_map[wire] if wire in context.wire_map else wire)
-            elif len(node.qubits[q].indices) == 1 and len(node.qubits[q].indices[0]) == 1:
+            elif len(qubit.indices) == 1 and len(qubit.indices[0]) == 1:
                 # we are dealing with an index into a register
-                register = _resolve_name(node.qubits[q])
+                register = _resolve_name(qubit)
                 # required the register to have been declared
                 require_wires.append(register)
                 # evaluate the register to a list of the qubits that compose it
                 reg_var = context.retrieve_variable(register)
                 # evaluate the index into the register to a literal
-                index = self.visit(node.qubits[q].indices[0][0], context)
+                index = self.visit(qubit.indices[0][0], context)
                 # check that the index is not out of bounds
                 if index < len(reg_var):
                     # index into the register and return the wire acted on
