@@ -1951,9 +1951,9 @@ class TestPostselection:
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
 
+            @qml.set_shots(shots=shots)
             @qml.defer_measurements
             @qml.qnode(dev, interface=interface)
-            @qml.set_shots(shots=shots)
             def circ_postselect(theta):
                 qml.RX(theta, 0)
                 qml.CNOT([0, 1])
