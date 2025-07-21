@@ -26,7 +26,7 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms import TransformError
 
 pyzx = pytest.importorskip("pyzx")
-
+pytestmark = pytest.mark.external
 supported_operations = [
     qml.X(wires=0),
     qml.Y(wires=0),
