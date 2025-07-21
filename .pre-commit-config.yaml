@@ -5,9 +5,9 @@ repos:
     - id: black
       args: [
               "--line-length=100",
-              "-t", "py39",
-              "-t", "py310",
               "-t", "py311",
+              "-t", "py312",
+              "-t", "py313",
             ]
       exclude: ^doc/
 -   repo: https://github.com/PyCQA/isort
@@ -35,6 +35,11 @@ repos:
     rev: v0.28.5
     hooks:
     -   id: tach
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.16.0
+    hooks:
+    -   id: pyupgrade
+        args: [--py311-plus]
 - repo: local
   hooks:
     - id: pylint

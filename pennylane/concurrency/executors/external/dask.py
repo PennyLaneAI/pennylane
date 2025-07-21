@@ -19,7 +19,7 @@ Contains concurrent executor abstractions for task-based workloads based on supp
 
 import os
 from collections.abc import Callable, Sequence
-from typing import Optional, Union
+from typing import Union
 
 from ..base import ExtExec
 
@@ -41,9 +41,9 @@ class DaskExec(ExtExec):  # pragma: no cover
 
     def __init__(
         self,
-        max_workers: Optional[int] = None,
+        max_workers: int | None = None,
         persist: bool = False,
-        client_provider: Optional[Union["Cluster", str]] = None,
+        client_provider: Union["Cluster", str] | None = None,
         **kwargs,
     ):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)

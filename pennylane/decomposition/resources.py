@@ -19,7 +19,6 @@ from __future__ import annotations
 import functools
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Type
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -116,7 +115,7 @@ class CompressedResourceOp:
 
     """
 
-    def __init__(self, op_type: Type[Operator], params: dict | None = None):
+    def __init__(self, op_type: type[Operator], params: dict | None = None):
         if not isinstance(op_type, type):
             raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
         if not issubclass(op_type, qml.operation.Operator):
@@ -189,7 +188,7 @@ def _validate_resource_rep(op_type, params):
         )
 
 
-def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
+def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     """Binds an operator type with additional resource parameters.
 
     .. note::
@@ -295,7 +294,7 @@ def resource_rep(op_type: Type[Operator], **params) -> CompressedResourceOp:
 
 
 def controlled_resource_rep(  # pylint: disable=too-many-arguments
-    base_class: Type[Operator],
+    base_class: type[Operator],
     base_params: dict,
     num_control_wires: int,
     num_zero_control_values: int = 0,
@@ -381,7 +380,7 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments
     )
 
 
-def adjoint_resource_rep(base_class: Type[Operator], base_params: dict | None = None):
+def adjoint_resource_rep(base_class: type[Operator], base_params: dict = None):
     """Creates a ``CompressedResourceOp`` representation of the adjoint of an operator.
 
     Args:
