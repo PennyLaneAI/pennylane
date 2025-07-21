@@ -14,10 +14,12 @@
 """
 Contains the MPSPrep template.
 """
+from collections import Counter
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
@@ -346,6 +348,8 @@ class MPSPrep(Operation):
             ]
     """
 
+    resource_keys = {"num_sites", "num_work_wires"}
+
     def __init__(
         self, mps, wires, work_wires=None, right_canonicalize=False, id=None
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -381,6 +385,13 @@ class MPSPrep(Operation):
     def _unflatten(cls, data, metadata):
         hyperparams_dict = dict(metadata)
         return cls(data, **hyperparams_dict)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_sites": len(self.data),
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
+        }
 
     def map_wires(self, wire_map):
         new_wires = Wires(
@@ -498,3 +509,77 @@ if MPSPrep._primitive is not None:  # pylint: disable=protected-access
     @MPSPrep._primitive.def_impl  # pylint: disable=protected-access
     def _(*args, **kwargs):
         return type.__call__(MPSPrep, args, **kwargs)
+
+
+def _mps_prep_decomposition_resources(num_sites, num_work_wires):
+    resources = Counter({})
+
+    for i in range(num_sites):
+        resources[resource_rep(qml.QubitUnitary, num_wires=1 + num_work_wires)] += 1
+
+    return resources
+
+
+@register_resources(_mps_prep_decomposition_resources)
+def _mps_prep_decomposition(*mps, **kwargs):
+    wires = kwargs["wires"]
+    work_wires = kwargs["work_wires"]
+    right_canonicalize = kwargs["right_canonicalize"]
+    mps = list(mps)
+
+    if work_wires is None:
+        raise ValueError("The qml.MPSPrep decomposition requires `work_wires` to be specified.")
+
+    max_bond_dimension = 0
+    for i in range(len(mps) - 1):
+        bond_dim = mps[i].shape[-1]
+        max_bond_dimension = max(max_bond_dimension, bond_dim)
+
+    if max_bond_dimension > 2 ** len(work_wires):
+        raise ValueError(
+            f"Incorrect number of `work_wires`. At least {int(qml.math.ceil(qml.math.log2(max_bond_dimension)))} `work_wires` must be provided."
+        )
+
+    n_wires = len(work_wires) + 1
+
+    mps = mps.copy()
+
+    # Transform the MPS to ensure that the generated matrix is unitary
+    if right_canonicalize:
+        mps = right_canonicalize_mps(mps)
+
+    mps[0] = mps[0].reshape((1, *mps[0].shape))
+    mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
+
+    interface, dtype = qml.math.get_interface(mps[0]), mps[0].dtype
+
+    for i, Ai in enumerate(mps):
+
+        # Encode the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
+        vectors = []
+        for column in Ai:
+            vector = qml.math.zeros(2**n_wires, like=interface, dtype=dtype)
+
+            if interface == "jax":
+                vector = vector.at[: len(column[0])].set(column[0])
+                vector = vector.at[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])].set(
+                    column[1]
+                )
+
+            else:
+                vector[: len(column[0])] = column[0]
+                vector[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])] = column[1]
+
+            vectors.append(vector)
+
+        vectors = qml.math.stack(vectors).T
+        # The unitary is completed using QR decomposition
+        d, k = vectors.shape
+        new_columns = qml.math.array(np.random.RandomState(42).random((d, d - k)))
+        unitary_matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
+        unitary_matrix *= qml.math.sign(qml.math.diag(R))  # Enforce uniqueness for QR decomposition
+
+        qml.QubitUnitary(unitary_matrix, wires=[wires[i]] + work_wires)
+
+
+add_decomps(MPSPrep, _mps_prep_decomposition)

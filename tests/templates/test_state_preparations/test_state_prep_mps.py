@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.state_prep_mps import (
     _validate_mps_shape,
     right_canonicalize_mps,
@@ -525,6 +526,31 @@ class TestMPSPrep:
         output = dev.execute(qs)[: 2**num_wires]
 
         assert np.allclose(state, output, rtol=0.01)
+
+    def test_decomposition_new(self):
+        """Tests the decomposition rule implemented with the new system."""
+        mps = [
+            np.array([[0.70710678, 0.0], [0.0, 0.70710678]]),
+            np.array(
+                [
+                    [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+                    [[0.0, 0.0, -0.0, 0.0], [-1.0, 0.0, 0.0, 0.0]],
+                ]
+            ),
+            np.array(
+                [
+                    [[0.00000000e00, 1.74315280e-32], [-7.07106781e-01, -7.07106781e-01]],
+                    [[7.07106781e-01, 7.07106781e-01], [0.00000000e00, 0.00000000e00]],
+                    [[0.00000000e00, 0.00000000e00], [-7.07106781e-01, 7.07106781e-01]],
+                    [[-7.07106781e-01, 7.07106781e-01], [0.00000000e00, 0.00000000e00]],
+                ]
+            ),
+            np.array([[1.0, 0.0], [0.0, 1.0]]),
+        ]
+
+        op = qml.MPSPrep(mps, wires=range(2, 6), work_wires=[0, 1])
+        for rule in qml.list_decomps(qml.MPSPrep):
+            _test_decomposition_rule(op, rule)
 
     def test_decomposition(self):
         """Tests that the template defines the correct decomposition."""
