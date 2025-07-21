@@ -58,10 +58,7 @@ class Observable(Operator):
         """All observables must be hermitian"""
         return True
 
-    def compare(
-        self,
-        other: Union["Observable", "qml.ops.LinearCombination"],
-    ) -> bool:
+    def compare(self, other: Union["Observable", "qml.ops.LinearCombination"]) -> bool:
         r"""Compares with another :class:`~Observable`, to determine if they are equivalent.
 
         .. warning::
