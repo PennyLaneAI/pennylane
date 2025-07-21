@@ -105,5 +105,4 @@ def test_assembly_format(run_filecheck):
     %callback_result = catalyst.callback_call @callback_func(%val) : (f64) -> f64
     """
 
-
     run_filecheck(program)

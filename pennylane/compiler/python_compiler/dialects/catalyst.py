@@ -24,6 +24,7 @@ It contains data structures that support core compiler functionality.
 # ruff: noqa: F403, F405
 
 from typing import ClassVar
+
 from xdsl.dialects.builtin import IntegerAttr, IntegerType, StringAttr, UnitAttr
 from xdsl.ir import AttributeCovT, Dialect, Generic, ParametrizedAttribute, TypeAttribute
 from xdsl.irdl import (
@@ -54,6 +55,7 @@ class ArrayListType(Generic[AttributeCovT], ParametrizedAttribute, TypeAttribute
     name = "catalyst.arraylist"
 
     element_type: AttributeCovT
+
 
 @irdl_op_definition
 class AssertionOp(IRDLOperation):
@@ -191,6 +193,7 @@ class ListLoadDataOp(IRDLOperation):
 
     data = result_def(AnyAttr())
 
+
 @irdl_op_definition
 class ListPopOp(IRDLOperation):
     """Remove an element from the end of an array list and return it."""
@@ -204,6 +207,7 @@ class ListPopOp(IRDLOperation):
     list = operand_def(base(ArrayListType[T]))
 
     result = result_def(T)
+
 
 @irdl_op_definition
 class ListPushOp(IRDLOperation):

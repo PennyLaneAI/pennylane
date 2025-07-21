@@ -34,7 +34,7 @@ from xdsl.ir import Dialect as xDialect
 from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
-from .dialects import Catalyst, MBQC, Quantum
+from .dialects import MBQC, Catalyst, Quantum
 
 JaxJittedFunction: TypeAlias = jaxlib.xla_extension.PjitFunction
 
