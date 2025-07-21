@@ -6,10 +6,13 @@
 
 <h3>Improvements 🛠</h3>
 
-* Decomposition rules that can be accessed with the new graph-based decomposition system are
-  implemented. The following decompositions have been added:
+* Several templates now have decompositions that can be accessed within the graph-based
+  decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows 
+  that include these templates to be decomposed in a resource-efficient and performant
+  manner.
     [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
-
+  
+  The included templates are:
     * :class:`~.Adder`
     
     * :class:`~.ControlledSequence`
