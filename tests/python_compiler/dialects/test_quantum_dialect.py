@@ -36,10 +36,12 @@ all_attrs = list(Quantum.attributes)
 expected_ops_names = {
     "AdjointOp": "quantum.adjoint",
     "AllocOp": "quantum.alloc",
+    "AllocQubitOp": "quantum.alloc_qb",
     "ComputationalBasisOp": "quantum.compbasis",
     "CountsOp": "quantum.counts",
     "CustomOp": "quantum.custom",
     "DeallocOp": "quantum.dealloc",
+    "DeallocQubitOp": "quantum.dealloc_qb",
     "DeviceInitOp": "quantum.device",
     "DeviceReleaseOp": "quantum.device_release",
     "ExpvalOp": "quantum.expval",
@@ -126,6 +128,12 @@ def test_assembly_format():
 
     // CHECK: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
     %out_qubit = quantum.custom "RX"(%cst) %qubit : !quantum.bit
+
+    // CHECK: [[QUBIT3:%.+]] = quantum.alloc_qb : !quantum.bit
+    %alloc_qubit = quantum.alloc_qb : !quantum.bit
+
+    // CHECK: quantum.dealloc_qb [[QUBIT3]] : !quantum.bit
+    quantum.dealloc_qb %alloc_qubit : !quantum.bit
 
     // CHECK: quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
     quantum.device["some-library.so", "pennylane-lightning", "kwargs"]

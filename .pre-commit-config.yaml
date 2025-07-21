@@ -45,6 +45,11 @@ repos:
     hooks:
     -   id: tach
         name: "🐍 tach · Check module dependencies"
+-   repo: https://github.com/asottile/pyupgrade
+    rev: v3.16.0
+    hooks:
+    -   id: pyupgrade
+        args: [--py311-plus]
 - repo: local
   hooks:
     - id: pylint

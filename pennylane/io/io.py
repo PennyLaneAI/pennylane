@@ -20,7 +20,7 @@ from collections.abc import Callable
 from functools import wraps
 from importlib import metadata
 from sys import version_info
-from typing import Any, Optional
+from typing import Any
 
 from pennylane.wires import WiresLike  # pylint: disable=ungrouped-imports
 
@@ -628,10 +628,10 @@ def from_qasm(quantum_circuit: str, measurements=None):
 
 def to_openqasm(
     qnode,
-    wires: Optional[WiresLike] = None,
+    wires: WiresLike | None = None,
     rotations: bool = True,
     measure_all: bool = True,
-    precision: Optional[int] = None,
+    precision: int | None = None,
 ) -> Callable[[Any], str]:
     """Convert a circuit to an OpenQASM 2.0 program.
 
@@ -848,9 +848,9 @@ def from_qasm3(quantum_circuit: str, wire_map: dict = None):
     Converts an OpenQASM 3.0 circuit into a quantum function that can be used within a QNode.
 
     .. note::
-        The following OpenQASM 3.0 gates are not supported: sdg, tdg, cu. Pulses are not yet supported. The
-        remaining standard library gates, built-in mathematical functions and constants, subroutines, variables,
+        The standard library gates, built-in mathematical functions and constants, subroutines, variables,
         control flow, measurements, inputs, outputs, custom gates and ``end`` statements are all supported.
+        Pulses are not yet supported.
 
         In order to use this function, ``openqasm3`` and ``'openqasm3[parser]'`` must be installed in the user's
         environment. Please consult the `OpenQASM installation instructions <https://pypi.org/project/openqasm3>`__
