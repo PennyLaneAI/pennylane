@@ -392,7 +392,7 @@ class ResourceRegisterComparator(ResourceOperator):
     Resources:
         The resources are obtained from appendix B of `arXiv:1711.10460
         <https://arxiv.org/abs/1711.10460>`_ for registers of same size.
-        If the size of registers differ, unary iteration technique from
+        If the size of registers differ, the unary iteration technique from
         `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ is used
         to combine the results from extra qubits.
 
