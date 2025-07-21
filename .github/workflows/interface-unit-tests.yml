@@ -48,7 +48,7 @@ on:
           Indicate if a lightened version of the CI should be run instead of the entire suite.
 
           The lightened version of the CI includes the following changes:
-          - Only Python 3.10 is tested against, instead of 3.10, 3.11, 3.12
+          - Only Python 3.11 is tested against, instead of 3.11, 3.12, 3.13
         required: false
         type: boolean
         default: false
