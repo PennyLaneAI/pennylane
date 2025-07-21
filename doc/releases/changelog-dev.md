@@ -34,7 +34,7 @@
   def optimization_qjit(params, iters):
       state = opt.init(params)
       args = (params, state)
-      params, state = qml.for_loop(0, iters)(update_step_qjit)(args)
+      params, state = qml.for_loop(iters)(update_step_qjit)(args)
       return params
   ```
 
