@@ -776,7 +776,7 @@ def defer_measurements(
             "must support the Projector gate to apply postselection."
         )
 
-    integer_wires = list(filter(lambda w: isinstance(w, int), tape.wires))
+    integer_wires = [w for w in tape.wires if isinstance(w, int)]
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
