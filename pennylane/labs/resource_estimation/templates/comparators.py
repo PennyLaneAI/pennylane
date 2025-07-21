@@ -184,8 +184,8 @@ class ResourceTwoQubitCompare(ResourceOperator):
 class ResourceIntegerComparator(ResourceOperator):
     r"""Resource class for comparing a state to a positive integer.
 
-    This operation provides the cost for comparing basis state, `x`, and a fixed positive integer, val.
-    It flips a target qubit if :math:`x \geq val` or :math:`x < val`, depending on the parameter geq.
+    This operation provides the cost for comparing basis state, `x`, and a fixed positive integer, :code:`val`.
+    It flips a target qubit if :math:`x \geq val` or :math:`x < val`, depending on the parameter :code:`geq`.
 
     Args:
         val (int): the integer to be compared against
