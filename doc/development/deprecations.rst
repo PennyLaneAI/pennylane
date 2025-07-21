@@ -112,7 +112,7 @@ Completed deprecation cycles
             return False
         try:
             generator = obj.generator()
-            _, ops = generator.terms() 
+            _, ops = generator.terms()
             return len(ops) > 1
         except TermsUndefinedError:
             return False
@@ -125,7 +125,6 @@ Completed deprecation cycles
   .. code-block:: python
 
       class MyObs(Operator):
-      
           is_hermitian = True
 
           def queue(self, context=qml.QueuingManager):
