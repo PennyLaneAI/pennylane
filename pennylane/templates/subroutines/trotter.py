@@ -481,7 +481,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             Operations making up the decomposition should be queued within the
             ``compute_decomposition`` method.
 
-        .. seealso:: :math:`~.Operator.decomposition`.
+        .. seealso:: :meth:`~.Operator.decomposition`.
 
         Args:
             *params (list): trainable parameters of the operator, as stored in the ``parameters`` attribute
