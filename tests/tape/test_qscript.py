@@ -34,7 +34,7 @@ def test_to_openqasm_deprecation():
     with pytest.warns(
         PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
     ):
-        circuit.to_openqasm(circuit)
+        circuit.to_openqasm()
 
 
 class TestInitialization:
