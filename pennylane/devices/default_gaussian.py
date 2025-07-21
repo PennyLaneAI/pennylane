@@ -359,7 +359,7 @@ def vacuum_state(wires, hbar=2.0):
     Returns:
         array: the vacuum state
     """
-    means = np.zeros((2 * wires))
+    means = np.zeros(2 * wires)
     cov = np.identity(2 * wires) * hbar / 2
     state = [cov, means]
     return state
@@ -395,7 +395,7 @@ def squeezed_state(r, phi, hbar=2.0):
     Returns:
         array: the squeezed state
     """
-    means = np.zeros((2))
+    means = np.zeros(2)
     state = [squeezed_cov(r, phi, hbar), means]
     return state
 

@@ -17,7 +17,6 @@ This module contains the qml.classical_shadow measurement.
 import copy
 from collections.abc import Iterable, Sequence
 from string import ascii_letters
-from typing import Optional, Union
 
 import numpy as np
 
@@ -182,8 +181,7 @@ def classical_shadow(wires: WiresLike, seed=None):
 
             ops = [qml.Hadamard(wires=0), qml.CNOT(wires=(0,1))]
             measurements = [qml.classical_shadow(wires=(0,1))]
-            tape = qml.tape.QuantumTape(ops, measurements)
-            tape = qml.set_shots(tape, shots=5)
+            tape = qml.tape.QuantumTape(ops, measurements, shots=5)
 
         >>> bits1, recipes1 = qml.execute([tape], device=dev, diff_method=None)[0]
         >>> bits2, recipes2 = qml.execute([tape], device=dev, diff_method=None)[0]
@@ -200,12 +198,10 @@ def classical_shadow(wires: WiresLike, seed=None):
             dev = qml.device("default.qubit", wires=2)
 
             measurements1 = [qml.classical_shadow(wires=(0,1), seed=10)]
-            tape1 = qml.tape.QuantumTape(ops, measurements1)
-            tape1 = qml.set_shots(tape1, shots=5)
+            tape1 = qml.tape.QuantumTape(ops, measurements1, shots=5)
 
             measurements2 = [qml.classical_shadow(wires=(0,1), seed=15)]
-            tape2 = qml.tape.QuantumTape(ops, measurements2)
-            tape2 = qml.set_shots(tape2, shots=5)
+            tape2 = qml.tape.QuantumTape(ops, measurements2, shots=5)
 
         >>> bits1, recipes1 = qml.execute([tape1], device=dev, diff_method=None)[0]
         >>> bits2, recipes2 = qml.execute([tape2], device=dev, diff_method=None)[0]
@@ -237,9 +233,9 @@ class ClassicalShadowMP(MeasurementTransform):
 
     def __init__(
         self,
-        wires: Optional[WiresLike] = None,
-        seed: Optional[int] = None,
-        id: Optional[str] = None,
+        wires: WiresLike | None = None,
+        seed: int | None = None,
+        id: str | None = None,
     ):
         self.seed = seed
         super().__init__(wires=wires, id=id)
@@ -586,14 +582,14 @@ class ClassicalShadowMP(MeasurementTransform):
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ) -> tuple:
         return (2, shots, n_wires), np.int8
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, int, int]:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, int, int]:
         # otherwise, the return type requires a device
         if shots is None:
             raise MeasurementShapeError(
@@ -641,10 +637,10 @@ class ShadowExpvalMP(MeasurementTransform):
 
     def __init__(
         self,
-        H: Union[Operator, Sequence],
-        seed: Optional[int] = None,
+        H: Operator | Sequence,
+        seed: int | None = None,
         k: int = 1,
-        id: Optional[str] = None,
+        id: str | None = None,
     ):
         self.seed = seed
         self.H = H
@@ -655,8 +651,8 @@ class ShadowExpvalMP(MeasurementTransform):
     @classmethod
     def _primitive_bind_call(
         cls,
-        H: Union[Operator, Sequence],
-        seed: Optional[int] = None,
+        H: Operator | Sequence,
+        seed: int | None = None,
         k: int = 1,
         **kwargs,
     ):
@@ -723,7 +719,7 @@ class ShadowExpvalMP(MeasurementTransform):
     def numeric_type(self):
         return float
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return () if isinstance(self.H, Operator) else (len(self.H),)
 
     @property

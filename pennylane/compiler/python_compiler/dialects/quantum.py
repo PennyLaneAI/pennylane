@@ -25,7 +25,8 @@ starting from the catalyst/mlir/include/Quantum/IR/QuantumOps.td file in the cat
 
 # pragma: no cover
 
-from typing import Sequence, TypeAlias
+from collections.abc import Sequence
+from typing import TypeAlias
 
 from xdsl.dialects.builtin import (
     I32,
@@ -366,6 +367,38 @@ class DeviceReleaseOp(IRDLOperation):
     name = "quantum.device_release"
 
     assembly_format = "attr-dict"
+
+
+@irdl_op_definition
+class AllocQubitOp(IRDLOperation):
+    """Allocate a single qubit."""
+
+    name = "quantum.alloc_qb"
+
+    assembly_format = """attr-dict `:` type(results)"""
+
+    qubit = result_def(QubitType)
+
+    def __init__(self):
+        super().__init__(
+            result_types=(QubitType(),),
+        )
+
+
+@irdl_op_definition
+class DeallocQubitOp(IRDLOperation):
+    """Deallocate a single qubit."""
+
+    name = "quantum.dealloc_qb"
+
+    assembly_format = """$qubit attr-dict `:` type(operands)"""
+
+    qubit = operand_def(QubitType)
+
+    def __init__(self, qubit: QubitSSAValue | Operation):
+        super().__init__(
+            operands=(qubit,),
+        )
 
 
 @irdl_op_definition
@@ -856,15 +889,17 @@ class YieldOp(IRDLOperation):
     retvals = var_operand_def(QuregType)
 
 
-QuantumDialect = Dialect(
+Quantum = Dialect(
     "quantum",
     [
         AdjointOp,
         AllocOp,
+        AllocQubitOp,
         ComputationalBasisOp,
         CountsOp,
         CustomOp,
         DeallocOp,
+        DeallocQubitOp,
         DeviceInitOp,
         DeviceReleaseOp,
         ExpvalOp,

@@ -9,39 +9,35 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
-  and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
+* The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
+  Instead, the ``qml.to_openqasm`` function should be used.
 
-  - Deprecated in v0.42
-  - Will be removed in v0.43
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
-  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
-  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
-  processed into the circuit.
+* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
+  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
 
-  .. code-block:: python
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-      class MyObs(Operator):
-      
-          is_hermitian = True
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
 
-          def queue(self, context=qml.QueuingManager):
-              return self
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-  To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
+* The ``level=None`` argument in the ``get_transform_program``, ``construct_batch`` , ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` transforms is deprecated and will be removed in v0.43.
+  Please use ``level='device'`` instead to apply the noise model at the device level.
 
-  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-  - Deprecated in v0.42
-  - Will be removed in v0.43
+* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.43.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
 
-* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
-  on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
-  to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
-
-  - Deprecated in v0.42
-  - Will be removed in v0.43
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
 * The boolean functions provided by ``pennylane.operation`` are deprecated. See below for alternate code to
   use instead.
@@ -87,11 +83,6 @@ Pending deprecations
         except TermsUndefinedError:
             return False
 
-* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
-
-  - Deprecated in v0.42
-  - Will be removed in v0.43
-
 * Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
 
  - Deprecated in v0.40
@@ -124,6 +115,45 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
+  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
+  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
+  processed into the circuit.
+
+  .. code-block:: python
+
+      class MyObs(Operator):
+      
+          is_hermitian = True
+
+          def queue(self, context=qml.QueuingManager):
+              return self
+
+  To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
+
+  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
+
+  - Deprecated in v0.42
+  - Removed in v0.43
+
+* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
+  on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
+  to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
+  
+  - Deprecated in v0.42
+  - Removed in v0.43
+
+* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
+
+  - Deprecated in v0.42
+  - Removed in v0.43
+
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` 
+  is now removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
+
+  - Deprecated in v0.42
+  - Removed in v0.43
 
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is now removed in v0.42.
   The gradient keyword arguments should be passed to the new keyword argument ``gradient_kwargs`` via an explicit 

@@ -13,7 +13,6 @@
 # limitations under the License.
 r"""This module contains the base class for qubit management"""
 
-from typing import Union
 
 import pennylane as qml
 
@@ -42,7 +41,7 @@ class QubitManager:
 
     """
 
-    def __init__(self, work_wires: Union[int, dict], algo_wires=0, tight_budget=False) -> None:
+    def __init__(self, work_wires: int | dict, algo_wires=0, tight_budget=False) -> None:
 
         if isinstance(work_wires, dict):
             clean_wires = work_wires["clean"]

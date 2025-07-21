@@ -5,6 +5,7 @@ Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 from re import escape
 from unittest.mock import MagicMock
 
+import numpy as np
 import pytest
 
 from pennylane import (
@@ -40,8 +41,8 @@ from pennylane import (
     queuing,
 )
 from pennylane.measurements import MeasurementValue, MidMeasureMP
-from pennylane.ops import Adjoint, Conditional, Controlled, ControlledPhaseShift, MultiControlledX
-from pennylane.ops.op_math.pow import PowOperation, PowOpObs
+from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
+from pennylane.ops.op_math.pow import PowOperation
 from pennylane.wires import Wires
 
 try:
@@ -53,10 +54,209 @@ try:
         Context,
         QasmInterpreter,
         Variable,
+        _get_bit_type_val,
+        _rotate,
         preprocess_operands,
     )
 except (ModuleNotFoundError, ImportError) as import_error:
     pass
+
+
+@pytest.mark.external
+class TestBuiltIns:  # pylint: disable=too-few-public-methods
+
+    VALID_BIT_TYPE_VAL = [
+        ## Valid
+        # BitType
+        Variable(
+            ty="BitType",
+            val=5,
+            size=3,
+            line=0,
+            constant=True,
+        ),
+        # IntType
+        Variable(
+            ty="IntType",
+            val=5,
+            size=-1,
+            line=0,
+            constant=True,
+        ),
+        # Int
+        5,
+    ]
+
+    @pytest.mark.parametrize("valid", VALID_BIT_TYPE_VAL)
+    def test_valid_get_bit_type_val(self, valid):
+        assert _get_bit_type_val(valid) == "101"
+
+    INVALID_BIT_TYPE_VAL = [
+        ## Invalid
+        # StringType
+        Variable(
+            ty="StringType",
+            val="string",
+            size=-1,
+            line=0,
+            constant=True,
+        ),
+        # String
+        "string",
+    ]
+
+    @pytest.mark.parametrize("invalid", INVALID_BIT_TYPE_VAL)
+    def test_invalid_get_bit_type_val(self, invalid):
+        with pytest.raises(TypeError, match="Cannot convert"):
+            _get_bit_type_val(invalid)
+
+    TO_ROTATE = [
+        # 0001 -> 0010
+        (
+            Variable(ty="BitType", val=1, size=4, line=0, constant=False, scope="global"),
+            3,
+            "right",
+            2,
+        ),
+        # 1010 -> 0101
+        (
+            Variable(ty="IntType", val=10, size=-1, line=0, constant=False, scope="global"),
+            1,
+            "left",
+            5,
+        ),
+        # 1011 -> 0111
+        (11, 1, "left", 7),
+        # 1011 -> 1101
+        (11, 1, "right", 13),
+    ]
+
+    @pytest.mark.parametrize("to_rotate, distance, direction, expected", TO_ROTATE)
+    def test_rotate(self, to_rotate, distance, direction, expected):
+        assert _rotate(to_rotate, distance, direction) == expected
+
+    def test_functions(self):
+        ast = parse(
+            open("tests/io/qasm_interpreter/functions.qasm", mode="r").read(), permissive=True
+        )
+
+        context = QasmInterpreter().interpret(ast, context={"name": "functions", "wire_map": None})
+
+        assert context.vars["a"].val == np.arccos(np.pi / 4)
+        assert context.vars["b"].val == np.arcsin(np.pi / 10)
+        assert context.vars["c"].val == np.arctan(np.pi / 3)
+        assert context.vars["d"].val == np.ceil(0.8)
+        assert context.vars["e"].val == np.cos(np.pi)
+        assert context.vars["f"].val == np.exp(0.2)
+        assert context.vars["g"].val == np.floor(1.1)
+        assert context.vars["h"].val == np.log(2)
+        assert context.vars["i"].val == np.mod(3, 2)
+        assert context.vars["j"].val == 2
+        assert context.vars["l"].val == 7
+        assert context.vars["m"].val == 13
+        assert context.vars["n"].val == np.sin(np.pi)
+        assert context.vars["o"].val == np.sqrt(2)
+        assert context.vars["p"].val == np.tan(np.pi / 3)
+        assert context.vars["q"].val == 7
+        assert context.vars["r"].val == 13
+        assert context.vars["s"].val == 7
+
+    def test_constants(self):
+        ast = parse(
+            """
+            const float one = π;
+            const float two = τ;
+            const float three = ℇ;
+            const float four = pi;
+            const float five = tau;
+            const float six = e;
+            """
+        )
+
+        context = QasmInterpreter().interpret(ast, context={"name": "constants", "wire_map": None})
+
+        assert context.vars["one"].val == np.pi
+        assert context.vars["two"].val == np.pi * 2
+        assert context.vars["three"].val == np.e
+        assert context.vars["four"].val == np.pi
+        assert context.vars["five"].val == np.pi * 2
+        assert context.vars["six"].val == np.e
+
+
+@pytest.mark.external
+class TestIO:
+
+    def test_output(self):
+        ast = parse(
+            """
+            output float v;
+            output bit b;
+            qubit q;
+            v = 2.2;
+            measure q -> b;
+            """
+        )
+
+        context = QasmInterpreter().interpret(ast, context={"name": "outputs", "wire_map": None})
+
+        assert context["return"]["v"].val == 2.2
+        assert isinstance(context["return"]["b"].val, MeasurementValue)
+
+    def test_wrong_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=escape(
+                "Got the wrong input parameters ['theta', 'phi'] to QASM, expecting ['theta']."
+            ),
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"name": "wrong-input", "wire_map": None}, theta=0.2, phi=0.1
+            )
+
+    def test_missing_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="Missing input theta. Please pass theta as a keyword argument to from_qasm3.",
+        ):
+            QasmInterpreter().interpret(ast, context={"name": "missing-input", "wire_map": None})
+
+    def test_input(self):
+        ast = parse(
+            """
+            input float theta;
+            qubit q;
+            rx(theta) q;
+            """
+        )
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(
+                ast, context={"name": "inputs", "wire_map": None}, theta=0.1
+            )
+            QasmInterpreter().interpret(
+                ast, context={"name": "inputs", "wire_map": None}, theta=0.2
+            )
+
+        assert q.queue == [
+            RX(0.1, "q"),
+            RX(0.2, "q"),
+        ]
 
 
 @pytest.mark.external
@@ -969,6 +1169,22 @@ class TestVariables:
 @pytest.mark.external
 class TestGates:
 
+    def test_custom_gates(self):
+        ast = parse(
+            open("tests/io/qasm_interpreter/custom_gates.qasm", mode="r").read(), permissive=True
+        )
+
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "custom-gates"})
+
+        assert q.queue == [
+            PauliY("q1"),
+            CNOT(wires=["q0", "q1"]),
+            CNOT(wires=["q0", "q1"]),
+            RX(0.7853975, wires=["q1"]),
+            PauliX("q0"),
+        ]
+
     def test_nested_modifiers(self):
         # parse the QASM program
         ast = parse(
@@ -1215,7 +1431,7 @@ class TestGates:
             RX(0.5, wires=["q0"]),
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
-            PowOpObs(PauliX(wires=["q0"]), 2),
+            PowOperation(PauliX(wires=["q0"]), 2),
             CNOT(wires=["q1", "q0"]),
         ]
 
@@ -1259,6 +1475,7 @@ class TestGates:
             crx(0.2) q0, q1;
             cry(0.1) q0, q1;
             crz(0.3) q1, q0;
+            cu(0.1, 0.2, 0.3, 0.4) q0, q1;
             """,
             permissive=True,
         )
@@ -1275,6 +1492,8 @@ class TestGates:
             CRX(0.2, wires=["q0", "q1"]),
             CRY(0.1, wires=["q0", "q1"]),
             CRZ(0.3, wires=Wires(["q1", "q0"])),
+            PhaseShift(0.4, wires=["q0"])
+            @ (Controlled(U3(0.1, 0.2, 0.3, wires=["q1"]), control_wires=["q0"])),
         ]
 
     def test_interprets_multi_qubit_gates(self):
@@ -1350,7 +1569,9 @@ class TestGates:
             y q2;
             z q0;
             s q2;
+            sdg q2;
             t q1;
+            tdg q1;
             sx q0;
             ctrl @ id q0, q1;
             inv @ h q2;
@@ -1372,7 +1593,9 @@ class TestGates:
             PauliY("q2"),
             PauliZ("q0"),
             S("q2"),
+            Adjoint(S("q2")),
             T("q1"),
+            Adjoint(T("q1")),
             SX("q0"),
             Controlled(Identity("q1"), control_wires=["q0"]),
             Adjoint(Hadamard("q2")),
