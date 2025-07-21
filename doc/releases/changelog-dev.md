@@ -176,6 +176,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes issue related to :func:`~.transforms.to_zx` adding the support for
+  `Toffoli` and `CCZ` gates conversion into their ZX-graph representation.
+  [(#7899)](https://github.com/PennyLaneAI/pennylane/pull/7899)
+
 * `get_best_diff_method` now correctly aligns with `execute` and `construct_batch` logic in workflows.
   [(#7898)](https://github.com/PennyLaneAI/pennylane/pull/7898)
 
