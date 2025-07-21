@@ -572,7 +572,7 @@ _MEAS_FUNC_MAP = {
     measurements.state: measurements.StateMP,
     measurements.density_matrix: measurements.DensityMatrixMP,
     measurements.counts: measurements.CountsMP,
-    measurements.sample: measurements.SampleMP,
+    measurements.sample: measurements.sample,
     measurements.probs: measurements.ProbabilityMP,
     measurements.vn_entropy: measurements.VnEntropyMP,
     measurements.mutual_info: measurements.MutualInfoMP,

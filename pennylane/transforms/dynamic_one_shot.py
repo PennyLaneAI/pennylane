@@ -29,8 +29,8 @@ from pennylane.measurements import (
     MeasurementValue,
     MidMeasureMP,
     ProbabilityMP,
-    SampleMP,
     VarianceMP,
+    sample,
 )
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, TensorLike
@@ -99,7 +99,7 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
         return (tape,), null_postprocessing
 
     for m in tape.measurements:
-        if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
+        if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, sample, VarianceMP)):
             raise TypeError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} "
                 "measurements."
@@ -109,7 +109,7 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
     if not tape.shots:
         raise QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
 
-    samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
+    samples_present = any(isinstance(mp, sample) for mp in tape.measurements)
     postselect_present = any(op.postselect is not None for op in tape.operations if is_mcm(op))
     if postselect_present and samples_present and tape.batch_size is not None:
         raise ValueError(
@@ -208,7 +208,7 @@ def _dynamic_one_shot_qnode(self, qnode, targs, tkwargs):
 def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     """Creates an auxiliary circuit to perform one-shot mid-circuit measurement calculations.
 
-    Measurements are replaced by SampleMP measurements on wires and observables found in the
+    Measurements are replaced by sample measurements on wires and observables found in the
     original measurements.
 
     Args:
@@ -221,7 +221,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     for m in circuit.measurements:
         if m.mv is None:
             if isinstance(m, VarianceMP):
-                new_measurements.append(SampleMP(obs=m.obs))
+                new_measurements.append(sample(obs=m.obs))
             else:
                 new_measurements.append(m)
     for op in circuit.operations:
@@ -292,7 +292,7 @@ def parse_native_mid_circuit_measurements(
     normalized_meas = []
     m_count = 0
     for m in circuit.measurements:
-        if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
+        if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, sample, VarianceMP)):
             raise TypeError(
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
             )
@@ -330,7 +330,7 @@ def parse_native_mid_circuit_measurements(
                 result = qml.math.squeeze(result)
             meas = gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode)
             m_count += 1
-        if isinstance(m, SampleMP):
+        if isinstance(m, sample):
             meas = qml.math.squeeze(meas)
         normalized_meas.append(meas)
 
@@ -405,7 +405,7 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
             tmp = Counter({k: v for k, v in tmp.items() if v > 0})
         return dict(sorted(tmp.items()))
 
-    if isinstance(measurement, SampleMP):
+    if isinstance(measurement, sample):
         if postselect_mode == "pad-invalid-samples" and samples.ndim == 2:
             is_valid = qml.math.reshape(is_valid, (-1, 1))
         if postselect_mode == "pad-invalid-samples":
@@ -451,7 +451,7 @@ def gather_mcm(measurement, samples, is_valid, postselect_mode=None):
     interface = qml.math.get_deep_interface(is_valid)
     mv = measurement.mv
     # The following block handles measurement value lists, like ``qml.counts(op=[mcm0, mcm1, mcm2])``.
-    if isinstance(measurement, (CountsMP, ProbabilityMP, SampleMP)) and isinstance(mv, Sequence):
+    if isinstance(measurement, (CountsMP, ProbabilityMP, sample)) and isinstance(mv, Sequence):
         mcm_samples = [m.concretize(samples) for m in mv]
         mcm_samples = qml.math.concatenate(mcm_samples, axis=1)
         if isinstance(measurement, ProbabilityMP):

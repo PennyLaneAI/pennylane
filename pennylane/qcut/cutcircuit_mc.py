@@ -22,7 +22,7 @@ import numpy as np
 from networkx import MultiDiGraph
 
 from pennylane import ops
-from pennylane.measurements import SampleMP, sample
+from pennylane.measurements import sample
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -429,7 +429,7 @@ def cut_circuit_mc(
             "with a single output measurement"
         )
 
-    if not all(isinstance(m, SampleMP) for m in tape.measurements):
+    if not all(isinstance(m, sample) for m in tape.measurements):
         raise ValueError(
             "The Monte Carlo circuit cutting workflow only supports circuits "
             "with sampling-based measurements"

@@ -44,13 +44,13 @@ from pennylane.measurements import (
     MutualInfoMP,
     ProbabilityMP,
     SampleMeasurement,
-    SampleMP,
     ShadowExpvalMP,
     Shots,
     StateMeasurement,
     StateMP,
     VarianceMP,
     VnEntropyMP,
+    sample,
 )
 from pennylane.operation import Operation, operation_derivative
 from pennylane.resource import Resources
@@ -63,9 +63,9 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _sample_to_str(sample):
+def _sample_to_str(samples):
     """Converts a bit-array to a string. For example, ``[0, 1]`` would become '01'."""
-    return "".join(map(str, sample))
+    return "".join(map(str, samples))
 
 
 class QubitDevice(Device):
@@ -157,7 +157,7 @@ class QubitDevice(Device):
         "Prod",
     }
 
-    measurement_map = defaultdict(str)  # e.g. {SampleMP: "sample"}
+    measurement_map = defaultdict(str)  # e.g. {sample: "sample"}
     """Mapping used to override the logic of measurement processes. The dictionary maps a
     measurement class to a string containing the name of a device's method that overrides the
     measurement process. The method defined by the device should have the following arguments:
@@ -277,7 +277,7 @@ class QubitDevice(Device):
             mid_measurements = kwargs["mid_measurements"]
 
         # generate computational basis samples
-        sample_type = (SampleMP, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
+        sample_type = (sample, CountsMP, ClassicalShadowMP, ShadowExpvalMP)
 
         if self.shots is not None or any(isinstance(m, sample_type) for m in circuit.measurements):
             # Lightning does not support apply(rotations) anymore, so we need to rotate here
@@ -430,7 +430,7 @@ class QubitDevice(Device):
             for idx2, r_ in enumerate(r):
                 measurement_proc = circuit.measurements[idx2]
                 if isinstance(measurement_proc, ProbabilityMP) or (
-                    isinstance(measurement_proc, SampleMP) and measurement_proc.obs
+                    isinstance(measurement_proc, sample) and measurement_proc.obs
                 ):
                     # Here, the result has a shape of (num_basis_states, shot_tuple.copies)
                     # Extract a single row -> shape (num_basis_states,)
@@ -656,9 +656,9 @@ class QubitDevice(Device):
             elif isinstance(m, VarianceMP):
                 result = self.var(obs, shot_range=shot_range, bin_size=bin_size)
 
-            elif isinstance(m, SampleMP):
+            elif isinstance(m, sample):
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
-                dtype = int if isinstance(obs, SampleMP) else None
+                dtype = int if isinstance(obs, sample) else None
                 result = self._asarray(qml.math.squeeze(samples), dtype=dtype)
 
             elif isinstance(m, CountsMP):

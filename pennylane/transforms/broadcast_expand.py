@@ -15,7 +15,7 @@
 broadcasted tape into multiple tapes."""
 
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP, SampleMP
+from pennylane.measurements import MidMeasureMP, sample
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
 
@@ -137,7 +137,7 @@ def broadcast_expand(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postproce
     has_postselect = any(
         op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
     )
-    has_sample = any(isinstance(op, SampleMP) for op in tape.measurements)
+    has_sample = any(isinstance(op, sample) for op in tape.measurements)
     if has_postselect and has_sample:
         raise ValueError(
             "Returning qml.sample is not supported when using post-selected mid-circuit measurements and parameters broadcasting."

@@ -128,11 +128,11 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
         ((4,), float)
         >>> ProbabilityMP._abstract_eval(n_wires=0, num_device_wires=2)
         ((4,), float)
-        >>> SampleMP._abstract_eval(n_wires=0, shots=50, num_device_wires=2)
+        >>> sample._abstract_eval(n_wires=0, shots=50, num_device_wires=2)
         ((50, 2), int)
-        >>> SampleMP._abstract_eval(n_wires=4, has_eigvals=True, shots=50)
+        >>> sample._abstract_eval(n_wires=4, has_eigvals=True, shots=50)
         ((50,), float)
-        >>> SampleMP._abstract_eval(n_wires=None, shots=50)
+        >>> sample._abstract_eval(n_wires=None, shots=50)
         ((50,), float)
 
         """

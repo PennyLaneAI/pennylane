@@ -33,11 +33,11 @@ from pennylane.measurements import (
     MutualInfoMP,
     ProbabilityMP,
     PurityMP,
-    SampleMP,
     ShadowExpvalMP,
     StateMP,
     VarianceMP,
     VnEntropyMP,
+    sample,
 )
 from pennylane.ops.qubit.observables import BasisStateProjector
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -711,7 +711,7 @@ class DefaultClifford(Device):
                 # Post-processing for special cases
                 if isinstance(meas, CountsMP):
                     res = res[0]
-                elif isinstance(meas, SampleMP):
+                elif isinstance(meas, sample):
                     res = np.squeeze(res)
 
             results.append(res)

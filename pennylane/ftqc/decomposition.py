@@ -21,7 +21,7 @@ import networkx as nx
 from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
-from pennylane.measurements import SampleMP, sample
+from pennylane.measurements import sample
 from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
@@ -66,7 +66,7 @@ def convert_to_mbqc_formalism(tape):
     Note that this transform leaves all Paulis and Identities as physical gates, and applies
     all byproduct operations online immediately after their respective measurement procedures."""
 
-    if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
+    if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (sample)):
         raise NotImplementedError(
             "Transforming to the MBQC formalism is not implemented for circuits where the "
             "final measurements have not been converted to a single samples measurement"

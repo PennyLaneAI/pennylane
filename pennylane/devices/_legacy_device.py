@@ -31,10 +31,10 @@ from pennylane.measurements import (
     MeasurementProcess,
     MidMeasureMP,
     ProbabilityMP,
-    SampleMP,
     ShadowExpvalMP,
     StateMP,
     VarianceMP,
+    sample,
 )
 from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
@@ -474,7 +474,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 elif isinstance(mp, VarianceMP):
                     results.append(self.var(obs.name, obs.wires, obs.parameters))
 
-                elif isinstance(mp, SampleMP):
+                elif isinstance(mp, sample):
                     results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
 
                 elif isinstance(mp, ProbabilityMP):
@@ -503,9 +503,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(isinstance(mp, SampleMP) for mp in observables):
+            if all(isinstance(mp, sample) for mp in observables):
                 return self._asarray(results)
-            if any(isinstance(mp, SampleMP) for mp in observables):
+            if any(isinstance(mp, sample) for mp in observables):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)

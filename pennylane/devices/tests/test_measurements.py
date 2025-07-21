@@ -24,9 +24,9 @@ from pennylane.measurements import (
     ClassicalShadowMP,
     MeasurementTransform,
     SampleMeasurement,
-    SampleMP,
     StateMeasurement,
     StateMP,
+    sample,
 )
 from pennylane.wires import Wires
 
@@ -1753,7 +1753,7 @@ class TestSampleMeasurement:
             qml.X(0)
             return qml.sample(wires=0), qml.sample(wires=1)
 
-        circuit.device.measurement_map[SampleMP] = "test_method"
+        circuit.device.measurement_map[sample] = "test_method"
         circuit.device.test_method = lambda obs, shot_range=None, bin_size=None: 2
 
         assert qml.math.allequal(circuit(), [2, 2])
