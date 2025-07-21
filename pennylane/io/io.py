@@ -31,7 +31,7 @@ has_openqasm = True
 try:
     import openqasm3
 
-    from pennylane.io.qasm_interpreter import QasmInterpreter
+    from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_openqasm = False  # pragma: no cover
 
