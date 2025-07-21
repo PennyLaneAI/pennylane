@@ -776,16 +776,15 @@ def defer_measurements(
             "must support the Projector gate to apply postselection."
         )
 
-    if len(reused_measurement_wires) > 0 and not all(isinstance(w, int) for w in tape.wires):
-        raise ValueError(
-            "qml.defer_measurements does not support custom wire labels with qubit reuse/reset."
-        )
+    integer_wires = list(filter(lambda w: isinstance(w, int), tape.wires))
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}
     cur_wire = (
-        max(tape.wires) + 1 if reused_measurement_wires or any_repeated_measurements else None
+        (max(integer_wires) if integer_wires else -1) + 1
+        if reused_measurement_wires or any_repeated_measurements
+        else None
     )
 
     for op in tape.operations:
