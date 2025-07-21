@@ -113,8 +113,9 @@ class ResourceTwoQubitCompare(ResourceOperator):
     Resources:
         The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
         <https://arxiv.org/abs/1711.10460>`_. Specifically,
-        the resources are given as :math:`1` ancilla, :math:`2` controlled SWAP gates,
-        :math:`3` CNOT gates, and :math:`1` X gate.
+        the resources are given as :math:`2` controlled SWAP gates,
+        :math:`3` CNOT gates, and :math:`1` X gate. This decomposition 
+        requires one clean auxiliary qubit.
 
     **Example**
 
