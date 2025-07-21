@@ -31,16 +31,10 @@ _SHOTS_NOT_PROVIDED = object()
 
 @overload
 def set_shots(qnode: QNode, shots: ShotsLike) -> QNode: ...
-
-
 @overload
 def set_shots(shots: ShotsLike) -> Callable[[QNode], QNode]: ...
-
-
 @overload
 def set_shots(*, shots: ShotsLike) -> Callable[[QNode], QNode]: ...
-
-
 def set_shots(*args, shots: ShotsLike = _SHOTS_NOT_PROVIDED):
     """Transform used to set or update a circuit's shots.
 
