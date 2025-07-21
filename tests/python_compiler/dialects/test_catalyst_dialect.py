@@ -80,8 +80,8 @@ def test_assembly_format(run_filecheck):
     // CHECK: [[LIST:%.+]] = catalyst.list_init : !catalyst.arraylist<f64>
     %list = catalyst.list_init : !catalyst.arraylist<f64>
 
-    // CHECK: [[DATA:%.+]] = catalyst.list_load_data [[LIST]] : !catalyst.arraylist<f64> -> memref<*xf64>
-    %data = catalyst.list_load_data %list : !catalyst.arraylist<f64> -> memref<*xf64>
+    // CHECK: [[DATA:%.+]] = catalyst.list_load_data [[LIST]] : !catalyst.arraylist<f64> -> memref<?xf64>
+    %data = catalyst.list_load_data %list : !catalyst.arraylist<f64> -> memref<?xf64>
 
     // CHECK: [[VAL:%.+]] = "test.op"() : () -> f64
     %val = "test.op"() : () -> f64
