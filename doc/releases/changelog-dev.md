@@ -82,7 +82,7 @@
 <h3>Breaking changes 💔</h3>
 
 * Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
-  Top level import and usage is advised. The functions now live in the `dla` module.
+  Top level import and usage is advised. The functions now live in the `liealg` module.
 
   ```python
   import pennylane.liealg

@@ -127,7 +127,7 @@ Completed deprecation cycles
 ----------------------------
 
 * Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised. They now live in
-  the ``dla`` module.
+  the ``liealg`` module.
 
   .. code-block:: python
     import pennylane.liealg
