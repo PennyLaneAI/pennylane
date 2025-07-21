@@ -130,7 +130,7 @@ Completed deprecation cycles
   the `dla`` module.
 
  - Deprecated in v0.40
- - Removed in v0.41
+ - Removed in v0.43
 
 * ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
   on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
