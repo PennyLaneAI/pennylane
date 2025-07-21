@@ -103,9 +103,9 @@ class ResourceSingleQubitCompare(ResourceOperator):
 
 
 class ResourceTwoQubitCompare(ResourceOperator):
-    r"""Resource class for comparing two qubits.
+    r"""Resource class for comparing two quantum registers of one qubit each.
 
-    This operation provides the cost for implementing a comparison between two qubit registers.
+    This operation provides the cost for implementing a comparison between two quantum registers of one qubit each.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
