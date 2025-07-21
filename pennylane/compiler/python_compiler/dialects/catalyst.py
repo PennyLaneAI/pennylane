@@ -29,6 +29,7 @@ from typing import ClassVar
 
 from xdsl.dialects.builtin import (
     FlatSymbolRefAttrConstr,
+    FunctionType,
     IntegerAttr,
     IntegerType,
     StringAttr,
@@ -107,7 +108,7 @@ class CallbackOp(IRDLOperation):
 
     sym_name = prop_def(BaseAttr(StringAttr))
 
-    function_type = prop_def(AnyAttr())
+    function_type = prop_def(FunctionType)
 
     id = prop_def(IntegerAttr.constr(type=EqAttrConstraint(IntegerType(64))))
 
