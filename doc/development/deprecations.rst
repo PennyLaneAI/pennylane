@@ -39,27 +39,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
-  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
-  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
-  processed into the circuit.
-
-  .. code-block:: python
-
-      class MyObs(Operator):
-      
-          is_hermitian = True
-
-          def queue(self, context=qml.QueuingManager):
-              return self
-
-  To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
-
-  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
-
-  - Deprecated in v0.42
-  - Will be removed in v0.43
-
 * The boolean functions provided by ``pennylane.operation`` are deprecated. See below for alternate code to
   use instead.
   These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
@@ -140,6 +119,27 @@ Completed deprecation cycles
     from pennylane.liealg import lie_closure, structure_constants, center
 
   - Deprecated in v0.40
+  - Removed in v0.43
+
+* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
+  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
+  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
+  processed into the circuit.
+
+  .. code-block:: python
+
+      class MyObs(Operator):
+      
+          is_hermitian = True
+
+          def queue(self, context=qml.QueuingManager):
+              return self
+
+  To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
+
+  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
+
+  - Deprecated in v0.42
   - Removed in v0.43
 
 * ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act

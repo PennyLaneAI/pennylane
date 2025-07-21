@@ -50,12 +50,13 @@
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
-  subroutines, constants, all remaining stdlib gates, and built-in mathematical functions.
+  subroutines, constants, all remaining stdlib gates, qubit registers, and built-in mathematical functions.
   [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
   [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
   [(#7676)](https://github.com/PennyLaneAI/pennylane/pull/7676)
   [(#7679)](https://github.com/PennyLaneAI/pennylane/pull/7679)
   [(#7677)](https://github.com/PennyLaneAI/pennylane/pull/7677)
+  [(#7767)](https://github.com/PennyLaneAI/pennylane/pull/7767)
   [(#7690)](https://github.com/PennyLaneAI/pennylane/pull/7690)
 
 <h4>Other improvements</h4>
@@ -135,6 +136,11 @@
   ```
 
   [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
+
+* `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
+  PennyLane now depends on the more general `Operator` interface instead. The
+  `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
+  that the operator instance is Hermitian.
 
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
   should instead indicate that the `Operator` does not need wire validation.
