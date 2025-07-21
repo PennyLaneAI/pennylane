@@ -4,6 +4,47 @@
 
 <h3>New features since last release</h3>
 
+* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the momentum
+  quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.
+  [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
+
+  Similar to the :class:`~.QNGOptimizerQJIT` optimizer, :class:`~.MomentumQNGOptimizerQJIT` offers a
+  `qml.qjit`-compatible analogue to the existing :class:`~.MomentumQNGOptimizer` with an Optax-like interface:
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(params):
+      qml.RX(params[0], wires=0)
+      qml.RY(params[1], wires=1)
+      return qml.expval(qml.Z(0) + qml.X(1))
+
+  opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
+
+  @qml.qjit
+  def update_step_qjit(i, args):
+      params, state = args
+      return opt.step(circuit, params, state)
+
+  @qml.qjit
+  def optimization_qjit(params, iters):
+      state = opt.init(params)
+      args = (params, state)
+      params, state = qml.for_loop(iters)(update_step_qjit)(args)
+      return params
+  ```
+
+  ```pycon
+  >>> params = jnp.array([0.1, 0.2])
+  >>> iters = 1000
+  >>> optimization_qjit(params=params, iters=iters)
+  Array([ 3.14159265, -1.57079633], dtype=float64)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 <h4>OpenQASM-PennyLane interoperability</h4>
@@ -194,6 +235,7 @@ Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
 Marcus Edwards,
+Simone Gasperini,
 David Ittah,
 Erick Ochoa,
 Mudit Pandey,
