@@ -27,7 +27,13 @@ It contains data structures that support core compiler functionality.
 
 from typing import ClassVar
 
-from xdsl.dialects.builtin import IntegerAttr, IntegerType, StringAttr, UnitAttr
+from xdsl.dialects.builtin import (
+    FlatSymbolRefAttrConstr,
+    IntegerAttr,
+    IntegerType,
+    StringAttr,
+    UnitAttr,
+)
 from xdsl.ir import AttributeCovT, Dialect, Generic, ParametrizedAttribute, TypeAttribute
 from xdsl.irdl import (
     AnyAttr,
@@ -80,7 +86,7 @@ class CallbackCallOp(IRDLOperation):
         $callee `(` $inputs `)` attr-dict `:` functional-type($inputs, results)
       """
 
-    callee = prop_def(AnyAttr())
+    callee = prop_def(FlatSymbolRefAttrConstr)
 
     inputs = var_operand_def(AnyAttr())
 
