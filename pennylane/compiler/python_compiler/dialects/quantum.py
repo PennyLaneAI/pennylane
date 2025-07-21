@@ -1389,7 +1389,8 @@ class StateOp(IRDLOperation):
 
         func.func @foo(%q0: !quantum.bit, %q1: !quantum.bit)
         {
-            %state = quantum.state %q0, %q1 : tensor<4xcomplex<f64>>
+            %obs = quantum.compbasis qubits %q0, %q1 : !quantum.obs
+            %state = quantum.state %obs : tensor<4xcomplex<f64>>
             func.return
         }
 
