@@ -26,46 +26,6 @@ from .mid_measure import MeasurementValue
 from .sample import SampleMP
 
 
-def var(op: Operator | MeasurementValue) -> "VarianceMP":
-    r"""Variance of the supplied observable.
-
-    Args:
-        op (Union[Operator, MeasurementValue]): a quantum observable object.
-            To get variances for mid-circuit measurements, ``op`` should be a
-            ``MeasurementValue``.
-
-    Returns:
-        VarianceMP: Measurement process instance
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.var(qml.Y(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    0.7701511529340698
-    """
-    if isinstance(op, MeasurementValue):
-        return VarianceMP(obs=op)
-
-    if isinstance(op, Sequence):
-        raise ValueError(
-            "qml.var does not support measuring sequences of measurements or observables"
-        )
-
-    return VarianceMP(obs=op)
-
-
 class VarianceMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the variance of the supplied observable.
 
@@ -152,3 +112,43 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         """
         eigvals = qml.math.asarray(self.eigvals(), dtype="float64")
         return qml.math.dot(probabilities, (eigvals**2)) - qml.math.dot(probabilities, eigvals) ** 2
+
+
+def var(op: Operator | MeasurementValue) -> VarianceMP:
+    r"""Variance of the supplied observable.
+
+    Args:
+        op (Union[Operator, MeasurementValue]): a quantum observable object.
+            To get variances for mid-circuit measurements, ``op`` should be a
+            ``MeasurementValue``.
+
+    Returns:
+        VarianceMP: Measurement process instance
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.var(qml.Y(0))
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    0.7701511529340698
+    """
+    if isinstance(op, MeasurementValue):
+        return VarianceMP(obs=op)
+
+    if isinstance(op, Sequence):
+        raise ValueError(
+            "qml.var does not support measuring sequences of measurements or observables"
+        )
+
+    return VarianceMP(obs=op)
