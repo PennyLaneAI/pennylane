@@ -15,8 +15,6 @@
 
 
 # pylint: disable=too-many-arguments,too-few-public-methods,protected-access
-from functools import partial
-
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
