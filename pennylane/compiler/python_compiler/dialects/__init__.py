@@ -18,4 +18,4 @@ from .mbqc import MBQC
 from .quantum import Quantum
 from .catalyst import Catalyst
 
-__all__ = ["MBQC", "Quantum", "Catalyst"]
+__all__ = ["Catalyst", "MBQC", "Quantum"]
