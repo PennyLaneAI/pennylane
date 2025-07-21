@@ -377,10 +377,11 @@ class ResourceIntegerComparator(ResourceOperator):
 
 
 class ResourceRegisterComparator(ResourceOperator):
-    r"""Resource class for comparing two quantum registers.
+    r"""Resource class for comparing two quantum registers of any size.
 
     This operation provides the cost for implementing a comparison between two
-    values, a and b encoded in two quantum registers.
+    integer values encoded in quantum registers. The comparison result is stored in
+    an additional qubit and the original registers are returned in the same state.
 
     Args:
         a_num_qubits (int): the size of the first register
