@@ -225,7 +225,7 @@ def _reflection_decomposition_resources(
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
     resources = {
-        resource_rep(qml.GlobalPhase): 1,
+        qml.GlobalPhase: 1,
         adjoint_resource_rep(base_class, base_params): 1
     }
 
