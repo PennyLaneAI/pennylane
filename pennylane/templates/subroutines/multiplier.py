@@ -14,7 +14,6 @@
 """
 Contains the Multiplier template.
 """
-from collections import Counter
 
 import numpy as np
 
