@@ -4,6 +4,47 @@
 
 <h3>New features since last release</h3>
 
+* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the momentum
+  quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.
+  [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
+
+  Similar to the :class:`~.QNGOptimizerQJIT` optimizer, :class:`~.MomentumQNGOptimizerQJIT` offers a
+  `qml.qjit`-compatible analogue to the existing :class:`~.MomentumQNGOptimizer` with an Optax-like interface:
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(params):
+      qml.RX(params[0], wires=0)
+      qml.RY(params[1], wires=1)
+      return qml.expval(qml.Z(0) + qml.X(1))
+
+  opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
+
+  @qml.qjit
+  def update_step_qjit(i, args):
+      params, state = args
+      return opt.step(circuit, params, state)
+
+  @qml.qjit
+  def optimization_qjit(params, iters):
+      state = opt.init(params)
+      args = (params, state)
+      params, state = qml.for_loop(iters)(update_step_qjit)(args)
+      return params
+  ```
+
+  ```pycon
+  >>> params = jnp.array([0.1, 0.2])
+  >>> iters = 1000
+  >>> optimization_qjit(params=params, iters=iters)
+  Array([ 3.14159265, -1.57079633], dtype=float64)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 <h4>OpenQASM-PennyLane interoperability</h4>
@@ -102,6 +143,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
+  Instead, the `qml.to_openqasm` function should be used.
+  [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
+
 * The `level=None` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, `qml.draw`, `qml.draw_mpl`, and `qml.specs` transforms is deprecated and will be removed in v0.43.
   Please use `level='device'` instead to apply the noise model at the device level.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
@@ -119,6 +164,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
+  [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
 
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
@@ -162,6 +210,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes issue related to :func:`~.transforms.to_zx` adding the support for
+  `Toffoli` and `CCZ` gates conversion into their ZX-graph representation.
+  [(#7899)](https://github.com/PennyLaneAI/pennylane/pull/7899)
+
 * `get_best_diff_method` now correctly aligns with `execute` and `construct_batch` logic in workflows.
   [(#7898)](https://github.com/PennyLaneAI/pennylane/pull/7898)
 
@@ -184,6 +236,7 @@ Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
 Marcus Edwards,
+Simone Gasperini,
 David Ittah,
 Erick Ochoa,
 Mudit Pandey,

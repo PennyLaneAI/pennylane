@@ -19,7 +19,6 @@ This module contains the qml.bind_new_parameters function.
 import copy
 from collections.abc import Sequence
 from functools import singledispatch
-from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator
@@ -165,7 +164,7 @@ def bind_new_parameters_copy(op, params: Sequence[TensorLike]):
 @bind_new_parameters.register(qml.ControlledPhaseShift)
 @bind_new_parameters.register(qml.ControlledQubitUnitary)
 def bind_new_parameters_parametric_controlled_ops(
-    op: Union[qml.CRX, qml.CRY, qml.CRZ, qml.CRot, qml.ControlledPhaseShift],
+    op: qml.CRX | qml.CRY | qml.CRZ | qml.CRot | qml.ControlledPhaseShift,
     params: Sequence[TensorLike],
 ):
     return op.__class__(*params, wires=op.wires)
