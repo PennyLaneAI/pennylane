@@ -199,7 +199,7 @@ def test_integration_for_transform_interpreter(capsys):
     ctx.load_dialect(builtin.Builtin)
     ctx.load_dialect(transform.Transform)
 
-    pipeline = xdsl.passes.PipelinePass((ApplyTransformSequence(),))
+    pipeline = xdsl.passes.PassPipeline((ApplyTransformSequence(),))
     pipeline.apply(ctx, program())
     captured = capsys.readouterr()
     assert captured.out.strip() == "hello world"

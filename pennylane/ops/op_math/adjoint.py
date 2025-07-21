@@ -14,11 +14,13 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
-from functools import lru_cache, partial, wraps
-from typing import Callable, overload
+from collections.abc import Callable
+from functools import lru_cache, partial
+from typing import overload
 
 import pennylane as qml
 from pennylane._deprecated_observable import Observable
+from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Operation, Operator
