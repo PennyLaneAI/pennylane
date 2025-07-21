@@ -19,7 +19,6 @@ excepting the Pauli gates and Hadamard gate in ``non_parametric_ops.py``.
 import warnings
 from collections.abc import Sequence
 from copy import copy
-from typing import Optional, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
@@ -73,7 +72,7 @@ class Hermitian(Operator):
     _num_basis_states = 2
     _eigs = {}
 
-    def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: str | None = None):
         A = np.array(A) if isinstance(A, list) else A
         if not qml.math.is_abstract(A):
             if isinstance(wires, Sequence) and not isinstance(wires, str):
@@ -91,7 +90,7 @@ class Hermitian(Operator):
         super().__init__(A, wires=wires, id=id)
 
     @staticmethod
-    def _validate_input(A: TensorLike, expected_mx_shape: Optional[int] = None):
+    def _validate_input(A: TensorLike, expected_mx_shape: int | None = None):
         """Validate the input matrix."""
         if len(A.shape) != 2 or A.shape[0] != A.shape[1]:
             raise ValueError("Observable must be a square matrix.")
@@ -104,9 +103,9 @@ class Hermitian(Operator):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
@@ -306,7 +305,7 @@ class SparseHamiltonian(Operator):
 
     grad_method = None
 
-    def __init__(self, H: csr_matrix, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, H: csr_matrix, wires: WiresLike, id: str | None = None):
         if not isinstance(H, csr_matrix):
             raise TypeError("Observable must be a scipy sparse csr_matrix.")
         super().__init__(H, wires=wires, id=id)
@@ -317,7 +316,7 @@ class SparseHamiltonian(Operator):
                 f"Sparse Matrix must be of shape ({mat_len}, {mat_len}). Got {H.shape}."
             )
 
-    def __mul__(self, value: Union[int, float]) -> "qml.SparseHamiltonian":
+    def __mul__(self, value: int | float) -> "qml.SparseHamiltonian":
         r"""The scalar multiplication operation between a scalar and a SparseHamiltonian."""
         if not isinstance(value, (int, float)) and qml.math.ndim(value) != 0:
             raise TypeError(f"Scalar value must be an int or float. Got {type(value)}")
@@ -328,9 +327,9 @@ class SparseHamiltonian(Operator):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "𝓗", cache=cache)
 
@@ -496,7 +495,7 @@ class Projector(Operator):
             f"{len(wires)}, respectively."
         )
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         """Raise this projector to the power ``z``."""
         return [copy(self)] if (isinstance(z, int) and z > 0) else super().pow(z)
 
@@ -510,7 +509,7 @@ class BasisStateProjector(Projector, Operation):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
 
         if qml.math.get_interface(state) == "jax":
@@ -531,9 +530,9 @@ class BasisStateProjector(Projector, Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         r"""A customizable string representation of the operator.
 
@@ -692,7 +691,7 @@ class StateVectorProjector(Projector):
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
-    def __init__(self, state: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, state: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
         super().__init__(state, wires=wires, id=id)
 
@@ -702,9 +701,9 @@ class StateVectorProjector(Projector):
     # pylint: disable=unused-argument
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         r"""A customizable string representation of the operator.
 

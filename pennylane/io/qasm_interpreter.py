@@ -4,9 +4,10 @@ This submodule contains the interpreter for OpenQASM 3.0.
 
 import copy
 import functools
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from functools import partial, reduce
-from typing import Any, Callable, Iterable
+from typing import Any
 
 import numpy as np
 from numpy import uint
