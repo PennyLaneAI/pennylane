@@ -83,6 +83,12 @@
 
 * Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
   Top level import and usage is advised. The functions now live in the `dla` module.
+
+  ```python
+  import pennylane.liealg
+  from pennylane.liealg import lie_closure, structure_constants, center
+  ```
+
   [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
 
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)

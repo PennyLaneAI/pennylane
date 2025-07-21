@@ -127,10 +127,14 @@ Completed deprecation cycles
 ----------------------------
 
 * Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised. They now live in
-  the `dla`` module.
+  the ``dla`` module.
 
- - Deprecated in v0.40
- - Removed in v0.43
+  .. code-block:: python
+    import pennylane.liealg
+    from pennylane.liealg import lie_closure, structure_constants, center
+
+  - Deprecated in v0.40
+  - Removed in v0.43
 
 * ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
   on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
