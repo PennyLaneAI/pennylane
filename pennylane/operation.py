@@ -150,11 +150,6 @@ Boolean Functions
 :class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
 The ``operation`` module provides the following:
 
-.. warning::
-
-    All of the boolean functions in this module are currently deprecated. See the individual functions
-    for alternative code.
-
 .. currentmodule:: pennylane.operation
 
 .. autosummary::
@@ -219,7 +214,6 @@ from scipy.sparse import spmatrix
 
 import pennylane as qml
 from pennylane import capture
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.math import expand_matrix, is_abstract
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
