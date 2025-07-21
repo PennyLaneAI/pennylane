@@ -584,7 +584,7 @@ class InsertOp(IRDLOperation):
 
     idx = opt_operand_def(IntegerType(64))
 
-    idx_attr = opt_prop_def(AnyAttr())
+    idx_attr = opt_prop_def(IntegerAttr[I64])
 
     qubit = operand_def(QubitType)
 
