@@ -214,7 +214,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Raises error if an end statement is found in a measurement conditioned branch.
+* An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
   [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
 
 * Fixes issue related to :func:`~.transforms.to_zx` adding the support for
