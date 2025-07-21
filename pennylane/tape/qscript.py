@@ -23,7 +23,7 @@ import warnings
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Iterator, Sequence
 from functools import cached_property
-from typing import Any, Optional, ParamSpec, TypeVar, Union
+from typing import Any, ParamSpec, TypeVar, Union
 
 import pennylane as qml
 from pennylane.exceptions import PennyLaneDeprecationWarning
@@ -150,10 +150,10 @@ class QuantumScript:
 
     def __init__(
         self,
-        ops: Optional[Iterable[Operator]] = None,
-        measurements: Optional[Iterable[MeasurementProcess]] = None,
-        shots: Optional[ShotsLike] = None,
-        trainable_params: Optional[Sequence[int]] = None,
+        ops: Iterable[Operator] | None = None,
+        measurements: Iterable[MeasurementProcess] | None = None,
+        shots: ShotsLike | None = None,
+        trainable_params: Sequence[int] | None = None,
     ):
         self._ops = [] if ops is None else list(ops)
         self._measurements = [] if measurements is None else list(measurements)
@@ -180,12 +180,12 @@ class QuantumScript:
         fingerprint.extend(self.shots)
         return hash(tuple(fingerprint))
 
-    def __iter__(self) -> Iterator[Union[Operator, MeasurementProcess]]:
+    def __iter__(self) -> Iterator[Operator | MeasurementProcess]:
         """Iterator[.Operator, .MeasurementProcess]: Return an iterator to the
         underlying quantum circuit object."""
         return iter(self.circuit)
 
-    def __getitem__(self, idx: int) -> Union[Operator, MeasurementProcess]:
+    def __getitem__(self, idx: int) -> Operator | MeasurementProcess:
         """Union[Operator, MeasurementProcess]: Return the indexed operator from underlying quantum
         circuit object."""
         return self.circuit[idx]
@@ -200,7 +200,7 @@ class QuantumScript:
     # ========================================================
 
     @property
-    def circuit(self) -> list[Union[Operator, MeasurementProcess]]:
+    def circuit(self) -> list[Operator | MeasurementProcess]:
         """Returns the underlying quantum circuit as a list of operations and measurements.
 
         The circuit is created with the assumptions that:
@@ -234,7 +234,7 @@ class QuantumScript:
         return self._ops
 
     @property
-    def observables(self) -> list[Union[MeasurementProcess, Operator]]:
+    def observables(self) -> list[MeasurementProcess | Operator]:
         """Returns the observables on the quantum script.
 
         Returns:
@@ -287,7 +287,7 @@ class QuantumScript:
         return len(self.trainable_params)
 
     @property
-    def batch_size(self) -> Optional[int]:
+    def batch_size(self) -> int | None:
         r"""The batch size of the quantum script inferred from the batch sizes
         of the used operations for parameter broadcasting.
 
@@ -420,7 +420,7 @@ class QuantumScript:
         return len(self.wires)
 
     @cached_property
-    def par_info(self) -> list[dict[str, Union[int, Operator]]]:
+    def par_info(self) -> list[dict[str, int | Operator]]:
         """Returns the parameter information of the operations and measurements in the quantum script.
 
         Returns:
@@ -753,7 +753,7 @@ class QuantumScript:
 
     def shape(
         self, device: Union["qml.devices.Device", "qml.devices.LegacyDevice"]
-    ) -> Union[tuple[int, ...], tuple[tuple[int, ...], ...]]:
+    ) -> tuple[int, ...] | tuple[tuple[int, ...], ...]:
         """Produces the output shape of the quantum script by inspecting its measurements
         and the device used for execution.
 
@@ -799,7 +799,7 @@ class QuantumScript:
         return tuple(shape) if self.shots.has_partitioned_shots else shape[0]
 
     @property
-    def numeric_type(self) -> Union[type, tuple[type, ...]]:
+    def numeric_type(self) -> type | tuple[type, ...]:
         """Returns the expected numeric type of the quantum script result by inspecting
         its measurements.
 
@@ -923,7 +923,7 @@ class QuantumScript:
     def expand(
         self,
         depth: int = 1,
-        stop_at: Optional[Callable[[Union[Operation, MeasurementProcess]], bool]] = None,
+        stop_at: Callable[[Operation | MeasurementProcess], bool] | None = None,
         expand_measurements: bool = False,
     ) -> "QuantumScript":
         """Expand all operations to a specific depth.
@@ -1125,9 +1125,9 @@ class QuantumScript:
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def draw(
         self,
-        wire_order: Optional[Iterable[Hashable]] = None,
+        wire_order: Iterable[Hashable] | None = None,
         show_all_wires: bool = False,
-        decimals: Optional[int] = None,
+        decimals: int | None = None,
         max_length: int = 100,
         show_matrices: bool = True,
     ) -> str:
@@ -1156,10 +1156,10 @@ class QuantumScript:
 
     def to_openqasm(
         self,
-        wires: Optional[WiresLike] = None,
+        wires: WiresLike | None = None,
         rotations: bool = True,
         measure_all: bool = True,
-        precision: Optional[int] = None,
+        precision: int | None = None,
     ) -> str:
         """Serialize the circuit as an OpenQASM 2.0 program.
 
@@ -1206,7 +1206,7 @@ class QuantumScript:
 
     @classmethod
     def from_queue(
-        cls: type[QS], queue: qml.queuing.AnnotatedQueue, shots: Optional[ShotsLike] = None
+        cls: type[QS], queue: qml.queuing.AnnotatedQueue, shots: ShotsLike | None = None
     ) -> QS:
         """Construct a QuantumScript from an AnnotatedQueue."""
         return cls(*process_queue(queue), shots=shots)
@@ -1289,7 +1289,7 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 
-def make_qscript(fn: Callable[P, T], shots: Optional[ShotsLike] = None) -> Callable[P, QS]:
+def make_qscript(fn: Callable[P, T], shots: ShotsLike | None = None) -> Callable[P, QS]:
     """Returns a function that generates a qscript from a quantum function without any
     operation queuing taking place.
 
@@ -1343,7 +1343,7 @@ def make_qscript(fn: Callable[P, T], shots: Optional[ShotsLike] = None) -> Calla
 
 
 QuantumScriptBatch = Sequence[QuantumScript]
-QuantumScriptOrBatch = Union[QuantumScript, QuantumScriptBatch]
+QuantumScriptOrBatch = QuantumScript | QuantumScriptBatch
 
 register_pytree(QuantumScript, QuantumScript._flatten, QuantumScript._unflatten)
 
