@@ -85,6 +85,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated so that they accept a list of operations 
+  instead of a `qml.tape.QuantumScript` of operations.
+  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
+
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
   should instead indicate that the `Operator` does not need wire validation.
   [(#7911)](https://github.com/PennyLaneAI/pennylane/pull/7911)
@@ -183,6 +187,7 @@ Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
 Marcus Edwards,
+Pietropaolo Frisoni,
 David Ittah,
 Erick Ochoa,
 Mudit Pandey,
