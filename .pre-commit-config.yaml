@@ -49,6 +49,7 @@ repos:
     rev: v3.16.0
     hooks:
     -   id: pyupgrade
+        name: "🐍 pyupgrade · Check language features"
         args: [--py311-plus]
 - repo: local
   hooks:
