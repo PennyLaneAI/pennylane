@@ -24,15 +24,14 @@ import numpy as np
 from scipy.sparse import csr_matrix, spmatrix
 
 import pennylane as qml
-from pennylane._deprecated_observable import Observable
-from pennylane.operation import Operation
+from pennylane.operation import Operation, Operator
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .matrix_ops import QubitUnitary
 
 
-class Hermitian(Observable):
+class Hermitian(Operator):
     r"""
     An arbitrary Hermitian observable.
 
@@ -262,7 +261,7 @@ class Hermitian(Observable):
         return self.compute_diagonalizing_gates(self.eigendecomposition["eigvec"], self.wires)
 
 
-class SparseHamiltonian(Observable):
+class SparseHamiltonian(Operator):
     r"""
     A Hamiltonian represented directly as a sparse matrix in Compressed Sparse Row (CSR) format.
 
@@ -405,7 +404,7 @@ class SparseHamiltonian(Observable):
         return H
 
 
-class Projector(Observable):
+class Projector(Operator):
     r"""Projector(state, wires, id=None)
     Observable corresponding to the state projector :math:`P=\ket{\phi}\bra{\phi}`.
 
@@ -453,6 +452,7 @@ class Projector(Observable):
     is_hermitian = True
     name = "Projector"
     num_params = 1
+    _queue_category = None
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (1,)
@@ -505,6 +505,7 @@ class BasisStateProjector(Projector, Operation):
     :math:`\phi` denotes a basis state."""
 
     grad_method = None
+    _queue_category = "_ops"
 
     # The call signature should be the same as Projector.__new__ for the positional
     # arguments, but with free key word arguments.
