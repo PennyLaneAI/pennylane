@@ -115,6 +115,7 @@ Completed deprecation cycles
   the ``liealg`` module.
 
   .. code-block:: python
+
     import pennylane.liealg
     from pennylane.liealg import lie_closure, structure_constants, center
 
