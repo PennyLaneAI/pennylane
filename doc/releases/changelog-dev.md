@@ -109,6 +109,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
+  Instead, the `qml.to_openqasm` function should be used.
+  [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
+
 * The `level=None` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, `qml.draw`, `qml.draw_mpl`, and `qml.specs` transforms is deprecated and will be removed in v0.43.
   Please use `level='device'` instead to apply the noise model at the device level.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
