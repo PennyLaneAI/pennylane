@@ -147,7 +147,7 @@ def register_resources(
             to their number of occurrences therein. If a function is provided instead of a static
             dictionary, a dictionary must be returned from the function. For more information,
             consult the "Quantum Functions as Decomposition Rules" section below.
-        work_wires (dict or Callable): a dictionary declaring the number of each type of work wires
+        work_wires (dict or Callable): a dictionary declaring the number of work wires of each type
             required to perform this decomposition. Accepted work wire types include ``"zeroed"``,
             ``"borrowed"``, ``"burnable"``, and ``"garbage"``. For more information, consult the
             "Dynamic Allocation of Work Wires" section below.
@@ -278,7 +278,7 @@ def register_resources(
             :func:`~pennylane.resource_rep`
 
     .. details:
-       :title: Dynamic Allocation of Work Wires
+       :title: Dynamically Allocated Wires as a Resource
 
        Some decomposition rules make use of work wires, which can be dynamically requested within
        the quantum function using :func:`~pennylane.allocation.allocate`. Such decomposition rules
@@ -290,13 +290,12 @@ def register_resources(
        - "zeroed" wires are guaranteed to be in the :math:`|0\rangle` state initially, and they
          must be restored to the :math:`|0\rangle>` state before deallocation.
 
-       - "borrowed" wires could be allocated in any state, and they must be restored to their
-         initial state before deallocation.
+       - "borrowed" wires are allocated in an arbitrary state, but they must be restored to the same initial state before deallocation.
 
-       - "burnable" wires are guaranteed to be in the :math:`|0\rangle` state initially, and they
-         could be deallocated in any arbitrary state.
+       - "burnable" wires are guaranteed to be in the :math:`|0\rangle` state initially, but they
+         can be deallocated in any arbitrary state.
 
-       - "garbage" wires could be allocated in any state, and can be deallocated in any state.
+       - "garbage" wires can be allocated in any state, and can be deallocated in any state.
 
        Here's a decomposition for a multi-controlled `Rot` that uses a zeroed work wire:
 
