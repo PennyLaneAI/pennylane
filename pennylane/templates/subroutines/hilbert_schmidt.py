@@ -120,7 +120,7 @@ class HilbertSchmidt(Operation):
     def __init__(self, *params, v_function, v_wires, u_ops, id=None):
 
         self._num_params = len(params)
-        self.hyperparameters["u_ops"] = u_ops
+        self.hyperparameters["u_ops"] = tuple(u_ops)
 
         u_script = qml.tape.QuantumScript(u_ops)
         u_wires = u_script.wires
@@ -133,14 +133,14 @@ class HilbertSchmidt(Operation):
         self.hyperparameters["v_function"] = v_function
 
         v_script = qml.tape.make_qscript(v_function)(*params)
-        self.hyperparameters["v_ops"] = v_script.operations
+        self.hyperparameters["v_ops"] = tuple(v_script.operations)
         self.hyperparameters["v_wires"] = qml.wires.Wires(v_wires)
 
         if len(u_wires) != len(v_wires):
             raise QuantumFunctionError("U and V must have the same number of wires.")
 
         if not qml.wires.Wires(v_wires).contains_wires(v_script.wires):
-            raise QuantumFunctionError("All wires in v_script must be in v_wires.")
+            raise QuantumFunctionError("All wires in v must be in v_wires.")
 
         # Intersection of wires
         if len(qml.wires.Wires.shared_wires([u_script.wires, v_script.wires])) != 0:
