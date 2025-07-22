@@ -23,10 +23,7 @@ from pennylane import QueuingManager
 from pennylane.capture import FlatFn
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
-
 from pennylane.exceptions import ConditionalTransformError
-from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates
-
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
