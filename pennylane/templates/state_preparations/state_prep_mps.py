@@ -523,11 +523,7 @@ def _work_wires_condition(bond_dimensions, num_sites, num_work_wires):  # pylint
 
 
 def _bond_dimension_condition(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
-    max_bond_dimension = 0
-    for i in range(num_sites - 1):
-        bond_dim = bond_dimensions[i]
-        max_bond_dimension = max(max_bond_dimension, bond_dim)
-
+    max_bond_dimension = max(bond_dimensions)
     return max_bond_dimension > 2 ** num_work_wires
 
 
