@@ -289,7 +289,6 @@ class TestHilbertSchmidt:
 
         for i, j in zip(tape_dec.operations, expected_operations):
             assert i.name == j.name
-            # print(f"i: {i}, j: {j}")  # Debugging line
             assert i.wires == j.wires
             assert qml.math.allclose(i.data, j.data)
 
