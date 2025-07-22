@@ -121,28 +121,6 @@ Operator Types
 .. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
 
-Errors
-~~~~~~
-
-When an :class:`~.Operator` method is undefined, it raises a error type that depends
-on the method that is undefined.
-
-.. currentmodule:: pennylane.operation
-
-.. autosummary::
-    :toctree: api
-
-    ~OperatorPropertyUndefined
-    ~AdjointUndefinedError
-    ~DecompositionUndefinedError
-    ~DiagGatesUndefinedError
-    ~EigvalsUndefinedError
-    ~GeneratorUndefinedError
-    ~MatrixUndefinedError
-    ~ParameterFrequenciesUndefinedError
-    ~PowUndefinedError
-    ~SparseMatrixUndefinedError
-    ~TermsUndefinedError
 
 Boolean Functions
 ~~~~~~~~~~~~~~~~~
@@ -214,6 +192,18 @@ from scipy.sparse import spmatrix
 
 import pennylane as qml
 from pennylane import capture
+from pennylane.exceptions import (
+    AdjointUndefinedError,
+    DecompositionUndefinedError,
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    GeneratorUndefinedError,
+    MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
+    PowUndefinedError,
+    SparseMatrixUndefinedError,
+    TermsUndefinedError,
+)
 from pennylane.math import expand_matrix, is_abstract
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -228,59 +218,7 @@ try:
 except ImportError:
     has_jax = False
 
-# =============================================================================
-# Errors
-# =============================================================================
-
-SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
-
-
-class OperatorPropertyUndefined(Exception):
-    """Generic exception to be used for undefined
-    Operator properties or methods."""
-
-
-class DecompositionUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's representation as a decomposition is undefined."""
-
-
-class TermsUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's representation as a linear combination is undefined."""
-
-
-class MatrixUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's matrix representation is undefined."""
-
-
-class SparseMatrixUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's sparse matrix representation is undefined."""
-
-
-class EigvalsUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's eigenvalues are undefined."""
-
-
-class DiagGatesUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's diagonalizing gates are undefined."""
-
-
-class AdjointUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's adjoint version is undefined."""
-
-
-class PowUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's power is undefined."""
-
-
-class GeneratorUndefinedError(OperatorPropertyUndefined):
-    """Exception used to indicate that an operator
-    does not have a generator"""
-
-
-class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
-    """Exception used to indicate that an operator
-    does not have parameter_frequencies"""
 
 
 # =============================================================================

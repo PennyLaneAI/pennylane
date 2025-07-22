@@ -19,13 +19,13 @@ from collections.abc import Sequence
 import numpy as np
 
 from pennylane import math
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError, MeasurementShapeError, QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 from .counts import CountsMP
-from .measurements import MeasurementShapeError, SampleMeasurement
+from .measurements import SampleMeasurement
 from .mid_measure import MeasurementValue
 from .process_samples import process_raw_samples
 
