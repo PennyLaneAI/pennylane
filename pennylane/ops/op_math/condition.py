@@ -16,6 +16,7 @@ Contains the condition transform.
 """
 import functools
 from collections.abc import Callable, Sequence
+from typing import Union
 
 import pennylane as qml
 from pennylane import QueuingManager
@@ -311,7 +312,7 @@ class CondCallable:
 
 
 def cond(
-    condition: MeasurementValue | bool,
+    condition: Union["qml.measurements.MeasurementValue", bool],
     true_fn: Callable | None = None,
     false_fn: Callable | None = None,
     elifs: Sequence = (),

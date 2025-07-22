@@ -17,7 +17,6 @@ This module contains the qml.measure measurement.
 import uuid
 from collections.abc import Hashable
 from functools import lru_cache
-from typing import Optional
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.exceptions import QuantumFunctionError
@@ -104,11 +103,11 @@ def find_post_processed_mcms(circuit):
     This includes any mid-circuit measurement that is post-selected or the object of a terminal
     measurement.
     """
-    post_processed_mcms = set(
+    post_processed_mcms = {
         op
         for op in circuit.operations
         if isinstance(op, MidMeasureMP) and op.postselect is not None
-    )
+    }
     for m in circuit.measurements:
         if isinstance(m.mv, list):
             for mv in m.mv:
@@ -413,7 +412,7 @@ def measure(
               samples, leading to unexpected or incorrect results.
 
     """
-    if capture_enabled()
+    if capture_enabled():
         primitive = _create_mid_measure_primitive()
         return primitive.bind(wires, reset=reset, postselect=postselect)
 
