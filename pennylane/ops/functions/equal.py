@@ -776,13 +776,13 @@ def _equal_hilbert_schmidt(
         "rtol": rtol,
     }
 
-    u1 = qml.tape.QuantumScript(op1.hyperparameters["u_ops"])
-    u2 = qml.tape.QuantumScript(op2.hyperparameters["u_ops"])
+    u1 = qml.prod(*op1.hyperparameters["u"])
+    u2 = qml.prod(*op2.hyperparameters["u"])
     if not qml.equal(u1, u2, **equal_kwargs):
         return False
 
-    v1 = qml.tape.QuantumScript(op1.hyperparameters["v_ops"])
-    v2 = qml.tape.QuantumScript(op2.hyperparameters["v_ops"])
+    v1 = qml.prod(*op1.hyperparameters["v"])
+    v2 = qml.prod(*op2.hyperparameters["v"])
     if not qml.equal(v1, v2, **equal_kwargs):
         return False
 

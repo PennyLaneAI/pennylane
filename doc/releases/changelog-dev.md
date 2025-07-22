@@ -127,14 +127,14 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated so that they accept a list of operations 
+  instead of a `qml.tape.QuantumScript` of operations.
+  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
+
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
   PennyLane now depends on the more general `Operator` interface instead. The
   `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
   that the operator instance is Hermitian.
-
-* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated so that they accept a list of operations 
-  instead of a `qml.tape.QuantumScript` of operations.
-  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
 
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
   should instead indicate that the `Operator` does not need wire validation.

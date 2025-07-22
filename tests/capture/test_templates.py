@@ -460,7 +460,7 @@ class TestModifiedTemplates:
         v_params = np.array([0.6])
 
         kwargs = {
-            "u_ops": [qml.Hadamard(0)],
+            "u": qml.Hadamard(0),
             "v_function": lambda params: qml.RZ(params[0], wires=1),
             "v_wires": [1],
             "id": None,
