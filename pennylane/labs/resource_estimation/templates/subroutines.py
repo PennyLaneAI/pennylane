@@ -560,6 +560,11 @@ class ResourceQFT(ResourceOperator):
         swap = resource_rep(re.ResourceSWAP)
         ctrl_phase_shift = resource_rep(re.ResourceControlledPhaseShift)
 
+        if num_wires == 1:
+            return [
+                GateCount(hadamard),
+            ]
+
         return [
             GateCount(hadamard, num_wires),
             GateCount(swap, num_wires // 2),
@@ -592,6 +597,9 @@ class ResourceQFT(ResourceOperator):
         """
         hadamard = resource_rep(re.ResourceHadamard)
         swap = resource_rep(re.ResourceSWAP)
+
+        if num_wires == 1:
+            return [GateCount(hadamard)]
 
         gate_types = [
             GateCount(hadamard, num_wires),
@@ -711,7 +719,6 @@ class ResourceAQFT(ResourceOperator):
         """
         hadamard = resource_rep(re.ResourceHadamard)
         swap = resource_rep(re.ResourceSWAP)
-        cz = resource_rep(re.ResourceCZ)
         cs = re.ResourceControlled.resource_rep(
             base_cmpr_op=resource_rep(re.ResourceS),
             num_ctrl_wires=1,
@@ -725,15 +732,11 @@ class ResourceAQFT(ResourceOperator):
             GateCount(hadamard, num_wires),
         ]
 
-        if num_wires > 1:
-            gate_types.append(GateCount(cz, num_wires - 1))
+        if order > 1 and num_wires > 1:
+            gate_types.append(GateCount(cs, num_wires - 1))
 
-        if num_wires > 2 and order > 1:
-            gate_types.append(GateCount(cs, num_wires - 2))
-
-        if order > 2:  # No need for Adder circuits
-            for index in range(3, order):
-                addition_reg_size = index - 2
+            for index in range(2, order):
+                addition_reg_size = index - 1
 
                 temp_and = resource_rep(re.ResourceTempAND)
                 temp_and_dag = re.ResourceAdjoint.resource_rep(temp_and)
@@ -749,24 +752,25 @@ class ResourceAQFT(ResourceOperator):
                 ]
                 gate_types.extend(cost_iter)
 
-            for index in range(order, num_wires):
-                addition_reg_size = order - 2
+            addition_reg_size = order - 1
+            repetitions = num_wires - order
 
-                temp_and = resource_rep(re.ResourceTempAND)
-                temp_and_dag = re.ResourceAdjoint.resource_rep(temp_and)
-                in_place_add = re.ResourceSemiAdder.resource_rep(addition_reg_size)
+            temp_and = resource_rep(re.ResourceTempAND)
+            temp_and_dag = re.ResourceAdjoint.resource_rep(temp_and)
+            in_place_add = re.ResourceSemiAdder.resource_rep(addition_reg_size)
 
-                cost_iter = [
-                    AllocWires(addition_reg_size),
-                    GateCount(temp_and, addition_reg_size),
-                    GateCount(in_place_add),
-                    GateCount(hadamard),
-                    GateCount(temp_and_dag, addition_reg_size),
-                    FreeWires(addition_reg_size),
-                ]
-                gate_types.extend(cost_iter)
+            cost_iter = [
+                AllocWires(addition_reg_size),
+                GateCount(temp_and, addition_reg_size * repetitions),
+                GateCount(in_place_add, repetitions),
+                GateCount(hadamard, repetitions),
+                GateCount(temp_and_dag, addition_reg_size * repetitions),
+                FreeWires(addition_reg_size),
+            ]
+            gate_types.extend(cost_iter)
 
-        gate_types.append(GateCount(swap, num_wires // 2))
+            gate_types.append(GateCount(swap, num_wires // 2))
+
         return gate_types
 
     @staticmethod

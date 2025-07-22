@@ -255,14 +255,26 @@ class TestS:
             ["c1"],
             [1],
             [
-                plre.GateCount(plre.ResourceControlledPhaseShift.resource_rep(), 1),
+                plre.GateCount(plre.resource_rep(plre.ResourceCNOT), 2),
+                plre.GateCount(plre.resource_rep(plre.ResourceT), 2),
+                plre.GateCount(
+                    plre.resource_rep(
+                        plre.ResourceAdjoint, {"base_cmpr_op": plre.resource_rep(plre.ResourceT)}
+                    ),
+                ),
             ],
         ),
         (
             ["c1"],
             [0],
             [
-                plre.GateCount(plre.ResourceControlledPhaseShift.resource_rep(), 1),
+                plre.GateCount(plre.resource_rep(plre.ResourceCNOT), 2),
+                plre.GateCount(plre.resource_rep(plre.ResourceT), 2),
+                plre.GateCount(
+                    plre.resource_rep(
+                        plre.ResourceAdjoint, {"base_cmpr_op": plre.resource_rep(plre.ResourceT)}
+                    ),
+                ),
                 plre.GateCount(plre.ResourceX.resource_rep(), 2),
             ],
         ),
@@ -270,16 +282,28 @@ class TestS:
             ["c1", "c2"],
             [1, 1],
             [
-                plre.GateCount(plre.ResourceControlledPhaseShift.resource_rep(), 1),
                 plre.GateCount(plre.ResourceMultiControlledX.resource_rep(2, 0), 2),
+                plre.GateCount(plre.resource_rep(plre.ResourceCNOT), 2),
+                plre.GateCount(plre.resource_rep(plre.ResourceT), 2),
+                plre.GateCount(
+                    plre.resource_rep(
+                        plre.ResourceAdjoint, {"base_cmpr_op": plre.resource_rep(plre.ResourceT)}
+                    ),
+                ),
             ],
         ),
         (
             ["c1", "c2", "c3"],
             [1, 0, 0],
             [
-                plre.GateCount(plre.ResourceControlledPhaseShift.resource_rep(), 1),
                 plre.GateCount(plre.ResourceMultiControlledX.resource_rep(3, 2), 2),
+                plre.GateCount(plre.resource_rep(plre.ResourceCNOT), 2),
+                plre.GateCount(plre.resource_rep(plre.ResourceT), 2),
+                plre.GateCount(
+                    plre.resource_rep(
+                        plre.ResourceAdjoint, {"base_cmpr_op": plre.resource_rep(plre.ResourceT)}
+                    ),
+                ),
             ],
         ),
     )
