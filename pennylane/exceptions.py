@@ -41,6 +41,11 @@ General Execution Errors
     ~QueuingError
     ~WireError
     ~MeasurementShapeError
+    ~AutoGraphError
+    ~CompileError
+    ~DecompositionError
+    ~InvalidCapabilitiesError
+    ~NonDifferentiableError
 
 Operator Property Errors
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -59,18 +64,6 @@ Operator Property Errors
     ~PowUndefinedError
     ~GeneratorUndefinedError
     ~ParameterFrequenciesUndefinedError
-
-Autograph and Compilation Errors
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~AutoGraphError
-    ~CompileError
-    ~DecompositionError
-    ~InvalidCapabilitiesError
-    ~NonDifferentiableError
 
 User Warnings
 ~~~~~~~~~~~~~
