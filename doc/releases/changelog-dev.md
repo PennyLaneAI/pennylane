@@ -165,14 +165,14 @@
 
 <h3>Deprecations 👋</h3>
 
-* Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
+* Some unnecessary methods of the `qml.CircuitGraph` class are deprecated and will be removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
-    - ``print_contents`` in favor of ``print(obj)``
-    - ``observables_in_order`` in favor of ``observables``
-    - ``operations_in_order`` in favor of ``operations``
-    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
-    - ``descendants_in_order`` in favore of ``.descendants(obj, sort=True)``
+    - `print_contents` in favor of `print(obj)`
+    - `observables_in_order` in favor of `observables`
+    - `operations_in_order` in favor of `operations`
+    - `ancestors_in_order` in favor of `ancestors(obj, sort=True)`
+    - `descendants_in_order` in favore of `descendants(obj, sort=True)`
 
 * The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
   Instead, the `qml.to_openqasm` function should be used.
