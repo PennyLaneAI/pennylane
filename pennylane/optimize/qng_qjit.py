@@ -44,6 +44,21 @@ class QNGOptimizerQJIT:
             - ``QNGOptimizerQJIT`` does not work correctly if there is any classical processing in the QNode circuit
               (e.g., ``2 * theta`` as a gate parameter).
 
+    Args:
+        stepsize (float): the user-defined stepsize hyperparameter (default value: 0.01).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
+
+            - If ``None``, the full metric tensor is computed.
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
+
+        lam (float): metric tensor regularization to be applied at each optimization step (default value: 0).
+
     **Example:**
 
     Consider a hybrid workflow to optimize an objective function defined by a quantum circuit.
@@ -111,21 +126,6 @@ class QNGOptimizerQJIT:
 
     >>> params
     Array([ 3.14159265, -1.57079633], dtype=float64)
-
-    Keyword Args:
-        stepsize=0.01 (float): the user-defined stepsize hyperparameter
-        approx="block-diag" (str): approximation method for the metric tensor.
-
-            - If ``None``, the full metric tensor is computed
-
-            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
-              the number of evaluated circuits significantly
-
-            - If ``"diag"``, the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources
-              (compared to ``"block-diag"``)
-
-        lam=0 (float): metric tensor regularization to be applied at each optimization step
     """
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):
