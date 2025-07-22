@@ -441,6 +441,36 @@ class TestControlFlow:
             PauliY("q0"),
         ]
 
+    def test_end_in_loop(self):
+        # parse the QASM
+        ast = parse(
+            open("tests/io/qasm_interpreter/end_in_loop.qasm", mode="r").read(), permissive=True
+        )
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "loop-end", "wire_map": None})
+
+        assert q.queue == [RX(1, "q0")]
+
+    def test_end_in_measurement_controlled_branch(self):
+        # parse the QASM
+        ast = parse(
+            open(
+                "tests/io/qasm_interpreter/end_in_measure_conditioned_branch.qasm", mode="r"
+            ).read(),
+            permissive=True,
+        )
+
+        # run the program
+        with pytest.raises(
+            NotImplementedError,
+            match="End statements in measurement conditioned branches are not supported.",
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"name": "meas-ctrl-branch-nested-end", "wire_map": None}
+            )
+
     def test_nested_end(self):
         # parse the QASM
         ast = parse(

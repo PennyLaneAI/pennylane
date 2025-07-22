@@ -130,6 +130,16 @@
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
+* Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
+  Top level import and usage is advised. The functions now live in the `liealg` module.
+
+  ```python
+  import pennylane.liealg
+  from pennylane.liealg import lie_closure, structure_constants, center
+  ```
+
+  [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
+
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
   PennyLane now depends on the more general `Operator` interface instead. The
   `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
@@ -211,12 +221,21 @@
 * Update xDSL supported version to `0.45`.
   [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
 
+* Update JAX version used in tests to `0.6.2`
+  [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
+
 <h3>Documentation 📝</h3>
+
+* Improved the docstrings of all optimizers for consistency and legibility.
+  [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
 
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
 <h3>Bug fixes 🐛</h3>
+
+* An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
+  [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
 
 * Fixes issue related to :func:`~.transforms.to_zx` adding the support for
   `Toffoli` and `CCZ` gates conversion into their ZX-graph representation.
