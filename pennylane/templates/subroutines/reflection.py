@@ -274,7 +274,7 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
         qml.PhaseShift(alpha, wires=wires)
         qml.PauliX(wires=wires)
 
-    U.__class__(*U.parameters, wires=U.wires)
+    U._unflatten(*U._flatten())
 
 
 add_decomps(Reflection, _reflection_decomposition)
