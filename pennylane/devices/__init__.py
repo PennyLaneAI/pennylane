@@ -156,7 +156,7 @@ Qutrit Mixed-State Simulation Tools
 from .tracker import Tracker
 
 from .capabilities import DeviceCapabilities
-from .execution_config import ExecutionConfig, MCMConfig
+from .execution_config import DefaultExecutionConfig, ExecutionConfig, MCMConfig
 from .device_constructor import device, refresh_devices
 from .device_api import Device
 from .default_qubit import DefaultQubit
