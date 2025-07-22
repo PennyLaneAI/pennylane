@@ -1164,7 +1164,6 @@ class TestShots:
     """Unit tests for specifying shots per call."""
 
     # pylint: disable=unexpected-keyword-arg
-    @pytest.mark.xfail(reason="deprecated. To be removed in 0.44")
     def test_specify_shots_per_call_sample(self):
         """Tests that shots can be set per call for a sample return type."""
         dev = qml.device("default.qubit", wires=1, shots=10)
@@ -1175,12 +1174,15 @@ class TestShots:
             return qml.sample(qml.PauliZ(wires=0))
 
         assert len(circuit(0.8)) == 10
-        assert len(circuit(0.8, shots=2)) == 2
-        assert len(circuit(0.8, shots=3178)) == 3178
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=2)) == 2
+            assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
 
     # pylint: disable=unexpected-keyword-arg, protected-access
-    @pytest.mark.xfail(reason="deprecated. To be removed in 0.44")
     def test_specify_shots_per_call_expval(self):
         """Tests that shots can be set per call for an expectation value.
         Note: this test has a vanishingly small probability to fail."""
@@ -1197,7 +1199,11 @@ class TestShots:
         assert circuit.device._shots.total_shots is None
 
         # check that the circuit is temporary non-analytic
-        res1 = [circuit(shots=1) for _ in range(100)]
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            res1 = [circuit(shots=1) for _ in range(100)]
         assert np.std(res1) != 0.0
 
         # check that the circuit is analytic again
@@ -1206,7 +1212,6 @@ class TestShots:
         assert circuit.device._shots.total_shots is None
 
     # pylint: disable=unexpected-keyword-arg
-    @pytest.mark.xfail(reason="deprecated. To be removed in 0.44")
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
         """Tests that the per-call shots overwriting is suspended if user
         has a shots keyword argument, but a warning is raised."""
@@ -1226,11 +1231,19 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8)
         assert tape.operations[0].wires.labels == (0,)
 
-        assert len(circuit(0.8, shots=1)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=1)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
-        assert len(circuit(0.8, shots=0)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
