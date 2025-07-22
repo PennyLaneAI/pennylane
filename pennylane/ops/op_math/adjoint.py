@@ -14,11 +14,12 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
-from functools import lru_cache, partial, wraps
-from typing import Callable, overload
+from collections.abc import Callable
+from functools import lru_cache, partial
+from typing import overload
 
 import pennylane as qml
-from pennylane._deprecated_observable import Observable
+from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
 from pennylane.operation import Operation, Operator
@@ -310,17 +311,6 @@ class Adjoint(SymbolicOp):
         >>> op.grad_method
         'A'
 
-        If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as
-        well.
-
-        >>> op = Adjoint(1.0 * qml.X(0))
-        >>> isinstance(op, qml.operation.Observable)
-        True
-        >>> isinstance(op, qml.operation.Operation)
-        False
-        >>> Adjoint(qml.X(0)) @ qml.Y(1)
-        (Adjoint(X(0))) @ Y(1)
-
     """
 
     resource_keys = {"base_class", "base_params"}
@@ -338,20 +328,12 @@ class Adjoint(SymbolicOp):
         """Returns an uninitialized type with the necessary mixins.
 
         If the ``base`` is an ``Operation``, this will return an instance of ``AdjointOperation``.
-        If ``Observable`` but not ``Operation``, it will be ``AdjointObs``.
-        And if both, it will be an instance of ``AdjointOpObs``.
 
         """
 
         if isinstance(base, Operation):
-            if isinstance(base, Observable):
-                return object.__new__(AdjointOpObs)
-
             # not an observable
             return object.__new__(AdjointOperation)
-
-        if isinstance(base, Observable):
-            return object.__new__(AdjointObs)
 
         return object.__new__(Adjoint)
 
@@ -489,22 +471,4 @@ class AdjointOperation(Adjoint, Operation):
         return -1 * self.base.generator()
 
 
-class AdjointObs(Adjoint, Observable):
-    """A child of :class:`~.Adjoint` that also inherits from :class:`~.Observable`."""
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)
-
-
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=too-many-ancestors
-class AdjointOpObs(AdjointOperation, Observable):
-    """A child of :class:`~.AdjointOperation` that also inherits from :class:`~.Observable."""
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)
-
-
 AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access
-AdjointObs._primitive = Adjoint._primitive  # pylint: disable=protected-access
-AdjointOpObs._primitive = Adjoint._primitive  # pylint: disable=protected-access

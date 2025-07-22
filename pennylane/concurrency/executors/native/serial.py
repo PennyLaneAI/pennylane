@@ -20,7 +20,7 @@ This module provides single-threaded, local executor support for function execut
 from collections.abc import Callable, Sequence
 from functools import partial
 from itertools import starmap
-from typing import Any, Optional
+from typing import Any
 
 from ..base import ExecBackendConfig
 from .api import PyNativeExec
@@ -74,7 +74,7 @@ class SerialExec(PyNativeExec):
 
     """
 
-    def __init__(self, max_workers: Optional[int] = 1, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: int | None = 1, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
         if max_workers > 1:  # pragma: no cover
             raise RuntimeError("The serial executor backend cannot have more than 1 worker.")

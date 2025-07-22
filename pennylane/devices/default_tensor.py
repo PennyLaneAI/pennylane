@@ -21,7 +21,7 @@ from collections.abc import Callable
 from dataclasses import replace
 from functools import singledispatch
 from numbers import Number
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 
@@ -34,7 +34,7 @@ from pennylane.devices.preprocess import (
     validate_measurements,
     validate_observables,
 )
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, WireError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -48,7 +48,6 @@ from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.templates.subroutines.trotter import _recursive_expression
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch, TensorLike
-from pennylane.wires import WireError
 
 has_quimb = True
 
@@ -586,7 +585,9 @@ class DefaultTensor(Device):
             **kwargs,
         )
 
-    def _setup_execution_config(self, config: Optional[ExecutionConfig] = None) -> ExecutionConfig:
+    def _setup_execution_config(
+        self, config: ExecutionConfig | None = DefaultExecutionConfig
+    ) -> ExecutionConfig:
         """
         Update the execution config with choices for how the device should be used and the device options.
         """
@@ -651,8 +652,8 @@ class DefaultTensor(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: Optional[ExecutionConfig] = None,
-    ) -> Union[Result, ResultBatch]:
+        execution_config: ExecutionConfig | None = None,
+    ) -> Result | ResultBatch:
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:
@@ -846,8 +847,8 @@ class DefaultTensor(Device):
 
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[qml.tape.QuantumTape] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: qml.tape.QuantumTape | None = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -899,8 +900,8 @@ class DefaultTensor(Device):
 
     def supports_vjp(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Whether or not this device defines a custom vector-Jacobian product.
 

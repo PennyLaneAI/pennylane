@@ -15,13 +15,14 @@
 Contains the condition transform.
 """
 import functools
-from functools import wraps
-from typing import Callable, Optional, Sequence, Type, Union
+from collections.abc import Callable, Sequence
 
 import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.capture import FlatFn
+from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
+from pennylane.exceptions import ConditionalTransformError
 from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
@@ -64,10 +65,6 @@ def _add_abstract_shapes(f):
     return new_f
 
 
-class ConditionalTransformError(ValueError):
-    """Error for using qml.cond incorrectly"""
-
-
 class Conditional(SymbolicOp, Operation):
     """A Conditional Operation.
 
@@ -88,7 +85,7 @@ class Conditional(SymbolicOp, Operation):
             can be useful for some applications where the instance has to be identified
     """
 
-    def __init__(self, expr, then_op: Type[Operation], id=None):
+    def __init__(self, expr, then_op: type[Operation], id=None):
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         super().__init__(then_op, id=id)
@@ -312,9 +309,9 @@ class CondCallable:
 
 
 def cond(
-    condition: Union[MeasurementValue, bool],
-    true_fn: Optional[Callable] = None,
-    false_fn: Optional[Callable] = None,
+    condition: MeasurementValue | bool,
+    true_fn: Callable | None = None,
+    false_fn: Callable | None = None,
     elifs: Sequence = (),
 ):
     """Quantum-compatible if-else conditionals --- condition quantum operations

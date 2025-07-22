@@ -22,7 +22,6 @@ import logging
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
-from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.devices.qubit_mixed import simulate
@@ -242,8 +241,8 @@ class DefaultMixed(Device):
     @debug_logger
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -265,7 +264,7 @@ class DefaultMixed(Device):
     def execute(
         self,
         circuits: QuantumScript,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ) -> Union[Result, ResultBatch]:
         if execution_config is None:
             execution_config = ExecutionConfig()

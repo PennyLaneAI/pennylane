@@ -19,7 +19,6 @@ import concurrent.futures
 from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
-from typing import Optional, Union
 
 import numpy as np
 
@@ -506,9 +505,9 @@ class DefaultClifford(Device):
 
     def execute(
         self,
-        circuits: Union[QuantumScript, QuantumScriptBatch],
-        execution_config: Optional[ExecutionConfig] = None,
-    ) -> Union[Result, ResultBatch]:
+        circuits: QuantumScript | QuantumScriptBatch,
+        execution_config: ExecutionConfig | None = DefaultExecutionConfig,
+    ) -> Result | ResultBatch:
         if execution_config is None:
             execution_config = ExecutionConfig()
         max_workers = execution_config.device_options.get("max_workers", self._max_workers)
@@ -943,7 +942,7 @@ class DefaultClifford(Device):
         if tgt_states is None:
             num_wires = len(meas_wires)
             basis_vec = np.arange(2**num_wires)[:, np.newaxis]
-            tgt_states = (((basis_vec & (1 << np.arange(num_wires)[::-1]))) > 0).astype(int)
+            tgt_states = ((basis_vec & (1 << np.arange(num_wires)[::-1])) > 0).astype(int)
 
         # Rotate the circuit basis to computational basis
         diagonalizing_cit = kwargs.get("stim_circuit").copy()
