@@ -226,11 +226,11 @@ def _reflection_decomposition_resources(
 
     resources = {
         qml.GlobalPhase: 1,
-        adjoint_resource_rep(base_class, base_params): 1
+        adjoint_resource_rep(base_class, base_params): 1,
+        qml.PauliX: 2
     }
 
     if num_wires > 1:
-        resources[resource_rep(qml.PauliX)] = 2
         resources[
             controlled_resource_rep(
                 qml.PhaseShift,
@@ -240,7 +240,6 @@ def _reflection_decomposition_resources(
             )
         ] = 1
     else:
-        resources[resource_rep(qml.PauliX)] = 2
         resources[resource_rep(qml.PhaseShift)] = 1
 
     resources[resource_rep(base_class, **base_params)] = 1
