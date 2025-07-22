@@ -18,6 +18,7 @@ Contains the FermionicSingleExcitation template.
 import numpy as np
 
 import pennylane as qml
+from pennylane import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 
@@ -116,6 +117,8 @@ class FermionicSingleExcitation(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
+    resource_keys = {"num_wires"}
+
     def __init__(self, weight, wires=None, id=None):
         if len(wires) < 2:
             raise ValueError(f"expected at least two wires; got {len(wires)}")
@@ -125,6 +128,12 @@ class FermionicSingleExcitation(Operation):
             raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
         super().__init__(weight, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.wires),
+        }
 
     @property
     def num_params(self):
@@ -201,3 +210,64 @@ class FermionicSingleExcitation(Operation):
         op_list.append(RX(np.pi / 2, wires=p))
 
         return op_list
+
+
+def _fermionic_single_excitation_resources(num_wires):
+    return {qml.RX: 4, qml.H: 4, qml.CNOT: 4 * (num_wires - 1), qml.RZ: 2}
+
+
+@register_resources(_fermionic_single_excitation_resources)
+def _fermionic_single_excitation_decomposition(weight, wires):
+    # Interpret first and last wire as r and p
+    r = wires[0]
+    p = wires[-1]
+
+    # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
+    set_cnot_wires = [wires[l : l + 2] for l in range(len(wires) - 1)]
+
+    # ------------------------------------------------------------------
+    # Apply the first layer
+
+    # U_1, U_2 acting on wires 'r' and 'p'
+    RX(-np.pi / 2, wires=r)
+    Hadamard(wires=p)
+
+    # Applying CNOTs between wires 'r' and 'p'
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(weight / 2, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+ acting on wires 'r' and 'p'
+    RX(np.pi / 2, wires=r)
+    Hadamard(wires=p)
+
+    # ------------------------------------------------------------------
+    # Apply the second layer
+
+    # U_1, U_2 acting on wires 'r' and 'p'
+    Hadamard(wires=r)
+    RX(-np.pi / 2, wires=p)
+
+    # Applying CNOTs between wires 'r' and 'p'
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(-weight / 2, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+ acting on wires 'r' and 'p'
+    Hadamard(wires=r)
+    RX(np.pi / 2, wires=p)
+
+
+add_decomps(FermionicSingleExcitation, _fermionic_single_excitation_decomposition)
