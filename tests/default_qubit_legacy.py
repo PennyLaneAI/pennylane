@@ -1017,7 +1017,7 @@ class DefaultQubitLegacy(QubitDevice):
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements."
             )
-        seed = self._seed or np.random.randint(0, 2**31)  # pylint:disable=protected-access
+        seed = self._seed or np.random.randint(0, 2**31)
 
         # Create a locally rolling seed by using deterministic context properties
         # Use only deterministic properties for reproducibility across executions
