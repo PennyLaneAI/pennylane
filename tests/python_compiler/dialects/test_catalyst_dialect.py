@@ -98,8 +98,8 @@ def test_assembly_format(run_filecheck):
     // CHECK: [[CUSTOM_RESULT:%.+]] = catalyst.custom_call fn("custom_function") ([[VAL]]) : (f64) -> f64
     %custom_result = catalyst.custom_call fn("custom_function")(%val) : (f64) -> f64
 
-    // CHECK: [[KERNEL_RESULT:%.+]] = catalyst.launch_kernel "kernel_name"([[VAL]]) : (f64) -> f64
-    %kernel_result = catalyst.launch_kernel "kernel_name"(%val) : (f64) -> f64
+    // CHECK: [[KERNEL_RESULT:%.+]] = catalyst.launch_kernel @kernel_name([[VAL]]) : (f64) -> f64
+    %kernel_result = catalyst.launch_kernel @kernel_name(%val) : (f64) -> f64
 
     // CHECK: [[CALLBACK_RESULT:%.+]] = catalyst.callback_call @callback_func([[VAL]]) : (f64) -> f64
     %callback_result = catalyst.callback_call @callback_func(%val) : (f64) -> f64
