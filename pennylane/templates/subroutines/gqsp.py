@@ -19,6 +19,7 @@ Contains the GQSP template.
 import copy
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -82,12 +83,21 @@ class GQSP(Operation):
 
     grad_method = None
 
+    resource_keys = {"unitary", "num_iters"}
+
     def __init__(self, unitary, angles, control, id=None):
         total_wires = qml.wires.Wires(control) + unitary.wires
 
         self._hyperparameters = {"unitary": unitary, "control": qml.wires.Wires(control)}
 
         super().__init__(angles, *unitary.data, wires=total_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "unitary": self.hyperparameters["unitary"],
+            "num_iters": min(len(self.data[0][0]), len(self.data[0][1]), len(self.data[0][2])),
+        }
 
     def _flatten(self):
         data = self.parameters
@@ -165,3 +175,47 @@ class GQSP(Operation):
         context.remove(self.hyperparameters["unitary"])
         context.append(self)
         return self
+
+
+def _GQSP_resources(unitary, num_iters):
+    resources = {
+        qml.X: 2 + 2 * (num_iters - 1),
+        qml.U3: num_iters,
+        qml.Z: num_iters,
+        controlled_resource_rep(
+            base_class=unitary.__class__,
+            base_params={},
+            num_control_wires=1,
+            num_zero_control_values=1,
+        ): num_iters
+        - 1,
+    }
+
+    return resources
+
+
+@register_resources(_GQSP_resources)
+def _GQSP_decomposition(*parameters, **hyperparameters):
+    unitary = hyperparameters["unitary"]
+    control = hyperparameters["control"]
+
+    angles = parameters[0]
+
+    thetas, phis, lambds = angles[0], angles[1], angles[2]
+
+    # These four gates adapt PennyLane's qml.U3 to the chosen U3 format in the GQSP paper.
+    qml.X(control)
+    qml.U3(2 * thetas[0], phis[0], lambds[0], wires=control)
+    qml.X(control)
+    qml.Z(control)
+
+    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
+        qml.ops.Controlled(unitary, control_wires=[control], control_values=[0])
+
+        qml.X(control)
+        qml.U3(2 * theta, phi, lamb, wires=control)
+        qml.X(control)
+        qml.Z(control)
+
+
+add_decomps(GQSP, _GQSP_decomposition)
