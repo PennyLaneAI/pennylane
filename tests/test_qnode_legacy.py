@@ -896,7 +896,7 @@ class TestShots:
 
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="'shots' as an argument to the quantum function is deprecated",
+            match="'shots' specified on call to a QNode is deprecated",
         ):
             assert len(ansatz1(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)

@@ -1267,7 +1267,7 @@ class TestShots:
 
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="'shots' as an argument to the quantum function is deprecated",
+            match="'shots' specified on call to a QNode is deprecated",
         ):
             assert len(ansatz1(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
@@ -1687,7 +1687,7 @@ class TestNewDeviceIntegration:
 
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="'shots' as an argument to the quantum function is deprecated",
+            match="'shots' specified on call to a QNode is deprecated",
         ):
             results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
             assert qml.math.allclose(results, np.zeros((10, 2)))
@@ -2051,7 +2051,7 @@ class TestSetShots:
         # Then try to pass shots parameter when calling the QNode
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="'shots' as an argument to the quantum function is deprecated",
+            match="'shots' specified on call to a QNode is deprecated",
         ):
             with pytest.warns(
                 UserWarning,

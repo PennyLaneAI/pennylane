@@ -595,7 +595,7 @@ class TestSnapshotSupportedQNode:
         # Make sure shots are overridden correctly
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="'shots' as an argument to the quantum function is deprecated",
+            match="'shots' specified on call to a QNode is deprecated",
         ):
             result = qml.snapshots(circuit)(shots=200)
         assert result[3] == {"0": 98, "1": 102}
@@ -656,7 +656,7 @@ class TestSnapshotUnsupportedQNode:
         # Make sure shots are overridden correctly
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="'shots' as an argument to the quantum function is deprecated",
+            match="'shots' specified on call to a QNode is deprecated",
         ):
             counts, _ = tuple(
                 zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50)))
@@ -731,7 +731,7 @@ class TestSnapshotUnsupportedQNode:
         # Make sure shots are overridden correctly
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="'shots' as an argument to the quantum function is deprecated",
+            match="'shots' specified on call to a QNode is deprecated",
         ):
             result = circuit(shots=200)
         finite_shot_result = result[0]
