@@ -28,6 +28,7 @@ It contains data structures that support core compiler functionality.
 from typing import ClassVar
 
 from xdsl.dialects.builtin import (
+    I64,
     ArrayAttr,
     DenseArrayBase,
     DictionaryAttr,
@@ -44,8 +45,6 @@ from xdsl.dialects.builtin import (
 from xdsl.ir import AttributeCovT, Dialect, Generic, ParametrizedAttribute, TypeAttribute
 from xdsl.irdl import (
     AnyAttr,
-    BaseAttr,
-    EqAttrConstraint,
     IRDLOperation,
     ParsePropInAttrDict,
     VarConstraint,
@@ -78,9 +77,9 @@ class AssertionOp(IRDLOperation):
 
     name = "catalyst.assert"
 
-    assertion = operand_def(EqAttrConstraint(IntegerType(1)))
+    assertion = operand_def(IntegerType(1))
 
-    error = prop_def(BaseAttr(StringAttr))
+    error = prop_def(StringAttr)
 
 
 @irdl_op_definition
@@ -95,13 +94,13 @@ class CallbackCallOp(IRDLOperation):
 
     callee = prop_def(FlatSymbolRefAttrConstr)
 
-    inputs = var_operand_def(AnyAttr())
+    inputs = var_operand_def()
 
     arg_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
     res_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
-    callback_results = var_result_def(AnyAttr())
+    callback_results = var_result_def()
 
     irdl_options = [ParsePropInAttrDict()]
 
@@ -112,15 +111,15 @@ class CallbackOp(IRDLOperation):
 
     name = "catalyst.callback"
 
-    sym_name = prop_def(BaseAttr(StringAttr))
+    sym_name = prop_def(StringAttr)
 
     function_type = prop_def(FunctionType)
 
-    id = prop_def(IntegerAttr.constr(type=EqAttrConstraint(IntegerType(64))))
+    id = prop_def(IntegerAttr[I64])
 
-    argc = prop_def(IntegerAttr.constr(type=EqAttrConstraint(IntegerType(64))))
+    argc = prop_def(IntegerAttr[I64])
 
-    resc = prop_def(IntegerAttr.constr(type=EqAttrConstraint(IntegerType(64))))
+    resc = prop_def(IntegerAttr[I64])
 
     arg_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
@@ -140,13 +139,13 @@ class CustomCallOp(IRDLOperation):
           attr-dict `:` functional-type(operands, results)
       """
 
-    inputs = var_operand_def(AnyAttr())
+    inputs = var_operand_def()
 
-    call_target_name = prop_def(BaseAttr(StringAttr))
+    call_target_name = prop_def(StringAttr)
 
     number_original_arg = opt_prop_def(DenseArrayBase.constr(i32))
 
-    custom_results = var_result_def(AnyAttr())
+    custom_results = var_result_def()
 
     irdl_options = [ParsePropInAttrDict()]
 
@@ -163,13 +162,13 @@ class LaunchKernelOp(IRDLOperation):
 
     callee = prop_def(SymbolRefAttr)
 
-    inputs = var_operand_def(AnyAttr())
+    inputs = var_operand_def()
 
     arg_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
     res_attrs = opt_prop_def(ArrayAttr[DictionaryAttr])
 
-    kernel_results = var_result_def(AnyAttr())
+    kernel_results = var_result_def()
 
     irdl_options = [ParsePropInAttrDict()]
 
@@ -182,7 +181,7 @@ class ListDeallocOp(IRDLOperation):
 
     assembly_format = """ $list attr-dict `:` type($list) """
 
-    list = operand_def(BaseAttr(ArrayListType))
+    list = operand_def(ArrayListType)
 
 
 @irdl_op_definition
@@ -193,7 +192,7 @@ class ListInitOp(IRDLOperation):
 
     assembly_format = """ attr-dict `:` type($list) """
 
-    list = result_def(BaseAttr(ArrayListType))
+    list = result_def(ArrayListType)
 
 
 @irdl_op_definition
@@ -204,7 +203,7 @@ class ListLoadDataOp(IRDLOperation):
 
     assembly_format = """ $list attr-dict `:` type($list) `->` type($data) """
 
-    list = operand_def(BaseAttr(ArrayListType))
+    list = operand_def(ArrayListType)
 
     data = result_def(MemRefType)
 
@@ -245,9 +244,9 @@ class PrintOp(IRDLOperation):
 
     name = "catalyst.print"
 
-    val = opt_operand_def(AnyAttr())
+    val = opt_operand_def()
 
-    const_val = opt_prop_def(BaseAttr(StringAttr))
+    const_val = opt_prop_def(StringAttr)
 
     print_descriptor = prop_def(UnitAttr)
 
