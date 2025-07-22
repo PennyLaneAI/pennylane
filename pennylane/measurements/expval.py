@@ -15,7 +15,6 @@
 This module contains the qml.expval measurement.
 """
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from pennylane import math
 from pennylane.operation import Operator
@@ -27,55 +26,6 @@ from .measurement_value import MeasurementValue
 from .measurements import SampleMeasurement, StateMeasurement
 from .probs import probs
 from .sample import SampleMP
-
-
-def expval(
-    op: Union[Operator, MeasurementValue],
-):
-    r"""Expectation value of the supplied observable.
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Y(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    -0.4794255386042029
-
-    Args:
-        op (Union[Operator, MeasurementValue]): a quantum observable object. To
-            get expectation values for mid-circuit measurements, ``op`` should be
-            a ``MeasurementValue``.
-
-    Returns:
-        ExpectationMP: measurement process instance
-    """
-    if isinstance(op, MeasurementValue):
-        return ExpectationMP(obs=op)
-
-    if isinstance(op, Sequence):
-        raise ValueError(
-            "qml.expval does not support measuring sequences of measurements or observables"
-        )
-
-    if isinstance(op, I) and len(op.wires) == 0:
-        # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
-        # allow once we have testing and confidence in qml.expval(I())
-        raise NotImplementedError(
-            "Expectation values of qml.Identity() without wires are currently not allowed."
-        )
-
-    return ExpectationMP(obs=op)
 
 
 class ExpectationMP(SampleMeasurement, StateMeasurement):
@@ -101,15 +51,15 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
 
     def process_samples(
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Optional[tuple[int, ...]] = None,
-        bin_size: Optional[int] = None,
+        shot_range: tuple[int, ...] | None = None,
+        bin_size: int | None = None,
     ):
         if not self.wires:
             return math.squeeze(self.eigvals())
@@ -168,3 +118,52 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             probabilities (array): the probabilities of collapsing to eigen states
         """
         return math.dot(probabilities, self.eigvals())
+
+
+def expval(
+    op: Operator | MeasurementValue,
+) -> ExpectationMP:
+    r"""Expectation value of the supplied observable.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Y(0))
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    -0.4794255386042029
+
+    Args:
+        op (Union[Operator, MeasurementValue]): a quantum observable object. To
+            get expectation values for mid-circuit measurements, ``op`` should be
+            a ``MeasurementValue``.
+
+    Returns:
+        ExpectationMP: measurement process instance
+    """
+    if isinstance(op, MeasurementValue):
+        return ExpectationMP(obs=op)
+
+    if isinstance(op, Sequence):
+        raise ValueError(
+            "qml.expval does not support measuring sequences of measurements or observables"
+        )
+
+    if isinstance(op, qml.Identity) and len(op.wires) == 0:
+        # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
+        # allow once we have testing and confidence in qml.expval(I())
+        raise NotImplementedError(
+            "Expectation values of qml.Identity() without wires are currently not allowed."
+        )
+
+    return ExpectationMP(obs=op)

@@ -17,7 +17,6 @@ from quantum chemistry applications.
 """
 # pylint: disable=arguments-differ
 import functools
-from typing import Optional, Union
 
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -184,7 +183,7 @@ class SingleExcitation(Operation):
         w1, w2 = self.wires
         return qml.Hamiltonian([0.25, -0.25], [qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2)])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -256,14 +255,14 @@ class SingleExcitation(Operation):
         (phi,) = self.parameters
         return SingleExcitation(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [SingleExcitation(self.data[0] * z, wires=self.wires)]
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G", cache=cache)
 
@@ -345,7 +344,7 @@ class SingleExcitationMinus(Operation):
             [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -425,9 +424,9 @@ class SingleExcitationMinus(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G₋", cache=cache)
 
@@ -517,7 +516,7 @@ class SingleExcitationPlus(Operation):
             [qml.Identity(w1), qml.X(w1) @ qml.Y(w2), qml.Y(w1) @ qml.X(w2), qml.Z(w1) @ qml.Z(w2)],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -597,9 +596,9 @@ class SingleExcitationPlus(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G₊", cache=cache)
 
@@ -722,10 +721,10 @@ class DoubleExcitation(Operation):
             ],
         )
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [DoubleExcitation(self.data[0] * z, wires=self.wires)]
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     mask_s = np.zeros((16, 16))
@@ -842,9 +841,9 @@ class DoubleExcitation(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G²", cache=cache)
 
@@ -949,7 +948,7 @@ class DoubleExcitationPlus(Operation):
         H = csr_matrix(-0.5 * G)
         return qml.SparseHamiltonian(H, wires=self.wires)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -976,9 +975,9 @@ class DoubleExcitationPlus(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G²₊", cache=cache)
 
@@ -1071,9 +1070,9 @@ class DoubleExcitationMinus(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "G²₋", cache=cache)
 
@@ -1172,7 +1171,7 @@ class OrbitalRotation(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     mask_s = np.zeros((16, 16))
@@ -1387,7 +1386,7 @@ class FermionicSWAP(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
         super().__init__(phi, wires=wires, id=id)
 
     @staticmethod
@@ -1488,14 +1487,14 @@ class FermionicSWAP(Operation):
         (phi,) = self.parameters
         return FermionicSWAP(-phi, wires=self.wires)
 
-    def pow(self, z: Union[int, float]) -> list["qml.operation.Operator"]:
+    def pow(self, z: int | float) -> list["qml.operation.Operator"]:
         return [FermionicSWAP(self.data[0] * z, wires=self.wires)]
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "fSWAP", cache=cache)
 

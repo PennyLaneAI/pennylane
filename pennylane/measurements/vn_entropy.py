@@ -15,7 +15,7 @@
 """
 This module contains the qml.vn_entropy measurement.
 """
-from typing import Optional
+from collections.abc import Sequence
 
 from pennylane import math
 from pennylane.typing import TensorLike
@@ -48,9 +48,9 @@ class VnEntropyMP(StateMeasurement):
 
     def __init__(
         self,
-        wires: Optional[Wires] = None,
-        id: Optional[str] = None,
-        log_base: Optional[float] = None,
+        wires: Wires | None = None,
+        id: str | None = None,
+        log_base: float | None = None,
     ):
         self.log_base = log_base
         super().__init__(wires=wires, id=id)
@@ -66,7 +66,7 @@ class VnEntropyMP(StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
 
     def process_state(self, state: TensorLike, wire_order: Wires):

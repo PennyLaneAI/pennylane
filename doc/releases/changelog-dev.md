@@ -4,19 +4,66 @@
 
 <h3>New features since last release</h3>
 
+* Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the momentum
+  quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.
+  [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
+
+  Similar to the :class:`~.QNGOptimizerQJIT` optimizer, :class:`~.MomentumQNGOptimizerQJIT` offers a
+  `qml.qjit`-compatible analogue to the existing :class:`~.MomentumQNGOptimizer` with an Optax-like interface:
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  dev = qml.device("lightning.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def circuit(params):
+      qml.RX(params[0], wires=0)
+      qml.RY(params[1], wires=1)
+      return qml.expval(qml.Z(0) + qml.X(1))
+
+  opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
+
+  @qml.qjit
+  def update_step_qjit(i, args):
+      params, state = args
+      return opt.step(circuit, params, state)
+
+  @qml.qjit
+  def optimization_qjit(params, iters):
+      state = opt.init(params)
+      args = (params, state)
+      params, state = qml.for_loop(iters)(update_step_qjit)(args)
+      return params
+  ```
+
+  ```pycon
+  >>> params = jnp.array([0.1, 0.2])
+  >>> iters = 1000
+  >>> optimization_qjit(params=params, iters=iters)
+  Array([ 3.14159265, -1.57079633], dtype=float64)
+  ```
+
 <h3>Improvements 🛠</h3>
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
-  subroutines, constants, and built-in mathematical functions.
+  subroutines, constants, all remaining stdlib gates, qubit registers, and built-in mathematical functions.
   [(#7651)](https://github.com/PennyLaneAI/pennylane/pull/7651)
   [(#7653)](https://github.com/PennyLaneAI/pennylane/pull/7653)
   [(#7676)](https://github.com/PennyLaneAI/pennylane/pull/7676)
   [(#7679)](https://github.com/PennyLaneAI/pennylane/pull/7679)
   [(#7677)](https://github.com/PennyLaneAI/pennylane/pull/7677)
+  [(#7767)](https://github.com/PennyLaneAI/pennylane/pull/7767)
+  [(#7690)](https://github.com/PennyLaneAI/pennylane/pull/7690)
 
 <h4>Other improvements</h4>
+
+* The error message raised when using Python compiler transforms with :func:`pennylane.qjit` has been updated
+  with suggested fixes.
+  [(#7916)](https://github.com/PennyLaneAI/pennylane/pull/7916)
 
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
@@ -25,9 +72,10 @@
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
+  [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
 
   ```python
-  @qml.set_shots(shots=1000)
+  @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
   @qml.qnode(dev)
   def circuit():
       qml.H(0)
@@ -61,6 +109,10 @@
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
 
+* The `AllocQubitOp` and `DeallocQubitOp` operations have been added to the `Quantum` dialect in the
+  Python compiler.
+  [(#7915)](https://github.com/PennyLaneAI/pennylane/pull/7915)
+
 * The :func:`pennylane.ops.rs_decomposition` method now performs exact decomposition and returns
   complete global phase information when used for decomposing a phase gate to Clifford+T basis.
   [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
@@ -75,6 +127,28 @@
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
 <h3>Breaking changes 💔</h3>
+
+* The boolean functions provided in `qml.operation` are deprecated. See the 
+  :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These 
+  include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`, 
+  `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
+  [(#7924)](https://github.com/PennyLaneAI/pennylane/pull/7924)
+
+* Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
+  Top level import and usage is advised. The functions now live in the `liealg` module.
+
+  ```python
+  import pennylane.liealg
+  from pennylane.liealg import lie_closure, structure_constants, center
+  ```
+
+  [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
+
+* `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
+  PennyLane now depends on the more general `Operator` interface instead. The
+  `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
+  that the operator instance is Hermitian.
+  [(#7927)](https://github.com/PennyLaneAI/pennylane/pull/7927)
 
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
   should instead indicate that the `Operator` does not need wire validation.
@@ -91,6 +165,10 @@
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 <h3>Deprecations 👋</h3>
+
+* The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
+  Instead, the `qml.to_openqasm` function should be used.
+  [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
 
 * The `level=None` argument in the :func:`pennylane.workflow.get_transform_program`, :func:`pennylane.workflow.construct_batch`, `qml.draw`, `qml.draw_mpl`, and `qml.specs` transforms is deprecated and will be removed in v0.43.
   Please use `level='device'` instead to apply the noise model at the device level.
@@ -109,6 +187,15 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Improves type hints in the `measurements` module.
+  [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
+
+* Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
+  [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
+
+* Improve the pre-commit hook to add gitleaks.
+  [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
 
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
@@ -142,12 +229,29 @@
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
+* Update xDSL supported version to `0.46`.
+  [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
+  [(#7932)](https://github.com/PennyLaneAI/pennylane/pull/7932)
+
+* Update JAX version used in tests to `0.6.2`
+  [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
+
 <h3>Documentation 📝</h3>
+
+* Improved the docstrings of all optimizers for consistency and legibility.
+  [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
 
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
 <h3>Bug fixes 🐛</h3>
+
+* An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
+  [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
+
+* Fixes issue related to :func:`~.transforms.to_zx` adding the support for
+  `Toffoli` and `CCZ` gates conversion into their ZX-graph representation.
+  [(#7899)](https://github.com/PennyLaneAI/pennylane/pull/7899)
 
 * `get_best_diff_method` now correctly aligns with `execute` and `construct_batch` logic in workflows.
   [(#7898)](https://github.com/PennyLaneAI/pennylane/pull/7898)
@@ -170,9 +274,12 @@ This release contains contributions from (in alphabetical order):
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
+Marcus Edwards,
+Simone Gasperini,
 David Ittah,
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
+Shuli Shu,
 Jay Soni,
 Jake Zaia

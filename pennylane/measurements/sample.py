@@ -15,7 +15,6 @@
 This module contains the qml.sample measurement.
 """
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import numpy as np
 
@@ -83,9 +82,9 @@ class SampleMP(SampleMeasurement):
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ):
         if shots is None:
@@ -114,7 +113,7 @@ class SampleMP(SampleMeasurement):
             return int
         return float
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         if not shots:
             raise MeasurementShapeError(
                 "Shots are required to obtain the shape of the measurement "
@@ -188,7 +187,7 @@ class SampleMP(SampleMeasurement):
 
 
 def sample(
-    op: Optional[Union[Operator, MeasurementValue, Sequence[MeasurementValue]]] = None,
+    op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
     wires=None,
 ) -> SampleMP:
     r"""Sample from the supplied observable, with the number of shots
@@ -250,7 +249,7 @@ def sample(
                 return qml.expval(qml.PauliX(0))
 
             def cost(angle):
-                return math.hstack(circuit(angle))
+                return qml.math.hstack(circuit(angle))
 
             angle = qml.numpy.array(0.1)
             res = qml.jacobian(cost)(angle)

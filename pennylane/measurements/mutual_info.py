@@ -17,7 +17,6 @@ This module contains the qml.mutual_info measurement.
 """
 from collections.abc import Sequence
 from copy import copy
-from typing import Optional
 
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
@@ -51,9 +50,9 @@ class MutualInfoMP(StateMeasurement):
 
     def __init__(
         self,
-        wires: Optional[Sequence[Wires]] = None,
-        id: Optional[str] = None,
-        log_base: Optional[float] = None,
+        wires: Sequence[Wires] | None = None,
+        id: str | None = None,
+        log_base: float | None = None,
     ):
         self.log_base = log_base
         super().__init__(wires=wires, id=id)
@@ -92,7 +91,7 @@ class MutualInfoMP(StateMeasurement):
         ]
         return new_measurement
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
 
     def process_state(self, state: TensorLike, wire_order: Wires):

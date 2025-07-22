@@ -16,7 +16,6 @@
 This module contains the qml.var measurement.
 """
 from collections.abc import Sequence
-from typing import Optional, Union
 
 from pennylane import math
 from pennylane.operation import Operator
@@ -53,15 +52,15 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
     def numeric_type(self):
         return float
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
 
     def process_samples(
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: Optional[tuple[int, ...]] = None,
-        bin_size: Optional[int] = None,
+        shot_range: tuple[int, ...] | None = None,
+        bin_size: int | None = None,
     ):
         # estimate the variance
         op = self.mv if self.mv is not None else self.obs
@@ -120,7 +119,7 @@ class VarianceMP(SampleMeasurement, StateMeasurement):
         return math.dot(probabilities, (eigvals**2)) - math.dot(probabilities, eigvals) ** 2
 
 
-def var(op: Union[Operator, MeasurementValue]) -> VarianceMP:
+def var(op: Operator | MeasurementValue) -> VarianceMP:
     r"""Variance of the supplied observable.
 
     Args:
