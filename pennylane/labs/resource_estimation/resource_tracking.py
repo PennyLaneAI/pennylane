@@ -32,7 +32,7 @@ from pennylane.wires import Wires
 # pylint: disable=dangerous-default-value,protected-access,too-many-arguments
 
 # user-friendly gateset for visual checks and initial compilation
-StandardGateSet: set = {
+StandardGateSet = {
     "X",
     "Y",
     "Z",
@@ -58,7 +58,7 @@ used when visualizing a circuit after larger building-blocks (e.g QFT) have been
 """
 
 # realistic gateset for useful compilation of circuits
-DefaultGateSet: set = {
+DefaultGateSet = {
     "X",
     "Y",
     "Z",
@@ -76,7 +76,7 @@ The default :code:`gate_set` argument used in
 """
 
 # parameters for further configuration of the decompositions
-resource_config: dict = {
+resource_config = {
     "error_rx": 1e-9,
     "error_ry": 1e-9,
     "error_rz": 1e-9,
@@ -84,13 +84,13 @@ resource_config: dict = {
     "precision_qubit_unitary": 1e-9,
     "precision_qrom_state_prep": 1e-9,
 }
-r"""A configuration dictionary which stores the default values of certain parameters
-(e.g. error thresholds).
+r"""A configuration dictionary which stores the default values of certain parameters (e.g. error thresholds).
 
 The default :code:`config` argument used in the
 :func:`~.pennylane.labs.resource_estimation.estimate_resources` function. This allows users to
 have top level access to change the default value of certain parameters if none were provided
 in the circuit.
+
 """
 
 

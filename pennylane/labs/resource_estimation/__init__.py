@@ -50,12 +50,11 @@ Resource Estimation Functions:
 Gatesets & Configurations:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autosummary::
-    :toctree: api
+.. autodata:: ~StandardGateSet
 
-    ~StandardGateSet
-    ~DefaultGateSet
-    ~resource_config
+.. autodata:: ~DefaultGateSet
+
+.. autodata:: ~resource_config
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
