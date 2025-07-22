@@ -15,7 +15,7 @@
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
 from dataclasses import dataclass, field
-from typing import Literal, Optional
+from typing import Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.concurrency.executors.base import RemoteExec
@@ -27,7 +27,9 @@ from pennylane.transforms.core import TransformDispatcher
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: Literal["deferred", "one-shot", "tree-traversal", "single-branch-statistics"] | str | None = None
+    mcm_method: (
+        Literal["deferred", "one-shot", "tree-traversal", "single-branch-statistics"] | str | None
+    ) = None
     """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is

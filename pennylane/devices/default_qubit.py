@@ -22,7 +22,6 @@ from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
 from typing import TYPE_CHECKING
-from numbers import Number
 
 import numpy as np
 
@@ -71,6 +70,8 @@ logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
     from numbers import Number
+
+    from jax.extend.core import Jaxpr
 
     from pennylane.operation import Operator
 
@@ -555,7 +556,7 @@ class DefaultQubit(Device):
         """This function defines the device transform program to be applied and an updated device configuration.
 
         Args:
-            execution_config (Optional[ExecutionConfig]): A data structure describing the
+            execution_config (ExecutionConfig | None): A data structure describing the
                 parameters needed to fully describe the execution.
 
         Returns:
@@ -676,7 +677,7 @@ class DefaultQubit(Device):
         if mcm_config.mcm_method == "device":
             mcm_config = replace(mcm_config, mcm_method="tree-traversal")
 
-        if qml.capture.enabled():
+        if capture.enabled():
             mcm_updated_values = {}
             mcm_method = mcm_config.mcm_method
 
@@ -768,7 +769,7 @@ class DefaultQubit(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -791,7 +792,7 @@ class DefaultQubit(Device):
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -837,7 +838,7 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -859,7 +860,7 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -909,7 +910,7 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         r"""The vector jacobian product used in reverse-mode differentiation. ``DefaultQubit`` uses the
         adjoint differentiation method to compute the VJP.
@@ -979,7 +980,7 @@ class DefaultQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -1007,7 +1008,7 @@ class DefaultQubit(Device):
     # pylint: disable=import-outside-toplevel
     @debug_logger
     def eval_jaxpr(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: list[TensorLike], *args, execution_config=None
+        self, jaxpr: Jaxpr, consts: list[TensorLike], *args, execution_config=None
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
