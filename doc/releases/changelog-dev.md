@@ -125,6 +125,9 @@
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
+* Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
+  [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
+
 <h3>Breaking changes 💔</h3>
 
 * Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
