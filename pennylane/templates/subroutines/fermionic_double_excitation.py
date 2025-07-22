@@ -501,6 +501,8 @@ class FermionicDoubleExcitation(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
+    resource_keys = {"num_wires_1", "num_wires_2"}
+
     def _flatten(self):
         return self.data, (self.hyperparameters["wires1"], self.hyperparameters["wires2"])
 
@@ -538,6 +540,13 @@ class FermionicDoubleExcitation(Operation):
 
         wires = wires1 + wires2
         super().__init__(weight, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires_1": len(self.hyperparameters["wires1"]),
+            "num_wires_2": len(self.hyperparameters["wires2"]),
+        }
 
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
