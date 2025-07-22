@@ -121,28 +121,6 @@ Operator Types
 .. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
 
-Errors
-~~~~~~
-
-When an :class:`~.Operator` method is undefined, it raises a error type that depends
-on the method that is undefined.
-
-.. currentmodule:: pennylane.operation
-
-.. autosummary::
-    :toctree: api
-
-    ~OperatorPropertyUndefined
-    ~AdjointUndefinedError
-    ~DecompositionUndefinedError
-    ~DiagGatesUndefinedError
-    ~EigvalsUndefinedError
-    ~GeneratorUndefinedError
-    ~MatrixUndefinedError
-    ~ParameterFrequenciesUndefinedError
-    ~PowUndefinedError
-    ~SparseMatrixUndefinedError
-    ~TermsUndefinedError
 
 Boolean Functions
 ~~~~~~~~~~~~~~~~~
@@ -150,26 +128,12 @@ Boolean Functions
 :class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
 The ``operation`` module provides the following:
 
-.. warning::
-
-    All of the boolean functions in this module are currently deprecated. See the individual functions
-    for alternative code.
-
 .. currentmodule:: pennylane.operation
 
 .. autosummary::
     :toctree: api
 
-    ~defines_diagonalizing_gates
-    ~gen_is_multi_term_hamiltonian
-    ~has_gen
-    ~has_grad_method
-    ~has_multipar
-    ~has_nopar
-    ~has_unitary_gen
-    ~is_measurement
     ~is_trainable
-    ~not_tape
 
 Other
 ~~~~~
@@ -228,7 +192,18 @@ from scipy.sparse import spmatrix
 
 import pennylane as qml
 from pennylane import capture
-from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.exceptions import (
+    AdjointUndefinedError,
+    DecompositionUndefinedError,
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    GeneratorUndefinedError,
+    MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
+    PowUndefinedError,
+    SparseMatrixUndefinedError,
+    TermsUndefinedError,
+)
 from pennylane.math import expand_matrix, is_abstract
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
@@ -243,59 +218,7 @@ try:
 except ImportError:
     has_jax = False
 
-# =============================================================================
-# Errors
-# =============================================================================
-
-SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
-
-
-class OperatorPropertyUndefined(Exception):
-    """Generic exception to be used for undefined
-    Operator properties or methods."""
-
-
-class DecompositionUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's representation as a decomposition is undefined."""
-
-
-class TermsUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's representation as a linear combination is undefined."""
-
-
-class MatrixUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's matrix representation is undefined."""
-
-
-class SparseMatrixUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's sparse matrix representation is undefined."""
-
-
-class EigvalsUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's eigenvalues are undefined."""
-
-
-class DiagGatesUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's diagonalizing gates are undefined."""
-
-
-class AdjointUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's adjoint version is undefined."""
-
-
-class PowUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's power is undefined."""
-
-
-class GeneratorUndefinedError(OperatorPropertyUndefined):
-    """Exception used to indicate that an operator
-    does not have a generator"""
-
-
-class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
-    """Exception used to indicate that an operator
-    does not have parameter_frequencies"""
 
 
 # =============================================================================
@@ -2387,140 +2310,11 @@ def operation_derivative(operation: Operation) -> TensorLike:
 
 
 @qml.BooleanFn
-def not_tape(obj):
-    """Returns ``True`` if the object is not a quantum tape.
-
-    .. warning::
-
-        **Deprecated**. Use ``not isinstance(obj, qml.tape.QuantumScript)`` instead.
-    """
-    warnings.warn(
-        "not_tape is deprecated. Use ``not isinstance(obj, qml.tape.QuantumScript)`` instead.",
-        PennyLaneDeprecationWarning,
-    )
-    return not isinstance(obj, qml.tape.QuantumScript)
-
-
-@qml.BooleanFn
-def has_gen(obj):
-    """Returns ``True`` if an operator has a generator defined.
-
-    .. warning::
-
-        **Deprecated**. Use ``obj.has_generator`` instead.
-    """
-    warnings.warn(
-        "has_gen is deprecated. Use Operator.has_generator instead.", PennyLaneDeprecationWarning
-    )
-    if isinstance(obj, Operator):
-        return obj.has_generator
-    try:
-        obj.generator()
-    except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
-        return False
-    return True
-
-
-@qml.BooleanFn
-def has_grad_method(obj):
-    """Returns ``True`` if an operator has a grad_method defined.
-
-    .. warning::
-
-        **Deprecated**: Use ``obj.grad_method is not None`` instead.
-    """
-    warnings.warn(
-        "has_grad_method is deprecated. Use obj.grad_method is not None instead. ",
-        PennyLaneDeprecationWarning,
-    )
-    return obj.grad_method is not None
-
-
-@qml.BooleanFn
-def has_multipar(obj):
-    """Returns ``True`` if an operator has more than one parameter
-    according to ``num_params``.
-
-    .. warning::
-
-        **Deprecated**: Use ``obj.num_params > 1`` instead.
-    """
-    warnings.warn(
-        "has_multipar is deprecated. Use obj.num_params > 1 instead.", PennyLaneDeprecationWarning
-    )
-    return obj.num_params > 1
-
-
-@qml.BooleanFn
-def has_nopar(obj):
-    """Returns ``True`` if an operator has no parameters
-    according to ``num_params``.
-
-    .. warning::
-
-        **Deprecated**: Use ``obj.num_params == 0`` instead.
-    """
-    warnings.warn(
-        "has_nopar is deprecated. Use obj.num_params == 0 instead.", PennyLaneDeprecationWarning
-    )
-    return obj.num_params == 0
-
-
-@qml.BooleanFn
-def has_unitary_gen(obj):
-    """Returns ``True`` if an operator has a unitary_generator
-    according to the ``has_unitary_generator`` flag.
-
-    .. warning::
-
-        **Deprecated**: Use ``obj in qml.ops.qubit.attributes.has_unitary_gen`` insteaed.
-
-    """
-    warnings.warn(
-        "has_unitary_gen is deprecated. Use `obj in qml.ops.qubit.attributes.has_unitary_generator` instead.",
-        PennyLaneDeprecationWarning,
-    )
-    # Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
-    return obj in qml.ops.qubit.attributes.has_unitary_generator
-
-
-@qml.BooleanFn
-def is_measurement(obj):
-    """Returns ``True`` if an operator is a ``MeasurementProcess`` instance.
-
-    .. warning::
-
-        **Deprecated**: Use ``isinstance(obj, qml.measurements.MeasurementProcess)`` instead.
-    """
-    warnings.warn(
-        "is_measurement is deprecated. Use isinstance(obj, qml.measurements.MeasurementProcess) instead.",
-        PennyLaneDeprecationWarning,
-    )
-    return isinstance(obj, qml.measurements.MeasurementProcess)
-
-
-@qml.BooleanFn
 def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
     according to ``qml.math.requires_grad``.
     """
     return any(qml.math.requires_grad(p) for p in obj.parameters)
-
-
-@qml.BooleanFn
-def defines_diagonalizing_gates(obj):
-    """Returns ``True`` if an operator defines the diagonalizing gates.
-
-    .. warning::
-
-        **Deprecated:** Use ``obj.has_diagonalizing_gates`` instead.
-
-    """
-    warnings.warn(
-        "defines_diagonalizing_gates is deprecated. Use obj.has_diagonalizing_gates instead.",
-        PennyLaneDeprecationWarning,
-    )
-    return obj.has_diagonalizing_gates
 
 
 _gen_is_multi_term_hamiltonian_code = """
@@ -2533,43 +2327,6 @@ try:
 except TermsUndefinedError:
     return False
 """
-
-
-@qml.BooleanFn
-def gen_is_multi_term_hamiltonian(obj):
-    """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian
-    with more than one term.
-
-    .. warning::
-
-        **Deprecated**: Use the following code instead:
-
-        .. code-block:: python
-
-            def gen_is_multi_term_hamiltonian(obj):
-                if not isinstance(obj, Operator) or not obj.has_generator:
-                    return False
-                try:
-                    generator = obj.generator()
-                    _, ops = generator.terms()
-                    return len(ops) > 1
-                except TermsUndefinedError:
-                    return False
-
-
-    """
-    warnings.warn(
-        f"gen_is_multiterm_hamiltonian is deprecated. Use {_gen_is_multi_term_hamiltonian_code}",
-        PennyLaneDeprecationWarning,
-    )
-    if not isinstance(obj, Operator) or not obj.has_generator:
-        return False
-    try:
-        generator = obj.generator()
-        _, ops = generator.terms()  # len(coeffs) can be weird sometimes
-        return len(ops) > 1
-    except TermsUndefinedError:
-        return False
 
 
 def __getattr__(name):

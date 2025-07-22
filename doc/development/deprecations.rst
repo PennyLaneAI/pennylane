@@ -9,6 +9,17 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
+
+    - ``print_contents`` in favor of ``print(obj)``
+    - ``observables_in_order`` in favor of ``observables``
+    - ``operations_in_order`` in favor of ``operations``
+    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
+    - ``descendants_in_order`` in favore of ``.descendants(obj, sort=True)``
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
   Instead, the ``qml.to_openqasm`` function should be used.
 
@@ -39,15 +50,49 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for alternate code to
-  use instead.
+* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
+
+ - Deprecated in v0.40
+ - Will be removed in v0.41
+
+Completed removal of legacy operator arithmetic
+-----------------------------------------------
+
+In PennyLane v0.40, the legacy operator arithmetic system has been removed, and is fully replaced by the new
+operator arithmetic functionality that was introduced in v0.36. Check out the :ref:`Updated operators <new_opmath>` page
+for details on how to port your legacy code to the new system. The following functionality has been removed:
+
+* In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`~pennylane.operation.enable_new_opmath`,
+  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`. Note
+  that ``qml.Hamiltonian`` will continue to dispatch to :class:`~pennylane.ops.LinearCombination`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* :meth:`~pennylane.pauli.PauliSentence.hamiltonian` and :meth:`~pennylane.pauli.PauliWord.hamiltonian` has been removed. Instead, please use
+  :meth:`~pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+Completed deprecation cycles
+----------------------------
+
+* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for an example of alternative code to use.
   These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
   ``is_measurement``, ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
 
   - Deprecated in v0.42
-  - Will be removed in v0.43
+  - Removed in v0.43
 
 .. code-block:: python
+
+    from pennylane.operation import TermsUndefinedError, Operator
 
     def not_tape(obj):
         return not isinstance(obj, qml.tape.QuantumScript)
@@ -78,38 +123,10 @@ Pending deprecations
             return False
         try:
             generator = obj.generator()
-            _, ops = generator.terms() 
+            _, ops = generator.terms()
             return len(ops) > 1
         except TermsUndefinedError:
             return False
-
-Completed removal of legacy operator arithmetic
------------------------------------------------
-
-In PennyLane v0.40, the legacy operator arithmetic system has been removed, and is fully replaced by the new
-operator arithmetic functionality that was introduced in v0.36. Check out the :ref:`Updated operators <new_opmath>` page
-for details on how to port your legacy code to the new system. The following functionality has been removed:
-
-* In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`~pennylane.operation.enable_new_opmath`,
-  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`. Note
-  that ``qml.Hamiltonian`` will continue to dispatch to :class:`~pennylane.ops.LinearCombination`.
-
-  - Deprecated in v0.39
-  - Removed in v0.40
-
-* :meth:`~pennylane.pauli.PauliSentence.hamiltonian` and :meth:`~pennylane.pauli.PauliWord.hamiltonian` has been removed. Instead, please use
-  :meth:`~pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
-
-  - Deprecated in v0.39
-  - Removed in v0.40
-
-* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
-
-  - Deprecated in v0.39
-  - Removed in v0.40
-
-Completed deprecation cycles
-----------------------------
 
 * Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised. They now live in
   the ``liealg`` module.
@@ -130,7 +147,6 @@ Completed deprecation cycles
   .. code-block:: python
 
       class MyObs(Operator):
-      
           is_hermitian = True
 
           def queue(self, context=qml.QueuingManager):

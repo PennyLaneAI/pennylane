@@ -19,130 +19,12 @@ from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, SampleMeasurement
+from .measurements import SampleMeasurement
 from .mid_measure import MeasurementValue
-
-
-def sample(
-    op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
-    wires=None,
-) -> "SampleMP":
-    r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
-    returning raw samples. If no observable is provided then basis state samples are returned
-    directly from the device.
-
-    Note that the output shape of this measurement process depends on the shots
-    specified on the device.
-
-    Args:
-        op (Operator or MeasurementValue): a quantum observable object. To get samples
-            for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
-        wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
-            op is ``None``.
-
-    Returns:
-        SampleMP: Measurement process instance
-
-    Raises:
-        ValueError: Cannot set wires if an observable is provided
-
-    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
-    The probability of drawing eigenvalue :math:`\lambda_i` is given by
-    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
-    is the corresponding basis state from the observable's eigenbasis.
-
-    .. note::
-
-        QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. An alternative
-        approach would be to use single-shot expectation values. For example, instead of this:
-
-        .. code-block:: python
-
-            from functools import partial
-            dev = qml.device("default.qubit")
-
-            @partial(qml.set_shots, shots=10)
-            @qml.qnode(dev, diff_method="parameter-shift")
-            def circuit(angle):
-                qml.RX(angle, wires=0)
-                return qml.sample(qml.PauliX(0))
-
-            angle = qml.numpy.array(0.1)
-            res = qml.jacobian(circuit)(angle)
-
-        Consider using :func:`~pennylane.expval` and a sequence of single shots, like this:
-
-        .. code-block:: python
-
-            from functools import partial
-            dev = qml.device("default.qubit")
-
-            @partial(qml.set_shots, shots=[(1, 10)])
-            @qml.qnode(dev, diff_method="parameter-shift")
-            def circuit(angle):
-                qml.RX(angle, wires=0)
-                return qml.expval(qml.PauliX(0))
-
-            def cost(angle):
-                return qml.math.hstack(circuit(angle))
-
-            angle = qml.numpy.array(0.1)
-            res = qml.jacobian(cost)(angle)
-
-    **Example**
-
-    .. code-block:: python3
-
-        from functools import partial
-        dev = qml.device("default.qubit", wires=2)
-
-        @partial(qml.set_shots, shots=4)
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.Y(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    array([ 1.,  1.,  1., -1.])
-
-    If no observable is provided, then the raw basis state samples obtained
-    from device are returned (e.g., for a qubit device, samples from the
-    computational device are returned). In this case, ``wires`` can be specified
-    so that sample results only include measurement results of the qubits of interest.
-
-    .. code-block:: python3
-
-        from functools import partial
-        dev = qml.device("default.qubit", wires=2)
-
-        @partial(qml.set_shots, shots=4)
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample()
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    array([[0, 1],
-           [0, 0],
-           [1, 1],
-           [0, 0]])
-
-    """
-    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires))
 
 
 class SampleMP(SampleMeasurement):
@@ -344,3 +226,121 @@ class SampleMP(SampleMeasurement):
             return eigvals[int(outcome, 2)]
 
         return [int(bit) for bit in outcome]
+
+
+def sample(
+    op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
+    wires=None,
+) -> SampleMP:
+    r"""Sample from the supplied observable, with the number of shots
+    determined from the ``dev.shots`` attribute of the corresponding device,
+    returning raw samples. If no observable is provided then basis state samples are returned
+    directly from the device.
+
+    Note that the output shape of this measurement process depends on the shots
+    specified on the device.
+
+    Args:
+        op (Operator or MeasurementValue): a quantum observable object. To get samples
+            for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
+        wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
+            op is ``None``.
+
+    Returns:
+        SampleMP: Measurement process instance
+
+    Raises:
+        ValueError: Cannot set wires if an observable is provided
+
+    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
+    The probability of drawing eigenvalue :math:`\lambda_i` is given by
+    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
+    is the corresponding basis state from the observable's eigenbasis.
+
+    .. note::
+
+        QNodes that return samples cannot, in general, be differentiated, since the derivative
+        with respect to a sample --- a stochastic process --- is ill-defined. An alternative
+        approach would be to use single-shot expectation values. For example, instead of this:
+
+        .. code-block:: python
+
+            from functools import partial
+            dev = qml.device("default.qubit")
+
+            @partial(qml.set_shots, shots=10)
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(angle):
+                qml.RX(angle, wires=0)
+                return qml.sample(qml.PauliX(0))
+
+            angle = qml.numpy.array(0.1)
+            res = qml.jacobian(circuit)(angle)
+
+        Consider using :func:`~pennylane.expval` and a sequence of single shots, like this:
+
+        .. code-block:: python
+
+            from functools import partial
+            dev = qml.device("default.qubit")
+
+            @partial(qml.set_shots, shots=[(1, 10)])
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(angle):
+                qml.RX(angle, wires=0)
+                return qml.expval(qml.PauliX(0))
+
+            def cost(angle):
+                return qml.math.hstack(circuit(angle))
+
+            angle = qml.numpy.array(0.1)
+            res = qml.jacobian(cost)(angle)
+
+    **Example**
+
+    .. code-block:: python3
+
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.set_shots, shots=4)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.Y(0))
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    array([ 1.,  1.,  1., -1.])
+
+    If no observable is provided, then the raw basis state samples obtained
+    from device are returned (e.g., for a qubit device, samples from the
+    computational device are returned). In this case, ``wires`` can be specified
+    so that sample results only include measurement results of the qubits of interest.
+
+    .. code-block:: python3
+
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.set_shots, shots=4)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample()
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    array([[0, 1],
+           [0, 0],
+           [1, 1],
+           [0, 0]])
+
+    """
+    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires))
