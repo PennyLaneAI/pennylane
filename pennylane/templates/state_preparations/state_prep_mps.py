@@ -513,12 +513,9 @@ if MPSPrep._primitive is not None:  # pylint: disable=protected-access
 
 
 def _mps_prep_decomposition_resources(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
-    resources = Counter({})
-
-    for _ in range(num_sites):
-        resources[resource_rep(qml.QubitUnitary, num_wires=1 + num_work_wires)] += 1
-
-    return resources
+    return {
+        resource_rep(qml.QubitUnitary, num_wires=1 + num_work_wires): num_sites
+    }
 
 
 def _work_wires_bond_dimension_condition(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
