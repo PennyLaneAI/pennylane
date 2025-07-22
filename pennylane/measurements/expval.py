@@ -159,7 +159,7 @@ def expval(
             "qml.expval does not support measuring sequences of measurements or observables"
         )
 
-    if isinstance(op, qml.Identity) and len(op.wires) == 0:
+    if isinstance(op, I) and len(op.wires) == 0:
         # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
         # allow once we have testing and confidence in qml.expval(I())
         raise NotImplementedError(
