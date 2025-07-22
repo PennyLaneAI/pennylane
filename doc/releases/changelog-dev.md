@@ -192,6 +192,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improves type hints in the `measurements` module.
+  [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
+
 * Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
 
