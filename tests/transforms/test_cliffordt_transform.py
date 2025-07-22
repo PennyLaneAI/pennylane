@@ -609,6 +609,7 @@ class TestCatalyst:
     """Unit tests for catalyst integration."""
 
     # pylint: disable=import-outside-toplevel
+    @pytest.mark.external
     @pytest.mark.catalyst
     def test_catalyst_integration(self):
         """Test that the catalyst integration is working correctly."""
