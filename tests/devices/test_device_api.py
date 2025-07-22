@@ -14,8 +14,6 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-from typing import Optional
-
 import pytest
 
 import pennylane as qml
@@ -105,7 +103,7 @@ class TestDeviceCapabilities:
 
                 config_filepath = "nonexistent_file.toml"
 
-                def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+                def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                     return (0,)
 
 
@@ -224,7 +222,7 @@ class TestSetupExecutionConfig:
         class CustomDevice(Device):
             """A device with only a dummy execute method provided."""
 
-            def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
         dev = CustomDevice()
@@ -532,7 +530,7 @@ class TestPreprocessTransforms:
                 if sum_support:
                     self.capabilities.observables.update({"Sum": OperatorProperties()})
 
-            def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
         dev = CustomDevice()
@@ -592,7 +590,7 @@ class TestPreprocessTransforms:
                         }
                     )
 
-            def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
         dev = CustomDevice()
@@ -618,7 +616,7 @@ class TestMinimalDevice:
     class MinimalDevice(Device):
         """A device with only a dummy execute method provided."""
 
-        def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return (0,)
 
     dev = MinimalDevice()
@@ -773,13 +771,13 @@ def test_device_with_ambiguous_preprocess():
 
             def setup_execution_config(
                 self,
-                config: Optional[ExecutionConfig] = None,
-                circuit: Optional[QuantumScript] = None,
+                config: ExecutionConfig | None = None,
+                circuit: QuantumScript | None = None,
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 
             def preprocess_transforms(
-                self, execution_config: Optional[ExecutionConfig] = None
+                self, execution_config: ExecutionConfig | None = None
             ) -> TransformProgram:
                 return TransformProgram()
 
