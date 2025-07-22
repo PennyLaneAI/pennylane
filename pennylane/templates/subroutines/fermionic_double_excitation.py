@@ -20,6 +20,7 @@ import copy
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.wires import Wires
@@ -597,3 +598,395 @@ class FermionicDoubleExcitation(Operation):
         op_list.extend(_layer8(weight, s, r, q, p, set_cnot_wires))
 
         return op_list
+
+
+def _fermionic_double_excitation_resources(num_wires_1, num_wires_2):
+    num_set_cnot_wires = num_wires_1 + num_wires_2 - 1
+
+    return {qml.Hadamard: 32, qml.RX: 32, qml.CNOT: 16 * num_set_cnot_wires, qml.RZ: 8}
+
+
+def _layer_qfunc1(weight, s, r, q, p, set_cnot_wires):
+    r"""Implement the first layer of the circuit to exponentiate the double-excitation
+    operator entering the UCCSD ansatz.
+
+    .. math::
+
+        \hat{U}_{pqrs}^{(1)}(\theta) = \mathrm{exp} \Big\{ \frac{i\theta}{8}
+        \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1} \hat{Z}_a
+        (\hat{X}_s \hat{X}_r \hat{Y}_q \hat{X}_p) \Big\}
+
+    Args:
+        weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
+        set_cnot_wires (list[Wires]): list of CNOT wires
+
+    Returns:
+          list[.Operator]: sequence of operators defined by this function
+    """
+    # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
+    Hadamard(wires=s)
+    Hadamard(wires=r)
+    RX(-np.pi / 2, wires=q)
+    Hadamard(wires=p)
+
+    # Applying CNOTs
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(weight / 8, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
+    Hadamard(wires=s)
+    Hadamard(wires=r)
+    RX(np.pi / 2, wires=q)
+    Hadamard(wires=p)
+
+
+def _layer_qfunc2(weight, s, r, q, p, set_cnot_wires):
+    r"""Implement the second layer of the circuit to exponentiate the double-excitation
+    operator entering the UCCSD ansatz.
+
+    .. math::
+
+        \hat{U}_{pqrs}^{(2)}(\theta) = \mathrm{exp} \Big\{ \frac{i\theta}{8}
+        \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1} \hat{Z}_a
+        (\hat{Y}_s \hat{X}_r \hat{Y}_q \hat{Y}_p) \Big\}
+
+    Args:
+        weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
+        set_cnot_wires (list[Wires]): list of CNOT wires
+
+    Returns:
+        list[.Operator]: sequence of operators defined by this function
+    """
+    # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
+    RX(-np.pi / 2, wires=s)
+    Hadamard(wires=r)
+    RX(-np.pi / 2, wires=q)
+    RX(-np.pi / 2, wires=p)
+
+    # Applying CNOTs
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(weight / 8, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
+    RX(np.pi / 2, wires=s)
+    Hadamard(wires=r)
+    RX(np.pi / 2, wires=q)
+    RX(np.pi / 2, wires=p)
+
+
+def _layer_qfunc3(weight, s, r, q, p, set_cnot_wires):
+    r"""Implement the third layer of the circuit to exponentiate the double-excitation
+    operator entering the UCCSD ansatz.
+
+    .. math::
+
+        \hat{U}_{pqrs}^{(3)}(\theta) = \mathrm{exp} \Big\{ \frac{i\theta}{8}
+        \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1} \hat{Z}_a
+        (\hat{X}_s \hat{Y}_r \hat{Y}_q \hat{Y}_p) \Big\}
+
+    Args:
+        weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
+        set_cnot_wires (list[Wires]): list of CNOT wires
+
+    Returns:
+        list[.Operator]: sequence of operators defined by this function
+    """
+    # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
+    Hadamard(wires=s)
+    RX(-np.pi / 2, wires=r)
+    RX(-np.pi / 2, wires=q)
+    RX(-np.pi / 2, wires=p)
+
+    # Applying CNOTs
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(weight / 8, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
+    Hadamard(wires=s)
+    RX(np.pi / 2, wires=r)
+    RX(np.pi / 2, wires=q)
+    RX(np.pi / 2, wires=p)
+
+
+def _layer_qfunc4(weight, s, r, q, p, set_cnot_wires):
+    r"""Implement the fourth layer of the circuit to exponentiate the double-excitation
+    operator entering the UCCSD ansatz.
+
+    .. math::
+
+        \hat{U}_{pqrs}^{(4)}(\theta) = \mathrm{exp} \Big\{ \frac{i\theta}{8}
+        \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1} \hat{Z}_a
+        (\hat{X}_s \hat{X}_r \hat{X}_q \hat{Y}_p) \Big\}
+
+    Args:
+        weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
+        set_cnot_wires (list[Wires]): list of CNOT wires
+
+    Returns:
+        list[.Operator]: sequence of operators defined by this function
+    """
+    # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
+    Hadamard(wires=s)
+    Hadamard(wires=r)
+    Hadamard(wires=q)
+    RX(-np.pi / 2, wires=p)
+
+    # Applying CNOTs
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(weight / 8, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
+    Hadamard(wires=s)
+    Hadamard(wires=r)
+    Hadamard(wires=q)
+    RX(np.pi / 2, wires=p)
+
+
+def _layer_qfunc5(weight, s, r, q, p, set_cnot_wires):
+    r"""Implement the fifth layer of the circuit to exponentiate the double-excitation
+    operator entering the UCCSD ansatz.
+
+    .. math::
+
+        \hat{U}_{pqrs}^{(5)}(\theta) = \mathrm{exp} \Big\{ -\frac{i\theta}{8}
+        \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1} \hat{Z}_a
+        (\hat{Y}_s \hat{X}_r \hat{X}_q \hat{X}_p) \Big\}
+
+    Args:
+        weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
+        set_cnot_wires (list[Wires]): list of CNOT wires
+
+    Returns:
+        list[.Operator]: sequence of operators defined by this function
+    """
+    # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
+    RX(-np.pi / 2, wires=s)
+    Hadamard(wires=r)
+    Hadamard(wires=q)
+    Hadamard(wires=p)
+
+    # Applying CNOTs
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(-weight / 8, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
+    RX(np.pi / 2, wires=s)
+    Hadamard(wires=r)
+    Hadamard(wires=q)
+    Hadamard(wires=p)
+
+
+def _layer_qfunc6(weight, s, r, q, p, set_cnot_wires):
+    r"""Implement the sixth layer of the circuit to exponentiate the double-excitation
+    operator entering the UCCSD ansatz.
+
+    .. math::
+
+        \hat{U}_{pqrs}^{(6)}(\theta) = \mathrm{exp} \Big\{ -\frac{i\theta}{8}
+        \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1} \hat{Z}_a
+        (\hat{X}_s \hat{Y}_r \hat{X}_q \hat{X}_p) \Big\}
+
+    Args:
+        weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
+        set_cnot_wires (list[Wires]): list of CNOT wires
+
+    Returns:
+        list[.Operator]: sequence of operators defined by this function
+    """
+    # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
+    Hadamard(wires=s)
+    RX(-np.pi / 2, wires=r)
+    Hadamard(wires=q)
+    Hadamard(wires=p)
+
+    # Applying CNOTs
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(-weight / 8, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
+    Hadamard(wires=s)
+    RX(np.pi / 2, wires=r)
+    Hadamard(wires=q)
+    Hadamard(wires=p)
+
+
+def _layer_qfunc7(weight, s, r, q, p, set_cnot_wires):
+    r"""Implement the seventh layer of the circuit to exponentiate the double-excitation
+    operator entering the UCCSD ansatz.
+
+    .. math::
+
+        \hat{U}_{pqrs}^{(7)}(\theta) = \mathrm{exp} \Big\{ -\frac{i\theta}{8}
+        \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1} \hat{Z}_a
+        (\hat{Y}_s \hat{Y}_r \hat{Y}_q \hat{X}_p) \Big\}
+
+    Args:
+        weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
+        set_cnot_wires (list[Wires]): list of CNOT wires
+
+    Returns:
+        list[.Operator]: sequence of operators defined by this function
+    """
+    # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
+    RX(-np.pi / 2, wires=s)
+    RX(-np.pi / 2, wires=r)
+    RX(-np.pi / 2, wires=q)
+    Hadamard(wires=p)
+
+    # Applying CNOTs
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(-weight / 8, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
+    RX(np.pi / 2, wires=s)
+    RX(np.pi / 2, wires=r)
+    RX(np.pi / 2, wires=q)
+    Hadamard(wires=p)
+
+
+def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
+    r"""Implement the eighth layer of the circuit to exponentiate the double-excitation
+    operator entering the UCCSD ansatz.
+
+    .. math::
+
+        \hat{U}_{pqrs}^{(8)}(\theta) = \mathrm{exp} \Big\{ -\frac{i\theta}{8}
+        \bigotimes_{b=s+1}^{r-1} \hat{Z}_b \bigotimes_{a=q+1}^{p-1} \hat{Z}_a
+        (\hat{Y}_s \hat{Y}_r \hat{X}_q \hat{Y}_p) \Big\}
+
+    Args:
+        weight (float): angle :math:`\theta` entering the Z rotation acting on wire ``p``
+        s (int): qubit index ``s``
+        r (int): qubit index ``r``
+        q (int): qubit index ``q``
+        p (int): qubit index ``p``
+        set_cnot_wires (list[Wires]): list of CNOT wires
+
+    Returns:
+        list[.Operator]: sequence of operators defined by this function
+    """
+    # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
+    RX(-np.pi / 2, wires=s)
+    RX(-np.pi / 2, wires=r)
+    Hadamard(wires=q)
+    RX(-np.pi / 2, wires=p)
+
+    # Applying CNOTs
+    for cnot_wires in set_cnot_wires:
+        CNOT(wires=cnot_wires)
+
+    # Z rotation acting on wire 'p'
+    RZ(-weight / 8, wires=p)
+
+    # Applying CNOTs in reverse order
+    for cnot_wires in reversed(set_cnot_wires):
+        CNOT(wires=cnot_wires)
+
+    # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
+    RX(np.pi / 2, wires=s)
+    RX(np.pi / 2, wires=r)
+    Hadamard(wires=q)
+    RX(np.pi / 2, wires=p)
+
+
+@register_resources(_fermionic_double_excitation_resources)
+def _fermionic_double_excitation_decomopsition(weight, wires, wires1, wires2):
+    s = wires1[0]
+    r = wires1[-1]
+    q = wires2[0]
+    p = wires2[-1]
+
+    # Sequence of the wires entering the CNOTs
+    cnots_occ = [wires1[l : l + 2] for l in range(len(wires1) - 1)]
+    cnots_unocc = [wires2[l : l + 2] for l in range(len(wires2) - 1)]
+
+    set_cnot_wires = cnots_occ + [[r, q]] + cnots_unocc
+
+    _layer1(weight, s, r, q, p, set_cnot_wires)
+    _layer2(weight, s, r, q, p, set_cnot_wires)
+    _layer3(weight, s, r, q, p, set_cnot_wires)
+    _layer4(weight, s, r, q, p, set_cnot_wires)
+    _layer5(weight, s, r, q, p, set_cnot_wires)
+    _layer6(weight, s, r, q, p, set_cnot_wires)
+    _layer7(weight, s, r, q, p, set_cnot_wires)
+    _layer8(weight, s, r, q, p, set_cnot_wires)
+
+
+add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_decomopsition)
