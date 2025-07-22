@@ -14,10 +14,13 @@
 """
 This submodule contains the templates for the Hilbert-Schmidt tests.
 """
+from collections.abc import Iterable
+
 # pylint: disable-msg=too-many-arguments
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operation
+from pennylane.typing import Callable, TensorLike
 
 
 class HilbertSchmidt(Operation):
@@ -117,7 +120,14 @@ class HilbertSchmidt(Operation):
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata))
 
-    def __init__(self, *params, v_function, v_wires, u, id=None):
+    def __init__(
+        self,
+        *params: TensorLike,
+        v_function: Callable,
+        v_wires: int | Iterable[int | str] | qml.wires.Wires,
+        u: Operation | Iterable[Operation],
+        id=None,
+    ) -> None:
 
         self._num_params = len(params)
 
@@ -136,18 +146,18 @@ class HilbertSchmidt(Operation):
             )
 
         self.hyperparameters["v_function"] = v_function
-        v_script = qml.tape.make_qscript(v_function)(*params)
-        self.hyperparameters["v"] = tuple(v_script.operations)
+        v_tape = qml.tape.make_qscript(v_function)(*params)
+        self.hyperparameters["v"] = tuple(v_tape.operations)
         self.hyperparameters["v_wires"] = qml.wires.Wires(v_wires)
 
         if len(u_wires) != len(v_wires):
             raise QuantumFunctionError("U and V must have the same number of wires.")
 
-        if not qml.wires.Wires(v_wires).contains_wires(v_script.wires):
+        if not qml.wires.Wires(v_wires).contains_wires(v_tape.wires):
             raise QuantumFunctionError("All wires in v must be in v_wires.")
 
         # Intersection of wires
-        if len(qml.wires.Wires.shared_wires([u_wires, v_script.wires])) != 0:
+        if len(qml.wires.Wires.shared_wires([u_wires, v_tape.wires])) != 0:
             raise QuantumFunctionError("operations in u and v must act on distinct wires.")
 
         wires = qml.wires.Wires(u_wires + v_wires)
@@ -163,8 +173,14 @@ class HilbertSchmidt(Operation):
 
     @staticmethod
     def compute_decomposition(
-        params, wires, u, v, v_function=None, v_wires=None
-    ):  # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
+        params: TensorLike,
+        wires: int | Iterable[int | str] | qml.wires.Wires,
+        u: Operation | Iterable[Operation],
+        v: Operation | Iterable[Operation],
+        v_function: Callable = None,
+        v_wires: int | Iterable[int | str] | qml.wires.Wires = None,
+    ) -> list[Operation]:
+        # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
         r"""Representation of the operator as a product of other operators."""
 
         u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u))
@@ -228,7 +244,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     Raises:
         QuantumFunctionError: The argument ``u`` is not an Operator or an iterable of Operators.
         QuantumFunctionError: ``v_function`` is not a valid Quantum function.
-        QuantumFunctionError: `U` and `V` do not have the same number of wires.
+        QuantumFunctionError: ``U`` and ``V`` do not have the same number of wires.
         QuantumFunctionError: The wires ``v_wires`` are a subset of `V` wires.
         QuantumFunctionError: Operations in ``u`` must act on distinct wires from those in ``v_wires``.
 
@@ -279,8 +295,14 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
     @staticmethod
     def compute_decomposition(
-        params, wires, u, v, v_function=None, v_wires=None
-    ):  # pylint: disable=too-many-positional-arguments
+        params: TensorLike,
+        wires: int | Iterable[int | str] | qml.wires.Wires,
+        u: Operation | Iterable[Operation],
+        v: Operation | Iterable[Operation],
+        v_function: Callable = None,
+        v_wires: int | Iterable[int | str] | qml.wires.Wires = None,
+    ) -> list[Operation]:
+        # pylint: disable=too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
 
         u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u))
