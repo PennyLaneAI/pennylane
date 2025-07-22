@@ -128,6 +128,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
+  [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
+
 * The boolean functions provided in `qml.operation` are deprecated. See the 
   :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These 
   include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`, 
@@ -169,6 +172,15 @@
 * `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
   Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
   [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
+
+* Some unnecessary methods of the `qml.CircuitGraph` class are deprecated and will be removed in version v0.44:
+  [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
+
+    - `print_contents` in favor of `print(obj)`
+    - `observables_in_order` in favor of `observables`
+    - `operations_in_order` in favor of `operations`
+    - `ancestors_in_order` in favor of `ancestors(obj, sort=True)`
+    - `descendants_in_order` in favore of `descendants(obj, sort=True)`
 
 * The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
   Instead, the `qml.to_openqasm` function should be used.
