@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def test_assert_valid_qrom():
@@ -191,6 +192,14 @@ class TestQROM:
 
         for op1, op2 in zip(qrom_decomposition, expected_gates):
             qml.assert_equal(op1, op2)
+
+    def test_decomposition_new(self):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.QROM(
+            ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
+        )
+        for rule in qml.list_decomps(qml.QROM):
+            _test_decomposition_rule(op, rule)
 
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""

@@ -224,10 +224,7 @@ def _reflection_decomposition_resources(
 
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
-    resources = {
-        qml.GlobalPhase: 1,
-        adjoint_resource_rep(base_class, base_params): 1
-    }
+    resources = {qml.GlobalPhase: 1, adjoint_resource_rep(base_class, base_params): 1}
 
     if num_wires > 1:
         resources[resource_rep(qml.PauliX)] = 2
