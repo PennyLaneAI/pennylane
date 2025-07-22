@@ -218,6 +218,9 @@
 * Update xDSL supported version to `0.45`.
   [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
 
+* Update JAX version used in tests to `0.6.2`
+  [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
+
 <h3>Documentation 📝</h3>
 
 * Improved the docstrings of all optimizers for consistency and legibility.
