@@ -570,7 +570,7 @@ def _trotter_product_decomposition(*args, **kwargs):
     decomp = _recursive(time / n, order, ops)[::-1] * (n - 1)
 
     for op in decomp:  # apply operators in reverse order of expression
-        qml.apply(op)
+        op.__class__(*op.parameters, wires=op.wires)
 
 
 add_decomps(TrotterProduct, _trotter_product_decomposition)
