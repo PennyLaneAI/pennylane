@@ -649,15 +649,15 @@ class ResourceAQFT(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> aqft = plre.ResourceAQFT(order=2, num_wires=3)
-    >>> gate_set = {"SWAP", "Hadamard", "CZ", "T", "CNOT"}
+    >>> gate_set = {"SWAP", "Hadamard", "T", "CNOT"}
     >>> print(plre.estimate_resources(aqft, gate_set))
     --- Resources: ---
-     Total qubits: 3
-     Total gates : 17
+     Total qubits: 4
+     Total gates : 57
      Qubit breakdown:
-      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 3
+      clean qubits: 1, dirty qubits: 0, algorithmic qubits: 3
      Gate breakdown:
-      {'Hadamard': 3, 'CZ': 2, 'CNOT': 2, 'T': 9, 'SWAP': 1}
+      {'Hadamard': 7, 'CNOT': 9, 'T': 40, 'SWAP': 1}
     """
 
     resource_keys = {"order, num_wires"}
