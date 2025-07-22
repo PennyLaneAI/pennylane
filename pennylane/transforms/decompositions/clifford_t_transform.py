@@ -19,6 +19,7 @@ from functools import lru_cache, partial
 from itertools import product
 
 import pennylane as qml
+from pennylane.measurements.mid_measure import MeasurementValue
 from pennylane.ops import Adjoint
 from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
@@ -64,11 +65,25 @@ _PARAMETER_GATES = (qml.RX, qml.RY, qml.RZ, qml.Rot, qml.PhaseShift)
 _CLIFFORD_T_GATES = tuple(_CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES) + (qml.GlobalPhase,)
 
 # Gates to be skipped during decomposition
-_SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut)
+_SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut, MeasurementValue)
 
 # Stores the cache of a specified size for the decomposition function
 # that is used to decompose the RZ gates in the Clifford+T basis.
 _CLIFFORD_T_CACHE = None
+
+_CATALYST_SKIP_OP_TYPES = ()
+
+
+# pylint: disable=import-outside-toplevel, global-statement
+def _add_catalyst_skip_op_types():
+    """Delayed addition of PennyLane-Catalyst skip op types."""
+    global _CATALYST_SKIP_OP_TYPES
+    try:
+        from catalyst.api_extensions.quantum_operators import MidCircuitMeasure
+
+        _CATALYST_SKIP_OP_TYPES = (*_CATALYST_SKIP_OP_TYPES, MidCircuitMeasure)
+    except (ModuleNotFoundError, ImportError):  # pragma: no cover
+        return
 
 
 def _check_clifford_op(op, use_decomposition=False):
@@ -469,7 +484,6 @@ def clifford_t_decomposition(
     >>> qml.math.allclose(result, approx, atol=1e-4)
     True
     """
-
     with QueuingManager.stop_recording():
         # Build the basis set and the pipeline for initial compilation pass
         basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES + _SKIP_OP_TYPES]
@@ -478,11 +492,15 @@ def clifford_t_decomposition(
         # Compile the tape according to depth provided by the user and expand it
         [compiled_tape], _ = qml.compile(tape, pipelines, basis_set=basis_set)
 
+        if not _CATALYST_SKIP_OP_TYPES:
+            _add_catalyst_skip_op_types()
+
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
         for op in compiled_tape.operations:
+            print(op, type(op))
             # Check whether operation is to be skipped
-            if isinstance(op, _SKIP_OP_TYPES):
+            if isinstance(op, _SKIP_OP_TYPES + _CATALYST_SKIP_OP_TYPES):
                 decomp_ops.append(op)
 
             # Check whether the operation is a global phase
