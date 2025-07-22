@@ -351,6 +351,20 @@ class TestHilbertSchmidt:
         ):
             qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=U.operations)
 
+    def test_u_operator(self):
+        """Test that U must be a an Operator or an iterable of Operators."""
+
+        u = "qml.CNOT(wires=[0, 1])"
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires=1)
+
+        with pytest.raises(
+            QuantumFunctionError,
+            match="The argument u must be an Operator or an iterable of Operators.",
+        ):
+            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=u)
+
     def test_u_v_same_number_of_wires(self):
         """Test that U and V must have the same number of wires."""
 
@@ -627,6 +641,20 @@ class TestLocalHilbertSchmidt:
             match="The argument v_function must be a callable quantum " "function.",
         ):
             qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=U.operations)
+
+    def test_u_operator(self):
+        """Test that U must be a an Operator or an iterable of Operators."""
+
+        u = "qml.CNOT(wires=[0, 1])"
+
+        def v_circuit(params):
+            qml.RZ(params[0], wires=1)
+
+        with pytest.raises(
+            QuantumFunctionError,
+            match="The argument u must be an Operator or an iterable of Operators.",
+        ):
+            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=u)
 
     def test_u_v_same_number_of_wires(self):
         """Test that U and V must have the same number of wires."""

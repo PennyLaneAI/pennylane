@@ -51,6 +51,7 @@ class HilbertSchmidt(Operation):
         u (Operation or Iterable[Operation]): The operations that represent the unitary `U`.
 
     Raises:
+        QuantumFunctionError: The argument ``u`` is not an Operator or an iterable of Operators.
         QuantumFunctionError: ``v_function`` is not a valid quantum function.
         QuantumFunctionError: ``U`` and ``V`` do not have the same number of wires.
         QuantumFunctionError: The wires ``v_wires`` are a subset of ``V`` wires.
@@ -120,11 +121,14 @@ class HilbertSchmidt(Operation):
 
         self._num_params = len(params)
 
-        # As metadata, we store the U and V unitaries
-        # as a (hashable) tuple of operations
         u = (u,) if isinstance(u, Operation) else u
+        for op in u:
+            if not isinstance(op, qml.operation.Operator):
+                raise QuantumFunctionError(
+                    "The argument u must be an Operator or an iterable of Operators."
+                )
         self.hyperparameters["u"] = tuple(u)
-        u_wires = qml.tape.QuantumScript(u).wires
+        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u))
 
         if not callable(v_function):
             raise QuantumFunctionError(
@@ -163,10 +167,10 @@ class HilbertSchmidt(Operation):
     ):  # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
         r"""Representation of the operator as a product of other operators."""
 
-        u_script = qml.tape.QuantumScript(u)
-        v_script = qml.tape.QuantumScript(v)
+        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u))
+        v_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in v))
 
-        n_wires = len(u_script.wires + v_script.wires)
+        n_wires = len(u_wires + v_wires)
         first_range = range(n_wires // 2)
         second_range = range(n_wires // 2, n_wires)
 
@@ -178,7 +182,7 @@ class HilbertSchmidt(Operation):
         )
 
         # Unitary U
-        for op_u in u_script.operations:
+        for op_u in u:
             # The operation has been defined outside of this function, to queue it we call qml.apply.
             if qml.QueuingManager.recording():
                 qml.apply(op_u)
@@ -189,8 +193,7 @@ class HilbertSchmidt(Operation):
         # apply the complex conjugate of each operation in the V tape and append it to the decomposition
         # using the QubitUnitary operation.
         decomp_ops.extend(
-            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires)
-            for op_v in v_script.operations
+            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v
         )
 
         # CNOT second layer
@@ -223,6 +226,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         u (Operation or Iterable[Operation]): The operations that represent the unitary `U`.
 
     Raises:
+        QuantumFunctionError: The argument ``u`` is not an Operator or an iterable of Operators.
         QuantumFunctionError: ``v_function`` is not a valid Quantum function.
         QuantumFunctionError: `U` and `V` do not have the same number of wires.
         QuantumFunctionError: The wires ``v_wires`` are a subset of `V` wires.
@@ -279,12 +283,10 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     ):  # pylint: disable=too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
 
-        u_ops = [u] if isinstance(u, qml.operation.Operator) else u
-        v_ops = [v] if isinstance(v, qml.operation.Operator) else v
-        u_script = qml.tape.QuantumScript(u_ops)
-        v_script = qml.tape.QuantumScript(v_ops)
+        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u))
+        v_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in v))
 
-        n_wires = len(u_script.wires + v_script.wires)
+        n_wires = len(u_wires + v_wires)
         first_range = range(n_wires // 2)
         second_range = range(n_wires // 2, n_wires)
 
@@ -297,16 +299,16 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         # Unitary U
         if qml.QueuingManager.recording():
-            decomp_ops.extend(qml.apply(op_u) for op_u in u_ops)
+            decomp_ops.extend(qml.apply(op_u) for op_u in u)
         else:
-            decomp_ops.extend(u_ops)
+            decomp_ops.extend(u)
 
         # Unitary V conjugate
         # Since we don't currently have an easy way to apply the complex conjugate of a tape, we manually
         # apply the complex conjugate of each operation in the V tape and append it to the decomposition
         # using the QubitUnitary operation.
         decomp_ops.extend(
-            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v_ops
+            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v
         )
         # Single qubit measurement
         decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
