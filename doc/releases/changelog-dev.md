@@ -72,9 +72,10 @@
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
+  [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
 
   ```python
-  @qml.set_shots(shots=1000)
+  @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
   @qml.qnode(dev)
   def circuit():
       qml.H(0)
@@ -192,6 +193,9 @@
 
 * Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
+
+* Improve the pre-commit hook to add gitleaks.
+  [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
 
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
