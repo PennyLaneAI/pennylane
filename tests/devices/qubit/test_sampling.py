@@ -215,11 +215,11 @@ class TestMeasureSamples:
         result0 = measure_with_samples([mp0], state, shots=shots)[0]
         result1 = measure_with_samples([mp1], state, shots=shots)[0]
 
-        assert result0.shape == (shots.total_shots,)
+        assert result0.shape == (shots.total_shots, 1)
         assert result0.dtype == np.int64
         assert np.all(result0 == 0)
 
-        assert result1.shape == (shots.total_shots,)
+        assert result1.shape == (shots.total_shots, 1)
         assert result1.dtype == np.int64
         assert len(np.unique(result1)) == 2
 
@@ -567,7 +567,7 @@ class TestMeasureSamples:
                     qml.expval(2 * (qml.Y(0) + qml.Y(0) - 5 * (qml.Y(0) + qml.Y(0)))),
                     qml.expval(
                         (2 * (qml.Y(0) + qml.Y(0)))
-                        @ ((5 * (qml.Y(0) + qml.Y(0)) + 3 * (qml.Y(0) + qml.Y(0))))
+                        @ (5 * (qml.Y(0) + qml.Y(0)) + 3 * (qml.Y(0) + qml.Y(0)))
                     ),
                 ],
                 (0.0, 16.0, 64.0),

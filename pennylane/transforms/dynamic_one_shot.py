@@ -128,7 +128,7 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
     postselect_mode = kwargs.get("postselect_mode", None)
 
     def reshape_data(array):
-        return qml.math.squeeze(qml.math.vstack(array))
+        return qml.math.vstack(array)
 
     def processing_fn(results, has_partitioned_shots=None, batched_results=None):
         if batched_results is None and batch_size is not None:
@@ -327,11 +327,8 @@ def parse_native_mid_circuit_measurements(
                     )
                     m_count += 1
                     continue
-                result = qml.math.squeeze(result)
             meas = gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode)
             m_count += 1
-        if isinstance(m, SampleMP):
-            meas = qml.math.squeeze(meas)
         normalized_meas.append(meas)
 
     return tuple(normalized_meas) if len(normalized_meas) > 1 else normalized_meas[0]

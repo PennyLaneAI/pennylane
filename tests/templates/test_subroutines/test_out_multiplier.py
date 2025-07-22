@@ -112,9 +112,8 @@ class TestOutMultiplier:
             mod = 2 ** len(output_wires)
 
         # pylint: disable=bad-reversed-sequence
-        assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y)))), (x * y) % mod
-        )
+        out = circuit(x, y)[0, :]
+        assert np.allclose(sum(bit * (2**i) for i, bit in enumerate(reversed(out))), (x * y) % mod)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),
@@ -272,6 +271,7 @@ class TestOutMultiplier:
             return qml.sample(wires=output_wires)
 
         # pylint: disable=bad-reversed-sequence
+        out = circuit()[0, :]
         assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x * y) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(out))), (x * y) % mod
         )

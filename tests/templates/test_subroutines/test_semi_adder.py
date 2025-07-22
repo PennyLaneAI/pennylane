@@ -66,7 +66,7 @@ class TestSemiAdder:
         #  check that the output sample is the binary representation of x + y mod 2^len(y_wires)
         # pylint: disable=bad-reversed-sequence
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(output[0]))),
+            sum(bit * (2**i) for i, bit in enumerate(reversed(output[0][0, :]))),
             (x + y) % 2 ** len(y_wires),
         )
 
@@ -126,7 +126,7 @@ class TestSemiAdder:
         # Example in Fig 1.  https://arxiv.org/pdf/1709.06648
         assert names.count("TemporaryAND") == 4
         assert names.count("Adjoint(TemporaryAND)") == 4
-        assert names.count(("CNOT")) == 21
+        assert names.count("CNOT") == 21
 
     @pytest.mark.parametrize(
         ("x_wires"),
@@ -169,6 +169,6 @@ class TestSemiAdder:
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))),
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))),
             (x + y) % 2 ** len(y_wires),
         )
