@@ -127,6 +127,27 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
+  down on the complexity of post-processing due to having to handle single shot and single wire cases
+  separately. The return shape will now *always* be `(shots, num_wires)`.
+  [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
+
+  For a simple qnode:
+
+  >>> @qml.qnode(qml.device('default.qubit'))
+  ... def c():
+  ...   return qml.sample(wires=0)
+
+  Before the change, we had:
+  
+  >>> qml.set_shots(c, shots=1)()
+  0
+
+  and now we have:
+
+  >>> qml.set_shots(c, shots=1)()
+  array([[0]])
+
 * The boolean functions provided in `qml.operation` are deprecated. See the 
   :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These 
   include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`, 

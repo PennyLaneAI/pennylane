@@ -1310,14 +1310,14 @@ class TestOutputShape:
 
         shot_dim = len(shots) if isinstance(shots, tuple) else shots
         if expected_shape is None:
-            expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
+            expected_shape = (shot_dim,)
 
         if isinstance(measurement, qml.measurements.SampleMP):
             if measurement.obs is None:
-                expected_shape = (num_wires,) if shots == 1 else (shots, num_wires)
+                expected_shape = (shots, num_wires)
 
             else:
-                expected_shape = () if shots == 1 else (shots,)
+                expected_shape = (shots,)
         assert qs.shape(dev) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
@@ -1378,7 +1378,7 @@ class TestOutputShape:
         expectation value, variance and probability measurements with a shot
         vector."""
         if isinstance(measurements[0], qml.measurements.ProbabilityMP):
-            num_wires = set(len(m.wires) for m in measurements)
+            num_wires = {len(m.wires) for m in measurements}
             if len(num_wires) > 1:
                 pytest.skip(
                     "Multi-probs with varying number of varies when using a shot vector is to be updated in PennyLane."
@@ -1419,7 +1419,7 @@ class TestOutputShape:
             ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)], shots=shots
         )
 
-        expected = tuple(() if shots == 1 else (shots,) for _ in range(num_samples))
+        expected = tuple((shots,) for _ in range(num_samples))
 
         res = qs.shape(dev)
         assert res == expected
@@ -1510,7 +1510,7 @@ class TestOutputShape:
             ops, [qml.sample(qml.PauliZ(i)) for i in range(num_samples)], shots=shots
         )
 
-        expected = tuple(tuple(() if s == 1 else (s,) for _ in range(num_samples)) for s in shots)
+        expected = tuple(tuple((s,) for _ in range(num_samples)) for s in shots)
 
         res = qs.shape(dev)
         assert res == expected
@@ -1531,9 +1531,7 @@ class TestOutputShape:
         ops = [qml.RY(0.3, 0), qml.RX(0.2, 0)]
         qs = QuantumScript(ops, [qml.sample()] * num_samples, shots=shots)
 
-        expected = tuple(
-            tuple((3,) if s == 1 else (s, 3) for _ in range(num_samples)) for s in shots
-        )
+        expected = tuple(tuple((s, 3) for _ in range(num_samples)) for s in shots)
 
         res = qs.shape(dev)
         assert res == expected

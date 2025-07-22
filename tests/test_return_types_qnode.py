@@ -295,7 +295,7 @@ class TestIntegrationSingleReturn:
         assert isinstance(res, (np.ndarray, np.float64))
 
         if measurement.wires.tolist() != [0, 1]:
-            assert res.shape == (shots,)
+            assert res.shape == (shots,) if measurement.obs else (shots, 1)
         else:
             assert res.shape == (shots, 2) if device != "default.qutrit" else (shots, 3)
 
@@ -1243,7 +1243,7 @@ class TestIntegrationMultipleReturns:
 
         # Sample
         assert isinstance(res[1], (np.ndarray, np.float64))
-        assert res[1].shape == (shots,)
+        assert res[1].shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
@@ -2274,11 +2274,7 @@ class TestIntegrationShotVectors:
 
         assert len(res) == len(all_shot_copies)
         for r, shots in zip(res, all_shot_copies):
-            if shots == 1:
-                # Scalar tensors
-                assert r.shape == ()
-            else:
-                assert r.shape == (shots,)
+            assert r.shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement, device):
@@ -2414,8 +2410,8 @@ class TestIntegrationSameMeasurementShotVector:
 
         assert len(res) == len(all_shot_copies)
         for r, shots in zip(res, all_shot_copies):
-            shape = () if shots == 1 else (shots,)
-            assert all(res_item.shape == shape for res_item in r)
+            assert r[0].shape == (shots,) if measurement1.obs else (shots, 1)
+            assert r[1].shape == (shots,) if measurement2.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement1", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     @pytest.mark.parametrize("measurement2", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
@@ -2605,7 +2601,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
 
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[idx]):
-                if i % 2 == 0 or shots == 1:
+                if i % 2 == 0:
                     assert meas2.obs is not None
                     expected_shape = ()
                     assert r.shape == expected_shape
@@ -2826,11 +2822,8 @@ class TestIntegrationMultipleMeasurementsShotVector:
                     # Probs add up to 1
                     assert np.allclose(sum(r), 1)
                 else:
-                    if shots == 1:
-                        assert r.shape == ()
-                    else:
-                        expected = (shots,)
-                        assert r.shape == expected
+                    expected = (shots, 1) if sample_obs is None else (shots,)
+                    assert r.shape == expected
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_counts(self, shot_vector, sample_obs, device):
@@ -2953,14 +2946,16 @@ class TestIntegrationMultipleMeasurementsShotVector:
         assert all(isinstance(measurement_res[1], dict) for measurement_res in res)
 
         for idx, shots in enumerate(raw_shot_vector):
-            for i, r in enumerate(res[idx]):
+            for res_idx, r in enumerate(res[idx]):
                 num_wires = len(sample_wires)
-                if shots == 1 and i % 2 == 0:
-                    expected_shape = () if num_wires == 1 else (num_wires,)
-                    assert r.shape == expected_shape
-                elif i % 2 == 0:
-                    expected_shape = (shots,) if num_wires == 1 else (shots, num_wires)
-                    assert r.shape == expected_shape
+                if res_idx % 2 == 0:
+                    if len(sample_wires) > 1:
+                        expected_shape = (shots, num_wires)
+                        assert r.shape == expected_shape
+                    else:
+                        # think this means measured observable?
+                        expected_shape = (shots,)
+                        assert r.shape == expected_shape
                 else:
                     assert isinstance(r, dict)
 
@@ -3024,11 +3019,8 @@ class TestIntegrationMultipleMeasurementsShotVector:
                     assert np.allclose(sum(r), 1)
                 elif sample:
                     shots = raw_shot_vector[res_idx]
-                    if shots == 1:
-                        assert r.shape == ()
-                    else:
-                        expected = (shots,)
-                        assert r.shape == expected
+                    expected = (shots,)
+                    assert r.shape == expected
                 else:
                     # Return is Counts
                     assert isinstance(r, dict)

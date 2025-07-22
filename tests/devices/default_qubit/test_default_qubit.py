@@ -599,7 +599,7 @@ class TestSampleMeasurements:
         assert len(results) == 2
         assert all(isinstance(res, (float, np.ndarray)) for res in results)
         assert results[0].shape == (100, 2)
-        assert results[1].shape == (50,)
+        assert results[1].shape == (50, 1)
 
     @pytest.mark.parametrize("max_workers", max_workers_list)
     def test_counts_wires(self, max_workers, seed):

@@ -254,7 +254,7 @@ class TestSnapshotGeneral:
 
         out = qml.snapshots(c)()
 
-        assert out["sample"].shape == (5,)
+        assert out["sample"].shape == (5, 1)
         assert out["counts"]["0"] + out["counts"].get("1", 0) == 20
         if dev.name != "default.qutrit":
             # very rare that it will be *exactly* [0.5, 0.5] if 20 shots
@@ -278,7 +278,7 @@ class TestSnapshotGeneral:
 
         out = qml.snapshots(set_shots(c, shots=10))()
         assert qml.math.allclose(out["probs"], np.array([0.5, 0.5]))
-        assert out["execution_results"].shape == (10,)
+        assert out["execution_results"].shape == (10, 1)
 
 
 class TestSnapshotSupportedQNode:
@@ -577,7 +577,7 @@ class TestSnapshotSupportedQNode:
             1: 0.64,
             2: np.array([0.6, 0.4]),
             3: {"0": 2, "1": 8},
-            4: np.array([0, 1, 0, 1, 0, 1, 1, 0, 0, 0]),
+            4: np.array([[0, 1, 0, 1, 0, 1, 1, 0, 0, 0]]).transpose(),
             5: np.array([0.70710678, 0.70710678]),
             "execution_results": np.array(0.2),
         }
