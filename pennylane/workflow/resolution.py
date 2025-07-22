@@ -140,8 +140,8 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
 
 
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
-) -> "qml.devices.MCMConfig":
+    mcm_config: qml.devices.MCMConfig, interface: Interface, finite_shots: bool
+) -> qml.devices.MCMConfig:
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
     updated_values = {}
@@ -180,8 +180,8 @@ def _resolve_mcm_config(
 
 
 def _resolve_hadamard(
-    initial_config: "qml.devices.ExecutionConfig", device: "qml.devices.Device"
-) -> "qml.devices.ExecutionConfig":
+    initial_config: qml.devices.ExecutionConfig, device: qml.devices.Device
+) -> qml.devices.ExecutionConfig:
     diff_method = initial_config.gradient_method
     updated_values = {"gradient_method": diff_method}
     if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
@@ -208,10 +208,10 @@ def _resolve_hadamard(
 
 @debug_logger
 def _resolve_diff_method(
-    initial_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
-    tape: "qml.tape.QuantumTape" = None,
-) -> "qml.devices.ExecutionConfig":
+    initial_config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
+    tape: qml.tape.QuantumTape = None,
+) -> qml.devices.ExecutionConfig:
     """
     Resolves the differentiation method and updates the initial execution configuration accordingly.
 
@@ -271,10 +271,10 @@ def _resolve_diff_method(
 
 
 def _resolve_execution_config(
-    execution_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    execution_config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
     tapes: QuantumScriptBatch,
-) -> "qml.devices.ExecutionConfig":
+) -> qml.devices.ExecutionConfig:
     """Resolves the execution configuration for non-device specific properties.
 
     Args:

@@ -16,16 +16,15 @@ This module contains the qml.matrix function.
 """
 from functools import partial
 
-# pylint: disable=too-many-branches
-from typing import Union
-
 import pennylane as qml
 from pennylane import transform
-from pennylane.exceptions import TransformError
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.exceptions import MatrixUndefinedError, TransformError
+from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, TensorLike
+
+# pylint: disable=too-many-branches
 
 
 def catalyst_qjit(qnode):
@@ -33,7 +32,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
-def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
+def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
 
     .. note::

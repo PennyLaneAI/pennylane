@@ -20,10 +20,9 @@ import os
 import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
-from typing import Optional, Type
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
@@ -31,7 +30,6 @@ from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import WireError
 
 from .execution_config import MCMConfig
 
@@ -47,10 +45,10 @@ def _operator_decomposition_gen(  # pylint: disable = too-many-positional-argume
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
-    max_expansion: Optional[int] = None,
+    max_expansion: int | None = None,
     current_depth=0,
     name: str = "device",
-    error: Optional[Type[Exception]] = None,
+    error: type[Exception] | None = None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     if error is None:
@@ -111,7 +109,7 @@ def no_sampling(
 
 @transform
 def validate_device_wires(
-    tape: QuantumScript, wires: Optional[qml.wires.Wires] = None, name: str = "device"
+    tape: QuantumScript, wires: qml.wires.Wires | None = None, name: str = "device"
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Validates that all wires present in the tape are in the set of provided wires. Adds the
     device wires to measurement processes like :class:`~.measurements.StateMP` that are broadcasted
@@ -302,11 +300,11 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     stopping_condition: Callable[[qml.operation.Operator], bool],
     stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
     skip_initial_state_prep: bool = True,
-    decomposer: Optional[
+    decomposer: None | (
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
-    ] = None,
+    ) = None,
     name: str = "device",
-    error: Optional[Type[Exception]] = None,
+    error: type[Exception] | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
