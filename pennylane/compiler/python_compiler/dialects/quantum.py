@@ -160,9 +160,9 @@ class AllocOp(IRDLOperation):
 
     name = "quantum.alloc"
 
-    # assembly_format = """
-    #        `(` ($nqubits^):($nqubits_attr)? `)` attr-dict `:` type(results)
-    #    """
+    assembly_format = """
+           `(` ($nqubits^):($nqubits_attr)? `)` attr-dict `:` type(results)
+    """
 
     nqubits = opt_operand_def(i64)
 
@@ -423,15 +423,15 @@ class ExtractOp(IRDLOperation):
 
     name = "quantum.extract"
 
-    # assembly_format = """
-    #        $qreg `[` ($idx^):($idx_attr)? `]` attr-dict `:` type($qreg) `->` type(results)
-    #    """
+    assembly_format = """
+           $qreg `[` ($idx^):($idx_attr)? `]` attr-dict `:` type($qreg) `->` type(results)
+    """
 
     qreg = operand_def(QuregType)
 
     idx = opt_operand_def(IntegerType(64))
 
-    idx_attr = opt_prop_def(AnyAttr())
+    idx_attr = opt_prop_def(IntegerAttr[I64])
 
     qubit = result_def(QubitType)
 
@@ -576,15 +576,15 @@ class InsertOp(IRDLOperation):
 
     name = "quantum.insert"
 
-    # assembly_format = """
-    #        $in_qreg `[` ($idx^):($idx_attr)? `]` `,` $qubit attr-dict `:` type($in_qreg) `,` type($qubit)
-    #    """
+    assembly_format = """
+           $in_qreg `[` ($idx^):($idx_attr)? `]` `,` $qubit attr-dict `:` type($in_qreg) `,` type($qubit)
+    """
 
     in_qreg = operand_def(QuregType)
 
     idx = opt_operand_def(IntegerType(64))
 
-    idx_attr = opt_prop_def(AnyAttr())
+    idx_attr = opt_prop_def(IntegerAttr[I64])
 
     qubit = operand_def(QubitType)
 

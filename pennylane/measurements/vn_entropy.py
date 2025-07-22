@@ -23,58 +23,6 @@ from pennylane.wires import Wires
 from .measurements import StateMeasurement
 
 
-def vn_entropy(wires, log_base=None) -> "VnEntropyMP":
-    r"""Von Neumann entropy of the system prior to measurement.
-
-    .. math::
-        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
-
-    Args:
-        wires (Sequence[int] or int): The wires of the subsystem
-        log_base (float): Base for the logarithm.
-
-    Returns:
-        VnEntropyMP: Measurement process instance
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit_entropy(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.vn_entropy(wires=[0])
-
-    Executing this QNode:
-
-    >>> circuit_entropy(np.pi/2)
-    0.6931472
-
-    It is also possible to get the gradient of the previous QNode:
-
-    >>> param = np.array(np.pi/4, requires_grad=True)
-    >>> qml.grad(circuit_entropy)(param)
-    tensor(0.62322524, requires_grad=True)
-
-    .. note::
-
-        Calculating the derivative of :func:`~pennylane.vn_entropy` is currently supported when
-        using the classical backpropagation differentiation method (``diff_method="backprop"``)
-        with a compatible device and finite differences (``diff_method="finite-diff"``).
-
-    .. note::
-
-        ``qml.vn_entropy`` can also be used to compute the entropy of entanglement between two
-        subsystems by computing the Von Neumann entropy of either of the subsystems.
-
-    .. seealso:: :func:`pennylane.math.vn_entropy`, :func:`pennylane.math.vn_entanglement_entropy`
-    """
-    wires = Wires(wires)
-    return VnEntropyMP(wires=wires, log_base=log_base)
-
-
 class VnEntropyMP(StateMeasurement):
     """Measurement process that computes the Von Neumann entropy of the system prior to measurement.
 
@@ -130,3 +78,55 @@ class VnEntropyMP(StateMeasurement):
         return qml.math.vn_entropy(
             density_matrix, indices=self.wires, c_dtype=density_matrix.dtype, base=self.log_base
         )
+
+
+def vn_entropy(wires, log_base=None) -> VnEntropyMP:
+    r"""Von Neumann entropy of the system prior to measurement.
+
+    .. math::
+        S( \rho ) = -\text{Tr}( \rho \log ( \rho ))
+
+    Args:
+        wires (Sequence[int] or int): The wires of the subsystem
+        log_base (float): Base for the logarithm.
+
+    Returns:
+        VnEntropyMP: Measurement process instance
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_entropy(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.vn_entropy(wires=[0])
+
+    Executing this QNode:
+
+    >>> circuit_entropy(np.pi/2)
+    0.6931472
+
+    It is also possible to get the gradient of the previous QNode:
+
+    >>> param = np.array(np.pi/4, requires_grad=True)
+    >>> qml.grad(circuit_entropy)(param)
+    tensor(0.62322524, requires_grad=True)
+
+    .. note::
+
+        Calculating the derivative of :func:`~pennylane.vn_entropy` is currently supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device and finite differences (``diff_method="finite-diff"``).
+
+    .. note::
+
+        ``qml.vn_entropy`` can also be used to compute the entropy of entanglement between two
+        subsystems by computing the Von Neumann entropy of either of the subsystems.
+
+    .. seealso:: :func:`pennylane.math.vn_entropy`, :func:`pennylane.math.vn_entanglement_entropy`
+    """
+    wires = Wires(wires)
+    return VnEntropyMP(wires=wires, log_base=log_base)

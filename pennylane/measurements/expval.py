@@ -25,55 +25,6 @@ from .mid_measure import MeasurementValue
 from .sample import SampleMP
 
 
-def expval(
-    op: Operator | MeasurementValue,
-):
-    r"""Expectation value of the supplied observable.
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.expval(qml.Y(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    -0.4794255386042029
-
-    Args:
-        op (Union[Operator, MeasurementValue]): a quantum observable object. To
-            get expectation values for mid-circuit measurements, ``op`` should be
-            a ``MeasurementValue``.
-
-    Returns:
-        ExpectationMP: measurement process instance
-    """
-    if isinstance(op, MeasurementValue):
-        return ExpectationMP(obs=op)
-
-    if isinstance(op, Sequence):
-        raise ValueError(
-            "qml.expval does not support measuring sequences of measurements or observables"
-        )
-
-    if isinstance(op, qml.Identity) and len(op.wires) == 0:
-        # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
-        # allow once we have testing and confidence in qml.expval(I())
-        raise NotImplementedError(
-            "Expectation values of qml.Identity() without wires are currently not allowed."
-        )
-
-    return ExpectationMP(obs=op)
-
-
 class ExpectationMP(SampleMeasurement, StateMeasurement):
     """Measurement process that computes the expectation value of the supplied observable.
 
@@ -160,3 +111,52 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
             probabilities (array): the probabilities of collapsing to eigen states
         """
         return qml.math.dot(probabilities, self.eigvals())
+
+
+def expval(
+    op: Operator | MeasurementValue,
+) -> ExpectationMP:
+    r"""Expectation value of the supplied observable.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Y(0))
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    -0.4794255386042029
+
+    Args:
+        op (Union[Operator, MeasurementValue]): a quantum observable object. To
+            get expectation values for mid-circuit measurements, ``op`` should be
+            a ``MeasurementValue``.
+
+    Returns:
+        ExpectationMP: measurement process instance
+    """
+    if isinstance(op, MeasurementValue):
+        return ExpectationMP(obs=op)
+
+    if isinstance(op, Sequence):
+        raise ValueError(
+            "qml.expval does not support measuring sequences of measurements or observables"
+        )
+
+    if isinstance(op, qml.Identity) and len(op.wires) == 0:
+        # temporary solution to merge https://github.com/PennyLaneAI/pennylane/pull/5106
+        # allow once we have testing and confidence in qml.expval(I())
+        raise NotImplementedError(
+            "Expectation values of qml.Identity() without wires are currently not allowed."
+        )
+
+    return ExpectationMP(obs=op)

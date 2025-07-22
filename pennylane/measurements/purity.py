@@ -23,45 +23,6 @@ from pennylane.wires import Wires
 from .measurements import StateMeasurement
 
 
-def purity(wires) -> "PurityMP":
-    r"""The purity of the system prior to measurement.
-
-    .. math::
-        \gamma = \text{Tr}(\rho^2)
-
-    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
-    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
-    A pure state has a purity of 1.
-
-    Args:
-        wires (Sequence[int] or int): The wires of the subsystem
-
-    Returns:
-        PurityMP: Measurement process instance
-
-    **Example**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.mixed", wires=2)
-
-        @qml.qnode(dev)
-        def circuit_purity(p):
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.BitFlip(p, wires=0)
-            qml.BitFlip(p, wires=1)
-            return qml.purity(wires=[0,1])
-
-    >>> circuit_purity(0.1)
-    array(0.7048)
-
-    .. seealso:: :func:`pennylane.math.purity`
-    """
-    wires = Wires(wires)
-    return PurityMP(wires=wires)
-
-
 class PurityMP(StateMeasurement):
     """Measurement process that computes the purity of the system prior to measurement.
 
@@ -98,3 +59,42 @@ class PurityMP(StateMeasurement):
         wire_map = dict(zip(wire_order, list(range(len(wire_order)))))
         indices = [wire_map[w] for w in self.wires]
         return qml.math.purity(density_matrix, indices=indices, c_dtype=density_matrix.dtype)
+
+
+def purity(wires) -> PurityMP:
+    r"""The purity of the system prior to measurement.
+
+    .. math::
+        \gamma = \text{Tr}(\rho^2)
+
+    where :math:`\rho` is the density matrix. The purity of a normalized quantum state satisfies
+    :math:`\frac{1}{d} \leq \gamma \leq 1`, where :math:`d` is the dimension of the Hilbert space.
+    A pure state has a purity of 1.
+
+    Args:
+        wires (Sequence[int] or int): The wires of the subsystem
+
+    Returns:
+        PurityMP: Measurement process instance
+
+    **Example**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.mixed", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_purity(p):
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.BitFlip(p, wires=0)
+            qml.BitFlip(p, wires=1)
+            return qml.purity(wires=[0,1])
+
+    >>> circuit_purity(0.1)
+    array(0.7048)
+
+    .. seealso:: :func:`pennylane.math.purity`
+    """
+    wires = Wires(wires)
+    return PurityMP(wires=wires)
