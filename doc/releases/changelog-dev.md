@@ -215,8 +215,9 @@
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
-* Update xDSL supported version to `0.45`.
+* Update xDSL supported version to `0.46`.
   [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
+  [(#7932)](https://github.com/PennyLaneAI/pennylane/pull/7932)
 
 <h3>Documentation 📝</h3>
 
