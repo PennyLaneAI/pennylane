@@ -789,7 +789,6 @@ class QNode:
         kwargs = copy.copy(kwargs)
         if "shots" in kwargs:
             # NOTE: at removal, remember to remove the userwarning below as well; without allowing
-            # qnode call kwarg, users should be free to define their own `shots` kwarg in qfunc definition
             warnings.warn(
                 "'shots' as an argument to the quantum function is deprecated and will be removed in v0.44. ",
                 PennyLaneDeprecationWarning,
