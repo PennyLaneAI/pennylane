@@ -50,11 +50,11 @@ Resource Estimation Functions:
 Gatesets & Configurations:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. autodata:: ~StandardGateSet
+.. autodata:: StandardGateSet
 
-.. autodata:: ~DefaultGateSet
+.. autodata:: DefaultGateSet
 
-.. autodata:: ~resource_config
+.. autodata:: resource_config
 
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
