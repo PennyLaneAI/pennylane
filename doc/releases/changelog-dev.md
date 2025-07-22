@@ -127,6 +127,22 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The boolean functions provided in `qml.operation` are deprecated. See the 
+  :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These 
+  include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`, 
+  `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
+  [(#7924)](https://github.com/PennyLaneAI/pennylane/pull/7924)
+
+* Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
+  Top level import and usage is advised. The functions now live in the `liealg` module.
+
+  ```python
+  import pennylane.liealg
+  from pennylane.liealg import lie_closure, structure_constants, center
+  ```
+
+  [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
+
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated so that they accept a list of operations 
   instead of a `qml.tape.QuantumScript` of operations.
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
@@ -135,6 +151,7 @@
   PennyLane now depends on the more general `Operator` interface instead. The
   `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
   that the operator instance is Hermitian.
+  [(#7927)](https://github.com/PennyLaneAI/pennylane/pull/7927)
 
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
   should instead indicate that the `Operator` does not need wire validation.
@@ -209,15 +226,25 @@
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
-* Update xDSL supported version to `0.45`.
+* Update xDSL supported version to `0.46`.
   [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
+  [(#7932)](https://github.com/PennyLaneAI/pennylane/pull/7932)
+
+* Update JAX version used in tests to `0.6.2`
+  [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
 
 <h3>Documentation 📝</h3>
+
+* Improved the docstrings of all optimizers for consistency and legibility.
+  [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
 
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
 <h3>Bug fixes 🐛</h3>
+
+* An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
+  [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
 
 * Fixes issue related to :func:`~.transforms.to_zx` adding the support for
   `Toffoli` and `CCZ` gates conversion into their ZX-graph representation.

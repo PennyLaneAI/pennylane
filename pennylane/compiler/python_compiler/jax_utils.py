@@ -18,8 +18,8 @@ from collections.abc import Callable, Sequence
 from functools import wraps
 from typing import TypeAlias
 
-import jaxlib
 from catalyst import QJIT
+from jax._src.lib import _jax
 from jaxlib.mlir.dialects import stablehlo as jstablehlo  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Context as jContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jModule  # pylint: disable=no-name-in-module
@@ -37,7 +37,7 @@ from xdsl.traits import SymbolTable as xSymbolTable
 
 from .dialects import MBQC, Quantum
 
-JaxJittedFunction: TypeAlias = jaxlib.xla_extension.PjitFunction
+JaxJittedFunction: TypeAlias = _jax.PjitFunction  # pylint: disable=c-extension-no-member
 
 
 class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-methods
