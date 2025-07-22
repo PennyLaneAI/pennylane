@@ -19,7 +19,7 @@ and measurement samples using AnnotatedQueues.
 import copy
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import Optional, Union
+from typing import Optional
 
 from pennylane import math
 from pennylane.capture import ABCCaptureMeta
@@ -45,8 +45,6 @@ from .capture_measurements import (
     create_measurement_wires_primitive,
 )
 from .measurement_value import MeasurementValue
-
-AbstractOperator = _get_abstract_operator()
 
 
 class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
@@ -103,7 +101,9 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
                 *wires, eigvals, has_eigvals=True, **kwargs
             )  # wires + eigvals
 
-        if isinstance(obs, Operator) or isinstance(getattr(obs, "aval", None), AbstractOperator):
+        if isinstance(obs, Operator) or isinstance(
+            getattr(obs, "aval", None), _get_abstract_operator()
+        ):
             return cls._obs_primitive.bind(obs, **kwargs)
         if isinstance(obs, (list, tuple)):
             return cls._mcm_primitive.bind(*obs, single_mcm=False, **kwargs)  # iterable of mcms
@@ -158,13 +158,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
 
     def __init__(
         self,
-        obs: None | (
-            Union[
-                Operator,
-                MeasurementValue,
-                Sequence[MeasurementValue],
-            ]
-        ) = None,
+        obs: None | (Operator | MeasurementValue | Sequence[MeasurementValue]) = None,
         wires: Wires | None = None,
         eigvals: TensorLike | None = None,
         id: str | None = None,
