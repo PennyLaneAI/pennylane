@@ -804,13 +804,22 @@ def _expand_transform_param_shift(
         _ = [_inplace_set_trainable_params(t) for t in batch]
     return batch, postprocessing
 
+def with_tform(func):
+    from functools import partial, wraps
 
-@partial(
-    transform,
-    expand_transform=_expand_transform_param_shift,
-    classical_cotransform=contract_qjac_with_cjac,
-    final_transform=True,
-)
+    @wraps(func)
+    def wrapped_func(*args, **kwargs):
+        return partial(transform, expand_transform=_expand_transform_param_shift, classical_cotransform=contract_qjac_with_cjac,
+    final_transform=True)(func)(*args, **kwargs)
+    return wrapped_func
+
+#@partial(
+#    transform,
+#    expand_transform=_expand_transform_param_shift,
+#    classical_cotransform=contract_qjac_with_cjac,
+#    final_transform=True,
+#)
+@with_tform
 # pylint: disable=too-many-positional-arguments
 def param_shift(
     tape: QuantumScript,

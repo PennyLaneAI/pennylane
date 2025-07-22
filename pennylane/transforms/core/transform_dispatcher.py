@@ -195,6 +195,14 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
 
         return super().__new__(cls)
 
+    #def __setstate__(self, state):
+    #    print(1)
+    #    from IPython import embed; embed()
+
+    #def __getstate__(self) -> object:
+    #    print(2)
+    #    from IPython import embed; embed()
+
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
@@ -206,6 +214,7 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         use_argnum_in_expand=False,
         plxpr_transform=None,
     ):
+        print(f"{transform}")
         self._transform = transform
         self._expand_transform = expand_transform
         self._classical_cotransform = classical_cotransform
@@ -225,7 +234,6 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
         self, *targs, **tkwargs
     ):  # pylint: disable=too-many-return-statements,too-many-branches
         obj = None
-
         if targs:
             # assume the first argument passed to the transform
             # is the object we wish to transform
