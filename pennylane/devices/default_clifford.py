@@ -506,7 +506,7 @@ class DefaultClifford(Device):
     def execute(
         self,
         circuits: QuantumScript | QuantumScriptBatch,
-        execution_config: ExecutionConfig | None = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ) -> Result | ResultBatch:
         if execution_config is None:
             execution_config = ExecutionConfig()
