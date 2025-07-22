@@ -22,9 +22,13 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import (
+    DecompositionUndefinedError,
+    EigvalsUndefinedError,
+    QuantumFunctionError,
+)
 from pennylane.math.utils import is_abstract
-from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
+from pennylane.operation import Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -34,11 +38,6 @@ from .capture_measurements import (
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
 )
-
-
-class MeasurementShapeError(ValueError):
-    """An error raised when an unsupported operation is attempted with a
-    quantum tape."""
 
 
 class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):

@@ -31,8 +31,8 @@ from jax import numpy as jnp
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
-from pennylane.capture.autograph.ag_primitives import AutoGraphError
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
+from pennylane.exceptions import AutoGraphError
 
 check_cache = TRANSFORMER.has_cache
 

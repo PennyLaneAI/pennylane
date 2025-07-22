@@ -72,9 +72,10 @@
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
+  [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
 
   ```python
-  @qml.set_shots(shots=1000)
+  @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
   @qml.qnode(dev)
   def circuit():
       qml.H(0)
@@ -148,6 +149,9 @@
   >>> qml.set_shots(c, shots=1)()
   array([[0]])
 
+* Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
+  [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
+
 * The boolean functions provided in `qml.operation` are deprecated. See the 
   :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These 
   include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`, 
@@ -186,6 +190,15 @@
 
 <h3>Deprecations 👋</h3>
 
+* Some unnecessary methods of the `qml.CircuitGraph` class are deprecated and will be removed in version v0.44:
+  [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
+
+    - `print_contents` in favor of `print(obj)`
+    - `observables_in_order` in favor of `observables`
+    - `operations_in_order` in favor of `operations`
+    - `ancestors_in_order` in favor of `ancestors(obj, sort=True)`
+    - `descendants_in_order` in favore of `descendants(obj, sort=True)`
+
 * The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
   Instead, the `qml.to_openqasm` function should be used.
   [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
@@ -208,8 +221,14 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improves type hints in the `measurements` module.
+  [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
+
 * Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
+
+* Improve the pre-commit hook to add gitleaks.
+  [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
 
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.

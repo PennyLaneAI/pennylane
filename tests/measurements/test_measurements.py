@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DecompositionUndefinedError, DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -40,7 +40,6 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
