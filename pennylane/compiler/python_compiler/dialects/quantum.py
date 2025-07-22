@@ -775,11 +775,6 @@ class GlobalPhaseOp(IRDLOperation):
 
     Results:
         out_ctrl_qubits: The control qubits
-
-    .. note::
-
-        With the introduction of dynamic qubit allocation, applying a global
-        phase and then creating a new qubit results in undefined behaviour.
     """
 
     name = "quantum.gphase"
@@ -1313,11 +1308,6 @@ class SetBasisStateOp(IRDLOperation):
 
     Returns:
         out_qubits (Sequence[SSAValue]): The output qubits.
-
-    .. note::
-
-        This operation should be the first quantum operation of the entry point of
-        a quantum module.
     """
 
     name = "quantum.set_basis_state"
@@ -1343,11 +1333,6 @@ class SetStateOp(IRDLOperation):
 
     Returns:
         out_qubits (Sequence[SSAValue]): The output qubits.
-
-    .. note::
-
-        This operation should be the first quantum operation of the entry point of
-        a quantum module.
     """
 
     name = "quantum.set_state"
