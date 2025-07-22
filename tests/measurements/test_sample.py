@@ -30,22 +30,8 @@ class TestSample:
     def test_sample_dimension(self, n_sample):
         """Test that the sample function outputs samples of the right size"""
 
-        dev = qml.device("default.qubit", wires=2, shots=n_sample)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.RX(0.54, wires=0)
-            return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
-
-        output = circuit()
-
-        assert len(output) == 2
-        assert circuit._qfunc_output[0].shape(shots=n_sample, num_device_wires=2) == (
-            (n_sample,) if not n_sample == 1 else ()
-        )
-        assert circuit._qfunc_output[1].shape(shots=n_sample, num_device_wires=2) == (
-            (n_sample,) if not n_sample == 1 else ()
-        )
+        assert qml.sample(qml.PauliZ(0)).shape(shots=n_sample, num_device_wires=2) == ((n_sample,))
+        assert qml.sample(qml.PauliX(1)).shape(shots=n_sample, num_device_wires=2) == ((n_sample,))
 
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
@@ -264,13 +250,13 @@ class TestSample:
 
         assert isinstance(res, tuple)
 
-        expected_shapes = [(num_wires,), (shots2, num_wires), (shots3, num_wires)]
+        expected_shapes = [(shots1, num_wires), (shots2, num_wires), (shots3, num_wires)]
         assert len(res) == len(expected_shapes)
         assert all(r.shape == exp_shape for r, exp_shape in zip(res, expected_shapes))
 
         # assert first wire is always the same as second
         # pylint: disable=unsubscriptable-object
-        assert np.all(res[0][0] == res[0][1])
+        assert np.all(res[0][:, 0] == res[0][:, 1])
         assert np.all(res[1][:, 0] == res[1][:, 1])
         assert np.all(res[2][:, 0] == res[2][:, 1])
 
@@ -460,7 +446,7 @@ class TestJAXCompatibility:
 
         results = jax.jit(circuit)(jax.numpy.array(0.123, dtype=jax.numpy.float64))
 
-        expected = (2,) if samples == 1 else (samples, 2)
+        expected = (samples, 2)
         assert results.shape == expected
         assert circuit._qfunc_output.shape(samples, 3) == (samples, 2) if samples != 1 else (2,)
 

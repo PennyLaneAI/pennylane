@@ -207,19 +207,10 @@ class SampleMP(SampleMeasurement):
         sample_eigvals = n_wires is None or has_eigvals
         dtype = float if sample_eigvals else int
 
-        if n_wires == 0:
-            dim = num_device_wires
-        elif sample_eigvals:
-            dim = 1
-        else:
-            dim = n_wires
-
-        shape = []
-        if shots != 1:
-            shape.append(shots)
-        if dim != 1:
-            shape.append(dim)
-        return tuple(shape), dtype
+        if sample_eigvals:
+            return (shots,), dtype
+        dim = num_device_wires if n_wires == 0 else n_wires
+        return (shots, dim), dtype
 
     @property
     def numeric_type(self):
@@ -235,19 +226,14 @@ class SampleMP(SampleMeasurement):
                 f"{self.__class__.__name__}."
             )
         if self.obs:
-            num_values_per_shot = 1  # one single eigenvalue
-        elif self.mv is not None:
+            return (shots,)
+
+        if self.mv is not None:
             num_values_per_shot = 1 if isinstance(self.mv, MeasurementValue) else len(self.mv)
         else:
-            # one value per wire
             num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires
 
-        shape = []
-        if shots != 1:
-            shape.append(shots)
-        if num_values_per_shot != 1:
-            shape.append(num_values_per_shot)
-        return tuple(shape)
+        return (shots, num_values_per_shot)
 
     def process_samples(
         self,
