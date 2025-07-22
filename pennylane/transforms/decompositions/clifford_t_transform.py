@@ -390,15 +390,18 @@ class _CachedCallable:
 
     def cached_decompose(self, op):
         """Decomposes the angle into a sequence of gates."""
-        f_adj = op.data[0] < 2 * math.pi  # 4 * pi / 2
-        cached_op = op if f_adj else op.adjoint()
+        if not self.is_qjit:
+            f_adj = op.data[0] < 2 * math.pi  # 4 * pi / 2
+            cached_op = op if f_adj else op.adjoint()
 
-        seq = self.decompose_fn(cached_op)
-        if f_adj:
-            return seq
+            seq = self.decompose_fn(cached_op)
+            if f_adj:
+                return seq
 
-        adj = [qml.adjoint(s, lazy=False) for s in reversed(seq)]
-        return adj[1:] + adj[:1]
+            adj = [qml.adjoint(s, lazy=False) for s in reversed(seq)]
+            return adj[1:] + adj[:1]
+
+        return self.decompose_fn(op)
 
 
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
@@ -556,13 +559,14 @@ def clifford_t_decomposition(
                 wire = op.wires[0] if is_qjit else 0
                 # Decompose the RZ operation with a default wire
                 clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [wire]))
-                # Extract the global phase from the last operation
-                phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
-                # Map the operations to the original wires
                 op_wire = op.wires[0]
+                # Extract the global phase from the last operation
+                # Map the operations to the original wires
                 if is_qjit:
-                    decomp_ops.extend(clifford_ops[:-1])
+                    phase += clifford_ops[-1].data[0]
+                    decomp_ops.extend(clifford_ops[:-1])  # Already mapped
                 else:
+                    phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
                     decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
             else:
                 decomp_ops.append(op)
@@ -577,7 +581,8 @@ def clifford_t_decomposition(
     decomp_ops.clear()
 
     # Perform a final attempt of simplification before return
-    [new_tape], _ = cancel_inverses(new_tape)
+    if not is_qjit:
+        [new_tape], _ = cancel_inverses(new_tape)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results
