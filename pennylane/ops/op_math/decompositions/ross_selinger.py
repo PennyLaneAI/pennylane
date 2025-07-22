@@ -159,7 +159,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
                 qml.H(wire)
                 qml.T(wire)
 
-            #  syllable_sequence could be 0, 1 or -1. -1
+            #  syllable_sequence can be 0, 1 or -1.
             qml.cond(
                 is_HT != -1,
                 true_fn=qml.cond(is_HT.astype(bool), true_fn=compose_SHT, false_fn=compose_HT),
