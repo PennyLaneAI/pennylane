@@ -126,19 +126,19 @@ class HilbertSchmidt(Operation):
         v_function: Callable,
         v_wires: int | Iterable[int | str] | qml.wires.Wires,
         u: Operation | Iterable[Operation],
-        id=None,
+        id: str | None = None,
     ) -> None:
 
         self._num_params = len(params)
 
-        u = (u,) if isinstance(u, Operation) else u
-        for op in u:
+        u_ops = (u,) if isinstance(u, Operation) else u
+        for op in u_ops:
             if not isinstance(op, qml.operation.Operator):
                 raise QuantumFunctionError(
                     "The argument u must be an Operator or an iterable of Operators."
                 )
-        self.hyperparameters["u"] = tuple(u)
-        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u))
+        self.hyperparameters["u"] = tuple(u_ops)
+        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u_ops))
 
         if not callable(v_function):
             raise QuantumFunctionError(
@@ -183,8 +183,10 @@ class HilbertSchmidt(Operation):
         # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
         r"""Representation of the operator as a product of other operators."""
 
-        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u))
-        v_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in v))
+        u_ops = (u,) if isinstance(u, Operation) else u
+        v_ops = (v,) if isinstance(v, Operation) else v
+        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u_ops))
+        v_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in v_ops))
 
         n_wires = len(u_wires + v_wires)
         first_range = range(n_wires // 2)
@@ -198,7 +200,7 @@ class HilbertSchmidt(Operation):
         )
 
         # Unitary U
-        for op_u in u:
+        for op_u in u_ops:
             # The operation has been defined outside of this function, to queue it we call qml.apply.
             if qml.QueuingManager.recording():
                 qml.apply(op_u)
@@ -209,7 +211,7 @@ class HilbertSchmidt(Operation):
         # apply the complex conjugate of each operation in the V tape and append it to the decomposition
         # using the QubitUnitary operation.
         decomp_ops.extend(
-            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v
+            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v_ops
         )
 
         # CNOT second layer
@@ -305,8 +307,10 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         # pylint: disable=too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
 
-        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u))
-        v_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in v))
+        u_ops = (u,) if isinstance(u, Operation) else u
+        v_ops = (v,) if isinstance(v, Operation) else v
+        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u_ops))
+        v_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in v_ops))
 
         n_wires = len(u_wires + v_wires)
         first_range = range(n_wires // 2)
@@ -321,16 +325,16 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         # Unitary U
         if qml.QueuingManager.recording():
-            decomp_ops.extend(qml.apply(op_u) for op_u in u)
+            decomp_ops.extend(qml.apply(op_u) for op_u in u_ops)
         else:
-            decomp_ops.extend(u)
+            decomp_ops.extend(u_ops)
 
         # Unitary V conjugate
         # Since we don't currently have an easy way to apply the complex conjugate of a tape, we manually
         # apply the complex conjugate of each operation in the V tape and append it to the decomposition
         # using the QubitUnitary operation.
         decomp_ops.extend(
-            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v
+            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v_ops
         )
         # Single qubit measurement
         decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
