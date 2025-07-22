@@ -72,9 +72,10 @@
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
+  [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
 
   ```python
-  @qml.set_shots(shots=1000)
+  @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
   @qml.qnode(dev)
   def circuit():
       qml.H(0)
@@ -130,6 +131,12 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The boolean functions provided in `qml.operation` are deprecated. See the 
+  :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These 
+  include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`, 
+  `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
+  [(#7924)](https://github.com/PennyLaneAI/pennylane/pull/7924)
+
 * Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
   Top level import and usage is advised. The functions now live in the `liealg` module.
 
@@ -144,6 +151,7 @@
   PennyLane now depends on the more general `Operator` interface instead. The
   `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
   that the operator instance is Hermitian.
+  [(#7927)](https://github.com/PennyLaneAI/pennylane/pull/7927)
 
 * `qml.operation.WiresEnum`, `qml.operation.AllWires`, and `qml.operation.AnyWires` have been removed. Setting `Operator.num_wires = None` (the default)
   should instead indicate that the `Operator` does not need wire validation.
@@ -183,8 +191,14 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improves type hints in the `measurements` module.
+  [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
+
 * Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
+
+* Improve the pre-commit hook to add gitleaks.
+  [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
 
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
@@ -218,8 +232,9 @@
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
-* Update xDSL supported version to `0.45`.
+* Update xDSL supported version to `0.46`.
   [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
+  [(#7932)](https://github.com/PennyLaneAI/pennylane/pull/7932)
 
 * Update JAX version used in tests to `0.6.2`
   [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
