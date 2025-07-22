@@ -169,6 +169,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
         ops.append(syllable_sequence_loop.operation)
 
     # Rightmost Clifford operator
+    # TODO: Whenver subroutines is supported in QJIT, make this function as subroutines.
     rightmost_cliff_op_cond = apply_clifford_from_idx(clifford_op_idx, wire)
     rightmost_cliff_op_cond()
     ops.append(rightmost_cliff_op_cond.operation)
