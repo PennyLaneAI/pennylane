@@ -111,6 +111,13 @@ def test_all_attributes_names(attr):
 
 def test_assembly_format():
     program = """
+    // CHECK: quantum.alloc(1) : !quantum.reg
+    %qreg_alloc_static = quantum.alloc(1) : !quantum.reg
+
+    %i = "test.op"() : () -> i64
+    // CHECK: quantum.alloc(%i) : !quantum.reg
+    %qreg_alloc_dyn = quantum.alloc(%i) : !quantum.reg
+
     // CHECK: [[QREG:%.+]] = "test.op"() : () -> !quantum.reg
     %qreg = "test.op"() : () -> !quantum.reg
 
@@ -131,6 +138,12 @@ def test_assembly_format():
 
     // CHECK: [[QUBIT_DYN:%.+]] = quantum.extract %qreg[%cst2] : !quantum.reg -> !quantum.bit
     %qubit_dyn = quantum.extract %qreg[%cst2] : !quantum.reg -> !quantum.bit
+
+    // CHECK: quantum.insert [[QREG:%.+]][0], [[QUBIT]] : !quantum.reg, !quantum.bit
+    %qreg_insert_static = quantum.insert %qreg[0], %qubit : !quantum.reg, !quantum.bit
+
+    // CHECK: quantum.insert [[QREG:%.+]][[[WIRE_DYN]]], [[QUBIT]] : !quantum.reg, !quantum.bit
+    %qreg_insert_dyn = quantum.insert %qreg[%cst2], %qubit : !quantum.reg, !quantum.bit
 
     // CHECK: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
     %out_qubit = quantum.custom "RX"(%cst) %qubit : !quantum.bit
