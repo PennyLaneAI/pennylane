@@ -1273,23 +1273,6 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 
-    # pylint: disable=unexpected-keyword-arg
-    @pytest.mark.xfail(reason="deprecated. To be removed in 0.44")
-    def test_shots_setting_does_not_mutate_device(self):
-        """Tests that per-call shots setting does not change the number of shots in the device."""
-
-        dev = qml.device("default.qubit", wires=1, shots=3)
-
-        @qnode(dev)
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.PauliZ(wires=0))
-
-        assert dev.shots.total_shots == 3
-        res = circuit(0.8, shots=2)
-        assert len(res) == 2
-        assert dev.shots.total_shots == 3
-
     def test_warning_finite_shots_dev(self):
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = qml.device("default.qubit", wires=1, shots=5)
