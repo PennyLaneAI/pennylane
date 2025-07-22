@@ -14,9 +14,12 @@
 """
 Contains the Grover Operation template.
 """
+from functools import reduce
+
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
 from pennylane.wires import Wires, WiresLike
@@ -102,6 +105,8 @@ class GroverOperator(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires", "num_work_wires"}
+
     def __repr__(self):
         return f"GroverOperator(wires={self.wires.tolist()}, work_wires={self.hyperparameters['work_wires'].tolist()})"
 
@@ -122,6 +127,13 @@ class GroverOperator(Operation):
         }
 
         super().__init__(wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": self.hyperparameters["n_wires"],
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
+        }
 
     @property
     def work_wires(self):
@@ -227,3 +239,41 @@ class GroverOperator(Operation):
         # Grover diffusion operator. Realize the all-ones entry via broadcasting when subtracting
         # the second term.
         return 2 / dim - np.eye(dim)
+
+
+def _grover_operator_resources(num_wires, num_work_wires):
+    return {
+        qml.Hadamard: (num_wires - 1) * 2,
+        qml.PauliZ: 2,
+        qml.GlobalPhase: 1,
+        resource_rep(
+            MultiControlledX,
+            num_control_wires=num_wires - 1,
+            num_zero_control_values=num_wires - 1,
+            num_work_wires=num_work_wires,
+            work_wire_type="dirty",
+        ): 1,
+    }
+
+
+@register_resources(_grover_operator_resources)
+def _grover_decomposition(wires, work_wires, n_wires):  # pylint: disable=arguments-differ
+    ctrl_values = [0] * (n_wires - 1)
+
+    @qml.for_loop(len(wires) - 1)
+    def hadamard_loop(i):
+        Hadamard(wires[i])
+
+    hadamard_loop()
+    PauliZ(wires[-1])
+    MultiControlledX(
+        control_values=ctrl_values,
+        wires=wires,
+        work_wires=work_wires,
+    )
+    PauliZ(wires[-1])
+    hadamard_loop()
+    GlobalPhase(np.pi, wires=wires[0])
+
+
+add_decomps(GroverOperator, _grover_decomposition)
