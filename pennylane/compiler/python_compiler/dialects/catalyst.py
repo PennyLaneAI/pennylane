@@ -35,6 +35,7 @@ from xdsl.dialects.builtin import (
     FunctionType,
     IntegerAttr,
     IntegerType,
+    MemRefType,
     StringAttr,
     SymbolRefAttr,
     UnitAttr,
@@ -205,7 +206,7 @@ class ListLoadDataOp(IRDLOperation):
 
     list = operand_def(BaseAttr(ArrayListType))
 
-    data = result_def(AnyAttr())
+    data = result_def(MemRefType)
 
 
 @irdl_op_definition
@@ -248,7 +249,7 @@ class PrintOp(IRDLOperation):
 
     const_val = opt_prop_def(BaseAttr(StringAttr))
 
-    print_descriptor = prop_def(EqAttrConstraint(UnitAttr()))
+    print_descriptor = prop_def(UnitAttr)
 
 
 Catalyst = Dialect(
