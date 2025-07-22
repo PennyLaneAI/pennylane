@@ -16,9 +16,6 @@ Unit tests for the :mod:`pennylane.circuit_graph` module.
 """
 # pylint: disable=no-self-use,too-many-arguments,protected-access
 
-import contextlib
-import io
-
 import numpy as np
 import pytest
 
@@ -373,14 +370,8 @@ class TestCircuitGraph:
         obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
 
         circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
-
-        f = io.StringIO()
-        with contextlib.redirect_stdout(f):
-            print(circuit_w_wires)
-        out = f.getvalue().strip()
-
-        expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
-        assert out == expected
+        expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])\n"""
+        assert str(circuit_w_wires) == expected
 
     def test_print_contents_deprecation(self):
         """Test that a deprecation warning is raised."""
