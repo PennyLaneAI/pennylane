@@ -248,8 +248,8 @@ class ResourceIntegerComparator(ResourceOperator):
           flipping condition is always `True`, a ``MultiControlledX`` gate can be applied with the first two wires as
           controls and :math:`2` control values.
         - Next Prefix: Subsequently, the next significant bit prefix is examined. The target value :math:`22` begins with :math:`0101`.
-        - Therefore, all :math:`6`-bit numbers begining with :code:`0100` will satisfy the condition, so a ``MultiControlledX`` gate can
-          be applied with the first four wires as controls and :code:`0100` as control values.
+        - Therefore, all :math:`6`-bit numbers begining with :math:`0100` will satisfy the condition, so a ``MultiControlledX`` gate can
+          be applied with the first four wires as controls and :math:`0100` as control values.
         - This iterative procedure continues, with ``MultiControlledX`` gates being added for each significant bit prefix of
           the target value, until the full conditional operation is realized with the minimum number of multi-controlled operations.
 
