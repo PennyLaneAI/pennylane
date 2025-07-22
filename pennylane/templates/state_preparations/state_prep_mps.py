@@ -512,16 +512,21 @@ if MPSPrep._primitive is not None:  # pylint: disable=protected-access
         return type.__call__(MPSPrep, args, **kwargs)
 
 
-def _mps_prep_decomposition_resources(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
-    return {
-        resource_rep(qml.QubitUnitary, num_wires=1 + num_work_wires): num_sites
-    }
+def _mps_prep_decomposition_resources(
+    bond_dimensions, num_sites, num_work_wires
+):  # pylint: disable=unused-argument
+    return {resource_rep(qml.QubitUnitary, num_wires=1 + num_work_wires): num_sites}
 
 
-def _work_wires_bond_dimension_condition(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
+def _work_wires_bond_dimension_condition(
+    bond_dimensions, num_sites, num_work_wires
+):  # pylint: disable=unused-argument
     max_bond_dimension = max(bond_dimensions[:-1])
 
-    return not ((max_bond_dimension > 2 ** num_work_wires) or (num_work_wires is not None and num_work_wires > 0))
+    return not (
+        (max_bond_dimension > 2**num_work_wires)
+        or (num_work_wires is not None and num_work_wires > 0)
+    )
 
 
 @qml.register_condition(_work_wires_bond_dimension_condition)
