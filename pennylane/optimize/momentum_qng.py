@@ -43,6 +43,23 @@ class MomentumQNGOptimizer(QNGOptimizer):
     is an expectation value of some observable measured on the variational
     quantum circuit :math:`U(x^{(t)})`.
 
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
+        momentum (float): the user-defined hyperparameter :math:`\rho` (default value: 0.9).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
+
+            - If ``None``, the full metric tensor is computed.
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
+
+        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
+            to be applied at each optimization step (default value: 0).
+
     **Examples:**
 
     Consider an objective function realized as a :class:`~.QNode` that returns the
@@ -83,22 +100,6 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
         See :class:`~.MomentumQNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation.
 
-    Keyword Args:
-        stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
-        momentum=0.9 (float): the user-defined hyperparameter :math:`\rho`
-        approx (str): Which approximation of the metric tensor to compute.
-
-            - If ``None``, the full metric tensor is computed
-
-            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
-              the number of evaluated circuits significantly.
-
-            - If ``"diag"``, only the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources
-              (compared to ``"block-diag"``).
-
-        lam=0 (float): metric tensor regularization :math:`G_{ij}+\lambda I`
-            to be applied at each optimization step
     """
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):
