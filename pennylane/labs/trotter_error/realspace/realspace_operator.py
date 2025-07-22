@@ -16,8 +16,8 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from itertools import product
-from typing import Dict, Sequence, Tuple, Union
 
 import numpy as np
 import scipy as sp
@@ -64,7 +64,7 @@ class RealspaceOperator:
     """
 
     def __init__(
-        self, modes: int, ops: Sequence[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]
+        self, modes: int, ops: Sequence[str], coeffs: RealspaceCoeffs | np.ndarray | float
     ) -> RealspaceOperator:
 
         if coeffs.shape != (modes,) * len(ops):
@@ -78,7 +78,7 @@ class RealspaceOperator:
 
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
-    ) -> Union[np.ndarray, sp.sparse.csr_array]:
+    ) -> np.ndarray | sp.sparse.csr_array:
         """Return a matrix representation of the operator.
 
         Args:
@@ -209,7 +209,7 @@ class RealspaceOperator:
         """
         return RealspaceOperator(modes, tuple(), RealspaceCoeffs(np.array(0)))
 
-    def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int], float]:
+    def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[int], float]:
         """Return the non-zero coefficients in a dictionary.
 
         Args:
@@ -384,7 +384,7 @@ class RealspaceSum(Fragment):
 
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
-    ) -> Union[np.ndarray, sp.sparse.cs_array]:
+    ) -> np.ndarray | sp.sparse.cs_array:
         """Return a matrix representation of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
@@ -421,7 +421,7 @@ class RealspaceSum(Fragment):
 
         return final_matrix
 
-    def norm(self, params: Dict) -> float:
+    def norm(self, params: dict) -> float:
         """Returns an upper bound on the spectral norm of the operator.
 
         Args:
@@ -481,7 +481,7 @@ class RealspaceSum(Fragment):
             mat @ state.vector,
         )
 
-    def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[str], Dict]:
+    def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[str], dict]:
         """Return a dictionary containing the non-zero coefficients of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
