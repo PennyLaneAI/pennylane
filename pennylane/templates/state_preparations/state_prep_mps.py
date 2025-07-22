@@ -521,21 +521,16 @@ def _mps_prep_decomposition_resources(bond_dimensions, num_sites, num_work_wires
     return resources
 
 
-def _work_wires_condition(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
-    return num_work_wires is not None and num_work_wires > 0
-
-
-def _bond_dimension_condition(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
+def _work_wires_bond_dimension_condition(bond_dimensions, num_sites, num_work_wires):  # pylint: disable=unused-argument
     max_bond_dimension = 0
     for i in range(num_sites - 1):
         bond_dim = bond_dimensions[i]
         max_bond_dimension = max(max_bond_dimension, bond_dim)
 
-    return max_bond_dimension > 2 ** num_work_wires
+    return (max_bond_dimension > 2 ** num_work_wires) or (num_work_wires is not None and num_work_wires > 0)
 
 
-@qml.register_condition(_bond_dimension_condition)
-@qml.register_condition(_work_wires_condition)
+@qml.register_condition(_work_wires_bond_dimension_condition)
 @register_resources(_mps_prep_decomposition_resources)
 def _mps_prep_decomposition(*mps, **kwargs):
     wires = kwargs["wires"]
