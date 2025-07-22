@@ -221,7 +221,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
     for m in circuit.measurements:
         if m.mv is None:
             if isinstance(m, VarianceMP):
-                new_measurements.append(sample(obs=m.obs))
+                new_measurements.append(sample(op=m.obs))
             else:
                 new_measurements.append(m)
     for op in circuit.operations:
