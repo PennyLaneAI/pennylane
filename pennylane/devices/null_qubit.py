@@ -346,7 +346,7 @@ class NullQubit(Device):
 
     # pylint: disable=cell-var-from-loop
     def preprocess(
-        self, execution_config: Optional[ExecutionConfig] = None
+        self, execution_config: ExecutionConfig | None = None
     ) -> tuple[TransformProgram, ExecutionConfig]:
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -390,7 +390,7 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig | None = None,
-    ) -> Union[Result, ResultBatch]:
+    ) -> Result | ResultBatch:
         if execution_config is None:
             execution_config = ExecutionConfig()
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
@@ -427,7 +427,7 @@ class NullQubit(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -436,7 +436,7 @@ class NullQubit(Device):
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -449,7 +449,7 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -459,7 +459,7 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -472,7 +472,7 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -482,7 +482,7 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()

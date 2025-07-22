@@ -221,7 +221,7 @@ def simulator_tracking(cls: type) -> type:
         @single_tape_support
         class MyDevice(qml.devices.Device):
 
-            def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return tuple(0.0 for c in circuits)
 
     >>> dev = MyDevice()

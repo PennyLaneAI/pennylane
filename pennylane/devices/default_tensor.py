@@ -585,9 +585,7 @@ class DefaultTensor(Device):
             **kwargs,
         )
 
-    def _setup_execution_config(
-        self, config: ExecutionConfig | None = DefaultExecutionConfig
-    ) -> ExecutionConfig:
+    def _setup_execution_config(self, config: ExecutionConfig | None = None) -> ExecutionConfig:
         """
         Update the execution config with choices for how the device should be used and the device options.
         """
@@ -610,7 +608,7 @@ class DefaultTensor(Device):
 
     def preprocess(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         """This function defines the device transform program to be applied and an updated device configuration.
 
@@ -865,7 +863,7 @@ class DefaultTensor(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         """Calculate the Jacobian of either a single or a batch of circuits on the device.
 
@@ -883,7 +881,7 @@ class DefaultTensor(Device):
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         """Compute the results and Jacobians of circuits at the same time.
 
@@ -918,7 +916,7 @@ class DefaultTensor(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         r"""The vector-Jacobian product used in reverse-mode differentiation.
 
@@ -940,7 +938,7 @@ class DefaultTensor(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         """Calculate both the results and the vector-Jacobian product used in reverse-mode differentiation.
 

@@ -111,7 +111,7 @@ to handle a single circuit. See the documentation for each modifier for more det
     @single_tape_support
     class MyDevice(qml.devices.Device):
 
-        def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()

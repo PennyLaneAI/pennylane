@@ -334,7 +334,7 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def preprocess(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device
         configuration.
