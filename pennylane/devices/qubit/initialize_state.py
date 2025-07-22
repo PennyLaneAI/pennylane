@@ -14,7 +14,6 @@
 """Functions to prepare a state."""
 
 from collections.abc import Iterable
-from typing import Union
 
 import numpy as np
 import scipy as sp
@@ -23,7 +22,7 @@ import pennylane as qml
 
 
 def create_initial_state(
-    wires: Union[qml.wires.Wires, Iterable],
+    wires: qml.wires.Wires | Iterable,
     prep_operation: qml.operation.StatePrepBase = None,
     like: str = None,
 ):
