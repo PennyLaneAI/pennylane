@@ -788,9 +788,9 @@ class QNode:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
         if "shots" in kwargs:
-            # NOTE: at removal, remember to remove the userwarning below as well; without allowing
+            # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
-                "'shots' as an argument to the quantum function is deprecated and will be removed in v0.44. ",
+                "'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
                 PennyLaneDeprecationWarning,
                 stacklevel=2,
             )

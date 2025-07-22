@@ -439,11 +439,7 @@ class TestSnapshotSupportedQNode:
         assert result["execution_results"] == expected["execution_results"]
 
         # Make sure shots are overridden correctly
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="'shots' as an argument to the quantum function is deprecated",
-        ):
-            result = qml.snapshots(circuit)(add_bad_snapshot=False, shots=200)
+        result = qml.snapshots(qml.set_shots(shots=200)(circuit))(add_bad_snapshot=False)
         assert result[0] == {"00": 74, "10": 58, "20": 68}
 
     @pytest.mark.parametrize(

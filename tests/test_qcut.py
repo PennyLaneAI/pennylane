@@ -2620,9 +2620,7 @@ class TestCutCircuitMCTransform:
         v = 0.319
 
         temp_shots = 333
-        cut_res = qml.set_shots(shots=temp_shots)(cut_circuit)(
-            v
-        )  # pylint: disable=unexpected-keyword-arg
+        cut_res = qml.set_shots(shots=temp_shots)(cut_circuit)(v)
 
         assert cut_res.shape == (temp_shots, 2)
 
