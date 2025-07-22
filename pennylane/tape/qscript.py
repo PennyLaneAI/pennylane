@@ -816,6 +816,12 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
+        warnings.warn(
+            "``QuantumScript.numeric_type`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``MeasurementProcess.numeric_type``.",
+            PennyLaneDeprecationWarning,
+        )
+
         types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types

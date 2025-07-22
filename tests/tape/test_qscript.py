@@ -1378,7 +1378,7 @@ class TestOutputShape:
         expectation value, variance and probability measurements with a shot
         vector."""
         if isinstance(measurements[0], qml.measurements.ProbabilityMP):
-            num_wires = set(len(m.wires) for m in measurements)
+            num_wires = {len(m.wires) for m in measurements}
             if len(num_wires) > 1:
                 pytest.skip(
                     "Multi-probs with varying number of varies when using a shot vector is to be updated in PennyLane."
@@ -1586,7 +1586,7 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert all(np.issubdtype(res.dtype, float) for res in result)
-        assert qs.numeric_type is float
+        assert ret.numeric_type is float
 
     @pytest.mark.parametrize(
         "ret", [qml.state(), qml.density_matrix(wires=[0, 1]), qml.density_matrix(wires=[2, 0])]
@@ -1604,19 +1604,20 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, complex)
-        assert qs.numeric_type is complex
+        assert ret.numeric_type is complex
 
     def test_sample_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for a
         sampling measurement returning samples"""
         dev = qml.device("default.qubit", wires=3, shots=5)
-        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample()], shots=5)
+        ret = qml.sample()
+        qs = QuantumScript([qml.RY(0.4, 0)], [ret], shots=5)
 
         result = qml.execute([qs], dev, diff_method=None)[0]
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, np.int64)
-        assert qs.numeric_type is int
+        assert ret.numeric_type is int
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -1633,13 +1634,14 @@ class TestNumericType:
         )
         herm = np.outer(arr, arr)
 
-        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample(qml.Hermitian(herm, wires=0))], shots=5)
+        ret = qml.sample(qml.Hermitian(herm, wires=0))
+        qs = QuantumScript([qml.RY(0.4, 0)], [ret], shots=5)
 
         result = qml.execute([qs], dev, diff_method=None)[0]
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert qs.numeric_type is float
+        assert ret.numeric_type is float
 
     @pytest.mark.autograd
     def test_sample_real_and_int_eigvals(self):
@@ -1661,7 +1663,8 @@ class TestNumericType:
         # Double-check the domain of the QNode output
         assert np.issubdtype(result[0].dtype, float)
         assert np.issubdtype(result[1].dtype, np.int64)
-        assert qs.numeric_type == (float, int)
+        assert m[0].numeric_type == float
+        assert m[1].numeric_type == int
 
 
 class TestDiagonalizingGates:
