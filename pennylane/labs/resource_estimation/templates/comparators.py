@@ -79,8 +79,8 @@ class ResourceSingleQubitCompare(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
 
         Resources:
             The resources are obtained from appendix B, Figure 5 in `arXiv:1711.10460
@@ -114,7 +114,7 @@ class ResourceTwoQubitCompare(ResourceOperator):
         The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
         <https://arxiv.org/abs/1711.10460>`_. Specifically,
         the resources are given as :math:`2` controlled SWAP gates,
-        :math:`3` CNOT gates, and :math:`1` X gate. This decomposition 
+        :math:`3` CNOT gates, and :math:`1` X gate. This decomposition
         requires one clean auxiliary qubit.
 
     **Example**
@@ -157,8 +157,9 @@ class ResourceTwoQubitCompare(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+
 
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
@@ -266,8 +267,8 @@ class ResourceIntegerComparator(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, val, register_size, geq=False, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
 
         Args:
             val (int): the integer to be compared against
@@ -460,8 +461,8 @@ class ResourceRegisterComparator(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(cls, a_num_qubits, b_num_qubits, geq=False, **kwargs):
-        r"""Returns a dictionary representing the resources of the operator. The
-        keys are the operators and the associated values are the counts.
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
 
         Args:
             a_num_qubits (int): the size of the first register
