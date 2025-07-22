@@ -118,6 +118,7 @@ class CustomOpDepth4(ResourcesOperation):
         return Resources(num_wires=self.num_wires, depth=4)
 
 
+# pylint: disable=too-many-public-methods
 class TestCircuitGraph:
     """Test conversion of queues to DAGs"""
 
@@ -188,20 +189,6 @@ class TestCircuitGraph:
         with pytest.raises(ValueError, match=r"operator that occurs multiple times."):
             graph.descendants([op], sort=sort)
 
-    def test_ancestors_and_descendents_in_order_deprecation(self):
-        op = qml.X(0)
-        ops = [op, qml.Y(0), qml.Z(0)]
-        graph = CircuitGraph(ops, [], qml.wires.Wires([0, 1, 2]))
-
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``CircuitGraph.ancestors_in_order`` is deprecated"
-        ):
-            graph.ancestors_in_order([op])
-        with pytest.warns(
-            PennyLaneDeprecationWarning, match="``CircuitGraph.descendants_in_order`` is deprecated"
-        ):
-            graph.descendants_in_order([op])
-
     @pytest.mark.parametrize("sort", [True, False])
     def test_ancestors_and_descendents_single_op_error(self, sort):
         """Test ancestors and descendents raises a ValueError is the requested operation occurs more than once."""
@@ -244,6 +231,42 @@ class TestCircuitGraph:
     def test_operations(self, circuit, ops):
         """Test that the `operations` property returns the list of operations in the circuit."""
         assert str(circuit.operations) == str(ops)
+
+    def test_observables_in_order_deprecation(self, circuit, obs):
+        """Test that a deprecation warning is raised."""
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``CircuitGraph.observables_in_order`` is deprecated"
+        ):
+            assert str(circuit.observables_in_order) == str(obs)
+
+    def test_operations_in_order_deprecation(self, circuit, ops):
+        """Test that a deprecation warning is raised."""
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``CircuitGraph.operations_in_order`` is deprecated"
+        ):
+            assert str(circuit.operations_in_order) == str(ops)
+
+    def test_ancestors_in_order_deprecation(self):
+        """Test that a deprecation warning is raised."""
+        op = qml.X(0)
+        ops = [op, qml.Y(0), qml.Z(0)]
+        graph = CircuitGraph(ops, [], qml.wires.Wires([0, 1, 2]))
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``CircuitGraph.ancestors_in_order`` is deprecated"
+        ):
+            graph.ancestors_in_order([op])
+
+    def test_descendants_in_order_deprecation(self):
+        """Test that a deprecation warning is raised."""
+        op = qml.X(0)
+        ops = [op, qml.Y(0), qml.Z(0)]
+        graph = CircuitGraph(ops, [], qml.wires.Wires([0, 1, 2]))
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``CircuitGraph.descendants_in_order`` is deprecated"
+        ):
+            graph.descendants_in_order([op])
 
     def test_op_indices(self, circuit):
         """Test that for the given circuit, this method will fetch the correct operation indices for
@@ -311,13 +334,13 @@ class TestCircuitGraph:
         result = list(circuit.iterate_parametrized_layers())
 
         assert len(result) == 3
-        assert set(result[0][0]) == set([])
+        assert set(result[0][0]) == set()
         assert set(result[0][1]) == set(circuit.operations[:3])
         assert result[0][2] == (0, 1, 2)
         assert set(result[0][3]) == set(circuit.operations[3:] + circuit.observables)
 
         assert set(result[1][0]) == set(circuit.operations[:2])
-        assert set(result[1][1]) == set([circuit.operations[3]])
+        assert set(result[1][1]) == {circuit.operations[3]}
         assert result[1][2] == (3,)
         assert set(result[1][3]) == set(circuit.operations[4:6] + circuit.observables[:2])
 
@@ -344,7 +367,7 @@ class TestCircuitGraph:
         circuit = tape.graph
         assert circuit.max_simultaneous_measurements == expected
 
-    def test_print_contents(self):
+    def test_str_print(self):
         """Tests if the circuit prints correct."""
         ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
         obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
@@ -353,14 +376,23 @@ class TestCircuitGraph:
 
         f = io.StringIO()
         with contextlib.redirect_stdout(f):
-            with pytest.warns(
-                PennyLaneDeprecationWarning, match="``CircuitGraph.print_contents`` is deprecated"
-            ):
-                circuit_w_wires.print_contents()
+            print(circuit_w_wires)
         out = f.getvalue().strip()
 
         expected = """Operations\n==========\nH(0)\nCNOT(wires=[0, 1])\n\nObservables\n===========\nsample(wires=[0, 1, 2])"""
         assert out == expected
+
+    def test_print_contents_deprecation(self):
+        """Test that a deprecation warning is raised."""
+        ops = [qml.Hadamard(wires=0), qml.CNOT(wires=[0, 1])]
+        obs_w_wires = [qml.measurements.sample(op=None, wires=[0, 1, 2])]
+
+        circuit_w_wires = CircuitGraph(ops, obs_w_wires, wires=Wires([0, 1, 2]))
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``CircuitGraph.print_contents`` is deprecated"
+        ):
+            circuit_w_wires.print_contents()
 
     tape_depth = (
         ([qml.PauliZ(0), qml.CNOT([0, 1]), qml.RX(1.23, 2)], 2),
