@@ -16,7 +16,6 @@ Contains the ReferenceQubit device, a minimal device that can be used for testin
 and plugin development purposes.
 """
 
-from typing import Optional
 
 import numpy as np
 
@@ -133,7 +132,7 @@ class ReferenceQubit(Device):
         # numpy practices to use a local random number generator
         self._rng = np.random.default_rng(seed)
 
-    def preprocess(self, execution_config: Optional[ExecutionConfig] = None):
+    def preprocess(self, execution_config: ExecutionConfig | None = None):
         if execution_config is None:
             execution_config = ExecutionConfig()
 
@@ -156,7 +155,7 @@ class ReferenceQubit(Device):
         # no need to preprocess the config as the device does not support derivatives
         return program, execution_config
 
-    def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+    def execute(self, circuits, execution_config: ExecutionConfig | None = None):
         for tape in circuits:
             assert all(supports_operation(op) for op in tape.operations)
         return tuple(simulate(tape, seed=self._rng) for tape in circuits)

@@ -20,7 +20,6 @@ new interface.
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from dataclasses import replace
-from typing import Optional
 
 import pennylane as qml
 from pennylane.exceptions import DeviceError
@@ -220,7 +219,7 @@ class LegacyDeviceFacade(Device):
     def _debugger(self, new_debugger):
         self._device._debugger = new_debugger
 
-    def preprocess(self, execution_config: Optional[ExecutionConfig] = None):
+    def preprocess(self, execution_config: ExecutionConfig | None = None):
         if execution_config is None:
             execution_config = ExecutionConfig()
 
@@ -370,7 +369,7 @@ class LegacyDeviceFacade(Device):
         # determine if the device provides its own jacobian method
         return self._device.capabilities().get("provides_jacobian", False)
 
-    def execute(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+    def execute(self, circuits, execution_config: ExecutionConfig | None = None):
         if execution_config is None:
             execution_config = ExecutionConfig()
 
@@ -388,7 +387,7 @@ class LegacyDeviceFacade(Device):
         )
 
     def execute_and_compute_derivatives(
-        self, circuits, execution_config: Optional[ExecutionConfig] = None
+        self, circuits, execution_config: ExecutionConfig | None = None
     ):
         if execution_config is None:
             execution_config = ExecutionConfig()
@@ -403,7 +402,7 @@ class LegacyDeviceFacade(Device):
         )
         return tuple(zip(*batched_res))
 
-    def compute_derivatives(self, circuits, execution_config: Optional[ExecutionConfig] = None):
+    def compute_derivatives(self, circuits, execution_config: ExecutionConfig | None = None):
         if execution_config is None:
             execution_config = ExecutionConfig()
         first_shot = circuits[0].shots
