@@ -524,7 +524,7 @@ class TestJAXCompatibility:
 
 
 class TestSampleProcessCounts:
-    """Tests for the process_counts method in the SampleMP class."""
+    """Tests for the process_counts method in the sample class."""
 
     def test_process_counts_multiple_wires(self):
         """Test process_counts method with multiple wires."""

@@ -14,12 +14,13 @@
 """
 This module contains the qml.sample measurement.
 """
+import warnings
 from collections.abc import Sequence
 
 import numpy as np
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
@@ -27,10 +28,7 @@ from .measurements import MeasurementShapeError, SampleMeasurement
 from .mid_measure import MeasurementValue
 
 
-def sample(
-    op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
-    wires=None,
-) -> "SampleMP":
+class sample(SampleMeasurement):
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -44,9 +42,6 @@ def sample(
             for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
         wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
             op is ``None``.
-
-    Returns:
-        SampleMP: Measurement process instance
 
     Raises:
         ValueError: Cannot set wires if an observable is provided
@@ -142,57 +137,59 @@ def sample(
            [0, 0]])
 
     """
-    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires))
-
-
-class SampleMP(SampleMeasurement):
-    """Measurement process that returns the samples of a given observable. If no observable is
-    provided then basis state samples are returned directly from the device.
-
-    Please refer to :func:`pennylane.sample` for detailed documentation.
-
-    Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
-            as part of the measurement process. Not all measurement processes require observables
-            (for example ``Probability``); this argument is optional.
-        wires (.Wires): The wires the measurement process applies to.
-            This can only be specified if an observable was not provided.
-        eigvals (array): A flat array representing the eigenvalues of the measurement.
-            This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
-    """
 
     _shortname = "sample"
 
-    def __init__(self, obs=None, wires=None, eigvals=None, id=None):
+    @classmethod
+    def _unflatten(cls, data, metadata):
+        if data[0] is not None:
+            return cls(op=data[0], **dict(metadata))
+        if data[1] is not None:
+            return cls(eigvals=data[1], **dict(metadata))
+        return cls(**dict(metadata))
 
-        if isinstance(obs, MeasurementValue):
-            super().__init__(obs=obs)
+    def __init__(
+        self,
+        op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
+        wires=None,
+        id=None,
+        obs=None,
+        eigvals=None,
+    ):
+
+        if obs is not None:
+            warnings.warn(
+                "obs has been renamed to op as an argument to sample, formerly SampleMP.",
+                PennyLaneDeprecationWarning,
+            )
+            op = obs
+
+        if isinstance(op, MeasurementValue):
+            super().__init__(obs=op)
             return
 
-        if isinstance(obs, Sequence):
+        if isinstance(op, Sequence):
             if not all(
-                isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
-            ) and not all(qml.math.is_abstract(o) for o in obs):
+                isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op
+            ) and not all(qml.math.is_abstract(o) for o in op):
                 raise QuantumFunctionError(
                     "Only sequences of single MeasurementValues can be passed with the op "
                     "argument. MeasurementValues manipulated using arithmetic operators cannot be "
                     "used when collecting statistics for a sequence of mid-circuit measurements."
                 )
 
-            super().__init__(obs=obs)
+            super().__init__(obs=op)
             return
 
         if wires is not None:
-            if obs is not None:
+            if op is not None:
                 raise ValueError(
                     "Cannot specify the wires to sample if an observable is provided. The wires "
                     "to sample will be determined directly from the observable."
                 )
             wires = Wires(wires)
 
-        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+        super().__init__(obs=op, wires=wires, eigvals=eigvals, id=id)
 
     @classmethod
     def _abstract_eval(
@@ -344,3 +341,6 @@ class SampleMP(SampleMeasurement):
             return eigvals[int(outcome, 2)]
 
         return [int(bit) for bit in outcome]
+
+
+SampleMP = sample

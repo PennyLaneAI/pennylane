@@ -25,9 +25,9 @@ from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
     SampleMeasurement,
-    SampleMP,
     Shots,
     VarianceMP,
+    sample,
 )
 from pennylane.ops import Sum
 from pennylane.typing import TensorLike
@@ -53,7 +53,7 @@ def _process_samples(
     samples,
     wire_order,
 ):
-    """Processes samples like SampleMP.process_samples, but fixed for qutrits"""
+    """Processes samples like sample.process_samples, but fixed for qutrits"""
     wire_map = dict(zip(wire_order, range(len(wire_order))))
     mapped_wires = [wire_map[w] for w in mp.wires]
 
@@ -134,7 +134,7 @@ def _measure_with_samples_diagonalizing_gates(
 
     def _process_single_shot(samples):
         samples_processed = _process_samples(mp, samples, wires)
-        if isinstance(mp, SampleMP):
+        if isinstance(mp, sample):
             return math.squeeze(samples_processed)
         if isinstance(mp, CountsMP):
             process_func = functools.partial(_process_counts_samples, mp_has_obs=mp.obs is not None)

@@ -22,7 +22,7 @@ import numpy as np
 import tensorflow as tf
 
 import pennylane as qml
-from pennylane.measurements import SampleMP, StateMP
+from pennylane.measurements import StateMP, sample
 
 from .tensorflow import _res_restructured, _to_tensors, set_parameters_on_copy
 
@@ -147,7 +147,7 @@ def execute(
 
         o_types = []
         for m in tape.measurements:
-            if isinstance(m, SampleMP):
+            if isinstance(m, sample):
                 if m.obs:
                     o_types.append(tf.float64)  # obs has float eigvals
                 else:

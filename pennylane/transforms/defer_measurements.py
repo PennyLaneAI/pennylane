@@ -25,8 +25,8 @@ from pennylane.measurements import (
     MeasurementValue,
     MidMeasureMP,
     ProbabilityMP,
-    SampleMP,
     get_mcm_predicates,
+    sample,
 )
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
@@ -51,7 +51,7 @@ def _check_tape_validity(tape: QuantumScript):
         raise ValueError("Continuous variable operations and observables are not supported.")
 
     for mp in tape.measurements:
-        if isinstance(mp, (CountsMP, ProbabilityMP, SampleMP)) and not (
+        if isinstance(mp, (CountsMP, ProbabilityMP, sample)) and not (
             mp.obs or mp._wires or mp.mv is not None
         ):
             raise ValueError(
@@ -68,7 +68,7 @@ def _check_tape_validity(tape: QuantumScript):
                 "measurements on a device that does not support them."
             )
 
-    samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
+    samples_present = any(isinstance(mp, sample) for mp in tape.measurements)
     postselect_present = any(
         op.postselect is not None for op in tape.operations if isinstance(op, MidMeasureMP)
     )
@@ -847,11 +847,12 @@ def defer_measurements(
                     new_m.append(MeasurementValue(new_ms, val.processing_fn))
 
             with QueuingManager.stop_recording():
-                new_mp = (
-                    type(mp)(obs=new_m)
-                    if not isinstance(mp, CountsMP)
-                    else CountsMP(obs=new_m, all_outcomes=mp.all_outcomes)
-                )
+                if isinstance(mp, qml.sample):
+                    new_mp = qml.sample(op=new_m)
+                elif isinstance(mp, CountsMP):
+                    new_mp = CountsMP(obs=new_m, all_outcomes=mp.all_outcomes)
+                else:
+                    new_mp = type(mp)(obs=new_m)
         else:
             new_mp = mp
         new_measurements.append(new_mp)

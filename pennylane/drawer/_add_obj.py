@@ -37,9 +37,9 @@ from pennylane.measurements import (
     MeasurementProcess,
     MidMeasureMP,
     ProbabilityMP,
-    SampleMP,
     StateMP,
     VarianceMP,
+    sample,
 )
 from pennylane.operation import Operator
 from pennylane.ops import Conditional, Controlled, GlobalPhase, Identity
@@ -225,7 +225,7 @@ def _add_tape(obj: QuantumScript, layer_str, config, tape_cache, skip_grouping_s
 measurement_label_map = {
     ExpectationMP: lambda label: f"<{label}>",
     ProbabilityMP: lambda label: f"Probs[{label}]" if label else "Probs",
-    SampleMP: lambda label: f"Sample[{label}]" if label else "Sample",
+    sample: lambda label: f"Sample[{label}]" if label else "Sample",
     CountsMP: lambda label: f"Counts[{label}]" if label else "Counts",
     VarianceMP: lambda label: f"Var[{label}]",
     StateMP: lambda label: "State",

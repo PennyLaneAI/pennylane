@@ -21,7 +21,7 @@ from threading import RLock
 
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
-from pennylane.measurements import CountsMP, MeasurementProcess, ProbabilityMP, SampleMP
+from pennylane.measurements import CountsMP, MeasurementProcess, ProbabilityMP, sample
 from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
@@ -100,7 +100,7 @@ def rotations_and_diagonal_measurements(tape):
         try:
             rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape.obs_sharing_wires)
         except (TypeError, ValueError) as e:
-            if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements):
+            if any(isinstance(m, (ProbabilityMP, sample, CountsMP)) for m in tape.measurements):
                 raise QuantumFunctionError(
                     "Only observables that are qubit-wise commuting "
                     "Pauli words can be returned on the same wire.\n"

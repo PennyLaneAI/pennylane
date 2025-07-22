@@ -31,9 +31,9 @@ from pennylane.measurements import (
     ExpectationMP,
     MidMeasureMP,
     ProbabilityMP,
-    SampleMP,
     VarianceMP,
     find_post_processed_mcms,
+    sample,
 )
 from pennylane.transforms.dynamic_one_shot import gather_mcm
 from pennylane.typing import Result
@@ -857,7 +857,7 @@ def combine_measurements(terminal_measurements, results, mcm_samples):
             comb_meas = measurement_with_no_shots(circ_meas)
         else:
             comb_meas = combine_measurements_core(circ_meas, results.pop(0))
-        if isinstance(circ_meas, SampleMP):
+        if isinstance(circ_meas, sample):
             comb_meas = qml.math.squeeze(comb_meas)
         final_measurements.append(comb_meas)
     return final_measurements[0] if len(final_measurements) == 1 else tuple(final_measurements)
@@ -910,7 +910,7 @@ def _(original_measurement: ProbabilityMP, measures):
 
 
 @combine_measurements_core.register
-def _(original_measurement: SampleMP, measures):
+def _(original_measurement: sample, measures):
     """The combined samples of two branches is obtained by concatenating the sample of each branch."""
     new_sample = tuple(
         qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()

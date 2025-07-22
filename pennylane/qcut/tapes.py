@@ -22,7 +22,7 @@ from itertools import product
 from networkx import MultiDiGraph
 
 from pennylane import ops
-from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP, expval, sample
+from pennylane.measurements import ExpectationMP, MeasurementProcess, expval, sample
 from pennylane.operation import Operator
 from pennylane.ops.meta import WireCut
 from pennylane.pauli import partition_pauli_group, string_to_pauli_word
@@ -80,7 +80,7 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
         if obs is not None and isinstance(obs, ops.Prod):
-            if isinstance(m, SampleMP):
+            if isinstance(m, sample):
                 raise ValueError(
                     "Sampling from tensor products of observables "
                     "is not supported in circuit cutting"
@@ -90,7 +90,7 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
                 m_ = m.__class__(obs=o)
                 _add_operator_node(graph, m_, order, wire_latest_node)
 
-        elif isinstance(m, SampleMP) and obs is None:
+        elif isinstance(m, sample) and obs is None:
             for w in m.wires:
                 s_ = sample(ops.Projector([1], wires=w))
                 _add_operator_node(graph, s_, order, wire_latest_node)
@@ -185,7 +185,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
             )
         measurement_type = measurement_types.pop()
 
-        if measurement_type not in {SampleMP, ExpectationMP}:
+        if measurement_type not in {sample, ExpectationMP}:
             raise ValueError(
                 "Invalid return type. Only expectation value and sampling measurements "
                 "are supported in graph_to_tape"
@@ -196,7 +196,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
             obs = meas.obs
             observables.append(obs)
 
-            if measurement_type is SampleMP:
+            if measurement_type is sample:
                 measurements_from_graph.append(meas)
 
         if measurement_type is ExpectationMP:
