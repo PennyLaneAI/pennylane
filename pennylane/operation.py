@@ -1346,7 +1346,22 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
     @property
     def is_hermitian(self) -> bool:
-        """This property determines if an operator is hermitian."""
+        """This property determines if an operator is likely hermitian.
+
+        If this property returns ``True``, the operator is guaranteed to
+        be hermitian, but if it returns ``False``, the operator may still be hermitian.
+
+        As an example, consider the following edge case:
+
+        >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
+        >>> op.is_hermitian
+        False
+
+        To definitely check if an operator is hermitian, you can use the :func:`~.is_hermitian` function:
+
+        >>> qml.is_hermitian(op)
+        True
+        """
         return False
 
     # pylint: disable=no-self-argument, comparison-with-callable
