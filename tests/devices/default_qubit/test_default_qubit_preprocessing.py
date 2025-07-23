@@ -66,7 +66,8 @@ class CustomizedSparseOp(qml.operation.Operator):
         U = sp.sparse.eye(2 ** len(wires))
         super().__init__(U, wires)
 
-    # pylint: disable=arguments-renamed
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
     def has_matrix(self) -> bool:
         return False
 
