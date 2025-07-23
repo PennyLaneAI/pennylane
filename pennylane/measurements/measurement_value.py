@@ -29,7 +29,7 @@ class MeasurementValue(Generic[T]):
 
     Args:
         measurements (list[.MidMeasureMP]): The measurement(s) that this object depends on.
-        processing_fn (callable): A lazily transformation applied to the measurement values.
+        processing_fn (callable): A lazy transformation applied to the measurement values.
     """
 
     name = "MeasurementValue"
