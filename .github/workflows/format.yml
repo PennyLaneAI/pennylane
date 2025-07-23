@@ -35,7 +35,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install black pylint==3.0 isort==5.13.2
+        run: pip install --upgrade black pylint isort
 
       - uses: actions/checkout@v4
 
