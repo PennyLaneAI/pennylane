@@ -40,9 +40,13 @@ Us = [qml.matrix(U, wire_order=range(2)) for U in Us]
 Ks3 = [coeffs[j] * Us[j] for j in range(len(Us))]
 
 
+@pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
 @pytest.mark.parametrize("Ks", [Ks1, Ks2, Ks3])
-def test_density_matrix(Ks):
+def test_density_matrix(Ks, interface):
     """Test that the resulting choi matrix is a density matrix"""
+    if interface:
+        Ks = qml.math.asarray(Ks, like=interface)
+
     choi = choi_matrix(Ks)
     assert math.isclose(math.trace(choi), 1.0), "not a density matrix, tr(choi) != 1"
     assert math.allclose(choi, choi.conj().T), "not a density matrix, not Hermitian"
