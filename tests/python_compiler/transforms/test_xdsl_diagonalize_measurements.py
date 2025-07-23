@@ -155,8 +155,8 @@ class TestDiagonalizeFinalMeasurementsPass:
                 %0 = "test.op"() : () -> !quantum.bit
 
                 // CHECK: [[q0_1:%.*]] = quantum.custom "PauliZ"() [[q0]]
-                // CHECK: [[q0_2:%.*]] = quantum.custom "S"() [[q0_1]]
-                // CHECK: [[q0_3:%.*]] = quantum.custom "Hadamard"() [[q0_2]]
+                // CHECK-NEXT: [[q0_2:%.*]] = quantum.custom "S"() [[q0_1]]
+                // CHECK-NEXT: [[q0_3:%.*]] = quantum.custom "Hadamard"() [[q0_2]]
                 // CHECK-NEXT: [[q0_4:%.*]] =  quantum.namedobs [[q0_3]][PauliZ]
                 // CHECK-NOT: quantum.namedobs [[q:%.+]][PauliY]
                 %1 = quantum.namedobs %0[PauliY] : !quantum.obs
@@ -200,7 +200,7 @@ class TestDiagonalizeFinalMeasurementsPass:
                 %3 = quantum.namedobs %0[PauliY]: !quantum.obs
                 
                 // CHECK: [[q1_1:%.*]] = quantum.custom "Hadamard"() [[q1]]
-                // CHECK: [[q_x:%.*]] = custom.namedobs [[q1_1]][PauliZ]
+                // CHECK: [[q_x:%.*]] = quantum.namedobs [[q1_1]][PauliZ]
                 // CHECK-NOT: quantum.namedobs [[q:%.+]][PauliX]
                 %4 = quantum.namedobs %1[PauliX]: !quantum.obs
                 
@@ -380,7 +380,7 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
     def test_with_overlapping_observables(self):
         """Test the case where multiple overlapping (commuting) observables exist in
         the same circuit. Here we want to be sure not to diagonalize the Y(0)
-        observable twice (once for each occurence in measurements)"""
+        observable twice (once for each occurrence in measurements)"""
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -533,7 +533,7 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
     def test_with_overlapping_observables(self):
         """Test the case where multiple overlapping (commuting) observables exist in
         the same circuit. Here we want to be sure not to diagonalize the Y(0)
-        observable twice (once for each occurence in measurements)"""
+        observable twice (once for each occurrence in measurements)"""
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qnode(dev)
