@@ -523,9 +523,8 @@ def _work_wires_bond_dimension_condition(
 ):  # pylint: disable=unused-argument
     max_bond_dimension = max(bond_dimensions[:-1])
 
-    return not (
-        (max_bond_dimension > 2**num_work_wires)
-        or (num_work_wires is not None and num_work_wires > 0)
+    return (max_bond_dimension <= 2**num_work_wires) and not (
+        num_work_wires is None and num_work_wires == 0
     )
 
 
