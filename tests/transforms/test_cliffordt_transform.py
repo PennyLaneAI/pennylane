@@ -192,6 +192,8 @@ class TestCliffordCompile:
         )
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
+    @pytest.mark.catalyst
+    @pytest.mark.jax
     @pytest.mark.parametrize("circuit", [circuit_7, circuit_8])
     def test_decomposition_with_rs_qjit(self, circuit):
         """Test decomposition for the Clifford transform with Ross-Selinger method with QJIT enabled."""
@@ -204,6 +206,8 @@ class TestCliffordCompile:
         res1, res2 = decomp_cir(), qjit_cir()
         assert qml.math.isclose(res1, res2, atol=1e-2)
 
+    @pytest.mark.catalyst
+    @pytest.mark.jax
     def test_decomposition_with_rs_qjit_dynamic_param(self):
 
         def circuit(angle, qb):
