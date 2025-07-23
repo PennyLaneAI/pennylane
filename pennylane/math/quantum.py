@@ -1516,3 +1516,56 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     eigvals = math.abs(math.eigvalsh(state0 - state1))
 
     return math.sum(eigvals, axis=-1) / 2
+
+
+def _check_trace_preserving(Ks):
+    r""" "
+    Check whether a set of Kraus operators ``Ks`` fulfills :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
+    """
+    return np.allclose(np.sum([K.conj().T @ K for K in Ks], axis=0), np.eye(len(Ks[0])))
+
+
+def choi_matrix(Ks):
+    r"""
+    Compute the choi matrix :math:`\Lambda` of a quantum channel :math:`\mathcal{E}`
+
+    .. math:: \Lambda = (\mathbb{1} \otimes \mathcal{E})(|\phi^+ \rangle \langle \phi^+|) = \frac{1}{d} \sum_{ij=0}^{d-1} |i \rangle \langle j| \otimes \mathcal{E}(|i \rangle \langle j|)
+
+    where :math:`|\phi^+ \rangle` is the maximally entangled state
+    :math:`|\phi^+\rangle = \frac{1}{\sqrt{d}} \sum_{i=0}^{d-1} |i\rangle \otimes |i\rangle` between the
+    qubit system the channel :math:`\mathcal{E}` is acting on, and an artificially introduced extra system of the same size.
+
+    We assume the channel
+
+    .. math:: \mathcal{E}(\bullet) = \sum_j K_j^\dagger \bullet K_j
+
+    is provided in form of its Kraus operators :math:`\{K_j\}` (``Ks``) that are trace-preserving, hence :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
+
+    Args:
+        Ks (TensorLike): Kraus operators as a list of ``(2**n, 2**n)`` acting on ``n`` qubits.
+
+    Returns:
+        TensorLike: Trace distance between state0 and state1
+
+    **Examples**
+
+    """
+    d = len(Ks[0])
+
+    if not _check_trace_preserving(Ks):
+        raise ValueError(
+            r"The provided Kraus operators are not trace-preserving ($\sum_j K_j^\dagger K_j = \mathbb{1}$)"
+        )
+
+    aux_basis = math.eye(d)  # same dimension as qubit system
+    q_basis = math.eye(d)
+
+    choi = 0.0 + 0.0j
+    for i in aux_basis:
+        for j in q_basis:
+            for K in Ks:
+                choi += math.kron(math.outer(i, j), K @ np.outer(i, j) @ K.conj().T)
+
+    choi = choi / d
+
+    return choi
