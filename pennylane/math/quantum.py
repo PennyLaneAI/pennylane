@@ -1559,14 +1559,19 @@ def choi_matrix(Ks, check_Ks=False):
                 r"The provided Kraus operators are not trace-preserving ($\sum_j K_j^\dagger K_j = \mathbb{1}$)"
             )
 
-    aux_basis = math.eye(d)  # same dimension as qubit system
-    q_basis = math.eye(d)
+    choi = math.asarray(
+        math.cast_like(np.zeros((d**2, d**2)), Ks), like=Ks[0]
+    )  # TODO: is there a smarter way to get both dtype and interface right?
 
-    choi = 0.0 + 0.0j
+    aux_basis = math.cast_like(math.eye(d), Ks)  # same dimension as qubit system
+    q_basis = math.cast_like(math.eye(d), Ks)
+    print(choi.dtype, aux_basis.dtype, q_basis.dtype)
     for i in aux_basis:
         for j in q_basis:
             for K in Ks:
-                choi += math.kron(math.outer(i, j), K @ np.outer(i, j) @ K.conj().T)
+                asd = K @ np.outer(i, j) @ K.conj().T
+                asd2 = math.kron(math.outer(i, j), asd)
+                choi += asd2
 
     choi = choi / d
 

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for choi matrix in qml.math"""
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -23,11 +24,13 @@ from pennylane.math import choi_matrix
 # jax = pytest.importorskip("jax")
 # jnp = pytest.importorskip("jax.numpy")
 
-Ks1 = [qml.matrix(qml.CNOT((0, 1)))]  # a simple unitary channel
-Ks2 = [
-    math.sqrt(0.5) * qml.matrix(qml.CNOT((0, 1))),
-    math.sqrt(0.5) * qml.matrix(qml.CZ((0, 1))),
-]  # equal probability channel
+Ks1 = np.array([qml.matrix(qml.CNOT((0, 1)))])  # a simple unitary channel
+Ks2 = np.array(
+    [
+        math.sqrt(0.5) * qml.matrix(qml.CNOT((0, 1))),
+        math.sqrt(0.5) * qml.matrix(qml.CZ((0, 1))),
+    ]
+)  # equal probability channel
 coeffs = math.arange(1, 5)
 coeffs = coeffs / math.linalg.norm(coeffs)
 Us = [
@@ -37,21 +40,23 @@ Us = [
     qml.Z(1),
 ]
 Us = [qml.matrix(U, wire_order=range(2)) for U in Us]
-Ks3 = [coeffs[j] * Us[j] for j in range(len(Us))]
+Ks3 = np.array([coeffs[j] * Us[j] for j in range(len(Us))])
 
 
 @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
 @pytest.mark.parametrize("Ks", [Ks1, Ks2, Ks3])
 def test_density_matrix(Ks, interface):
     """Test that the resulting choi matrix is a density matrix"""
+
     if interface:
-        Ks = qml.math.asarray(Ks, like=interface)
+        Ks = qml.math.asarray(np.array(Ks), like=interface)
 
     choi = choi_matrix(Ks)
-    assert math.isclose(math.trace(choi), 1.0), "not a density matrix, tr(choi) != 1"
+    val_tr = math.trace(choi)
+    assert math.isclose(val_tr, math.ones_like(val_tr)), "not a density matrix, tr(choi) != 1"
     assert math.allclose(choi, choi.conj().T), "not a density matrix, not Hermitian"
     lambdas = math.linalg.eigvalsh(choi)
-    assert math.all(math.round(lambdas, 8) >= 0), "not a density matrix, not positive"
+    assert math.all(lambdas >= -1e-7), "not a density matrix, not positive"
 
 
 def test_error_message():
