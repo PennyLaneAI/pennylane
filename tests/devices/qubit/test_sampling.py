@@ -652,7 +652,7 @@ class TestInvalidStateSamples:
         if not isinstance(shots, list):
             assert isinstance(res, tuple)
             res = res[0]
-            assert qml.math.shape(res) == (shots,) if len(mp.wires) == 1 else (shots, len(mp.wires))
+            assert qml.math.shape(res) == (shots,) if mp.obs else (shots, len(mp.wires))
 
         else:
             assert isinstance(res, tuple)
@@ -660,11 +660,7 @@ class TestInvalidStateSamples:
             for i, r in enumerate(res):
                 assert isinstance(r, tuple)
                 r = r[0]
-                assert (
-                    qml.math.shape(r) == (shots[i],)
-                    if len(mp.wires) == 1
-                    else (shots[i], len(mp.wires))
-                )
+                assert qml.math.shape(r) == (shots[i],) if mp.obs else (shots[i], len(mp.wires))
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
