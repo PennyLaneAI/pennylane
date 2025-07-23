@@ -637,7 +637,7 @@ class FlattenedInterpreter(PlxprInterpreter):
 
 
 # pylint: disable=protected-access
-@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
+@FlattenedInterpreter.register_primitive(jax._src.pjit.jit_p)
 def _(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
