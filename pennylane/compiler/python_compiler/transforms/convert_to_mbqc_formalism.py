@@ -17,15 +17,57 @@ written using xDSL."""
 
 from dataclasses import dataclass
 
+import networkx as nx
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, memref, tensor, vector
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
-from xdsl.ir.core import SSAValue
 from xdsl.rewriter import InsertPoint
 
-from ..mbqc_dialect import MeasureInBasisOp
-from ..quantum_dialect import AllocOp, CustomOp, ExtractOp, InsertOp, NamedObsOp
+from pennylane.ftqc import generate_lattice
+from pennylane.ops import CZ, H
+
+from ..dialects.mbqc import MeasureInBasisOp
+from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp
 from .api import compiler_transform
+
+
+def _generate_cnot_lattice():
+    """Generate lattice graph for a CNOT gate based on the textbook MBQC formalism."""
+    wires = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15]
+    g = nx.Graph()
+    g.add_nodes_from(wires)
+    g.add_edges_from(
+        [
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (5, 6),
+            (6, 7),
+            (4, 8),
+            (8, 12),
+            (10, 11),
+            (11, 12),
+            (12, 13),
+            (13, 14),
+            (14, 15),
+        ]
+    )
+    return g
+
+
+def _generate_one_wire_op_lattice():
+    """Generate lattice graph for a one-wire gate based on the textbook MBQC formalism."""
+    wires = [2, 3, 4, 5]
+    g = nx.Graph()
+    g.add_nodes_from(wires)
+    g.add_edges_from(
+        [
+            (2, 3),
+            (3, 4),
+            (4, 5),
+        ]
+    )
+    return g
 
 
 @dataclass(frozen=True)
@@ -53,128 +95,84 @@ convert_to_mbqc_formalism_pass = compiler_transform(ConvertToMBQCFormalismPass)
 class ConvertToMBQCFormalismPattern(
     pattern_rewriter.RewritePattern
 ):  # pylint: disable=too-few-public-methods
-    """RewritePattern for pre-allocate 13 more aux wires."""
+    """RewritePattern for converting to the MBQC formalism."""
 
-    def _swap_qubits(
-        self, rewriter, registers_state, current_op, num_wires_int, target_qubits_index, offset
-    ):
-        # NOTE: The following logic mimic the QubitMgr class defined in the `ftqc.utils` module
-        # 1. Extract the target wire and the result wires in the auxiliary registers
-        target_qubit = ExtractOp(registers_state, target_qubits_index)
-        rewriter.insert_op(target_qubit, insertion_point=InsertPoint.after(current_op))
-        current_op = target_qubit
-        result_qubits_index = num_wires_int + offset - 1
-        res_qubit = ExtractOp(registers_state, result_qubits_index)
-        rewriter.insert_op(res_qubit, insertion_point=InsertPoint.after(current_op))
-        current_op = res_qubit
+    def make_graph_state(self, rewriter, op):
+        """Make a graph state and return the allocated qubits"""
+        graph = None
+        if op.gate_name.data == "CNOT":
+            graph = _generate_cnot_lattice()
+        elif op.gate_name.data in [
+            "Hadamard",
+            "S",
+            "RZ",
+            "RotXZX",
+        ]:
+            graph = _generate_one_wire_op_lattice()
+        else:
+            raise NotImplementedError(f"{op.gate_name.data} gate is not implemented.")
 
-        # 2. Swap the target register and the result register
-        new_target_qubit = InsertOp(registers_state, result_qubits_index, target_qubit)
-        rewriter.insert_op(new_target_qubit, insertion_point=InsertPoint.after(current_op))
-        registers_state = new_target_qubit.results[0]
+        nodes = graph.nodes
+        edges = graph.edges
 
-        current_op = new_target_qubit
+        # Allocate qubits
+        aux_qubits_dict = {}
+        for node in nodes:
+            aux_qubits_dict[node] = AllocQubitOp()
+        # Insert qubit allocation ops before the op
+        for aux_qubit in aux_qubits_dict.values:
+            rewriter.insert_op(aux_qubit, insert_point=InsertPoint.before(op))
 
-        new_res_qubit = InsertOp(registers_state, target_qubits_index, res_qubit)
-        rewriter.insert_op(new_res_qubit, insertion_point=InsertPoint.after(current_op))
-        registers_state = new_res_qubit.results[0]
-        current_op = new_res_qubit
-        return current_op, registers_state
+        # Apply Hadamard gate to each auxiliary qubit
+        for node in nodes:
+            in_qubits = aux_qubits_dict[node]
+            gate_name = "Hadamard"
+            HadamardOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
+            rewriter.insert_op(HadamardOp, insert_point=InsertPoint.before(op))
+
+        # Apply CZ gate to entangle each nearest auxiliary qubit pair
+        for edge in edges:
+            in_qubits = [aux_qubits_dict[node] for node in edge]
+            gate_name = "CZ"
+            CZOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
+            rewriter.insert_op(CZOp, insert_point=InsertPoint.before(op))
+
+        return aux_qubits_dict
 
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
-        self, root: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
+        self, root: func.FuncOp | IfOp | WhileOp | ForOp, rewriter: pattern_rewriter.PatternRewriter
     ):  # pylint: disable=arguments-differ, cell-var-from-loop
-        """Match and rewrite for pre-allocate 13 more aux wires."""
+        """Match and rewrite for converting to the MBQC formalism."""
 
-        num_wires_int = 0
-        registers_state = None
-        # Replace AllocOp with 13 more qubits
         for region in root.regions:
             for op in region.ops:
-                if isinstance(op, AllocOp):
-                    # Note that as of 25.07.14, generic assembly format is used
-                    # the number of qubits is assigned to the nqubits_attr.
-                    num_wires_int = op.properties["nqubits_attr"].value.data
-                    # Note that 13 more qubits is added and this is subject to change
-                    # once the dynamic qubit allocate and deallocate is supported.
-                    total_num_wires_int = num_wires_int + 13
-                    new_op = AllocOp(total_num_wires_int)
-                    rewriter.replace_op(op, new_op)
-                    registers_state = new_op.results[0]
-                elif isinstance(op, CustomOp) and op.gate_name.data in [
+                if isinstance(op, CustomOp) and op.gate_name.data in [
                     "Hadamard",
                     "S",
                     "RZ",
                     "RotXZX",
                 ]:
-                    idx = self.get_custom_op_wire_idx(op, 0)
-                    offset = 0 + 4
-                    _, registers_state = self._swap_qubits(
-                        rewriter, registers_state, op, num_wires_int, idx, offset
-                    )
-                elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
-                    current_op = op
-                    for i in range(len(current_op.in_qubits)):
-                        offset = i + 12
-                        idx = self.get_custom_op_wire_idx(op, i)
-                        current_op, registers_state = self._swap_qubits(
-                            rewriter, registers_state, current_op, num_wires_int, idx, offset
-                        )
-                elif isinstance(op, NamedObsOp):
-                    current_op = op
-                    idx = self.get_obs_wire_idx(op)
-                    target_qubit = ExtractOp(registers_state, idx)
-                    rewriter.insert_op(target_qubit, insertion_point=InsertPoint.before(current_op))
-                    current_op = target_qubit
-                    new_obs = NamedObsOp(target_qubit, op.properties["type"])
-                    rewriter.replace_op(op, new_obs)
+                    aux_qubits_dict = self.make_graph_state(rewriter, op)
+                    # Entangle the target wire to qubit 2 in the aux_qubits_dict
+                    in_qubits = [op.in_qubits[0], aux_qubits_dict[2]]
+                    gate_name = "CZ"
+                    CZOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
+                    rewriter.insert_op(CZOp, insert_point=InsertPoint.before(op))
 
-    def get_custom_op_wire_idx(self, op, i):
-        """Get the wire index from a CustomOp for ith-wire."""
+                    # Insert measurement Op before the op operation
 
-        assert (isinstance(op, CustomOp), "The op should be CustomOp")
+                    # Swap the target qubit with the output qubit
+                    in_qubits = [op.in_qubits[0], aux_qubits_dict[5]]
+                    gate_name = "SWAP"
+                    SWAPOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
+                    rewriter.insert_op(SWAPOp, insert_point=InsertPoint.before(op))
 
-        def _walk_back_to_wire_def(op, i):
-            if isinstance(op, ExtractOp):
-                qubit_extract_op = op
-                idx_extract_op = qubit_extract_op.idx.owner
-                assert isinstance(idx_extract_op, tensor.ExtractOp)
-                # TODOs: Add safe guard
-                idx_constant_op = idx_extract_op.operands[0].owner
-                idx_value_attribute: builtin.DenseIntOrFPElementsAttr = idx_constant_op.properties[
-                    "value"
-                ]
-                idx_int_values = idx_value_attribute.get_values()
-                return idx_int_values[0]
+                    # Deallocate aux_qubits except for the last qubit
+                    for _, aux_qubit in aux_qubits_dict:
+                        deallocQubitOp = DeallocQubitOp(aux_qubit)
+                        rewriter.insert_op(deallocQubitOp, insertion_point=InsertPoint.after(op))
 
-            if isinstance(op, CustomOp):
-                return _walk_back_to_wire_def(op.in_qubits[i].owner, i)
-
-        idx = _walk_back_to_wire_def(op, i)
-        return idx
-
-    def get_obs_wire_idx(self, obs):
-        assert (isinstance(obs, NamedObsOp), "The op should be CustomOp")
-
-        def _walk_back_to_wire_def(op):
-            if isinstance(op, ExtractOp):
-                qubit_extract_op = op
-                idx_extract_op = qubit_extract_op.idx.owner
-                assert isinstance(idx_extract_op, tensor.ExtractOp)
-                # TODOs: Add safe guard
-                idx_constant_op = idx_extract_op.operands[0].owner
-                idx_value_attribute: builtin.DenseIntOrFPElementsAttr = idx_constant_op.properties[
-                    "value"
-                ]
-                idx_int_values = idx_value_attribute.get_values()
-                return idx_int_values[0]
-
-            if isinstance(op, CustomOp):
-                return _walk_back_to_wire_def(op.in_qubits[0].owner)
-            if isinstance(op, NamedObsOp):
-                return _walk_back_to_wire_def(op.qubit.owner)
-
-        idx = _walk_back_to_wire_def(obs)
-        return idx
+                    # Erase the current operation
+                    rewriter.erase_op(op)
