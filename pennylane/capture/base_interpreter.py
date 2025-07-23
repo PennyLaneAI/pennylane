@@ -14,10 +14,11 @@
 """
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
-# pylint: disable=no-self-use, wrong-import-position
-from importlib.metadata import version
 from copy import copy
 from functools import partial, wraps
+
+# pylint: disable=no-self-use, wrong-import-position
+from importlib.metadata import version
 from typing import Callable, Optional, Sequence
 
 import jax
