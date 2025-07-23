@@ -37,16 +37,6 @@ def test_to_openqasm_deprecation():
         circuit.to_openqasm()
 
 
-def test_numeric_type_deprecation():
-    """Test deprecation of the ``QuantumScript.numeric_type`` property."""
-    circuit = QuantumScript(measurements=[qml.sample()])
-
-    with pytest.warns(
-        PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
-    ):
-        assert circuit.numeric_type == int
-
-
 class TestInitialization:
     """Test the non-update components of intialization."""
 
@@ -1629,7 +1619,11 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert all(np.issubdtype(res.dtype, float) for res in result)
-        assert ret.numeric_type is float
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
+        ):
+            assert qs.numeric_type is float
 
     @pytest.mark.parametrize(
         "ret", [qml.state(), qml.density_matrix(wires=[0, 1]), qml.density_matrix(wires=[2, 0])]
@@ -1647,7 +1641,11 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, complex)
-        assert ret.numeric_type is complex
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
+        ):
+            assert qs.numeric_type is complex
 
     def test_sample_int_eigvals(self):
         """Test that the tape can correctly determine the output domain for a
@@ -1660,7 +1658,11 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, np.int64)
-        assert ret.numeric_type is int
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
+        ):
+            assert qs.numeric_type is int
 
     # TODO: add cases for each interface once qml.Hermitian supports other
     # interfaces
@@ -1684,7 +1686,11 @@ class TestNumericType:
 
         # Double-check the domain of the QNode output
         assert np.issubdtype(result.dtype, float)
-        assert ret.numeric_type is float
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
+        ):
+            assert qs.numeric_type is float
 
     @pytest.mark.autograd
     def test_sample_real_and_int_eigvals(self):
@@ -1706,8 +1712,11 @@ class TestNumericType:
         # Double-check the domain of the QNode output
         assert np.issubdtype(result[0].dtype, float)
         assert np.issubdtype(result[1].dtype, np.int64)
-        assert m[0].numeric_type == float
-        assert m[1].numeric_type == int
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
+        ):
+            assert qs.numeric_type == (float, int)
 
 
 class TestDiagonalizingGates:
