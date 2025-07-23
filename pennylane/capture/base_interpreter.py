@@ -15,7 +15,7 @@
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
 # pylint: disable=no-self-use, wrong-import-position
-import importlib.metadata as importlib_metadata
+from importlib.metadata import version
 from copy import copy
 from functools import partial, wraps
 from typing import Callable, Optional, Sequence
