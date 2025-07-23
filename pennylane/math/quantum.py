@@ -1525,7 +1525,7 @@ def _check_trace_preserving(Ks):
     return np.allclose(np.sum([K.conj().T @ K for K in Ks], axis=0), np.eye(len(Ks[0])))
 
 
-def choi_matrix(Ks):
+def choi_matrix(Ks, check_Ks=False):
     r"""
     Compute the choi matrix :math:`\Lambda` of a quantum channel :math:`\mathcal{E}`
 
@@ -1543,6 +1543,7 @@ def choi_matrix(Ks):
 
     Args:
         Ks (TensorLike): Kraus operators as a list of ``(2**n, 2**n)`` acting on ``n`` qubits.
+        check_Ks (bool): Whether or not to check if the provided Kraus operators are trace-preserving, i.e. :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`. Default is ``False``.
 
     Returns:
         TensorLike: Trace distance between state0 and state1
@@ -1552,10 +1553,11 @@ def choi_matrix(Ks):
     """
     d = len(Ks[0])
 
-    if not _check_trace_preserving(Ks):
-        raise ValueError(
-            r"The provided Kraus operators are not trace-preserving ($\sum_j K_j^\dagger K_j = \mathbb{1}$)"
-        )
+    if check_Ks:
+        if not _check_trace_preserving(Ks):
+            raise ValueError(
+                r"The provided Kraus operators are not trace-preserving ($\sum_j K_j^\dagger K_j = \mathbb{1}$)"
+            )
 
     aux_basis = math.eye(d)  # same dimension as qubit system
     q_basis = math.eye(d)

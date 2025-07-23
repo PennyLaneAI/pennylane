@@ -48,3 +48,11 @@ def test_density_matrix(Ks):
     assert math.allclose(choi, choi.conj().T), "not a density matrix, not Hermitian"
     lambdas = math.linalg.eigvalsh(choi)
     assert math.all(math.round(lambdas, 8) >= 0), "not a density matrix, not positive"
+
+
+def test_error_message():
+    """Test that an error is raised when input Kraus operators are not trace-preserving and check_Ks is set to True"""
+    # easiest way to construct a non-trace-preserving channel is use non-normalized unitary operators
+    Ks_non_trace_preserving = [qml.matrix(qml.CNOT((0, 1))), qml.matrix(qml.CZ((0, 1)))]
+    with pytest.raises(ValueError, match="The provided Kraus operators are not trace-preserving"):
+        _ = choi_matrix(Ks_non_trace_preserving, check_Ks=True)
