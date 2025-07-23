@@ -24,40 +24,20 @@ import pytest
 pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
-from xdsl.dialects import arith, builtin, func, tensor
-
 catalyst = pytest.importorskip("catalyst")
 from catalyst.passes import xdsl_plugin
 
 import pennylane as qml
-from pennylane.compiler.python_compiler import quantum_dialect as quantum
 from pennylane.compiler.python_compiler.transforms import (
     MeasurementsFromSamplesPass,
     measurements_from_samples_pass,
 )
 
 
-@pytest.fixture(name="context_and_pipeline", scope="function")
-def fixture_context_and_pipeline():
-    """A fixture that prepares the context and pipeline for unit tests of the
-    measurements-from-samples pass.
-    """
-    ctx = xdsl.context.Context(allow_unregistered=True)
-    ctx.load_dialect(builtin.Builtin)
-    ctx.load_dialect(func.Func)
-    ctx.load_dialect(tensor.Tensor)
-    ctx.load_dialect(arith.Arith)
-    ctx.load_dialect(quantum.QuantumDialect)
-
-    pipeline = xdsl.passes.PipelinePass((MeasurementsFromSamplesPass(),))
-
-    yield ctx, pipeline
-
-
 class TestMeasurementsFromSamplesPass:
     """Unit tests for the measurements-from-samples pass."""
 
-    def test_1_wire_expval(self, context_and_pipeline, run_filecheck):
+    def test_1_wire_expval(self, run_filecheck):
         """Test the measurements-from-samples pass on a 1-wire circuit terminating with an expval(Z)
         measurement.
         """
@@ -91,13 +71,10 @@ class TestMeasurementsFromSamplesPass:
         }
         """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (MeasurementsFromSamplesPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_1_wire_var(self, context_and_pipeline, run_filecheck):
+    def test_1_wire_var(self, run_filecheck):
         """Test the measurements-from-samples pass on a 1-wire circuit terminating with a var(Z)
         measurement.
         """
@@ -131,13 +108,10 @@ class TestMeasurementsFromSamplesPass:
         }
         """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (MeasurementsFromSamplesPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_1_wire_probs(self, context_and_pipeline, run_filecheck):
+    def test_1_wire_probs(self, run_filecheck):
         """Test the measurements-from-samples pass on a 1-wire circuit terminating with a probs
         measurement.
         """
@@ -168,13 +142,10 @@ class TestMeasurementsFromSamplesPass:
         }
         """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (MeasurementsFromSamplesPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_1_wire_sample(self, context_and_pipeline, run_filecheck):
+    def test_1_wire_sample(self, run_filecheck):
         """Test the measurements-from-samples pass on a 1-wire circuit terminating with a sample
         measurement.
 
@@ -203,14 +174,11 @@ class TestMeasurementsFromSamplesPass:
         }
         """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (MeasurementsFromSamplesPass(),)
+        run_filecheck(program, pipeline)
 
     @pytest.mark.xfail(reason="Counts not supported", strict=True, raises=NotImplementedError)
-    def test_1_wire_counts(self, context_and_pipeline, run_filecheck):
+    def test_1_wire_counts(self, run_filecheck):
         """Test the measurements-from-samples pass on a 1-wire circuit terminating with a counts
         measurement.
         """
@@ -245,13 +213,10 @@ class TestMeasurementsFromSamplesPass:
         }
         """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (MeasurementsFromSamplesPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_2_wire_expval(self, context_and_pipeline, run_filecheck):
+    def test_2_wire_expval(self, run_filecheck):
         """Test the measurements-from-samples pass on a 2-wire circuit terminating with an expval(Z)
         measurement on each wire.
         """
@@ -296,13 +261,10 @@ class TestMeasurementsFromSamplesPass:
         }
         """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (MeasurementsFromSamplesPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_2_wire_var(self, context_and_pipeline, run_filecheck):
+    def test_2_wire_var(self, run_filecheck):
         """Test the measurements-from-samples pass on a 2-wire circuit terminating with a var(Z)
         measurement on each wire.
         """
@@ -347,13 +309,10 @@ class TestMeasurementsFromSamplesPass:
         }
         """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (MeasurementsFromSamplesPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_2_wire_probs_global(self, context_and_pipeline, run_filecheck):
+    def test_2_wire_probs_global(self, run_filecheck):
         """Test the measurements-from-samples pass on a 2-wire circuit terminating with a "global"
         probs measurement (one that implicitly acts on all wires).
         """
@@ -365,8 +324,8 @@ class TestMeasurementsFromSamplesPass:
                 %1 = tensor.extract %0[] : tensor<i64>
                 quantum.device shots(%1) ["", "", ""]
 
-                // CHECK: [[qreg:%.+]] = {{.*}}quantum.alloc{{.*}} : () -> !quantum.reg
-                %2 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
+                // CHECK: [[qreg:%.+]] = quantum.alloc
+                %2 = quantum.alloc(2) : !quantum.reg
 
                 // CHECK: [[compbasis:%.+]] = quantum.compbasis qreg [[qreg]] : !quantum.obs
                 %3 = quantum.compbasis qreg %2 : !quantum.obs
@@ -384,13 +343,10 @@ class TestMeasurementsFromSamplesPass:
         }
         """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (MeasurementsFromSamplesPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_2_wire_probs_per_wire(self, context_and_pipeline, run_filecheck):
+    def test_2_wire_probs_per_wire(self, run_filecheck):
         """Test the measurements-from-samples pass on a 2-wire circuit terminating with separate
         probs measurements per wire.
         """
@@ -402,10 +358,11 @@ class TestMeasurementsFromSamplesPass:
                 %1 = tensor.extract %0[] : tensor<i64>
                 quantum.device shots(%1) ["", "", ""]
 
-                %2 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
+                // CHECK: [[qreg:%.+]] = quantum.alloc
+                %2 = quantum.alloc(2) : !quantum.reg
 
-                // CHECK: [[q0:%.+]] = {{.*}}quantum.extract{{.*}}idx_attr = 0{{.*}} -> !quantum.bit
-                %3 = "quantum.extract"(%2) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+                // CHECK: [[q0:%.+]] = quantum.extract [[qreg]][0]
+                %3 = quantum.extract %2[0] : !quantum.reg -> !quantum.bit
 
                 // CHECK: [[compbasis0:%.+]] = quantum.compbasis qubits [[q0]] : !quantum.obs
                 %4 = quantum.compbasis qubits %3 : !quantum.obs
@@ -416,8 +373,8 @@ class TestMeasurementsFromSamplesPass:
                 // CHECK-NOT: quantum.probs
                 %5 = quantum.probs %4 : tensor<2xf64>
 
-                // CHECK: [[q1:%.+]] = {{.*}}quantum.extract{{.*}}idx_attr = 1{{.*}} -> !quantum.bit
-                %6 = "quantum.extract"(%2) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
+                // CHECK: [[q1:%.+]] = quantum.extract [[qreg]][1]
+                %6 = quantum.extract %2[1] : !quantum.reg -> !quantum.bit
 
                 // CHECK: [[compbasis1:%.+]] = quantum.compbasis qubits [[q1]] : !quantum.obs
                 %7 = quantum.compbasis qubits %6 : !quantum.obs
@@ -435,19 +392,16 @@ class TestMeasurementsFromSamplesPass:
         }
         """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (MeasurementsFromSamplesPass(),)
+        run_filecheck(program, pipeline)
 
 
-class TestMeasurementsFromSamplesExecution:
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestMeasurementsFromSamplesIntegration:
     """Tests of the execution of simple workloads with the xDSL-based MeasurementsFromSamplesPass
     transform.
     """
 
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
         "initial_op, mp, obs, expected_res",
@@ -573,7 +527,6 @@ class TestMeasurementsFromSamplesExecution:
 
     # -------------------------------------------------------------------------------------------- #
 
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
         "initial_op, expected_res",
@@ -612,7 +565,6 @@ class TestMeasurementsFromSamplesExecution:
         strict=True,
         raises=NotImplementedError,
     )
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
         "initial_op, expected_res",
@@ -646,7 +598,6 @@ class TestMeasurementsFromSamplesExecution:
 
     # -------------------------------------------------------------------------------------------- #
 
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
         "initial_op, expected_res_base",
@@ -679,7 +630,6 @@ class TestMeasurementsFromSamplesExecution:
 
     # -------------------------------------------------------------------------------------------- #
 
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
         "initial_ops, mp, obs, expected_res",
@@ -724,7 +674,6 @@ class TestMeasurementsFromSamplesExecution:
     @pytest.mark.xfail(
         reason="Operator arithmetic not yet supported with capture enabled", strict=True
     )
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
         "initial_ops, mp, expected_res",
@@ -765,7 +714,6 @@ class TestMeasurementsFromSamplesExecution:
 
     # -------------------------------------------------------------------------------------------- #
 
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
         "initial_ops, expected_res",
@@ -801,7 +749,6 @@ class TestMeasurementsFromSamplesExecution:
 
     # -------------------------------------------------------------------------------------------- #
 
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     @pytest.mark.parametrize("shots", [1, 2])
     @pytest.mark.parametrize(
         "initial_ops, expected_res",
@@ -838,7 +785,6 @@ class TestMeasurementsFromSamplesExecution:
     # -------------------------------------------------------------------------------------------- #
 
     @pytest.mark.xfail(reason="Dynamic shots not supported")
-    @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_exec_expval_dynamic_shots(self):
         """Test the measurements_from_samples transform where the number of shots is dynamic.
 
@@ -858,6 +804,25 @@ class TestMeasurementsFromSamplesExecution:
 
         result = workload(2)
         assert result == 1.0
+
+    def test_qjit_filecheck(self, run_filecheck_qjit):
+        """Test that the measurements_from_samples_pass works correctly with qjit."""
+        dev = qml.device("lightning.qubit", wires=2, shots=25)
+
+        @qml.qjit(target="mlir", pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
+        @measurements_from_samples_pass
+        @qml.qnode(dev)
+        def circuit():
+            # CHECK-NOT: quantum.namedobs
+            # CHECK: [[obs:%.+]] = quantum.compbasis
+            # CHECK: [[samples:%.+]] = quantum.sample [[obs]] : tensor<25x1xf64>
+            # CHECK: [[c0:%.+]] = arith.constant dense<0> : tensor<i64>
+            # CHECK: [[res:%.+]] = func.call @expval_from_samples.tensor.25x1xf64([[samples]], [[c0]]) :
+            # CHECK-SAME: (tensor<25x1xf64>, tensor<i64>) -> tensor<f64>
+            # CHECK-NOT: quantum.expval
+            return qml.expval(qml.Z(wires=0))
+
+        run_filecheck_qjit(circuit)
 
 
 def _counts_catalyst_to_pl(basis_states, counts):

@@ -16,10 +16,10 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
 from copy import copy
 from functools import cached_property, lru_cache
 from itertools import chain
-from typing import Iterable
 
 from pennylane.ops.op_math.decompositions.rings import _SQRT2, ZOmega, ZSqrtTwo
 
@@ -50,6 +50,12 @@ class Ellipse:
     Args:
         D (list[float, float, float]): The elements of the positive definite matrix.
         p (tuple[float, float]): The center of the ellipse.
+
+    .. note::
+      We obtain corresponding matrix :math:`D^{\prime}` with determinant :math:`1` from :math:`D`.
+      These are useful for computing key properties of ``EllipseState``, i.e., a pair of ellipses:
+        - a = eλ^{-z}, d = eλ^z, b^2 = e^2 - 1; (Eq. 31, arXiv:1403.2975)
+        - 2z * log(λ) = log(d / a) => z = 0.5 * log(d / a) / log(λ)
     """
 
     def __init__(
@@ -59,8 +65,6 @@ class Ellipse:
     ):
         self.a, self.b, self.d = D
         self.p = p
-        # a = eλ^{-z}, d = eλ^z, b^2 = e^2 - 1; (Eq. 31, arXiv:1403.2975)
-        # 2z * log(λ) = log(d / a) => z = 0.5 * log(d / a) / log(λ)
         self.z = 0.5 * math.log2(self.d / self.a) / math.log2(_LAMBDA)
         self.e = math.sqrt(self.a * self.d)
 
@@ -91,7 +95,7 @@ class Ellipse:
         """Return a string representation of the ellipse."""
         return f"Ellipse(a={self.a}, b={self.b}, d={self.d}, p={self.p})"
 
-    def __eq__(self, other: "Ellipse") -> bool:
+    def __eq__(self, other: Ellipse) -> bool:
         """Check if the ellipses are equal."""
         return self.a == other.a and self.b == other.b and self.d == other.d and self.p == other.p
 
@@ -125,12 +129,12 @@ class Ellipse:
         x_, y_ = x - self.p[0], y - self.p[1]
         return (self.a * x_**2 + 2 * self.b * x_ * y_ + self.d * y_**2) <= 1
 
-    def normalize(self) -> tuple["Ellipse", float]:
+    def normalize(self) -> tuple[Ellipse, float]:
         """Normalize the ellipse to have a determinant of 1."""
         s_val = 1 / math.sqrt(self.determinant)
         return self.scale(scale=s_val), s_val
 
-    def scale(self, scale: float) -> "Ellipse":
+    def scale(self, scale: float) -> Ellipse:
         """Scale the ellipse by a factor of scale."""
         D = (self.a * scale, self.b * scale, self.d * scale)
         return Ellipse(D, self.p)
@@ -162,15 +166,15 @@ class Ellipse:
     def bounding_box(self) -> tuple[float, float, float, float]:
         """Return the bounding box of the ellipse in the form [[x0, x1], [y0, y1]]."""
         denom = self.determinant
-        x, y = math.sqrt((self.d / denom)), math.sqrt((self.a / denom))
+        x, y = math.sqrt(self.d / denom), math.sqrt(self.a / denom)
         return (-x, x, -y, y)
 
-    def offset(self, offset: float) -> "Ellipse":
+    def offset(self, offset: float) -> Ellipse:
         """Return the ellipse shifted by the offset."""
         p_offset = (self.p[0] + offset, self.p[1] + offset)
         return Ellipse((self.a, self.b, self.d), p_offset)
 
-    def apply_grid_op(self, grid_op: GridOp) -> "Ellipse":
+    def apply_grid_op(self, grid_op: GridOp) -> Ellipse:
         """Apply a grid operation :math:`G` to the ellipse :math:`E` as :math:`G^T E G`."""
         ga, gb, gc, gd = grid_op.flatten
 
@@ -360,18 +364,18 @@ class GridOp:
         """Return a string representation of the grid operation."""
         return f"GridOp(a={self.a}, b={self.b}, c={self.c}, d={self.d})"
 
-    def __eq__(self, other: "GridOp") -> bool:
+    def __eq__(self, other: GridOp) -> bool:
         """Check if the grid operations are equal."""
         return self.a == other.a and self.b == other.b and self.c == other.c and self.d == other.d
 
-    def __mul__(self, other: "GridOp" | "ZOmega") -> "GridOp" | "ZOmega":
+    def __mul__(self, other: GridOp | ZOmega) -> GridOp | ZOmega:
         if isinstance(other, GridOp):
             return self._mul_grid_op(other)
         if isinstance(other, ZOmega):
             return self._mul_z_omega(other)
         raise TypeError(f"Cannot multiply GridOp with {type(other)}")
 
-    def __pow__(self, n: int) -> "GridOp":
+    def __pow__(self, n: int) -> GridOp:
         """Raise the grid operator to a power."""
         if self == self.from_string("I") or n == 0:  # Identity:
             return GridOp((1, 0), (0, 0), (0, 0), (1, 0))
@@ -391,7 +395,7 @@ class GridOp:
             n //= 2
         return res
 
-    def _mul_grid_op(self, other: "GridOp") -> "GridOp":
+    def _mul_grid_op(self, other: GridOp) -> GridOp:
         """Multiply the grid operator with another grid operator."""
         a = (
             self.a[0] * other.a[0]
@@ -431,7 +435,7 @@ class GridOp:
         )
         return GridOp(a, b, c, d)
 
-    def _mul_z_omega(self, other: "ZOmega") -> "ZOmega":
+    def _mul_z_omega(self, other: ZOmega) -> ZOmega:
         """Multiply the grid operator with a ZOmega element."""
         x1, y1 = other.d, other.b
         x2, y2 = other.c - other.a, other.c + other.a
@@ -486,7 +490,7 @@ class GridOp:
             self.d[0] + self.d[1] / _SQRT2,
         ]
 
-    def inverse(self) -> "GridOp":
+    def inverse(self) -> GridOp:
         """Compute the inverse of the grid operation."""
         det1, det2 = self.determinant
         if det2 == 0 and det1 in {1, -1}:
@@ -498,7 +502,7 @@ class GridOp:
             )
         raise ValueError("Grid operator needs to be special to have an inverse.")
 
-    def transpose(self) -> "GridOp":
+    def transpose(self) -> GridOp:
         """Transpose the grid operation."""
         return GridOp(
             self.d,
@@ -507,7 +511,7 @@ class GridOp:
             self.a,
         )
 
-    def adj2(self) -> "GridOp":
+    def adj2(self) -> GridOp:
         """Compute the sqrt(2)-conjugate of the grid operation."""
         return GridOp(
             (self.a[0], -self.a[1]),
@@ -524,7 +528,7 @@ class GridOp:
         """Apply the grid operator to a state based on Definition A.3 of arXiv:1403.2975."""
         return state.apply_grid_op(self)
 
-    def apply_shift_op(self, k: int) -> "GridOp":
+    def apply_shift_op(self, k: int) -> GridOp:
         """Apply a shift operator to the grid operation based on Lemma A.9 of arXiv:1403.2975."""
         k, sign = abs(k), (-1) ** (k < 0)  # +1 if k > 0, -1 if k < 0
         s1, s2 = (ZSqrtTwo(1, 1) ** k).flatten
@@ -537,7 +541,7 @@ class GridOp:
 
 
 @lru_cache(maxsize=1)
-def _useful_grid_ops() -> dict["str", "GridOp"]:
+def _useful_grid_ops() -> dict[str, GridOp]:
     """Generate a list of useful grid operations based on Fig 6 of arXiv:1403.2975."""
     return {
         "I": GridOp((1, 0), (0, 0), (0, 0), (1, 0)),
@@ -554,18 +558,16 @@ def _useful_grid_ops() -> dict["str", "GridOp"]:
 class GridIterator:
     r"""Iterate over the solutions to the scaled grid problem.
 
-    This is based on the Section 5 of arXiv:1403.2975 and
-    implements Proposition 5.22, to enumerate all solutions
-    to the scaled grid problem over the :math:`\epsilon`-region,
+    This is based on the Section 5 of arXiv:1403.2975 and implements Proposition 5.22,
+    to enumerate all solutions to the scaled grid problem over the :math:`\epsilon`-region
     and a unit disk.
 
-    It implements an ``__iter__`` method to iterate over the
-    solutions efficiently as a generator.
+    It implements an ``__iter__`` method to iterate over the solutions efficiently as a generator.
 
     Args:
         theta (float): The angle of the grid problem.
         epsilon (float): The epsilon of the grid problem.
-        max_trials (int): The maximum number of iterations. Default is 20.
+        max_trials (int): The maximum number of iterations. Default is ``20``.
     """
 
     def __init__(self, theta: float = 0.0, epsilon: float = 1e-3, max_trials: int = 20):
