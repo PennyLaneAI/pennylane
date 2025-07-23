@@ -637,7 +637,7 @@ class FlattenedInterpreter(PlxprInterpreter):
     """
 
 
-jax_version = importlib_metadata.version("jax")
+jax_version = version("jax")
 if Version(jax_version) > Version("0.6.2"):  # pragma: no cover
     from jax._src.pjit import jit_p as pjit_p
 else:  # pragma: no cover
