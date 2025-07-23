@@ -20,13 +20,13 @@ from dataclasses import dataclass
 import networkx as nx
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, memref, tensor, vector
-from xdsl.dialects.scf import ForOp, IfOp, WhileOp
+from xdsl.dialects.scf import ForOp, IfOp, WhileOp, YieldOp
 from xdsl.rewriter import InsertPoint
 
 from pennylane.ftqc import generate_lattice
 from pennylane.ops import CZ, H
 
-from ..dialects.mbqc import MeasureInBasisOp
+from ..dialects.mbqc import MeasureInBasisOp, MeasurementPlaneAttr, MeasurementPlaneEnum
 from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp
 from .api import compiler_transform
 
@@ -97,7 +97,7 @@ class ConvertToMBQCFormalismPattern(
 ):  # pylint: disable=too-few-public-methods
     """RewritePattern for converting to the MBQC formalism."""
 
-    def make_graph_state(self, rewriter, op):
+    def _make_graph_state(self, op, rewriter):
         """Make a graph state and return the allocated qubits"""
         graph = None
         if op.gate_name.data == "CNOT":
@@ -139,6 +139,46 @@ class ConvertToMBQCFormalismPattern(
 
         return aux_qubits_dict
 
+    def _insert_arbitary_basis_measure_op(self, angle, plane, qubit, op, rewriter):
+        """Insert arbitary basis measure related operations before the op operation."""
+        in_qubit = qubit
+        planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
+        constAngleOp = arith.ConstantOp(
+            builtin.DenseIntOrFPElementsAttr.from_list(
+                type=builtin.TensorType(builtin.Float64Type(), shape=()), data=(angle,)
+            )
+        )
+        # Insert the constant angleOP
+        rewriter.insert_op(constAngleOp, insert_point=InsertPoint.before(op))
+        measureOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constAngleOp)
+        # Insert measureOp
+        rewriter.insert_op(measureOp, insert_point=InsertPoint.before(op))
+        return measureOp.results
+
+    def _cond_insert_arbitary_basis_measure_op(self, cond, angle, plane, qubit, op, rewriter):
+        in_qubit = qubit
+        planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
+        constAngleOp = arith.ConstantOp(
+            builtin.DenseIntOrFPElementsAttr.from_list(
+                type=builtin.TensorType(builtin.Float64Type(), shape=()), data=(angle,)
+            )
+        )
+        measureOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constAngleOp)
+        constNegAngleOp = arith.ConstantOp(
+            builtin.DenseIntOrFPElementsAttr.from_list(
+                type=builtin.TensorType(builtin.Float64Type(), shape=()), data=(-angle,)
+            )
+        )
+        measureNegOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constNegAngleOp)
+        ture_region = [planeOp, constAngleOp, measureOp, YieldOp()]
+        false_region = [planeOp, constNegAngleOp, measureNegOp, YieldOp()]
+        condOp = IfOp(
+            cond=cond, return_types=[], ture_region=ture_region, false_region=false_region
+        )
+        # Insert condOp before op operations
+        rewriter.insert_op(condOp, insert_point=InsertPoint.before(op))
+        return condOp.results
+
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
@@ -154,7 +194,7 @@ class ConvertToMBQCFormalismPattern(
                     "RZ",
                     "RotXZX",
                 ]:
-                    aux_qubits_dict = self.make_graph_state(rewriter, op)
+                    aux_qubits_dict = self._make_graph_state(op, rewriter)
                     # Entangle the target wire to qubit 2 in the aux_qubits_dict
                     in_qubits = [op.in_qubits[0], aux_qubits_dict[2]]
                     gate_name = "CZ"
