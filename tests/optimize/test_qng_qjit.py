@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Test Jax-based Catalyst-compatible QNG optimizer"""
+# FIXME: init method will always return None.
+# pylint: disable=assignment-from-none
 
 from functools import partial
 

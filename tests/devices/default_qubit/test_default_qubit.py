@@ -1902,10 +1902,9 @@ class TestPostselection:
             return qml.apply(mp)
 
         if use_jit:
-            import jax
-
             pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
-            circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
+            # import jax
+            # circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
         res = circ_postselect(param, shots=shots)
         expected = circ_expected(shots=shots)
@@ -2090,10 +2089,10 @@ class TestPostselection:
             return qml.apply(mp)
 
         if use_jit:
-            import jax
-
             pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
-            circ = jax.jit(circ, static_argnames=["shots"])
+
+            # import jax
+            # circ = jax.jit(circ, static_argnames=["shots"])
 
         res = circ(shots=shots)
 
