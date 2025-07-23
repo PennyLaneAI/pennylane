@@ -781,6 +781,12 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
+        warnings.warn(
+            "``QuantumScript.shape`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``MeasurementProcess.shape``.",
+            PennyLaneDeprecationWarning,
+        )
+
         num_device_wires = len(device.wires) if device.wires else len(self.wires)
 
         def get_shape(mp, _shots):

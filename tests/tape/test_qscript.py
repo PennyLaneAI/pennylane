@@ -1328,7 +1328,11 @@ class TestOutputShape:
 
             else:
                 expected_shape = () if shots == 1 else (shots,)
-        assert qs.shape(dev) == expected_shape
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
+        ):
+            assert qs.shape(dev) == expected_shape
 
     @pytest.mark.parametrize("measurement, expected_shape", measures)
     @pytest.mark.parametrize("shots", [None, 1, 10, (1, 2, 5, 3)])
@@ -1356,7 +1360,10 @@ class TestOutputShape:
         else:
             res_shape = res.shape
 
-        assert qs.shape(dev) == res_shape
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
+        ):
+            assert qs.shape(dev) == res_shape
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("measurements, expected", multi_measurements)
@@ -1372,7 +1379,10 @@ class TestOutputShape:
             expected[1] = shots
             expected = tuple(expected)
 
-        res = qs.shape(dev)
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
+        ):
+            res = qs.shape(dev)
         assert res == expected
 
         # TODO: test diff_method is not None when the interface `execute` functions are implemented
@@ -1404,7 +1414,11 @@ class TestOutputShape:
 
         # Update expected as we're using a shotvector
         expected = tuple(expected for _ in shots)
-        res = qs.shape(dev)
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
+        ):
+            res = qs.shape(dev)
         assert res == expected
 
         # TODO: test diff_method is not None when the interface `execute` functions are implemented
@@ -1431,7 +1445,10 @@ class TestOutputShape:
 
         expected = tuple(() if shots == 1 else (shots,) for _ in range(num_samples))
 
-        res = qs.shape(dev)
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
+        ):
+            res = qs.shape(dev)
         assert res == expected
 
         res = qml.execute([qs], dev, diff_method=None)[0]
@@ -1471,7 +1488,10 @@ class TestOutputShape:
             0
         ].shape
 
-        assert tape.shape(dev) == expected_shape
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
+        ):
+            assert tape.shape(dev) == expected_shape
 
     @pytest.mark.autograd
     @pytest.mark.parametrize("measurement, expected", measures)
@@ -1499,7 +1519,11 @@ class TestOutputShape:
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         program = dev.preprocess_transforms()
         expected = qml.execute([tape], dev, diff_method=None, transform_program=program)[0]
-        actual = tape.shape(dev)
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
+        ):
+            actual = tape.shape(dev)
 
         for exp, act in zip(expected, actual):
             assert exp.shape == act
@@ -1522,7 +1546,10 @@ class TestOutputShape:
 
         expected = tuple(tuple(() if s == 1 else (s,) for _ in range(num_samples)) for s in shots)
 
-        res = qs.shape(dev)
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
+        ):
+            res = qs.shape(dev)
         assert res == expected
 
         expected = qml.execute([qs], dev, diff_method=None)[0]
@@ -1545,7 +1572,10 @@ class TestOutputShape:
             tuple((3,) if s == 1 else (s, 3) for _ in range(num_samples)) for s in shots
         )
 
-        res = qs.shape(dev)
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
+        ):
+            res = qs.shape(dev)
         assert res == expected
 
         program = dev.preprocess_transforms()
@@ -1562,7 +1592,10 @@ class TestOutputShape:
         y = np.array([0.1, 0.2])
         tape = qml.tape.QuantumScript([qml.RY(y, 0)], [qml.expval(qml.Z(0))], shots=(1, 2, 3))
 
-        assert tape.shape(dev) == ((2,), (2,), (2,))
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
+        ):
+            assert tape.shape(dev) == ((2,), (2,), (2,))
 
 
 class TestNumericType:
