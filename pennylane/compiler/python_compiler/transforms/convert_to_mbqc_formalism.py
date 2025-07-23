@@ -184,12 +184,10 @@ class ConvertToMBQCFormalismPattern(
     def _insert_byproduct_op(self, cond, gate_name, qubit, op, rewriter):
         in_qubit = qubit
         byproductOp = CustomOp(in_qubits=in_qubit, gate_name=gate_name)
-        ture_region = [byproductOp]
+        ture_region = [byproductOp, scf.YieldOp(byproductOp.results[0])]
         identityOp = CustomOp(in_qubits=in_qubit, gate_name="Identity")
-        false_region = [identityOp]
-        condOp = IfOp(
-            cond=cond, return_types=QubitType(), true_region=ture_region, false_region=false_region
-        )
+        false_region = [identityOp, scf.YieldOp(identityOp.results[0])]
+        condOp = IfOp(cond, QubitType(), ture_region, false_region)
         # Insert condOp before op operations
         rewriter.insert_op(condOp, InsertPoint.before(op))
         return condOp.results
@@ -265,21 +263,25 @@ class ConvertToMBQCFormalismPattern(
                         cmpOp = arith.CmpiOp(xorOp.result, constantOneOp, "eq")
                         rewriter.insert_op(cmpOp, InsertPoint.before(op))
 
-                        # TODO: the line below brings errors
-                        self._insert_byproduct_op(cmpOp, "PauliX", aux_qubits_dict[5], op, rewriter)
+                        result_qubit = self._insert_byproduct_op(
+                            cmpOp.result, "PauliX", aux_qubits_dict[5], op, rewriter
+                        )
+                        aux_qubits_dict[5] = result_qubit
 
                         # # z correction: m2, m3
-                        # m23_sum_z = arith.AddiOp(m2, m3)
-                        # rewriter.insert_op(m23_sum_z, InsertPoint.before(op))
+                        m23_sum_z = arith.AddiOp(m2, m3)
+                        rewriter.insert_op(m23_sum_z, InsertPoint.before(op))
 
-                        # m23 = m23_sum_z.result
-                        # # Insert a conditional IfOp
-                        # moduloOp = arith.RemSIOp(m23, constantTwoOp)
-                        # rewriter.insert_op(moduloOp, InsertPoint.before(op))
-                        # cmpOp = arith.CmpiOp(moduloOp.result, constantOneOp, "eq")
-                        # self._insert_byproduct_op(
-                        #     cmpOp, "PauliZ", aux_qubits_dict[5], op, rewriter
-                        # )
+                        xorOp = arith.XOrIOp(m23_sum_z.result, constantOneOp)
+                        rewriter.insert_op(xorOp, InsertPoint.before(op))
+
+                        cmpOp = arith.CmpiOp(xorOp.result, constantOneOp, "eq")
+                        rewriter.insert_op(cmpOp, InsertPoint.before(op))
+
+                        result_qubit = self._insert_byproduct_op(
+                            cmpOp.result, "PauliZ", aux_qubits_dict[5], op, rewriter
+                        )
+                        aux_qubits_dict[5] = result_qubit
 
                     # qubit_extractop = ExtractOp(registers_state, target_qubit)
                     # # Swap the target qubit with the output qubit
