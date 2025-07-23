@@ -986,7 +986,6 @@ class TestBroadcastingPRNG:
     # but the definition of `atol` is too arbitrary. Further
     # investigation is needed to establish a more systematic
     # approach to test the final sampling distribution. [sc-91887]
-    # @pytest.mark.local_salt(2)
     @pytest.mark.parametrize(
         "measurement, expected",
         [
