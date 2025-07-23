@@ -689,22 +689,21 @@ class TestReducerZX:
         qs = QuantumScript(ops)
         (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
 
-        assert len(new_qs.operations) == 6
+        assert len(new_qs.operations) == 5
 
-        rot = new_qs.operations[3]
-        assert new_qs.operations[0] == qml.H(0)
-        assert new_qs.operations[1] == qml.S(0)
-        assert new_qs.operations[2] == qml.H(0)
+        rot = new_qs.operations[2]
+        assert new_qs.operations[0] == qml.S(0)
+        assert new_qs.operations[1] == qml.H(0)
         assert isinstance(rot, qml.RZ)
-        assert new_qs.operations[4] == qml.H(0)
-        assert new_qs.operations[5] == qml.S(0)
+        assert new_qs.operations[3] == qml.H(0)
+        assert new_qs.operations[4] == qml.adjoint(qml.S(0))
 
-        new_angle = rot.parameters[0] - np.pi / 2
+        new_angle = rot.parameters[0]
         # if the expected total angle is negative add 2π
         exp_angle = np.sum(params)
         if exp_angle < 0:
             exp_angle += 2 * np.pi
-        assert np.isclose(new_angle, exp_angle)
+        assert np.isclose(new_angle, 2 * np.pi - exp_angle)
 
     @pytest.mark.parametrize(
         "params",
