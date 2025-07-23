@@ -40,9 +40,9 @@ from .api import compiler_transform
 
 def _diagonalize(obs: NamedObsOp) -> bool:
     """Whether to diagonalize a given observable."""
-    if obs.type.data in ("PauliZ", "Identity"):
+    if obs.type.data in {"PauliZ", "Identity"}:
         return False
-    if obs.type.data in ("PauliX", "PauliY"):
+    if obs.type.data in {"PauliX", "PauliY"}:
         return True
     raise NotImplementedError(f"Observable {obs.type.data} is not supported for diagonalization")
 
