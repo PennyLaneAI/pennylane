@@ -162,6 +162,8 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.pyth
 
 [[modules]]
 path = "pennylane.measurements"
+layer = "core"
+depends_on = ["pennylane.capture", "pennylane.math", "pennylane.wires", "pennylane.exceptions", "pennylane.operation", "pennylane.ops", "pennylane.queuing", "pennylane.typing", "pennylane.pytrees"]
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
 ## AUXILIARY module(s)

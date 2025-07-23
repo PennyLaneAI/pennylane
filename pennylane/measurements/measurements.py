@@ -248,7 +248,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         return self.obs.diagonalizing_gates() if self.obs else []
 
     def __eq__(self, other):
-        from pennylane import equal  # tach-ignore pylint: disable=import-outside-toplevel
+        # tach-ignore
+        from pennylane import equal  # pylint: disable=import-outside-toplevel
 
         return equal(self, other)
 
@@ -402,7 +403,8 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             self.obs.diagonalizing_gates()
             self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
 
-        from pennylane.tape import (  # tach-ignore pylint: disable=import-outside-toplevel
+        # tach-ignore
+        from pennylane.tape import (  # pylint: disable=import-outside-toplevel
             QuantumScript,
         )
 
