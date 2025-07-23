@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 test_data_decomposition = [
     (
@@ -218,6 +219,22 @@ class TestDecomposition:
             exp_weight = gate[3]
             res_weight = queue[idx].parameters
             assert np.allclose(res_weight, exp_weight)
+
+    @pytest.mark.parametrize(
+        "s_wires, d_wires, weights, n_repeats, ref_gates", test_data_decomposition
+    )
+    def test_decomposition_new(self, s_wires, d_wires, weights, n_repeats, ref_gates):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.UCCSD(
+            weights,
+            wires=range(6),
+            s_wires=s_wires,
+            d_wires=d_wires,
+            init_state=np.array([1, 1, 0, 0, 0, 0]),
+            n_repeats=n_repeats,
+        )
+        for rule in qml.list_decomps(qml.UCCSD):
+            _test_decomposition_rule(op, rule)
 
     def test_custom_wire_labels(self, tol):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""

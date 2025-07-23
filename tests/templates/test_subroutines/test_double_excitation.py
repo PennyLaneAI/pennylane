@@ -226,8 +226,14 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         ("wires1", "wires2"),
         [
-            ([0, 1, 2], [4, 5, 6],),
-            ([0, 1], [4, 5],),
+            (
+                [0, 1, 2],
+                [4, 5, 6],
+            ),
+            (
+                [0, 1],
+                [4, 5],
+            ),
         ],
     )
     def test_decomposition_new(self, wires1, wires2):
