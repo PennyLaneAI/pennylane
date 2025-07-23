@@ -192,7 +192,6 @@ from importlib.util import find_spec
 from packaging.version import Version
 
 if find_spec("jax") is not None:
-    has_jax = True
     if Version(version("jax")) > Version("0.6.2"):  # pragma: no cover
         warnings.warn(
             f"PennyLane is not yet compatible with JAX versions > 0.6.2. "
@@ -200,8 +199,6 @@ if find_spec("jax") is not None:
             f"Please downgrade JAX to <=0.6.2 to avoid runtime errors.",
             RuntimeWarning,
         )
-else:
-    has_jax = False
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
