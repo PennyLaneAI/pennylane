@@ -376,7 +376,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
             .. code-block:: python
 
-                diagonalized_mp= type(mp)(eigvals=mp.eigvals(), wires=mp.wires)
+                diagonalized_mp = type(mp)(eigvals=mp.eigvals(), wires=mp.wires)
                 qml.tape.QuantumScript(mp.diagonalizing_gates(), [diagonalized_mp])
 
         Returns:
