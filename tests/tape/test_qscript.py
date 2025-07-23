@@ -1679,8 +1679,7 @@ class TestNumericType:
         )
         herm = np.outer(arr, arr)
 
-        ret = qml.sample(qml.Hermitian(herm, wires=0))
-        qs = QuantumScript([qml.RY(0.4, 0)], [ret], shots=5)
+        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample(qml.Hermitian(herm, wires=0))], shots=5)
 
         result = qml.execute([qs], dev, diff_method=None)[0]
 
