@@ -17,12 +17,30 @@ import numpy as np
 
 from pennylane import math
 from pennylane.operation import EigvalsUndefinedError
+from pennylane.typing import TensorLike
 
 from .measurement_value import MeasurementValue
+from .measurements import MeasurementProcess
 
 
-def process_raw_samples(mp, samples, wire_order, shot_range, bin_size):
-    """TODO"""
+def process_raw_samples(
+    mp: MeasurementProcess, samples: TensorLike, wire_order, shot_range, bin_size
+):
+    """Slice the samples for a measurement process.
+
+    Args:
+        mp (MeasurementProcess): the measurement process containing the wires, observable, and mcms for the processing
+        samples (TensorLike): the raw samples
+        wire_order: the wire order for the raw samples
+        shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
+            to use. If not specified, all samples are used.
+        bin_size (int): Divides the shot range into bins of size ``bin_size``, and
+            returns the measurement statistic separately over each bin. If not
+            provided, the entire shot range is treated as a single bin.
+
+    This function matches `SampleMP.process_samples`, but does not have a dependence on the measurement process.
+
+    """
 
     wire_map = dict(zip(wire_order, range(len(wire_order))))
     mapped_wires = [wire_map[w] for w in mp.wires]
@@ -40,7 +58,8 @@ def process_raw_samples(mp, samples, wire_order, shot_range, bin_size):
     num_wires = samples.shape[-1]  # wires is the last dimension
 
     # If we're sampling wires or a list of mid-circuit measurements
-    if mp.obs is None and not isinstance(mp.mv, MeasurementValue) and mp.eigvals() is None:
+    # pylint: disable=protected-access
+    if mp.obs is None and not isinstance(mp.mv, MeasurementValue) and mp._eigvals is None:
         # if no observable was provided then return the raw samples
         return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
 
