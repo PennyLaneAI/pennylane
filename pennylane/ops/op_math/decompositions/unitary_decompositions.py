@@ -23,13 +23,13 @@ from scipy.linalg import cossin
 from pennylane import capture, compiler, math, ops, queuing, templates
 from pennylane.decomposition.decomposition_rule import register_condition, register_resources
 from pennylane.decomposition.resources import resource_rep
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.math.decomposition import (
     xyx_rotation_angles,
     xzx_rotation_angles,
     zxz_rotation_angles,
     zyz_rotation_angles,
 )
-from pennylane.operation import DecompositionUndefinedError
 from pennylane.wires import Wires
 
 

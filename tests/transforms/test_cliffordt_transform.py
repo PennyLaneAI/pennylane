@@ -161,7 +161,7 @@ class TestCliffordCompile:
 
         old_tape = qml.tape.make_qscript(circuit)()
 
-        [new_tape], tape_fn = clifford_t_decomposition(old_tape, method="rs")
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, method="gridsynth")
 
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)
@@ -474,7 +474,7 @@ class TestCliffordCompile:
 
         with pytest.raises(
             NotImplementedError,
-            match=r"Currently we only support Solovay-Kitaev \('sk'\) and Ross-Selinger \('rs'\) decompositions",
+            match=r"Currently we only support Solovay-Kitaev \('sk'\) and Ross-Selinger \('gridsynth'\) decompositions",
         ):
             decomposed_qfunc()
 

@@ -15,7 +15,7 @@
 This module contains the qml.evolve function.
 """
 from functools import singledispatch
-from typing import Optional, overload
+from typing import overload
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
@@ -26,7 +26,7 @@ from pennylane.typing import TensorLike
 @overload
 def evolve(op: ParametrizedHamiltonian, **kwargs) -> ParametrizedEvolution: ...
 @overload
-def evolve(op: Operator, coeff: TensorLike = 1, num_steps: Optional[int] = None) -> Evolution: ...
+def evolve(op: Operator, coeff: TensorLike = 1, num_steps: int | None = None) -> Evolution: ...
 @singledispatch
 def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     r"""This method is dispatched and its functionality depends on the type of the input ``op``.
@@ -164,6 +164,9 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.
     """
+    raise ValueError(
+        f"No dispatch rule for first argument of type {type(args[0])}. Options are Operator and ParametrizedHamiltonian"
+    )
 
 
 # pylint: disable=missing-docstring
