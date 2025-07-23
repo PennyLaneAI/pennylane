@@ -14,8 +14,6 @@
 """
 Contains the Grover Operation template.
 """
-from functools import reduce
-
 import numpy as np
 
 import pennylane as qml

@@ -14,8 +14,6 @@
 r"""
 Contains the StronglyEntanglingLayers template.
 """
-from collections import Counter
-
 from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
@@ -310,32 +308,19 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
     n_wires = len(wires)
     n_layers = weights.shape[0]
 
-    @for_loop(n_layers)
-    def layers(l):
-        @for_loop(n_wires)
-        def rot_loop(i):
+    for l in range(n_layers):
+        for j in range(n_wires):
             Rot(
-                weights[l, i, 0],
-                weights[l, i, 1],
-                weights[l, i, 2],
-                wires=wires[i],
+                weights[l, j, 0],
+                weights[l, j, 1],
+                weights[l, j, 2],
+                wires=wires[j],
             )
 
-        def imprim_true():
-            @for_loop(n_wires)
-            def imprimitive_loop(i):
+        if n_wires > 1:
+            for i in range(n_wires):
                 act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
                 imprimitive(wires=wires[act_on])
-
-            imprimitive_loop()
-
-        def imprim_false():
-            pass
-
-        rot_loop()
-        cond(n_wires > 1, imprim_true, imprim_false)()
-
-    layers()
 
 
 add_decomps(StronglyEntanglingLayers, _strongly_entangling_decomposition)
