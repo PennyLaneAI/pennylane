@@ -128,6 +128,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
+  [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
+
 * The boolean functions provided in `qml.operation` are deprecated. See the 
   :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These 
   include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`, 
@@ -166,6 +169,15 @@
 
 <h3>Deprecations 👋</h3>
 
+* Some unnecessary methods of the `qml.CircuitGraph` class are deprecated and will be removed in version v0.44:
+  [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
+
+    - `print_contents` in favor of `print(obj)`
+    - `observables_in_order` in favor of `observables`
+    - `operations_in_order` in favor of `operations`
+    - `ancestors_in_order` in favor of `ancestors(obj, sort=True)`
+    - `descendants_in_order` in favore of `descendants(obj, sort=True)`
+
 * The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
   Instead, the `qml.to_openqasm` function should be used.
   [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
@@ -188,9 +200,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Equipped `DefaultQubitLegacy` with seeded sampling.
+* Equipped `DefaultQubitLegacy` (test suite only) with seeded sampling.
   This allows for reproducible sampling results across CI.
   [(#7903)](https://github.com/PennyLaneAI/pennylane/pull/7903)
+
+* Improves type hints in the `measurements` module.
+  [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
 
 * Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
