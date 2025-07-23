@@ -920,7 +920,7 @@ class TestShotsIntegration:
         # Smaller atol since sin(0.25)**2 is close to zero
         assert qml.math.allclose(res[1][1], expected_probs[1], atol=0.5 * 1 / qml.math.sqrt(shots))
 
-    @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
+    @pytest.mark.parametrize("shots", [(10, 10), (10, 15)])
     def test_shot_vectors_single_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors and returns correct shapes."""
 
@@ -948,7 +948,7 @@ class TestShotsIntegration:
         assert all(isinstance(gr, jax.numpy.ndarray) for gr in g)
         assert all(gr.shape == () for gr in g)  # Scalar gradients
 
-    @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
+    @pytest.mark.parametrize("shots", [(10, 10), (10, 15)])
     def test_shot_vectors_multiple_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors and returns correct shapes for multiple measurements."""
 
