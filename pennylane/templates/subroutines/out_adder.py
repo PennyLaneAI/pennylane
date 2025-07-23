@@ -307,7 +307,7 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
     for num_wires in (num_x_wires, num_y_wires):
         rep = resource_rep(
             qml.ControlledSequence,
-            base=qml.PhaseAdder,
+            base_class=qml.PhaseAdder,
             base_params={"num_x_wires": qft_wires, "mod": mod},
             num_control_wires=num_wires,
         )
