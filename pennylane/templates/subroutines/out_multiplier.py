@@ -308,7 +308,7 @@ def _out_multiplier_decomposition_resources(
         resource_rep(qml.QFT, num_wires=qft_wires): 1,
         resource_rep(
             qml.ControlledSequence,
-            base=qml.ControlledSequence,
+            base_class=qml.ControlledSequence,
             base_params={
                 "base_class": qml.PhaseAdder,
                 "base_params": {"num_x_wires": qft_wires, "mod": mod},
