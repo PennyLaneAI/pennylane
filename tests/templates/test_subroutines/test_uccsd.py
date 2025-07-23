@@ -223,7 +223,9 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "s_wires, d_wires, weights, n_repeats, ref_gates", test_data_decomposition
     )
-    def test_decomposition_new(self, s_wires, d_wires, weights, n_repeats, ref_gates):
+    def test_decomposition_new(
+        self, s_wires, d_wires, weights, n_repeats, ref_gates
+    ):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
         op = qml.UCCSD(
             weights,
