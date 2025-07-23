@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
+  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
 
     - ``print_contents`` in favor of ``print(obj)``
