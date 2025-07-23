@@ -404,9 +404,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
             self.__class__(wires=self.obs.wires, eigvals=self.obs.eigvals())
 
         # tach-ignore
-        from pennylane.tape import (  # pylint: disable=import-outside-toplevel
-            QuantumScript,
-        )
+        from pennylane.tape import QuantumScript  # pylint: disable=import-outside-toplevel
 
         return QuantumScript.from_queue(q)
 

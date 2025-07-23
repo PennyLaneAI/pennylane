@@ -505,9 +505,7 @@ class ShadowExpvalMP(MeasurementTransform):
             state, wire_order, shots, rng=rng
         )
         # tach-ignore
-        from pennylane.shadows import (  # pylint:disable=import-outside-toplevel
-            ClassicalShadow,
-        )
+        from pennylane.shadows import ClassicalShadow  # pylint:disable=import-outside-toplevel
 
         shadow = ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
