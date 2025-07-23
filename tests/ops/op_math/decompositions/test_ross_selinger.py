@@ -17,7 +17,6 @@ import math
 
 import jax.numpy as jnp
 import pytest
-from catalyst.api_extensions.control_flow import Cond, ForLoop
 
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.rings import ZOmega
@@ -101,26 +100,32 @@ def test_exception():
         rs_decomposition(op, epsilon=1e-4, max_search_trials=1)
 
 
+@pytest.mark.catalyst
 @pytest.mark.parametrize(
     ("decomposition_info", "expected_ops"),
     [
         (
             (1, (1, 0, 1, 1, 1, 0), 0),
-            (Cond, ForLoop, Cond),
+            ("Cond", "ForLoop", "Cond"),
         ),
         (
             (0, (1, 0, 1, 1, 1, 0), 12),
-            (Cond, ForLoop, Cond),
+            ("Cond", "ForLoop", "Cond"),
         ),
         (
             (0, (), 9),
-            (Cond, Cond),
+            ("Cond", "Cond"),
         ),
     ],
 )
 @pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
 def test_jit_rs_decomposition(decomposition_info, expected_ops):
     """Test that the qjit rs decomposition is working."""
+
+    catalyst = pytest.importorskip("catalyst")
+    catalyst_cfs_api = catalyst.api_extensions.control_flow
+
+    catalyst_op_dict = {"Cond": catalyst_cfs_api.Cond, "ForLoop": catalyst_cfs_api.ForLoop}
 
     # Create decomposition info using jnp
     has_leading_t = jnp.int32(decomposition_info[0])  # First element
@@ -139,6 +144,8 @@ def test_jit_rs_decomposition(decomposition_info, expected_ops):
 
         # Verify each operation is of the expected type
         for op, expected_type in zip(ops, expected_ops):
-            assert isinstance(op, expected_type), f"Expected {expected_type}, got {type(op)}"
+            assert isinstance(
+                op, catalyst_op_dict[expected_type]
+            ), f"Expected {expected_type}, got {type(op)}"
 
     qml.qjit(circuit)
