@@ -976,7 +976,7 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
 
 
 @register_resources(_fermionic_double_excitation_resources)
-def _fermionic_double_excitation_decomopsition(weight, wires, wires1, wires2):
+def _fermionic_double_excitation_decomopsition(weight, wires, wires1, wires2):  # pylint: disable=unused-argument
     s = wires1[0]
     r = wires1[-1]
     q = wires2[0]

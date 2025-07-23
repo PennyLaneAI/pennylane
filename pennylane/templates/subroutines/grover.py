@@ -258,11 +258,8 @@ def _grover_operator_resources(num_wires, num_work_wires):
 def _grover_decomposition(wires, work_wires, n_wires):  # pylint: disable=arguments-differ
     ctrl_values = [0] * (n_wires - 1)
 
-    @qml.for_loop(len(wires) - 1)
-    def hadamard_loop(i):
+    for i in range(len(wires) - 1):
         Hadamard(wires[i])
-
-    hadamard_loop()
     PauliZ(wires[-1])
     MultiControlledX(
         control_values=ctrl_values,
@@ -270,7 +267,8 @@ def _grover_decomposition(wires, work_wires, n_wires):  # pylint: disable=argume
         work_wires=work_wires,
     )
     PauliZ(wires[-1])
-    hadamard_loop()
+    for i in range(len(wires) - 1):
+        Hadamard(wires[i])
     GlobalPhase(np.pi, wires=wires[0])
 
 
