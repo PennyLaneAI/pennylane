@@ -20,15 +20,15 @@ from dataclasses import dataclass
 
 import networkx as nx
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import arith, builtin, func, memref, tensor, vector
-from xdsl.dialects.scf import ForOp, IfOp, WhileOp, YieldOp
+from xdsl.dialects import arith, builtin, func, memref, scf, tensor, vector
+from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
 
 from pennylane.ftqc import generate_lattice
 from pennylane.ops import CZ, H
 
 from ..dialects.mbqc import MeasureInBasisOp, MeasurementPlaneAttr, MeasurementPlaneEnum
-from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp
+from ..dialects.quantum import AllocOp, AllocQubitOp, CustomOp, DeallocQubitOp, ExtractOp, QubitType
 from .api import compiler_transform
 
 
@@ -120,23 +120,24 @@ class ConvertToMBQCFormalismPattern(
         aux_qubits_dict = {}
         for node in nodes:
             aux_qubits_dict[node] = AllocQubitOp()
+
         # Insert qubit allocation ops before the op
-        for aux_qubit in aux_qubits_dict.values:
-            rewriter.insert_op(aux_qubit, insert_point=InsertPoint.before(op))
+        for node in aux_qubits_dict:
+            rewriter.insert_op(aux_qubits_dict[node], InsertPoint.before(op))
 
         # Apply Hadamard gate to each auxiliary qubit
         for node in nodes:
             in_qubits = aux_qubits_dict[node]
             gate_name = "Hadamard"
             HadamardOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
-            rewriter.insert_op(HadamardOp, insert_point=InsertPoint.before(op))
+            rewriter.insert_op(HadamardOp, InsertPoint.before(op))
 
         # Apply CZ gate to entangle each nearest auxiliary qubit pair
         for edge in edges:
             in_qubits = [aux_qubits_dict[node] for node in edge]
             gate_name = "CZ"
             CZOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
-            rewriter.insert_op(CZOp, insert_point=InsertPoint.before(op))
+            rewriter.insert_op(CZOp, InsertPoint.before(op))
 
         return aux_qubits_dict
 
@@ -150,10 +151,10 @@ class ConvertToMBQCFormalismPattern(
             )
         )
         # Insert the constant angleOP
-        rewriter.insert_op(constAngleOp, insert_point=InsertPoint.before(op))
+        rewriter.insert_op(constAngleOp, InsertPoint.before(op))
         measureOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constAngleOp)
         # Insert measureOp
-        rewriter.insert_op(measureOp, insert_point=InsertPoint.before(op))
+        rewriter.insert_op(measureOp, InsertPoint.before(op))
         return measureOp.results
 
     def _cond_insert_arbitary_basis_measure_op(self, cond, angle, plane, qubit, op, rewriter):
@@ -171,25 +172,26 @@ class ConvertToMBQCFormalismPattern(
             )
         )
         measureNegOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constNegAngleOp)
-        ture_region = [planeOp, constAngleOp, measureOp, YieldOp()]
-        false_region = [planeOp, constNegAngleOp, measureNegOp, YieldOp()]
+        ture_region = [planeOp, constAngleOp, measureOp, scf.YieldOp(measureOp.results)]
+        false_region = [planeOp, constNegAngleOp, measureNegOp, scf.YieldOp(measureNegOp.results)]
         condOp = IfOp(
             cond=cond, return_types=[], ture_region=ture_region, false_region=false_region
         )
         # Insert condOp before op operations
-        rewriter.insert_op(condOp, insert_point=InsertPoint.before(op))
+        rewriter.insert_op(condOp, InsertPoint.before(op))
         return condOp.results
 
     def _insert_byproduct_op(self, cond, gate_name, qubit, op, rewriter):
         in_qubit = qubit
         byproductOp = CustomOp(in_qubits=in_qubit, gate_name=gate_name)
-        ture_region = [byproductOp, YieldOp()]
-        false_region = [qubit, YieldOp()]
+        ture_region = [byproductOp]
+        identityOp = CustomOp(in_qubits=in_qubit, gate_name="Identity")
+        false_region = [identityOp]
         condOp = IfOp(
-            cond=cond, return_types=[], true_region=ture_region, false_region=false_region
+            cond=cond, return_types=QubitType(), true_region=ture_region, false_region=false_region
         )
         # Insert condOp before op operations
-        rewriter.insert_op(condOp, insert_point=InsertPoint.before(op))
+        rewriter.insert_op(condOp, InsertPoint.before(op))
         return condOp.results
 
     # pylint: disable=no-self-use
@@ -199,9 +201,12 @@ class ConvertToMBQCFormalismPattern(
     ):  # pylint: disable=arguments-differ, cell-var-from-loop
         """Match and rewrite for converting to the MBQC formalism."""
 
+        registers_state = None
         for region in root.regions:
             for op in region.ops:
-                if isinstance(op, CustomOp) and op.gate_name.data in [
+                if isinstance(op, AllocOp):
+                    registers_state = op.results[0]
+                elif isinstance(op, CustomOp) and op.gate_name.data in [
                     "Hadamard",
                     "S",
                     "RZ",
@@ -212,7 +217,7 @@ class ConvertToMBQCFormalismPattern(
                     in_qubits = [op.in_qubits[0], aux_qubits_dict[2]]
                     gate_name = "CZ"
                     CZOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
-                    rewriter.insert_op(CZOp, insert_point=InsertPoint.before(op))
+                    rewriter.insert_op(CZOp, InsertPoint.before(op))
 
                     target_qubit = op.in_qubits[0]
                     # Insert measurement Op before the op operation
@@ -249,65 +254,44 @@ class ConvertToMBQCFormalismPattern(
                         # Insert by-product corrections
                         # x correction: m1, m3, m4
                         m13_sum_x = arith.AddiOp(m1, m3)
-                        rewriter.insert_op(m13_sum_x, insertion_point=InsertPoint.before(op))
+                        rewriter.insert_op(m13_sum_x, InsertPoint.before(op))
                         m134_sum_x = arith.AddiOp(m13_sum_x.result, m4)
-                        rewriter.insert_op(m134_sum_x, insertion_point=InsertPoint.before(op))
-                        m134 = m134_sum_x.result
-                        # Insert a conditional IfOp
-                        constantTwoOp = arith.ConstantOp(
-                            builtin.DenseIntOrFPElementsAttr.from_list(
-                                type=builtin.TensorType(builtin.I64, shape=()), data=(2,)
-                            )
-                        )
-                        rewriter.insert_op(constantTwoOp, insertion_point=InsertPoint.before(op))
-                        moduloOp = arith.RemSIOp(m134, constantTwoOp)
-                        rewriter.insert_op(moduloOp, insertion_point=InsertPoint.before(op))
-                        constantOneOp = arith.ConstantOp(
-                            builtin.DenseIntOrFPElementsAttr.from_list(
-                                type=builtin.TensorType(builtin.I64, shape=()), data=(1,)
-                            )
-                        )
-                        rewriter.insert_op(constantOneOp, insertion_point=InsertPoint.before(op))
-                        cmpOp = arith.CmpiOp(moduloOp.result, constantOneOp)
-                        aux_qubits_dict[5] = self._insert_byproduct_op(
-                            cmpOp, "PauliX", aux_qubits_dict[5], op, rewriter
-                        )
+                        rewriter.insert_op(m134_sum_x, InsertPoint.before(op))
+                        # # Insert a conditional IfOp
+                        constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+                        rewriter.insert_op(constantOneOp, InsertPoint.before(op))
+                        xorOp = arith.XOrIOp(m134_sum_x.result, constantOneOp)
+                        rewriter.insert_op(xorOp, InsertPoint.before(op))
+                        cmpOp = arith.CmpiOp(xorOp.result, constantOneOp, "eq")
+                        rewriter.insert_op(cmpOp, InsertPoint.before(op))
 
-                        # z correction: m2, m3
-                        m23_sum_z = arith.AddiOp(m2, m3)
-                        rewriter.insert_op(m23_sum_z, insertion_point=InsertPoint.before(op))
+                        # TODO: the line below brings errors
+                        self._insert_byproduct_op(cmpOp, "PauliX", aux_qubits_dict[5], op, rewriter)
 
-                        m23 = m23_sum_z.result
-                        # Insert a conditional IfOp
-                        constantTwoOp = arith.ConstantOp(
-                            builtin.DenseIntOrFPElementsAttr.from_list(
-                                type=builtin.TensorType(builtin.I64, shape=()), data=(2,)
-                            )
-                        )
-                        rewriter.insert_op(constantTwoOp, insertion_point=InsertPoint.before(op))
-                        moduloOp = arith.RemSIOp(m23, constantTwoOp)
-                        rewriter.insert_op(moduloOp, insertion_point=InsertPoint.before(op))
-                        constantOneOp = arith.ConstantOp(
-                            builtin.DenseIntOrFPElementsAttr.from_list(
-                                type=builtin.TensorType(builtin.I64, shape=()), data=(1,)
-                            )
-                        )
-                        rewriter.insert_op(constantOneOp, insertion_point=InsertPoint.before(op))
-                        cmpOp = arith.CmpiOp(moduloOp.result, constantOneOp)
-                        aux_qubits_dict[5] = self._insert_byproduct_op(
-                            cmpOp, "PauliZ", aux_qubits_dict[5], op, rewriter
-                        )
+                        # # z correction: m2, m3
+                        # m23_sum_z = arith.AddiOp(m2, m3)
+                        # rewriter.insert_op(m23_sum_z, InsertPoint.before(op))
 
-                    # Swap the target qubit with the output qubit
-                    in_qubits = [target_qubit, aux_qubits_dict[5]]
-                    gate_name = "SWAP"
-                    SWAPOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
-                    rewriter.insert_op(SWAPOp, insert_point=InsertPoint.before(op))
+                        # m23 = m23_sum_z.result
+                        # # Insert a conditional IfOp
+                        # moduloOp = arith.RemSIOp(m23, constantTwoOp)
+                        # rewriter.insert_op(moduloOp, InsertPoint.before(op))
+                        # cmpOp = arith.CmpiOp(moduloOp.result, constantOneOp, "eq")
+                        # self._insert_byproduct_op(
+                        #     cmpOp, "PauliZ", aux_qubits_dict[5], op, rewriter
+                        # )
 
-                    # Deallocate aux_qubits except for the last qubit
-                    for _, aux_qubit in aux_qubits_dict:
-                        deallocQubitOp = DeallocQubitOp(aux_qubit)
-                        rewriter.insert_op(deallocQubitOp, insertion_point=InsertPoint.after(op))
+                    # qubit_extractop = ExtractOp(registers_state, target_qubit)
+                    # # Swap the target qubit with the output qubit
+                    # in_qubits = [target_qubit, aux_qubits_dict[5]]
+                    # gate_name = "SWAP"
+                    # SWAPOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
+                    # rewriter.insert_op(SWAPOp, InsertPoint.before(op))
 
-                    # Erase the current operation
-                    rewriter.erase_op(op)
+                    # # Deallocate aux_qubits
+                    # for node in aux_qubits_dict:
+                    #     deallocQubitOp = DeallocQubitOp(aux_qubits_dict[node])
+                    #     rewriter.insert_op(deallocQubitOp, InsertPoint.before(op))
+
+                    # # Replace the current operation
+                    # rewriter.replace_op(op, qubit_extractop)
