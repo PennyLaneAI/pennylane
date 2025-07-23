@@ -506,35 +506,27 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
 
 def _trotter_product_decomposition_resources(n, order, ops):
-    def _recursive(order, ops):
-        reps = Counter()
-        if order == 1:
-            for op in ops:
-                reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] += 1
-            return reps
+    reps = {}
 
-        if order == 2:
-            for op in ops + ops[::-1]:
-                reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] += 1
-            return reps
-
-        ops_ctr_1 = _recursive(order - 2, ops)
-        ops_ctr_2 = _recursive(order - 2, ops)
-
-        for key in ops_ctr_1:
-            ops_ctr_1[key] = ops_ctr_1[key] * 4
-
-        ops_ctr_1.update(ops_ctr_2)
-
-        return ops_ctr_1
-
-    resources = _recursive(order, ops)
-
-    for _ in range(n - 1):
-        for key in resources:
-            resources[key] += 1
-
-    return resources
+    if order == 1:
+        for op in ops:
+            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = n
+        return reps
+    if order == 2:
+        for op in ops:
+            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = n * 2
+        return reps
+    if order % 2:
+        for op in ops:
+            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = (
+                n * 5 * (order - 1) / 2
+            )
+        return reps
+    for op in ops:
+        reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = (
+            n * 2 * 5 * (order - 2) / 2
+        )
+    return reps
 
 
 @register_resources(_trotter_product_decomposition_resources)

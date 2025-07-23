@@ -779,7 +779,9 @@ class TestDecomposition:
 
     @pytest.mark.parametrize("order", (1, 2, 4))
     @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
-    def test_decomposition_new(self, hamiltonian, hamiltonian_index, order):  # pylint: disable=unused-argument
+    def test_decomposition_new(
+        self, hamiltonian, hamiltonian_index, order
+    ):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
         op = qml.TrotterProduct(hamiltonian, 4.2, order=order)
         for rule in qml.list_decomps(qml.TrotterProduct):

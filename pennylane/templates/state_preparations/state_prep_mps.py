@@ -521,7 +521,11 @@ def _work_wires_bond_dimension_condition(
 ):  # pylint: disable=unused-argument
     max_bond_dimension = max(bond_dimensions[:-1])
 
-    return num_work_wires is not None and num_work_wires > 0 and 2**num_work_wires >= max_bond_dimension
+    return (
+        num_work_wires is not None
+        and num_work_wires > 0
+        and 2**num_work_wires >= max_bond_dimension
+    )
 
 
 @qml.register_condition(_work_wires_bond_dimension_condition)
