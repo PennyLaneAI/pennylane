@@ -15,7 +15,6 @@
 """
 This module contains the qml.vn_entropy measurement.
 """
-from collections.abc import Sequence
 
 from pennylane import math
 from pennylane.typing import TensorLike

@@ -19,7 +19,7 @@ from collections.abc import Sequence
 import numpy as np
 
 from pennylane import math
-from pennylane.exceptions import QuantumFunctionError, MeasurementShapeError, QuantumFunctionError
+from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires

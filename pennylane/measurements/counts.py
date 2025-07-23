@@ -112,10 +112,11 @@ class CountsMP(SampleMeasurement):
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
     ):
+        dummy_mp = CountsMP(obs=self.obs or self.mv, wires=self._wires)
+        # cant use `self` due to eigvals differences
         samples = process_raw_samples(
-            self, samples, wire_order, shot_range=shot_range, bin_size=bin_size
+            dummy_mp, samples, wire_order, shot_range=shot_range, bin_size=bin_size
         )
-
         if bin_size is None:
             return self._samples_to_counts(samples)
 
