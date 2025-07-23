@@ -492,7 +492,7 @@ class SampleMeasurement(MeasurementProcess):
 
     >>> class MyMeasurement(SampleMeasurement):
     ...     def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
-    ...         return math.sum(samples[..., self.wires])
+    ...         return qml.math.sum(samples[..., self.wires])
 
     We can now execute it in a QNode:
 
@@ -562,7 +562,7 @@ class StateMeasurement(MeasurementProcess):
     ...         # use the already defined `qml.density_matrix` measurement to compute the
     ...         # reduced density matrix from the given state
     ...         density_matrix = qml.density_matrix(wires=self.wires).process_state(state, wire_order)
-    ...         return math.diagonal(math.real(density_matrix))
+    ...         return qml.math.diagonal(qml.math.real(density_matrix))
 
     We can now execute it in a QNode:
 

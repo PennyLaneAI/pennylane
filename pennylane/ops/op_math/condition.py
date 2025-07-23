@@ -350,7 +350,7 @@ def cond(
         If a branch returns one or more variables, every other branch must return the same abstract values.
 
     Args:
-        condition (Union[.qml.measurements.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
+        condition (Union[qml.measurements.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
            measurement value (see :func:`.pennylane.measure`).
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``

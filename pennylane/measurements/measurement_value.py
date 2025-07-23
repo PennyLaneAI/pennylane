@@ -34,7 +34,7 @@ class MeasurementValue(Generic[T]):
 
     name = "MeasurementValue"
 
-    def __init__(self, measurements, processing_fn):
+    def __init__(self, measurements: list, processing_fn: callable):
         self.measurements = measurements
         self.processing_fn = processing_fn
 
