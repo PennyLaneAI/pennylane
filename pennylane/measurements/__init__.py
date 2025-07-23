@@ -269,6 +269,7 @@ You can find more about Pennylane standards in the guidelines on :doc:`/developm
 """
 from pennylane.exceptions import MeasurementShapeError
 
+from .measurement_value import MeasurementValue
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
 from .expval import ExpectationMP, expval
@@ -279,7 +280,6 @@ from .measurements import (
     StateMeasurement,
 )
 from .mid_measure import (
-    MeasurementValue,
     MidMeasureMP,
     find_post_processed_mcms,
     get_mcm_predicates,
