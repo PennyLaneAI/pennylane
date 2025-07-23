@@ -166,12 +166,7 @@ def _parity_transforms() -> dict:
 
 
 # pylint: disable=import-outside-toplevel
-def _ma_normal_form(
-    op: SO3Matrix, compressed=False, upper_bounded_size=None
-) -> (
-    tuple[qml.operation.Operator, float]
-    | tuple[tuple[jnp.int32, jnp.ndarray, jnp.int32] | tuple[int, list[int], int], float]
-):
+def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
     r"""Decompose an SO(3) matrix into Matsumoto-Amano normal form.
 
     A Matsumoto-Amano normal form - :math:`(T | \epsilon) (HT | SHT)^* \mathcal{C}`, consists of a rightmost
