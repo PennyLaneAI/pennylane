@@ -227,7 +227,7 @@ def _reflection_decomposition_resources(
     resources = {
         qml.GlobalPhase: 1,
         adjoint_resource_rep(base_class, base_params): 1,
-        qml.PauliX: 2
+        qml.PauliX: 2,
     }
 
     if num_wires > 1:
