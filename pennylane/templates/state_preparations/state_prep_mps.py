@@ -522,7 +522,7 @@ def _work_wires_bond_dimension_condition(
     max_bond_dimension = max(bond_dimensions[:-1])
 
     return (max_bond_dimension <= 2**num_work_wires) and not (
-        num_work_wires is None and num_work_wires == 0
+        num_work_wires is None or num_work_wires == 0
     )
 
 
