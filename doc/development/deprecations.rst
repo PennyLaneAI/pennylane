@@ -9,6 +9,17 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
+
+    - ``print_contents`` in favor of ``print(obj)``
+    - ``observables_in_order`` in favor of ``observables``
+    - ``operations_in_order`` in favor of ``operations``
+    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
+    - ``descendants_in_order`` in favore of ``.descendants(obj, sort=True)``
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
   Instead, the ``qml.to_openqasm`` function should be used.
 
