@@ -17,25 +17,6 @@ PennyLane can be directly imported.
 """
 import warnings
 
-import importlib.metadata as importlib_metadata
-from packaging.version import Version
-
-has_jax = True
-try:
-    import jax
-
-    jax_version = importlib_metadata.version("jax")
-    if Version(jax_version) > Version("0.6.2"):  # pragma: no cover
-        warnings.warn(
-            f"PennyLane is not yet compatible with JAX versions > 0.6.2. "
-            f"You have version {jax_version} installed. "
-            f"Please downgrade JAX to <=0.6.2 to avoid runtime errors.",
-            RuntimeWarning,
-        )
-
-except ImportError:
-    has_jax = False
-
 import pennylane.exceptions
 from pennylane.boolean_fn import BooleanFn
 import pennylane.numpy
@@ -204,6 +185,26 @@ import pennylane.spin
 import pennylane.liealg
 from pennylane.liealg import lie_closure, structure_constants, center
 import pennylane.qnn
+
+
+import importlib.metadata as importlib_metadata
+from packaging.version import Version
+
+has_jax = True
+try:
+    import jax
+
+    jax_version = importlib_metadata.version("jax")
+    if Version(jax_version) > Version("0.6.2"):  # pragma: no cover
+        warnings.warn(
+            f"PennyLane is not yet compatible with JAX versions > 0.6.2. "
+            f"You have version {jax_version} installed. "
+            f"Please downgrade JAX to <=0.6.2 to avoid runtime errors.",
+            RuntimeWarning,
+        )
+
+except ImportError:
+    has_jax = False
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
