@@ -129,7 +129,7 @@
 <h3>Breaking changes 💔</h3>
 
 * Remove support for Python 3.10.
-  [(#)]()
+  [(#7935)](https://github.com/PennyLaneAI/pennylane/pull/7935)
 
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
