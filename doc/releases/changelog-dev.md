@@ -49,13 +49,13 @@
 
 * Decomposition rules that can be accessed with the new graph-based decomposition system are
   implemented. The following decompositions have been added:
-    [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
+  [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
 
-    * :class:`~.Reflection`
-  
-    * :class:`~.TrotterProduct`
+  * :class:`~.Reflection`
 
-    * :class:`~.MPSPrep`
+  * :class:`~.TrotterProduct`
+
+  * :class:`~.MPSPrep`
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
