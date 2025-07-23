@@ -809,13 +809,13 @@ class ResourceQROM(ResourceOperator):
         w1 = 2 ** math.floor(math.log2(opt_width_continuous))
         w2 = 2 ** math.ceil(math.log2(opt_width_continuous))
 
-        if w1 < 1 and w2 < 1:
-            return 1
+        w1 = 1 if w1 < 1 else w1
+        w2 = 1 if w2 < 1 else w2  # The continuous solution could be non-physical
 
         def t_cost_func(w):
             return 4 * (math.ceil(num_bitstrings / w) - 2) + 6 * (w - 1) * size_bitstring
 
-        if t_cost_func(w2) < t_cost_func(w1) and w2 >= 1:
+        if t_cost_func(w2) < t_cost_func(w1):
             return w2
         return w1
 
