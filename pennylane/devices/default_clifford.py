@@ -61,7 +61,7 @@ from .preprocess import (
 
 has_stim = True
 try:
-    import stim
+    from stim import stim
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_stim = False
 

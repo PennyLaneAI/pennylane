@@ -637,6 +637,7 @@ class ResourceSelect(ResourceOperator):
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires) + num_ctrl_wires
 
+    # pylint: disable=arguments-renamed
     def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
         for op in ops_to_remove:

@@ -52,6 +52,9 @@ disable=
   arguments-differ,
   no-value-for-parameter,
   too-many-positional-arguments, # because of parameterization
+  unnecessary-lambda-assignment,
+  consider-using-generator,
+  use-implicit-booleaness-not-comparison
 
 [MISCELLANEOUS]
 
