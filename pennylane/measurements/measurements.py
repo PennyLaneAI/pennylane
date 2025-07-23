@@ -30,10 +30,7 @@ from pennylane.exceptions import (
     QuantumFunctionError,
 )
 from pennylane.math.utils import is_abstract
-from pennylane.operation import (
-    Operator,
-    _get_abstract_operator,
-)
+from pennylane.operation import Operator, _get_abstract_operator
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.typing import TensorLike
