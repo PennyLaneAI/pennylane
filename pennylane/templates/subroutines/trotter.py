@@ -563,14 +563,14 @@ def _trotter_product_decomposition(*args, **kwargs):
         ops_ctr_2 = _recursive(scalar_2 * x, order - 2, ops)
 
         for op in 3 * ops_ctr_1:
-            op._unflatten(*op._flatten())
+            op._unflatten(*op._flatten())  # pylint: disable=protected-access
 
         return (2 * ops_ctr_1) + ops_ctr_2 + (2 * ops_ctr_1)
 
     decomp = _recursive(time / n, order, ops)[::-1] * (n - 1)
 
     for op in decomp:  # apply operators in reverse order of expression
-        op._unflatten(*op._flatten())
+        op._unflatten(*op._flatten())  # pylint: disable=protected-access
 
 
 add_decomps(TrotterProduct, _trotter_product_decomposition)
