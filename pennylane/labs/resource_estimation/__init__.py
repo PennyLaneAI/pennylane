@@ -47,6 +47,15 @@ Resource Estimation Functions:
     ~set_ctrl_decomp
     ~set_pow_decomp
 
+Gatesets & Configurations:
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autodata:: StandardGateSet
+
+.. autodata:: DefaultGateSet
+
+.. autodata:: resource_config
+
 Qubit Management Classes:
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
