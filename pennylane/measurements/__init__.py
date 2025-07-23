@@ -267,12 +267,12 @@ Here are a few more tips for adding measurements:
 
 You can find more about Pennylane standards in the guidelines on :doc:`/development/guide/documentation`.
 """
+from pennylane.exceptions import MeasurementShapeError
 from .classical_shadow import ClassicalShadowMP, ShadowExpvalMP, classical_shadow, shadow_expval
 from .counts import CountsMP, counts
 from .expval import ExpectationMP, expval
 from .measurements import (
     MeasurementProcess,
-    MeasurementShapeError,
     MeasurementTransform,
     SampleMeasurement,
     StateMeasurement,
@@ -289,7 +289,7 @@ from .null_measurement import NullMeasurement
 from .probs import ProbabilityMP, probs
 from .purity import PurityMP, purity
 from .sample import SampleMP, sample
-from .shots import ShotCopies, Shots, add_shots
+from .shots import ShotCopies, Shots, ShotsLike, add_shots
 from .state import DensityMatrixMP, StateMP, density_matrix, state
 from .var import VarianceMP, var
 from .vn_entropy import VnEntropyMP, vn_entropy

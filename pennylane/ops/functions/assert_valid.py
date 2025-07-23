@@ -27,7 +27,7 @@ import scipy.sparse
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
-from pennylane.operation import EigvalsUndefinedError
+from pennylane.exceptions import EigvalsUndefinedError
 
 
 def _assert_error_raised(func, error, failure_comment):
