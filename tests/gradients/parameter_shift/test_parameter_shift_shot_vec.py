@@ -1226,7 +1226,7 @@ class TestParameterShiftRule:
         for _gA in gradA:
             assert _gA == pytest.approx(expected, abs=shot_vec_tol)
 
-    @pytest.mark.local_salt(42)
+    # @pytest.mark.local_salt(42)
     def test_involutory_variance_multi_param(self, broadcast):
         """Tests qubit observables that are involutory with multiple trainable params"""
         shot_vec = many_shots_shot_vector
