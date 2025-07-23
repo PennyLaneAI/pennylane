@@ -51,22 +51,23 @@
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows 
   that include these templates to be decomposed in a resource-efficient and performant
   manner.
-    [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
+  [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
   
   The included templates are:
-    * :class:`~.Adder`
+
+  * :class:`~.Adder`
     
-    * :class:`~.ControlledSequence`
+  * :class:`~.ControlledSequence`
   
-    * :class:`~.ModExp`
+  * :class:`~.ModExp`
 
-    * :class:`~.Multiplier`
+  * :class:`~.Multiplier`
 
-    * :class:`~.OutAdder`
+  * :class:`~.OutAdder`
 
-    * :class:`~.OutMultiplier`
+  * :class:`~.OutMultiplier`
 
-    * :class:`~.OutPoly`
+  * :class:`~.OutPoly`
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
