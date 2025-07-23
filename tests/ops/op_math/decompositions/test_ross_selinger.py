@@ -101,6 +101,7 @@ def test_exception():
 
 
 @pytest.mark.catalyst
+@pytest.mark.jax
 @pytest.mark.parametrize(
     ("decomposition_info", "expected_ops"),
     [
