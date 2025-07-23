@@ -22,9 +22,13 @@ from collections.abc import Sequence
 from typing import Optional, Union
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import (
+    DecompositionUndefinedError,
+    EigvalsUndefinedError,
+    QuantumFunctionError,
+)
 from pennylane.math.utils import is_abstract
-from pennylane.operation import DecompositionUndefinedError, EigvalsUndefinedError, Operator
+from pennylane.operation import Operator
 from pennylane.pytrees import register_pytree
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -34,11 +38,6 @@ from .capture_measurements import (
     create_measurement_obs_primitive,
     create_measurement_wires_primitive,
 )
-
-
-class MeasurementShapeError(ValueError):
-    """An error raised when an unsupported operation is attempted with a
-    quantum tape."""
 
 
 class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
@@ -107,9 +106,9 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ) -> tuple[tuple, type]:
         """Calculate the shape and dtype that will be returned when a measurement is performed.
@@ -152,16 +151,16 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
 
     def __init__(
         self,
-        obs: Optional[
+        obs: None | (
             Union[
                 Operator,
                 "qml.measurements.MeasurementValue",
                 Sequence["qml.measurements.MeasurementValue"],
             ]
-        ] = None,
-        wires: Optional[Wires] = None,
-        eigvals: Optional[TensorLike] = None,
-        id: Optional[str] = None,
+        ) = None,
+        wires: Wires | None = None,
+        eigvals: TensorLike | None = None,
+        id: str | None = None,
     ):
         if getattr(obs, "name", None) == "MeasurementValue" or isinstance(obs, Sequence):
             # Cast sequence of measurement values to list
@@ -211,7 +210,7 @@ class MeasurementProcess(ABC, metaclass=qml.capture.ABCCaptureMeta):
             f"The numeric type of the measurement {self.__class__.__name__} is not defined."
         )
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple[int, ...]:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, ...]:
         """Calculate the shape of the result object tensor.
 
         Args:
