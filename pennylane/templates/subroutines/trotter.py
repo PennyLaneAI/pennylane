@@ -516,7 +516,7 @@ def _trotter_product_decomposition_resources(n, order, ops):
         for op in ops:
             reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = n * 2
         return reps
-    if order % 2:
+    if order % 2 == 1:
         for op in ops:
             reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = (
                 n * 5 * (order - 1) / 2
