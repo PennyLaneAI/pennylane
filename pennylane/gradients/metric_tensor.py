@@ -24,6 +24,7 @@ import numpy as np
 import pennylane.ops as qops
 from pennylane import math
 from pennylane.circuit_graph import LayerData
+from pennylane.exceptions import WireError
 from pennylane.measurements import expval, probs
 from pennylane.ops.functions import generator, matrix
 from pennylane.queuing import WrappedObj
@@ -31,7 +32,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import expand_multipar, expand_nonunitary_gen
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 
 def _mt_cjac_tdot(mt, c):

@@ -17,8 +17,9 @@ This module contains the qml.state measurement.
 from collections.abc import Sequence
 
 import pennylane as qml
+from pennylane.exceptions import WireError
 from pennylane.typing import TensorLike
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 from .measurements import StateMeasurement
 

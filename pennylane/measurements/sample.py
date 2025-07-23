@@ -19,11 +19,11 @@ from collections.abc import Sequence
 import numpy as np
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.operation import Operator
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, SampleMeasurement
+from .measurements import SampleMeasurement
 from .mid_measure import MeasurementValue
 
 

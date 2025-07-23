@@ -21,10 +21,11 @@ from string import ascii_letters
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import MeasurementShapeError
 from pennylane.operation import Operator
 from pennylane.wires import Wires, WiresLike
 
-from .measurements import MeasurementShapeError, MeasurementTransform
+from .measurements import MeasurementTransform
 
 
 class ClassicalShadowMP(MeasurementTransform):
