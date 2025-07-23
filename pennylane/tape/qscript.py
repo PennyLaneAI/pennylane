@@ -768,6 +768,11 @@ class QuantumScript:
         Returns:
             Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result
 
+        .. warning::
+
+            The ``QuantumScript.shape`` method is deprecated and will be removed in v0.44.
+            "Instead, please use ``MeasurementProcess.shape``.
+
         **Examples**
 
         .. code-block:: pycon
@@ -812,6 +817,11 @@ class QuantumScript:
         Returns:
             Union[type, Tuple[type]]: The numeric type corresponding to the result type of the
             quantum script, or a tuple of such types if the script contains multiple measurements
+
+        .. warning::
+
+            The ``QuantumScript.numeric_type`` method is deprecated and will be removed in v0.44.
+            "Instead, please use ``MeasurementProcess.numeric_type``.
 
         **Example:**
 
