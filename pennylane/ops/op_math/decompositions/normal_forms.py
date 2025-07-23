@@ -17,10 +17,14 @@ from copy import deepcopy
 from functools import lru_cache
 from math import pi as PI
 
-import jax.numpy as jnp
-
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.rings import _SQRT2, DyadicMatrix, SO3Matrix, ZOmega
+
+has_jax = True
+try:
+    import jax.numpy as jnp
+except (ModuleNotFoundError, ImportError):
+    has_jax = False
 
 
 @lru_cache
@@ -161,9 +165,13 @@ def _parity_transforms() -> dict:
     }
 
 
+# pylint: disable=import-outside-toplevel
 def _ma_normal_form(
     op: SO3Matrix, compressed=False, upper_bounded_size=None
-) -> tuple[qml.operation.Operator, float] | tuple[tuple[jnp.int32, jnp.ndarray, jnp.int32], float]:
+) -> (
+    tuple[qml.operation.Operator, float]
+    | tuple[tuple[jnp.int32, jnp.ndarray, jnp.int32] | tuple[int, list[int], int], float]
+):
     r"""Decompose an SO(3) matrix into Matsumoto-Amano normal form.
 
     A Matsumoto-Amano normal form - :math:`(T | \epsilon) (HT | SHT)^* \mathcal{C}`, consists of a rightmost
@@ -227,12 +235,17 @@ def _ma_normal_form(
     if not compressed:
         return decomposition, g_phase
 
-    t_bit = jnp.int32(int(decomposition[0] == qml.T(0)))
-    c_bit = jnp.int32(max(0, cl_index))
-    syllable_sequence = jnp.array(rep_bits[t_bit:], dtype=jnp.int32)
+    if has_jax:
+        t_bit = jnp.int32(int(decomposition[0] == qml.T(0)))
+        c_bit = jnp.int32(max(0, cl_index))
+        syllable_sequence = jnp.array(rep_bits[t_bit:], dtype=jnp.int32)
+    else:
+        t_bit = int(decomposition[0] == qml.T(0))
+        c_bit = max(0, cl_index)
+        syllable_sequence = rep_bits[t_bit:]
 
     # If the upper_bounded_size is specified, we need to pad the syllable_sequence with -1s.
-    if upper_bounded_size is not None and compressed:
+    if upper_bounded_size is not None and compressed and has_jax:
         size = upper_bounded_size
         # If the upper_bounded_size is smaller than actual size, raise an error.
         if size < syllable_sequence.shape[0]:

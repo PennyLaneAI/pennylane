@@ -14,10 +14,6 @@
 """Ross-Selinger (arXiv:1403.2975v3) implementation for approximate Pauli-Z rotation gate decomposition."""
 import math
 
-import jax
-import jax.numpy as jnp
-from jax.core import ShapedArray
-
 import pennylane as qml
 from pennylane.compiler.compiler import AvailableCompilers
 from pennylane.ops.op_math.decompositions.grid_problems import GridIterator
@@ -28,6 +24,14 @@ from pennylane.ops.op_math.decompositions.normal_forms import (
 )
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 from pennylane.queuing import QueuingManager
+
+has_jax = True
+try:
+    import jax
+    import jax.numpy as jnp
+    from jax.core import ShapedArray
+except (ModuleNotFoundError, ImportError):
+    has_jax = False
 
 
 def _domain_correction(theta: float) -> tuple[float, ZOmega]:
@@ -272,10 +276,12 @@ def rs_decomposition(
                 so3_mat, compressed=is_qjit, upper_bounded_size=upper_bounded_size
             )
 
-            return (decomposition_info, jnp.float64(g_phase), jnp.float64(phase))
+            if is_qjit and has_jax:
+                return (decomposition_info, jnp.float64(g_phase), jnp.float64(phase))
+            return (decomposition_info, g_phase, phase)
 
         # If QJIT is active, use the compressed normal form.
-        if is_qjit:
+        if is_qjit and has_jax:
             # circular import issue when import outside of the function
 
             api_extensions = AvailableCompilers.names_entrypoints["catalyst"]["ops"].load()
@@ -315,13 +321,15 @@ def rs_decomposition(
                 _ = [qml.apply(op) for op in new_tape.operations]
 
     # TODO: Improve the global phase information to the decomposition.
-    with jax.ensure_compile_time_eval():
+    if is_qjit and has_jax:
+        with jax.ensure_compile_time_eval():
+            interface = qml.math.get_interface(angle)
+            phase += qml.math.mod(g_phase, 2) * math.pi
+            global_phase = qml.GlobalPhase(phase)
+    else:
         interface = qml.math.get_interface(angle)
         phase += qml.math.mod(g_phase, 2) * math.pi
-        if is_qjit:
-            global_phase = qml.GlobalPhase(phase)
-        else:
-            global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
+        global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
 
     # Return the gates from the mapped tape and global phase
     return new_tape.operations + [global_phase]

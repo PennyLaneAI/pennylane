@@ -15,7 +15,6 @@
 
 import math
 
-import jax.numpy as jnp
 import pytest
 
 import pennylane as qml
@@ -123,6 +122,7 @@ def test_exception():
 def test_jit_rs_decomposition(decomposition_info, expected_ops):
     """Test that the qjit rs decomposition is working."""
 
+    jnp = pytest.importorskip("jax")
     catalyst = pytest.importorskip("catalyst")
     catalyst_cfs_api = catalyst.api_extensions.control_flow
 
