@@ -131,14 +131,13 @@ class HilbertSchmidt(Operation):
 
         self._num_params = len(params)
 
-        u_ops = (u,) if isinstance(u, Operation) else u
-        for op in u_ops:
-            if not isinstance(op, qml.operation.Operator):
-                raise QuantumFunctionError(
-                    "The argument u must be an Operator or an iterable of Operators."
-                )
-        self.hyperparameters["u"] = tuple(u_ops)
-        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u_ops))
+        u_ops = (u,) if isinstance(u, Operation) else tuple(u)
+        if not all(isinstance(op, qml.operation.Operator) for op in u_ops):
+            raise QuantumFunctionError(
+                "The argument 'u' must be an Operator or an iterable of Operators."
+            )
+        self.hyperparameters["u"] = u_ops
+        u_wires = qml.wires.Wires.all_wires([op.wires for op in u_ops])
 
         if not callable(v_function):
             raise QuantumFunctionError(
@@ -156,13 +155,11 @@ class HilbertSchmidt(Operation):
         if not qml.wires.Wires(v_wires).contains_wires(v_tape.wires):
             raise QuantumFunctionError("All wires in v must be in v_wires.")
 
-        # Intersection of wires
         if len(qml.wires.Wires.shared_wires([u_wires, v_tape.wires])) != 0:
             raise QuantumFunctionError("operations in u and v must act on distinct wires.")
 
-        wires = qml.wires.Wires(u_wires + v_wires)
-
-        super().__init__(*params, wires=wires, id=id)
+        total_wires = qml.wires.Wires(u_wires + v_wires)
+        super().__init__(*params, wires=total_wires, id=id)
 
     def map_wires(self, wire_map: dict):
         raise NotImplementedError("Mapping the wires of HilbertSchmidt is not implemented.")
@@ -183,10 +180,10 @@ class HilbertSchmidt(Operation):
         # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
         r"""Representation of the operator as a product of other operators."""
 
-        u_ops = (u,) if isinstance(u, Operation) else u
-        v_ops = (v,) if isinstance(v, Operation) else v
-        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u_ops))
-        v_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in v_ops))
+        u_ops = (u,) if isinstance(u, Operation) else tuple(u)
+        v_ops = (v,) if isinstance(v, Operation) else tuple(v)
+        u_wires = qml.wires.Wires.all_wires([op.wires for op in u_ops])
+        v_wires = qml.wires.Wires.all_wires([op.wires for op in v_ops])
 
         n_wires = len(u_wires + v_wires)
         first_range = range(n_wires // 2)
@@ -210,9 +207,9 @@ class HilbertSchmidt(Operation):
         # Since we don't currently have an easy way to apply the complex conjugate of a tape, we manually
         # apply the complex conjugate of each operation in the V tape and append it to the decomposition
         # using the QubitUnitary operation.
-        decomp_ops.extend(
-            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v_ops
-        )
+        for op_v in v_ops:
+            mat = op_v.matrix().conjugate()
+            decomp_ops.append(qml.QubitUnitary(mat, wires=op_v.wires))
 
         # CNOT second layer
         decomp_ops.extend(
@@ -307,10 +304,10 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         # pylint: disable=too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
 
-        u_ops = (u,) if isinstance(u, Operation) else u
-        v_ops = (v,) if isinstance(v, Operation) else v
-        u_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in u_ops))
-        v_wires = qml.wires.Wires.all_wires(dict.fromkeys(op.wires for op in v_ops))
+        u_ops = (u,) if isinstance(u, Operation) else tuple(u)
+        v_ops = (v,) if isinstance(v, Operation) else tuple(v)
+        u_wires = qml.wires.Wires.all_wires([op.wires for op in u_ops])
+        v_wires = qml.wires.Wires.all_wires([op.wires for op in v_ops])
 
         n_wires = len(u_wires + v_wires)
         first_range = range(n_wires // 2)

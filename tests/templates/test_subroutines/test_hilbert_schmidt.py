@@ -360,7 +360,7 @@ class TestHilbertSchmidt:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="The argument u must be an Operator or an iterable of Operators.",
+            match="The argument 'u' must be an Operator or an iterable of Operators.",
         ):
             qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=u)
 
@@ -651,7 +651,7 @@ class TestLocalHilbertSchmidt:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="The argument u must be an Operator or an iterable of Operators.",
+            match="The argument 'u' must be an Operator or an iterable of Operators.",
         ):
             qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=u)
 
