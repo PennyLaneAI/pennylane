@@ -1651,8 +1651,7 @@ class TestNumericType:
         """Test that the tape can correctly determine the output domain for a
         sampling measurement returning samples"""
         dev = qml.device("default.qubit", wires=3, shots=5)
-        ret = qml.sample()
-        qs = QuantumScript([qml.RY(0.4, 0)], [ret], shots=5)
+        qs = QuantumScript([qml.RY(0.4, 0)], [qml.sample()], shots=5)
 
         result = qml.execute([qs], dev, diff_method=None)[0]
 
