@@ -643,8 +643,8 @@ def _(self, *invals, jaxpr, **params):
         # just evaluate it so it doesn't throw dynamic shape errors
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
-    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
-    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
+    subfuns, params = jax._src.pjit.jit_p.get_bind_params({"jaxpr": jaxpr, **params})
+    return jax._src.pjit.jit_p.bind(*subfuns, *invals, **params)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)
