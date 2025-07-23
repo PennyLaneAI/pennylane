@@ -187,12 +187,12 @@ from pennylane.liealg import lie_closure, structure_constants, center
 import pennylane.qnn
 
 
-from importlib.metadata import version as metadata_version
-from importlib.util import find_spec
-from packaging.version import Version
+from importlib.metadata import version as _metadata_version
+from importlib.util import find_spec as _find_spec
+from packaging.version import Version as _Version
 
-if find_spec("jax") is not None:
-    if (jax_version := Version(metadata_version("jax"))) > Version("0.6.2"):  # pragma: no cover
+if _find_spec("jax") is not None:
+    if (jax_version := _Version(_metadata_version("jax"))) > _Version("0.6.2"):  # pragma: no cover
         warnings.warn(
             f"PennyLane is not yet compatible with JAX versions > 0.6.2. "
             f"You have version {jax_version} installed. "
