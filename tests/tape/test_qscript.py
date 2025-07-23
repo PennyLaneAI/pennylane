@@ -39,12 +39,12 @@ def test_to_openqasm_deprecation():
 
 def test_numeric_type_deprecation():
     """Test deprecation of the ``QuantumScript.numeric_type`` property."""
-    circuit = QuantumScript(measurements=qml.Z(0))
+    circuit = QuantumScript(measurements=[qml.sample()])
 
     with pytest.warns(
         PennyLaneDeprecationWarning, match="``QuantumScript.numeric_type`` is deprecated"
     ):
-        assert circuit.numeric_type == float
+        assert circuit.numeric_type == int
 
 
 class TestInitialization:
