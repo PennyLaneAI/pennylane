@@ -409,8 +409,6 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
             is_valid = qml.math.reshape(is_valid, (-1, 1))
         if postselect_mode == "pad-invalid-samples":
             return qml.math.where(is_valid, samples, fill_in_value)
-        if qml.math.shape(samples) == ():  # single shot case
-            samples = qml.math.reshape(samples, (-1, 1))
         return samples[is_valid]
 
     if (interface := qml.math.get_interface(is_valid)) == "tensorflow":
@@ -420,13 +418,14 @@ def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None):
         is_valid = qml.math.cast_like(is_valid, samples)
 
     if isinstance(measurement, ExpectationMP):
-        return qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
+        return qml.math.sum(qml.math.squeeze(samples) * is_valid) / qml.math.sum(is_valid)
     if isinstance(measurement, ProbabilityMP):
         return qml.math.sum(samples * qml.math.reshape(is_valid, (-1, 1)), axis=0) / qml.math.sum(
             is_valid
         )
 
     # VarianceMP
+    samples = qml.math.squeeze(samples)  # should figure out a better solution, but this works
     expval = qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
     if interface == "tensorflow":
         # Casting needed for tensorflow

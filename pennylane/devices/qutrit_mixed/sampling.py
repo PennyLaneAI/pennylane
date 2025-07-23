@@ -146,7 +146,7 @@ def _measure_with_samples_diagonalizing_gates(
             raise NotImplementedError
 
         if is_state_batched:
-            return tuple(process_func(s) for s in samples_processed)
+            return qml.math.stack(tuple(process_func(s) for s in samples_processed))
         return process_func(samples_processed)
 
     # if there is a shot vector, build a list containing results for each shot entry
