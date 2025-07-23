@@ -330,21 +330,9 @@ class ResourceOutMultiplier(ResourceOperator):
         l = max(a_num_qubits, b_num_qubits)
 
         toff = resource_rep(re.ResourceToffoli)
-        l_elbow = resource_rep(re.ResourceTempAND)
-        r_elbow = resource_rep(re.ResourceAdjoint, {"base_cmpr_op": l_elbow})
-
         toff_count = 2 * a_num_qubits * b_num_qubits - l
-        elbow_count = toff_count // 2
-        toff_count = toff_count - (elbow_count * 2)
 
-        gate_lst = [
-            GateCount(l_elbow, elbow_count),
-            GateCount(r_elbow, elbow_count),
-        ]
-
-        if toff_count:
-            gate_lst.append(GateCount(toff))
-        return gate_lst
+        return [GateCount(toff, toff_count)]
 
 
 class ResourceSemiAdder(ResourceOperator):
