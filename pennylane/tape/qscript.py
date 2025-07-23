@@ -771,7 +771,7 @@ class QuantumScript:
         .. warning::
 
             The ``QuantumScript.shape`` method is deprecated and will be removed in v0.44.
-            "Instead, please use ``MeasurementProcess.shape``.
+            Instead, please use ``MeasurementProcess.shape``.
 
         **Examples**
 
@@ -821,7 +821,7 @@ class QuantumScript:
         .. warning::
 
             The ``QuantumScript.numeric_type`` method is deprecated and will be removed in v0.44.
-            "Instead, please use ``MeasurementProcess.numeric_type``.
+            Instead, please use ``MeasurementProcess.numeric_type``.
 
         **Example:**
 
