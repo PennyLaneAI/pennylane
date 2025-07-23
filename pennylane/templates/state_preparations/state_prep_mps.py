@@ -538,6 +538,7 @@ def _mps_prep_decomposition(*mps, **kwargs):
     if right_canonicalize:
         mps = right_canonicalize_mps(mps)
 
+    #  NOTE: tensor legs assignment convention is (vL, p, vR)
     mps[0] = mps[0].reshape((1, *mps[0].shape))
     mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
 
