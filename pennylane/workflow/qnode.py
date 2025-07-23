@@ -605,7 +605,7 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        self._shots: Shots = device.shots
+        self._shots: Shots = Shots(None)
         self._shots_override_device: bool = False
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
@@ -733,15 +733,6 @@ class QNode:
 
         # pylint: disable=protected-access
         old_shots = self._shots
-        # set shots issue
-        if "device" in kwargs:
-            if old_shots != kwargs["device"].shots:
-                warnings.warn(
-                    "The device's shots value does not match the QNode's shots value. "
-                    "This may lead to unexpected behavior. Use `set_shots` to update the QNode's shots.",
-                    UserWarning,
-                )
-
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
         # pylint: disable=protected-access

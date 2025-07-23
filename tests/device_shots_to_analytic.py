@@ -26,7 +26,8 @@ def shots_to_analytic(dev: qml.devices.Device) -> qml.devices.Device:
 
     .. code-block:: python
 
-        @qml.qnode(shots_to_analytic(qml.device('default.qubit', shots=(1,1,1))))
+        @partial(qml.set_shots, shots=(1,1,1))
+        @qml.qnode(shots_to_analytic(qml.device('default.qubit')))
         def f(x):
             qml.RX(2*x, 0)
             return qml.expval(qml.Z(0))
