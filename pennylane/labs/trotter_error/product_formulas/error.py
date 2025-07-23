@@ -210,6 +210,13 @@ def _insert_fragments(
     )
 
 
+def _handle_return_value(expectations, convergence_info, return_convergence_info):
+    """Helper function to handle return values consistently."""
+    if return_convergence_info:
+        return expectations, convergence_info
+    return expectations
+
+
 # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-branches, too-many-statements
 def perturbation_error(
     product_formula: ProductFormula,
@@ -232,7 +239,8 @@ def perturbation_error(
     convergence_tolerance: float = 1e-6,
     convergence_window: int = 10,
     min_convergence_checks: int = 3,
-) -> List[float]:
+    return_convergence_info: bool = False,
+):
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
@@ -285,9 +293,15 @@ def perturbation_error(
             Only used when convergence_sampling is True.
         min_convergence_checks (int): Minimum number of consecutive convergence checks that must pass before stopping
             in convergence sampling (default: 3). Only used when convergence_sampling is True.
+        return_convergence_info (bool): If True, returns a tuple (expectation_values, convergence_info)
+            where convergence_info is a dictionary containing detailed statistics about the sampling process including
+            mean and variance histories, execution times, cache performance, and distribution information.
+            If False (default), returns only the expectation values for backward compatibility.
 
     Returns:
-        List[float]: the list of expectation values computed from the Trotter error operator and the input states
+        List[float] or Tuple[List[float], Dict]: If return_convergence_info is False,
+            returns the list of expectation values. If True, returns a tuple containing both
+            the expectation values and a dictionary with detailed convergence information.
 
     **Example**
 
@@ -317,15 +331,28 @@ def perturbation_error(
     >>> print(errors)
     [0.9189251160920877j, 4.797716682426847j]
     >>>
-    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3, num_workers=2, backend="mpi4py_pool", parallel_mode="commutator")
-    >>> print(errors)
-    [0.9189251160920877j, 4.797716682426847j]
+    >>> errors, conv_info = perturbation_error(pf, frags, [state1, state2], order=3,
+    ...                                         adaptive_sampling=True, return_convergence_info=True)
+    >>> print(conv_info['states'][0]['mean_history'])  # Mean evolution for first state
     """
 
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
     commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order))
+
+    # Initialize convergence info if requested
+    convergence_info = None
+    if return_convergence_info:
+        convergence_info = {
+            'global': {
+                'total_commutators': len(commutators),
+                'sampling_method': sampling_method,
+                'order': order,
+                'timestep': timestep,
+            },
+            'states_info': []
+        }
 
     # Check for conflicting sampling methods
     if adaptive_sampling and convergence_sampling:
@@ -349,7 +376,7 @@ def perturbation_error(
             gridpoints = None
 
         # Perform adaptive sampling for each state
-        return _adaptive_sampling(
+        expectations = _adaptive_sampling(
             commutators=commutators,
             fragments=fragments,
             states=states,
@@ -361,7 +388,11 @@ def perturbation_error(
             max_sample_size=max_sample_size,
             random_seed=random_seed,
             gridpoints=gridpoints or 10,  # Default gridpoints if not found
+            convergence_info=convergence_info,
         )
+
+        # Return results for adaptive sampling
+        return _handle_return_value(expectations, convergence_info, return_convergence_info)
 
     # Handle convergence sampling
     if convergence_sampling:
@@ -381,7 +412,7 @@ def perturbation_error(
             gridpoints = None
 
         # Perform convergence sampling for each state
-        return _convergence_sampling(
+        expectations = _convergence_sampling(
             commutators=commutators,
             fragments=fragments,
             states=states,
@@ -394,7 +425,11 @@ def perturbation_error(
             max_sample_size=max_sample_size,
             random_seed=random_seed,
             gridpoints=gridpoints or 10,  # Default gridpoints if not found
+            convergence_info=convergence_info,
         )
+
+        # Return results for convergence sampling
+        return _handle_return_value(expectations, convergence_info, return_convergence_info)
 
     # Handle fixed-size sampling if explicitly requested
     if sample_size is not None:
@@ -403,7 +438,7 @@ def perturbation_error(
             gridpoints = states[0].gridpoints
         else:
             gridpoints = None
-        return _fixed_sampling(
+        expectations = _fixed_sampling(
             commutators=commutators,
             fragments=fragments,
             states=states,
@@ -415,16 +450,32 @@ def perturbation_error(
             num_workers=num_workers,
             backend=backend,
             parallel_mode=parallel_mode,
+            convergence_info=convergence_info,
         )
+
+        # Return results for fixed sampling
+        return _handle_return_value(expectations, convergence_info, return_convergence_info)
 
     # Use all commutators exactly (no sampling)
     commutator_weights = [1.0] * len(commutators)
 
     # Use the shared expectation value computation function
-    return _compute_expectation_values(
+    expectations = _compute_expectation_values(
         commutators, commutator_weights, fragments, states,
-        num_workers, backend, parallel_mode
+        num_workers, backend, parallel_mode, convergence_info
     )
+
+    # Return based on whether convergence info was requested
+    if return_convergence_info:
+        # For exact computation, update the method field for each state
+        if convergence_info and convergence_info.get('states_info'):
+            for state_info in convergence_info['states_info']:
+                state_info['method'] = 'exact'
+                state_info['variance'] = 0.0  # No variance in exact computation
+                state_info['sigma2_over_n'] = 0.0  # No sampling uncertainty
+            convergence_info['global']['sampled_commutators'] = len(commutators)
+
+    return _handle_return_value(expectations, convergence_info, return_convergence_info)
 
 
 def _get_expval_state(
@@ -678,6 +729,7 @@ def _adaptive_sampling(
     max_sample_size: int,
     random_seed: Optional[int] = None,
     gridpoints: int = 10,
+    convergence_info: Optional[Dict] = None,
 ) -> List[float]:
     r"""
     Adaptive sampling that continues until variance-based stopping criterion is met.
@@ -714,9 +766,15 @@ def _adaptive_sampling(
     z_score = _get_confidence_z_score(confidence_level)
 
     # Setup probabilities for sampling
+    prob_start_time = time.time()
     probabilities = _setup_importance_probabilities(
         commutators, fragments, timestep, gridpoints, sampling_method
     )
+    prob_time = time.time() - prob_start_time
+
+    # Record probability calculation time
+    if convergence_info:
+        convergence_info['global']['probability_calculation_time'] = prob_time
 
     # Process each state with adaptive sampling
     expectations = []
@@ -733,10 +791,17 @@ def _adaptive_sampling(
             target_error=target_error,
             min_sample_size=min_sample_size,
             max_sample_size=max_sample_size,
+            convergence_info=convergence_info,
         )
         expectations.append(expectation)
 
+    # Record total samples information for adaptive sampling
+    if convergence_info:
+        total_samples = sum(state_info['n_samples'] for state_info in convergence_info['states_info'])
+        convergence_info['global']['sampled_commutators'] = total_samples
+
     return expectations
+
 
 def _get_confidence_z_score(confidence_level: float) -> float:
     """
@@ -813,6 +878,7 @@ def _adaptive_sample_single_state(
     target_error: float,
     min_sample_size: int,
     max_sample_size: int,
+    convergence_info: Optional[Dict] = None,
 ) -> float:
     """
     Perform adaptive sampling for a single state until convergence.
@@ -848,6 +914,12 @@ def _adaptive_sample_single_state(
     last_report_time = time.time()
     report_interval = 10  # Report every 10 samples initially
 
+    # Initialize convergence tracking histories
+    mean_history = []
+    variance_history = []
+    sigma2_over_n_history = []
+    relative_error_history = []
+
     # Start sampling
     while n_samples < max_sample_size:
         sample_start_time = time.time()
@@ -874,20 +946,35 @@ def _adaptive_sample_single_state(
         sum_values += contribution
         sum_squared += contribution * contribution
 
+        # Calculate current statistics for convergence tracking
+        current_mean = sum_values / n_samples
+        current_variance = (sum_squared - n_samples * current_mean * current_mean) / (n_samples - 1) if n_samples > 1 else 0.0
+        current_variance = abs(current_variance)  # Handle complex variance
+        current_sigma2_over_n = current_variance / n_samples
+
+        # Store convergence history
+        mean_history.append(current_mean)
+        variance_history.append(current_variance)
+        sigma2_over_n_history.append(current_sigma2_over_n)
+
+        # Calculate and store relative error history
+        if abs(current_mean) > 1e-12:
+            current_relative_error = np.sqrt(current_variance) / abs(current_mean)
+            relative_error_history.append(current_relative_error)
+        else:
+            relative_error_history.append(float('inf'))  # Handle near-zero mean
+
         sample_time = time.time() - sample_start_time
 
         # Progress reporting
         current_time = time.time()
         if (n_samples % report_interval == 0) or (current_time - last_report_time > 5.0):
-            mean = sum_values / n_samples
-            variance = (sum_squared - n_samples * mean * mean) / (n_samples - 1) if n_samples > 1 else 0
-            variance_abs = abs(variance)
-            std_dev = np.sqrt(variance_abs)
+            std_dev = np.sqrt(current_variance)
 
             # Add cache statistics to progress reporting
             cache_stats = cache.get_stats()
             print(f"  Sample {n_samples:4d}: "
-                  f"mean={mean:8.3e}, "
+                  f"mean={current_mean:8.3e}, "
                   f"std={std_dev:8.3e}, "
                   f"cache_hit_rate={cache_stats['hit_rate']:.1%}, "
                   f"time={sample_time:.3f}s")
@@ -950,6 +1037,56 @@ def _adaptive_sample_single_state(
         print(f"    Cache performance: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({cache_stats['hit_rate']:.1%} hit rate)")
 
     print(f"  State {state_idx + 1} completed in {state_time:.2f}s")
+
+    # Add convergence information if requested
+    if convergence_info:
+        # Calculate final statistics
+        final_variance = (sum_squared - n_samples * final_mean * final_mean) / (n_samples - 1) if n_samples > 1 else 0.0
+        final_variance = abs(final_variance)  # Handle complex variance
+        final_sigma2_over_n = final_variance / n_samples if n_samples > 0 else 0.0
+        final_cache_stats = cache.get_stats()
+
+        # Determine convergence method and add relevant info
+        convergence_details = {
+            'sampling_method': sampling_method,
+            'z_score': z_score,
+            'target_error': target_error,
+            'min_sample_size': min_sample_size,
+            'max_sample_size': max_sample_size,
+        }
+
+        # Add final statistics based on convergence outcome
+        if n_samples < max_sample_size:
+            convergence_details['convergence_status'] = 'converged'
+            if abs(final_mean) > 1e-12:
+                final_relative_error = np.sqrt(final_variance) / abs(final_mean)
+                required_samples = (z_score * final_relative_error / target_error) ** 2
+                convergence_details.update({
+                    'relative_error': final_relative_error,
+                    'required_samples': required_samples,
+                    'z2_sigma2_over_eps2': z_score**2 * final_variance / target_error**2,
+                })
+        else:
+            convergence_details['convergence_status'] = 'max_samples_reached'
+
+        # Add state info using dictionary approach
+        state_info = {
+            'mean': final_mean,
+            'variance': final_variance,
+            'sigma2_over_n': final_sigma2_over_n,
+            'n_samples': n_samples,
+            'execution_time': state_time,
+            'cache_stats': final_cache_stats,
+            'mean_history': mean_history,
+            'variance_history': variance_history,
+            'sigma2_over_n_history': sigma2_over_n_history,
+            'relative_error_history': relative_error_history,
+            **convergence_details
+        }
+        if 'states_info' not in convergence_info:
+            convergence_info['states_info'] = []
+        convergence_info['states_info'].append(state_info)
+
     return final_mean
 
 
@@ -966,6 +1103,7 @@ def _convergence_sampling(
     max_sample_size: int = 10000,
     random_seed: Optional[int] = None,
     gridpoints: int = 10,
+    convergence_info: Optional[Dict] = None,
 ) -> List[float]:
     r"""
     Convergence-based sampling that stops when the mean has converged to a certain precision.
@@ -997,9 +1135,15 @@ def _convergence_sampling(
         np.random.seed(random_seed)
 
     # Setup probabilities for sampling
+    prob_start_time = time.time()
     probabilities = _setup_importance_probabilities(
         commutators, fragments, timestep, gridpoints, sampling_method
     )
+    prob_time = time.time() - prob_start_time
+
+    # Record probability calculation time
+    if convergence_info:
+        convergence_info['probability_calculation_time'] = prob_time
 
     # Process each state with convergence-based sampling
     expectations = []
@@ -1017,8 +1161,14 @@ def _convergence_sampling(
             min_convergence_checks=min_convergence_checks,
             min_sample_size=min_sample_size,
             max_sample_size=max_sample_size,
+            convergence_info=convergence_info,
         )
         expectations.append(expectation)
+
+    # Record total samples information for convergence sampling
+    if convergence_info:
+        total_samples = sum(state_info['n_samples'] for state_info in convergence_info['states_info'])
+        convergence_info['global']['sampled_commutators'] = total_samples
 
     return expectations
 
@@ -1035,6 +1185,7 @@ def _convergence_sample_single_state(
     min_convergence_checks: int,
     min_sample_size: int,
     max_sample_size: int,
+    convergence_info: Optional[Dict] = None,
 ) -> float:
     """
     Perform convergence-based sampling for a single state until mean converges.
@@ -1064,11 +1215,15 @@ def _convergence_sample_single_state(
     # Initialize statistics for this state
     n_samples = 0
     sum_values = 0.0
+    sum_squared = 0.0  # Add for variance calculation
     last_report_time = time.time()
     report_interval = 10  # Report every 10 samples initially
 
-    # Keep track of mean history for convergence checking
+    # Keep track of convergence histories
     mean_history = []
+    variance_history = []
+    sigma2_over_n_history = []
+    relative_error_history = []
     convergence_checks_passed = 0
 
     # Start sampling
@@ -1095,8 +1250,25 @@ def _convergence_sample_single_state(
         # Update running statistics
         n_samples += 1
         sum_values += contribution
+        sum_squared += contribution * contribution
         current_mean = sum_values / n_samples
         mean_history.append(current_mean)
+
+        # Calculate additional convergence metrics
+        current_variance = (sum_squared - n_samples * current_mean * current_mean) / (n_samples - 1) if n_samples > 1 else 0.0
+        current_variance = abs(current_variance)  # Handle complex variance
+        current_sigma2_over_n = current_variance / n_samples
+
+        # Store convergence histories
+        variance_history.append(current_variance)
+        sigma2_over_n_history.append(current_sigma2_over_n)
+
+        # Calculate and store relative error history
+        if abs(current_mean) > 1e-12:
+            current_relative_error = np.sqrt(current_variance) / abs(current_mean)
+            relative_error_history.append(current_relative_error)
+        else:
+            relative_error_history.append(float('inf'))  # Handle near-zero mean
 
         sample_time = time.time() - sample_start_time
 
@@ -1166,6 +1338,57 @@ def _convergence_sample_single_state(
         print(f"    Cache performance: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({cache_stats['hit_rate']:.1%} hit rate)")
 
     print(f"  State {state_idx + 1} completed in {state_time:.2f}s")
+
+    # Add convergence information if requested
+    if convergence_info:
+        # Calculate final statistics
+        final_variance = (sum_squared - n_samples * final_mean * final_mean) / (n_samples - 1) if n_samples > 1 else 0.0
+        final_variance = abs(final_variance)  # Handle complex variance
+        final_sigma2_over_n = final_variance / n_samples if n_samples > 0 else 0.0
+        final_cache_stats = cache.get_stats()
+
+        # Determine convergence method and add relevant info
+        convergence_details = {
+            'sampling_method': sampling_method,
+            'convergence_tolerance': convergence_tolerance,
+            'convergence_window': convergence_window,
+            'min_convergence_checks': min_convergence_checks,
+            'min_sample_size': min_sample_size,
+            'max_sample_size': max_sample_size,
+        }
+
+        # Add final statistics based on convergence outcome
+        if n_samples < max_sample_size:
+            convergence_details['convergence_status'] = 'converged'
+            convergence_details['convergence_checks_passed'] = convergence_checks_passed
+            if len(mean_history) > convergence_window:
+                previous_mean = mean_history[-convergence_window-1]
+                if abs(final_mean) > 1e-12:
+                    final_relative_change = abs(final_mean - previous_mean) / abs(final_mean)
+                else:
+                    final_relative_change = abs(final_mean - previous_mean)
+                convergence_details['final_relative_change'] = final_relative_change
+        else:
+            convergence_details['convergence_status'] = 'max_samples_reached'
+
+        # Add state info using dictionary approach
+        state_info = {
+            'mean': final_mean,
+            'variance': final_variance,
+            'sigma2_over_n': final_sigma2_over_n,
+            'n_samples': n_samples,
+            'execution_time': state_time,
+            'cache_stats': final_cache_stats,
+            'mean_history': mean_history,
+            'variance_history': variance_history,
+            'sigma2_over_n_history': sigma2_over_n_history,
+            'relative_error_history': relative_error_history,
+            **convergence_details
+        }
+        if 'states_info' not in convergence_info:
+            convergence_info['states_info'] = []
+        convergence_info['states_info'].append(state_info)
+
     return final_mean
 
 
@@ -1181,6 +1404,7 @@ def _fixed_sampling(
     num_workers: int = 1,
     backend: str = "serial",
     parallel_mode: str = "state",
+    convergence_info: Optional[Dict] = None,
 ) -> List[float]:
     """
     Fixed-size sampling for perturbation error calculation.
@@ -1200,6 +1424,7 @@ def _fixed_sampling(
         num_workers: Number of workers for parallel processing
         backend: Backend for parallel processing
         parallel_mode: Mode of parallelization ("state" or "commutator")
+        convergence_info: Optional convergence info container to populate
 
     Returns:
         List of expectation values for each state
@@ -1229,16 +1454,24 @@ def _fixed_sampling(
         prob_time = time.time() - start_time
         print(f"Probability calculation completed in {prob_time:.2f} seconds")
 
+        # Record probability calculation time
+        if convergence_info:
+            convergence_info['probability_calculation_time'] = prob_time
+
         sampled_commutators, commutator_weights = _sample_importance_commutators(
             commutators, probabilities, sample_size, random_seed
         )
     else:
         raise ValueError("sampling_method must be 'random' or 'importance'")
 
+    # Record sampling information
+    if convergence_info:
+        convergence_info['global']['sampled_commutators'] = len(sampled_commutators)
+
     # Compute expectation values using the sampled commutators
     return _compute_expectation_values(
         sampled_commutators, commutator_weights, fragments, states,
-        num_workers, backend, parallel_mode
+        num_workers, backend, parallel_mode, convergence_info
     )
 
 
@@ -1294,6 +1527,7 @@ def _compute_expectation_values(
     num_workers: int = 1,
     backend: str = "serial",
     parallel_mode: str = "state",
+    convergence_info: Optional[Dict] = None,
 ) -> List[float]:
     """
     Compute expectation values for all states using the sampled commutators.
@@ -1306,6 +1540,7 @@ def _compute_expectation_values(
         num_workers: Number of workers for parallel processing
         backend: Backend for parallel processing
         parallel_mode: Mode of parallelization ("state" or "commutator")
+        convergence_info: Optional convergence info container to populate
 
     Returns:
         List of expectation values for each state
@@ -1316,6 +1551,7 @@ def _compute_expectation_values(
 
         # Create a cache for each state to store computed commutator applications
         for state_idx, state in enumerate(states):
+            state_start_time = time.time()
             cache = _CommutatorCache()
             new_state = _AdditiveIdentity()
 
@@ -1325,13 +1561,33 @@ def _compute_expectation_values(
 
             # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
             if isinstance(new_state, _AdditiveIdentity):
-                expectations.append(0.0)
+                expectation = 0.0
             else:
-                expectations.append(state.dot(new_state))
+                expectation = state.dot(new_state)
 
-            # Print cache statistics for this state
-            cache_stats = cache.get_stats()
-            print(f"State {state_idx+1} cache performance: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({cache_stats['hit_rate']:.1%} hit rate)")
+            expectations.append(expectation)
+
+            # Add convergence info for fixed sampling if requested
+            if convergence_info:
+                state_time = time.time() - state_start_time
+                cache_stats = cache.get_stats()
+                state_info = {
+                    'mean': expectation,
+                    'variance': 0.0,  # No variance in fixed sampling without repeated runs
+                    'sigma2_over_n': 0.0,  # No sampling uncertainty for fixed sampling
+                    'n_samples': len(commutators),
+                    'execution_time': state_time,
+                    'cache_stats': cache_stats,
+                    'sampling_method': 'fixed',
+                }
+                if 'states_info' not in convergence_info:
+                    convergence_info['states_info'] = []
+                convergence_info['states_info'].append(state_info)
+
+            # Print cache statistics for this state (only if not tracking convergence info)
+            if not convergence_info:
+                cache_stats = cache.get_stats()
+                print(f"State {state_idx+1} cache performance: {cache_stats['hits']} hits, {cache_stats['misses']} misses ({cache_stats['hit_rate']:.1%} hit rate)")
 
         return expectations
 

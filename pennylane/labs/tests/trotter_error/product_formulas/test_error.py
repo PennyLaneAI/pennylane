@@ -357,6 +357,263 @@ def test_perturbation_error_invalid_sampling_method(invalid_method, minimal_syst
         )
 
 
+# ==================== TESTS FOR CONVERGENCE INFO FUNCTIONALITY ====================
+
+def test_perturbation_error_return_convergence_info_basic(minimal_system):  # pylint: disable=redefined-outer-name
+    """Test that return_convergence_info=True returns tuple with convergence information."""
+    # Test without convergence info (default behavior)
+    errors_only = perturbation_error(
+        minimal_system['pf'],
+        minimal_system['frags'],
+        minimal_system['states'],
+        order=2,
+    )
+
+    # Test with convergence info
+    errors_with_info, convergence_info = perturbation_error(
+        minimal_system['pf'],
+        minimal_system['frags'],
+        minimal_system['states'],
+        order=2,
+        return_convergence_info=True,
+    )
+
+    # Check that results are consistent
+    np.testing.assert_array_equal(errors_only, errors_with_info)
+
+    # Check convergence info structure
+    assert isinstance(convergence_info, dict)
+    assert 'states_info' in convergence_info
+    assert 'global' in convergence_info
+
+    # Check global info structure
+    global_info = convergence_info['global']
+    assert 'total_commutators' in global_info
+    assert 'sampling_method' in global_info
+    assert 'order' in global_info
+    assert 'timestep' in global_info
+
+    # For exact computation, sampled_commutators should be in global section
+    assert 'sampled_commutators' in convergence_info['global']
+
+    # Check states info structure for exact computation
+    states_info = convergence_info['states_info']
+    assert len(states_info) == len(minimal_system['states'])
+
+    for state_info in states_info:
+        assert isinstance(state_info, dict)
+        assert 'mean' in state_info
+        assert 'variance' in state_info
+        assert 'sigma2_over_n' in state_info
+        assert 'n_samples' in state_info
+        assert 'method' in state_info
+        # For exact computation, these should be zero
+        assert state_info['variance'] == 0.0
+        assert state_info['sigma2_over_n'] == 0.0
+        assert state_info['method'] == 'exact'
+
+
+@pytest.mark.parametrize("sampling_method", ["random", "importance"])
+def test_perturbation_error_convergence_info_fixed_sampling(sampling_method, minimal_system):  # pylint: disable=redefined-outer-name
+    """Test convergence info with fixed sampling methods."""
+    errors, convergence_info = perturbation_error(
+        minimal_system['pf'],
+        minimal_system['frags'],
+        minimal_system['states'],
+        order=2,
+        sample_size=3,
+        sampling_method=sampling_method,
+        random_seed=42,
+        return_convergence_info=True,
+    )
+
+    # Basic structure checks
+    assert isinstance(errors, list)
+    assert isinstance(convergence_info, dict)
+    assert len(errors) == len(minimal_system['states'])
+
+    # Check convergence info contains expected keys
+    assert 'states_info' in convergence_info
+    assert 'global' in convergence_info
+    assert 'sampled_commutators' in convergence_info['global']
+
+    # Check states info
+    states_info = convergence_info['states_info']
+    assert len(states_info) == len(minimal_system['states'])
+
+    for state_info in states_info:
+        assert 'mean' in state_info
+        assert 'sampling_method' in state_info
+        assert state_info['sampling_method'] == 'fixed'
+        assert 'n_samples' in state_info
+        assert 'execution_time' in state_info
+        assert 'cache_stats' in state_info
+
+        # For fixed sampling without repeated runs
+        assert state_info['variance'] == 0.0
+        assert state_info['sigma2_over_n'] == 0.0
+
+
+def test_perturbation_error_convergence_info_adaptive_sampling(minimal_system):  # pylint: disable=redefined-outer-name
+    """Test convergence info with adaptive sampling."""
+    errors, convergence_info = perturbation_error(
+        minimal_system['pf'],
+        minimal_system['frags'],
+        minimal_system['states'],
+        order=2,
+        adaptive_sampling=True,
+        confidence_level=0.95,
+        target_relative_error=0.5,  # Large target for quick convergence
+        min_sample_size=3,
+        max_sample_size=10,
+        sampling_method="random",
+        random_seed=42,
+        return_convergence_info=True,
+    )
+
+    # Basic structure checks
+    assert isinstance(errors, list)
+    assert isinstance(convergence_info, dict)
+    assert len(errors) == len(minimal_system['states'])
+
+    # Check global info
+    assert 'global' in convergence_info
+    global_info = convergence_info['global']
+    assert 'probability_calculation_time' in global_info
+    assert 'sampled_commutators' in global_info
+
+    # Check states info with convergence histories
+    assert 'states_info' in convergence_info
+    states_info = convergence_info['states_info']
+    assert len(states_info) == len(minimal_system['states'])
+
+    for state_info in states_info:
+        # Check basic fields
+        assert 'mean' in state_info
+        assert 'variance' in state_info
+        assert 'sigma2_over_n' in state_info
+        assert 'n_samples' in state_info
+        assert 'execution_time' in state_info
+        assert 'cache_stats' in state_info
+
+        # Check convergence histories - the key new functionality
+        assert 'mean_history' in state_info
+        assert 'variance_history' in state_info
+        assert 'sigma2_over_n_history' in state_info
+        assert 'relative_error_history' in state_info
+
+        # Verify histories are lists with appropriate length
+        n_samples = state_info['n_samples']
+        assert isinstance(state_info['mean_history'], list)
+        assert isinstance(state_info['variance_history'], list)
+        assert isinstance(state_info['sigma2_over_n_history'], list)
+        assert isinstance(state_info['relative_error_history'], list)
+
+        # All histories should have same length as n_samples
+        assert len(state_info['mean_history']) == n_samples
+        assert len(state_info['variance_history']) == n_samples
+        assert len(state_info['sigma2_over_n_history']) == n_samples
+        assert len(state_info['relative_error_history']) == n_samples
+
+        # Check convergence status
+        assert 'convergence_status' in state_info
+        assert state_info['convergence_status'] in ['converged', 'max_samples_reached']
+
+
+def test_perturbation_error_convergence_info_convergence_sampling(minimal_system):  # pylint: disable=redefined-outer-name
+    """Test convergence info with convergence sampling."""
+    errors, convergence_info = perturbation_error(
+        minimal_system['pf'],
+        minimal_system['frags'],
+        minimal_system['states'],
+        order=2,
+        convergence_sampling=True,
+        convergence_tolerance=0.2,  # Large tolerance for quick convergence
+        convergence_window=3,
+        min_convergence_checks=2,
+        min_sample_size=3,
+        max_sample_size=10,
+        sampling_method="random",
+        random_seed=42,
+        return_convergence_info=True,
+    )
+
+    # Basic structure checks
+    assert isinstance(errors, list)
+    assert isinstance(convergence_info, dict)
+    assert len(errors) == len(minimal_system['states'])
+
+    # Check that convergence histories exist
+    assert 'states_info' in convergence_info
+    states_info = convergence_info['states_info']
+
+    for state_info in states_info:
+        # Check convergence histories exist
+        assert 'mean_history' in state_info
+        assert 'variance_history' in state_info
+        assert 'sigma2_over_n_history' in state_info
+        assert 'relative_error_history' in state_info
+
+        # Verify they are non-empty lists
+        assert len(state_info['mean_history']) > 0
+        assert len(state_info['variance_history']) > 0
+        assert len(state_info['sigma2_over_n_history']) > 0
+        assert len(state_info['relative_error_history']) > 0
+
+        # Check convergence-specific fields
+        assert 'convergence_status' in state_info
+        assert state_info['convergence_status'] in ['converged', 'max_samples_reached']
+
+
+def test_convergence_info_dictionary_structure():
+    """Test that convergence info maintains proper dictionary structure without ConvergenceInfo class."""
+    # This test ensures our simplified dictionary approach works correctly
+
+    # Create a minimal test case
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
+    frag_labels = [0, 1]
+    frag_coeffs = [1/2, 1/2]
+    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+
+    gridpoints = 3
+    state = HOState(n_modes, gridpoints, {(0, 0): 1})
+
+    # Test with adaptive sampling
+    _, convergence_info = perturbation_error(
+        pf, frags, [state], order=2,
+        adaptive_sampling=True,
+        target_relative_error=0.5,
+        min_sample_size=2,
+        max_sample_size=5,
+        random_seed=42,
+        return_convergence_info=True,
+    )
+
+    # Verify it's a plain dictionary (not a custom class instance)
+    assert isinstance(convergence_info, dict)
+
+    # Verify direct dictionary access works
+    assert isinstance(convergence_info['states_info'], list)
+
+    # Verify nested dictionary access works
+    state_info = convergence_info['states_info'][0]
+    assert isinstance(state_info['mean_history'], list)
+    assert isinstance(state_info['variance_history'], list)
+
+    # Verify we can modify the dictionary (proving it's not a special class)
+    convergence_info['test_key'] = 'test_value'
+    assert convergence_info['test_key'] == 'test_value'
+
+
 def test_effective_hamiltonian_basic(minimal_system):  # pylint: disable=redefined-outer-name
     """Test the effective_hamiltonian function with different orders."""
     # Test with different orders
