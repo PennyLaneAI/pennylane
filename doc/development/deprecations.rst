@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` are deprecated and will be removed in version v0.44.
+  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
 
     - ``print_contents`` in favor of ``print(obj)``
