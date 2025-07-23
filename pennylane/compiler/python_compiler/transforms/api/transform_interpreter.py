@@ -19,7 +19,7 @@ to be passed in as options.
 """
 
 import io
-from typing import Callable
+from collections.abc import Callable
 
 from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
 from xdsl.context import Context
@@ -27,10 +27,9 @@ from xdsl.dialects import builtin, transform
 from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls
 from xdsl.interpreters.transform import TransformFunctions
 from xdsl.parser import Parser
-from xdsl.passes import ModulePass, PipelinePass
+from xdsl.passes import ModulePass, PassPipeline
 from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
-from xdsl.utils import parse_pipeline
 from xdsl.utils.exceptions import PassFailedException
 
 
@@ -56,18 +55,15 @@ class TransformFunctionsExt(TransformFunctions):
         pass_name = op.pass_name.data  # pragma: no cover
         if pass_name in self.passes:
             # pragma: no cover
-            pipeline = PipelinePass(
-                tuple(
-                    PipelinePass.iter_passes(self.passes, parse_pipeline.parse_pipeline(pass_name))
-                )
-            )
+            pass_class = self.passes[pass_name]()
+            pipeline = PassPipeline((pass_class(),))
             pipeline.apply(self.ctx, args[0])
             return (args[0],)
 
         # pragma: no cover
         buffer = io.StringIO()
 
-        Printer(stream=buffer, print_generic_format=True).print(args[0])
+        Printer(stream=buffer, print_generic_format=True).print_op(args[0])
         schedule = f"--{pass_name}"
         modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
 

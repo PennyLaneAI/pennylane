@@ -16,7 +16,6 @@ This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the device.
 """
 # pylint: disable=too-many-branches,arguments-differ
-from typing import Optional, Union
 from warnings import warn
 
 import numpy as np
@@ -26,10 +25,11 @@ from scipy.sparse import csr_array, csr_matrix
 import pennylane as qml
 from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane.exceptions import WireError
 from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.templates.state_preparations import MottonenStatePreparation
 from pennylane.typing import TensorLike
-from pennylane.wires import WireError, Wires, WiresLike
+from pennylane.wires import Wires, WiresLike
 
 state_prep_ops = {"BasisState", "StatePrep", "QubitDensityMatrix"}
 
@@ -158,7 +158,7 @@ class BasisState(StatePrepBase):
 
         return op_list
 
-    def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
+    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """Returns a statevector of shape ``(2,) * num_wires``."""
         prep_vals = self.parameters[0]
         prep_vals_int = math.cast(self.parameters[0], int)
@@ -355,11 +355,11 @@ class StatePrep(StatePrepBase):
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
-        state: Union[TensorLike, csr_matrix],
+        state: TensorLike | csr_matrix,
         wires: WiresLike,
         pad_with=None,
         normalize=False,
-        id: Optional[str] = None,
+        id: str | None = None,
         validate_norm: bool = False,
     ):
         self.is_sparse = False
@@ -424,7 +424,7 @@ class StatePrep(StatePrepBase):
     def _unflatten(cls, data, metadata):
         return cls(*data, **dict(metadata[0]), wires=metadata[1])
 
-    def state_vector(self, wire_order: Optional[WiresLike] = None):
+    def state_vector(self, wire_order: WiresLike | None = None):
 
         if self.is_sparse:
             op_vector = _sparse_statevec_permute_and_embed(
