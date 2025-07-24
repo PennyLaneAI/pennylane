@@ -1285,8 +1285,10 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     @property
     def is_hermitian(self) -> bool:
         """This property determines if an operator is likely hermitian.
-        
-        .. note:: It is recommended to use the :func:`~.is_hermitian` function. Although this function may be expensive to calculate, the `op.is_hermitian` property can lead to technically incorrect results.
+
+        .. note:: It is recommended to use the :func:`~.is_hermitian` function.
+            Although this function may be expensive to calculate,
+            the `op.is_hermitian` property can lead to technically incorrect results.
 
         If this property returns ``True``, the operator is guaranteed to
         be hermitian, but if it returns ``False``, the operator may still be hermitian.
