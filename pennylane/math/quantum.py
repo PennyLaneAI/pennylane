@@ -1529,11 +1529,11 @@ def choi_matrix(Ks, check_Ks=False):
     r"""
     Compute the choi matrix :math:`\Lambda` of a quantum channel :math:`\mathcal{E}`,
 
-    .. math:: \Lambda = (\mathbb{1} \otimes \mathcal{E})(|\phi^+ \rangle \langle \phi^+|) = \frac{1}{d} \sum_{ij=0}^{d-1} |i \rangle \langle j| \otimes \mathcal{E}(|i \rangle \langle j|)
+    .. math:: \Lambda = (\mathbb{1} \otimes \mathcal{E})(|\phi^+ \rangle \langle \phi^+|) = \frac{1}{2^n} \sum_{ij=0}^{2^n-1} |i \rangle \langle j| \otimes \mathcal{E}(|i \rangle \langle j|)
 
     where :math:`|\phi^+ \rangle` is the maximally entangled state
-    :math:`|\phi^+\rangle = \frac{1}{\sqrt{d}} \sum_{i=0}^{d-1} |i\rangle \otimes |i\rangle` between the
-    qubit system the channel :math:`\mathcal{E}` is acting on and additional "artificial" system of the same size. 
+    :math:`|\phi^+\rangle = \frac{1}{\sqrt{2^n}} \sum_{i=0}^{2^n-1} |i\rangle \otimes |i\rangle` between the
+    qubit system the channel :math:`\mathcal{E}` is acting on and additional "artificial" system of the same size.
 
     We assume the channel
 
