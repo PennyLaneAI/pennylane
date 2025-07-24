@@ -197,7 +197,7 @@ if _find_spec("jax") is not None:
             "PennyLane is not yet compatible with JAX versions > 0.6.2. "
             f"You have version {jax_version} installed. "
             "Please downgrade JAX to 0.6.2 to avoid runtime errors using ",
-            "python -m pip install jax==0.6.2 jaxlib==0.6.2",
+            "python -m pip install jax~=0.6.0 jaxlib~=0.6.0",
             RuntimeWarning,
         )
 
