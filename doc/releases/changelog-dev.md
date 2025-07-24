@@ -173,6 +173,14 @@
 
 <h3>Deprecations 👋</h3>
 
+* `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
+  Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
+  [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
+
+* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` are deprecated and will be removed in version v0.44.
+  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
+  [(#7950)](https://github.com/PennyLaneAI/pennylane/pull/7950)
+
 * Some unnecessary methods of the `qml.CircuitGraph` class are deprecated and will be removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
