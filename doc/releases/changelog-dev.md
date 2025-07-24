@@ -150,41 +150,6 @@
 
 <h3>Breaking changes 💔</h3>
 
-* Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
-  Instead, you can use :class:`~.TrotterProduct` providing the `n` parameter to perform the
-  Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
-
-  As a concrete example, consider the following case:
-
-  ```python
-  coeffs = [0.5, -0.6]
-  ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
-  H_flat = qml.dot(coeffs, ops)
-  ```
-
-  Instead of computing the Suzuki-Trotter product approximation as:
-
-  ```pycon
-  >>> qml.evolve(H_flat, num_steps=2).decomposition()
-  [RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1]),
-  RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1])]
-  ```
-
-  The same result can be obtained using :class:`~.TrotterProduct` as follows:
-
-  ```pycon
-  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
-  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
-  [RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1]),
-  RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1])]
-  ```
-
-  [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
-
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
@@ -225,6 +190,40 @@
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 <h3>Deprecations 👋</h3>
+
+* Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
+  Instead, you can use :class:`~.TrotterProduct` providing the `n` parameter to perform the
+  Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+
+  As a concrete example, consider the following case:
+
+  ```python
+  coeffs = [0.5, -0.6]
+  ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
+  H_flat = qml.dot(coeffs, ops)
+  ```
+
+  Instead of computing the Suzuki-Trotter product approximation as:
+
+  ```pycon
+  >>> qml.evolve(H_flat, num_steps=2).decomposition()
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
+
+  The same result can be obtained using :class:`~.TrotterProduct` as follows:
+
+  ```pycon
+  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
+  [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
 
 * `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
   Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
