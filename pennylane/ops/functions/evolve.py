@@ -16,6 +16,8 @@ This module contains the qml.evolve function.
 """
 from functools import singledispatch
 from typing import overload
+from warnings import warn
+from pennylane.exceptions import PennyLaneDeprecationWarning
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
@@ -178,4 +180,10 @@ def parametrized_evolution(op: ParametrizedHamiltonian, **kwargs):
 # pylint: disable=missing-docstring
 @evolve.register
 def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
+    if num_steps is not None:
+        warn(
+            "Providing ``num_steps`` is deprecated and will be removed in a future version. "
+            "Instead, please use ``qml.TrotterProduct`` with ``num_steps`` for approximate decompositions.",
+            PennyLaneDeprecationWarning,
+        )
     return Evolution(op, coeff, num_steps)
