@@ -684,6 +684,19 @@ class TestResourceQROM:
             == expected_res
         )
 
+    # pylint: disable=protected-access
+    def test_t_select_swap_width(self):
+        """Test that the private function doesn't give negative or
+        fractional values for the depth"""
+        num_bitstrings = 8
+        size_bitstring = 17
+
+        opt_width = plre.ResourceQROM._t_optimized_select_swap_width(
+            num_bitstrings,
+            size_bitstring,
+        )
+        assert opt_width == 1
+
 
 class TestResourceQubitUnitary:
     """Test the ResourceQubitUnitary template"""
