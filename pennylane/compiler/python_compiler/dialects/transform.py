@@ -45,9 +45,6 @@ from xdsl.dialects.builtin import DictionaryAttr
 from xdsl.dialects.transform import *
 
 
-# Copied over from xDSL's sources
-# temporarily. Next commit will redfine
-# the operation.
 @irdl_op_definition
 # pylint: disable=function-redefined
 class ApplyRegisteredPassOp(IRDLOperation):
@@ -61,6 +58,15 @@ class ApplyRegisteredPassOp(IRDLOperation):
     pass_name = prop_def(StringAttr)
     target = operand_def(TransformHandleType)
     result = result_def(TransformHandleType)
+    # While this assembly format doesn't match
+    # the one in upstream MLIR,
+    # this is because xDSL currently lacks CustomDirectives
+    # https://mlir.llvm.org/docs/DefiningDialects/Operations/#custom-directives
+    # https://github.com/xdslproject/xdsl/pull/4829
+    # However, storing the property in the attribute should still work
+    # specially when parsing and printing in generic format.
+    # Which is how Catalyst and XDSL currently communicate at the moment.
+    # TODO: Add test.
     assembly_format = "$pass_name `to` $target attr-dict `:` functional-type(operands, results)"
     irdl_options = [ParsePropInAttrDict()]
 
