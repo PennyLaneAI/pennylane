@@ -637,8 +637,8 @@ class ResourceAQFT(ResourceOperator):
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        The resources are obtained from (Fig. 4) `Nam 2019, <https://arxiv.org/abs/1803.04933>`_
-        excluding the allocation and instantiation of the phase gradient state. The phased Toffoli
+        The resources are obtained from (Fig. 4) of `arXiv:1803.04933, <https://arxiv.org/abs/1803.04933>`_
+        excluding the allocation and instantiation of the phase gradient state. The phased `Toffoli`
         gates and the classical measure-and-reset (Fig. 2) are accounted for as temporary and
         operations.
 
