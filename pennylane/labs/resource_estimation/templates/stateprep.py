@@ -35,7 +35,7 @@ where :math:`L` is odd, starting from the :math:`|0\rangle` state.
 This operation uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states, where :math:`l` is not a power of 2.
 
     Args:
-        num_states (int): the number of states over which the uniform superposition is being prepared
+        num_states (int): the number of states in the uniform superposition
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
