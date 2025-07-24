@@ -1113,7 +1113,7 @@ def test_error_raised_for_missing_molecule_information():
                 ],
             ),
         ),
-        (
+        pytest.param(
             ["H", "H"],
             np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 2.0]]),
             0,
@@ -1160,6 +1160,10 @@ def test_error_raised_for_missing_molecule_information():
                     Z(1) @ Z(3),
                     Z(2) @ Z(3),
                 ],
+            ),
+            marks=pytest.mark.xfail(
+                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue #[insert-issue-number] for more details.",
+                strict=True,
             ),
         ),
         (
