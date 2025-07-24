@@ -531,7 +531,6 @@ def _trotter_product_decomposition(*args, **kwargs):
     ops = kwargs["base"].operands
 
     def _recursive(x, order, ops):
-        applied = []
         if order == 1:
             for op in ops[::-1]:
                 qml.exp(op, x * 1j)
