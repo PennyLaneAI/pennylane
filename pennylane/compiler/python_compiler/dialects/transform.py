@@ -41,7 +41,7 @@ be contributed upstream.
 
 from xdsl.dialects.builtin import DictionaryAttr
 
-# pylint: disable=unused-wildcard-import,wildcard-import
+# pylint: disable=unused-wildcard-import,wildcard-import,undefined-variable,too-few-public-methods
 from xdsl.dialects.transform import *
 
 
