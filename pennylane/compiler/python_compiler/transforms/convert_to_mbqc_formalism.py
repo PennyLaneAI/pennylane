@@ -128,6 +128,7 @@ class ConvertToMBQCFormalismPattern(
             gate_name = "Hadamard"
             HadamardOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
             rewriter.insert_op(HadamardOp, InsertPoint.before(op))
+            aux_qubits_dict[node] = HadamardOp.results[0]
 
         # Apply CZ gate to entangle each nearest auxiliary qubit pair
         for edge in edges:
@@ -135,6 +136,7 @@ class ConvertToMBQCFormalismPattern(
             gate_name = "CZ"
             CZOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
             rewriter.insert_op(CZOp, InsertPoint.before(op))
+            aux_qubits_dict[edge[0]], aux_qubits_dict[edge[1]] = CZOp.results[0], CZOp.results[1]
 
         return aux_qubits_dict
 
@@ -211,7 +213,8 @@ class ConvertToMBQCFormalismPattern(
                     CZOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
                     rewriter.insert_op(CZOp, InsertPoint.before(op))
 
-                    target_qubit = op.in_qubits[0]
+                    target_qubit, aux_qubits_dict[2] = CZOp.results
+
                     # Insert measurement Op before the op operation
                     if op.gate_name.data == "Hadamard":
                         m1, qubit1 = self._insert_arbitary_basis_measure_op(
@@ -279,7 +282,7 @@ class ConvertToMBQCFormalismPattern(
                     gate_name = "SWAP"
                     SWAPOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
                     rewriter.insert_op(SWAPOp, InsertPoint.before(op))
-                    result_qubit = SWAPOp.out_qubits[0]
+                    result_qubit, aux_qubits_dict[5] = SWAPOp.results
 
                     # Deallocate aux_qubits
                     for node in aux_qubits_dict:
