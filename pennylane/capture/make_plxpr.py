@@ -144,7 +144,7 @@ def make_plxpr(
     if not has_jax:  # pragma: no cover
         raise ImportError(
             "Module jax is required for the ``make_plxpr`` function. "
-            "You can install jax via: pip install jax"
+            "You can install jax via: pip install jax~=0.6.0"
         )
 
     if not qml.capture.enabled():
