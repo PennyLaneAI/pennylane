@@ -358,9 +358,9 @@ def _qrom_decomposition_resources(
 
     # Swap block
     num_control_swap_wires = num_control_wires - num_control_select_wires
-    swap_ops = Counter({})
+    resources = Counter({})
     for ind in range(num_control_swap_wires):
-        swap_ops[
+        resources[
             controlled_resource_rep(
                 base_class=qml.ops.op_math.Prod,
                 base_params={},
@@ -371,19 +371,19 @@ def _qrom_decomposition_resources(
         )
 
     if not clean or depth == 1:
-        swap_ops.update(select_ops)
-        return swap_ops
+        resources.update(select_ops)
+        return resources
 
     hadamard_ops = {qml.Hadamard: num_target_wires}
 
-    swap_ops.update(hadamard_ops)
-    swap_ops.update(select_ops)
-    swap_ops.update(swap_ops)
+    resources.update(hadamard_ops)
+    resources.update(select_ops)
+    resources.update(resources)
 
-    for key, val in swap_ops.items():
-        swap_ops[key] = val * 2
+    for key, val in resources.items():
+        resources[key] = val * 2
 
-    return swap_ops
+    return resources
 
 
 @register_resources(_qrom_decomposition_resources)
