@@ -162,11 +162,11 @@ class ResourceTwoQubitCompare(ResourceOperator):
     >>> print(plre.estimate_resources(two_qubit_compare))
     --- Resources: ---
      Total qubits: 5
-     Total gates : 9
+     Total gates : 10
      Qubit breakdown:
       clean qubits: 1, dirty qubits: 0, algorithmic qubits: 4
      Gate breakdown:
-      {'Toffoli': 2, 'CNOT': 7}
+      {'Toffoli': 2, 'CNOT': 7, 'X': 1}
     """
 
     def __init__(self, wires=None):
