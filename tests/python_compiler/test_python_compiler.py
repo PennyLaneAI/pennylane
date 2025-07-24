@@ -25,6 +25,7 @@ catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
 jaxlib = pytest.importorskip("jaxlib")
 xdsl = pytest.importorskip("xdsl")
+filecheck = pytest.importorskip("filecheck")
 
 from catalyst import CompileError
 from xdsl import passes
@@ -204,6 +205,23 @@ def test_integration_for_transform_interpreter(capsys):
     pipeline.apply(ctx, program())
     captured = capsys.readouterr()
     assert captured.out.strip() == "hello world"
+
+
+def test_transform_dialect_update(run_filecheck):
+
+    program = """
+        "builtin.module"() ({
+            "transform.named_sequence"() <{function_type = (!transform.any_op) -> (), sym_name = "__transform_main"}> ({
+            ^bb0(%arg0: !transform.any_op):
+                %0 = "transform.structured.match"(%arg0) <{ops = ["func.func"]}> : (!transform.any_op) -> !transform.any_op
+                // CHECK: "invalid-option"
+                %1 = "transform.apply_registered_pass"(%0) <{options = {"invalid-option" = 1 : i64}, pass_name = "canonicalize"}> : (!transform.any_op) -> !transform.any_op
+                "transform.yield"() : () -> ()
+            }) : () -> ()
+        }) {transform.with_named_sequence} : () -> ()
+    """
+
+    run_filecheck(program, ())
 
 
 if __name__ == "__main__":
