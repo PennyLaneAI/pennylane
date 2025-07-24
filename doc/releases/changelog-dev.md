@@ -191,6 +191,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
+  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+  [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
+
 * `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
   Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
   [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
