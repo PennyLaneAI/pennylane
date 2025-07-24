@@ -1347,6 +1347,8 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     @property
     def is_hermitian(self) -> bool:
         """This property determines if an operator is likely hermitian.
+        
+        .. note:: It is recommended to use the :func:`~.is_hermitian` function. Although this function may be expensive to calculate, the `op.is_hermitian` property can lead to technically incorrect results.
 
         If this property returns ``True``, the operator is guaranteed to
         be hermitian, but if it returns ``False``, the operator may still be hermitian.
@@ -1357,7 +1359,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         >>> op.is_hermitian
         False
 
-        To definitely check if an operator is hermitian, you can use the :func:`~.is_hermitian` function, though this function may get quite expensive:
+        On the contrary, the :func:`~.is_hermitian` function will give the correct answer:
 
         >>> qml.is_hermitian(op)
         True
