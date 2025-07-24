@@ -15,7 +15,7 @@
 Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 import copy
-from collections import Counter, defaultdict
+from collections import defaultdict
 
 import pennylane as qml
 from pennylane.capture.autograph import wraps
@@ -506,35 +506,21 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 
 
 def _trotter_product_decomposition_resources(n, order, ops):
-    def _recursive(order, ops):
-        reps = Counter()
-        if order == 1:
-            for op in ops:
-                reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] += 1
-            return reps
+    reps = {}
 
-        if order == 2:
-            for op in ops + ops[::-1]:
-                reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] += 1
-            return reps
-
-        ops_ctr_1 = _recursive(order - 2, ops)
-        ops_ctr_2 = _recursive(order - 2, ops)
-
-        for key in ops_ctr_1:
-            ops_ctr_1[key] = ops_ctr_1[key] * 4
-
-        ops_ctr_1.update(ops_ctr_2)
-
-        return ops_ctr_1
-
-    resources = _recursive(order, ops)
-
-    for _ in range(n - 1):
-        for key in resources:
-            resources[key] += 1
-
-    return resources
+    if order == 1:
+        for op in ops:
+            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = n
+        return reps
+    if order == 2:
+        for op in ops:
+            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = n * 2
+        return reps
+    for op in ops:
+        reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = (
+            n * 2 * 5 * (order - 2) / 2
+        )
+    return reps
 
 
 @register_resources(_trotter_product_decomposition_resources)
@@ -545,32 +531,27 @@ def _trotter_product_decomposition(*args, **kwargs):
     ops = kwargs["base"].operands
 
     def _recursive(x, order, ops):
-        applied = []
         if order == 1:
-            for op in ops:
-                applied.append(qml.exp(op, x * 1j))
-            return applied
+            for op in ops[::-1]:
+                qml.exp(op, x * 1j)
+            return
 
         if order == 2:
             for op in ops + ops[::-1]:
-                applied.append(qml.exp(op, x * 0.5j))
-            return applied
+                qml.exp(op, x * 0.5j)
+            return
 
         scalar_1 = _scalar(order)
         scalar_2 = 1 - 4 * scalar_1
 
-        ops_ctr_1 = _recursive(scalar_1 * x, order - 2, ops)
-        ops_ctr_2 = _recursive(scalar_2 * x, order - 2, ops)
+        for _ in range(2):
+            _recursive(scalar_1 * x, order - 2, ops)
+        _recursive(scalar_2 * x, order - 2, ops)
+        for _ in range(2):
+            _recursive(scalar_1 * x, order - 2, ops)
 
-        for op in 3 * ops_ctr_1:
-            qml.apply(op)
-
-        return (2 * ops_ctr_1) + ops_ctr_2 + (2 * ops_ctr_1)
-
-    decomp = _recursive(time / n, order, ops)[::-1] * (n - 1)
-
-    for op in decomp:  # apply operators in reverse order of expression
-        qml.apply(op)
+    for _ in range(n):
+        _recursive(time / n, order, ops)
 
 
 add_decomps(TrotterProduct, _trotter_product_decomposition)
