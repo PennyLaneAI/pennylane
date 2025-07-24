@@ -39,6 +39,8 @@ Once xDSL moves to a newer version of MLIR, these changes should
 be contributed upstream.
 """
 
+from xdsl.dialects.builtin import DictionaryAttr
+
 # pylint: disable=unused-wildcard-import,wildcard-import
 from xdsl.dialects.transform import *
 
@@ -55,7 +57,7 @@ class ApplyRegisteredPassOp(IRDLOperation):
 
     name = "transform.apply_registered_pass"
 
-    options = prop_def(StringAttr, default_value=StringAttr(""))
+    options = prop_def(DictionaryAttr, default_value=DictionaryAttr({}))
     pass_name = prop_def(StringAttr)
     target = operand_def(TransformHandleType)
     result = result_def(TransformHandleType)
@@ -66,13 +68,13 @@ class ApplyRegisteredPassOp(IRDLOperation):
         self,
         pass_name: str | StringAttr,
         target: SSAValue,
-        options: str | StringAttr | None = None,
+        options: dict | DictionaryAttr | None = None,
     ):
         if isinstance(pass_name, str):
             pass_name = StringAttr(pass_name)
 
-        if isinstance(options, str):
-            options = StringAttr(options)
+        if isinstance(options, dict):
+            options = DictionaryAttr(options)
 
         super().__init__(
             properties={
