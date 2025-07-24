@@ -28,7 +28,6 @@ from __future__ import annotations
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass
-from functools import lru_cache
 
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
