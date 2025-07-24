@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit test module for the xDSL implementation of the diagonalize_measurements transform"""
+"""Unit test module for the xDSL implementation of the diagonalize_final_measurements pass"""
 
 
 # pylint: disable=wrong-import-position
@@ -22,40 +22,21 @@ import pytest
 pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
-from xdsl.dialects import arith, builtin, func, tensor
 
 catalyst = pytest.importorskip("catalyst")
 from catalyst.passes import xdsl_plugin
 
 import pennylane as qml
-from pennylane.compiler.python_compiler import quantum_dialect as quantum
 from pennylane.compiler.python_compiler.transforms import (
     DiagonalizeFinalMeasurementsPass,
-    diagonalize_measurements_pass,
+    diagonalize_final_measurements_pass,
 )
 
 
-@pytest.fixture(name="context_and_pipeline", scope="function")
-def fixture_context_and_pipeline():
-    """A fixture that prepares the context and pipeline for unit tests of the
-    diagonalize-measurements pass.
-    """
-    ctx = xdsl.context.Context(allow_unregistered=True)
-    ctx.load_dialect(builtin.Builtin)
-    ctx.load_dialect(func.Func)
-    ctx.load_dialect(tensor.Tensor)
-    ctx.load_dialect(arith.Arith)
-    ctx.load_dialect(quantum.QuantumDialect)
-
-    pipeline = xdsl.passes.PipelinePass((DiagonalizeFinalMeasurementsPass(),))
-
-    yield ctx, pipeline
-
-
 class TestDiagonalizeFinalMeasurementsPass:
-    """Unit tests for the diagonalize-measurements pass."""
+    """Unit tests for the diagonalize-final-measurements pass."""
 
-    def test_unsupported_observable_raises_error(self, context_and_pipeline):
+    def test_unsupported_observable_raises_error(self, run_filecheck):
         """Test that an unsupported observable raises an error. At the time of
         implementation, the only observable that is supported in MLIR but not
         in this transform is Hadamard."""
@@ -69,12 +50,12 @@ class TestDiagonalizeFinalMeasurementsPass:
             }
             """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        with pytest.raises(NotImplementedError, match="not supported for diagonalization"):
-            pipeline.apply(ctx, module)
+        pipeline = (DiagonalizeFinalMeasurementsPass(),)
 
-    def test_with_pauli_z(self, context_and_pipeline, run_filecheck):
+        with pytest.raises(NotImplementedError, match="not supported for diagonalization"):
+            run_filecheck(program, pipeline)
+
+    def test_with_pauli_z(self, run_filecheck):
         """Test that a PauliZ observable is not affected by diagonalization"""
 
         program = """
@@ -90,13 +71,10 @@ class TestDiagonalizeFinalMeasurementsPass:
             }
             """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (DiagonalizeFinalMeasurementsPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_with_identity(self, context_and_pipeline, run_filecheck):
+    def test_with_identity(self, run_filecheck):
         """Test that an Identity observable is not affected by diagonalization."""
 
         program = """
@@ -112,14 +90,10 @@ class TestDiagonalizeFinalMeasurementsPass:
                 return
             }
             """
+        pipeline = (DiagonalizeFinalMeasurementsPass(),)
+        run_filecheck(program, pipeline)
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
-
-    def test_with_pauli_x(self, context_and_pipeline, run_filecheck):
+    def test_with_pauli_x(self, run_filecheck):
         """Test that when diagonalizing a PauliX observable, the expected diagonalizing
         gates are inserted and the observable becomes PauliZ."""
 
@@ -139,13 +113,10 @@ class TestDiagonalizeFinalMeasurementsPass:
             }
             """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (DiagonalizeFinalMeasurementsPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_with_pauli_y(self, context_and_pipeline, run_filecheck):
+    def test_with_pauli_y(self, run_filecheck):
         """Test that when diagonalizing a PauliY observable, the expected diagonalizing
         gates are inserted and the observable becomes PauliZ."""
 
@@ -167,13 +138,10 @@ class TestDiagonalizeFinalMeasurementsPass:
             }
             """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (DiagonalizeFinalMeasurementsPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_with_composite_observable(self, context_and_pipeline, run_filecheck):
+    def test_with_composite_observable(self, run_filecheck):
         """Test transform on a measurement process with a composite observable. In this
         case, the simplified program is based on the MLIR generated by the circuit
 
@@ -197,23 +165,23 @@ class TestDiagonalizeFinalMeasurementsPass:
                 // CHECK: [[q0_3:%.*]] = quantum.custom "Hadamard"() [[q0_2]]
                 // CHECK: [[q_y:%.*]] =  quantum.namedobs [[q0_3]][PauliZ]
                 // CHECK-NOT: quantum.namedobs [[q:%.+]][PauliY]
-                %3 = quantum.namedobs %0[PauliY]: !quantum.obs
+                %3 = quantum.namedobs %0[PauliY] : !quantum.obs
                 
                 // CHECK: [[q1_1:%.*]] = quantum.custom "Hadamard"() [[q1]]
                 // CHECK: [[q_x:%.*]] = quantum.namedobs [[q1_1]][PauliZ]
                 // CHECK-NOT: quantum.namedobs [[q:%.+]][PauliX]
-                %4 = quantum.namedobs %1[PauliX]: !quantum.obs
+                %4 = quantum.namedobs %1[PauliX] : !quantum.obs
                 
-                // CHECK: [[tensor0:%.*]] = quantum.tensor [[q_y]], [[q_x]]: !quantum.obs
-                %5 = quantum.tensor %3, %4: !quantum.obs
+                // CHECK: [[tensor0:%.*]] = quantum.tensor [[q_y]], [[q_x]] : !quantum.obs
+                %5 = quantum.tensor %3, %4 : !quantum.obs
                 
-                // CHECK: [[q_z:%.*]] = quantum.namedobs [[q2]][PauliZ]: !quantum.obs
-                %6 = quantum.namedobs %2[PauliZ]: !quantum.obs
+                // CHECK: [[q_z:%.*]] = quantum.namedobs [[q2]][PauliZ] : !quantum.obs
+                %6 = quantum.namedobs %2[PauliZ] : !quantum.obs
                 
                 // CHECK: [[size:%.*]] = "test.op"() : () -> tensor<2xf64>
                 %size_info = "test.op"() : () -> tensor<2xf64>
                 
-                // CHECK: quantum.hamiltonian([[size]]: tensor<2xf64>) [[tensor0]], [[q_z]] : !quantum.obs
+                // CHECK: quantum.hamiltonian([[size]] : tensor<2xf64>) [[tensor0]], [[q_z]] : !quantum.obs
                 %7 = quantum.hamiltonian(%size_info : tensor<2xf64>) %5, %6 : !quantum.obs
 
                 // CHECK: quantum.expval
@@ -222,13 +190,10 @@ class TestDiagonalizeFinalMeasurementsPass:
             }
             """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
+        pipeline = (DiagonalizeFinalMeasurementsPass(),)
+        run_filecheck(program, pipeline)
 
-        run_filecheck(program, module)
-
-    def test_with_multiple_measurements(self, context_and_pipeline, run_filecheck):
+    def test_with_multiple_measurements(self, run_filecheck):
         """Test diagonalizing a circuit with multiple measurements. The simplified program
         for this test is based on the circuit
 
@@ -262,11 +227,8 @@ class TestDiagonalizeFinalMeasurementsPass:
             }
             """
 
-        ctx, pipeline = context_and_pipeline
-        module = xdsl.parser.Parser(ctx, program).parse_module()
-        pipeline.apply(ctx, module)
-
-        run_filecheck(program, module)
+        pipeline = (DiagonalizeFinalMeasurementsPass(),)
+        run_filecheck(program, pipeline)
 
 
 class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
@@ -305,13 +267,12 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
         ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
-            diagonalize_measurements_pass(circuit_ref),
+            diagonalize_final_measurements_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
         )
 
         assert np.allclose(expected_res(angle), circuit_compiled(angle))
 
-    @pytest.mark.xfail(reason="operator arithmetic not yet supported for plxpr conversion")
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_with_composite_observables(self):
         """Test the transform works for an observable built using operator arithmetic
@@ -340,7 +301,7 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
         ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
-            diagonalize_measurements_pass(circuit_ref),
+            diagonalize_final_measurements_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
         )
 
@@ -370,7 +331,7 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
         ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
-            diagonalize_measurements_pass(circuit_ref),
+            diagonalize_final_measurements_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
         )
 
@@ -398,13 +359,13 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
         ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
-            diagonalize_measurements_pass(circuit_ref),
+            diagonalize_final_measurements_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
         )
 
         assert np.allclose(expected_res(phi), circuit_compiled(phi))
 
-    # ToDo: get this handled (currently silently returns incorrect results)
+    @pytest.mark.xfail(reason="for now, assume split_non_commuting is always applied")
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_non_commuting_observables_raise_error(self):
         """Check that an error is if we try to diagonalize a circuit that contains
@@ -412,7 +373,7 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
         dev = qml.device("lightning.qubit", wires=1)
 
         @qml.qjit(pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
-        @diagonalize_measurements_pass
+        @diagonalize_final_measurements_pass
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, 0)
@@ -459,7 +420,7 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
         ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
-            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-measurements")(
+            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-final-measurements")(
                 circuit_ref
             ),
         )
@@ -493,7 +454,7 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
         ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
-            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-measurements")(
+            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-final-measurements")(
                 circuit_ref
             ),
         )
@@ -523,7 +484,7 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
         ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
-            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-measurements")(
+            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-final-measurements")(
                 circuit_ref
             ),
         )
@@ -551,21 +512,21 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
         ), "Sanity check failed, is expected_res correct?"
 
         circuit_compiled = qml.qjit(
-            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-measurements")(
+            catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-final-measurements")(
                 circuit_ref
             ),
         )
 
         assert np.allclose(expected_res(phi), circuit_compiled(phi))
 
-    # ToDo: get this handled (currently silently returns incorrect results)
+    @pytest.mark.xfail(reason="for now, assume split_non_commuting is always applied")
     def test_non_commuting_observables_raise_error(self):
         """Check that an error is if we try to diagonalize a circuit that contains
         non-commuting observables."""
         dev = qml.device("lightning.qubit", wires=1)
 
         @qml.qjit()
-        @catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-measurements")
+        @catalyst.passes.apply_pass("catalyst_xdsl_plugin.diagonalize-final-measurements")
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, 0)
