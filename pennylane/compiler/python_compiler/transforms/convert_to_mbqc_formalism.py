@@ -144,7 +144,6 @@ class ConvertToMBQCFormalismPattern(
         """Insert arbitary basis measure related operations before the op operation."""
         in_qubit = qubit
         planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
-        rewriter.insert_op(planeOp, InsertPoint.before(op))
         constAngleOp = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
         # Insert the constant angleOP
         rewriter.insert_op(constAngleOp, InsertPoint.before(op))
