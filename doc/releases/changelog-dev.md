@@ -281,6 +281,11 @@
 * Update JAX version used in tests to `0.6.2`
   [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
 
+* The measurement-plane attribute of the Python compiler `mbqc` dialect now uses the "opaque syntax"
+  format when printing in the generic IR format. This enables usage of this attribute when IR needs
+  to be passed from the python compiler to Catalyst.
+  [(#7957)](https://github.com/PennyLaneAI/pennylane/pull/7957)
+
 <h3>Documentation 📝</h3>
 
 * Improved the docstrings of all optimizers for consistency and legibility.
