@@ -20,15 +20,12 @@ from dataclasses import dataclass
 
 import networkx as nx
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import arith, builtin, func, memref, scf, tensor, vector
+from xdsl.dialects import arith, builtin, func, scf
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.rewriter import InsertPoint
 
-from pennylane.ftqc import generate_lattice
-from pennylane.ops import CZ, H
-
 from ..dialects.mbqc import MeasureInBasisOp, MeasurementPlaneAttr, MeasurementPlaneEnum
-from ..dialects.quantum import AllocOp, AllocQubitOp, CustomOp, DeallocQubitOp, ExtractOp, QubitType
+from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp, QubitType
 from .api import compiler_transform
 
 
@@ -199,12 +196,9 @@ class ConvertToMBQCFormalismPattern(
     ):  # pylint: disable=arguments-differ, cell-var-from-loop
         """Match and rewrite for converting to the MBQC formalism."""
 
-        registers_state = None
         for region in root.regions:
             for op in region.ops:
-                if isinstance(op, AllocOp):
-                    registers_state = op.results[0]
-                elif isinstance(op, CustomOp) and op.gate_name.data in [
+                if isinstance(op, CustomOp) and op.gate_name.data in [
                     "Hadamard",
                     "S",
                     "RZ",
@@ -266,9 +260,8 @@ class ConvertToMBQCFormalismPattern(
                         result_qubit = self._insert_byproduct_op(
                             cmpOp.result, "PauliX", aux_qubits_dict[5], op, rewriter
                         )
-                        aux_qubits_dict[5] = result_qubit
 
-                        # # z correction: m2, m3
+                        # z correction: m2, m3
                         m23_sum_z = arith.AddiOp(m2, m3)
                         rewriter.insert_op(m23_sum_z, InsertPoint.before(op))
 
@@ -281,19 +274,19 @@ class ConvertToMBQCFormalismPattern(
                         result_qubit = self._insert_byproduct_op(
                             cmpOp.result, "PauliZ", aux_qubits_dict[5], op, rewriter
                         )
-                        aux_qubits_dict[5] = result_qubit
 
-                    # qubit_extractop = ExtractOp(registers_state, target_qubit)
-                    # # Swap the target qubit with the output qubit
-                    # in_qubits = [target_qubit, aux_qubits_dict[5]]
-                    # gate_name = "SWAP"
-                    # SWAPOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
-                    # rewriter.insert_op(SWAPOp, InsertPoint.before(op))
+                    in_qubits = (target_qubit, aux_qubits_dict[5])
+                    gate_name = "SWAP"
+                    SWAPOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
+                    rewriter.insert_op(SWAPOp, InsertPoint.before(op))
+                    result_qubit = SWAPOp.out_qubits[0]
 
-                    # # Deallocate aux_qubits
-                    # for node in aux_qubits_dict:
-                    #     deallocQubitOp = DeallocQubitOp(aux_qubits_dict[node])
-                    #     rewriter.insert_op(deallocQubitOp, InsertPoint.before(op))
+                    # Deallocate aux_qubits
+                    for node in aux_qubits_dict:
+                        deallocQubitOp = DeallocQubitOp(aux_qubits_dict[node])
+                        rewriter.insert_op(deallocQubitOp, InsertPoint.before(op))
 
-                    # # Replace the current operation
-                    # rewriter.replace_op(op, qubit_extractop)
+                    # Replace all uses of output qubit of op with the result_qubit
+                    rewriter.replace_all_uses_with(op.results[0], result_qubit)
+                    # Remove op operation
+                    rewriter.erase_op(op)
