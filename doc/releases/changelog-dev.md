@@ -47,6 +47,28 @@
 
 <h3>Improvements 🛠</h3>
 
+* Several templates now have decompositions that can be accessed within the graph-based
+  decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows 
+  that include these templates to be decomposed in a resource-efficient and performant
+  manner.
+  [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
+  
+  The included templates are:
+
+  * :class:`~.Adder`
+    
+  * :class:`~.ControlledSequence`
+  
+  * :class:`~.ModExp`
+
+  * :class:`~.Multiplier`
+
+  * :class:`~.OutAdder`
+
+  * :class:`~.OutMultiplier`
+
+  * :class:`~.OutPoly`
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -242,6 +264,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Adds `measurements` as a "core" module in the tach specification.
+ [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 
 * Improves type hints in the `measurements` module.
   [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
