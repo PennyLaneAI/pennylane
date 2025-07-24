@@ -623,7 +623,9 @@ class TestMPSPrep:
     )
     def test_decomposition_new(self, mps, num_wires):
         """Tests the decomposition rule implemented with the new system."""
-        op = qml.MPSPrep(mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True)
+        op = qml.MPSPrep(
+            mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
+        )
         for rule in qml.list_decomps(qml.MPSPrep):
             _test_decomposition_rule(op, rule)
 
