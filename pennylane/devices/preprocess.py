@@ -775,7 +775,7 @@ def _get_diagonalized_tape_and_wires(tape):
 
 @transform
 def device_resolve_dynamic_wires(
-    tape: QuantumScript, wires: Optional[Wires]
+    tape: QuantumScript, wires: None | Wires
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     if wires:
         zeroed = set(wires) - set(tape.wires)
