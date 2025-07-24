@@ -1527,22 +1527,22 @@ def _check_trace_preserving(Ks):
 
 def choi_matrix(Ks, check_Ks=False):
     r"""
-    Compute the choi matrix :math:`\Lambda` of a quantum channel :math:`\mathcal{E}`
+    Compute the choi matrix :math:`\Lambda` of a quantum channel :math:`\mathcal{E}`,
 
     .. math:: \Lambda = (\mathbb{1} \otimes \mathcal{E})(|\phi^+ \rangle \langle \phi^+|) = \frac{1}{d} \sum_{ij=0}^{d-1} |i \rangle \langle j| \otimes \mathcal{E}(|i \rangle \langle j|)
 
     where :math:`|\phi^+ \rangle` is the maximally entangled state
     :math:`|\phi^+\rangle = \frac{1}{\sqrt{d}} \sum_{i=0}^{d-1} |i\rangle \otimes |i\rangle` between the
-    qubit system the channel :math:`\mathcal{E}` is acting on, and an artificially introduced extra system of the same size.
+    qubit system the channel :math:`\mathcal{E}` is acting on and additional "artificial" system of the same size. 
 
     We assume the channel
 
-    .. math:: \mathcal{E}(\bullet) = \sum_j K_j^\dagger \bullet K_j
+    .. math:: \mathcal{E}(\rho) = \sum_\ell K_\ell^\dagger \rho K_\ell
 
-    is provided in form of its Kraus operators :math:`\{K_j\}` (``Ks``) that are trace-preserving, hence :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
+    is provided in terms of its Kraus operators :math:`\{K_j\}` (``Ks``) that are trace-preserving, hence :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
 
     Args:
-        Ks (TensorLike): Kraus operators as a list of ``(2**n, 2**n)`` acting on ``n`` qubits.
+        Ks (TensorLike): A list of Kraus operators with size ``(2**n, 2**n)`` that act on ``n`` wires.
         check_Ks (bool): Whether or not to check if the provided Kraus operators are trace-preserving, i.e. :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`. Default is ``False``.
 
     Returns:
