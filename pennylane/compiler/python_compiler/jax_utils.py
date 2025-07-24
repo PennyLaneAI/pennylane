@@ -30,12 +30,12 @@ from xdsl.dialects import func as xfunc
 from xdsl.dialects import scf as xscf
 from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects import tensor as xtensor
-from xdsl.dialects import transform as xtransform
 from xdsl.ir import Dialect as xDialect
 from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
 from .dialects import MBQC, Quantum
+from .dialects import transform as xtransform
 
 JaxJittedFunction: TypeAlias = _jax.PjitFunction  # pylint: disable=c-extension-no-member
 
