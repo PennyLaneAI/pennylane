@@ -24,7 +24,6 @@ from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
 
 import pennylane as qml
-from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import DecompositionGraph
 from pennylane.decomposition.utils import translate_op_alias
 from pennylane.operation import Operator
@@ -197,9 +196,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                 return self.interpret_operation(op)
 
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
-                return self.interpret_operation(op)
-
-            if isinstance(op, (Allocate, Deallocate)):
                 return self.interpret_operation(op)
 
             if qml.decomposition.enabled_graph() and self._decomp_graph.is_solved_for(op):
@@ -829,8 +825,6 @@ def _operator_decomposition_gen(
         max_depth_reached = True
 
     if acceptance_function(op) or max_depth_reached:
-        yield op
-    elif isinstance(op, (Allocate, Deallocate)):
         yield op
     elif decomp_graph is not None and decomp_graph.is_solved_for(op):
         op_rule = decomp_graph.decomposition(op)
