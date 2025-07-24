@@ -557,7 +557,7 @@ def _mps_prep_decomposition(*mps, **kwargs):
         vectors = Aip.reshape(2**n_wires, -1)  # Reshape to (2**n_wires, vL)
         # The unitary is completed using QR decomposition
         d, k = vectors.shape
-        assert d == 2**n_wires, "The first dimension of the vectors must match 2**(n_wires-1)."
+        assert d == 2**n_wires, "The first dimension of the vectors must match 2**n_wires."
         assert k <= d, "The second dimension of the vectors must be less than or equal to 2**(n_wires-1)."
         new_columns = qml.math.array(np.random.RandomState(42).random((d, d - k)))
         unitary_matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
