@@ -95,42 +95,9 @@ class ApplyRegisteredPassOp(IRDLOperation):
 # Copied over from xDSL's sources
 # the main difference will be the use
 # of a different ApplyRegisteredPassOp
-Transform = Dialect(
-    "transform",
-    [
-        ApplyRegisteredPassOp,
-        GetConsumersOfResultOp,
-        GetDefiningOp,
-        GetParentOp,
-        GetProducerOfOperandOp,
-        GetResultOp,
-        GetTypeOp,
-        IncludeOp,
-        MatchOperationEmptyOp,
-        MatchOperationNameOp,
-        MatchParamCmpIOp,
-        MergeHandlesOp,
-        ParamConstantOp,
-        SplitHandleOp,
-        SequenceOp,
-        YieldOp,
-        TileOp,
-        TileToForallOp,
-        SelectOp,
-        NamedSequenceOp,
-        CastOp,
-        MatchOp,
-    ],
-    [
-        # Types
-        AffineMapType,
-        AnyOpType,
-        AnyValueType,
-        AnyParamType,
-        OperationType,
-        ParamType,
-        TypeParamType,
-        # Attributes
-        FailurePropagationModeAttr,
-    ],
-)
+operations = list(transform.Transform.operations)
+del operations[operations.index(transform.ApplyRegisteredPassOp)]
+operations.append(ApplyRegisteredPassOp)
+attributes = list(transform.Transform.attributes)
+
+Transform = Dialect("transform", operations, attributes)

@@ -32,7 +32,7 @@ from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
 from xdsl.utils.exceptions import PassFailedException
 
-from pennylane.compiler.python_compiler.dialects import transform
+from ...dialects import transform
 
 
 # pylint: disable=too-few-public-methods
