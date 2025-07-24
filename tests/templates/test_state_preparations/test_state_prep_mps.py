@@ -14,11 +14,13 @@
 """
 Tests for the MPSPrep template.
 """
+from functools import partial
 
 import numpy as np
 import pytest
 
 import pennylane as qml
+import pennylane.decomposition
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.state_prep_mps import (
     _validate_mps_shape,
@@ -655,13 +657,16 @@ class TestMPSPrep:
         ]
         num_wires = 4
 
+        qml.decomposition.enable_graph()
+
+        @partial(qml.transforms.decompose, gate_set={qml.QubitUnitary})
         def circuit():
-            qml.MPSPrep(mps, wires=range(2, num_wires + 2))
+            qml.MPSPrep(mps, wires=range(2, num_wires + 2), work_wires=[0, 1])
 
         plxpr = qml.capture.make_plxpr(circuit)()
         collector = CollectOpsandMeas()
         collector.eval(plxpr.jaxpr, plxpr.consts)
-        assert collector.state["ops"] == [qml.MPSPrep(mps, wires=range(2, num_wires + 2))]
+        assert isinstance(collector.state["ops"][0], qml.QubitUnitary)
 
     def test_decomposition(self):
         """Tests that the template defines the correct decomposition."""
