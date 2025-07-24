@@ -1598,7 +1598,7 @@ def choi_matrix(Ks, check_Ks=False):
     for i in aux_basis:
         for j in q_basis:
             for K in Ks:
-                asd = K @ np.outer(i, j) @ K.conj().T
+                asd = K @ np.outer(i, j) @ math.transpose(math.conj(K))
                 asd2 = math.kron(math.outer(i, j), asd)
                 choi += asd2
 
