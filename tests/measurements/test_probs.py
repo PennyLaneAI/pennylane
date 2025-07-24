@@ -418,6 +418,7 @@ class TestProbs:
 
         dev = qml.device("default.qubit", seed=seed)
 
+        @qml.set_shots(shots=shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -428,7 +429,7 @@ class TestProbs:
             m2 = qml.measure(2)
             return qml.probs(op=[m0, m1, m2])
 
-        res = circuit(phi, shots=shots)
+        res = circuit(phi)
 
         @qml.qnode(dev)
         def expected_circuit(phi):
