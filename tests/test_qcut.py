@@ -2620,7 +2620,7 @@ class TestCutCircuitMCTransform:
         v = 0.319
 
         temp_shots = 333
-        cut_res = cut_circuit(v, shots=temp_shots)  # pylint: disable=unexpected-keyword-arg
+        cut_res = qml.set_shots(shots=temp_shots)(cut_circuit)(v)
 
         assert cut_res.shape == (temp_shots, 2)
 
@@ -4538,8 +4538,9 @@ class TestCutCircuitExpansion:
         spy = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
 
-        kwargs = {"shots": 10} if isinstance(measurement, qml.measurements.SampleMP) else {}
-        cut_transform(circuit, device_wires=[0])(**kwargs)
+        if isinstance(measurement, qml.measurements.SampleMP):
+            circuit = qml.set_shots(circuit, shots=10)
+        cut_transform(circuit, device_wires=[0])()
 
         assert spy.call_count == 1 or spy_mc.call_count == 1
 
@@ -4555,8 +4556,9 @@ class TestCutCircuitExpansion:
             return qml.apply(measurement)
 
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
-            kwargs = {"shots": 10} if isinstance(measurement, qml.measurements.SampleMP) else {}
-            cut_transform(circuit, device_wires=[0])(**kwargs)
+            if isinstance(measurement, qml.measurements.SampleMP):
+                circuit = qml.set_shots(circuit, shots=10)
+            cut_transform(circuit, device_wires=[0])()
 
     def test_expansion_ttn(self, mocker):
         """Test if wire cutting is compatible with the tree tensor network operation"""

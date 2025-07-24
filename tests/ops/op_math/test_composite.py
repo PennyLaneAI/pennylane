@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp
 from pennylane.wires import Wires
 

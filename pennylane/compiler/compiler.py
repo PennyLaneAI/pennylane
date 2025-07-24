@@ -22,11 +22,9 @@ from sys import version_info
 
 from packaging.version import Version
 
+from pennylane.exceptions import CompileError
+
 PL_CATALYST_MIN_VERSION = Version("0.12.0")
-
-
-class CompileError(Exception):
-    """Error encountered in the compilation phase."""
 
 
 @dataclasses.dataclass
