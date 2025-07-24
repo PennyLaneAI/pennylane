@@ -333,7 +333,7 @@ def _qrom_decomposition_resources(
     num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
 ):
     if num_control_wires == 0:
-        return {resource_rep(qml.BasisEmbedding, num_wires=num_target_wires)}
+        return {resource_rep(qml.BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
 
     num_swap_wires = num_target_wires + num_work_wires
 
