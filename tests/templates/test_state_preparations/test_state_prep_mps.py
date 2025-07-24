@@ -660,6 +660,7 @@ class TestMPSPrep:
         qml.decomposition.enable_graph()
 
         @partial(qml.transforms.decompose, gate_set={qml.QubitUnitary})
+        @qml.qnode(qml.device("default.qubit", wires=[i for i in range(num_wires + 2)]))
         def circuit():
             qml.MPSPrep(mps, wires=range(2, num_wires + 2), work_wires=[0, 1])
 
