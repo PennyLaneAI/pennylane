@@ -259,7 +259,7 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso 
+Guillermo Alonso,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
