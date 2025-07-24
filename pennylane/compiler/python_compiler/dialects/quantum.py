@@ -144,7 +144,7 @@ ObservableSSAValue: TypeAlias = SSAValue[ObservableType]
 class AdjointOp(IRDLOperation):
     """Calculate the adjoint of the enclosed operations.
 
-    This operation takes as an input a quantum register and outputs
+    This operation takes as input a quantum register and outputs
     an updated quantum register. Its body may contain classical and
     quantum operations, including nested adjoint operations.
 
@@ -330,7 +330,7 @@ class AllocOp(IRDLOperation):
 
     Args:
         nqubits (int | IntegerAttr | SSAValue): Quantity of wires/qubits in the state vector.
-            If the value for ``nqubits`` is either an Python integer
+            If the value for ``nqubits`` is either a Python integer
             or an ``IntegerAttr``, then the number is known at compile time.
             If it is an ``SSAValue``, then it is likely that this value is
             computed at runtime.
@@ -375,11 +375,11 @@ class AllocOp(IRDLOperation):
 
 @irdl_op_definition
 class ComputationalBasisOp(IRDLOperation):
-    """Define a pseudo-obeservable in the computational basis for use in measurements.
+    """Define a pseudo-observable in the computational basis for use in measurements.
 
     Args:
-        qubits (Sequence[SSAValue] | None): Qubits that make up the computational basis.
-        qreg (SSAValue | None): Quantum register that makes up the computational basis.
+        qubits (Sequence[QubitSSAValue] | None): Qubits that make up the computational basis.
+        qreg (QuregSSAValue | None): Quantum register that makes up the computational basis.
 
     Results:
         obs (ObservableSSAValue): The observable value.
@@ -482,11 +482,11 @@ class CountsOp(IRDLOperation):
 class CustomOp(IRDLOperation):
     """A generic quantum gate on n qubits with m floating point parameters.
 
-    This operation represents an quantum operation acting on wires.
+    This operation represents a quantum operation acting on wires.
     This operation may be adjoint, or may be controlled.
 
     Args:
-        name (string | StringAttr): The operation's name. E.g., Hadamard.
+        gate_name (string | StringAttr): The operation's name. E.g., Hadamard.
         params (Sequence[SSAValue]): The classical parameters.
         in_qubits (Sequence[SSAValue]): The qubits the operation acts on.
         adjoint (UnitAttr | bool | None): Denotes whether the operation is an adjoint.
@@ -504,7 +504,7 @@ class CustomOp(IRDLOperation):
         operation is not controlled in this context since both its control and target wires are
         contained within ``in_qubits``.
 
-        The same number of ``in_ctrl_qubits`` and ``in_ctrl_values`` are required.
+        The same number of ``in_ctrl_qubits`` and ``in_ctrl_values`` is required.
 
         The semantics of these gates are given by the runtime.
 
@@ -1083,7 +1083,7 @@ class MultiRZOp(IRDLOperation):
 
         This operation is one of the few quantum operations that is not applied via
         ``quantum.custom``. The reason for this is that it needs to be handled in a special
-        way during the lowering due to its C function being variadic on the number of qubits.
+        way during lowering due to its C function being variadic on the number of qubits.
     """
 
     name = "quantum.multirz"
@@ -1180,7 +1180,7 @@ class ProbsOp(IRDLOperation):
     number of qubits.
 
     Args:
-        obs (ObservableSSalue): observable to compute probabilities for.
+        obs (ObservableSSAValue): observable to compute probabilities for.
         dynamic_shape (SSAValue | None): Optional variable used during dynamic register allocation
             to denote how many elements will be available in the probabilities tensor output.
     Results:
@@ -1277,7 +1277,7 @@ class SampleOp(IRDLOperation):
     from an observable on the current quantum state.
 
     Args:
-        obs (SSAValue): an observable that must be defined by an operation in the local scope.
+        obs (ObservableSSAValue): an observable that must be defined by an operation in the local scope.
 
     Results:
         samples (SSAValue): The number of samples to draw is determined by the device shots argument in the device initialization operation in the local scope.
@@ -1287,7 +1287,7 @@ class SampleOp(IRDLOperation):
 
         The return value type depends on the type of observable provided. Computational
         basis samples are returned as a 2D array of shape (shot number, number of qubits), with all
-        other obversables the output is a 1D array of lenth equal to the shot number.
+        other observables the output is a 1D array of length equal to the shot number.
 
     .. note::
 
@@ -1302,10 +1302,10 @@ class SampleOp(IRDLOperation):
         {
             quantum.device shots(%shots) ["rtd_lightning.so", "lightning.qubit", "{my_attr: my_attr_value}"]
             %obs1 = quantum.compbasis %q0, %q1 : !quantum.obs
-            %samples = quantum.samples %obs1 : tensor<?xf64>
+            %samples = quantum.sample %obs1 : tensor<?xf64>
 
             %obs2 = quantum.pauli %q0[3], %q1[1] : !quantum.obs
-            %samples2 = quantum.samples %obs2 : tensor<?x2xf64>
+            %samples2 = quantum.sample %obs2 : tensor<?x2xf64>
 
             func.return
         }
@@ -1458,7 +1458,7 @@ class TensorOp(IRDLOperation):
         {
             %obs1 = quantum.namedobs %q0[4] : !quantum.obs
             %obs2 = quantum.hermitian(%m: tensor<2x2xcomplex<f64>>) %q1 : !quantum.obs
-            %res = quantum.tensorprod %obs1, %obs2 : !quantum.obs
+            %res = quantum.tensor %obs1, %obs2 : !quantum.obs
             func.return
         }
 
@@ -1477,7 +1477,7 @@ class TensorOp(IRDLOperation):
 
 @irdl_op_definition
 class VarianceOp(IRDLOperation):
-    """Compute the variance of the given observable for the current state
+    """Compute the variance of the given observable for the current state.
 
     The ``quantum.var`` operation represents the measurement process of computing the variance of
     an observable on the current quantum state. While this quantity can be computed analytically on simulators, for hardware execution or shot noise
