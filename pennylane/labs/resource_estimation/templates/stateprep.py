@@ -39,7 +39,7 @@ class ResourceUniformStatePrep(ResourceOperator):
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        The resources are obtained from Figure 12 in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+        The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
         The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states, where :math:`l = 2^{k}L`.
 
     **Example**
@@ -98,7 +98,7 @@ class ResourceUniformStatePrep(ResourceOperator):
             num_states (int): the number of states over which the uniform superposition is being prepared
 
         Resources:
-            The resources are obtained from Figure 12 in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
             The circuit uses amplitude amplification to prepare a uniform superposition over l basis states, where :math:`l = 2^{k}L`.
 
         Returns:
@@ -148,7 +148,7 @@ class ResourceAliasSampling(ResourceOperator):
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        The resources are obtained from Section III D in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+        The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
 
     **Example**
 
@@ -205,7 +205,7 @@ class ResourceAliasSampling(ResourceOperator):
             precision (float): the precision with which the coefficients are loaded
 
         Resources:
-            The resources are obtained from Section III D in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_.
+            The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
             The circuit uses coherent alias sampling to prepare a state with the given coefficients.
 
         Returns:
