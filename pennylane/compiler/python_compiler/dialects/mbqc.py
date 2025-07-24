@@ -24,7 +24,7 @@ catalyst/mlir/include/MBQC/IR/MBQCDialect.td file in the catalyst repository.
 from typing import TypeAlias
 
 from xdsl.dialects.builtin import I32, Float64Type, IntegerAttr, IntegerType
-from xdsl.ir import Dialect, EnumAttribute, Operation, SSAValue
+from xdsl.ir import Dialect, EnumAttribute, Operation, SpacedOpaqueSyntaxAttribute, SSAValue
 from xdsl.irdl import (
     IRDLOperation,
     irdl_attr_definition,
@@ -53,7 +53,7 @@ class MeasurementPlaneEnum(StrEnum):
 
 
 @irdl_attr_definition
-class MeasurementPlaneAttr(EnumAttribute[MeasurementPlaneEnum]):
+class MeasurementPlaneAttr(EnumAttribute[MeasurementPlaneEnum], SpacedOpaqueSyntaxAttribute):
     """Planes in the Bloch sphere representation with support for arbitrary-basis measurements"""
 
     # pylint: disable=too-few-public-methods
