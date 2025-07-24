@@ -23,10 +23,10 @@ from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
 )
 from pennylane.ops.op_math import Evolution, Exp
 from pennylane.ops.op_math.exp import trotter_decomp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
