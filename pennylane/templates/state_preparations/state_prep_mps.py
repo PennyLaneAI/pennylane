@@ -553,12 +553,16 @@ def _mps_prep_decomposition(*mps, **kwargs):
         # Encode the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
         Aip = qml.math.transpose(Ai, (2, 1, 0))
         # Extend Aip to (2**(n_wires-1), 2, vL)
-        Aip = qml.math.pad(Aip, ((0, 2**(n_wires-1) - Aip.shape[0]), (0, 0), (0, 0)), mode='constant')
+        Aip = qml.math.pad(
+            Aip, ((0, 2 ** (n_wires - 1) - Aip.shape[0]), (0, 0), (0, 0)), mode="constant"
+        )
         vectors = Aip.reshape(2**n_wires, -1)  # Reshape to (2**n_wires, vL)
         # The unitary is completed using QR decomposition
         d, k = vectors.shape
         assert d == 2**n_wires, "The first dimension of the vectors must match 2**(n_wires-1)."
-        assert k <= d, "The second dimension of the vectors must be less than or equal to 2**(n_wires-1)."
+        assert (
+            k <= d
+        ), "The second dimension of the vectors must be less than or equal to 2**(n_wires-1)."
         new_columns = qml.math.array(np.random.RandomState(42).random((d, d - k)))
         unitary_matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
         unitary_matrix *= qml.math.sign(qml.math.diag(R))  # Enforce uniqueness for QR decomposition
