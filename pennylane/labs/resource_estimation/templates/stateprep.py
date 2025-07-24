@@ -26,13 +26,13 @@ from pennylane.labs.resource_estimation.resource_operator import (
 
 # pylint: disable=arguments-differ, unused-argument
 class ResourceUniformStatePrep(ResourceOperator):
-    r"""Resource class for preparing a uniform superposition, :
+    r"""Resource class for preparing a uniform superposition.
 
     .. math:
         \frac{1}{\sqrt{2^{k}L}} \sum_{l=0}^{2^{k}L-1} |l\rangle
 
-    where :math:`L` is odd, starting from the :math:`|0\rangle` state.
-    This operation uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states, where :math:`l` is not a power of 2.
+where :math:`L` is odd, starting from the :math:`|0\rangle` state.
+This operation uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states, where :math:`l` is not a power of 2.
 
     Args:
         num_states (int): the number of states over which the uniform superposition is being prepared
