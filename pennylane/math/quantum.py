@@ -1550,6 +1550,33 @@ def choi_matrix(Ks, check_Ks=False):
 
     **Examples**
 
+    The simplest quantum channel is simply a unitary gate. In that case, the Kraus operators reduce to just the unitary gate.
+
+    >>> import pennylane as qml
+    >>> Ks = [qml.matrix(qml.CNOT((0, 1)))]
+    >>> Lambda = qml.math.choi_matrix(Ks)
+
+    The resulting Choi matrix is a density matrix, so its trace sums to 1.
+    Because the channel is unitary, the resulting Choi state is pure,
+    which can be seen from :math:`\text{tr}\left( \Lambda^2 \right) = 1`
+
+    >>> np.trace(Lambda), np.trace(Lambda @ Lambda)
+    (np.float64(1.0), np.float64(1.0))
+
+
+    We can construct a non-unitary channel by taking different unitary operators and weighting them
+    such that the trace is preserved (i.e., the squares of the coefficients sum to one).
+
+    >>> Ks = [np.sqrt(0.3) * qml.CNOT((0, 1)), np.sqrt(1-0.3) * qml.X(0)]
+    >>> Ks = [qml.matrix(op, wire_order=range(2)) for op in Ks]
+    >>> Lambda = qml.math.choi_matrix(Ks)
+
+    In this case, the resulting Choi matrix does not correspond to a pure state, as seen by
+    :math:`\text{tr}\left( \Lambda^2 \right) < 1`.
+
+    >>> np.trace(Lambda), np.trace(Lambda @ Lambda)
+    (np.float64(1.0), np.float64(0.58))
+
     """
     d = len(Ks[0])
 
@@ -1565,7 +1592,7 @@ def choi_matrix(Ks, check_Ks=False):
 
     aux_basis = math.cast_like(math.eye(d), Ks)  # same dimension as qubit system
     q_basis = math.cast_like(math.eye(d), Ks)
-    print(choi.dtype, aux_basis.dtype, q_basis.dtype)
+
     for i in aux_basis:
         for j in q_basis:
             for K in Ks:
