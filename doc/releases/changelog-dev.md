@@ -57,6 +57,28 @@
 
   * :class:`~.MPSPrep`
 
+* Several templates now have decompositions that can be accessed within the graph-based
+  decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows 
+  that include these templates to be decomposed in a resource-efficient and performant
+  manner.
+  [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
+  
+  The included templates are:
+
+  * :class:`~.Adder`
+    
+  * :class:`~.ControlledSequence`
+  
+  * :class:`~.ModExp`
+
+  * :class:`~.Multiplier`
+
+  * :class:`~.OutAdder`
+
+  * :class:`~.OutMultiplier`
+
+  * :class:`~.OutPoly`
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -179,6 +201,14 @@
 
 <h3>Deprecations 👋</h3>
 
+* `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
+  Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
+  [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
+
+* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` are deprecated and will be removed in version v0.44.
+  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
+  [(#7950)](https://github.com/PennyLaneAI/pennylane/pull/7950)
+
 * Some unnecessary methods of the `qml.CircuitGraph` class are deprecated and will be removed in version v0.44:
   [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
 
@@ -209,6 +239,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Adds `measurements` as a "core" module in the tach specification.
+ [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 
 * Improves type hints in the `measurements` module.
   [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)

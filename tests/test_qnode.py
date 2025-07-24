@@ -380,7 +380,7 @@ class TestValidation:
             QuantumFunctionError,
             match="does not support adjoint with requested circuit",
         ):
-            circ(shots=1)
+            qml.set_shots(circ, shots=1)()
 
     @pytest.mark.autograd
     def test_sparse_diffmethod_error(self):
@@ -1174,8 +1174,12 @@ class TestShots:
             return qml.sample(qml.PauliZ(wires=0))
 
         assert len(circuit(0.8)) == 10
-        assert len(circuit(0.8, shots=2)) == 2
-        assert len(circuit(0.8, shots=3178)) == 3178
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=2)) == 2
+            assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
 
     # pylint: disable=unexpected-keyword-arg, protected-access
@@ -1195,7 +1199,11 @@ class TestShots:
         assert circuit.device._shots.total_shots is None
 
         # check that the circuit is temporary non-analytic
-        res1 = [circuit(shots=1) for _ in range(100)]
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            res1 = [circuit(shots=1) for _ in range(100)]
         assert np.std(res1) != 0.0
 
         # check that the circuit is analytic again
@@ -1223,11 +1231,19 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8)
         assert tape.operations[0].wires.labels == (0,)
 
-        assert len(circuit(0.8, shots=1)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=1)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
-        assert len(circuit(0.8, shots=0)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
@@ -1262,25 +1278,13 @@ class TestShots:
                 qml.RX(a, wires=shots)
                 return qml.sample(qml.PauliZ(wires=0))
 
-        assert len(ansatz1(0.8, shots=0)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(ansatz1(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
-
-    # pylint: disable=unexpected-keyword-arg
-    def test_shots_setting_does_not_mutate_device(self):
-        """Tests that per-call shots setting does not change the number of shots in the device."""
-
-        dev = qml.device("default.qubit", wires=1, shots=3)
-
-        @qnode(dev)
-        def circuit(a):
-            qml.RX(a, wires=0)
-            return qml.sample(qml.PauliZ(wires=0))
-
-        assert dev.shots.total_shots == 3
-        res = circuit(0.8, shots=2)
-        assert len(res) == 2
-        assert dev.shots.total_shots == 3
 
     def test_warning_finite_shots_dev(self):
         """Tests that a warning is raised when caching is used with finite shots."""
@@ -1309,7 +1313,7 @@ class TestShots:
         # no warning on the first execution
         circuit(0.3)
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
-            circuit(0.3, shots=5)
+            qml.set_shots(circuit, shots=5)(0.3)
 
     def test_warning_finite_shots_tape(self):
         """Tests that a warning is raised when caching is used with finite shots."""
@@ -1694,11 +1698,15 @@ class TestNewDeviceIntegration:
         with pytest.raises(DeviceError, match="not accepted for analytic simulation"):
             circuit()
 
-        results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
-        assert qml.math.allclose(results, np.zeros((10, 2)))
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
+            assert qml.math.allclose(results, np.zeros((10, 2)))
 
-        results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
-        assert qml.math.allclose(results, np.zeros((20, 2)))
+            results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
+            assert qml.math.allclose(results, np.zeros((20, 2)))
 
 
 class TestMCMConfiguration:
@@ -1827,7 +1835,7 @@ class TestMCMConfiguration:
             qml.measure(0, postselect=1)
             return mp(qml.PauliZ(0))
 
-        _ = circuit(1.8, qml.expval, shots=10)
+        _ = qml.set_shots(circuit, shots=10)(1.8, qml.expval)
         assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
         assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
@@ -1836,7 +1844,7 @@ class TestMCMConfiguration:
             assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
             assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
-        _ = circuit(1.8, qml.expval, shots=10)
+        _ = qml.set_shots(circuit, shots=10)(1.8, qml.expval)
         assert circuit.execute_kwargs["postselect_mode"] == original_config.postselect_mode
         assert circuit.execute_kwargs["mcm_method"] == original_config.mcm_method
 
@@ -2055,11 +2063,15 @@ class TestSetShots:
 
         # Then try to pass shots parameter when calling the QNode
         with pytest.warns(
-            UserWarning,
-            match="Both 'shots=' parameter and 'set_shots' transform are specified. "
-            "The transform will take precedence over",
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
         ):
-            result = modified_circuit(shots=25)
+            with pytest.warns(
+                UserWarning,
+                match="Both 'shots=' parameter and 'set_shots' transform are specified. "
+                "The transform will take precedence over",
+            ):
+                result = modified_circuit(shots=25)
 
         # Verify that the set_shots value (50) was used, not the parameter value (25)
         assert len(result) == 50
@@ -2363,10 +2375,7 @@ class TestSetShots:
             return qml.sample(qml.PauliZ(0))
 
         # No warning should be raised when calling with the same shots value
-        with pytest.warns(
-            UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified."
-        ):
-            result = circuit.update(diff_method="parameter-shift")(shots=50)
+        result = circuit.update(diff_method="parameter-shift")()
         assert len(result) == 100
 
     def test_set_shots_positional_preserves_qnode_properties(self):
