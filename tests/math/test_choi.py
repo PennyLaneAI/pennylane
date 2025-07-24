@@ -55,7 +55,9 @@ def test_density_matrix(Ks, interface):
     choi = choi_matrix(Ks)
     val_tr = math.trace(choi)
     assert math.isclose(val_tr, math.ones_like(val_tr)), "not a density matrix, tr(choi) != 1"
-    assert math.allclose(choi, choi.conj().T), "not a density matrix, not Hermitian"
+    assert math.allclose(
+        choi, math.transpose(math.conj(choi))
+    ), "not a density matrix, not Hermitian"
     lambdas = math.linalg.eigvalsh(choi)
     assert math.all(lambdas >= -1e-7), "not a density matrix, not positive"
 
