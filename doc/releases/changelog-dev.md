@@ -230,6 +230,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
+
 * Adds `measurements` as a "core" module in the tach specification.
  [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 
