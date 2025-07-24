@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-import pennylane.decomposition
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.state_prep_mps import (
     _validate_mps_shape,
@@ -660,7 +659,7 @@ class TestMPSPrep:
         qml.decomposition.enable_graph()
 
         @partial(qml.transforms.decompose, gate_set={qml.QubitUnitary})
-        @qml.qnode(qml.device("default.qubit", wires=[i for i in range(num_wires + 2)]))
+        @qml.qnode(qml.device("default.qubit", wires=range(num_wires + 2)))
         def circuit():
             qml.MPSPrep(mps, wires=range(2, num_wires + 2), work_wires=[0, 1])
 
