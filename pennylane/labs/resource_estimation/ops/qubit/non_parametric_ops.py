@@ -242,7 +242,7 @@ class ResourceS(ResourceOperator):
 
         Resources:
             The controlled-S gate decomposition is presented in (Fig. 5)
-            `Nam et al. (2019) <https://arxiv.org/pdf/1803.04933>`_. Given a single control wire, the
+            `arXiv:1803.04933 <https://arxiv.org/pdf/1803.04933>`_. Given a single control wire, the
             cost is therefore two :class:`~.ResourceCNOT` gates and three :class:`~.ResourceT` gates.
             Two additional :class:`~.ResourceX` gates are used to flip the control qubit if it is
             zero-controlled.

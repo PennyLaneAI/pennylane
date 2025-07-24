@@ -527,7 +527,7 @@ class ResourceQFT(ResourceOperator):
     @classmethod
     def resource_rep(cls, num_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             num_wires (int): the number of qubits the operation acts upon
@@ -632,14 +632,14 @@ class ResourceAQFT(ResourceOperator):
         See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
 
     Args:
-        order (int): truncate the number of controlled phaseshifts to at most :math:`order`
+        order (int): the maximum number of controlled phaseshifts to which the operation is truncated
         num_wires (int): the number of qubits the operation acts upon
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The resources are obtained from (Fig. 4) of `arXiv:1803.04933, <https://arxiv.org/abs/1803.04933>`_
         excluding the allocation and instantiation of the phase gradient state. The phased `Toffoli`
-        gates and the classical measure-and-reset (Fig. 2) are accounted for as temporary and
+        gates and the classical measure-and-reset (Fig. 2) are accounted for as `TempAND`
         operations.
 
     .. seealso:: :class:`~.AQFT`
@@ -667,7 +667,7 @@ class ResourceAQFT(ResourceOperator):
         self.num_wires = num_wires
 
         if order < 1:
-            raise ValueError("Order must be a positive integer greater than 0,")
+            raise ValueError("Order must be a positive integer greater than 0.")
 
         super().__init__(wires=wires)
 
@@ -677,7 +677,7 @@ class ResourceAQFT(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * order (int): the maximum number of controlled phaseshifts to truncate
+                * order (int): the maximum number of controlled phaseshifts to which the operation is truncated
                 * num_wires (int): the number of qubits the operation acts upon
         """
         return {"order": self.order, "num_wires": self.num_wires}
@@ -685,7 +685,7 @@ class ResourceAQFT(ResourceOperator):
     @classmethod
     def resource_rep(cls, order, num_wires) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             order (int): the maximum number of controlled phaseshifts to truncate
@@ -703,13 +703,13 @@ class ResourceAQFT(ResourceOperator):
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
-            order (int): the maximum number of controlled phaseshifts to truncate
+            order (int): the maximum number of controlled phaseshifts to which the operation is truncated
             num_wires (int): the number of qubits the operation acts upon
 
         Resources:
-            The resources are obtained from (Fig. 4) `Nam 2019, <https://arxiv.org/abs/1803.04933>`_
+            The resources are obtained from (Fig. 4) `arXiv:1803.04933 <https://arxiv.org/abs/1803.04933>`_
             excluding the allocation and instantiation of the phase gradient state. The phased Toffoli
-            gates and the classical measure-and-reset (Fig. 2) are accounted for as temporary and
+            gates and the classical measure-and-reset (Fig. 2) are accounted for as `TempAND`
             operations.
 
         Returns:
