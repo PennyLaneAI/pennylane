@@ -20,9 +20,11 @@ from string import ascii_letters
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.exceptions import MeasurementShapeError
 from pennylane.operation import Operator
+from pennylane.ops import RZ, Hadamard, I, X, Y, Z
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires, WiresLike
 
 from .measurements import MeasurementTransform
@@ -118,7 +120,7 @@ class ClassicalShadowMP(MeasurementTransform):
             # are the same for different executions with the same seed
             rng = np.random.RandomState(seed)
             recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-            obs_list = [qml.X, qml.Y, qml.Z]
+            obs_list = [X, Y, Z]
 
             outcomes = np.zeros((n_snapshots, n_qubits))
 
@@ -140,7 +142,7 @@ class ClassicalShadowMP(MeasurementTransform):
             device.shots = original_shots
             device._shot_vector = original_shot_vector  # pylint: disable=protected-access
 
-        return qml.math.cast(qml.math.stack([outcomes, recipes]), dtype=np.int8)
+        return math.cast(math.stack([outcomes, recipes]), dtype=np.int8)
 
     def process_state_with_shots(
         self, state: Sequence[complex], wire_order: Wires, shots: int, rng=None
@@ -178,18 +180,18 @@ class ClassicalShadowMP(MeasurementTransform):
 
         obs_list = np.stack(
             [
-                qml.X.compute_matrix(),
-                qml.Y.compute_matrix(),
-                qml.Z.compute_matrix(),
+                X.compute_matrix(),
+                Y.compute_matrix(),
+                Z.compute_matrix(),
             ]
         )
 
         # the diagonalizing matrices corresponding to the Pauli observables above
         diag_list = np.stack(
             [
-                qml.Hadamard.compute_matrix(),
-                qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
-                qml.Identity.compute_matrix(),
+                Hadamard.compute_matrix(),
+                Hadamard.compute_matrix() @ RZ.compute_matrix(-np.pi / 2),
+                I.compute_matrix(),
             ]
         )
         obs = obs_list[recipes]
@@ -351,7 +353,7 @@ class ClassicalShadowMP(MeasurementTransform):
             # collapse the state of the remaining qubits; the next qubit in line
             # becomes the first qubit for the next iteration
             U = diagonalizers[:, active_qubit]
-            UT = np.stack([qml.math.conjugate(qml.math.transpose(m)) for m in U])
+            UT = np.stack([math.conjugate(math.transpose(m)) for m in U])
 
             # index labeling:
             # (s, vL, a) (s, a, ..., b, ...) (s, b, vR) -> (s, vL, ..., vR, ...)
@@ -474,8 +476,12 @@ class ShadowExpvalMP(MeasurementTransform):
         return cls._obs_primitive.bind(H, seed=seed, k=k, **kwargs)
 
     def process(self, tape, device):
-        bits, recipes = qml.classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
-        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
+        from pennylane.shadows import (  # pylint: disable=import-outside-toplevel # tach-ignore
+            ClassicalShadow,
+        )
+
+        bits, recipes = classical_shadow(wires=self.wires, seed=self.seed).process(tape, device)
+        shadow = ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 
     def process_state_with_shots(
@@ -495,10 +501,13 @@ class ShadowExpvalMP(MeasurementTransform):
         Returns:
             float: The estimate of the expectation value.
         """
-        bits, recipes = qml.classical_shadow(
-            wires=self.wires, seed=self.seed
-        ).process_state_with_shots(state, wire_order, shots, rng=rng)
-        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
+        bits, recipes = classical_shadow(wires=self.wires, seed=self.seed).process_state_with_shots(
+            state, wire_order, shots, rng=rng
+        )
+        # tach-ignore
+        from pennylane.shadows import ClassicalShadow  # pylint:disable=import-outside-toplevel
+
+        shadow = ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 
     def process_density_matrix_with_shots(
@@ -518,10 +527,15 @@ class ShadowExpvalMP(MeasurementTransform):
         Returns:
             float: The estimate of the expectation value.
         """
-        bits, recipes = qml.classical_shadow(
+        bits, recipes = classical_shadow(
             wires=self.wires, seed=self.seed
         ).process_density_matrix_with_shots(state, wire_order, shots, rng=rng)
-        shadow = qml.shadows.ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
+        # tach-ignore
+        from pennylane.shadows import (  # tach-ignore pylint: disable=import-outside-toplevel
+            ClassicalShadow,
+        )
+
+        shadow = ClassicalShadow(bits, recipes, wire_map=self.wires.tolist())
         return shadow.expval(self.H, self.k)
 
     @property
@@ -546,7 +560,7 @@ class ShadowExpvalMP(MeasurementTransform):
 
         return self.H.wires
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=QueuingManager):
         """Append the measurement process to an annotated queue, making sure
         the observable is not queued"""
         Hs = self.H if isinstance(self.H, Iterable) else [self.H]
