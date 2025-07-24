@@ -18,7 +18,7 @@ import warnings
 
 import pytest
 
-from pennylane.capture.autograph import AutoGraphWarning
+from pennylane.exceptions import AutoGraphWarning
 
 
 # pylint: disable=unused-import

@@ -248,8 +248,8 @@ Utility Classes
 
 """
 
+from pennylane.exceptions import DecompositionError
 from .utils import (
-    DecompositionError,
     enable_graph,
     disable_graph,
     enabled_graph,
