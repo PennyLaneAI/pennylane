@@ -1546,7 +1546,7 @@ def choi_matrix(Ks, check_Ks=False):
         check_Ks (bool): Whether or not to check if the provided Kraus operators are trace-preserving, i.e. :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`. Default is ``False``.
 
     Returns:
-        TensorLike: Trace distance between state0 and state1
+        TensorLike: The Choi matrix :math:`\Lambda` of size ``(2**(2n), 2**(2n))``
 
     **Examples**
 
@@ -1555,6 +1555,8 @@ def choi_matrix(Ks, check_Ks=False):
     >>> import pennylane as qml
     >>> Ks = [qml.matrix(qml.CNOT((0, 1)))]
     >>> Lambda = qml.math.choi_matrix(Ks)
+    >>> Lambda.shape
+    (16, 16)
 
     The resulting Choi matrix is a density matrix, so its trace sums to 1.
     Because the channel is unitary, the resulting Choi state is pure,
