@@ -19,14 +19,14 @@ from .merge_rotations import MergeRotationsPass, merge_rotations_pass
 from .combine_global_phases import combine_global_phases_pass, CombineGlobalPhasesPass
 from .diagonalize_measurements import (
     DiagonalizeFinalMeasurementsPass,
-    diagonalize_measurements_pass,
+    diagonalize_final_measurements_pass,
 )
 
 
 __all__ = [
     "combine_global_phases_pass",
     "CombineGlobalPhasesPass",
-    "diagonalize_measurements_pass",
+    "diagonalize_final_measurements_pass",
     "DiagonalizeFinalMeasurementsPass",
     "iterative_cancel_inverses_pass",
     "IterativeCancelInversesPass",

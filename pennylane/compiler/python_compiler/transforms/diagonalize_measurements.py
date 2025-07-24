@@ -34,7 +34,7 @@ from xdsl.rewriter import InsertPoint
 
 from pennylane import ops as pl_ops
 
-from ..quantum_dialect import CustomOp, NamedObservable, NamedObservableAttr, NamedObsOp
+from ..dialects.quantum import CustomOp, NamedObservable, NamedObservableAttr, NamedObsOp
 from .api import compiler_transform
 
 
@@ -93,9 +93,9 @@ class DiagonalizeFinalMeasurementsPattern(
 
 @dataclass(frozen=True)
 class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
-    """Pass for merging consecutive composable rotation gates."""
+    """Pass for diagonalizing final measurements."""
 
-    name = "diagonalize-measurements"
+    name = "diagonalize-final-measurements"
 
     # pylint: disable=arguments-renamed, no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
@@ -105,4 +105,4 @@ class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
         ).rewrite_module(module)
 
 
-diagonalize_measurements_pass = compiler_transform(DiagonalizeFinalMeasurementsPass)
+diagonalize_final_measurements_pass = compiler_transform(DiagonalizeFinalMeasurementsPass)
