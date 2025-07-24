@@ -342,12 +342,6 @@ def _qrom_decomposition_resources(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, num_bitstrings)
 
-    # TODO: need to use these in qml.Prod?
-    resources = {
-        resource_rep(qml.BasisEmbedding, num_wires=num_target_wires): num_bitstrings,
-        qml.I: int(2**num_control_wires - num_bitstrings),
-    }
-
     new_ops = {
         qml.ops.op_math.Prod: (
             num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
@@ -380,21 +374,22 @@ def _qrom_decomposition_resources(
         swap_ops.update(select_ops)
         return swap_ops
 
-    else:
-        hadamard_ops = {qml.Hadamard: num_target_wires}
+    hadamard_ops = {qml.Hadamard: num_target_wires}
 
-        swap_ops.update(hadamard_ops)
-        swap_ops.update(select_ops)
-        swap_ops.update(swap_ops)
+    swap_ops.update(hadamard_ops)
+    swap_ops.update(select_ops)
+    swap_ops.update(swap_ops)
 
-        for key, val in swap_ops.items():
-            swap_ops[key] = val * 2
+    for key, val in swap_ops.items():
+        swap_ops[key] = val * 2
 
-        return swap_ops
+    return swap_ops
 
 
 @register_resources(_qrom_decomposition_resources)
-def _qrom_decomposition(wires, bitstrings, control_wires, target_wires, work_wires, clean):
+def _qrom_decomposition(
+    wires, bitstrings, control_wires, target_wires, work_wires, clean
+):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
         for bits in bitstrings:
             qml.BasisEmbedding(int(bits, 2), wires=target_wires)
