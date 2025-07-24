@@ -19,7 +19,7 @@ import pytest
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import AllocWires, FreeWires, GateCount, resource_rep
 
-# pylint: disable=no-self-use,too-many-arguments
+# pylint: disable=no-self-use,too-many-arguments,use-implicit-booleaness-not-comparison
 
 
 class TestSingleQubitCompare:
@@ -186,43 +186,43 @@ class TestRegisterComparator:
     """Test the ResourceRegisterComparator class."""
 
     @pytest.mark.parametrize(
-        "a_num_qubits, b_num_qubits, geq",
+        "first_register, second_register, geq",
         (
             (10, 10, True),
             (6, 4, False),
             (4, 6, False),
         ),
     )
-    def test_resource_params(self, a_num_qubits, b_num_qubits, geq):
+    def test_resource_params(self, first_register, second_register, geq):
         """Test that the resource params are correct."""
-        op = plre.ResourceRegisterComparator(a_num_qubits, b_num_qubits, geq)
+        op = plre.ResourceRegisterComparator(first_register, second_register, geq)
         assert op.resource_params == {
-            "a_num_qubits": a_num_qubits,
-            "b_num_qubits": b_num_qubits,
+            "first_register": first_register,
+            "second_register": second_register,
             "geq": geq,
         }
 
     @pytest.mark.parametrize(
-        "a_num_qubits, b_num_qubits, geq",
+        "first_register, second_register, geq",
         (
             (10, 10, True),
             (6, 4, False),
             (4, 6, False),
         ),
     )
-    def test_resource_rep(self, a_num_qubits, b_num_qubits, geq):
+    def test_resource_rep(self, first_register, second_register, geq):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
             plre.ResourceRegisterComparator,
-            {"a_num_qubits": a_num_qubits, "b_num_qubits": b_num_qubits, "geq": geq},
+            {"first_register": first_register, "second_register": second_register, "geq": geq},
         )
         assert (
-            plre.ResourceRegisterComparator.resource_rep(a_num_qubits, b_num_qubits, geq)
+            plre.ResourceRegisterComparator.resource_rep(first_register, second_register, geq)
             == expected
         )
 
     @pytest.mark.parametrize(
-        "a_num_qubits, b_num_qubits, geq, expected_res",
+        "first_register, second_register, geq, expected_res",
         (
             (
                 10,
@@ -326,9 +326,9 @@ class TestRegisterComparator:
             ),
         ),
     )
-    def test_resources(self, a_num_qubits, b_num_qubits, geq, expected_res):
+    def test_resources(self, first_register, second_register, geq, expected_res):
         """Test that the resources are correct."""
         assert (
-            plre.ResourceRegisterComparator.resource_decomp(a_num_qubits, b_num_qubits, geq)
+            plre.ResourceRegisterComparator.resource_decomp(first_register, second_register, geq)
             == expected_res
         )
