@@ -1,4 +1,3 @@
-<!-- orphan: true -->
 
 # Release 0.42.0 (current release)
 

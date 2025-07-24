@@ -1,4 +1,3 @@
-<!-- orphan: true -->
 
 # Release 0.40.0
 
