@@ -193,10 +193,20 @@ class TestQROM:
         for op1, op2 in zip(qrom_decomposition, expected_gates):
             qml.assert_equal(op1, op2)
 
-    def test_decomposition_new(self):
+    @pytest.mark.parametrize(
+        ("bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
+        [
+            (["1", "0", "0", "1"], [0, 1], [2], [3], True),
+            (["10", "00", "00", "01", "01", "00", "00", "01"], [0, 1, 2], [3, 4], [5], False),
+            (["01", "00", "00", "10", "10", "00", "00", "01"], [0, 1, 2], [3, 4], [5], True),
+            (["1", "0", "0", "1"], [0, 1], [2], [], False),
+            (["1", "0", "0", "1"], [0, 1], [2], [3, 4], False),
+        ]
+    )
+    def test_decomposition_new(self, bitstrings, control_wires, target_wires, work_wires, clean):
         """Tests the decomposition rule implemented with the new system."""
         op = qml.QROM(
-            ["1", "0", "0", "1"], control_wires=[0, 1], target_wires=[2], work_wires=[3], clean=True
+            bitstrings, control_wires=control_wires, target_wires=target_wires, work_wires=work_wires, clean=True
         )
         for rule in qml.list_decomps(qml.QROM):
             _test_decomposition_rule(op, rule)
