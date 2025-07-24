@@ -144,11 +144,8 @@ class ConvertToMBQCFormalismPattern(
         """Insert arbitary basis measure related operations before the op operation."""
         in_qubit = qubit
         planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
-        constAngleOp = arith.ConstantOp(
-            builtin.DenseIntOrFPElementsAttr.from_list(
-                type=builtin.TensorType(builtin.Float64Type(), shape=()), data=(angle,)
-            )
-        )
+        rewriter.insert_op(planeOp, InsertPoint.before(op))
+        constAngleOp = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
         # Insert the constant angleOP
         rewriter.insert_op(constAngleOp, InsertPoint.before(op))
         measureOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constAngleOp)
@@ -159,16 +156,10 @@ class ConvertToMBQCFormalismPattern(
     def _cond_insert_arbitary_basis_measure_op(self, cond, angle, plane, qubit, op, rewriter):
         in_qubit = qubit
         planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
-        constAngleOp = arith.ConstantOp(
-            builtin.DenseIntOrFPElementsAttr.from_list(
-                type=builtin.TensorType(builtin.Float64Type(), shape=()), data=(angle,)
-            )
-        )
+        constAngleOp = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
         measureOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constAngleOp)
         constNegAngleOp = arith.ConstantOp(
-            builtin.DenseIntOrFPElementsAttr.from_list(
-                type=builtin.TensorType(builtin.Float64Type(), shape=()), data=(-angle,)
-            )
+            builtin.FloatAttr(data=-angle, type=builtin.Float64Type())
         )
         measureNegOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constNegAngleOp)
         ture_region = [planeOp, constAngleOp, measureOp, scf.YieldOp(measureOp.results)]
