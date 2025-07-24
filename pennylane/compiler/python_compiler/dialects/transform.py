@@ -42,6 +42,48 @@ be contributed upstream.
 # pylint: disable=unused-wildcard-import,wildcard-import
 from xdsl.dialects.transform import *
 
+
+# Copied over from xDSL's sources
+# temporarily. Next commit will redfine
+# the operation.
+@irdl_op_definition
+# pylint: disable=function-redefined
+class ApplyRegisteredPassOp(IRDLOperation):
+    """
+    See external [documentation](https://mlir.llvm.org/docs/Dialects/Transform/#transformapply_registered_pass-transformapplyregisteredpassop).
+    """
+
+    name = "transform.apply_registered_pass"
+
+    options = prop_def(StringAttr, default_value=StringAttr(""))
+    pass_name = prop_def(StringAttr)
+    target = operand_def(TransformHandleType)
+    result = result_def(TransformHandleType)
+    assembly_format = "$pass_name `to` $target attr-dict `:` functional-type(operands, results)"
+    irdl_options = [ParsePropInAttrDict()]
+
+    def __init__(
+        self,
+        pass_name: str | StringAttr,
+        target: SSAValue,
+        options: str | StringAttr | None = None,
+    ):
+        if isinstance(pass_name, str):
+            pass_name = StringAttr(pass_name)
+
+        if isinstance(options, str):
+            options = StringAttr(options)
+
+        super().__init__(
+            properties={
+                "pass_name": pass_name,
+                "options": options,
+            },
+            operands=[target],
+            result_types=[target.type],
+        )
+
+
 # Copied over from xDSL's sources
 # the main difference will be the use
 # of a different ApplyRegisteredPassOp
