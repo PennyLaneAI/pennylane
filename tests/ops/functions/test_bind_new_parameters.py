@@ -98,7 +98,7 @@ def test_num_steps_is_deprecated():
         PennyLaneDeprecationWarning,
         match="Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated",
     ):
-        _ = qml.evolve(qml.PauliX(0), 0.5, num_steps=15)
+        qml.evolve(qml.PauliX(0), 0.5, num_steps=15)
 
 
 @pytest.mark.parametrize(

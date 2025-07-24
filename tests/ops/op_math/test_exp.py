@@ -722,7 +722,7 @@ class TestMiscMethods:
             match="Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated",
         ):
             base = qml.RX(1.2, wires=0)
-            _ = Evolution(base, 2.5, num_steps=5)
+            Evolution(base, 2.5, num_steps=5)
 
     def test_repr_tensor(self):
         """Test the __repr__ method when the base is a tensor."""
