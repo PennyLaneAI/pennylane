@@ -18,13 +18,16 @@ from collections.abc import Sequence
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane import math
+from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, SampleMeasurement
+from .counts import CountsMP
+from .measurements import SampleMeasurement
 from .mid_measure import MeasurementValue
+from .process_samples import process_raw_samples
 
 
 class SampleMP(SampleMeasurement):
@@ -56,7 +59,7 @@ class SampleMP(SampleMeasurement):
         if isinstance(obs, Sequence):
             if not all(
                 isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
-            ) and not all(qml.math.is_abstract(o) for o in obs):
+            ) and not all(math.is_abstract(o) for o in obs):
                 raise QuantumFunctionError(
                     "Only sequences of single MeasurementValues can be passed with the op "
                     "argument. MeasurementValues manipulated using arithmetic operators cannot be "
@@ -135,57 +138,12 @@ class SampleMP(SampleMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: tuple[int, ...] = None,
-        bin_size: int = None,
+        shot_range: None | tuple[int, ...] = None,
+        bin_size: None | int = None,
     ):
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
-        # Select the samples from samples that correspond to ``shot_range`` if provided
-        if shot_range is not None:
-            # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
-            # colon (:) is required because shots is the second-to-last axis and the
-            # Ellipsis (...) otherwise would take up broadcasting and shots axes.
-            samples = samples[..., slice(*shot_range), :]
-
-        if mapped_wires:
-            # if wires are provided, then we only return samples from those wires
-            samples = samples[..., mapped_wires]
-
-        num_wires = samples.shape[-1]  # wires is the last dimension
-
-        # If we're sampling wires or a list of mid-circuit measurements
-        if self.obs is None and not isinstance(self.mv, MeasurementValue) and self._eigvals is None:
-            # if no observable was provided then return the raw samples
-            return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
-
-        # If we're sampling observables
-        try:
-            eigvals = self.eigvals()
-        except qml.operation.EigvalsUndefinedError as e:
-            # if observable has no info on eigenvalues, we cannot return this measurement
-            raise qml.operation.EigvalsUndefinedError(
-                f"Cannot compute samples of {self.obs.name}."
-            ) from e
-
-        if np.array_equal(eigvals, [1.0, -1.0]):
-            # special handling for observables with eigvals +1/-1
-            # (this is JIT-compatible, the next block is not)
-            # type should be float
-            samples = 1.0 - 2 * qml.math.squeeze(samples, axis=-1)
-        else:
-            # Replace the basis state in the computational basis with the correct eigenvalue.
-            # Extract only the columns of the basis samples required based on ``wires``.
-            powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
-            indices = samples @ powers_of_two
-            indices = qml.math.array(indices)  # Add np.array here for Jax support.
-            # This also covers statistics for mid-circuit measurements manipulated using
-            # arithmetic operators
-            if qml.math.is_abstract(indices):
-                samples = qml.math.take(eigvals, indices, like=indices)
-            else:
-                samples = eigvals[indices]
-
-        return samples if bin_size is None else samples.reshape((bin_size, -1))
+        return process_raw_samples(
+            self, samples, wire_order, shot_range=shot_range, bin_size=bin_size
+        )
 
     def process_counts(self, counts: dict, wire_order: Wires):
         samples = []
@@ -208,8 +166,8 @@ class SampleMP(SampleMeasurement):
         Returns:
             Dictionary where counts_to_map has been reordered according to wire_order
         """
-        with qml.QueuingManager.stop_recording():
-            helper_counts = qml.counts(wires=self.wires, all_outcomes=False)
+        with QueuingManager.stop_recording():
+            helper_counts = CountsMP(wires=self.wires, all_outcomes=False)
         return helper_counts.process_counts(counts_to_map, wire_order)
 
     def _compute_outcome_sample(self, outcome) -> list:
@@ -343,4 +301,4 @@ def sample(
            [0, 0]])
 
     """
-    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires))
+    return SampleMP(obs=op, wires=None if wires is None else Wires(wires))
