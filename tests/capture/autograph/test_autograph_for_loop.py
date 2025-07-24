@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import AutoGraphError
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
@@ -33,7 +34,7 @@ from jax import numpy as jnp
 from jax.core import eval_jaxpr
 from malt.operators import py_builtins as ag_py_builtins
 
-from pennylane.capture.autograph.ag_primitives import AutoGraphError, PEnumerate, PRange
+from pennylane.capture.autograph.ag_primitives import PEnumerate, PRange
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 
 check_cache = TRANSFORMER.has_cache
