@@ -553,23 +553,10 @@ def _mps_prep_decomposition(*mps, **kwargs):
     for i, Ai in enumerate(mps):
 
         # Encode the tensor Ai in a unitary matrix following Eq.23 in https://arxiv.org/pdf/2310.18410
-        vectors = []
-        for column in Ai:
-            vector = qml.math.zeros(2**n_wires, like=interface, dtype=dtype)
-
-            if interface == "jax":
-                vector = vector.at[: len(column[0])].set(column[0])
-                vector = vector.at[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])].set(
-                    column[1]
-                )
-
-            else:
-                vector[: len(column[0])] = column[0]
-                vector[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])] = column[1]
-
-            vectors.append(vector)
-
-        vectors = qml.math.stack(vectors).T
+        Aip = qml.math.transpose(Ai, (2, 1, 0))
+        # Extend Aip to (2**(n_wires-1), 2, vL)
+        Aip = qml.math.pad(Aip, ((0, 2**(n_wires-1) - Aip.shape[0]), (0, 0), (0, 0)), mode='constant')
+        vectors = Aip.reshape(2**n_wires, -1)  # Reshape to (2**n_wires, vL)
         # The unitary is completed using QR decomposition
         d, k = vectors.shape
         new_columns = qml.math.array(np.random.RandomState(42).random((d, d - k)))
