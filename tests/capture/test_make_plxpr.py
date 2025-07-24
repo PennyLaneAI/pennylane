@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.capture import make_plxpr
-from pennylane.capture.autograph import AutoGraphWarning
+from pennylane.exceptions import AutoGraphWarning
 
 pytestmark = pytest.mark.jax
 

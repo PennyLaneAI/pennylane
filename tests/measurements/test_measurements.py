@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DecompositionUndefinedError, DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -40,7 +40,6 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
@@ -363,7 +362,8 @@ class TestExpansion:
         """Test the expansion of a Pauli observable"""
         obs = qml.PauliX(0) @ qml.PauliY(1)
         m = qml.expval(op=obs)
-        tape = m.expand()
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            tape = m.expand()
 
         assert len(tape.operations) == 4
 
@@ -388,7 +388,8 @@ class TestExpansion:
         obs = qml.Hermitian(H, wires=["a"])
 
         m = qml.expval(op=obs)
-        tape = m.expand()
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            tape = m.expand()
 
         assert len(tape.operations) == 1
 
@@ -409,8 +410,9 @@ class TestExpansion:
     def test_expand_no_observable(self):
         """Check that an exception is raised if the measurement to
         be expanded has no observable"""
-        with pytest.raises(DecompositionUndefinedError):
-            ProbabilityMP(wires=qml.wires.Wires([0, 1])).expand()
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            with pytest.raises(DecompositionUndefinedError):
+                ProbabilityMP(wires=qml.wires.Wires([0, 1])).expand()
 
     @pytest.mark.parametrize(
         "m",
