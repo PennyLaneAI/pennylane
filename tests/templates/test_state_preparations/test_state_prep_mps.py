@@ -629,6 +629,40 @@ class TestMPSPrep:
         for rule in qml.list_decomps(qml.MPSPrep):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.capture
+    def test_decomposition_capture(self):
+        """Tests that the new decomposition works with capture."""
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        mps = [
+            np.array([[0.0, 0.107], [0.994, 0.0]]),
+            np.array(
+                [
+                    [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                    [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                ]
+            ),
+            np.array(
+                [
+                    [[-1.0, 0.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [0.0, 1.0]],
+                    [[0.0, -1.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [1.0, 0.0]],
+                ]
+            ),
+            np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+        ]
+        num_wires = 4
+
+        def circuit():
+            qml.MPSPrep(mps, wires=range(2, num_wires + 2))
+
+        plxpr = qml.capture.make_plxpr(circuit)()
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts)
+        assert collector.state["ops"] == [qml.MPSPrep(mps, wires=range(2, num_wires + 2))]
+
     def test_decomposition(self):
         """Tests that the template defines the correct decomposition."""
 
