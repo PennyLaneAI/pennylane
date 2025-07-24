@@ -41,3 +41,46 @@ be contributed upstream.
 
 # pylint: disable=unused-wildcard-import,wildcard-import
 from xdsl.dialects.transform import *
+
+# Copied over from xDSL's sources
+# the main difference will be the use
+# of a different ApplyRegisteredPassOp
+Transform = Dialect(
+    "transform",
+    [
+        ApplyRegisteredPassOp,
+        GetConsumersOfResultOp,
+        GetDefiningOp,
+        GetParentOp,
+        GetProducerOfOperandOp,
+        GetResultOp,
+        GetTypeOp,
+        IncludeOp,
+        MatchOperationEmptyOp,
+        MatchOperationNameOp,
+        MatchParamCmpIOp,
+        MergeHandlesOp,
+        ParamConstantOp,
+        SplitHandleOp,
+        SequenceOp,
+        YieldOp,
+        TileOp,
+        TileToForallOp,
+        SelectOp,
+        NamedSequenceOp,
+        CastOp,
+        MatchOp,
+    ],
+    [
+        # Types
+        AffineMapType,
+        AnyOpType,
+        AnyValueType,
+        AnyParamType,
+        OperationType,
+        ParamType,
+        TypeParamType,
+        # Attributes
+        FailurePropagationModeAttr,
+    ],
+)
