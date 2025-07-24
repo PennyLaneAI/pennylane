@@ -56,6 +56,12 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     Returns:
         .Evolution: evolution operator
 
+    .. warning::
+
+        Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version.
+        Instead, you can use :class:`~.TrotterProduct` providing the ``n`` parameter to perform the
+        Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+
     **Examples**
 
     We can use ``qml.evolve`` to compute the evolution of any PennyLane operator:
@@ -183,7 +189,8 @@ def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
     if num_steps is not None:
         warn(
             "Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version. "
-            "Instead, please use ``qml.TrotterProduct`` with ``num_steps`` for approximate decompositions.",
+            "Instead, you can use ``qml.TrotterProduct`` providing the ``n`` parameter to perform the "
+            "Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.",
             PennyLaneDeprecationWarning,
         )
     return Evolution(op, coeff, num_steps)

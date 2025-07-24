@@ -128,6 +128,16 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
+  Instead, you can use :class:`~.TrotterProduct` providing the `n` parameter to perform the
+  Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+
+  ```python
+  (...)
+  ```
+
+  [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
+
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 

@@ -504,7 +504,7 @@ class TestDecomposition:
         num_steps = 3
         op = qml.IsingXY(phi, wires=[0, 1])
         with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning,
+            PennyLaneDeprecationWarning,
             match="Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated",
         ):
             exp = qml.evolve(op.generator(), coeff=-phi, num_steps=num_steps)

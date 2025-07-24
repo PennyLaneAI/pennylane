@@ -40,6 +40,12 @@ class Evolution(Exp):
        :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{-ix\hat{G}}`,
        where x is real.
 
+    .. warning::
+
+        Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version.
+        Instead, you can use :class:`~.TrotterProduct` providing the ``n`` parameter to perform the
+        Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+
     **Usage Details**
 
     In contrast to the general :class:`~.Exp` class, the ``Evolution`` operator :math:`e^{-ix\hat{G}}` is constrained to have a single trainable
@@ -81,7 +87,8 @@ class Evolution(Exp):
         if num_steps is not None:
             warn(
                 "Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version. "
-                "Instead, please use ``qml.TrotterProduct`` with ``num_steps`` for approximate decompositions.",
+                "Instead, you can use ``qml.TrotterProduct`` providing the ``n`` parameter to perform the "
+                "Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.",
                 PennyLaneDeprecationWarning,
             )
         super().__init__(generator, coeff=-1j * param, num_steps=num_steps, id=id)
