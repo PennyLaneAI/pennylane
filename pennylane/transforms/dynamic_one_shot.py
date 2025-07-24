@@ -18,7 +18,7 @@ Contains the batch dimension transform.
 import itertools
 from collections import Counter
 from collections.abc import Sequence
-from functools import singledispatch
+from functools import partial, singledispatch
 
 import numpy as np
 
@@ -32,10 +32,11 @@ from pennylane.measurements import (
     MidMeasureMP,
     ProbabilityMP,
     SampleMP,
+    Shots,
     VarianceMP,
 )
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.typing import PostprocessingFn, TensorLike
+from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
 
 from .core import transform
 
@@ -55,8 +56,37 @@ def null_postprocessing(results):
     return results[0]
 
 
-@transform
-def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+# pylint: disable=unused-argument
+def _expand_fn(
+    tape: QuantumScript, postselect_mode=None, **_
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
+    postselect_present = any(op.postselect is not None for op in tape.operations if is_mcm(op))
+    if postselect_present and samples_present and tape.batch_size is not None:
+        raise ValueError(
+            "Returning qml.sample is not supported when postselecting mid-circuit "
+            "measurements with broadcasting"
+        )
+
+    return qml.transforms.broadcast_expand(tape)
+
+
+def _add_shot_vector_support(fn: PostprocessingFn, shots: Shots) -> PostprocessingFn:
+    def new_fn(results: ResultBatch) -> Result:
+        results = results[0]
+        return tuple(fn((results[slice(*sl)],)) for sl in shots.bins())
+
+    return new_fn
+
+
+def _squeeze_stack(array):
+    return qml.math.squeeze(qml.math.vstack(array))
+
+
+@partial(transform, expand_transform=_expand_fn)
+def dynamic_one_shot(
+    tape: QuantumScript, postselect_mode=None, **_
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transform a QNode to into several one-shot tapes to support dynamic circuit execution.
 
     This transform enables the ``"one-shot"`` mid-circuit measurement method. The ``"one-shot"`` method prompts the
@@ -106,64 +136,26 @@ def dynamic_one_shot(tape: QuantumScript, **kwargs) -> tuple[QuantumScriptBatch,
                 f"Native mid-circuit measurement mode does not support {type(m).__name__} "
                 "measurements."
             )
-    _ = kwargs.get("device", None)
 
     if not tape.shots:
         raise QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
 
-    samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
-    postselect_present = any(op.postselect is not None for op in tape.operations if is_mcm(op))
-    if postselect_present and samples_present and tape.batch_size is not None:
-        raise ValueError(
-            "Returning qml.sample is not supported when postselecting mid-circuit "
-            "measurements with broadcasting"
-        )
+    aux_tapes = [init_auxiliary_tape(tape)]
 
-    if (batch_size := tape.batch_size) is not None:
-        tapes, broadcast_fn = qml.transforms.broadcast_expand(tape)
-    else:
-        tapes = [tape]
-        broadcast_fn = None
-
-    aux_tapes = [init_auxiliary_tape(t) for t in tapes]
-
-    postselect_mode = kwargs.get("postselect_mode", None)
-
-    def reshape_data(array):
-        return qml.math.squeeze(qml.math.vstack(array))
-
-    def processing_fn(results, has_partitioned_shots=None, batched_results=None):
-        if batched_results is None and batch_size is not None:
-            # If broadcasting, recursively process the results for each batch. For each batch
-            # there are tape.shots.total_shots results. The length of the first axis of final_results
-            # will be batch_size.
-            final_results = []
-            for result in results:
-                final_results.append(processing_fn((result,), batched_results=False))
-            return broadcast_fn(final_results)
-
-        if has_partitioned_shots is None and tape.shots.has_partitioned_shots:
-            # If using shot vectors, recursively process the results for each shot bin. The length
-            # of the first axis of final_results will be the length of the shot vector.
-            results = list(results[0])
-            final_results = []
-            for s in tape.shots:
-                final_results.append(
-                    processing_fn(results[0:s], has_partitioned_shots=False, batched_results=False)
-                )
-                del results[0:s]
-            return tuple(final_results)
-        if not tape.shots.has_partitioned_shots:
-            results = results[0]
-
-        is_scalar = not isinstance(results[0], Sequence)
-        if is_scalar:
-            results = [reshape_data(tuple(results))]
+    def processing_fn(results):
+        results = results[0]
+        if len(aux_tapes[0].measurements) == 1:
+            results = [_squeeze_stack(tuple(results))]
         else:
             results = [
-                reshape_data(tuple(res[i] for res in results)) for i, _ in enumerate(results[0])
+                _squeeze_stack(tuple(res[i] for res in results)) for i, _ in enumerate(results[0])
             ]
-        return parse_native_mid_circuit_measurements(tape, results, postselect_mode=postselect_mode)
+        return parse_native_mid_circuit_measurements(
+            tape, results=results, postselect_mode=postselect_mode
+        )
+
+    if tape.shots.has_partitioned_shots:
+        processing_fn = _add_shot_vector_support(processing_fn, tape.shots)
 
     return aux_tapes, processing_fn
 
@@ -262,22 +254,25 @@ def _get_is_valid_has_valid(mcm_samples, all_mcms, interface):
     return is_valid, has_valid
 
 
+# pylint: disable=unused-argument
 def parse_native_mid_circuit_measurements(
     circuit: qml.tape.QuantumScript,
-    results: TensorLike,
+    _removed_arg=None,  # need to not break catalyst
+    results: None | TensorLike = None,
     postselect_mode=None,
 ):
     """Combines, gathers and normalizes the results of native mid-circuit measurement runs.
 
     Args:
         circuit (QuantumTape): The original ``QuantumScript``.
+        _removed_arg : a placeholder for an argument that used to exist. Can be removed pending update to catalyst.
         aux_tapes (List[QuantumTape]): List of auxiliary ``QuantumScript`` objects.
         results (TensorLike): Array of measurement results.
 
     Returns:
         tuple(TensorLike): The results of the simulation.
     """
-
+    assert results is not None  # condition needed to not break signature
     interface = qml.math.get_deep_interface(results)
     interface = "numpy" if interface == "builtins" else interface
     interface = "tensorflow" if interface == "tf" else interface
@@ -295,6 +290,10 @@ def parse_native_mid_circuit_measurements(
 
     handler = _handle_measurement_qjit if qml.compiler.active() else _handle_measurement
     for m in circuit.measurements:
+        if not isinstance(m, (CountsMP, ExpectationMP, ProbabilityMP, SampleMP, VarianceMP)):
+            raise TypeError(
+                f"Native mid-circuit measurement mode does not support {type(m).__name__} measurements."
+            )
         r, m_count = handler(
             m,
             m_count,
@@ -402,6 +401,7 @@ def gather_mcm_qjit(measurement, samples, is_valid, postselect_mode=None):  # pr
     return gather_non_mcm(measurement, meas, is_valid, postselect_mode=postselect_mode)
 
 
+# pylint: disable=unused-argument
 @singledispatch
 def gather_non_mcm(measurement, samples, is_valid: bool, postselect_mode=None) -> TensorLike:
     """Combines, gathers and normalizes several measurements with trivial measurement values.
@@ -420,6 +420,7 @@ def gather_non_mcm(measurement, samples, is_valid: bool, postselect_mode=None) -
     )
 
 
+# pylint: disable=unused-argument
 @gather_non_mcm.register
 def _gather_counts(measurement: CountsMP, samples, is_valid, postselect_mode=None):
     tmp = Counter()
@@ -442,6 +443,7 @@ def _gather_counts(measurement: CountsMP, samples, is_valid, postselect_mode=Non
     return dict(sorted(tmp.items()))
 
 
+# pylint: disable=unused-argument
 @gather_non_mcm.register
 def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=None):
     if postselect_mode == "pad-invalid-samples" and samples.ndim == 2:
@@ -478,6 +480,7 @@ def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselec
     )
 
 
+# pylint: disable=unused-argument
 @gather_non_mcm.register
 def _gather_variance(measurement: VarianceMP, samples, is_valid, postselect_mode=None):
     if (interface := qml.math.get_interface(is_valid)) == "tensorflow":
