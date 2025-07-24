@@ -148,6 +148,10 @@
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
+* Added state of the art resources for the `ResourceSingleQubitCompare`, `ResourceTwoQubitCompare`,
+  `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
+  [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
+
 <h3>Breaking changes 💔</h3>
 
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.

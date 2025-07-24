@@ -32,3 +32,9 @@ from .trotter import (
 )
 from .qubitize import ResourceQubitizeTHC
 from .compact_hamiltonian import CompactHamiltonian
+from .comparators import (
+    ResourceIntegerComparator,
+    ResourceSingleQubitCompare,
+    ResourceTwoQubitCompare,
+    ResourceRegisterComparator,
+)
