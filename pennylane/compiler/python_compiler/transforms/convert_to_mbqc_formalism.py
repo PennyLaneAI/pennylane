@@ -214,6 +214,7 @@ class ConvertToMBQCFormalismPattern(
                     rewriter.insert_op(CZOp, InsertPoint.before(op))
 
                     target_qubit, aux_qubits_dict[2] = CZOp.results
+                    res_aux_qubit = aux_qubits_dict[5]
 
                     # Insert measurement Op before the op operation
                     if op.gate_name.data == "Hadamard":
@@ -260,8 +261,8 @@ class ConvertToMBQCFormalismPattern(
                         cmpOp = arith.CmpiOp(xorOp.result, constantOneOp, "eq")
                         rewriter.insert_op(cmpOp, InsertPoint.before(op))
 
-                        result_qubit = self._insert_byproduct_op(
-                            cmpOp.result, "PauliX", aux_qubits_dict[5], op, rewriter
+                        res_aux_qubit = self._insert_byproduct_op(
+                            cmpOp.result, "PauliX", res_aux_qubit, op, rewriter
                         )
 
                         # z correction: m2, m3
@@ -274,13 +275,18 @@ class ConvertToMBQCFormalismPattern(
                         cmpOp = arith.CmpiOp(xorOp.result, constantOneOp, "eq")
                         rewriter.insert_op(cmpOp, InsertPoint.before(op))
 
-                        result_qubit = self._insert_byproduct_op(
-                            cmpOp.result, "PauliZ", aux_qubits_dict[5], op, rewriter
+                        res_aux_qubit = self._insert_byproduct_op(
+                            cmpOp.result, "PauliZ", res_aux_qubit, op, rewriter
                         )
 
-                    in_qubits = (target_qubit, aux_qubits_dict[5])
-                    gate_name = "SWAP"
-                    SWAPOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
+                    # NOTE: IdentityOp inserted here is a temporal solution to fix the issue that SWAPOp can't accept
+                    # `res_aux_qubit` as an in_qubits variable, i.e. SWAPOp = CustomOp(in_qubits=(target_qubit, res_aux_qubit), gate_name="SWAP").
+                    # The error message would be "| Error while applying pattern: 'NoneType' object has no attribute 'add_use'". Is it a upstream
+                    # issue or caused by the way how we define the `CustomOp` operation? Not sure why.
+                    IdentityOp = CustomOp(in_qubits=(res_aux_qubit), gate_name="Identity")
+                    rewriter.insert_op(IdentityOp, InsertPoint.before(op))
+                    in_qubits = (target_qubit, IdentityOp.results[0])
+                    SWAPOp = CustomOp(in_qubits=in_qubits, gate_name="SWAP")
                     rewriter.insert_op(SWAPOp, InsertPoint.before(op))
                     result_qubit, aux_qubits_dict[5] = SWAPOp.results
 
