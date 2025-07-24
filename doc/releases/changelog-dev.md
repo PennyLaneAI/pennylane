@@ -45,10 +45,6 @@
   Array([ 3.14159265, -1.57079633], dtype=float64)
   ```
 
-* Added a new function :func:`qml.math.choi_matrix` to compute the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
-  This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
-  [(#7951)](https://github.com/PennyLaneAI/pennylane/pull/7951)
-
 <h3>Improvements 🛠</h3>
 
 * Several templates now have decompositions that can be accessed within the graph-based
@@ -72,6 +68,10 @@
   * :class:`~.OutMultiplier`
 
   * :class:`~.OutPoly`
+
+* A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
+  This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
+  [(#7951)](https://github.com/PennyLaneAI/pennylane/pull/7951)
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
