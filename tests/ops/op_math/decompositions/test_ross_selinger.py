@@ -19,7 +19,11 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.rings import ZOmega
-from pennylane.ops.op_math.decompositions.ross_selinger import _domain_correction, rs_decomposition
+from pennylane.ops.op_math.decompositions.ross_selinger import (
+    _domain_correction,
+    _jit_rs_decomposition,
+    rs_decomposition,
+)
 
 
 @pytest.mark.parametrize(
@@ -93,3 +97,56 @@ def test_exception():
         match=r"Operator must be a RZ or PhaseShift gate",
     ):
         rs_decomposition(op, epsilon=1e-4, max_search_trials=1)
+
+
+@pytest.mark.catalyst
+@pytest.mark.jax
+@pytest.mark.parametrize(
+    ("decomposition_info", "expected_ops"),
+    [
+        (
+            (1, (1, 0, 1, 1, 1, 0), 0),
+            ("Cond", "ForLoop", "Cond"),
+        ),
+        (
+            (0, (1, 0, 1, 1, 1, 0), 12),
+            ("Cond", "ForLoop", "Cond"),
+        ),
+        (
+            (0, (), 9),
+            ("Cond", "Cond"),
+        ),
+    ],
+)
+@pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
+def test_jit_rs_decomposition(decomposition_info, expected_ops):
+    """Test that the qjit rs decomposition is working."""
+
+    jnp = pytest.importorskip("jax")
+    catalyst = pytest.importorskip("catalyst")
+    catalyst_cfs_api = catalyst.api_extensions.control_flow
+
+    catalyst_op_dict = {"Cond": catalyst_cfs_api.Cond, "ForLoop": catalyst_cfs_api.ForLoop}
+
+    # Create decomposition info using jnp
+    has_leading_t = jnp.int32(decomposition_info[0])  # First element
+    syllable_sequence = jnp.array(decomposition_info[1], dtype=jnp.int32)  # Second element
+    clifford_op_idx = jnp.int32(decomposition_info[2])  # Third element
+
+    decomposition_info = (has_leading_t, syllable_sequence, clifford_op_idx)
+
+    # Get the operations from _jit_rs_decomposition
+    @qml.qnode(qml.device("lightning.qubit", wires=1))
+    def circuit():
+        ops = _jit_rs_decomposition(0, decomposition_info)
+
+        # Verify we got the expected number of operations
+        assert len(ops) == len(expected_ops)
+
+        # Verify each operation is of the expected type
+        for op, expected_type in zip(ops, expected_ops):
+            assert isinstance(
+                op, catalyst_op_dict[expected_type]
+            ), f"Expected {expected_type}, got {type(op)}"
+
+    qml.qjit(circuit)

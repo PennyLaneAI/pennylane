@@ -47,6 +47,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
+  with quantum just-in-time compilation via the `@qml.qjit` decorator.
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
