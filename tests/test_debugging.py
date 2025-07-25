@@ -24,7 +24,7 @@ from scipy.stats import ttest_ind
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.debugging import PLDB, pldb_device_manager
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.ops.functions.equal import assert_equal
 
 
@@ -156,6 +156,7 @@ class TestSnapshotGeneral:
             qml.snapshots(circuit)()
 
     def test_non_StateMP_state_measurements_with_finite_shot_device_fails(self, dev):
+        @qml.set_shots(shots=200)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)
@@ -165,12 +166,13 @@ class TestSnapshotGeneral:
         # Expect a DeviceError to be raised here since no shots has
         # been provided to the snapshot due to the finite-shot device
         with pytest.raises(DeviceError):
-            qml.snapshots(circuit)(shots=200)
+            qml.snapshots(circuit)()
 
     def test_StateMP_with_finite_shot_device_passes(self, dev):
         if "lightning" in dev.name or "mixed" in dev.name:
             pytest.skip()
 
+        @qml.set_shots(shots=200)
         @qml.qnode(dev)
         def circuit():
             qml.Snapshot(measurement=qml.state())
@@ -181,7 +183,7 @@ class TestSnapshotGeneral:
 
             return qml.expval(qml.PauliZ(0))
 
-        _ = qml.snapshots(circuit)(shots=200)
+        _ = qml.snapshots(circuit)()
 
     @pytest.mark.parametrize("diff_method", [None, "parameter-shift"])
     def test_all_state_measurement_snapshot_pure_qubit_dev(self, dev, diff_method):
@@ -437,7 +439,7 @@ class TestSnapshotSupportedQNode:
         assert result["execution_results"] == expected["execution_results"]
 
         # Make sure shots are overridden correctly
-        result = qml.snapshots(circuit)(add_bad_snapshot=False, shots=200)
+        result = qml.snapshots(qml.set_shots(shots=200)(circuit))(add_bad_snapshot=False)
         assert result[0] == {"00": 74, "10": 58, "20": 68}
 
     @pytest.mark.parametrize(
@@ -591,7 +593,11 @@ class TestSnapshotSupportedQNode:
         _compare_numpy_dicts(result, expected)
 
         # Make sure shots are overridden correctly
-        result = qml.snapshots(circuit)(shots=200)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            result = qml.snapshots(circuit)(shots=200)
         assert result[3] == {"0": 98, "1": 102}
         assert np.allclose(result[5], expected[5])
 
@@ -632,7 +638,11 @@ class TestSnapshotUnsupportedQNode:
         with pytest.warns(UserWarning, match="Snapshots are not supported"):
             _ = qml.snapshots(circuit)
 
-    @pytest.mark.local_salt(1)
+    # Improper ttest_ind usage, but leaving it here for now;
+    # should be revised and fixed soon
+    # current failure rate: ~7%
+    # FIXME: [sc-92966]
+    @pytest.mark.local_salt(2)
     def test_lightning_qubit_finite_shots(self, seed):
         dev = qml.device("lightning.qubit", wires=2, shots=500, seed=seed)
 
@@ -648,7 +658,13 @@ class TestSnapshotUnsupportedQNode:
         assert ttest_ind(expvals, 0.0).pvalue >= 0.75
 
         # Make sure shots are overridden correctly
-        counts, _ = tuple(zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50))))
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            counts, _ = tuple(
+                zip(*(qml.snapshots(circuit)(shots=1000).values() for _ in range(50)))
+            )
         assert ttest_ind([count["0"] for count in counts], 500).pvalue >= 0.75
 
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint"])
@@ -717,7 +733,11 @@ class TestSnapshotUnsupportedQNode:
         _compare_numpy_dicts(result, expected)
 
         # Make sure shots are overridden correctly
-        result = circuit(shots=200)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            result = circuit(shots=200)
         finite_shot_result = result[0]
         assert not np.allclose(  # Since 200 does not have a factor of 3, we assert that there's no chance for finite-shot tape to reach 1/3 exactly here.
             finite_shot_result,
