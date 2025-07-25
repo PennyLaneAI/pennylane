@@ -1,7 +1,7 @@
 Release notes
 -------------
 
-This page contains the release notes for PennyLane.
+This page contains the changelogs for PennyLane.
 
 .. mdinclude:: ../releases/changelog-dev.md
 
