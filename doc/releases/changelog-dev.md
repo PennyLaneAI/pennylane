@@ -154,6 +154,9 @@
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
+* The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
+  [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
+
 <h3>Breaking changes 💔</h3>
 
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
@@ -196,6 +199,44 @@
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 <h3>Deprecations 👋</h3>
+
+* Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
+  Instead, use :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the
+  Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+
+  As a concrete example, consider the following case:
+
+  ```python
+  coeffs = [0.5, -0.6]
+  ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
+  H_flat = qml.dot(coeffs, ops)
+  ```
+
+  Instead of computing the Suzuki-Trotter product approximation as:
+
+  ```pycon
+  >>> qml.evolve(H_flat, num_steps=2).decomposition()
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
+
+  The same result can be obtained using :class:`~.TrotterProduct` as follows:
+
+  ```pycon
+  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
+  [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
+
+* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
+  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+  [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
 
 * `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
   Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
@@ -287,7 +328,15 @@
 * Update JAX version used in tests to `0.6.2`
   [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
 
+* The measurement-plane attribute of the Python compiler `mbqc` dialect now uses the "opaque syntax"
+  format when printing in the generic IR format. This enables usage of this attribute when IR needs
+  to be passed from the python compiler to Catalyst.
+  [(#7957)](https://github.com/PennyLaneAI/pennylane/pull/7957)
+
 <h3>Documentation 📝</h3>
+
+* The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
+  [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
 
 * Improved the docstrings of all optimizers for consistency and legibility.
   [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
@@ -318,16 +367,21 @@
   This allows for types to be inferred correctly when parsing.
   [(#7825)](https://github.com/PennyLaneAI/pennylane/pull/7825)
 
+* Fixes `SemiAdder` to work when inputs are defined with a single wire.
+  [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
 Marcus Edwards,
 Simone Gasperini,
 David Ittah,
+Mehrdad Malekmohammadi
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
