@@ -1162,7 +1162,7 @@ def test_error_raised_for_missing_molecule_information():
                 ],
             ),
             marks=pytest.mark.xfail(
-                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue #[insert-issue-number] for more details.",
+                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue https://github.com/quantumlib/OpenFermion/issues/1097 for more details.",
                 strict=True,
             ),
         ),
