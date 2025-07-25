@@ -299,6 +299,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
                 d_node.work_wire_dependent = True
 
         self._graph.add_edge(d_node_idx, op_idx, 0)
+        return d_node
 
     def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Helper function to get a list of decomposition rules."""
@@ -446,10 +447,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             )
 
         def _is_feasible(op_node: _OperatorNode):
-            if visitor._num_available_work_wires is None:
+            if visitor.num_available_work_wires is None:
                 return True
             op_node_idx = self._all_op_indices[op_node]
-            return num_work_wires >= visitor._num_work_wires_used[op_node_idx]
+            return num_work_wires >= visitor.num_work_wires_used[op_node_idx]
 
         return filter(_is_feasible, filter(_is_solved, self._op_to_op_nodes[op_rep]))
 
@@ -475,7 +476,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             op_node_idx = self._all_op_indices[node]
             return (
                 visitor.distances[op_node_idx].weighted_cost,
-                visitor._num_work_wires_used[op_node_idx],
+                visitor.num_work_wires_used[op_node_idx],
             )
 
         all_solutions = self._all_solutions(visitor, op, num_available_work_wires)
@@ -570,10 +571,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         return self._graph[d_node_idx].rule
 
 
-class _DecompositionSearchVisitor(DijkstraVisitor):
+class _DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-instance-attributes
     """The visitor used in the Dijkstra search for the optimal decomposition."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         graph: rx.PyDiGraph,
         gate_set: dict,
@@ -592,10 +593,10 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         self._n_edges_examined: dict[int, int] = defaultdict(int)
         self._gate_weights = gate_set
         # work wire related attributes
-        self._num_available_work_wires = num_available_work_wires
+        self.num_available_work_wires = num_available_work_wires
         # the minimum number of work wires consumed along the path that
         # reaches each node in the graph.
-        self._num_work_wires_used: dict[int, int] = defaultdict(int)
+        self.num_work_wires_used: dict[int, int] = defaultdict(int)
 
     def edge_weight(self, edge_obj):
         """Calculates the weight of an edge."""
@@ -627,7 +628,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
             return  # special case for when the decomposition produces nothing
 
         # Check if this decomposition is feasible under the work wire constraint
-        if not target_node.is_feasible(self._num_available_work_wires):
+        if not target_node.is_feasible(self.num_available_work_wires):
             raise PruneSearch
 
         self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node.op)
@@ -635,8 +636,8 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
 
         # Update the number of work wires required for this decomposition to be valid
         # with the maximum of the number of work wires required for each of its operators.
-        self._num_work_wires_used[target_idx] = max(
-            self._num_work_wires_used[target_idx], self._num_work_wires_used[src_idx]
+        self.num_work_wires_used[target_idx] = max(
+            self.num_work_wires_used[target_idx], self.num_work_wires_used[src_idx]
         )
 
         if self._n_edges_examined[target_idx] < len(target_node.decomp_resource.gate_counts):
@@ -654,13 +655,13 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
             # This branch applies to operators in the target gate set.
             weight = self._gate_weights[_to_name(target_node.op)]
             self.distances[target_idx] = Resources({target_node.op: 1}, weight)
-            self._num_work_wires_used[target_idx] = 0
+            self.num_work_wires_used[target_idx] = 0
         elif isinstance(target_node, _DecompositionNode):
-            self._num_work_wires_used[target_idx] += target_node.work_wire_spec.total
+            self.num_work_wires_used[target_idx] += target_node.work_wire_spec.total
         elif isinstance(target_node, _OperatorNode):
             self.predecessors[target_idx] = src_idx
             self.distances[target_idx] = self.distances[src_idx]
-            self._num_work_wires_used[target_idx] = self._num_work_wires_used[src_idx]
+            self.num_work_wires_used[target_idx] = self.num_work_wires_used[src_idx]
 
 
 def _to_name(op):
