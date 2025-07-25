@@ -258,6 +258,7 @@ class ConvertToMBQCFormalismPattern(
                     CZOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
                     rewriter.insert_op(CZOp, InsertPoint.before(op))
 
+                    # TODOs: the following line assign the target qubit to aux_qubits_dict[1] could be confusing, it's subject to be refactored.
                     aux_qubits_dict[1], aux_qubits_dict[2] = CZOp.results
                     res_aux_qubit = aux_qubits_dict[5]
 
