@@ -371,17 +371,4 @@
 
 This release contains contributions from (in alphabetical order):
 
-Guillermo Alonso,
-Utkarsh Azad,
-Joey Carter,
-Yushao Chen,
-Marcus Edwards,
-Simone Gasperini,
-David Ittah,
-Mehrdad Malekmohammadi
-Erick Ochoa,
-Mudit Pandey,
-Andrija Paurevic,
-Shuli Shu,
-Jay Soni,
-Jake Zaia
+[...]
