@@ -232,7 +232,7 @@ eig_h2o.append([-0.67873019, -0.45673019, -0.45673019])
             coeffs_h2_parity,
             ops_h2_parity,
             marks=pytest.mark.xfail(
-                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue #[insert-issue-number] for more details.",
+                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue https://github.com/quantumlib/OpenFermion/issues/1097 for more details.",
                 strict=True,
             ),
         ),
