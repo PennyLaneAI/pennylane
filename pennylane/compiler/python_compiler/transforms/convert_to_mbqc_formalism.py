@@ -170,13 +170,37 @@ class ConvertToMBQCFormalismPattern(
         rewriter.insert_op(condOp, InsertPoint.before(op))
         return condOp.results
 
-    def _insert_byproduct_op(self, cond, gate_name, qubit, op, rewriter):
+    def _insert_byprod_exp_op(self, mres, insert_before_op, rewriter, add_one_op=False):
+        prev_res = mres[0]
+        addOp = None
+        for i in range(1, len(mres)):
+            addOp = arith.AddiOp(prev_res, mres[i])
+            rewriter.insert_op(addOp, InsertPoint.before(insert_before_op))
+            prev_res = addOp.result
+
+        constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+        rewriter.insert_op(constantOneOp, InsertPoint.before(insert_before_op))
+
+        if add_one_op:
+            addOp = arith.AddiOp(prev_res, constantOneOp)
+            rewriter.insert_op(addOp, InsertPoint.before(insert_before_op))
+            prev_res = addOp.result
+
+        xorOp = arith.XOrIOp(prev_res, constantOneOp)
+        rewriter.insert_op(xorOp, InsertPoint.before(insert_before_op))
+        return xorOp.result
+
+    def _insert_cond_byproduct_op(self, exp_index, gate_name, qubit, op, rewriter):
+        constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+        rewriter.insert_op(constantOneOp, InsertPoint.before(op))
+        cmpOp = arith.CmpiOp(exp_index, constantOneOp, "eq")
+        rewriter.insert_op(cmpOp, InsertPoint.before(op))
         in_qubit = qubit
         byproductOp = CustomOp(in_qubits=in_qubit, gate_name=gate_name)
         ture_region = [byproductOp, scf.YieldOp(byproductOp.results[0])]
         identityOp = CustomOp(in_qubits=in_qubit, gate_name="Identity")
         false_region = [identityOp, scf.YieldOp(identityOp.results[0])]
-        condOp = IfOp(cond, QubitType(), ture_region, false_region)
+        condOp = IfOp(cmpOp, QubitType(), ture_region, false_region)
         # Insert condOp before op operations
         rewriter.insert_op(condOp, InsertPoint.before(op))
         return condOp.results
@@ -208,65 +232,41 @@ class ConvertToMBQCFormalismPattern(
 
                     # Insert measurement Op before the op operation
                     if op.gate_name.data == "Hadamard":
-                        m1, qubit1 = self._insert_arbitary_basis_measure_op(
+                        m1, target_qubit = self._insert_arbitary_basis_measure_op(
                             angle=0.0, plane="XY", qubit=target_qubit, op=op, rewriter=rewriter
                         )
-                        target_qubit = qubit1
-                        m2, qubit2 = self._insert_arbitary_basis_measure_op(
+                        m2, aux_qubits_dict[2] = self._insert_arbitary_basis_measure_op(
                             angle=math.pi / 2,
                             plane="XY",
                             qubit=aux_qubits_dict[2],
                             op=op,
                             rewriter=rewriter,
                         )
-                        aux_qubits_dict[2] = qubit2
-                        m3, qubit3 = self._insert_arbitary_basis_measure_op(
+                        m3, aux_qubits_dict[3] = self._insert_arbitary_basis_measure_op(
                             angle=math.pi / 2,
                             plane="XY",
                             qubit=aux_qubits_dict[3],
                             op=op,
                             rewriter=rewriter,
                         )
-                        aux_qubits_dict[3] = qubit3
-                        m4, qubit4 = self._insert_arbitary_basis_measure_op(
+                        m4, aux_qubits_dict[4] = self._insert_arbitary_basis_measure_op(
                             angle=math.pi / 2,
                             plane="XY",
                             qubit=aux_qubits_dict[4],
                             op=op,
                             rewriter=rewriter,
                         )
-                        aux_qubits_dict[4] = qubit4
 
-                        # Insert by-product corrections
-                        # x correction: m1, m3, m4
-                        m13_sum_x = arith.AddiOp(m1, m3)
-                        rewriter.insert_op(m13_sum_x, InsertPoint.before(op))
-                        m134_sum_x = arith.AddiOp(m13_sum_x.result, m4)
-                        rewriter.insert_op(m134_sum_x, InsertPoint.before(op))
-                        # # Insert a conditional IfOp
-                        constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
-                        rewriter.insert_op(constantOneOp, InsertPoint.before(op))
-                        xorOp = arith.XOrIOp(m134_sum_x.result, constantOneOp)
-                        rewriter.insert_op(xorOp, InsertPoint.before(op))
-                        cmpOp = arith.CmpiOp(xorOp.result, constantOneOp, "eq")
-                        rewriter.insert_op(cmpOp, InsertPoint.before(op))
+                        # Apply corrections
+                        x_exp = self._insert_byprod_exp_op([m1, m3, m4], op, rewriter, False)
+                        z_exp = self._insert_byprod_exp_op([m2, m3], op, rewriter, False)
 
-                        res_aux_qubit = self._insert_byproduct_op(
-                            cmpOp.result, "PauliX", res_aux_qubit, op, rewriter
+                        res_aux_qubit = self._insert_cond_byproduct_op(
+                            x_exp, "PauliX", res_aux_qubit, op, rewriter
                         )
 
-                        # z correction: m2, m3
-                        m23_sum_z = arith.AddiOp(m2, m3)
-                        rewriter.insert_op(m23_sum_z, InsertPoint.before(op))
-
-                        xorOp = arith.XOrIOp(m23_sum_z.result, constantOneOp)
-                        rewriter.insert_op(xorOp, InsertPoint.before(op))
-
-                        cmpOp = arith.CmpiOp(xorOp.result, constantOneOp, "eq")
-                        rewriter.insert_op(cmpOp, InsertPoint.before(op))
-
-                        res_aux_qubit = self._insert_byproduct_op(
-                            cmpOp.result, "PauliZ", res_aux_qubit, op, rewriter
+                        res_aux_qubit = self._insert_cond_byproduct_op(
+                            z_exp, "PauliZ", res_aux_qubit, op, rewriter
                         )
 
                     # NOTE: IdentityOp inserted here is a temporal solution to fix the issue that SWAPOp can't accept
