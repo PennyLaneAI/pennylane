@@ -23,8 +23,6 @@ def _make_execute(batch_execute):
 
     @wraps(batch_execute)
     def execute(self, circuits, execution_config: ExecutionConfig | None = None):
-        if execution_config is None:
-            execution_config = ExecutionConfig()
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
