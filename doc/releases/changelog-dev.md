@@ -175,6 +175,10 @@
 
   [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated so that they accept a list of operations 
+  instead of a `qml.tape.QuantumScript` of operations.
+  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
+
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
   PennyLane now depends on the more general `Operator` interface instead. The
   `Operator.is_hermitian` property can instead be used to check whether or not it is highly likely
@@ -376,6 +380,7 @@ Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
 Marcus Edwards,
+Pietropaolo Frisoni,
 Simone Gasperini,
 David Ittah,
 Mehrdad Malekmohammadi

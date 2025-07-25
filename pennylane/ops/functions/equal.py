@@ -766,19 +766,26 @@ def _equal_hilbert_schmidt(
             if qml.math.get_interface(params_1) != qml.math.get_interface(params_2):
                 return False
 
+    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
+        return False
+
     equal_kwargs = {
         "check_interface": check_interface,
         "check_trainability": check_trainability,
         "atol": atol,
         "rtol": rtol,
     }
-    # Check hyperparameters using qml.equal rather than == where necessary
-    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
+
+    u1 = qml.prod(*op1.hyperparameters["u"])
+    u2 = qml.prod(*op2.hyperparameters["u"])
+    if not qml.equal(u1, u2, **equal_kwargs):
         return False
-    if not qml.equal(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"], **equal_kwargs):
+
+    v1 = qml.prod(*op1.hyperparameters["v"])
+    v2 = qml.prod(*op2.hyperparameters["v"])
+    if not qml.equal(v1, v2, **equal_kwargs):
         return False
-    if not qml.equal(op1.hyperparameters["v_tape"], op2.hyperparameters["v_tape"], **equal_kwargs):
-        return False
+
     if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
         return False
 
