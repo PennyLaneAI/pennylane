@@ -18,11 +18,14 @@ from collections.abc import Sequence
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.ops import LinearCombination
+from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+from .counts import CountsMP
 from .measurements import SampleMeasurement, StateMeasurement
 from .mid_measure import MeasurementValue
 
@@ -62,7 +65,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
     def process_samples(
         self,
-        samples: Sequence[complex],
+        samples: TensorLike,
         wire_order: Wires,
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
@@ -79,24 +82,24 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             # if wires are provided, then we only return samples from those wires
             samples = samples[..., mapped_wires]
 
-        num_wires = qml.math.shape(samples)[-1]
+        num_wires = math.shape(samples)[-1]
         # convert samples from a list of 0, 1 integers, to base 10 representation
-        powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
+        powers_of_two = 2 ** math.arange(num_wires)[::-1]
         indices = samples @ powers_of_two
 
         # `samples` typically has two axes ((shots, wires)) but can also have three with
         # broadcasting ((batch_size, shots, wires)) so that we simply read out the batch_size.
-        batch_size = samples.shape[0] if qml.math.ndim(samples) == 3 else None
+        batch_size = samples.shape[0] if math.ndim(samples) == 3 else None
         dim = 2**num_wires
         # count the basis state occurrences, and construct the probability vector
         new_bin_size = bin_size or samples.shape[-2]
         new_shape = (-1, new_bin_size) if batch_size is None else (batch_size, -1, new_bin_size)
         indices = indices.reshape(new_shape)
         prob = self._count_samples(indices, batch_size, dim)
-        return qml.math.squeeze(prob) if bin_size is None else prob
+        return math.squeeze(prob) if bin_size is None else prob
 
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
-        prob = qml.math.real(state) ** 2 + qml.math.imag(state) ** 2
+    def process_state(self, state: TensorLike, wire_order: Wires):
+        prob = math.real(state) ** 2 + math.imag(state) ** 2
         if self.wires == Wires([]):
             # no need to marginalize
             return prob
@@ -115,7 +118,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         desired_axes = np.argsort(np.argsort(mapped_wires))
         flat_shape = (-1,)
         expected_size = 2**num_device_wires
-        batch_size = qml.math.get_batch_size(prob, (expected_size,), expected_size)
+        batch_size = math.get_batch_size(prob, (expected_size,), expected_size)
         if batch_size is not None:
             # prob now is reshaped to have self.num_wires+1 axes in the case of broadcasting
             shape.insert(0, batch_size)
@@ -123,17 +126,17 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
             desired_axes = np.insert(desired_axes + 1, 0, 0)
             flat_shape = (batch_size, -1)
 
-        prob = qml.math.reshape(prob, shape)
+        prob = math.reshape(prob, shape)
         # sum over all inactive wires
-        prob = qml.math.sum(prob, axis=tuple(inactive_wires))
+        prob = math.sum(prob, axis=tuple(inactive_wires))
         # rearrange wires if necessary
-        prob = qml.math.transpose(prob, desired_axes)
+        prob = math.transpose(prob, desired_axes)
         # flatten and return probabilities
-        return qml.math.reshape(prob, flat_shape)
+        return math.reshape(prob, flat_shape)
 
     def process_counts(self, counts: dict, wire_order: Wires) -> np.ndarray:
-        with qml.QueuingManager.stop_recording():
-            helper_counts = qml.counts(wires=self.wires, all_outcomes=False)
+        with QueuingManager.stop_recording():
+            helper_counts = CountsMP(wires=self.wires, all_outcomes=False)
         mapped_counts = helper_counts.process_counts(counts, wire_order)
 
         num_shots = sum(mapped_counts.values())
@@ -142,26 +145,23 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
 
         # constructs the probability vector
         # converts outcomes from binary strings to integers (base 10 representation)
-        prob_vector = qml.math.zeros((dim), dtype="float64")
+        prob_vector = math.zeros((dim), dtype="float64")
         for outcome, occurrence in mapped_counts.items():
             prob_vector[int(outcome, base=2)] = occurrence / num_shots
 
         return prob_vector
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
-        if len(qml.math.shape(density_matrix)) == 2:
-            prob = qml.math.diagonal(density_matrix)
+        if len(math.shape(density_matrix)) == 2:
+            prob = math.diagonal(density_matrix)
         else:
-            prob = qml.math.stack(
-                [
-                    qml.math.diagonal(density_matrix[i])
-                    for i in range(qml.math.shape(density_matrix)[0])
-                ]
+            prob = math.stack(
+                [math.diagonal(density_matrix[i]) for i in range(math.shape(density_matrix)[0])]
             )
 
         # Since we only care about the probabilities, we can simplify the task here by creating a 'pseudo-state' to carry the diagonal elements and reuse the process_state method
-        prob = qml.math.convert_like(prob, density_matrix)
-        p_state = qml.math.sqrt(prob)
+        prob = math.convert_like(prob, density_matrix)
+        p_state = math.sqrt(prob)
         return self.process_state(p_state, wire_order)
 
     @staticmethod
@@ -169,22 +169,22 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         """Count the occurrences of sampled indices and convert them to relative
         counts in order to estimate their occurrence probability."""
         num_bins, bin_size = indices.shape[-2:]
-        interface = qml.math.get_deep_interface(indices)
+        interface = math.get_deep_interface(indices)
 
-        if qml.math.is_abstract(indices):
+        if math.is_abstract(indices):
 
             def _count_samples_core(indices, dim, interface):
-                return qml.math.array(
-                    [[qml.math.sum(idx == p) for idx in indices] for p in range(dim)],
+                return math.array(
+                    [[math.sum(idx == p) for idx in indices] for p in range(dim)],
                     like=interface,
                 )
 
         else:
 
             def _count_samples_core(indices, dim, *_):
-                probabilities = qml.math.zeros((dim, num_bins), dtype="float64")
+                probabilities = math.zeros((dim, num_bins), dtype="float64")
                 for b, idx in enumerate(indices):
-                    basis_states, counts = qml.math.unique(idx, return_counts=True)
+                    basis_states, counts = math.unique(idx, return_counts=True)
                     probabilities[basis_states, b] = counts
                 return probabilities
 
@@ -194,7 +194,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
         # count the basis state occurrences, and construct the probability vector
         # for each bin and broadcasting index
         indices = indices.reshape((batch_size, num_bins, bin_size))
-        probabilities = qml.math.array(
+        probabilities = math.array(
             [_count_samples_core(_indices, dim, interface) for _indices in indices],
             like=interface,
         )
@@ -279,7 +279,7 @@ def probs(wires=None, op=None) -> ProbabilityMP:
         return ProbabilityMP(obs=op)
 
     if isinstance(op, Sequence):
-        if not qml.math.is_abstract(op[0]) and not all(
+        if not math.is_abstract(op[0]) and not all(
             isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in op
         ):
             raise QuantumFunctionError(
@@ -290,10 +290,10 @@ def probs(wires=None, op=None) -> ProbabilityMP:
 
         return ProbabilityMP(obs=op)
 
-    if isinstance(op, qml.ops.LinearCombination):
+    if isinstance(op, LinearCombination):
         raise QuantumFunctionError("Hamiltonians are not supported for rotating probabilities.")
 
-    if op is not None and not qml.math.is_abstract(op) and not op.has_diagonalizing_gates:
+    if op is not None and not math.is_abstract(op) and not op.has_diagonalizing_gates:
         raise QuantumFunctionError(
             f"{op} does not define diagonalizing gates : cannot be used to rotate the probability"
         )
