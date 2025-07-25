@@ -227,39 +227,38 @@ class ConvertToMBQCFormalismPattern(
                     CZOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
                     rewriter.insert_op(CZOp, InsertPoint.before(op))
 
-                    target_qubit, aux_qubits_dict[2] = CZOp.results
+                    aux_qubits_dict[1], aux_qubits_dict[2] = CZOp.results
                     res_aux_qubit = aux_qubits_dict[5]
 
                     # Insert measurement Op before the op operation
                     if op.gate_name.data == "Hadamard":
-                        m1, target_qubit = self._insert_arbitary_basis_measure_op(
-                            angle=0.0, plane="XY", qubit=target_qubit, op=op, rewriter=rewriter
-                        )
-                        m2, aux_qubits_dict[2] = self._insert_arbitary_basis_measure_op(
-                            angle=math.pi / 2,
-                            plane="XY",
-                            qubit=aux_qubits_dict[2],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        m3, aux_qubits_dict[3] = self._insert_arbitary_basis_measure_op(
-                            angle=math.pi / 2,
-                            plane="XY",
-                            qubit=aux_qubits_dict[3],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        m4, aux_qubits_dict[4] = self._insert_arbitary_basis_measure_op(
-                            angle=math.pi / 2,
-                            plane="XY",
-                            qubit=aux_qubits_dict[4],
-                            op=op,
-                            rewriter=rewriter,
-                        )
+                        x_mres_idx = [1, 3, 4]
+                        z_mres_idx = [2, 3]
+                        angles = {1: 0.0, 2: math.pi / 2, 3: math.pi / 2, 4: math.pi / 2}
+                        planes = {1: "XY", 2: "XY", 3: "XY", 4: "XY"}
+
+                        x_mres = []
+                        z_mres = []
+                        for key in angles:
+                            mres, aux_qubits_dict[key] = (
+                                self._insert_arbitary_basis_measure_op(
+                                    angle=angles[key],
+                                    plane=planes[key],
+                                    qubit=aux_qubits_dict[key],
+                                    op=op,
+                                    rewriter=rewriter,
+                                )
+                            )
+                            if key in x_mres_idx:
+                                x_mres.append(mres)
+                            if key in z_mres_idx:
+                                z_mres.append(mres)
 
                         # Apply corrections
-                        x_exp = self._insert_byprod_exp_op([m1, m3, m4], op, rewriter, False)
-                        z_exp = self._insert_byprod_exp_op([m2, m3], op, rewriter, False)
+                        x_exp = self._insert_byprod_exp_op(
+                            x_mres, op, rewriter, False
+                        )
+                        z_exp = self._insert_byprod_exp_op(z_mres, op, rewriter, False)
 
                         res_aux_qubit = self._insert_cond_byproduct_op(
                             x_exp, "PauliX", res_aux_qubit, op, rewriter
@@ -275,7 +274,7 @@ class ConvertToMBQCFormalismPattern(
                     # issue or caused by the way how we define the `CustomOp` operation? Not sure why.
                     IdentityOp = CustomOp(in_qubits=(res_aux_qubit), gate_name="Identity")
                     rewriter.insert_op(IdentityOp, InsertPoint.before(op))
-                    in_qubits = (target_qubit, IdentityOp.results[0])
+                    in_qubits = (aux_qubits_dict[1], IdentityOp.results[0])
                     SWAPOp = CustomOp(in_qubits=in_qubits, gate_name="SWAP")
                     rewriter.insert_op(SWAPOp, InsertPoint.before(op))
                     result_qubit, aux_qubits_dict[5] = SWAPOp.results
