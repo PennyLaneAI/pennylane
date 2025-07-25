@@ -14,8 +14,6 @@
 """
 Tests for the MPSPrep template.
 """
-from functools import partial
-
 import numpy as np
 import pytest
 
