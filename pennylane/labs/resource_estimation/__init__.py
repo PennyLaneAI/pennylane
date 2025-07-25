@@ -226,4 +226,7 @@ from .templates import (
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
     ResourceQubitizeTHC,
+    ResourceQPE,
+    ResourceIterativeQPE,
+    ResourceControlledSequence,
 )
