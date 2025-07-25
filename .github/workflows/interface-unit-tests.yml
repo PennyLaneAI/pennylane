@@ -350,7 +350,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
+      fail-fast: False
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
@@ -389,7 +389,7 @@ jobs:
       - default-dependency-versions
       - warnings-as-errors-setup
     strategy:
-      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
+      fail-fast: False
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).capture-jax-tests
