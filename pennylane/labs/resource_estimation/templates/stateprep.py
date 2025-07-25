@@ -29,6 +29,7 @@ class ResourceUniformStatePrep(ResourceOperator):
     r"""Resource class for preparing a uniform superposition.
 
     .. math:
+
         \frac{1}{\sqrt{2^{k}L}} \sum_{l=0}^{2^{k}L-1} |l\rangle
 
     where :math:`L` is odd.
