@@ -218,10 +218,10 @@ class ConvertToMBQCFormalismPattern(
         return condOp.results
 
     def _get_measurement_param_with_gatename(self, gatename):
-        xmres_add_one = False
-        zmres_add_one = False
         match gatename:
             case "Hadamard":
+                xmres_add_one = False
+                zmres_add_one = False
                 x_mres_idx = [1, 3, 4]
                 z_mres_idx = [2, 3]
                 angles = {1: 0.0, 2: math.pi / 2, 3: math.pi / 2, 4: math.pi / 2}
@@ -233,8 +233,63 @@ class ConvertToMBQCFormalismPattern(
                 z_mres_idx = [1, 2, 3]
                 angles = {1: 0.0, 2: 0.0, 3: math.pi / 2, 4: 0.0}
                 planes = {1: "XY", 2: "XY", 3: "XY", 4: "XY"}
+                xmres_add_one = False
                 zmres_add_one = True
                 return x_mres_idx, z_mres_idx, angles, planes, xmres_add_one, zmres_add_one
+
+            case "CNOT":
+                xc_mres_idx = [2, 3, 5, 6]
+                xt_mres_idx = [2, 3, 8, 10, 12, 14]
+                zc_mres_idx = [1, 3, 4, 5, 8, 9, 11]
+                zt_mres_idx = [9, 11, 13]
+
+                xcmres_add_one = False
+                xtmres_add_one = False
+                zcmres_add_one = True
+                ztmres_add_one = True
+
+                angles = {
+                    1: 0.0,
+                    2: math.pi / 2,
+                    3: math.pi / 2,
+                    4: math.pi / 2,
+                    5: math.pi / 2,
+                    6: math.pi / 2,
+                    8: math.pi / 2,
+                    9: 0.0,
+                    10: 0.0,
+                    11: 0.0,
+                    12: math.pi / 2,
+                    13: 0.0,
+                    14: 0.0,
+                }
+                planes = {
+                    1: "XY",
+                    2: "XY",
+                    3: "XY",
+                    4: "XY",
+                    5: "XY",
+                    6: "XY",
+                    8: "XY",
+                    9: "XY",
+                    10: "XY",
+                    11: "XY",
+                    12: "XY",
+                    13: "XY",
+                    14: "XY",
+                }
+                return (
+                    xc_mres_idx,
+                    xt_mres_idx,
+                    zc_mres_idx,
+                    zt_mres_idx,
+                    xcmres_add_one,
+                    xtmres_add_one,
+                    zcmres_add_one,
+                    ztmres_add_one,
+                    angles,
+                    planes,
+                )
 
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
@@ -383,5 +438,110 @@ class ConvertToMBQCFormalismPattern(
 
                     # Replace all uses of output qubit of op with the result_qubit
                     rewriter.replace_all_uses_with(op.results[0], result_qubit)
+                    # Remove op operation
+                    rewriter.erase_op(op)
+                elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
+                    aux_qubits_dict = self._make_graph_state(op, rewriter)
+                    # Entangle the target wire to qubit 2 in the aux_qubits_dict
+                    in_qubits_ctrl = [op.in_qubits[0], aux_qubits_dict[2]]
+                    CZ_ctrl_Op = CustomOp(in_qubits=in_qubits_ctrl, gate_name="CZ")
+                    rewriter.insert_op(CZ_ctrl_Op, InsertPoint.before(op))
+                    aux_qubits_dict[1], aux_qubits_dict[2] = CZ_ctrl_Op.results
+
+                    in_qubits_target = [op.in_qubits[1], aux_qubits_dict[10]]
+                    CZ_tgt_Op = CustomOp(in_qubits=in_qubits_target, gate_name="CZ")
+                    rewriter.insert_op(CZ_tgt_Op, InsertPoint.before(op))
+                    aux_qubits_dict[9], aux_qubits_dict[10] = CZ_tgt_Op.results
+
+                    ctrl_qubit = aux_qubits_dict[1]
+                    tgt_qubit = aux_qubits_dict[9]
+
+                    (
+                        xc_mres_idx,
+                        xt_mres_idx,
+                        zc_mres_idx,
+                        zt_mres_idx,
+                        xcmres_add_one,
+                        xtmres_add_one,
+                        zcmres_add_one,
+                        ztmres_add_one,
+                        angles,
+                        planes,
+                    ) = self._get_measurement_param_with_gatename(op.gate_name.data)
+                    xt_mres = []
+                    zt_mres = []
+                    xc_mres = []
+                    zc_mres = []
+                    for key in angles:
+                        mres, aux_qubits_dict[key] = self._insert_arbitary_basis_measure_op(
+                            angle=angles[key],
+                            plane=planes[key],
+                            qubit=aux_qubits_dict[key],
+                            op=op,
+                            rewriter=rewriter,
+                        )
+                        if key in xc_mres_idx:
+                            xc_mres.append(mres)
+                        if key in zc_mres_idx:
+                            zc_mres.append(mres)
+                        if key in xt_mres_idx:
+                            xt_mres.append(mres)
+                        if key in zt_mres_idx:
+                            zt_mres.append(mres)
+
+                    # Apply corrections
+                    xc_exp = self._insert_byprod_exp_op(xc_mres, op, rewriter, xcmres_add_one)
+                    zc_exp = self._insert_byprod_exp_op(zc_mres, op, rewriter, zcmres_add_one)
+
+                    xt_exp = self._insert_byprod_exp_op(xt_mres, op, rewriter, xtmres_add_one)
+                    zt_exp = self._insert_byprod_exp_op(zt_mres, op, rewriter, ztmres_add_one)
+
+                    res_c_qubit = self._insert_cond_byproduct_op(
+                        xc_exp, "PauliX", ctrl_qubit, op, rewriter
+                    )
+
+                    res_c_qubit = self._insert_cond_byproduct_op(
+                        zc_exp, "PauliZ", res_c_qubit, op, rewriter
+                    )
+
+                    res_t_qubit = self._insert_cond_byproduct_op(
+                        xt_exp, "PauliX", tgt_qubit, op, rewriter
+                    )
+
+                    res_t_qubit = self._insert_cond_byproduct_op(
+                        zt_exp, "PauliZ", res_t_qubit, op, rewriter
+                    )
+
+                    # NOTE: IdentityOp inserted here is a temporal solution to fix the issue that SWAPOp can't accept
+                    # `res_aux_qubit` as an in_qubits variable, i.e. SWAPOp = CustomOp(in_qubits=(target_qubit, res_aux_qubit), gate_name="SWAP").
+                    # The error message would be "| Error while applying pattern: 'NoneType' object has no attribute 'add_use'". Is it a upstream
+                    # issue or caused by the way how we define the `CustomOp` operation? Not sure why.
+                    IdentityOp = CustomOp(in_qubits=(res_c_qubit), gate_name="Identity")
+                    rewriter.insert_op(IdentityOp, InsertPoint.before(op))
+
+                    in_qubits = (aux_qubits_dict[1], IdentityOp.results[0])
+                    SWAPOp = CustomOp(in_qubits=in_qubits, gate_name="SWAP")
+                    rewriter.insert_op(SWAPOp, InsertPoint.before(op))
+                    result_c_qubit, aux_qubits_dict[7] = SWAPOp.results
+
+                    IdentityOp = CustomOp(in_qubits=(res_t_qubit), gate_name="Identity")
+                    rewriter.insert_op(IdentityOp, InsertPoint.before(op))
+
+                    in_qubits = (aux_qubits_dict[9], IdentityOp.results[0])
+                    SWAPOp = CustomOp(in_qubits=in_qubits, gate_name="SWAP")
+                    rewriter.insert_op(SWAPOp, InsertPoint.before(op))
+                    result_t_qubit, aux_qubits_dict[15] = SWAPOp.results
+
+                    # Deallocate aux_qubits
+                    for node in aux_qubits_dict:
+                        if (
+                            node != 1 and node != 9
+                        ):  # 1st qubit is the target qubit in the global register
+                            deallocQubitOp = DeallocQubitOp(aux_qubits_dict[node])
+                            rewriter.insert_op(deallocQubitOp, InsertPoint.before(op))
+
+                    # Replace all uses of output qubit of op with the result_qubit
+                    rewriter.replace_all_uses_with(op.results[0], result_c_qubit)
+                    rewriter.replace_all_uses_with(op.results[1], result_t_qubit)
                     # Remove op operation
                     rewriter.erase_op(op)
