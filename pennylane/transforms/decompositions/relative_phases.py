@@ -24,7 +24,7 @@ arXiv:1212.0506, arXiv, 2013. doi:10.48550/arXiv.1212.0506.
 """
 
 import pennylane as qml
-from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import pattern_matching_optimization, transform
 from pennylane.typing import PostprocessingFn
 
@@ -37,10 +37,10 @@ def replace_relative_phase_toffoli(
     (Maslov, 2016).
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumScript or Callable): A quantum circuit.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumScript], function]:
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
@@ -144,11 +144,11 @@ def replace_controlled_iX_gate(
     equivalency used is given in (Giles and Selinger, 2013).
 
     Args:
-        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        tape (QNode or QuantumScript or Callable): A quantum circuit.
         num_controls (int): The number of controls on the CS gate.
 
     Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumScript], function]:
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     **Example**
