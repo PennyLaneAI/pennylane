@@ -152,6 +152,10 @@
   `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
   [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
 
+* Added state of the art resources for the `ResourceUniformStatePrep`,
+  and `ResourceAliasSampling` templates.
+  [(#7883)](https://github.com/PennyLaneAI/pennylane/pull/7883)
+
 <h3>Breaking changes 💔</h3>
 
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
