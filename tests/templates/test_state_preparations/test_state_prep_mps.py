@@ -663,7 +663,7 @@ class TestMPSPrep:
 
         plxpr = qml.capture.make_plxpr(circuit)(*mps)
         collector = CollectOpsandMeas()
-        collector.eval(plxpr.jaxpr, plxpr.consts)
+        collector.eval(plxpr.jaxpr, plxpr.consts, *mps)
         assert len(collector.state["ops"]) == 4
         for op in collector.state["ops"]:
             assert isinstance(op, qml.QubitUnitary)
