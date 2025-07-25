@@ -324,8 +324,8 @@ class TestMeasurementsFromSamplesPass:
                 %1 = tensor.extract %0[] : tensor<i64>
                 quantum.device shots(%1) ["", "", ""]
 
-                // CHECK: [[qreg:%.+]] = {{.*}}quantum.alloc{{.*}} : () -> !quantum.reg
-                %2 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
+                // CHECK: [[qreg:%.+]] = quantum.alloc
+                %2 = quantum.alloc(2) : !quantum.reg
 
                 // CHECK: [[compbasis:%.+]] = quantum.compbasis qreg [[qreg]] : !quantum.obs
                 %3 = quantum.compbasis qreg %2 : !quantum.obs
@@ -358,10 +358,11 @@ class TestMeasurementsFromSamplesPass:
                 %1 = tensor.extract %0[] : tensor<i64>
                 quantum.device shots(%1) ["", "", ""]
 
-                %2 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
+                // CHECK: [[qreg:%.+]] = quantum.alloc
+                %2 = quantum.alloc(2) : !quantum.reg
 
-                // CHECK: [[q0:%.+]] = {{.*}}quantum.extract{{.*}}idx_attr = 0{{.*}} -> !quantum.bit
-                %3 = "quantum.extract"(%2) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+                // CHECK: [[q0:%.+]] = quantum.extract [[qreg]][0]
+                %3 = quantum.extract %2[0] : !quantum.reg -> !quantum.bit
 
                 // CHECK: [[compbasis0:%.+]] = quantum.compbasis qubits [[q0]] : !quantum.obs
                 %4 = quantum.compbasis qubits %3 : !quantum.obs
@@ -372,8 +373,8 @@ class TestMeasurementsFromSamplesPass:
                 // CHECK-NOT: quantum.probs
                 %5 = quantum.probs %4 : tensor<2xf64>
 
-                // CHECK: [[q1:%.+]] = {{.*}}quantum.extract{{.*}}idx_attr = 1{{.*}} -> !quantum.bit
-                %6 = "quantum.extract"(%2) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
+                // CHECK: [[q1:%.+]] = quantum.extract [[qreg]][1]
+                %6 = quantum.extract %2[1] : !quantum.reg -> !quantum.bit
 
                 // CHECK: [[compbasis1:%.+]] = quantum.compbasis qubits [[q1]] : !quantum.obs
                 %7 = quantum.compbasis qubits %6 : !quantum.obs

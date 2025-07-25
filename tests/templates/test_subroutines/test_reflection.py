@@ -164,7 +164,6 @@ class TestIntegration:
 
     # NOTE: the finite shot test of the results has a 3% chance to fail
     # due to the random nature of the sampling. Hence we just pin the salt
-    @pytest.mark.local_salt(1)
     @pytest.mark.autograd
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_autograd(self, shots, seed):
@@ -185,7 +184,6 @@ class TestIntegration:
 
         assert np.allclose(res, self.exp_jac, atol=0.005)
 
-    @pytest.mark.local_salt(1)
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -218,7 +216,6 @@ class TestIntegration:
 
         assert np.allclose(jac, self.exp_jac, atol=0.005)
 
-    @pytest.mark.local_salt(1)
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_torch(self, shots, seed):
