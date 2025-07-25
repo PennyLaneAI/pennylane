@@ -9,11 +9,6 @@
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
   [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
 
-* The `qchem` module is upgraded with new functions to construct a vibrational Hamiltonian in 
-  the Christiansen representation. 
-  [(#7491)](https://github.com/PennyLaneAI/pennylane/pull/7491)
-  [(#7596)](https://github.com/PennyLaneAI/pennylane/pull/7596)
-
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the momentum
   quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.
   [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
