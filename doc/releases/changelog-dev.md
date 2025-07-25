@@ -153,6 +153,9 @@
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
+* Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
+  [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
+
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 
