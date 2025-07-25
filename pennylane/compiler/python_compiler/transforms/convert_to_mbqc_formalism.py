@@ -205,6 +205,15 @@ class ConvertToMBQCFormalismPattern(
         rewriter.insert_op(condOp, InsertPoint.before(op))
         return condOp.results
 
+    def _get_measurement_param_with_gatename(self, gatename):
+        match gatename:
+            case "Hadamard":
+                x_mres_idx = [1, 3, 4]
+                z_mres_idx = [2, 3]
+                angles = {1: 0.0, 2: math.pi / 2, 3: math.pi / 2, 4: math.pi / 2}
+                planes = {1: "XY", 2: "XY", 3: "XY", 4: "XY"}
+                return x_mres_idx, z_mres_idx, angles, planes
+
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
@@ -230,43 +239,38 @@ class ConvertToMBQCFormalismPattern(
                     aux_qubits_dict[1], aux_qubits_dict[2] = CZOp.results
                     res_aux_qubit = aux_qubits_dict[5]
 
-                    # Insert measurement Op before the op operation
-                    if op.gate_name.data == "Hadamard":
-                        x_mres_idx = [1, 3, 4]
-                        z_mres_idx = [2, 3]
-                        angles = {1: 0.0, 2: math.pi / 2, 3: math.pi / 2, 4: math.pi / 2}
-                        planes = {1: "XY", 2: "XY", 3: "XY", 4: "XY"}
+                    # Get measurement params with gate name
+                    x_mres_idx, z_mres_idx, angles, planes = (
+                        self._get_measurement_param_with_gatename(op.gate_name.data)
+                    )
 
-                        x_mres = []
-                        z_mres = []
-                        for key in angles:
-                            mres, aux_qubits_dict[key] = (
-                                self._insert_arbitary_basis_measure_op(
-                                    angle=angles[key],
-                                    plane=planes[key],
-                                    qubit=aux_qubits_dict[key],
-                                    op=op,
-                                    rewriter=rewriter,
-                                )
-                            )
-                            if key in x_mres_idx:
-                                x_mres.append(mres)
-                            if key in z_mres_idx:
-                                z_mres.append(mres)
+                    x_mres = []
+                    z_mres = []
 
-                        # Apply corrections
-                        x_exp = self._insert_byprod_exp_op(
-                            x_mres, op, rewriter, False
+                    for key in angles:
+                        mres, aux_qubits_dict[key] = self._insert_arbitary_basis_measure_op(
+                            angle=angles[key],
+                            plane=planes[key],
+                            qubit=aux_qubits_dict[key],
+                            op=op,
+                            rewriter=rewriter,
                         )
-                        z_exp = self._insert_byprod_exp_op(z_mres, op, rewriter, False)
+                        if key in x_mres_idx:
+                            x_mres.append(mres)
+                        if key in z_mres_idx:
+                            z_mres.append(mres)
 
-                        res_aux_qubit = self._insert_cond_byproduct_op(
-                            x_exp, "PauliX", res_aux_qubit, op, rewriter
-                        )
+                    # Apply corrections
+                    x_exp = self._insert_byprod_exp_op(x_mres, op, rewriter, False)
+                    z_exp = self._insert_byprod_exp_op(z_mres, op, rewriter, False)
 
-                        res_aux_qubit = self._insert_cond_byproduct_op(
-                            z_exp, "PauliZ", res_aux_qubit, op, rewriter
-                        )
+                    res_aux_qubit = self._insert_cond_byproduct_op(
+                        x_exp, "PauliX", res_aux_qubit, op, rewriter
+                    )
+
+                    res_aux_qubit = self._insert_cond_byproduct_op(
+                        z_exp, "PauliZ", res_aux_qubit, op, rewriter
+                    )
 
                     # NOTE: IdentityOp inserted here is a temporal solution to fix the issue that SWAPOp can't accept
                     # `res_aux_qubit` as an in_qubits variable, i.e. SWAPOp = CustomOp(in_qubits=(target_qubit, res_aux_qubit), gate_name="SWAP").
