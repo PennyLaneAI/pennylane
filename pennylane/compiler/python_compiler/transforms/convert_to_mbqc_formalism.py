@@ -206,13 +206,23 @@ class ConvertToMBQCFormalismPattern(
         return condOp.results
 
     def _get_measurement_param_with_gatename(self, gatename):
+        xmres_add_one = False
+        zmres_add_one = False
         match gatename:
             case "Hadamard":
                 x_mres_idx = [1, 3, 4]
                 z_mres_idx = [2, 3]
                 angles = {1: 0.0, 2: math.pi / 2, 3: math.pi / 2, 4: math.pi / 2}
                 planes = {1: "XY", 2: "XY", 3: "XY", 4: "XY"}
-                return x_mres_idx, z_mres_idx, angles, planes
+                return x_mres_idx, z_mres_idx, angles, planes, xmres_add_one, zmres_add_one
+
+            case "S":
+                x_mres_idx = [2, 4]
+                z_mres_idx = [1, 2, 3]
+                angles = {1: 0.0, 2: 0.0, 3: math.pi / 2, 4: 0.0}
+                planes = {1: "XY", 2: "XY", 3: "XY", 4: "XY"}
+                zmres_add_one = True
+                return x_mres_idx, z_mres_idx, angles, planes, xmres_add_one, zmres_add_one
 
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
@@ -240,7 +250,7 @@ class ConvertToMBQCFormalismPattern(
                     res_aux_qubit = aux_qubits_dict[5]
 
                     # Get measurement params with gate name
-                    x_mres_idx, z_mres_idx, angles, planes = (
+                    x_mres_idx, z_mres_idx, angles, planes, xmres_add_one, zmres_add_one = (
                         self._get_measurement_param_with_gatename(op.gate_name.data)
                     )
 
@@ -261,8 +271,8 @@ class ConvertToMBQCFormalismPattern(
                             z_mres.append(mres)
 
                     # Apply corrections
-                    x_exp = self._insert_byprod_exp_op(x_mres, op, rewriter, False)
-                    z_exp = self._insert_byprod_exp_op(z_mres, op, rewriter, False)
+                    x_exp = self._insert_byprod_exp_op(x_mres, op, rewriter, xmres_add_one)
+                    z_exp = self._insert_byprod_exp_op(z_mres, op, rewriter, zmres_add_one)
 
                     res_aux_qubit = self._insert_cond_byproduct_op(
                         x_exp, "PauliX", res_aux_qubit, op, rewriter
