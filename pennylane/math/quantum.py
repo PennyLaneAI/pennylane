@@ -1535,8 +1535,8 @@ def choi_matrix(Ks, check_Ks=False):
     :math:`|\phi^+\rangle = \frac{1}{\sqrt{2^n}} \sum_{i=0}^{2^n-1} |i\rangle \otimes |i\rangle` between the
     qubit system the channel :math:`\mathcal{E}` is acting on and additional "artificial" system of the same size.
 
-        We assume the channel :math:`\mathcal{E}(\rho) = \sum_\ell K_\ell^\dagger \rho K_\ell` is provided 
-        in terms of its Kraus operators :math:`\{K_j\}` (``Ks``) that are trace-preserving, hence 
+        We assume the channel :math:`\mathcal{E}(\rho) = \sum_\ell K_\ell^\dagger \rho K_\ell` is provided
+        in terms of its Kraus operators :math:`\{K_j\}` (``Ks``) that are trace-preserving, hence
         :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
 
     Args:
