@@ -441,7 +441,7 @@ def _compare_operation_without_qubits(node_1, node_2):
     """
     return (
         (node_1.op.name == node_2.op.name)
-        and (node_1.op.data == node_2.op.data)
+        and qml.math.allclose(node_1.op.data, node_2.op.data)
         and len(node_1.wires) == len(node_2.wires)
     )
 
