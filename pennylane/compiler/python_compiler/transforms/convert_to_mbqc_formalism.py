@@ -152,19 +152,31 @@ class ConvertToMBQCFormalismPattern(
         rewriter.insert_op(measureOp, InsertPoint.before(op))
         return measureOp.results
 
-    def _cond_insert_arbitary_basis_measure_op(self, cond, angle, plane, qubit, op, rewriter):
+    def _cond_insert_arbitary_basis_measure_op(self, prev_mres, angle, plane, qubit, op, rewriter):
+        constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+        rewriter.insert_op(constantOneOp, InsertPoint.before(op))
+        cmpOp = arith.CmpiOp(prev_mres, constantOneOp, "eq")
+        rewriter.insert_op(cmpOp, InsertPoint.before(op))
         in_qubit = qubit
         planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
-        constAngleOp = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
-        measureOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constAngleOp)
-        constNegAngleOp = arith.ConstantOp(
-            builtin.FloatAttr(data=-angle, type=builtin.Float64Type())
+        measureOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=angle)
+
+        constNegAngleOp = arith.NegfOp(angle)
+
+        measureNegOp = MeasureInBasisOp(
+            in_qubit=in_qubit, plane=planeOp, angle=constNegAngleOp.result
         )
-        measureNegOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constNegAngleOp)
-        ture_region = [planeOp, constAngleOp, measureOp, scf.YieldOp(measureOp.results)]
-        false_region = [planeOp, constNegAngleOp, measureNegOp, scf.YieldOp(measureNegOp.results)]
+        ture_region = [measureOp, scf.YieldOp(measureOp.results[0], measureOp.results[1])]
+        false_region = [
+            constNegAngleOp,
+            measureNegOp,
+            scf.YieldOp(measureNegOp.results[0], measureNegOp.results[1]),
+        ]
         condOp = IfOp(
-            cond=cond, return_types=[], ture_region=ture_region, false_region=false_region
+            cmpOp,
+            (builtin.IntegerType(1), QubitType()),
+            ture_region,
+            false_region,
         )
         # Insert condOp before op operations
         rewriter.insert_op(condOp, InsertPoint.before(op))
@@ -250,25 +262,60 @@ class ConvertToMBQCFormalismPattern(
                     res_aux_qubit = aux_qubits_dict[5]
 
                     # Get measurement params with gate name
+
                     x_mres_idx, z_mres_idx, angles, planes, xmres_add_one, zmres_add_one = (
-                        self._get_measurement_param_with_gatename(op.gate_name.data)
+                        (self._get_measurement_param_with_gatename(op.gate_name.data))
+                        if op.gate_name.data in ["Hadamard", "S"]
+                        else [None] * 6
                     )
 
                     x_mres = []
                     z_mres = []
-
-                    for key in angles:
-                        mres, aux_qubits_dict[key] = self._insert_arbitary_basis_measure_op(
-                            angle=angles[key],
-                            plane=planes[key],
-                            qubit=aux_qubits_dict[key],
+                    if op.gate_name.data in ["Hadamard", "S"]:
+                        for key in angles:
+                            mres, aux_qubits_dict[key] = self._insert_arbitary_basis_measure_op(
+                                angle=angles[key],
+                                plane=planes[key],
+                                qubit=aux_qubits_dict[key],
+                                op=op,
+                                rewriter=rewriter,
+                            )
+                            if key in x_mres_idx:
+                                x_mres.append(mres)
+                            if key in z_mres_idx:
+                                z_mres.append(mres)
+                    if op.gate_name.data in ["RZ"]:
+                        m1, aux_qubits_dict[1] = self._insert_arbitary_basis_measure_op(
+                            angle=0.0,
+                            plane="XY",
+                            qubit=aux_qubits_dict[1],
                             op=op,
                             rewriter=rewriter,
                         )
-                        if key in x_mres_idx:
-                            x_mres.append(mres)
-                        if key in z_mres_idx:
-                            z_mres.append(mres)
+                        m2, aux_qubits_dict[2] = self._insert_arbitary_basis_measure_op(
+                            angle=0.0,
+                            plane="XY",
+                            qubit=aux_qubits_dict[2],
+                            op=op,
+                            rewriter=rewriter,
+                        )
+                        m3, aux_qubits_dict[3] = self._cond_insert_arbitary_basis_measure_op(
+                            prev_mres=m2,
+                            angle=op.params[0],
+                            plane="XY",
+                            qubit=aux_qubits_dict[3],
+                            op=op,
+                            rewriter=rewriter,
+                        )
+                        m4, aux_qubits_dict[4] = self._insert_arbitary_basis_measure_op(
+                            angle=0.0,
+                            plane="XY",
+                            qubit=aux_qubits_dict[4],
+                            op=op,
+                            rewriter=rewriter,
+                        )
+                        x_mres = [m2, m4]
+                        z_mres = [m1, m3]
 
                     # Apply corrections
                     x_exp = self._insert_byprod_exp_op(x_mres, op, rewriter, xmres_add_one)
