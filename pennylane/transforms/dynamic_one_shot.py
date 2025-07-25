@@ -150,7 +150,8 @@ def dynamic_one_shot(
             results = [_squeeze_stack(tuple(results))]
         else:
             results = [
-                _squeeze_stack(tuple(res[i] for res in results)) for i, _ in enumerate(results[0])
+                _squeeze_stack(tuple(res[i] for res in results))
+                for i, _ in enumerate(aux_tapes[0].measurements)
             ]
         return parse_native_mid_circuit_measurements(
             tape, results=results, postselect_mode=postselect_mode
@@ -270,6 +271,7 @@ def parse_native_mid_circuit_measurements(
         _removed_arg : a placeholder for an argument that used to exist. Can be removed pending update to catalyst.
         aux_tapes (List[QuantumTape]): List of auxiliary ``QuantumScript`` objects.
         results (TensorLike): Array of measurement results.
+        postselect_mode (None | str): how to handle postselection.
 
     Returns:
         tuple(TensorLike): The results of the simulation.
@@ -402,10 +404,9 @@ def gather_mcm_qjit(measurement, samples, is_valid, postselect_mode=None):  # pr
     return gather_non_mcm(measurement, meas, is_valid, postselect_mode=postselect_mode)
 
 
-# pragma: no cover
 # pylint: disable=unused-argument
 @singledispatch
-def gather_non_mcm(measurement, samples, is_valid: bool, postselect_mode=None) -> TensorLike:
+def gather_non_mcm(measurement, samples, is_valid, postselect_mode=None) -> TensorLike:
     """Combines, gathers and normalizes several measurements with trivial measurement values.
 
     Args:
@@ -413,6 +414,7 @@ def gather_non_mcm(measurement, samples, is_valid: bool, postselect_mode=None) -
         samples (TensorLike): Post-processed measurement samples
         is_valid (TensorLike): Boolean array with the same shape as ``samples`` where the value at
             each index specifies whether or not the respective sample is valid.
+        postselect_mode (None | str): the postselect mode to use.
 
     Returns:
         TensorLike: The combined measurement outcome
