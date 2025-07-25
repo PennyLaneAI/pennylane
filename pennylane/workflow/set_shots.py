@@ -137,5 +137,5 @@ def _set_shots_dispatch(shots_value: ShotsLike) -> Callable[[QNode], QNode]:
 def _apply_shots_to_qnode(qnode: QNode, shots: ShotsLike) -> QNode:
     """Handle direct application to a QNode: set_shots(qnode, shots=500)"""
     if not isinstance(qnode, QNode):
-        raise ValueError("set_shots can only be applied to QNodes")
+        raise ValueError(f"set_shots can only be applied to QNodes, not {type(qnode)} provided.")
     return qnode.update_shots(shots)
