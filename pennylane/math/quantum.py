@@ -1529,17 +1529,15 @@ def choi_matrix(Ks, check_Ks=False):
     r"""
     Compute the choi matrix :math:`\Lambda` of a quantum channel :math:`\mathcal{E}`,
 
-    .. math:: \Lambda = (\mathbb{1} \otimes \mathcal{E})(|\phi^+ \rangle \langle \phi^+|) = \frac{1}{2^n} \sum_{ij=0}^{2^n-1} |i \rangle \langle j| \otimes \mathcal{E}(|i \rangle \langle j|)
+    .. math:: \Lambda = (\mathbb{1} \otimes \mathcal{E})(|\phi^+ \rangle \langle \phi^+|) = \frac{1}{2^n} \sum_{ij=0}^{2^n-1} |i \rangle \langle j| \otimes \mathcal{E}(|i \rangle \langle j|),
 
     where :math:`|\phi^+ \rangle` is the maximally entangled state
     :math:`|\phi^+\rangle = \frac{1}{\sqrt{2^n}} \sum_{i=0}^{2^n-1} |i\rangle \otimes |i\rangle` between the
     qubit system the channel :math:`\mathcal{E}` is acting on and additional "artificial" system of the same size.
 
-    We assume the channel
-
-    .. math:: \mathcal{E}(\rho) = \sum_\ell K_\ell^\dagger \rho K_\ell
-
-    is provided in terms of its Kraus operators :math:`\{K_j\}` (``Ks``) that are trace-preserving, hence :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
+        We assume the channel :math:`\mathcal{E}(\rho) = \sum_\ell K_\ell^\dagger \rho K_\ell` is provided 
+        in terms of its Kraus operators :math:`\{K_j\}` (``Ks``) that are trace-preserving, hence 
+        :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
 
     Args:
         Ks (TensorLike): A list of Kraus operators with size ``(2**n, 2**n)`` that act on ``n`` wires.
@@ -1550,7 +1548,7 @@ def choi_matrix(Ks, check_Ks=False):
 
     **Examples**
 
-    The simplest quantum channel is simply a unitary gate. In that case, the Kraus operators reduce to just the unitary gate.
+    The simplest quantum channel is a single unitary gate. In that case, the Kraus operators reduce to the unitary gate itself.
 
     >>> import pennylane as qml
     >>> Ks = [qml.matrix(qml.CNOT((0, 1)))]

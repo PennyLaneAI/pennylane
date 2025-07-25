@@ -73,6 +73,15 @@
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
   [(#7951)](https://github.com/PennyLaneAI/pennylane/pull/7951)
 
+  ```pycon
+  >>> import numpy as np
+  >>> Ks = [np.sqrt(0.3) * qml.CNOT((0, 1)), np.sqrt(1-0.3) * qml.X(0)]
+  >>> Ks = [qml.matrix(op, wire_order=range(2)) for op in Ks]
+  >>> Lambda = qml.math.choi_matrix(Ks)
+  >>> np.trace(Lambda), np.trace(Lambda @ Lambda)
+  (np.float64(1.0), np.float64(0.58))
+  ```
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
