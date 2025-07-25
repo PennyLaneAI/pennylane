@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.state_prep_mps import (
     _validate_mps_shape,
-    right_canonicalize_mps,
+    right_canonicalize_mps, _mps_prep_decomposition,
 )
 
 
@@ -631,6 +631,7 @@ class TestMPSPrep:
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_decomposition_capture(self):
         """Tests that the new decomposition works with capture."""
 
@@ -656,17 +657,14 @@ class TestMPSPrep:
         ]
         num_wires = 4
 
-        qml.decomposition.enable_graph()
-
-        @partial(qml.transforms.decompose, gate_set={qml.QubitUnitary})
-        @qml.qnode(qml.device("default.qubit", wires=range(num_wires + 2)))
         def circuit():
-            qml.MPSPrep(mps, wires=range(2, num_wires + 2), work_wires=[0, 1])
+            _mps_prep_decomposition(*mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True)
 
         plxpr = qml.capture.make_plxpr(circuit)()
         collector = CollectOpsandMeas()
         collector.eval(plxpr.jaxpr, plxpr.consts)
-        assert isinstance(collector.state["ops"][0], qml.QubitUnitary)
+        for op in collector.state["ops"]:
+            assert isinstance(op, qml.QubitUnitary)
 
     def test_decomposition(self):
         """Tests that the template defines the correct decomposition."""
