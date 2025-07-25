@@ -13,157 +13,19 @@
   [(#7744)](https://github.com/PennyLaneAI/pennylane/pull/7744)
   [(#7842)](https://github.com/PennyLaneAI/pennylane/pull/7842)
 
-  Unary iteration leverages auxiliary wires to store intermediate values for reuse among the 
-  different multi-controlled operators, avoiding unnecessary recomputation and leading to more 
-  efficient decompositions to elementary gates. This decomposition uses a template called
-  :class:`~.TemporaryAND`, which was also added in this release (see the next changelog entry).
-  
-  This decomposition rule for :class:`~.Select` is available when the graph-based
-  decomposition system is enabled via :func:`~.decomposition.enable_graph`:
-
-  ```python
-  import pennylane as qml
-  from functools import partial
-
-  qml.decomposition.enable_graph()
-  ```
-
-  To demonstrate the resource-efficiency of this new decomposition, let's use 
-  :func:`~.transforms.decompose` to decompose an instance of :class:`~.Select` using the new unary iterator decomposition rule, and further decompose these gates into the Clifford+T gate set
-  using :func:`~.clifford_t_decomposition` so that we can count the number of `T` gates required:
-  
-  ```python
-  reg = qml.registers({"targ": 2, "control": 2, "work": 1})
-  targ, control, work = (reg[k] for k in reg.keys())
-
-  dev = qml.device('default.qubit')
-  ops = [qml.X(targ[0]), qml.X(targ[1]), qml.Y(targ[0]), qml.SWAP(targ)]
-
-  @qml.clifford_t_decomposition
-  @partial(qml.transforms.decompose, gate_set={
-          qml.X, qml.CNOT, qml.TemporaryAND, "Adjoint(TemporaryAND)", "CY", "CSWAP"
-      }
-  )
-  @qml.qnode(dev)
-  def circuit():
-      qml.Select(ops, control=control, work_wires=work)
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> unary_specs = qml.specs(circuit)()
-  >>> print(unary_specs['resources'].gate_types["T"])
-  16
-  >>> print(unary_specs['resources'].gate_types["Adjoint(T)"])
-  13
-  ```
-
-  Go check out the *Unary iterator decomposition* section in the :class:`~.Select` documentation for 
-  more information!
-
 * A new template called :class:`~.TemporaryAND` has been added. :class:`~.TemporaryAND` enables more 
   efficient circuit decompositions, such as the newest decomposition of the :class:`~.Select` template.
   [(#7472)](https://github.com/PennyLaneAI/pennylane/pull/7472)
 
-  The :class:`~.TemporaryAND` operation is a three-qubit gate equivalent to a logical ``AND`` operation 
-  (or a reversible :class:`~.Toffoli`): it assumes that the target qubit is initialized in the 
-  ``|0〉`` state, while ``Adjoint(TemporaryAND)`` assumes the target qubit will be output into the 
-  ``|0〉`` state. For more details, see Fig. 4 in [arXiv:1805.03662](https://arxiv.org/abs/1805.03662).
-
-  ```python
-  from functools import partial
-
-  dev = qml.device("default.qubit")
-
-  @partial(qml.set_shots, shots=1)
-  @qml.qnode(dev)
-  def circuit():
-      # |0000⟩
-      qml.X(0) # |1000⟩
-      qml.X(1) # |1100⟩
-      # The target wire is in state |0>, so we can apply TemporaryAND
-      qml.TemporaryAND([0, 1, 2]) # |1110⟩
-      qml.CNOT([2, 3]) # |1111⟩
-      # The target wire will be in state |0> after adjoint(TemporaryAND) gate is applied
-      # so we can apply adjoint(TemporaryAND)
-      qml.adjoint(qml.TemporaryAND([0, 1, 2])) # |1101⟩
-      return qml.sample(wires=[0, 1, 2, 3])
-  ```
-  
-  ```pycon
-  >>> print(circuit())
-  [1 1 0 1]
-  ```
-
 * A new template called :class:`~.SemiAdder` has been added, which provides state-of-the-art 
   resource-efficiency (fewer :class:`~.T` gates) when performing addition on a quantum computer.
   [(#7494)](https://github.com/PennyLaneAI/pennylane/pull/7494)
-
-  Based on [arXiv:1709.06648](https://arxiv.org/abs/1709.06648), :class:`~.SemiAdder` performs the plain 
-  addition of two integers in the computational basis. Here is an example of performing `3 + 4 = 7`
-  with 5 additional work wires:
-
-  ```python
-  from functools import partial
-
-  x = 3
-  y = 4
-
-  wires = qml.registers({"x": 3, "y": 6, "work": 5})
-
-  dev = qml.device("default.qubit")
-
-  @partial(qml.set_shots, shots=1)
-  @qml.qnode(dev)
-  def circuit():
-      qml.BasisEmbedding(x, wires=wires["x"])
-      qml.BasisEmbedding(y, wires=wires["y"])
-      qml.SemiAdder(wires["x"], wires["y"], wires["work"])
-      return qml.sample(wires=wires["y"])
-  ```
-  
-  ```pycon
-  >>> print(circuit()) 
-  [0 0 0 1 1 1]
-  ```
-
-  The result `[0 0 0 1 1 1]` is the binary representation of `7`.
 
 * A new template called :class:`~.SelectPauliRot` is available, which applies a sequence of 
   uniformly controlled rotations on a target qubit. This operator appears frequently in unitary 
   decompositions and block-encoding techniques. 
   [(#7206)](https://github.com/PennyLaneAI/pennylane/pull/7206)
   [(#7617)](https://github.com/PennyLaneAI/pennylane/pull/7617)
-
-  As input, :class:`~.SelectPauliRot` requires the `angles` of rotation to be applied to the target 
-  qubit for each control register configuration, as well as the `control_wires`, the `target_wire`,
-  and the axis of rotation (`rot_axis`) for which each rotation is performed (the default is the `"Z"` 
-  axis).
-
-  ```python
-  import numpy as np
-  angles = np.array([1.0, 2.0, 3.0, 4.0])
-
-  wires = qml.registers({"control": 2, "target": 1})
-  dev = qml.device("default.qubit", wires=3)
-
-  @qml.qnode(dev)
-  def circuit():
-      qml.SelectPauliRot(
-        angles,
-        control_wires=wires["control"],
-        target_wire=wires["target"],
-        rot_axis="Z"
-      )
-      return qml.state()
-  ```
-  
-  ```pycon
-  >>> print(qml.draw(circuit, level="device")())
-  0: ─────────────────────────╭●───────────────╭●─┤ ╭State
-  1: ───────────╭●────────────│──╭●────────────│──┤ ├State
-  2: ──RZ(2.50)─╰X──RZ(-0.50)─╰X─╰X──RZ(-1.00)─╰X─┤ ╰State
-  ```
 
 * The decompositions of :class:`~.SingleExcitation`, :class:`~.SingleExcitationMinus` and 
   :class:`~.SingleExcitationPlus` have been made more efficient by reducing the number of rotations 
@@ -173,58 +35,10 @@
 
 <h4>QSVT & QSP angle solver for large polynomials 🕸️</h4>
 
-Effortlessly perform QSVT and QSP with polynomials of large degrees, using our new iterative angle 
-solver.
-
 * A new iterative angle solver for QSVT and QSP is available in the 
   :func:`poly_to_angles <pennylane.poly_to_angles>` function, designed for angle computation for 
   polynomials with degrees larger than 1000.
   [(6694)](https://github.com/PennyLaneAI/pennylane/pull/6694)
-
-  Simply set `angle_solver="iterative"` in the :func:`poly_to_angles  <pennylane.poly_to_angles>` 
-  function to use it.
-
-  ```python
-  import numpy as np
-
-  # P(x) = x - 0.5 x^3 + 0.25 x^5
-  poly = np.array([0, 1.0, 0, -1/2, 0, 1/4])
-
-  qsvt_angles = qml.poly_to_angles(poly, "QSVT", angle_solver="iterative")
-  ```
-
-  ```pycon
-  >>> print(qsvt_angles)
-  [-4.72195208  1.59759022  1.12953398  1.12953403  1.59759046 -0.00956271]
-  ```
-
-  This functionality can also be accessed directly from :func:`qml.qsvt <pennylane.qsvt>` with the 
-  same keyword argument:
-
-  ```python
-  # P(x) = -x + 0.5 x^3 + 0.5 x^5
-  poly = np.array([0, -1, 0, 0.5, 0, 0.5])
-
-  hamiltonian = qml.dot([0.3, 0.7], [qml.Z(1), qml.X(1) @ qml.Z(2)])
-
-  dev = qml.device("default.qubit")
-  @qml.qnode(dev)
-  def circuit():
-      qml.qsvt(
-          hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep", angle_solver="iterative"
-      )
-      return qml.state()
-
-  matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
-  ```
-
-  ```pycon
-  >>> print(matrix[:4, :4].real)
-  [[-0.16253996  0.         -0.37925991  0.        ]
-   [ 0.         -0.16253996  0.          0.37925991]
-   [-0.37925991  0.          0.16253996  0.        ]
-   [ 0.          0.37925991  0.          0.16253996]]
-  ```
 
 <h4>Qualtran integration 🔗</h4>
 
@@ -240,59 +54,6 @@ solver.
   [(#7536)](https://github.com/PennyLaneAI/pennylane/pull/7536)
   [(#7814)](https://github.com/PennyLaneAI/pennylane/pull/7814)
 
-  :func:`qml.to_bloq <pennylane.to_bloq>` can be used in the following ways:
-
-  * Wrap PennyLane circuits and operations to give them Qualtran features, like obtaining
-    [bloq_counts](https://qualtran.readthedocs.io/en/latest/reference/qualtran/Bloq.html#:~:text=bloq_counts) 
-    and drawing a 
-    [call_graph](https://qualtran.readthedocs.io/en/latest/drawing/drawing_call_graph.html), but 
-    preserve PennyLane's definition of the circuit/operator. This is done by setting `map_ops` to `False`, 
-    which instead wraps operations as a :class:`~.ToBloq`:
-  
-    ```pycon
-    >>> def circuit():
-    ...     qml.X(0)
-    ...     qml.Y(1)
-    ...     qml.Z(2)
-    ...
-    >>> cbloq = qml.to_bloq(circuit, map_ops=False)
-    >>> type(cbloq)
-    pennylane.io.qualtran_io.ToBloq
-    >>> cbloq.bloq_counts()
-    {XGate(): 1, ZGate(): 1, YGate(): 1}
-    ```
-
-  * Use smart default mapping of PennyLane circuits and operations to Qualtran Bloqs by setting 
-    `map_ops=True` (the default value):
-
-    ```pycon
-    >>> PL_op = qml.X(0)
-    >>> qualtran_op = qml.to_bloq(PL_op)
-    >>> type(qualtran_op)
-    qualtran.bloqs.basic_gates.x_basis.XGate
-    ```
-
-  * Use custom user-defined mapping of PennyLane circuits and operations to Qualtran Bloqs by 
-    setting a `custom_mapping` dictionary:
-
-    ```python
-    from qualtran.bloqs.basic_gates import XGate
-
-    def circuit():
-        qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
-        qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
-        qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
-    ```
-
-    ```pycon
-    >>> PL_op = qml.QubitUnitary([[0, 1],[1, 0]], wires=0)
-    >>> qualtran_op = XGate()
-    >>> custom_map = {PL_op: qualtran_op}
-    >>> bloq = qml.to_bloq(circuit, custom_mapping=custom_map)
-    >>> bloq.bloq_counts()
-    {XGate(): 3}
-    ```
-
 <h4>Resource-efficient Clifford-T decompositions 🍃</h4>
 
 * The [Ross-Selinger algorithm](https://arxiv.org/abs/1403.2975),
@@ -306,36 +67,7 @@ solver.
   [(#7770)](https://github.com/PennyLaneAI/pennylane/pull/7770)
   [(#7791)](https://github.com/PennyLaneAI/pennylane/pull/7791)
 
-  In the following example, decomposing with `method="gridsynth"` instead of `method="sk"` gives a
-  significant reduction in overall gate counts, specifically the :class:`~.T` count:
-
-  ```python
-  @qml.qnode(qml.device("lightning.qubit", wires=2))
-  def circuit():
-
-      qml.RX(0.12, 0)
-      qml.CNOT([0, 1])
-      qml.RY(0.34, 0)
-
-      return qml.expval(qml.Z(0))
-  ```
-
-  We can inspect the gate counts resulting from both decomposition methods with :func:`~.specs`:
-
-  ```pycon
-  >>> gridsynth_circuit = qml.clifford_t_decomposition(circuit, method="gridsynth")
-  >>> sk_circuit = qml.clifford_t_decomposition(circuit, method="sk")
-  >>> gridsynth_specs = qml.specs(gridsynth_circuit)()["resources"]
-  >>> sk_specs = qml.specs(sk_circuit)()["resources"]
-  >>> print(gridsynth_specs.num_gates, sk_specs.num_gates)
-  239 47942
-  >>> print(gridsynth_specs.gate_types['T'], sk_specs.gate_types['T'])
-  90 8044
-  ```
-
 <h4>OpenQASM 🤝 PennyLane</h4>
-
-PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.com/).
 
 * Use the new :func:`qml.from_qasm3 <pennylane.from_qasm3>` function to convert your OpenQASM 3.0 
   circuits into quantum functions which can then be loaded into QNodes and executed.
@@ -350,97 +82,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7789)](https://github.com/PennyLaneAI/pennylane/pull/7789)
   [(#7802)](https://github.com/PennyLaneAI/pennylane/pull/7802)
 
-  ```python
-  import pennylane as qml
-
-  dev = qml.device("default.qubit", wires=[0, 1, 2])
-  
-  @qml.qnode(dev)
-  def my_circuit():
-      qml.from_qasm3(
-          """
-          qubit q0; 
-          qubit q1;
-          qubit q2;
-  
-          float theta = 0.2;
-          int power = 2;
-  
-          ry(theta / 2) q0; 
-          rx(theta) q1; 
-          pow(power) @ x q0;
-  
-          def random(qubit q) -> bit {
-            bit b = "0";
-            h q;
-            measure q -> b;
-            return b;
-          }
-  
-          bit m = random(q2);
-  
-          if (m) {
-            int i = 0;
-            while (i < 5) {
-              i = i + 1;
-              rz(i) q1;
-              break;
-            }
-          }
-          """,
-          {'q0': 0, 'q1': 1, 'q2': 2},
-      )()
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> print(qml.draw(my_circuit)())
-  0: ──RY(0.10)──X²────────────┤  <Z>
-  1: ──RX(0.20)───────RZ(1.00)─┤     
-  2: ──H─────────┤↗├──║────────┤     
-                  ╚═══╝      
-  ```
-  
-  Some gates and operations in OpenQASM 3.0 programs are not currently supported. For more details, please consult the documentation
-  for :func:`qml.from_qasm3 <pennylane.from_qasm3>` and ensure that you have installed `openqasm3` and `'openqasm3[parser]'`
-  in your environment by following the [OpenQASM 3.0 installation instructions](https://pypi.org/project/openqasm3/).
-
-* The new :func:`qml.to_openqasm <pennylane.to_openqasm>` function enables conversion of PennyLane 
-  circuits to OpenQASM 2.0 programs.
-  [(#7393)](https://github.com/PennyLaneAI/pennylane/pull/7393)
-
-  Consider this simple circuit in PennyLane:
-
-  ```python
-  from functools import partial
-
-  dev = qml.device("default.qubit", wires=2)
-
-  @partial(qml.set_shots, shots=100)
-  @qml.qnode(dev)
-  def circuit(theta, phi):
-      qml.RX(theta, wires=0)
-      qml.CNOT(wires=[0,1])
-      qml.RZ(phi, wires=1)
-      return qml.sample()
-  ```
-
-  This can be easily converted to OpenQASM 2.0 with :func:`qml.to_openqasm <pennylane.to_openqasm>`:
-  
-  ```pycon
-  >>> openqasm_circ = qml.to_openqasm(circuit)(1.2, 0.9)
-  >>> print(openqasm_circ)
-  OPENQASM 2.0;
-  include "qelib1.inc";
-  qreg q[2];
-  creg c[2];
-  rx(1.2) q[0];
-  cx q[0],q[1];
-  rz(0.9) q[1];
-  measure q[0] -> c[0];
-  measure q[1] -> c[1];
-  ```
-
 <h3>Improvements 🛠</h3>
 
 <h4>A quantum optimizer that works with QJIT</h4>
@@ -448,37 +89,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the quantum 
   natural gradient optimizer is now possible with the new :class:`~.QNGOptimizerQJIT` optimizer. 
   [(#7452)](https://github.com/PennyLaneAI/pennylane/pull/7452)
-  
-  The :class:`~.QNGOptimizerQJIT` optimizer offers a `jax.jit`- and :func:`qml.qjit <pennylane.qjit>`-compatible analogue to the existing 
-  :class:`~.QNGOptimizer` with an Optax-like interface:
-
-  ```python
-  import jax.numpy as jnp
-
-  @qml.qjit(autograph=True)
-  def workflow():
-      dev = qml.device("lightning.qubit", wires=2)
-  
-      @qml.qnode(dev)
-      def circuit(params):
-          qml.RX(params[0], wires=0)
-          qml.RY(params[1], wires=1)
-          return qml.expval(qml.Z(0) + qml.X(1))
-  
-      opt = qml.QNGOptimizerQJIT(stepsize=0.2)
-  
-      params = jnp.array([0.1, 0.2])
-      state = opt.init(params)
-      for _ in range(100):
-          params, state = opt.step(circuit, params, state)
-  
-      return params
-  ```
-
-  ```pycon
-  >>> workflow()
-  Array([ 3.14159265, -1.57079633], dtype=float64)
-  ```
 
 <h4>Resource-efficient decompositions 🔎</h4>
 
@@ -486,65 +96,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   :func:`~.transforms.decompose` transform now supports weighting gates in the target `gate_set`, 
   allowing for preferential treatment of certain gates in a target `gate_set` over others.
   [(#7389)](https://github.com/PennyLaneAI/pennylane/pull/7389)
-
-  Gates specified in `gate_set` can be given a numerical weight associated with their effective cost 
-  to have in a circuit:
-  
-  * Gate weights that are greater than 1 indicate a *greater cost* (less preferred).
-  * Gate weights that are less than 1 indicate a *lower cost* (more preferred).
-
-  Consider the following toy example, where `CZ` gates are highly preferred to decompose into, but
-  `H` and `CRZ` gates are quite costly.
-
-  ```python
-  from functools import partial
-
-  qml.decomposition.enable_graph()
-  
-  @partial(
-      qml.transforms.decompose, gate_set={
-          qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 420, qml.CRZ: 100
-      }
-  )
-  @qml.qnode(qml.device("default.qubit"))
-  def circuit():
-      qml.CRX(0.1, wires=[0, 1])
-      qml.Toffoli(wires=[0, 1, 2])
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> print(qml.draw(circuit)())
-
-  0: ───────────╭●────────────╭●─╭●─┤  <Z>
-  1: ──RX(0.05)─╰Z──RX(-0.05)─╰Z─├●─┤     
-  2: ────────────────────────────╰X─┤     
-  ```
-
-  By reducing the `H` and `CRZ` weights, the circuit decomposition changes:
-
-  ```python
-  qml.decomposition.enable_graph()
-
-  @partial(
-      qml.transforms.decompose, gate_set={
-          qml.Toffoli: 1.23, qml.RX: 4.56, qml.CZ: 0.01, qml.H: 0.1, qml.CRZ: 0.1
-      }
-  )
-  @qml.qnode(qml.device("default.qubit"))
-  def circuit():
-      qml.CRX(0.1, wires=[0, 1])
-      qml.Toffoli(wires=[0, 1, 2])
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> print(qml.draw(circuit)())
-
-  0: ────╭●───────────╭●─┤  <Z>
-  1: ──H─╰RZ(0.10)──H─├●─┤     
-  2: ─────────────────╰X─┤  
-  ```
 
 * Decomposition rules that can be accessed with the new graph-based decomposition system have been
   implemented for the following operators:
@@ -593,60 +144,12 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   decomposition rule denoting when it is applicable.
   [(#7439)](https://github.com/PennyLaneAI/pennylane/pull/7439)
 
-  The condition should be a function that takes the resource parameters of an operator as arguments 
-  and returns `True` or `False` based on whether these parameters satisfy the condition for when 
-  this rule can be applied.
-
-  Here is an example of adding a decomposition rule to :class:`~.QubitUnitary`, where the condition
-  for which this decomposition rule applies is when the number of wires :class:`~.QubitUnitary` acts
-  on is exactly one:
-
-  ```python
-  from pennylane.math.decomposition import zyz_rotation_angles
-  
-  qml.decomposition.enable_graph()
-
-  # The parameters must be consistent with ``qml.QubitUnitary.resource_keys``
-  def _zyz_condition(num_wires):
-    return num_wires == 1
-
-  @qml.register_condition(_zyz_condition)
-  @qml.register_resources({qml.RZ: 2, qml.RY: 1, qml.GlobalPhase: 1})
-  def zyz_decomposition(U, wires, **__):
-      # Assumes that U is a 2x2 unitary matrix
-      phi, theta, omega, phase = zyz_rotation_angles(U, return_global_phase=True)
-      qml.RZ(phi, wires=wires[0])
-      qml.RY(theta, wires=wires[0])
-      qml.RZ(omega, wires=wires[0])
-      qml.GlobalPhase(-phase)
-  
-  # This decomposition will be ignored for `QubitUnitary` on more than one wire.
-  qml.add_decomps(qml.QubitUnitary, zyz_decomposition)
-  ```
-
 * Symbolic operator types (e.g., `Adjoint`, `Controlled`, and `Pow`) can now be specified as strings
   in various parts of the new graph-based decomposition system:
 
   * The `gate_set` argument of the :func:`~.transforms.decompose` transform now supports adding 
     symbolic operators in the target gate set.
     [(#7331)](https://github.com/PennyLaneAI/pennylane/pull/7331)
-
-    ```python
-    from functools import partial
-
-    qml.decomposition.enable_graph()
-    
-    @partial(qml.transforms.decompose, gate_set={"T", "Adjoint(T)", "H", "CNOT"})
-    @qml.qnode(qml.device("default.qubit"))
-    def circuit():
-        qml.Toffoli(wires=[0, 1, 2])
-    ```
-    ```pycon
-    >>> print(qml.draw(circuit)())
-    0: ───────────╭●───────────╭●────╭●──T──╭●─┤
-    1: ────╭●─────│─────╭●─────│───T─╰X──T†─╰X─┤
-    2: ──H─╰X──T†─╰X──T─╰X──T†─╰X──T──H────────┤
-    ```
 
   * Symbolic operator types can now be given as strings to the `op_type` argument of 
     :func:`~.decomposition.add_decomps`, or as keys of the dictionaries passed to the `alt_decomps` 
@@ -656,36 +159,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
     [(#7352)](https://github.com/PennyLaneAI/pennylane/pull/7352)
     [(#7362)](https://github.com/PennyLaneAI/pennylane/pull/7362)
     [(#7499)](https://github.com/PennyLaneAI/pennylane/pull/7499)
-
-    ```python
-    @qml.register_resources({qml.RY: 1})
-    def my_adjoint_ry(phi, wires, **_):
-        qml.RY(-phi, wires=wires)
-
-    @qml.register_resources({qml.RX: 1})
-    def my_adjoint_rx(phi, wires, **__):
-        qml.RX(-phi, wires)
-
-    # Registers a decomposition rule for the adjoint of RY globally
-    qml.add_decomps("Adjoint(RY)", my_adjoint_ry)
-
-    @partial(
-        qml.transforms.decompose,
-        gate_set={"RX", "RY", "CNOT"},
-        fixed_decomps={"Adjoint(RX)": my_adjoint_rx}
-    )
-    @qml.qnode(qml.device("default.qubit"))
-    def circuit():
-        qml.adjoint(qml.RX(0.5, wires=[0]))
-        qml.CNOT(wires=[0, 1])
-        qml.adjoint(qml.RY(0.5, wires=[1]))
-        return qml.expval(qml.Z(0))
-    ```
-    ```pycon
-    >>> print(qml.draw(circuit)())
-    0: ──RX(-0.50)─╭●────────────┤  <Z>
-    1: ────────────╰X──RY(-0.50)─┤
-    ```
 
 * A `work_wire_type` argument has been added to :func:`~pennylane.ctrl` and 
   :class:`~pennylane.ControlledQubitUnitary` for more fine-grained control over the type of work 
@@ -724,29 +197,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7500)](https://github.com/PennyLaneAI/pennylane/pull/7500)
   [(#7627)](https://github.com/PennyLaneAI/pennylane/pull/7627)
 
-  The :func:`~.workflow.set_shots` transform can be used as a decorator:
-
-  ```python
-  @partial(qml.set_shots, shots=2)
-  @qml.qnode(qml.device("default.qubit", wires=1))
-  def circuit():
-      qml.RX(1.23, wires=0)
-      return qml.sample(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> circuit()
-  array([1., -1.])
-  ```
-  
-  Or, it can be used in-line to update a circuit's `shots`:
-
-  ```pycon
-  >>> new_circ = qml.set_shots(circuit, shots=(4, 10)) # shot vector
-  >>> new_circ()
-  (array([-1.,  1., -1.,  1.]), array([ 1.,  1.,  1., -1.,  1.,  1., -1., -1.,  1.,  1.]))
-  ```
-
 <h4>QChem</h4>
 
 * The `qchem` module has been upgraded with new functions to construct a vibrational Hamiltonian in 
@@ -754,46 +204,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
   [(#7491)](https://github.com/PennyLaneAI/pennylane/pull/7491)
   [(#7596)](https://github.com/PennyLaneAI/pennylane/pull/7596)
   [(#7785)](https://github.com/PennyLaneAI/pennylane/pull/7785)
-
-  The new functions :func:`christiansen_hamiltonian` and :func:`qml.qchem.christiansen_bosonic` can
-  be used to create the qubit and bosonic form of the Christiansen Hamiltonian, respectively. These
-  functions need input parameters that can be easily obtained by using the
-  :func:`christiansen_integrals` and :func:`vibrational_pes` functions. Similarly, a Christiansen
-  dipole operator can be created by using the :func:`christiansen_dipole` and
-  :func:`christiansen_integrals_dipole` functions.
-
-  ```python
-  import numpy as np
-
-  symbols  = ['H', 'F']
-  geometry = np.array([[0.0, 0.0, -0.40277116], [0.0, 0.0, 1.40277116]])
-  mol = qml.qchem.Molecule(symbols, geometry)
-  pes = qml.qchem.vibrational_pes(mol, optimize=False)
-  ham = qml.qchem.vibrational.christiansen_hamiltonian(pes, n_states = 4)
-  ```
-
-  ```pycon
-  >>> ham
-  (
-      0.08527499987546708 * I(0)
-    + -0.0051774006335491545 * Z(0)
-    + 0.0009697024705108074 * (X(0) @ X(1))
-    + 0.0009697024705108074 * (Y(0) @ Y(1))
-    + 0.0002321787923591865 * (X(0) @ X(2))
-    + 0.0002321787923591865 * (Y(0) @ Y(2))
-    + 0.0008190498635406456 * (X(0) @ X(3))
-    + 0.0008190498635406456 * (Y(0) @ Y(3))
-    + -0.015699890427524253 * Z(1)
-    + 0.002790002362847834 * (X(1) @ X(2))
-    + 0.002790002362847834 * (Y(1) @ Y(2))
-    + 0.000687929225764568 * (X(1) @ X(3))
-    + 0.000687929225764568 * (Y(1) @ Y(3))
-    + -0.026572392417060237 * Z(2)
-    + 0.005239546276220405 * (X(2) @ X(3))
-    + 0.005239546276220405 * (Y(2) @ Y(3))
-    + -0.037825316397333435 * Z(3)
-  )
-  ```  
 
 <h4>Experimental FTQC module</h4>
 
@@ -932,24 +342,6 @@ PennyLane now offers improved support for [OpenQASM 2.0 & 3.0](https://openqasm.
 
 * Shots can now be overridden for specific `qml.Snapshot` instances via a `shots` keyword argument.
   [(#7326)](https://github.com/PennyLaneAI/pennylane/pull/7326)
-
-  ```python
-  from functools import partial
-
-  dev = qml.device("default.qubit", wires=2)
-
-  @partial(qml.set_shots, shots=10)
-  @qml.qnode(dev)
-  def circuit():
-      qml.Snapshot("sample", measurement=qml.sample(qml.X(0)), shots=5)
-      return qml.sample(qml.X(0))
-  ```
-
-  ```pycon
-  >>> qml.snapshots(circuit)()
-  {'sample': array([-1., -1., -1., -1., -1.]),
-   'execution_results': array([ 1., -1., -1., -1., -1.,  1., -1., -1.,  1., -1.])}
-  ```
 
 * PennyLane no longer validates that an operation has at least one wire, as having this check 
   reduced performance by requiring the abstract interface to maintain a list of special 
