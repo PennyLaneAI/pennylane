@@ -277,10 +277,10 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
     if postselect is None:
         # First raw result for a single shot, i.e, result of wires/obs measurement
         obs_res_single_shot = qml.math.array(
-            [1.0, 0.0] if measure_f == qml.probs else 1.0, like=interface
+            [1.0, 0.0] if measure_f == qml.probs else [[1.0]], like=interface
         )
         # Result of SampleMP on mid-circuit measurements
-        rest_single_shot = qml.math.array(1, like=interface)
+        rest_single_shot = qml.math.array([[1]], like=interface)
         single_shot_res = (obs_res_single_shot,) + (rest_single_shot,) * n_mcms
         # Raw results for each shot are (sample_for_first_measurement,) + (sample for 1st MCM, sample for 2nd MCM, ...)
         raw_results = (single_shot_res,) * shots
@@ -389,6 +389,7 @@ class TestInterfaces:
             postselect=None,
             interface=interface if use_interface_for_results else None,
         )
+        print(raw_results)
         processed_results = fn(raw_results)
 
         if measure_f is qml.sample:
@@ -413,10 +414,12 @@ class TestInterfaces:
             assert len(processed_results) == len(shots)
             for r, e1, e2 in zip(processed_results, expected1, expected2):
                 # Expected result is 2-list since we have two measurements in the tape
-                assert qml.math.allclose(r, [e1, e2])
+                assert qml.math.allclose(r[0], e1)
+                assert qml.math.allclose(r[1], e2)
         else:
             # Expected result is 2-list since we have two measurements in the tape
-            assert qml.math.allclose(processed_results, [expected1, expected2])
+            assert qml.math.allclose(processed_results[0], expected1)
+            assert qml.math.allclose(processed_results[1], expected2)
 
     @pytest.mark.parametrize(
         "measure_f, expected1, expected2",
@@ -495,7 +498,9 @@ class TestInterfaces:
             assert len(processed_results) == len(shots)
             for r, e1, e2 in zip(processed_results, expected1, expected2):
                 # Expected result is 2-list since we have two measurements in the tape
-                assert qml.math.allclose(r, [e1, e2])
+                assert qml.math.allclose(qml.math.squeeze(r[0]), e1)
+                assert qml.math.allclose(r[1], e2)
         else:
             # Expected result is 2-list since we have two measurements in the tape
-            assert qml.math.allclose(processed_results, [expected1, expected2])
+            assert qml.math.allclose(qml.math.squeeze(processed_results[0]), expected1)
+            assert qml.math.allclose(processed_results[1], expected2)

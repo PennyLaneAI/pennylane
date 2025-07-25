@@ -161,6 +161,27 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
+  down on the complexity of post-processing due to having to handle single shot and single wire cases
+  separately. The return shape will now *always* be `(shots, num_wires)`.
+  [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
+
+  For a simple qnode:
+
+  >>> @qml.qnode(qml.device('default.qubit'))
+  ... def c():
+  ...   return qml.sample(wires=0)
+
+  Before the change, we had:
+  
+  >>> qml.set_shots(c, shots=1)()
+  0
+
+  and now we have:
+
+  >>> qml.set_shots(c, shots=1)()
+  array([[0]])
+
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 

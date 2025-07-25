@@ -104,7 +104,7 @@ class TestMultiplier:
 
         # pylint: disable=bad-reversed-sequence
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x * k) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)[0, :]))), (x * k) % mod
         )
 
     @pytest.mark.parametrize(
@@ -226,5 +226,5 @@ class TestMultiplier:
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x * k) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x * k) % mod
         )
