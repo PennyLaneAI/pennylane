@@ -277,10 +277,10 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
     if postselect is None:
         # First raw result for a single shot, i.e, result of wires/obs measurement
         obs_res_single_shot = qml.math.array(
-            [1.0, 0.0] if measure_f == qml.probs else 1.0, like=interface
+            [1.0, 0.0] if measure_f == qml.probs else [[1.0]], like=interface
         )
         # Result of SampleMP on mid-circuit measurements
-        rest_single_shot = qml.math.array(1, like=interface)
+        rest_single_shot = qml.math.array([[1]], like=interface)
         single_shot_res = (obs_res_single_shot,) + (rest_single_shot,) * n_mcms
         # Raw results for each shot are (sample_for_first_measurement,) + (sample for 1st MCM, sample for 2nd MCM, ...)
         raw_results = (single_shot_res,) * shots
@@ -389,6 +389,7 @@ class TestInterfaces:
             postselect=None,
             interface=interface if use_interface_for_results else None,
         )
+        print(raw_results)
         processed_results = fn(raw_results)
 
         if measure_f is qml.sample:

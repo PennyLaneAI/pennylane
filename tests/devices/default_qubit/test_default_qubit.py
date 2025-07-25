@@ -1927,7 +1927,7 @@ class TestPostselection:
         [
             (qml.sample(wires=[0, 2]), (5, 2)),
             (qml.classical_shadow(wires=[0, 2]), (2, 5, 2)),
-            (qml.sample(wires=[0]), (5,)),
+            (qml.sample(wires=[0]), (5, 1)),
             (qml.classical_shadow(wires=[0]), (2, 5, 1)),
         ],
     )

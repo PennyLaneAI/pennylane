@@ -82,7 +82,7 @@ def _add_shot_vector_support(fn: PostprocessingFn, shots: Shots) -> Postprocessi
 
 
 def _squeeze_stack(array):
-    return qml.math.squeeze(qml.math.vstack(array))
+    return qml.math.vstack(array)
 
 
 @partial(transform, expand_transform=_expand_fn)
@@ -466,7 +466,7 @@ def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mod
         # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
         # index other tf.Tensors (is_valid is used to index valid samples).
         is_valid = qml.math.cast_like(is_valid, samples)
-    return qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
+    return qml.math.sum(qml.math.squeeze(samples) * is_valid) / qml.math.sum(is_valid)
 
 
 # pylint: disable=unused-arguement
@@ -491,6 +491,7 @@ def _gather_variance(measurement: VarianceMP, samples, is_valid, postselect_mode
         # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
         # index other tf.Tensors (is_valid is used to index valid samples).
         is_valid = qml.math.cast_like(is_valid, samples)
+    samples = qml.math.squeeze(samples)
     expval = qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
     if interface == "tensorflow":
         # Casting needed for tensorflow
