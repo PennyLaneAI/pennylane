@@ -8,43 +8,6 @@
   quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.
   [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
 
-  Similar to the :class:`~.QNGOptimizerQJIT` optimizer, :class:`~.MomentumQNGOptimizerQJIT` offers a
-  `qml.qjit`-compatible analogue to the existing :class:`~.MomentumQNGOptimizer` with an Optax-like interface:
-
-  ```python
-  import pennylane as qml
-  import jax.numpy as jnp
-
-  dev = qml.device("lightning.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def circuit(params):
-      qml.RX(params[0], wires=0)
-      qml.RY(params[1], wires=1)
-      return qml.expval(qml.Z(0) + qml.X(1))
-
-  opt = qml.MomentumQNGOptimizerQJIT(stepsize=0.1, momentum=0.2)
-
-  @qml.qjit
-  def update_step_qjit(i, args):
-      params, state = args
-      return opt.step(circuit, params, state)
-
-  @qml.qjit
-  def optimization_qjit(params, iters):
-      state = opt.init(params)
-      args = (params, state)
-      params, state = qml.for_loop(iters)(update_step_qjit)(args)
-      return params
-  ```
-
-  ```pycon
-  >>> params = jnp.array([0.1, 0.2])
-  >>> iters = 1000
-  >>> optimization_qjit(params=params, iters=iters)
-  Array([ 3.14159265, -1.57079633], dtype=float64)
-  ```
-
 <h3>Improvements 🛠</h3>
 
 * Several templates now have decompositions that can be accessed within the graph-based
@@ -95,19 +58,6 @@
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
   [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
-
-  ```python
-  @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
-  @qml.qnode(dev)
-  def circuit():
-      qml.H(0)
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> circuit()
-  0.002
-  ```
 
 * Added a `QuantumParser` class to the `qml.compiler.python_compiler` submodule that automatically loads relevant dialects.
   [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
@@ -168,11 +118,6 @@
 * Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
   Top level import and usage is advised. The functions now live in the `liealg` module.
 
-  ```python
-  import pennylane.liealg
-  from pennylane.liealg import lie_closure, structure_constants, center
-  ```
-
   [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
 
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
@@ -200,35 +145,6 @@
 * Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
   Instead, use :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the
   Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
-
-  As a concrete example, consider the following case:
-
-  ```python
-  coeffs = [0.5, -0.6]
-  ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
-  H_flat = qml.dot(coeffs, ops)
-  ```
-
-  Instead of computing the Suzuki-Trotter product approximation as:
-
-  ```pycon
-  >>> qml.evolve(H_flat, num_steps=2).decomposition()
-  [RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1]),
-  RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1])]
-  ```
-
-  The same result can be obtained using :class:`~.TrotterProduct` as follows:
-
-  ```pycon
-  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
-  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
-  [RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1]),
-  RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1])]
-  ```
   [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
 
 * `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
