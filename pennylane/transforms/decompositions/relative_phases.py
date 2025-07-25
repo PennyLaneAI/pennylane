@@ -29,7 +29,7 @@ from pennylane.typing import PostprocessingFn
 def replace_relative_phase_toffoli(
     tape: QuantumScript,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Quantum transform to replace 4-qubit relative phase toffoli gates, given in
+    """Quantum transform to replace 4-qubit relative phase Toffoli gates, given in
     figure three of (Amy, M. and Ross, N. J., 2021).
 
     Args:
