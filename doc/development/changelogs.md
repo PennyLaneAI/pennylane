@@ -1,4 +1,4 @@
-Release notes
+Changelog
 -------------
 
 This page contains the changelogs for PennyLane.
