@@ -229,5 +229,5 @@ def replace_controlled_iX_gate(
         qml.T(num_controls + 1),
         qml.Hadamard(num_controls + 1),
     ]
-    pattern = QuantumTape(pattern_ops)
+    pattern = QuantumScript(pattern_ops)
     return pattern_matching_optimization(tape, pattern_tapes=[pattern])
