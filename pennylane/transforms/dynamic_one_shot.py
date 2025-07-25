@@ -60,6 +60,8 @@ def null_postprocessing(results):
 def _expand_fn(
     tape: QuantumScript, postselect_mode=None, **_
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    if not any(is_mcm(o) for o in tape.operations):
+        return (tape,), null_postprocessing
     samples_present = any(isinstance(mp, SampleMP) for mp in tape.measurements)
     postselect_present = any(op.postselect is not None for op in tape.operations if is_mcm(op))
     if postselect_present and samples_present and tape.batch_size is not None:
