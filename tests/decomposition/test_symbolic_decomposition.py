@@ -40,6 +40,8 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
     to_controlled_qubit_unitary,
 )
+
+# pylint: disable=no-name-in-module
 from tests.decomposition.conftest import to_resources
 
 

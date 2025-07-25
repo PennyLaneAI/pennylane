@@ -416,7 +416,7 @@ def _(op: qtemps.subroutines.ModExp):
 
     gate_types = defaultdict(int, {})
     ctrl_spec = CtrlSpec(cvs=[1])
-    for comp_rep in mult_resources:
+    for comp_rep, value in mult_resources.items():
         new_rep = comp_rep.controlled(ctrl_spec)
         if comp_rep == qt_gates.CNOT():
             new_rep = qt_gates.Toffoli()
@@ -428,7 +428,7 @@ def _(op: qtemps.subroutines.ModExp):
             if comp_rep.subbloq.op.name == "QFT":
                 gate_types[new_rep] = 1
         else:
-            gate_types[new_rep] = mult_resources[comp_rep] * ((2**num_x_wires) - 1)
+            gate_types[new_rep] = value * ((2**num_x_wires) - 1)
 
     return gate_types
 

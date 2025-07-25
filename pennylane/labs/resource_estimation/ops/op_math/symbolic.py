@@ -104,6 +104,7 @@ class ResourceAdjoint(ResourceOperator):
             self.wires = None or base_op.wires
             self.num_wires = base_op.num_wires
 
+    # pylint: disable=arguments-renamed
     def queue(self, remove_op, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
         context.remove(remove_op)
@@ -316,6 +317,7 @@ class ResourceControlled(ResourceOperator):
             num_base_wires = base_op.num_wires
             self.num_wires = num_ctrl_wires + num_base_wires
 
+    # pylint: disable=arguments-renamed
     def queue(self, remove_base_op, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
         context.remove(remove_base_op)
@@ -582,6 +584,7 @@ class ResourcePow(ResourceOperator):
             self.wires = None or base_op.wires
             self.num_wires = base_op.num_wires
 
+    # pylint: disable=arguments-renamed
     def queue(self, remove_op, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
         context.remove(remove_op)
@@ -805,6 +808,7 @@ class ResourceProd(ResourceOperator):
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires)
 
+    # pylint: disable=arguments-renamed
     def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
         for op in ops_to_remove:
@@ -986,6 +990,7 @@ class ResourceChangeBasisOp(ResourceOperator):
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires)
 
+    # pylint: disable=arguments-renamed
     def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
         for op in ops_to_remove:

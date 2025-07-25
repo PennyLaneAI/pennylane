@@ -36,7 +36,7 @@ def test_supported_gradient_kwargs():
     methods_to_skip = ("metric_tensor", "classical_fisher", "quantum_fisher")
 
     grad_transforms = []
-    for attr in qml.gradients.__dir__():
+    for attr in dir(qml.gradients):
         if attr in methods_to_skip:
             continue
         obj = getattr(qml.gradients, attr)
