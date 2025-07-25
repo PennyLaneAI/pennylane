@@ -17,6 +17,7 @@ per normal modes on a grid."""
 import itertools
 from pathlib import Path
 from tempfile import TemporaryDirectory
+import time
 
 import numpy as np
 import scipy as sp
@@ -46,6 +47,101 @@ BOHR_TO_ANG = (
 CM_TO_AU = 100 / sp.constants.physical_constants["hartree-inverse meter relationship"][0]  # m to cm
 
 
+from mpi4py import MPI
+import time
+
+TIMES_TABLE = {(MPI.COMM_WORLD.Get_rank()): {}}
+
+def timeit(func):
+    def wrapper(*args, **kwargs):
+        rank = MPI.COMM_WORLD.Get_rank()
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        end = time.perf_counter()
+        print(f"Rank {rank} finished {func.__name__} in {end - start} seconds")
+
+        if func.__name__ not in TIMES_TABLE[rank]:
+            TIMES_TABLE[rank][func.__name__] = {"hit_count": 0, "runs": []}
+        TIMES_TABLE[rank][func.__name__]["hit_count"] += 1
+        TIMES_TABLE[rank][func.__name__]["runs"].append(end - start)
+
+        return result
+    return wrapper
+
+def get_times_table():
+    """Return the times table for all ranks merged in rank 0."""
+    # comm = MPI.COMM_WORLD
+    # rank = comm.Get_rank()
+    # size = comm.Get_size()
+    
+    rank = MPI.COMM_WORLD.Get_rank()
+    size = MPI.COMM_WORLD.Get_size()
+
+    # First, compute total and average times for local data
+    for rank_id, data in TIMES_TABLE.items():
+        for func_name, stats in data.items():
+            if "runs" in stats and stats["runs"]:
+                total_time = sum(stats["runs"])
+                avg_time = total_time / stats["hit_count"]
+                stats["total_time"] = total_time
+                stats["avg_time"] = avg_time
+
+    # Gather all timing data to rank 0
+    all_times_tables = comm.gather(TIMES_TABLE, root=0)
+
+    if rank == 0:
+        # Merge all ranks' data into a single global table
+        global_times = {}
+
+        for rank_data in all_times_tables:
+            for rank_id, timing_data in rank_data.items():
+                global_times[rank_id] = timing_data
+
+        # Print the merged times table
+        print("Global Times Table (merged from all ranks):")
+        for rank_id in sorted(global_times.keys()):
+            data = global_times[rank_id]
+            print("-" * 150)
+            print(f"Rank {rank_id}:")
+            # for func_name, stats in data.items():
+            for func_name in sorted(data.keys()):
+                stats = data[func_name]
+                if "total_time" in stats and "avg_time" in stats:
+                    print(f"  {func_name}: hit_count={stats['hit_count']}, total_time={stats['total_time']:.4f}s, avg_time={stats['avg_time']:.4f}s, min_run={min(stats['runs']):.4f}s, max_run={max(stats['runs']):.4f}s")
+
+                    if False and stats['avg_time'] > 0.01:
+                        print(f"     Runs: ", end="")
+                        for run in stats['runs']:
+                            print(f"{run:7.4f}s,", end=" ")
+                        print()
+
+        return global_times
+    else:
+        return None        
+
+def finalize_timing():
+    """Call this at the end of your program to collect and print all timing data."""
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+
+    # Synchronize all ranks before collecting timing data
+    comm.Barrier()
+
+    if rank == 0:
+        print("\n" + "="*50)
+        print("FINAL TIMING STATISTICS")
+        print("="*50)
+
+    global_times = get_times_table()
+
+    if rank == 0:
+        print("="*50 + "\n")
+        return global_times
+
+    return None
+
+
+#@profile
 def _pes_onemode(
     molecule,
     scf_result,
@@ -81,32 +177,52 @@ def _pes_onemode(
 
     """
 
+    print("FDX: _pes_onemode called starting calculations...")
     quad_order = len(grid)
     all_jobs = range(quad_order)
-    jobs_on_rank = np.array_split(all_jobs, num_workers)
+    jobs_on_rank = np.array_split(all_jobs, num_workers-1)
 
     arguments = [
         (j, i, molecule, scf_result, freqs, vectors, grid, path, method, dipole)
         for j, i in enumerate(jobs_on_rank)
     ]
 
+    print(f"FDX: arguments for _pes_onemode: {len(arguments)}, quad_order: {quad_order}, num_workers: {num_workers}")
     executor_class = concurrency.backends.get_executor(backend)
+    time_star = time.perf_counter()
+    time_star_t = time.time()
     with executor_class(max_workers=num_workers) as executor:
         executor.starmap(_local_pes_onemode, arguments)
+    
+    time_end = time.perf_counter() - time_star
+    time_end_t = time.time() - time_star_t
+    
+    print(f"FDX: mpi_rank {MPI.COMM_WORLD.Get_rank()} finished _pes_onemode calculations..., took {time_end:.2f} seconds")
+    print(f"FDX: mpi_rank {MPI.COMM_WORLD.Get_rank()} finished _pes_onemode calculations..., took {time_end_t:.2f} seconds")
+    print(TIMES_TABLE)
 
     pes_onebody = None
     dipole_onebody = None
     pes_onebody, dipole_onebody = _load_pes_onemode(
-        num_workers, len(freqs), len(grid), path, dipole=dipole
+        num_workers-1, len(freqs), len(grid), path, dipole=dipole
     )
 
     if dipole:
         return pes_onebody, dipole_onebody
 
+    print("FDX: _pes_onemode called finished calculations...")
+
     return pes_onebody, None
 
-
 def _local_pes_onemode(
+    rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, path, method="rhf", dipole=False
+):
+    __local_pes_onemode(
+        rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, path, method=method, dipole=dipole
+    )
+
+@timeit
+def __local_pes_onemode(
     rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, path, method="rhf", dipole=False
 ):
     r"""Computes the one-mode potential energy surface on a grid along directions defined by
@@ -294,8 +410,25 @@ def _pes_twomode(
         return pes_twobody, dipole_twobody
     return pes_twobody, None  # pragma: no cover
 
-
 def _local_pes_twomode(
+    rank,
+    jobs_on_rank,
+    molecule,
+    scf_result,
+    freqs,
+    vectors,
+    pes_onebody,
+    dipole_onebody,
+    path,
+    method="rhf",
+    dipole=False,
+):
+    __local_pes_twomode(
+        rank, jobs_on_rank, molecule, scf_result, freqs, vectors, pes_onebody, dipole_onebody, path, method=method, dipole=dipole
+    )
+
+@timeit
+def __local_pes_twomode(
     rank,
     jobs_on_rank,
     molecule,
@@ -728,6 +861,7 @@ def _load_pes_threemode(num_proc, nmodes, quad_order, path, dipole):
     return pes_threebody, None  # pragma: no cover
 
 
+#@profile
 def vibrational_pes(
     molecule,
     n_points=9,
@@ -804,6 +938,9 @@ def vibrational_pes(
         * ``mpi4py_comm``: This executor wraps the `mpi4py.futures.MPICommExecutor <https://mpi4py.readthedocs.io/en/stable/mpi4py.futures.html#mpicommexecutor>`_
           class, and provides support for execution using multiple processes launched using MPI.
     """
+    
+    print("FDX: vibrational_pes called starting calculations...")
+    
     with TemporaryDirectory() as tmpdir:
         path = Path(tmpdir)
         if bins is None:
@@ -860,6 +997,7 @@ def vibrational_pes(
         if dipole_level < 2:
             dipole = False
 
+        exit()
         pes_twobody, dipole_twobody = _pes_twomode(
             mol_eq,
             scf_result,
@@ -903,6 +1041,11 @@ def vibrational_pes(
             dipole_data = [dipole_onebody, dipole_twobody, dipole_threebody]
 
         freqs = freqs * CM_TO_AU
+        
+        print("FDX: parallel part finished, now creating VibrationalPES object...")
+        
         return VibrationalPES(
             freqs, grid, gauss_weights, uloc, pes_data, dipole_data, localize, dipole_level
         )
+    print("FDX: vibrational_pes called finished calculations...")
+    # finalize_timing()
