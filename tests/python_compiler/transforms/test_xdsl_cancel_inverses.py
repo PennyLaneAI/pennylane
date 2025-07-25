@@ -20,10 +20,10 @@ pytestmark = pytest.mark.external
 pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
+import pennylane as qml
+
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
-
-import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
     IterativeCancelInversesPass,
     iterative_cancel_inverses_pass,

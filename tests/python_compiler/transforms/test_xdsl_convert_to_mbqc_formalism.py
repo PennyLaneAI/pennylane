@@ -18,13 +18,12 @@ pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
 
-from catalyst.passes import xdsl_plugin
-
 # pylint: disable=wrong-import-position
 from xdsl.context import Context
 from xdsl.dialects import func, test
 
 import pennylane as qml
+from catalyst.passes import xdsl_plugin
 from pennylane.compiler.python_compiler import Compiler
 from pennylane.compiler.python_compiler.jax_utils import parse_generic_to_xdsl_module
 from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect as Quantum

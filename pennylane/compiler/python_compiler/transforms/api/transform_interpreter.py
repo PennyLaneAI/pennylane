@@ -21,7 +21,6 @@ to be passed in as options.
 import io
 from collections.abc import Callable
 
-from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
 from xdsl.context import Context
 from xdsl.dialects import builtin, transform
 from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls
@@ -31,6 +30,8 @@ from xdsl.passes import ModulePass, PassPipeline
 from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
 from xdsl.utils.exceptions import PassFailedException
+
+from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
 
 
 # pylint: disable=too-few-public-methods
