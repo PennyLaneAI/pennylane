@@ -342,8 +342,9 @@ class ConvertToMBQCFormalismPattern(
 
                     # Deallocate aux_qubits
                     for node in aux_qubits_dict:
-                        deallocQubitOp = DeallocQubitOp(aux_qubits_dict[node])
-                        rewriter.insert_op(deallocQubitOp, InsertPoint.before(op))
+                        if node != 1:  # 1st qubit is the target qubit in the global register
+                            deallocQubitOp = DeallocQubitOp(aux_qubits_dict[node])
+                            rewriter.insert_op(deallocQubitOp, InsertPoint.before(op))
 
                     # Replace all uses of output qubit of op with the result_qubit
                     rewriter.replace_all_uses_with(op.results[0], result_qubit)
