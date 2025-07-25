@@ -178,6 +178,7 @@ PennyLane is **free** and **open source**, released under the Apache License, Ve
 
    development/release_notes.md
    development/deprecations
+   development/changelogs.md
    news/new_opmath
    news/program_capture_sharp_bits
 
