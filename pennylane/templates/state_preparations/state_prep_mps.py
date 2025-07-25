@@ -556,15 +556,15 @@ def _mps_prep_decomposition(*mps, **kwargs):
 
         vectors = []
         for column in Ai:
-            vector = qml.math.zeros(2 ** n_wires, like=interface, dtype=dtype)
+            vector = qml.math.zeros(2**n_wires, like=interface, dtype=dtype)
             if interface == "jax":
                 vector = vector.at[: len(column[0])].set(column[0])
-                vector = vector.at[2 ** (n_wires - 1): 2 ** (n_wires - 1) + len(column[1])].set(
+                vector = vector.at[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])].set(
                     column[1]
                 )
             else:
                 vector[: len(column[0])] = column[0]
-                vector[2 ** (n_wires - 1): 2 ** (n_wires - 1) + len(column[1])] = column[1]
+                vector[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])] = column[1]
             vectors.append(vector)
         vectors = qml.math.stack(vectors).T
         # The unitary is completed using QR decomposition
