@@ -23,14 +23,13 @@ Known Limitations
     of observables.
   * Unlike the current tape-based implementation of the transform, conversion to measurements based on eigvals
   and wires (rather than the PauliZ observable) is not currently supported.
-  * Unlike the tape-based implementation, this pass will NOT raise an error if given a tape that is invalid because
+  * Unlike the tape-based implementation, this pass will NOT raise an error if given a circuit that is invalid because
     it contains non-commuting measurements. It should be assumed that this transform results in incorrect outputs unless
     split_non_commuting is applied to break non-commuting measurements into separate tapes.
 """
 
 from dataclasses import dataclass
 
-import numpy as np
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin
 from xdsl.rewriter import InsertPoint
@@ -87,15 +86,17 @@ class DiagonalizeFinalMeasurementsPattern(
 
             insert_point = InsertPoint.before(observable)
 
-            for name, param in zip(diagonalizing_gates, params):
-                if param:
-                    paramOp = arith.ConstantOp(
-                        builtin.FloatAttr(data=-np.pi / 4, type=builtin.Float64Type())
-                    )
-                    rewriter.insert_op(paramOp, insert_point)
+            for name, op_data in zip(diagonalizing_gates, params):
+                if op_data:
+                    param_ssa_values = []
+                    for param in op_data:
+                        paramOp = arith.ConstantOp(
+                            builtin.FloatAttr(data=param, type=builtin.Float64Type())
+                        )
+                        rewriter.insert_op(paramOp, insert_point)
+                        param_ssa_values.append(paramOp.results[0])
 
-                    param_ssa_value = paramOp.results[0]
-                    gate = CustomOp(in_qubits=qubit, gate_name=name, params=param_ssa_value)
+                    gate = CustomOp(in_qubits=qubit, gate_name=name, params=param_ssa_values)
                 else:
                     gate = CustomOp(in_qubits=qubit, gate_name=name)
 
