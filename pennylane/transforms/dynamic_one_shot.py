@@ -402,6 +402,7 @@ def gather_mcm_qjit(measurement, samples, is_valid, postselect_mode=None):  # pr
     return gather_non_mcm(measurement, meas, is_valid, postselect_mode=postselect_mode)
 
 
+# pragma: no cover
 # pylint: disable=unused-argument
 @singledispatch
 def gather_non_mcm(measurement, samples, is_valid: bool, postselect_mode=None) -> TensorLike:
