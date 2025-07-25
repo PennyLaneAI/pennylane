@@ -620,6 +620,9 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         if not isinstance(target_node, _DecompositionNode):
             return  # nothing is to be done for edges leading to an operator node
 
+        if target_idx not in self.distances:
+            self.distances[target_idx] = Resources()  # initialize with empty resource
+
         if src_node is None:
             return  # special case for when the decomposition produces nothing
 
@@ -627,8 +630,6 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         if not target_node.is_feasible(self._num_available_work_wires):
             raise PruneSearch
 
-        if target_idx not in self.distances:
-            self.distances[target_idx] = Resources()
         self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node.op)
         self._n_edges_examined[target_idx] += 1
 
