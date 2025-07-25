@@ -43,7 +43,7 @@ Us = [qml.matrix(U, wire_order=range(2)) for U in Us]
 Ks3 = np.array([coeffs[j] * Us[j] for j in range(len(Us))])
 
 
-@pytest.mark.tensorflow
+@pytest.mark.all_interfaces
 @pytest.mark.parametrize("interface", [None, "autograd", "jax", "tensorflow", "torch"])
 @pytest.mark.parametrize("Ks", [Ks1, Ks2, Ks3])
 def test_density_matrix(Ks, interface):
