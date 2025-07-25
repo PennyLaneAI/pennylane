@@ -23,6 +23,9 @@ Known Limitations
     of observables.
   * Unlike the current tape-based implementation of the transform, conversion to measurements based on eigvals
   and wires (rather than the PauliZ observable) is not currently supported.
+  * Unlike the tape-based implementation, this pass will NOT raise an error if given a tape that is invalid because
+    it contains non-commuting measurements. It should be assumed that this transform results in incorrect outputs unless
+    split_non_commuting is applied to break non-commuting measurements into separate tapes.
 """
 
 from dataclasses import dataclass
