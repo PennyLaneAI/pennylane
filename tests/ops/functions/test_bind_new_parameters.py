@@ -20,6 +20,7 @@ import pytest
 from gate_data import GELL_MANN, I, X, Y, Z
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.functions import bind_new_parameters
 
 
@@ -91,21 +92,20 @@ def test_composite_ops(op, new_params, expected_op):
     assert all(no is not o for no, o in zip(new_op.operands, op.operands))
 
 
+def test_num_steps_is_deprecated():
+    """Test that providing `num_steps` to `qml.evolve` raises a deprecation warning."""
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated",
+    ):
+        qml.evolve(qml.PauliX(0), 0.5, num_steps=15)
+
+
 @pytest.mark.parametrize(
     "op, new_params, expected_op",
     [
         (qml.evolve(qml.PauliX(0), 0.5), [-0.5], qml.evolve(qml.PauliX(0), -0.5)),
-        (
-            qml.evolve(qml.PauliX(0), 0.5, num_steps=15),
-            [-0.5],
-            qml.evolve(qml.PauliX(0), -0.5, num_steps=15),
-        ),
         (qml.exp(qml.PauliX(0), 0.5), [-0.5], qml.exp(qml.PauliX(0), -0.5)),
-        (
-            qml.exp(qml.PauliX(0), 0.5, num_steps=15),
-            [-0.5],
-            qml.exp(qml.PauliX(0), -0.5, num_steps=15),
-        ),
         (qml.pow(qml.RX(0.123, 0), 2), [0.456], qml.pow(qml.RX(0.456, 0), 2)),
         (qml.s_prod(0.5, qml.RX(0.123, 0)), [-0.5, 0.456], qml.s_prod(-0.5, qml.RX(0.456, 0))),
         (

@@ -16,7 +16,7 @@ This module contains the qml.state measurement.
 """
 from collections.abc import Sequence
 
-import pennylane as qml
+from pennylane import math
 from pennylane.exceptions import WireError
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -66,10 +66,10 @@ class StateMP(StateMeasurement):
             dtype = str(state.dtype)
             if "complex" in dtype:
                 return state
-            if qml.math.get_interface(state) == "tensorflow":
-                return qml.math.cast(state, "complex128")
+            if math.get_interface(state) == "tensorflow":
+                return math.cast(state, "complex128")
             floating_single = "float32" in dtype or "complex64" in dtype
-            return qml.math.cast(state, "complex64" if floating_single else "complex128")
+            return math.cast(state, "complex64" if floating_single else "complex128")
 
         if not self.wires or wire_order == self.wires:
             return cast_to_complex(state)
@@ -82,24 +82,24 @@ class StateMP(StateMeasurement):
             )
 
         shape = (2,) * len(wire_order)
-        batch_size = None if qml.math.ndim(state) == 1 else qml.math.shape(state)[0]
+        batch_size = None if math.ndim(state) == 1 else math.shape(state)[0]
         shape = (batch_size,) + shape if batch_size else shape
-        state = qml.math.reshape(state, shape)
+        state = math.reshape(state, shape)
 
         if wires_to_add := Wires(set(self.wires) - set(wire_order)):
             for _ in wires_to_add:
-                state = qml.math.stack([state, qml.math.zeros_like(state)], axis=-1)
+                state = math.stack([state, math.zeros_like(state)], axis=-1)
             wire_order = wire_order + wires_to_add
 
         desired_axes = [wire_order.index(w) for w in self.wires]
         if batch_size:
             desired_axes = [0] + [i + 1 for i in desired_axes]
-        state = qml.math.transpose(state, desired_axes)
+        state = math.transpose(state, desired_axes)
 
         flat_shape = (2 ** len(self.wires),)
         if batch_size:
             flat_shape = (batch_size,) + flat_shape
-        state = qml.math.reshape(state, flat_shape)
+        state = math.reshape(state, flat_shape)
         return cast_to_complex(state)
 
     def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
@@ -142,20 +142,18 @@ class DensityMatrixMP(StateMP):
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not qml.math.is_abstract(state) and qml.math.any(qml.math.iscomplex(state)):
+        if not math.is_abstract(state) and math.any(math.iscomplex(state)):
             kwargs["c_dtype"] = state.dtype
-        return qml.math.reduce_statevector(state, **kwargs)
+        return math.reduce_statevector(state, **kwargs)
 
     def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
         # pylint:disable=redefined-outer-name
         wire_map = dict(zip(wire_order, range(len(wire_order))))
         mapped_wires = [wire_map[w] for w in self.wires]
         kwargs = {"indices": mapped_wires, "c_dtype": "complex128"}
-        if not qml.math.is_abstract(density_matrix) and qml.math.any(
-            qml.math.iscomplex(density_matrix)
-        ):
+        if not math.is_abstract(density_matrix) and math.any(math.iscomplex(density_matrix)):
             kwargs["c_dtype"] = density_matrix.dtype
-        return qml.math.reduce_dm(density_matrix, **kwargs)
+        return math.reduce_dm(density_matrix, **kwargs)
 
 
 def state() -> StateMP:

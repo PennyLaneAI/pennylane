@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.resource import Resources
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
@@ -803,8 +803,12 @@ class TestShots:
             return qml.sample(qml.PauliZ(wires=0))
 
         assert len(circuit(0.8)) == 10
-        assert len(circuit(0.8, shots=2)) == 2
-        assert len(circuit(0.8, shots=3178)) == 3178
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=2)) == 2
+            assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
 
     # pylint: disable=unexpected-keyword-arg, protected-access
@@ -824,7 +828,11 @@ class TestShots:
         assert circuit.device._shots is None
 
         # check that the circuit is temporary non-analytic
-        res1 = [circuit(shots=1) for _ in range(100)]
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            res1 = [circuit(shots=1) for _ in range(100)]
         assert np.std(res1) != 0.0
 
         # check that the circuit is analytic again
@@ -852,11 +860,19 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8)
         assert tape.operations[0].wires.labels == (0,)
 
-        assert len(circuit(0.8, shots=1)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=1)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
-        assert len(circuit(0.8, shots=0)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
@@ -891,7 +907,11 @@ class TestShots:
                 qml.RX(a, wires=shots)
                 return qml.sample(qml.PauliZ(wires=0))
 
-        assert len(ansatz1(0.8, shots=0)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(ansatz1(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 
@@ -907,7 +927,11 @@ class TestShots:
             return qml.sample(qml.PauliZ(wires=0))
 
         assert dev.shots == 3
-        res = circuit(0.8, shots=2)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            res = circuit(0.8, shots=2)
         assert len(res) == 2
         assert dev.shots == 3
 
@@ -938,7 +962,7 @@ class TestShots:
         # no warning on the first execution
         circuit(0.3)
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
-            circuit(0.3, shots=5)
+            qml.set_shots(shots=5)(circuit)(0.3)
 
     def test_warning_finite_shots_tape(self):
         """Tests that a warning is raised when caching is used with finite shots."""
