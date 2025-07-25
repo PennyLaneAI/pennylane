@@ -1066,7 +1066,7 @@ class TestParamShift:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             with pytest.raises(
-                qml.operation.OperatorPropertyUndefined, match="does not have a grad_recipe"
+                qml.exceptions.OperatorPropertyUndefined, match="does not have a grad_recipe"
             ):
                 qml.gradients.param_shift(tape)
 

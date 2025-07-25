@@ -14,12 +14,13 @@
 """Provides transforms for mitigating quantum circuits."""
 from collections.abc import Sequence
 from copy import copy
-from typing import Any, Optional
+from typing import Any
 
-import pennylane as qml
-from pennylane import adjoint, apply
+from pennylane import math
 from pennylane.math import mean, round, shape
-from pennylane.queuing import AnnotatedQueue
+from pennylane.operation import Channel
+from pennylane.ops.op_math import adjoint
+from pennylane.queuing import AnnotatedQueue, apply
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -121,7 +122,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
             # Load devices
             dev_ideal = qml.device("default.mixed", wires=n_wires)
-            dev_noisy = qml.transforms.insert(noise_gate, noise_strength)(dev_ideal)
+            dev_noisy = qml.noise.insert(noise_gate, noise_strength)(dev_ideal)
 
             x = np.arange(6)
 
@@ -187,7 +188,7 @@ def fold_global(tape: QuantumScript, scale_factor) -> tuple[QuantumScriptBatch, 
 
 def _divmod(a, b):
     """Performs divmod but in an all-interface compatible manner"""
-    out1 = qml.math.floor(a / b)
+    out1 = math.floor(a / b)
     out2 = a - out1 * b
     return int(out1), out2
 
@@ -215,7 +216,7 @@ def fold_global_tape(circuit, scale_factor):
     # Generate base_circuit without measurements
     # Treat all circuits as lists of operations, build new tape in the end
     base_ops = circuit.operations
-    if any((isinstance(op, qml.operation.Channel) for op in base_ops)):
+    if any(isinstance(op, Channel) for op in base_ops):
         raise ValueError(
             "Circuits containing quantum channels cannot be folded with mitigate_with_zne. "
             "To use zero-noise extrapolation on the circuit with channel noise, "
@@ -258,22 +259,22 @@ def fold_global_tape(circuit, scale_factor):
 # TODO: make this a pennylane.math function
 def _polyfit(x, y, order):
     """Brute force implementation of polynomial fit"""
-    x = qml.math.convert_like(x, y[0])
-    x = qml.math.cast_like(x, y[0])
-    X = qml.math.vander(x, order + 1)
-    y = qml.math.stack(y)
+    x = math.convert_like(x, y[0])
+    x = math.cast_like(x, y[0])
+    X = math.vander(x, order + 1)
+    y = math.stack(y)
 
     # scale X to improve condition number and solve
-    scale = qml.math.sum(qml.math.sqrt((X * X)), axis=0)
+    scale = math.sum(math.sqrt(X * X), axis=0)
     X = X / scale
 
     # Compute coeffs:
     # This part is typically done using a lstq solver, do it with the penrose inverse by hand:
     # i.e. coeffs = (X.T @ X)**-1 X.T @ y see https://en.wikipedia.org/wiki/Polynomial_regression
-    c = qml.math.linalg.pinv(qml.math.transpose(X) @ X)
-    c = c @ qml.math.transpose(X)
-    c = qml.math.tensordot(c, y, axes=1)
-    c = qml.math.transpose(qml.math.transpose(c) / scale)
+    c = math.linalg.pinv(math.transpose(X) @ X)
+    c = c @ math.transpose(X)
+    c = math.tensordot(c, y, axes=1)
+    c = math.transpose(math.transpose(c) / scale)
     return c
 
 
@@ -357,20 +358,20 @@ def exponential_extrapolate(x, y, asymptote=None, eps=1.0e-6):
     >>> qml.transforms.exponential_extrapolate(x, y)
     0.23365009000522544
     """
-    y = qml.math.stack(y)
+    y = math.stack(y)
     slope, y_intercept = _polyfit(x, y, 1)
     if asymptote is None:
-        sign = qml.math.sign(-slope)
+        sign = math.sign(-slope)
         asymptote = 0.0
     else:
-        sign = qml.math.sign(-(asymptote - y_intercept))
+        sign = math.sign(-(asymptote - y_intercept))
 
     y_shifted = sign * (y - asymptote)
-    y_shifted = qml.math.where(y_shifted < eps, eps, y_shifted)
-    y_scaled = qml.math.log(y_shifted)
+    y_shifted = math.where(y_shifted < eps, eps, y_shifted)
+    y_scaled = math.log(y_shifted)
 
     zne_unscaled = poly_extrapolate(x, y_scaled, 1)
-    return sign * qml.math.exp(zne_unscaled) + asymptote
+    return sign * math.exp(zne_unscaled) + asymptote
 
 
 # pylint: disable=too-many-arguments
@@ -380,8 +381,9 @@ def mitigate_with_zne(
     scale_factors: Sequence[float],
     folding: callable,
     extrapolate: callable,
-    folding_kwargs: Optional[dict[str, Any]] = None,
-    extrapolate_kwargs: Optional[dict[str, Any]] = None,
+    *,
+    folding_kwargs: dict[str, Any] | None = None,
+    extrapolate_kwargs: dict[str, Any] | None = None,
     reps_per_factor=1,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Mitigate an input circuit using zero-noise extrapolation.
@@ -610,20 +612,20 @@ def mitigate_with_zne(
             # stack the results if there are multiple measurements
             # this will not create ragged arrays since only expval measurements are allowed
             if len(tape.observables) > 1:
-                results[i] = qml.math.stack(results[i])
+                results[i] = math.stack(results[i])
 
         # Averaging over reps_per_factor repetitions
         results_flattened = []
         for i in range(0, len(results), reps_per_factor):
             # The stacking ensures the right interface is used
             # averaging over axis=0 is critical because the qnode may have multiple outputs
-            results_flattened.append(mean(qml.math.stack(results[i : i + reps_per_factor]), axis=0))
+            results_flattened.append(mean(math.stack(results[i : i + reps_per_factor]), axis=0))
 
         extrapolated = extrapolate(scale_factors, results_flattened, **extrapolate_kwargs)
 
         extrapolated = extrapolated[0] if shape(extrapolated) == (1,) else extrapolated
 
         # unstack the results in the case of multiple measurements
-        return extrapolated if shape(extrapolated) == () else tuple(qml.math.unstack(extrapolated))
+        return extrapolated if shape(extrapolated) == () else tuple(math.unstack(extrapolated))
 
     return out_tapes, processing_fn

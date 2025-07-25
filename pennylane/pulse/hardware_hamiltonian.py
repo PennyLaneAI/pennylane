@@ -16,7 +16,7 @@ Hardware Hamiltonians"""
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 
@@ -317,8 +317,8 @@ class HardwareHamiltonian(ParametrizedHamiltonian):
         coeffs,
         observables,
         reorder_fn: Callable = _reorder_parameters,
-        pulses: Optional[list["HardwarePulse"]] = None,
-        settings: Optional[Union["qml.pulse.RydbergSettings", "qml.pulse.TransmonSettings"]] = None,
+        pulses: list["HardwarePulse"] | None = None,
+        settings: Union["qml.pulse.RydbergSettings", "qml.pulse.TransmonSettings"] | None = None,
     ):
         self.settings = settings
         self.pulses = [] if pulses is None else pulses
@@ -441,9 +441,9 @@ class HardwarePulse:
             acts on
     """
 
-    amplitude: Union[float, Callable]
-    phase: Union[float, Callable]
-    frequency: Union[float, Callable]
+    amplitude: float | Callable
+    phase: float | Callable
+    frequency: float | Callable
     wires: list[Wires]
 
     def __post_init__(self):

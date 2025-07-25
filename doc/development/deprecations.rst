@@ -9,88 +9,100 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
-  and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
+* Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version.
+  Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
+  Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
 
-  - Deprecated in v0.42
-  - Will be removed in v0.43
+  As a concrete example, consider the following case:
 
-* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
-  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
-  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
-  processed into the circuit.
+  ```python
+  coeffs = [0.5, -0.6]
+  ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
+  H_flat = qml.dot(coeffs, ops)
+  ```
 
-  .. code-block:: python
+  Instead of computing the Suzuki-Trotter product approximation as:
 
-      class MyObs(Operator):
-      
-          is_hermitian = True
+  ```pycon
+  >>> qml.evolve(H_flat, num_steps=2).decomposition()
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
 
-          def queue(self, context=qml.QueuingManager):
-              return self
+  The same result can be obtained using :class:`~.TrotterProduct` as follows:
 
-  To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
+  ```pycon
+  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
+  
+  - Deprecated in v0.43
+  - Will be removed in a future version
 
-  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
+* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
+  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+  
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-  - Deprecated in v0.42
-  - Will be removed in v0.43
+* ``shots=`` in ``QNode`` calls is deprecated and will be removed in v0.44.
+  Instead, please use the ``qml.workflow.set_shots`` transform to set the number of shots for a ``QNode``.
 
-* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
-  on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
-  to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-  - Deprecated in v0.42
-  - Will be removed in v0.43
+* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` are deprecated and will be removed in version v0.44.
+  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
 
-* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for alternate code to
-  use instead.
-  These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
-  ``is_measurement``, ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-  - Deprecated in v0.42
-  - Will be removed in v0.43
+* Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
 
-.. code-block:: python
+    - ``print_contents`` in favor of ``print(obj)``
+    - ``observables_in_order`` in favor of ``observables``
+    - ``operations_in_order`` in favor of ``operations``
+    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
+    - ``descendants_in_order`` in favore of ``.descendants(obj, sort=True)``
 
-    def not_tape(obj):
-        return not isinstance(obj, qml.tape.QuantumScript)
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-    def has_gen(obj):
-        return obj.has_generator
+* The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
+  Instead, the ``qml.to_openqasm`` function should be used.
 
-    def has_grad_method(obj):
-        return obj.grad_method is not None
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-    def has_multipar(obj):
-        return obj.num_params > 1
+* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
+  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
 
-    def has_nopar(obj):
-        return obj.num_params == 0
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-    def has_unitary_gen(obj):
-        return obj in qml.ops.qubit.attributes.has_unitary_generator
+* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
+  Instead, these functions should be imported from the ``pennylane.noise`` module.
 
-    def is_measurement(obj):
-        return isinstance(obj, qml.measurements.MeasurementProcess)
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-    def defines_diagonalizing_gates(obj):
-        return obj.has_diagonalizing_gates
+* The ``level=None`` argument in the ``get_transform_program``, ``construct_batch`` , ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` transforms is deprecated and will be removed in v0.43.
+  Please use ``level='device'`` instead to apply the noise model at the device level.
 
-    def gen_is_multi_term_hamiltonian(obj):
-        if not isinstance(obj, Operator) or not obj.has_generator:
-            return False
-        try:
-            generator = obj.generator()
-            _, ops = generator.terms() 
-            return len(ops) > 1
-        except TermsUndefinedError:
-            return False
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
-* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
+* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.43.
+  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
 
-  - Deprecated in v0.42
-  - Will be removed in v0.43
+  - Deprecated in v0.43
+  - Will be removed in v0.44
 
 * Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
 
@@ -124,6 +136,100 @@ for details on how to port your legacy code to the new system. The following fun
 
 Completed deprecation cycles
 ----------------------------
+
+* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for an example of alternative code to use.
+  These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
+  ``is_measurement``, ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
+
+  - Deprecated in v0.42
+  - Removed in v0.43
+
+.. code-block:: python
+
+    from pennylane.operation import TermsUndefinedError, Operator
+
+    def not_tape(obj):
+        return not isinstance(obj, qml.tape.QuantumScript)
+
+    def has_gen(obj):
+        return obj.has_generator
+
+    def has_grad_method(obj):
+        return obj.grad_method is not None
+
+    def has_multipar(obj):
+        return obj.num_params > 1
+
+    def has_nopar(obj):
+        return obj.num_params == 0
+
+    def has_unitary_gen(obj):
+        return obj in qml.ops.qubit.attributes.has_unitary_generator
+
+    def is_measurement(obj):
+        return isinstance(obj, qml.measurements.MeasurementProcess)
+
+    def defines_diagonalizing_gates(obj):
+        return obj.has_diagonalizing_gates
+
+    def gen_is_multi_term_hamiltonian(obj):
+        if not isinstance(obj, Operator) or not obj.has_generator:
+            return False
+        try:
+            generator = obj.generator()
+            _, ops = generator.terms()
+            return len(ops) > 1
+        except TermsUndefinedError:
+            return False
+
+* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised. They now live in
+  the ``liealg`` module.
+
+  .. code-block:: python
+
+    import pennylane.liealg
+    from pennylane.liealg import lie_closure, structure_constants, center
+
+  - Deprecated in v0.40
+  - Removed in v0.43
+
+* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
+  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
+  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
+  processed into the circuit.
+
+  .. code-block:: python
+
+      class MyObs(Operator):
+          is_hermitian = True
+
+          def queue(self, context=qml.QueuingManager):
+              return self
+
+  To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
+
+  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
+
+  - Deprecated in v0.42
+  - Removed in v0.43
+
+* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
+  on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
+  to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
+  
+  - Deprecated in v0.42
+  - Removed in v0.43
+
+* The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
+
+  - Deprecated in v0.42
+  - Removed in v0.43
+
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` 
+  is now removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
+
+  - Deprecated in v0.42
+  - Removed in v0.43
 
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is now removed in v0.42.
   The gradient keyword arguments should be passed to the new keyword argument ``gradient_kwargs`` via an explicit 
