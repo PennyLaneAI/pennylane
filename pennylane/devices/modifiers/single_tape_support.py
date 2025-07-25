@@ -55,8 +55,6 @@ def _make_execute_and_compute_derivatives(batch_execute_and_compute_derivatives)
     def execute_and_compute_derivatives(
         self, circuits, execution_config: ExecutionConfig | None = None
     ):
-        if execution_config is None:
-            execution_config = ExecutionConfig()
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
