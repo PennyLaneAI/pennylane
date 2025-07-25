@@ -36,25 +36,6 @@ from pennylane.compiler.python_compiler.transforms import (
 class TestDiagonalizeFinalMeasurementsPass:
     """Unit tests for the diagonalize-final-measurements pass."""
 
-    def test_unsupported_observable_raises_error(self, run_filecheck):
-        """Test that an unsupported observable raises an error. At the time of
-        implementation, the only observable that is supported in MLIR but not
-        in this transform is Hadamard."""
-
-        program = """
-            func.func @test_func() {
-                %0 = "test.op"() : () -> !quantum.bit
-                %1 = quantum.namedobs %0[Hadamard] : !quantum.obs
-                %2 = quantum.expval %1 : f64
-                return
-            }
-            """
-
-        pipeline = (DiagonalizeFinalMeasurementsPass(),)
-
-        with pytest.raises(NotImplementedError, match="not supported for diagonalization"):
-            run_filecheck(program, pipeline)
-
     def test_with_pauli_z(self, run_filecheck):
         """Test that a PauliZ observable is not affected by diagonalization"""
 
@@ -135,6 +116,29 @@ class TestDiagonalizeFinalMeasurementsPass:
                 // CHECK: quantum.expval [[q0_4]]
                 %2 = quantum.expval %1 : f64
                 return
+            }
+            """
+
+        pipeline = (DiagonalizeFinalMeasurementsPass(),)
+        run_filecheck(program, pipeline)
+
+    def test_with_hadamard(self, run_filecheck):
+        """Test that when diagonalizing a Hadamard observable, the expected diagonalizing
+        gates are inserted and the observable becomes PauliZ."""
+
+        program = """
+            func.func @test_func() {
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                %0 = "test.op"() : () -> !quantum.bit
+
+                // CHECK: [[quarter_pi:%.*]] = arith.constant -0.78539816339744828 : f64
+                // CHECK-NEXT: [[q0_1:%.*]] = quantum.custom "RY"([[quarter_pi]]) [[q0]]
+                // CHECK-NEXT: [[q0_2:%.*]] =  quantum.namedobs [[q0_1]][PauliZ]
+                // CHECK-NOT: quantum.namedobs [[q:%.+]][Hadamard]
+                %1 = quantum.namedobs %0[Hadamard] : !quantum.obs
+
+                // CHECK: quantum.expval [[q0_2]]
+                %2 = quantum.expval %1 : f64
             }
             """
 
@@ -241,6 +245,12 @@ class TestDiagonalizeFinalMeasurementsPass:
             return qml.var(qml.X(0)), qml.var(qml.X(0))
         """
 
+        # Note: ideally, we would like to see this only contain a single Hadamard, that's used by
+        # both branches of measurements. The HLOLoweringPass currently merges these two branches, but
+        # without that, this would return incorrect results (which would be captured in integration tests
+        # below). This also shouldn't occur as long as split_non_commuting is a part of the pipeline before
+        # diagonalization.
+
         program = """
             func.func @test_func() {
                 %0 = "test.op"() : () -> !quantum.bit
@@ -275,6 +285,8 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
             (qml.var, qml.Y, lambda x: 1 - np.sin(x) ** 2),
             (qml.expval, qml.Z, lambda x: np.cos(x)),
             (qml.var, qml.Z, lambda x: 1 - np.cos(x) ** 2),
+            (qml.expval, qml.Hadamard, lambda x: np.cos(x) / np.sqrt(2)),
+            (qml.var, qml.Hadamard, lambda x: (2 - np.cos(x) ** 2) / 2),
         ],
     )
     def test_with_single_obs(self, mp, obs, expected_res):
@@ -434,6 +446,8 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
             (qml.var, qml.Y, lambda x: 1 - np.sin(x) ** 2),
             (qml.expval, qml.Z, lambda x: np.cos(x)),
             (qml.var, qml.Z, lambda x: 1 - np.cos(x) ** 2),
+            (qml.expval, qml.Hadamard, lambda x: np.cos(x) / np.sqrt(2)),
+            (qml.var, qml.Hadamard, lambda x: (2 - np.cos(x) ** 2) / 2),
         ],
     )
     def test_with_single_obs(self, mp, obs, expected_res):

@@ -11,15 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This file contains the implementation of the diagonalize_measurements transform,
+"""This file contains the implementation of the diagonalize_final_measurements transform,
 written using xDSL.
 
 
 Known Limitations
 -----------------
-  * Only observables PauliX, PauliY, PauliZ and Identity are currently supported when using this transform.
-  * The current implementation does not allow for support for observables with parametrized diagonalizing gates
-    (for example, qml.H(0).diagonalizing_gates())
+  * Only observables PauliX, PauliY, PauliZ, Hadamard and Identity are currently supported when using this transform (but
+    these are also the only observables currently supported in the Quantum dialect as NamedObservable).
   * Unlike the current tape-based implementation of the transform, it doesn't allow for diagonalization of a subset
     of observables.
   * Unlike the current tape-based implementation of the transform, conversion to measurements based on eigvals
@@ -28,43 +27,40 @@ Known Limitations
 
 from dataclasses import dataclass
 
+import numpy as np
 from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import builtin
+from xdsl.dialects import arith, builtin
 from xdsl.rewriter import InsertPoint
 
-from pennylane import ops as pl_ops
+from pennylane.ops import Hadamard, PauliX, PauliY
 
 from ..dialects.quantum import CustomOp, NamedObservable, NamedObservableAttr, NamedObsOp
 from .api import compiler_transform
+
+
+def _generate_mapping():
+    _gate_map = {}
+    _params_map = {}
+
+    for op in PauliX(0), PauliY(0), Hadamard(0):
+        diagonalizing_gates = op.diagonalizing_gates()
+
+        _gate_map[op.name] = [gate.name for gate in diagonalizing_gates]
+        _params_map[op.name] = [gate.data for gate in diagonalizing_gates]
+
+    return _gate_map, _params_map
+
+
+_gate_map, _params_map = _generate_mapping()
 
 
 def _diagonalize(obs: NamedObsOp) -> bool:
     """Whether to diagonalize a given observable."""
     if obs.type.data in {"PauliZ", "Identity"}:
         return False
-    if obs.type.data in {"PauliX", "PauliY"}:
+    if obs.type.data in _gate_map:
         return True
     raise NotImplementedError(f"Observable {obs.type.data} is not supported for diagonalization")
-
-
-def _diagonalizing_gates(obs: NamedObsOp):
-    """Get the names of the observable's diagonalizing gates from the corresponding
-    PennyLane Operation, and use them to get an xDSL representation of the diagonalizing
-    gates.
-
-    Returns a list of CustomOps representing the chain of diagonalizing gates, and the
-    new SSA value for the observable qubit wire following diagonalization."""
-    pl_obs = getattr(pl_ops, obs.type.data)(0)
-    gates = [o.name for o in pl_obs.diagonalizing_gates()]
-
-    diagonalizing_gates = []
-    qubit = obs.qubit
-
-    for name in gates:
-        diagonalizing_gates.append(CustomOp(in_qubits=qubit, gate_name=name))
-        qubit = diagonalizing_gates[-1].out_qubits[0]
-
-    return diagonalizing_gates, qubit
 
 
 class DiagonalizeFinalMeasurementsPattern(
@@ -81,12 +77,31 @@ class DiagonalizeFinalMeasurementsPattern(
 
         if _diagonalize(observable):
 
-            diagonalizing_gates, obs_qubit = _diagonalizing_gates(observable)
-            for gate in diagonalizing_gates:
-                rewriter.insert_op(gate, InsertPoint.before(observable))
+            diagonalizing_gates = _gate_map[observable.type.data]
+            params = _params_map[observable.type.data]
+
+            qubit = observable.qubit
+
+            insert_point = InsertPoint.before(observable)
+
+            for name, param in zip(diagonalizing_gates, params):
+                if param:
+                    paramOp = arith.ConstantOp(
+                        builtin.FloatAttr(data=-np.pi / 4, type=builtin.Float64Type())
+                    )
+                    rewriter.insert_op(paramOp, insert_point)
+
+                    param_ssa_value = paramOp.results[0]
+                    gate = CustomOp(in_qubits=qubit, gate_name=name, params=param_ssa_value)
+                else:
+                    gate = CustomOp(in_qubits=qubit, gate_name=name)
+
+                rewriter.insert_op(gate, insert_point)
+
+                qubit = gate.out_qubits[0]
 
             diag_obs = NamedObsOp(
-                qubit=obs_qubit, obs_type=NamedObservableAttr(NamedObservable("PauliZ"))
+                qubit=qubit, obs_type=NamedObservableAttr(NamedObservable("PauliZ"))
             )
             rewriter.replace_op(observable, diag_obs)
 
