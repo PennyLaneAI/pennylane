@@ -424,16 +424,15 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         )
         if self._visitor.unsolved_op_indices:
             unsolved_ops = [self._graph[op_idx] for op_idx in self._visitor.unsolved_op_indices]
-            op_names = {op.name for op in unsolved_ops}
+            op_names = {op_node.op.name for op_node in unsolved_ops}
             raise DecompositionError(
                 f"Decomposition not found for {op_names} to the gate set {set(self._gate_set_weights)}"
             )
 
-    def _all_solutions(self, op: Operator, num_work_wires: int) -> Iterable[_OperatorNode]:
+    def _all_solutions(
+        self, visitor: _DecompositionSearchVisitor, op: Operator, num_work_wires: int
+    ) -> Iterable[_OperatorNode]:
         """Returns all valid solutions for an operator and a work wire constraint."""
-
-        if not self._visitor:
-            return []
 
         op_rep = resource_rep(type(op), **op.resource_params)
         if op_rep not in self._op_to_op_nodes:
@@ -442,14 +441,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         def _is_solved(op_node: _OperatorNode):
             return (
                 op_node in self._all_op_indices
-                and self._all_op_indices[op_node] in self._visitor.distances
+                and self._all_op_indices[op_node] in visitor.distances
             )
 
         def _is_feasible(op_node: _OperatorNode):
-            if self._visitor._num_available_work_wires is None:
+            if visitor._num_available_work_wires is None:
                 return True
             op_node_idx = self._all_op_indices[op_node]
-            return num_work_wires >= self._visitor._num_work_wires_used[op_node_idx]
+            return num_work_wires >= visitor._num_work_wires_used[op_node_idx]
 
         return filter(_is_feasible, filter(_is_solved, self._op_to_op_nodes[op_rep]))
 
@@ -461,19 +460,24 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             num_available_work_wires (int): The maximum number of available work wires.
 
         """
-        return any(self._all_solutions(op, num_available_work_wires))
+        if self._visitor is None:
+            raise ValueError("The decomposition graph has not been solved yet.")
 
-    def _get_best_solution(self, op: Operator, num_available_work_wires: int) -> int:
+        return any(self._all_solutions(self._visitor, op, num_available_work_wires))
+
+    def _get_best_solution(
+        self, visitor: _DecompositionSearchVisitor, op: Operator, num_available_work_wires: int
+    ) -> int:
         """Finds the best solution for an operator in terms of resource efficiency."""
 
         def _resource(node: _OperatorNode):
             op_node_idx = self._all_op_indices[node]
             return (
-                self._visitor.distances[op_node_idx].weighted_cost,
-                self._visitor._num_work_wires_used[op_node_idx],
+                visitor.distances[op_node_idx].weighted_cost,
+                visitor._num_work_wires_used[op_node_idx],
             )
 
-        all_solutions = self._all_solutions(op, num_available_work_wires)
+        all_solutions = self._all_solutions(visitor, op, num_available_work_wires)
         solution = min(all_solutions, key=_resource, default=None)
 
         if not solution:
@@ -518,7 +522,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
         """
-        op_node_idx = self._get_best_solution(op, num_available_work_wires)
+        if self._visitor is None:
+            raise ValueError("The decomposition graph has not been solved yet.")
+
+        op_node_idx = self._get_best_solution(self._visitor, op, num_available_work_wires)
         return self._visitor.distances[op_node_idx]
 
     def decomposition(self, op: Operator, num_available_work_wires: int = 0) -> DecompositionRule:
@@ -554,7 +561,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
          CNOT(wires=[0, 2])]
 
         """
-        op_node_idx = self._get_best_solution(op, num_available_work_wires)
+        if self._visitor is None:
+            raise ValueError("The decomposition graph has not been solved yet.")
+
+        op_node_idx = self._get_best_solution(self._visitor, op, num_available_work_wires)
         d_node_idx = self._visitor.predecessors[op_node_idx]
         return self._graph[d_node_idx].rule
 
@@ -573,7 +583,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         self._graph = graph
         self._lazy = lazy
         # maps node indices to the optimal resource estimates
-        self.distances: dict[int, Resources] = defaultdict(Resources)
+        self.distances: dict[int, Resources] = {}
         # maps operator nodes to the optimal decomposition nodes
         self.predecessors: dict[int, int] = {}
         self.unsolved_op_indices = original_op_indices.copy()
@@ -593,7 +603,7 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         op_node_idx, d_node_idx = edge_obj
         return self.distances[d_node_idx].weighted_cost - self.distances[op_node_idx].weighted_cost
 
-    def discover_vertex(self, v, _):
+    def discover_vertex(self, v, score):  # pylint: disable=unused-argument
         """Triggered when a vertex is about to be explored during the Dijkstra search."""
         self.unsolved_op_indices.discard(v)
         if not self.unsolved_op_indices and self._lazy:
@@ -616,7 +626,9 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         if not target_node.is_feasible(self._num_available_work_wires):
             raise PruneSearch
 
-        self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node)
+        if target_idx not in self.distances:
+            self.distances[target_idx] = Resources()
+        self.distances[target_idx] += self.distances[src_idx] * target_node.count(src_node.op)
         self._n_edges_examined[target_idx] += 1
 
         # Update the number of work wires required for this decomposition to be valid
@@ -636,10 +648,10 @@ class _DecompositionSearchVisitor(DijkstraVisitor):
         """Triggered when an edge is relaxed during the Dijkstra search."""
         src_idx, target_idx, _ = edge
         target_node = self._graph[target_idx]
-        if self._graph[src_idx] is None and not isinstance(target_node, _DecompositionNode):
+        if self._graph[src_idx] is None and isinstance(target_node, _OperatorNode):
             # This branch applies to operators in the target gate set.
-            weight = self._gate_weights[_to_name(target_node)]
-            self.distances[target_idx] = Resources({target_node: 1}, weight)
+            weight = self._gate_weights[_to_name(target_node.op)]
+            self.distances[target_idx] = Resources({target_node.op: 1}, weight)
             self._num_work_wires_used[target_idx] = 0
         elif isinstance(target_node, _DecompositionNode):
             self._num_work_wires_used[target_idx] += target_node.work_wire_spec.total
