@@ -37,8 +37,9 @@ def make_adjoint_decomp(base_decomposition: DecompositionRule):
             for decomp_op, count in base_resources.gate_counts.items()
         }
 
+    # pylint: disable=protected-access
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn)
+    @register_resources(_resource_fn, work_wires=base_decomposition._work_wire_spec)
     def _impl(*params, wires, base, **__):
         # pylint: disable=protected-access
         qml.adjoint(base_decomposition._impl)(*params, wires=wires, **base.hyperparameters)
@@ -183,7 +184,7 @@ def decompose_to_base(*params, wires, base, **__):
 self_adjoint: DecompositionRule = decompose_to_base
 
 
-def make_controlled_decomp(base_decomposition):
+def make_controlled_decomp(base_decomposition: DecompositionRule):
     """Create a decomposition rule for the control of a decomposition rule."""
 
     def _condition_fn(base_params, **_):
@@ -209,8 +210,9 @@ def make_controlled_decomp(base_decomposition):
         gate_counts[resource_rep(qml.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
+    # pylint: disable=protected-access
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn)
+    @register_resources(_resource_fn, work_wires=base_decomposition._work_wire_spec)
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
@@ -248,8 +250,9 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
         gate_counts[resource_rep(qml.X)] = gate_counts.get(resource_rep(qml.X), 0) + num_x * 2
         return gate_counts
 
+    # pylint: disable=protected-access
     @register_condition(_condition_fn)
-    @register_resources(_resource_fn)
+    @register_resources(_resource_fn, work_wires=inner_decomp._work_wire_spec)
     def _impl(*params, wires, control_wires, control_values, **kwargs):
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
