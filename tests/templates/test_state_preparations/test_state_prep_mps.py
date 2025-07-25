@@ -656,12 +656,12 @@ class TestMPSPrep:
         ]
         num_wires = 4
 
-        def circuit():
+        def circuit(*_mps):
             _mps_prep_decomposition(
-                *mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
+                *_mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
             )
 
-        plxpr = qml.capture.make_plxpr(circuit)()
+        plxpr = qml.capture.make_plxpr(circuit)(*mps)
         collector = CollectOpsandMeas()
         collector.eval(plxpr.jaxpr, plxpr.consts)
         for op in collector.state["ops"]:
