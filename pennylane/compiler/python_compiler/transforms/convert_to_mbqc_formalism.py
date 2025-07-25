@@ -318,6 +318,40 @@ class ConvertToMBQCFormalismPattern(
                         x_mres = [m2, m4]
                         z_mres = [m1, m3]
 
+                    if op.gate_name.data in ["RotXZX"]:
+                        m1, aux_qubits_dict[1] = self._insert_arbitary_basis_measure_op(
+                            angle=0.0,
+                            plane="XY",
+                            qubit=aux_qubits_dict[1],
+                            op=op,
+                            rewriter=rewriter,
+                        )
+                        m2, aux_qubits_dict[2] = self._cond_insert_arbitary_basis_measure_op(
+                            prev_mres=m1,
+                            angle=op.params[0],
+                            plane="XY",
+                            qubit=aux_qubits_dict[2],
+                            op=op,
+                            rewriter=rewriter,
+                        )
+                        m3, aux_qubits_dict[3] = self._cond_insert_arbitary_basis_measure_op(
+                            prev_mres=m2,
+                            angle=op.params[1],
+                            plane="XY",
+                            qubit=aux_qubits_dict[3],
+                            op=op,
+                            rewriter=rewriter,
+                        )
+                        m4, aux_qubits_dict[4] = self._cond_insert_arbitary_basis_measure_op(
+                            prev_mres=m3,
+                            angle=op.params[2],
+                            plane="XY",
+                            qubit=aux_qubits_dict[4],
+                            op=op,
+                            rewriter=rewriter,
+                        )
+                        x_mres = [m2, m4]
+                        z_mres = [m1, m3]
                     # Apply corrections
                     x_exp = self._insert_byprod_exp_op(x_mres, op, rewriter, xmres_add_one)
                     z_exp = self._insert_byprod_exp_op(z_mres, op, rewriter, zmres_add_one)
