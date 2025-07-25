@@ -21,4 +21,14 @@ from .subroutines import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceSelectPauliRot,
+    ResourceQubitUnitary,
 )
+from .trotter import (
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
+    ResourceTrotterVibrational,
+    ResourceTrotterVibronic,
+)
+from .qubitize import ResourceQubitizeTHC
+from .compact_hamiltonian import CompactHamiltonian

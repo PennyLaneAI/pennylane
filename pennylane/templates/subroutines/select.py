@@ -275,7 +275,7 @@ class Select(Operation):
 
     """
 
-    resource_keys = set(["ops"])
+    resource_keys = {"ops"}
 
     def _flatten(self):
         return (self.ops), (self.control, self.hyperparameters["work_wires"])
@@ -605,7 +605,6 @@ def _unary_select_resources(ops):
 
     for op in ops:
         key = controlled_resource_rep(op.op_type, op.params, num_control_wires=1)
-        print(key)
         cnt[key] += 1
 
     return dict(cnt)
