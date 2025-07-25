@@ -167,7 +167,7 @@ class HilbertSchmidt(Operation):
 
     @staticmethod
     def compute_decomposition(
-        params: TensorLike,
+        *params: TensorLike,
         wires: int | Iterable[int | str] | qml.wires.Wires,
         U: Operation | Iterable[Operation],
         V: Operation | Iterable[Operation],

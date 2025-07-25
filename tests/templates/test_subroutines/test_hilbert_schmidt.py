@@ -101,29 +101,24 @@ class TestHilbertSchmidt:
     def test_intermediate_cost_1_qubits(self, param):
         """Test that Hilbert-Schmidt test provides the correct cost for a 1 qubit unitary."""
 
-        u_tape = qml.tape.QuantumScript([qml.Hadamard(0)])
+        U = [qml.Hadamard(0)]
+        u_wires = [0]
 
-        def v_function(param):
-            qml.RZ(param, wires=1)
+        V = qml.RZ(param, wires=1)
+        v_wires = [1]
 
         @qml.qnode(qml.device("default.qubit", wires=2))
-        def hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.HilbertSchmidt(
-                v_params, v_function=v_function, v_wires=v_wires, u=u_tape.operations
-            )
-            return qml.probs(u_tape.wires + v_wires)
+        def hilbert_test(V, U):
+            qml.HilbertSchmidt(V=V, U=U)
+            return qml.probs(u_wires + v_wires)
 
-        result = hilbert_test(param, v_function, [1], u_tape)[0]
+        result = hilbert_test(V, U)[0]
 
         # We compare the result with 1/d^2 * | Tr(V†U) |^2
         # (see Section 4.1 of https://arxiv.org/pdf/1807.00800 for more details)
         d = 2
-        u_matrix = qml.matrix(u_tape)
-
-        with qml.queuing.AnnotatedQueue() as v_queue:
-            v_function(param)
-        v_tape = qml.tape.QuantumScript.from_queue(v_queue)
-        v_matrix = qml.matrix(v_tape).reshape(d, d)
+        u_matrix = qml.matrix(U[0])
+        v_matrix = qml.matrix(V).reshape(d, d)
 
         trace = np.trace(np.conj(v_matrix).T @ u_matrix)
         expected = (1 / d**2) * abs(trace) ** 2
@@ -134,6 +129,29 @@ class TestHilbertSchmidt:
     def test_intermediate_cost_2_qubits(self, param):
         """Test that Hilbert-Schmidt test provides the correct cost for a 2 qubit unitary."""
 
+        U = [
+            qml.SWAP(wires=[0, 1]),
+            qml.Hadamard(wires=0) @ qml.RY(0.1, wires=1),
+            qml.CNOT(wires=[0, 1]),
+        ]
+        u_wires = [0, 1]
+
+        V = [
+            qml.RZ(param, wires=2) @ qml.CNOT(wires=[2, 3]),
+            qml.CNOT(wires=[2, 3]),
+            qml.RY(param, wires=3) @ qml.Z(3),
+            qml.RX(param, wires=2),
+        ]
+        v_wires = [2, 3]
+
+        @qml.qnode(qml.device("default.qubit", wires=4))
+        def hilbert_test(V, U):
+            qml.HilbertSchmidt(V=V, U=U)
+            return qml.probs(u_wires + v_wires)
+
+        result = hilbert_test(V, U)[0]
+
+        # TODO: find a better way to handle the matrix computation
         u_tape = qml.tape.QuantumScript(
             [
                 qml.SWAP(wires=[0, 1]),
@@ -147,15 +165,6 @@ class TestHilbertSchmidt:
             qml.CNOT(wires=[2, 3])
             qml.RY(param, wires=3) @ qml.Z(3)
             qml.RX(param, wires=2)
-
-        @qml.qnode(qml.device("default.qubit", wires=4))
-        def hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.HilbertSchmidt(
-                v_params, v_function=v_function, v_wires=v_wires, u=u_tape.operations
-            )
-            return qml.probs(u_tape.wires + v_wires)
-
-        result = hilbert_test(param, v_function, [2, 3], u_tape)[0]
 
         # We compare the result with 1/d^2 * | Tr(V†U) |^2
         # (see Section 4.1 of https://arxiv.org/pdf/1807.00800 for more details)
@@ -176,6 +185,20 @@ class TestHilbertSchmidt:
     def test_intermediate_cost_3_qubits(self, param):
         """Test that Hilbert-Schmidt test provides the correct cost for a 3 qubit unitary."""
 
+        U = [qml.RY(0.1, wires=0), qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[1, 2])]
+        u_wires = [0, 1, 2]
+
+        V = [qml.RY(param, wires=3), qml.CNOT(wires=[3, 4]), qml.Hadamard(wires=5)]
+        v_wires = [3, 4, 5]
+
+        @qml.qnode(qml.device("default.qubit", wires=6))
+        def hilbert_test(V, U):
+            qml.HilbertSchmidt(V=V, U=U)
+            return qml.probs(u_wires + v_wires)
+
+        result = hilbert_test(V, U)[0]
+
+        # TODO: find a better way to handle the matrix computation
         u_tape = qml.tape.QuantumScript(
             [qml.RY(0.1, wires=0), qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[1, 2])]
         )
@@ -184,15 +207,6 @@ class TestHilbertSchmidt:
             qml.RY(param, wires=3)
             qml.CNOT(wires=[3, 4])
             qml.Hadamard(wires=5)
-
-        @qml.qnode(qml.device("default.qubit", wires=6))
-        def hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.HilbertSchmidt(
-                v_params, v_function=v_function, v_wires=v_wires, u=u_tape.operations
-            )
-            return qml.probs(u_tape.wires + v_wires)
-
-        result = hilbert_test(param, v_function, [3, 4, 5], u_tape)[0]
 
         # We compare the result with 1/d^2 * | Tr(V†U) |^2
         # (see Section 4.1 of https://arxiv.org/pdf/1807.00800 for more details)
