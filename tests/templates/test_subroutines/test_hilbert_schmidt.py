@@ -65,20 +65,17 @@ class TestHilbertSchmidt:
     def test_maximal_cost(self, param):
         """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
 
-        u_tape = qml.tape.QuantumScript([qml.Hadamard(wires=0)])
-
-        def v_function(param):
-            qml.Identity(wires=1)
-            qml.GlobalPhase(param, wires=1)
+        U = [qml.Hadamard(wires=0)]
+        u_wires = [0]
+        V = [qml.Identity(wires=1), qml.GlobalPhase(param, wires=1)]
+        v_wires = [1]
 
         @qml.qnode(qml.device("default.qubit", wires=2))
-        def hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.HilbertSchmidt(
-                v_params, v_function=v_function, v_wires=v_wires, u=u_tape.operations
-            )
-            return qml.probs(u_tape.wires + v_wires)
+        def hilbert_test(V, U):
+            qml.HilbertSchmidt(V=V, U=U)
+            return qml.probs(u_wires + v_wires)
 
-        result = hilbert_test(param, v_function, [1], u_tape)[0]
+        result = hilbert_test(V, U)[0]
         # This is expected to be 0, since Tr(V†U) = 0
         assert qml.math.allclose(result, 0)
 
@@ -86,20 +83,17 @@ class TestHilbertSchmidt:
     def test_minimal_cost(self, param):
         """Test that the result is 1 when the Hilbert-Schmidt inner product is maximal."""
 
-        u_tape = qml.tape.QuantumScript([qml.Hadamard(0)])
-
-        def v_function(param):
-            qml.Hadamard(wires=1)
-            qml.GlobalPhase(param, wires=1)
+        U = [qml.Hadamard(0)]
+        u_wires = [0]
+        V = [qml.Hadamard(wires=1), qml.GlobalPhase(param, wires=1)]
+        v_wires = [1]
 
         @qml.qnode(qml.device("default.qubit", wires=2))
-        def hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.HilbertSchmidt(
-                v_params, v_function=v_function, v_wires=v_wires, u=u_tape.operations
-            )
-            return qml.probs(u_tape.wires + v_wires)
+        def hilbert_test(V, U):
+            qml.HilbertSchmidt(V=V, U=U)
+            return qml.probs(u_wires + v_wires)
 
-        result = hilbert_test(param, v_function, [1], u_tape)[0]
+        result = hilbert_test(V, U)[0]
         # This is expected to be 1, since U and V are the same up to a global phase
         assert qml.math.allclose(result, 1)
 

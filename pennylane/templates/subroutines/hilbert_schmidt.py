@@ -122,43 +122,40 @@ class HilbertSchmidt(Operation):
 
     def __init__(
         self,
-        *params: TensorLike,
-        v_function: Callable,
-        v_wires: int | Iterable[int | str] | qml.wires.Wires,
-        u: Operation | Iterable[Operation],
+        V: Operation | Iterable[Operation],
+        U: Operation | Iterable[Operation],
         id: str | None = None,
     ) -> None:
 
-        self._num_params = len(params)
-
-        u_ops = (u,) if isinstance(u, Operation) else tuple(u)
+        u_ops = (U,) if isinstance(U, Operation) else tuple(U)
         if not all(isinstance(op, qml.operation.Operator) for op in u_ops):
             raise QuantumFunctionError(
-                "The argument 'u' must be an Operator or an iterable of Operators."
+                "The argument 'U' must be an Operator or an iterable of Operators."
             )
-        self.hyperparameters["u"] = u_ops
+        self.hyperparameters["U"] = u_ops
         u_wires = qml.wires.Wires.all_wires([op.wires for op in u_ops])
 
-        if not callable(v_function):
+        v_ops = (V,) if isinstance(V, Operation) else tuple(V)
+        if not all(isinstance(op, qml.operation.Operator) for op in v_ops):
             raise QuantumFunctionError(
-                "The argument v_function must be a callable quantum function."
+                "The argument 'V' must be an Operator or an iterable of Operators."
             )
 
-        self.hyperparameters["v_function"] = v_function
-        v_tape = qml.tape.make_qscript(v_function)(*params)
-        self.hyperparameters["v"] = tuple(v_tape.operations)
-        self.hyperparameters["v_wires"] = qml.wires.Wires(v_wires)
+        self.hyperparameters["V"] = v_ops
+        v_wires = qml.wires.Wires.all_wires([op.wires for op in v_ops])
 
         if len(u_wires) != len(v_wires):
             raise QuantumFunctionError("U and V must have the same number of wires.")
 
-        if not qml.wires.Wires(v_wires).contains_wires(v_tape.wires):
-            raise QuantumFunctionError("All wires in v must be in v_wires.")
-
-        if len(qml.wires.Wires.shared_wires([u_wires, v_tape.wires])) != 0:
+        if len(qml.wires.Wires.shared_wires([u_wires, v_wires])) != 0:
             raise QuantumFunctionError("operations in u and v must act on distinct wires.")
 
+        with qml.QueuingManager.stop_recording():
+            params = qml.prod(*v_ops).parameters
+
+        self._num_params = len(params)
         total_wires = qml.wires.Wires(u_wires + v_wires)
+
         super().__init__(*params, wires=total_wires, id=id)
 
     def map_wires(self, wire_map: dict):
@@ -172,16 +169,14 @@ class HilbertSchmidt(Operation):
     def compute_decomposition(
         params: TensorLike,
         wires: int | Iterable[int | str] | qml.wires.Wires,
-        u: Operation | Iterable[Operation],
-        v: Operation | Iterable[Operation],
-        v_function: Callable = None,
-        v_wires: int | Iterable[int | str] | qml.wires.Wires = None,
+        U: Operation | Iterable[Operation],
+        V: Operation | Iterable[Operation],
     ) -> list[Operation]:
         # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
         r"""Representation of the operator as a product of other operators."""
 
-        u_ops = (u,) if isinstance(u, Operation) else tuple(u)
-        v_ops = (v,) if isinstance(v, Operation) else tuple(v)
+        u_ops = (U,) if isinstance(U, Operation) else tuple(U)
+        v_ops = (V,) if isinstance(V, Operation) else tuple(V)
         u_wires = qml.wires.Wires.all_wires([op.wires for op in u_ops])
         v_wires = qml.wires.Wires.all_wires([op.wires for op in v_ops])
 
