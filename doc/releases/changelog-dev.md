@@ -292,6 +292,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
+  [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
+
 * Improved the docstrings of all optimizers for consistency and legibility.
   [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
 
