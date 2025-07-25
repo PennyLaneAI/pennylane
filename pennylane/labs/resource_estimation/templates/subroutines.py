@@ -638,8 +638,8 @@ class ResourceAQFT(ResourceOperator):
 
     Resources:
         The resources are obtained from (Fig. 4) of `arXiv:1803.04933, <https://arxiv.org/abs/1803.04933>`_
-        excluding the allocation and instantiation of the phase gradient state. The phased `Toffoli`
-        gates and the classical measure-and-reset (Fig. 2) are accounted for as `TempAND`
+        excluding the allocation and instantiation of the phase gradient state. The phased :code:`Toffoli`
+        gates and the classical measure-and-reset (Fig. 2) are accounted for as :code:`TempAND`
         operations.
 
     .. seealso:: :class:`~.AQFT`
