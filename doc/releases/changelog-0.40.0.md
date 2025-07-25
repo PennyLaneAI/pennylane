@@ -10,77 +10,9 @@
   :class:`qml.MPSPrep <pennylane.MPSPrep>` on the `lightning.tensor` device.
   [(#6431)](https://github.com/PennyLaneAI/pennylane/pull/6431)
 
-  Given a list of :math:`n` tensors that represents an MPS, :math:`[A^{(0)}, ..., A^{(n-1)}]`, 
-  :class:`qml.MPSPrep <pennylane.MPSPrep>` lets you directly inject the MPS into a QNode as the initial 
-  state of the circuit without any need for pre-processing. The first and last tensors in the list 
-  must be rank-2, while all intermediate tensors should be rank-3.
-
-  ```python
-  import pennylane as qml
-  import numpy as np
-
-  mps = [
-      np.array([[0.0, 0.107], [0.994, 0.0]]),
-      np.array(
-          [
-              [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
-              [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
-          ]
-      ),
-      np.array(
-          [
-              [[-1.0, 0.0], [0.0, 0.0]],
-              [[0.0, 0.0], [0.0, 1.0]],
-              [[0.0, -1.0], [0.0, 0.0]],
-              [[0.0, 0.0], [1.0, 0.0]],
-          ]
-      ),
-      np.array([[-1.0, -0.0], [-0.0, -1.0]]),
-  ]
-
-  dev = qml.device("lightning.tensor", wires = [0, 1, 2, 3])
-  @qml.qnode(dev)
-  def circuit():
-      qml.MPSPrep(mps, wires = [0,1,2])
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> print(circuit())
-  [ 0.    +0.j  0.    +0.j  0.    +0.j -0.1066+0.j  0.    +0.j  0.    +0.j
-    0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j  0.    +0.j
-    0.9943+0.j  0.    +0.j  0.    +0.j  0.    +0.j]
-  ```
-
-  At this time, :class:`qml.MPSPrep <pennylane.MPSPrep>` is only supported on the `lightning.tensor` device.
-
 * Custom-made state preparation for linear combinations of quantum states is now available with 
   :class:`qml.Superposition <pennylane.Superposition>`.
   [(#6670)](https://github.com/PennyLaneAI/pennylane/pull/6670)
-
-  Given a list of :math:`m` coefficients :math:`c_i` and basic states :math:`|b_i\rangle`, 
-  :class:`qml.Superposition <pennylane.Superposition>` prepares 
-  :math:`|\phi\rangle = \sum_i^m c_i |b_i\rangle`. Here is a simple example showing how to use 
-  :class:`qml.Superposition <pennylane.Superposition>` to prepare 
-  :math:`\tfrac{1}{\sqrt{2}} |00\rangle + \tfrac{1}{\sqrt{2}} |10\rangle`.
-
-  ```python
-  coeffs = np.array([0.70710678, 0.70710678])
-  basis =  np.array([[0, 0], [1, 0]])
-
-  @qml.qnode(qml.device('default.qubit'))
-  def circuit():
-      qml.Superposition(coeffs, basis, wires=[0, 1], work_wire=[2])
-      return qml.state()
-  ```
-
-  ```
-  >>> circuit()
-  Array([0.7071068 +0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j,
-         0.70710677+0.j, 0.        +0.j, 0.        +0.j, 0.        +0.j],      dtype=complex64)
-  ```
-
-  Note that specification of one `work_wire` is required.
 
 <h4>Enhanced QSVT functionality 🤩</h4>
 
@@ -89,85 +21,13 @@
   :func:`qml.transform_angles <pennylane.transform_angles>`.
   [(#6483)](https://github.com/PennyLaneAI/pennylane/pull/6483)
 
-  The :func:`qml.poly_to_angles <pennylane.poly_to_angles>` function calculates phase angles 
-  directly given polynomial coefficients and the routine in which the angles will be used (`"QSVT"`, 
-  `"QSP"`, or `"GQSP"`):
-  ```pycon
-  >>> poly = [0, 1.0, 0, -1/2, 0, 1/3]
-  >>> qsvt_angles = qml.poly_to_angles(poly, "QSVT")
-  >>> print(qsvt_angles)
-  [-5.49778714  1.57079633  1.57079633  0.5833829   1.61095884  0.74753829]
-  ```
-
-  The :func:`qml.transform_angles <pennylane.transform_angles>` function can be used to convert 
-  angles from one routine to another:
-  ```pycon
-  >>> qsp_angles = np.array([0.2, 0.3, 0.5])
-  >>> qsvt_angles = qml.transform_angles(qsp_angles, "QSP", "QSVT")
-  >>> print(qsvt_angles)
-  [-6.86858347  1.87079633 -0.28539816]
-  ```
-
 * The :func:`qml.qsvt <pennylane.qsvt>` function has been improved to be more user-friendly,
 with enhanced capabilities.
   [(#6520)](https://github.com/PennyLaneAI/pennylane/pull/6520)
   [(#6693)](https://github.com/PennyLaneAI/pennylane/pull/6693)
 
-  Block encoding and phase angle computation are now handled automatically,
-  given a matrix to encode, polynomial coefficients, and a block encoding method
-  (`"prepselprep"`, `"qubitization"`, `"embedding"`, or `"fable"`, all implemented with their 
-  corresponding operators in PennyLane).
-  ```python
-  # P(x) = -x + 0.5 x^3 + 0.5 x^5
-  poly = np.array([0, -1, 0, 0.5, 0, 0.5])
-  hamiltonian = qml.dot([0.3, 0.7], [qml.Z(1), qml.X(1) @ qml.Z(2)])
-  
-  dev = qml.device("default.qubit")
-  @qml.qnode(dev)
-  def circuit():
-      qml.qsvt(hamiltonian, poly, encoding_wires=[0], block_encoding="prepselprep")
-      return qml.state()
-  
-  matrix = qml.matrix(circuit, wire_order=[0, 1, 2])()
-  ```
-  ```pycon
-  >>> print(matrix[:4, :4].real)
-  [[-0.1625  0.     -0.3793  0.    ]
-   [ 0.     -0.1625  0.      0.3793]
-   [-0.3793  0.      0.1625  0.    ]
-   [ 0.      0.3793  0.      0.1625]]
-  ```
-  The old functionality can still be accessed with :func:`qml.qsvt_legacy <pennylane.qsvt_legacy>`.
-
 * A new :class:`qml.GQSP <pennylane.GQSP>` template has been added to perform Generalized Quantum Signal Processing (GQSP).
   [(#6565)](https://github.com/PennyLaneAI/pennylane/pull/6565)
-  Similar to QSVT, GQSP is an algorithm that polynomially transforms an input unitary operator,
-  but with fewer restrictions on the chosen polynomial.
-
-  You can also use :func:`qml.poly_to_angles <pennylane.poly_to_angles>` to obtain angles for GQSP!
-
-  ```python
-  # P(x) = 0.1 + 0.2j x + 0.3 x^2
-  poly = [0.1, 0.2j, 0.3]
-  angles = qml.poly_to_angles(poly, "GQSP")
-  
-  @qml.prod # transforms the qfunc into an Operator
-  def unitary(wires):
-      qml.RX(0.3, wires)
-  
-  dev = qml.device("default.qubit")
-  @qml.qnode(dev)
-  def circuit(angles):
-      qml.GQSP(unitary(wires = 1), angles, control = 0)
-      return qml.state()
-  
-  matrix = qml.matrix(circuit, wire_order=[0, 1])(angles)
-  ```
-  ```pycon
-  >>> print(np.round(matrix,3)[:2, :2])
-  [[0.387+0.198j 0.03 -0.089j]
-  [0.03 -0.089j 0.387+0.198j]]
-  ```
 
 <h4>Generalized Trotter products 🐖</h4>
 
@@ -177,63 +37,6 @@ with enhanced capabilities.
   allows for custom specification of the first-order expansion of the Suzuki-Trotter product formula
   and extrapolating it to the :math:`n^{\text{th}}` order.
   [(#6627)](https://github.com/PennyLaneAI/pennylane/pull/6627)
-
-  If the first-order of the Suzuki-Trotter product formula for a given problem is known, 
-  :class:`qml.TrotterizedQfunc <pennylane.TrotterizedQfunc>` and :func:`qml.trotterize <pennylane.trotterize>`
-  let you implement the :math:`n^{\text{th}}`-order product formula while only specifying the 
-  first-order term as a quantum function.
-
-  ```python
-  def my_custom_first_order_expansion(time, theta, phi, wires, flip):
-    qml.RX(time * theta, wires[0])
-    qml.RY(time * phi, wires[1])
-    if flip:
-        qml.CNOT(wires=wires[:2])
-  ```
-
-  :func:`qml.trotterize <pennylane.trotterize>` requires the quantum function representing the first-order
-  product formula, the number of Trotter steps, and the desired order. It returns a function with 
-  the same call signature as the first-order product formula quantum function:
-
-  ```python
-  @qml.qnode(qml.device("default.qubit"))
-  def my_circuit(time, theta, phi, num_trotter_steps):
-      qml.trotterize(
-          first_order_expansion,
-          n=num_trotter_steps,
-          order=2,
-      )(time, theta, phi, wires=['a', 'b'], flip=True)
-      return qml.state()
-  ```
-  
-  Alternatively, :class:`qml.TrotterizedQfunc <pennylane.TrotterizedQfunc>` can be used as follows:
-
-  ```python
-  @qml.qnode(qml.device("default.qubit"))
-  def my_circuit(time, theta, phi, num_trotter_steps):
-      qml.TrotterizedQfunc(
-          time,
-          theta,
-          phi,
-          qfunc=my_custom_first_order_expansion,
-          n=num_trotter_steps,
-          order=2,
-          wires=['a', 'b'],
-          flip=True,
-      )
-      return qml.state()
-  ```
-
-  ```pycon
-  >>> time = 0.1
-  >>> theta, phi = (0.12, -3.45)
-  >>> print(qml.draw(my_circuit, level="device")(time, theta, phi, num_trotter_steps=1))
-  a: ──RX(0.01)──╭●─╭●──RX(0.01)──┤  State
-  b: ──RY(-0.17)─╰X─╰X──RY(-0.17)─┤  State
-  ```
-
-  Both methods produce the same results, but offer different interfaces based on the application or overall
-  preference.
 
 <h4>Bosonic operators 🎈</h4>
 
@@ -245,54 +48,12 @@ qubit operators.
   :class:`qml.BoseWord <pennylane.BoseWord>` and :class:`qml.BoseSentence <pennylane.BoseSentence>`.
   [(#6518)](https://github.com/PennyLaneAI/pennylane/pull/6518)
 
-  :class:`qml.BoseWord <pennylane.BoseWord>` and :class:`qml.BoseSentence <pennylane.BoseSentence>` 
-  operate similarly to their fermionic counterparts. To create a Bose word, a dictionary 
-  is required as input, where the keys are tuples of boson indices and values are `'+/-'` (denoting 
-  the bosonic creation/annihilation operators). For example, the :math:`b^{\dagger}_0 b_1` can be 
-  constructed as follows.
-
-  ```pycon
-  >>> w = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
-  >>> print(w)
-  b⁺(0) b(1)
-  ```
-
-  Multiple Bose words can then be combined to form a Bose sentence:
-
-  ```pycon
-  >>> w1 = qml.BoseWord({(0, 0) : '+', (1, 1) : '-'})
-  >>> w2 = qml.BoseWord({(0, 1) : '+', (1, 2) : '-'})
-  >>> s = qml.BoseSentence({w1 : 1.2, w2: 3.1})
-  >>> print(s)
-  1.2 * b⁺(0) b(1)
-  + 3.1 * b⁺(1) b(2)
-  ```
-
 * Functionality for converting bosonic operators to qubit operators is available with 
   :func:`qml.unary_mapping <pennylane.unary_mapping>`, :func:`qml.binary_mapping <pennylane.binary_mapping>`, 
   and :func:`qml.christiansen_mapping <pennylane.christiansen_mapping>`.
   [(#6623)](https://github.com/PennyLaneAI/pennylane/pull/6623)
   [(#6576)](https://github.com/PennyLaneAI/pennylane/pull/6576)
   [(#6564)](https://github.com/PennyLaneAI/pennylane/pull/6564)
-
-  All three mappings follow the same syntax, where a :class:`qml.BoseWord <pennylane.BoseWord>` or 
-  :class:`qml.BoseSentence <pennylane.BoseSentence>` is required as input.
-
-  ```python
-  >>> w = qml.BoseWord({(0, 0): "+"})
-  >>> qml.binary_mapping(w, n_states=4)
-  0.6830127018922193 * X(0)
-  + -0.1830127018922193 * X(0) @ Z(1)
-  + -0.6830127018922193j * Y(0)
-  + 0.1830127018922193j * Y(0) @ Z(1)
-  + 0.3535533905932738 * X(0) @ X(1)
-  + -0.3535533905932738j * X(0) @ Y(1)
-  + 0.3535533905932738j * Y(0) @ X(1)
-  + (0.3535533905932738+0j) * Y(0) @ Y(1)
-  ```
-
-  Additional fine-tuning is available within each function, such as the maximum number of allowed
-  bosonic states and a tolerance for discarding imaginary parts of the coefficients.
 
 <h4>Construct vibrational Hamiltonians 🔨</h4>
 
@@ -302,49 +63,13 @@ qubit operators.
   * The :class:`~.qchem.VibrationalPES` class to store potential energy surface information. 
     [(#6652)](https://github.com/PennyLaneAI/pennylane/pull/6652)
 
-    ```python
-    pes_onemode = np.array([[0.309, 0.115, 0.038, 0.008, 0.000, 0.006, 0.020, 0.041, 0.070]])
-    pes_twomode = np.zeros((1, 1, 9, 9))
-    dipole_onemode = np.zeros((1, 9, 3))
-    gauss_weights = np.array([3.96e-05, 4.94e-03, 8.85e-02,
-                                    4.33e-01, 7.20e-01, 4.33e-01,
-                                    8.85e-02, 4.94e-03, 3.96e-05])
-    grid = np.array([-3.19, -2.27, -1.47, -0.72,  0.0,  0.72,  1.47,  2.27,  3.19])
-    pes_object = qml.qchem.VibrationalPES(
-            freqs=np.array([0.025]),
-            grid=grid,
-            uloc=np.array([[1.0]]),
-            gauss_weights=gauss_weights,
-            pes_data=[pes_onemode, pes_twomode],
-            dipole_data=[dipole_onemode],
-            localized=False,
-            dipole_level=1,
-        )
-    ```
-
   * The :func:`~.qchem.taylor_hamiltonian` function to build a Taylor Hamiltonian from a
     :class:`~.qchem.VibrationalPES` object.
     [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
 
-    ```pycon
-    >>> qml.qchem.taylor_hamiltonian(pes_object, 4, 2)
-    (
-        0.016867926879358452 * I(0)
-      + -0.007078617919572303 * Z(0)
-      + 0.0008679410939323631 * X(0)
-    )
-    ```
-
   * The :func:`~.qchem.taylor_bosonic` function to build a Taylor Hamiltonian in terms of Bosonic
     operators.
     [(#6523)](https://github.com/PennyLaneAI/pennylane/pull/6523)
-
-    ```pycon
-    >>> coeffs_arr = qml.qchem.taylor_coeffs(pes_object)
-    >>> bose_op = qml.qchem.taylor_bosonic(coeffs_arr, pes_object.freqs, is_local=pes_object.localized, uloc=pes_object.uloc)
-    >>> type(bose_op)
-    pennylane.bose.bosonic.BoseSentence
-    ```
 
   Additional functionality is also available to optimize molecular geometries and convert between
   representations:
@@ -353,56 +78,12 @@ qubit operators.
     vibrational self-consistent field (VSCF) basis with the :func:`~.qchem.vscf_integrals` function. 
     [(#6688)](https://github.com/PennyLaneAI/pennylane/pull/6688)
 
-    ```pycon
-    >>> h1 = np.array([[[0.00968289, 0.00233724, 0.0007408,  0.00199125],
-                        [0.00233724, 0.02958449, 0.00675431, 0.0021936],
-                        [0.0007408,  0.00675431, 0.0506012,  0.01280986],
-                        [0.00199125, 0.0021936,  0.01280986, 0.07282307]]])
-    >>> qml.qchem.vscf_integrals(h_integrals=[h1], modals=[4,4,4])
-    (
-      [array([[[ 9.36124041e-03,  3.63798208e-19, -3.42019607e-19,
-        -3.83743044e-19],
-        [ 9.59982270e-19,  2.77803512e-02,  5.18290259e-18,
-        -4.82000376e-18],
-        [-2.73826508e-19,  4.88583546e-18,  4.63297357e-02,
-        -2.87022759e-18],
-        [-1.94549340e-19, -5.48544743e-18, -1.41379640e-18,
-          7.92203227e-02]]])], None
-    )
-    ```
-
   * Find the lowest energy configuration of molecules with :func:`~.qchem.optimize_geometry`.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
     [(#6666)](https://github.com/PennyLaneAI/pennylane/pull/6666)
 
-    ```pycon
-    >>> symbols  = ['H', 'F']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0,  1.0]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> eq_geom = qml.qchem.optimize_geometry(mol)
-    >>> eq_geom
-    array([[ 0.        ,  0.        , -0.40277116],
-           [ 0.        ,  0.        ,  1.40277116]])
-    ```
-
   * Separate normal mode frequencies and localize them with :func:`~.qchem.localize_normal_modes`.
     [(#6453)](https://github.com/PennyLaneAI/pennylane/pull/6453)
-
-    ```pycon
-    >>> freqs = np.array([1326.66001461, 2297.26736859, 2299.65032901])
-    >>> vectors = np.array([[[ 5.71518696e-18, -4.55642350e-01,  5.20920552e-01],
-                            [ 1.13167924e-17,  4.55642350e-01,  5.20920552e-01],
-                            [-1.23163569e-17,  5.09494945e-12, -3.27565762e-02]],
-                            [[-4.53008817e-17,  4.90364125e-01,  4.90363894e-01],
-                            [-1.98591028e-16,  4.90361513e-01, -4.90361744e-01],
-                            [-2.78235498e-18, -3.08350419e-02, -6.75886679e-08]],
-                            [[ 5.75393451e-17,  5.37047963e-01,  4.41957355e-01],
-                            [ 6.53049347e-17, -5.37050348e-01,  4.41959740e-01],
-                            [-5.49709883e-17,  7.49851221e-08, -2.77912798e-02]]])
-    >>> freqs_loc, vecs_loc, uloc = qml.qchem.localize_normal_modes(freqs, vectors)
-    >>> freqs_loc
-    array([1332.62008773, 2296.73455892, 2296.7346082 ])
-    ```
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧑‍🔬</h3>
 
@@ -452,47 +133,6 @@ how these features become a part of mainline PennyLane.
   Using new resource versions of existing operations and 
   :func:`~.labs.resource_estimation.get_resources`, we can estimate resources quickly:
 
-  ```python
-  import pennylane.labs.resource_estimation as re
-  
-  def my_circuit():
-      for w in range(2):
-          re.ResourceHadamard(w)
-      re.ResourceCNOT([0, 1])
-      re.ResourceRX(1.23, 0)
-      re.ResourceRY(-4.56, 1)
-      re.ResourceQFT(wires=[0, 1, 2])
-      return qml.expval(re.ResourceHadamard(2))
-  ```
-  ```pycon
-  >>> res = re.get_resources(my_circuit)()
-  >>> print(res)
-  wires: 3
-  gates: 202
-  gate_types:
-  {'Hadamard': 5, 'CNOT': 10, 'T': 187}
-  ```
-
-  We can also set custom gate sets for decompositions:
-
-  ````pycon
-  >>> gate_set={"Hadamard","CNOT","RZ", "RX", "RY", "SWAP"}
-  >>> res = re.get_resources(my_circuit, gate_set=gate_set)()
-  >>> print(res)
-  wires: 3
-  gates: 24
-  gate_types:
-  {'Hadamard': 5, 'CNOT': 7, 'RX': 1, 'RY': 1, 'SWAP': 1, 'RZ': 9}
-  ````
-
-  Alternatively, it is possible to manually substitute associated resources:
-
-  ```pycon
-  >>> new_resources = re.substitute(res, "SWAP", re.Resources(2, 3, {"CNOT":3}))
-  >>> print(new_resources)
-  {'Hadamard': 5, 'CNOT': 10, 'RX': 1, 'RY': 1, 'RZ': 9}
-  ```
-
 <h4>Experimental functionality for handling dynamical Lie algebras (DLAs)</h4>
 
 * Use the :mod:`qml.labs.dla <pennylane.labs.dla>` module to perform the
@@ -515,60 +155,6 @@ how these features become a part of mainline PennyLane.
     horizontal **Cartan subalgebra**.
     [(#6446)](https://github.com/PennyLaneAI/pennylane/pull/6446)
 
-  To use this functionality we start with a set of Hermitian operators.
-
-  ```pycon
-  >>> n = 3
-  >>> gens = [qml.X(i) @ qml.X(i + 1) for i in range(n - 1)]
-  >>> gens += [qml.Z(i) for i in range(n)]
-  >>> H = qml.sum(*gens)
-  ```
-
-  We then generate its Lie algebra by computing the Lie closure.
-
-  ```pycon
-  >>> g = qml.lie_closure(gens)
-  >>> g = [op.pauli_rep for op in g]
-  >>> print(g)
-  [1 * X(0) @ X(1), 1 * X(1) @ X(2), 1.0 * Z(0), ...]
-  ```
-
-  We then choose an involution (e.g. :func:`~.labs.dla.concurrence_involution`) that defines a 
-  Cartan decomposition `g = k + m`. `k` is the vertical subalgebra, and `m` its horizontal 
-  complement (not a subalgebra).
-
-  ```pycon
-  >>> from pennylane.labs.dla import concurrence_involution, cartan_decomp
-  >>> involution = concurrence_involution
-  >>> k, m = cartan_decomp(g, involution=involution)
-  ```
-
-  The next step is just re-ordering the basis elements in `g` and computing its 
-  `structure_constants`.
-
-  ```pycon
-  >>> g = k + m
-  >>> adj = qml.structure_constants(g)
-  ```
-
-  We can then compute a (horizontal) Cartan subalgebra `a`, that is, a maximal Abelian subalgebra of 
-  `m`.
-
-  ```pycon
-  >>> from pennylane.labs.dla import cartan_subalgebra
-  >>> g, k, mtilde, a, adj = cartan_subalgebra(g, k, m, adj)
-  ```
-
-  Having determined both subalgebras `k` and `a`, we can compute the KAK decomposition variationally 
-  like in [2104.00728](https://arxiv.org/abs/2104.00728), see our 
-  [demo on KAK decomposition in practice](https://pennylane.ai/qml/demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition).
-
-  ```pycon
-  >>> from pennylane.labs.dla import variational_kak_adj
-  >>> dims = (len(k), len(mtilde), len(a))
-  >>> adjvec_a, theta_opt = variational_kak_adj(H, g, dims, adj, opt_kwargs={"n_epochs": 3000})
-  ```
-
 * We also provide some additional features that are useful for handling dynamical Lie algebras.
   * :func:`~.labs.dla.recursive_cartan_decomp`: perform consecutive recursive Cartan decompositions.
     [(#6396)](https://github.com/PennyLaneAI/pennylane/pull/6396)
@@ -588,13 +174,7 @@ how these features become a part of mainline PennyLane.
   * Generate potential energy surfaces (PES) with `qml.labs.vibrational.vibrational_pes`.
     [(#6616)](https://github.com/PennyLaneAI/pennylane/pull/6616)
     [(#6676)](https://github.com/PennyLaneAI/pennylane/pull/6676)
-  
-    ```pycon
-    >>> symbols  = ['H', 'F']
-    >>> geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
-    >>> mol = qml.qchem.Molecule(symbols, geometry)
-    >>> pes = vibrational_pes(mol)
-    ```
+
   * Use the `qml.labs.vibrational.christiansen_hamiltonian` function and potential energy surfaces 
     to generate Hamiltonians in the Ch  ristiansen form.
     [(#6560)](https://github.com/PennyLaneAI/pennylane/pull/6560)
@@ -630,24 +210,6 @@ how these features become a part of mainline PennyLane.
   customization with options like `color`, `linestyle`, and `linewidth`.
   [(#6486)](https://github.com/PennyLaneAI/pennylane/pull/6486)
 
-  Here is an example that would make all wires cyan and bold except for wires 2 and 6, which are 
-  dashed and a different colour.
-
-  ```python
-  @qml.qnode(qml.device("default.qubit"))
-  def circuit(x):
-      for w in range(5):
-          qml.Hadamard(w) 
-      return qml.expval(qml.PauliZ(0) @ qml.PauliY(1))
-
-  wire_options = {"color": "cyan", 
-                  "linewidth": 5, 
-                  2: {"linestyle": "--", "color": "red"}, 
-                  6: {"linestyle": "--", "color": "orange"}
-              }
-  print(qml.draw_mpl(circuit, wire_options=wire_options)(0.52))
-  ```
-
 <h4>New device capabilities 💾</h4>
 
 * Two new methods, `setup_execution_config` and `preprocess_transforms`, have been added to the 
@@ -667,30 +229,10 @@ how these features become a part of mainline PennyLane.
   configuration files.
   [(#6407)](https://github.com/PennyLaneAI/pennylane/pull/6407)
 
-  ```pycon
-  >>> from pennylane.devices.capabilities import DeviceCapabilities
-  >>> capabilities = DeviceCapabilities.from_toml_file("my_device.toml")
-  >>> isinstance(capabilities, DeviceCapabilities)
-  True
-  ```
-
 * Devices that extend `qml.devices.Device` now have an optional class attribute called 
   `capabilities`, which is an instance of the `DeviceCapabilities` data class constructed from the 
   configuration file if it exists. Otherwise, it is set to `None`.
   [(#6433)](https://github.com/PennyLaneAI/pennylane/pull/6433)
-
-  ```python
-  from pennylane.devices import Device
-
-  class MyDevice(Device):
-      config_filepath = "path/to/config.toml"
-      ...
-  ```
-
-  ```pycon
-  >>> isinstance(MyDevice.capabilities, DeviceCapabilities)
-  True
-  ```
 
 * Default implementations of `Device.setup_execution_config` and `Device.preprocess_transforms`
   have been added to the device API for devices that provide a TOML configuration file and, thus, 
@@ -721,47 +263,6 @@ how these features become a part of mainline PennyLane.
   decorated with the new `qml.capture.expand_plxpr_transforms` function, which accepts a callable as 
   input and returns a new function for which all present transforms have been applied.
   [(#6722)](https://github.com/PennyLaneAI/pennylane/pull/6722)
-
-  ```python
-  from functools import partial
-
-  qml.capture.enable()
-  wire_map = {0: 3, 1: 6, 2: 9}
-
-  @partial(qml.map_wires, wire_map=wire_map)
-  def circuit(x, y):
-      qml.RX(x, 0)
-      qml.CNOT([0, 1])
-      qml.CRY(y, [1, 2])
-      return qml.expval(qml.Z(2))
-  ```
-  ```pycon
-  >>> qml.capture.make_plxpr(circuit)(1.2, 3.4)
-  { lambda ; a:f32[] b:f32[]. let
-      c:AbstractMeasurement(n_wires=None) = _map_wires_transform_transform[
-      args_slice=slice(0, 2, None)
-      consts_slice=slice(2, 2, None)
-      inner_jaxpr={ lambda ; d:f32[] e:f32[]. let
-          _:AbstractOperator() = RX[n_wires=1] d 0
-          _:AbstractOperator() = CNOT[n_wires=2] 0 1
-          _:AbstractOperator() = CRY[n_wires=2] e 1 2
-          f:AbstractOperator() = PauliZ[n_wires=1] 2
-          g:AbstractMeasurement(n_wires=None) = expval_obs f
-        in (g,) }
-      targs_slice=slice(2, None, None)
-      tkwargs={'wire_map': {0: 3, 1: 6, 2: 9}, 'queue': False}
-      ] a b
-    in (c,) }
-  >>> transformed_circuit = qml.capture.expand_plxpr_transforms(circuit)
-  >>> jax.make_jaxpr(transformed_circuit)(1.2, 3.4)
-  { lambda ; a:f32[] b:f32[]. let
-      _:AbstractOperator() = RX[n_wires=1] a 3
-      _:AbstractOperator() = CNOT[n_wires=2] 3 6
-      _:AbstractOperator() = CRY[n_wires=2] b 6 9
-      c:AbstractOperator() = PauliZ[n_wires=1] 9
-      d:AbstractMeasurement(n_wires=None) = expval_obs c
-    in (d,) }
-  ```
 
 * The `qml.iterative_qpe` function can now be compactly captured into plxpr.
   [(#6680)](https://github.com/PennyLaneAI/pennylane/pull/6680)
@@ -885,18 +386,6 @@ how these features become a part of mainline PennyLane.
 
 * PyTree support for measurements in a circuit has been added.
   [(#6378)](https://github.com/PennyLaneAI/pennylane/pull/6378)
-
-  ```python
-  @qml.qnode(qml.device("default.qubit"))
-  def circuit():
-      qml.Hadamard(0)
-      qml.CNOT([0,1])
-      return {"Probabilities": qml.probs(), "State": qml.state()}
-  ```
-  ```pycon
-  >>> circuit()
-  {'Probabilities': array([0.5, 0. , 0. , 0.5]), 'State': array([0.70710678+0.j, 0.        +0.j, 0.        +0.j, 0.70710678+0.j])}
-  ```
 
 * The `_cache_transform` transform has been moved to its own file located in 
   `pennylane/workflow/_cache_transform.py`.
