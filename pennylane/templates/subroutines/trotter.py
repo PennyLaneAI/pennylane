@@ -16,7 +16,6 @@ Contains templates for Suzuki-Trotter approximation based subroutines.
 """
 import copy
 from collections import defaultdict
-from functools import reduce
 
 import pennylane as qml
 from pennylane.capture.autograph import wraps
@@ -509,21 +508,26 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 def _trotter_product_decomposition_resources(n, order, ops):
     reps = {}
 
+    def _count(op, ops):
+        count = 0
+        for nxt in ops:
+            if nxt == op:
+                count += 1
+        return count
+
     if order == 1:
         for op in ops:
-            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = n * reduce(
-                lambda acc, nxt: acc + int(nxt == op), ops, 0
-            )
+            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = n * _count(op, ops)
         return reps
     if order == 2:
         for op in ops:
             reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = (
-                n * 2 * reduce(lambda acc, nxt: acc + int(nxt == op), ops, 0)
+                n * 2 * _count(op, ops)
             )
         return reps
     for op in ops:
         reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = (
-            n * reduce(lambda acc, nxt: acc + int(nxt == op), ops, 0) * 2 * 5 * (order - 2) / 2
+            n * _count(op, ops) * 2 * 5 * (order - 2) / 2
         )
     return reps
 
