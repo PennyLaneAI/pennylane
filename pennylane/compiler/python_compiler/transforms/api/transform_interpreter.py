@@ -15,7 +15,13 @@
 """Custom Transform Dialect Interpreter Pass
 
 Differs from xDSL's upstream implementation by allowing passes
-to be passed in as options.
+to be passed in as options and for the pipeline to have a callback and apply it
+after every pass is run. The callback differs from how xDSL callback mechanism
+is integrated into the PassPipeline object since PassPipeline only runs
+if there are more than two passes. Here we are running one pass at a time
+which will prevent the callback from being called.
+
+See here. https://github.com/xdslproject/xdsl/blob/334492e660b1726bc661efc7afb927e74bac48f4/xdsl/passes.py#L211-L222
 """
 
 import io
@@ -43,6 +49,10 @@ class TransformFunctionsExt(TransformFunctions):
     then it will try to run this pass in Catalyst.
     """
 
+    def __init__(self, ctx, passes, callback=None):
+        super().__init__(ctx, passes)
+        self.callback = callback
+
     @impl(transform.ApplyRegisteredPassOp)
     def run_apply_registered_pass_op(  # pragma: no cover
         self,
@@ -57,6 +67,10 @@ class TransformFunctionsExt(TransformFunctions):
             # pragma: no cover
             pass_class = self.passes[pass_name]()
             pipeline = PassPipeline((pass_class(),))
+            if self.callback:
+                prev = None  # We don't know which one
+                next = None  # We don't know which one
+                self.callback(prev, args[0], next)
             pipeline.apply(self.ctx, args[0])
             return (args[0],)
 
@@ -71,6 +85,10 @@ class TransformFunctionsExt(TransformFunctions):
         data = Parser(self.ctx, modified).parse_module()
         rewriter = Rewriter()
         rewriter.replace_op(module, data)
+        if self.callback:
+            prev = None  # We don't know which one
+            next = None  # We don't know which one
+            self.callback(prev, data, next)
         return (data,)
 
 
@@ -79,11 +97,13 @@ class TransformInterpreterPass(ModulePass):
 
     passes: dict[str, Callable[[], type[ModulePass]]]
     name = "transform-interpreter"
+    callback: Callable[[ModulePass, builtin.ModuleOp, ModulePass], None] | None = None
 
     entry_point: str = "__transform_main"
 
-    def __init__(self, passes):
+    def __init__(self, passes, callback):
         self.passes = passes
+        self.callback = callback
 
     @staticmethod
     def find_transform_entry_point(
@@ -101,6 +121,6 @@ class TransformInterpreterPass(ModulePass):
         """Run the interpreter with op."""
         schedule = TransformInterpreterPass.find_transform_entry_point(op, self.entry_point)
         interpreter = Interpreter(op)
-        interpreter.register_implementations(TransformFunctionsExt(ctx, self.passes))
+        interpreter.register_implementations(TransformFunctionsExt(ctx, self.passes, self.callback))
         schedule.parent_op().detach()
         interpreter.call_op(schedule, (op,))
