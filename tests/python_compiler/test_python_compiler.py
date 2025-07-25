@@ -45,6 +45,9 @@ from pennylane.compiler.python_compiler.transforms.api import (
     available_passes,
     compiler_transform,
 )
+from pennylane.compiler.python_compiler.transforms.api.apply_transform_sequence import (
+    register_callback,
+)
 
 
 def test_compiler():
@@ -199,6 +202,41 @@ def test_integration_for_transform_interpreter(capsys):
     ctx.load_dialect(builtin.Builtin)
     ctx.load_dialect(transform.Transform)
 
+    pipeline = xdsl.passes.PassPipeline((ApplyTransformSequence(),))
+    pipeline.apply(ctx, program())
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "hello world"
+
+
+def test_callback_integration(capsys):
+
+    @compiler_transform
+    @dataclass(frozen=True)
+    class _(passes.ModulePass):
+        name = "none-pass"
+
+        def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None: ...
+
+    def print_between_passes(*_):
+        print("hello world")
+
+    register_callback(print_between_passes)
+
+    @xdsl_from_docstring
+    def program():
+        """
+        builtin.module {
+          builtin.module {
+            transform.named_sequence @__transform_main(%arg0 : !transform.op<"builtin.module">) {
+              %0 = transform.apply_registered_pass "none-pass" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              transform.yield
+            }
+          }
+        }
+        """
+
+    ctx = Context()
+    ctx.load_dialect(builtin.Builtin)
     pipeline = xdsl.passes.PassPipeline((ApplyTransformSequence(),))
     pipeline.apply(ctx, program())
     captured = capsys.readouterr()
