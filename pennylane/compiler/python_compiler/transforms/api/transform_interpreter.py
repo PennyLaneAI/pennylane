@@ -67,11 +67,11 @@ class TransformFunctionsExt(TransformFunctions):
             # pragma: no cover
             pass_class = self.passes[pass_name]()
             pipeline = PassPipeline((pass_class(),))
+            pipeline.apply(self.ctx, args[0])
             if self.callback:
                 prev = None  # We don't know which one
                 next = None  # We don't know which one
                 self.callback(prev, args[0], next)
-            pipeline.apply(self.ctx, args[0])
             return (args[0],)
 
         # pragma: no cover
