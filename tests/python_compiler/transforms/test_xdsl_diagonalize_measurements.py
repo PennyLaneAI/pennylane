@@ -230,6 +230,34 @@ class TestDiagonalizeFinalMeasurementsPass:
         pipeline = (DiagonalizeFinalMeasurementsPass(),)
         run_filecheck(program, pipeline)
 
+    def test_with_overlapping_observables(self, run_filecheck):
+        """Test diagonalizing a circuit with overlapping observables (i.e. the requested
+        measurements are on the same wire, but commute). The simplified program
+        for this test is based on the circuit
+
+        @qml.qjit(target="mlir")
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def circuit():
+            return qml.var(qml.X(0)), qml.var(qml.X(0))
+        """
+
+        program = """
+            func.func @test_func() {
+                %0 = "test.op"() : () -> !quantum.bit
+                // CHECK: quantum.custom "Hadamard"()
+                // CHECK-NEXT: quantum.namedobs [[q:%.+]][PauliZ]
+                %1 = quantum.namedobs %0[PauliX] : !quantum.obs
+                %2 = quantum.var %1 : f64
+                // CHECK: quantum.custom "Hadamard"()
+                // CHECK-NEXT: quantum.namedobs [[q:%.+]][PauliZ]
+                %3 = quantum.namedobs %0[PauliX] : !quantum.obs
+                %4 = quantum.var %3 : f64
+            }
+            """
+
+        pipeline = (DiagonalizeFinalMeasurementsPass(),)
+        run_filecheck(program, pipeline)
+
 
 class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
     """Integration tests going through plxpr (program capture enabled)"""
@@ -342,6 +370,12 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
         """Test the case where multiple overlapping (commuting) observables exist in
         the same circuit. Here we want to be sure not to diagonalize the Y(0)
         observable twice (once for each occurrence in measurements)"""
+
+        # Note that this seems to work without split_non_commuting ONLY because the
+        # HLOLoweringPass merges the identical branches into one branch; otherwise
+        # the diagonalizing gate would be applied twice before calculating the output
+        # for the second MeasurementProcess
+
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qnode(dev)
@@ -493,8 +527,13 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
 
     def test_with_overlapping_observables(self):
         """Test the case where multiple overlapping (commuting) observables exist in
-        the same circuit. Here we want to be sure not to diagonalize the Y(0)
-        observable twice (once for each occurrence in measurements)"""
+        the same circuit."""
+
+        # Note that this seems to work without split_non_commuting ONLY because the
+        # HLOLoweringPass merges the identical branches into one branch; otherwise
+        # the diagonalizing gate would be applied twice before calculating the output
+        # for the second MeasurementProcess
+
         dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qnode(dev)
