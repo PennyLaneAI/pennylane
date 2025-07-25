@@ -132,7 +132,7 @@ def replace_relative_phase_toffoli(
         qml.adjoint(qml.T(3)),
         qml.Hadamard(3),
     ]
-    pattern = QuantumTape(pattern_ops)
+    pattern = QuantumScript(pattern_ops)
     return pattern_matching_optimization(tape, pattern_tapes=[pattern])
 
 
