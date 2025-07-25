@@ -414,7 +414,7 @@ class TestDiagonalizeFinalMeasurementsProgramCaptureExecution:
     @pytest.mark.xfail(reason="for now, assume split_non_commuting is always applied")
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_non_commuting_observables_raise_error(self):
-        """Check that an error is if we try to diagonalize a circuit that contains
+        """Check that an error is raised if we try to diagonalize a circuit that contains
         non-commuting observables."""
         dev = qml.device("lightning.qubit", wires=1)
 
@@ -574,7 +574,7 @@ class TestDiagonalizeFinalMeasurementsCatalystFrontend:
 
     @pytest.mark.xfail(reason="for now, assume split_non_commuting is always applied")
     def test_non_commuting_observables_raise_error(self):
-        """Check that an error is if we try to diagonalize a circuit that contains
+        """Check that an error is raised if we try to diagonalize a circuit that contains
         non-commuting observables."""
         dev = qml.device("lightning.qubit", wires=1)
 
