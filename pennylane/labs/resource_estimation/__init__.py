@@ -136,6 +136,15 @@ Templates:
     ~ResourceTrotterVibrational
     ~ResourceTrotterVibronic
     ~ResourceQubitizeTHC
+
+State Preparation:
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceUniformStatePrep
+    ~ResourceAliasSampling
     ~ResourceUniformStatePrep
     ~ResourceAliasSampling
 
