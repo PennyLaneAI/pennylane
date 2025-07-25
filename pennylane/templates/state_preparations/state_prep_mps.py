@@ -405,12 +405,12 @@ class MPSPrep(Operation):
         )
 
     @classmethod
-    def _primitive_bind_call(cls, mps, **kwargs):
+    def _primitive_bind_call(cls, mps, wires, work_wires, id=None):
         # pylint: disable=arguments-differ
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
-            return type.__call__(cls, mps=mps, **kwargs)  # pragma: no cover
-        return cls._primitive.bind(*mps, **kwargs)
+            return type.__call__(cls, mps=mps, wires=wires, id=id, work_wires=work_wires)  # pragma: no cover
+        return cls._primitive.bind(*mps, wires=wires, id=id, work_wires=work_wires)
 
     def decomposition(self):
         filtered_hyperparameters = {

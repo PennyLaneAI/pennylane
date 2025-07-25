@@ -22,8 +22,9 @@ import pytest
 import pennylane as qml
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.state_prep_mps import (
+    _mps_prep_decomposition,
     _validate_mps_shape,
-    right_canonicalize_mps, _mps_prep_decomposition,
+    right_canonicalize_mps,
 )
 
 
@@ -658,7 +659,9 @@ class TestMPSPrep:
         num_wires = 4
 
         def circuit():
-            _mps_prep_decomposition(*mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True)
+            _mps_prep_decomposition(
+                *mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
+            )
 
         plxpr = qml.capture.make_plxpr(circuit)()
         collector = CollectOpsandMeas()
