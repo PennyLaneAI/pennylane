@@ -399,28 +399,25 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         ]
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.parametrize("u", [[qml.Hadamard(0)], (qml.Hadamard(0),), qml.Hadamard(0)])
-    def test_HilbertSchmidt(self, device, u, tol):
+    @pytest.mark.parametrize("U", [[qml.Hadamard(0)], (qml.Hadamard(0),), qml.Hadamard(0)])
+    def test_HilbertSchmidt(self, device, U, tol):
         """Test the HilbertSchmidt template."""
         dev = device(2)
-        u_wires = u.wires if isinstance(u, qml.operation.Operation) else qml.prod(*u).wires
+        u_wires = U.wires if isinstance(U, qml.operation.Operation) else qml.prod(*U).wires
 
-        def v_function(params):
-            qml.RZ(params[0], wires=1)
+        V = qml.RZ(0, wires=1)
+        v_wires = V.wires
 
         @qml.qnode(dev)
-        def hilbert_test(v_params, v_function, v_wires, u):
-            qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u=u)
+        def hilbert_test(V, U):
+            qml.HilbertSchmidt(V=V, U=U)
             return qml.probs(u_wires + v_wires)
 
-        def cost_hst(parameters, v_function, v_wires, u):
+        def cost_hst(V, U):
             # pylint:disable=unsubscriptable-object
-            return (
-                1
-                - hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u=u)[0]
-            )
+            return 1 - hilbert_test(V=V, U=U)[0]
 
-        res = cost_hst([0], v_function=v_function, v_wires=[1], u=u)
+        res = cost_hst(V=V, U=U)
         expected = 1.0
         assert np.isclose(res, expected, atol=tol(dev.shots))
 

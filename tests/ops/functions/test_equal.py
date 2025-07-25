@@ -2695,21 +2695,21 @@ class TestHilbertSchmidt:
     # pylint: disable=no-self-argument
 
     def v_function1(params):
-        """A quantum function."""
-        qml.RZ(params[0], wires=1)
+        """Returns a v_function that is used in the HilbertSchmidt operator."""
+        return qml.RZ(params[0], wires=1)
 
     def v_function2(params):
         """Differs from v_function1 by operation type and used parameter."""
-        qml.RX(params[1], wires=1)
+        return qml.RX(params[1], wires=1)
 
     def v_function3(params):
         """Differs from v_function1 by the used wire."""
-        qml.RZ(params[0], wires=2)
+        return qml.RZ(params[0], wires=2)
 
     def v_function4(params):
         """Differs from v_function1 by the functional parameter dependence, but
         produces the same tape at params[0]=0.2."""
-        qml.RZ(params[0] * 2 - 0.2, wires=1)
+        return qml.RZ(params[0] * 2 - 0.2, wires=1)
 
     v_wires1 = [1]
     v_wires2 = [2]
@@ -2726,42 +2726,29 @@ class TestHilbertSchmidt:
     v_params1_trainable = npp.array(v_params1, requires_grad=True)
     v_params1_untrainable = npp.array(v_params1, requires_grad=False)
 
-    op1 = qml.HilbertSchmidt(
-        v_params1, v_function=v_function1, v_wires=v_wires1, u=u_tape1.operations
-    )
-    op1_trainable = qml.HilbertSchmidt(
-        v_params1, v_function=v_function1, v_wires=v_wires1, u=u_tape1_trainable.operations
-    )
-    op1_untrainable = qml.HilbertSchmidt(
-        v_params1, v_function=v_function1, v_wires=v_wires1, u=u_tape1_untrainable.operations
-    )
-    op1_eps = qml.HilbertSchmidt(
-        v_params1_eps, v_function=v_function1, v_wires=v_wires1, u=u_tape1.operations
-    )
-    op1_eps_tape = qml.HilbertSchmidt(
-        v_params1, v_function=v_function1, v_wires=v_wires1, u=u_tape1_eps.operations
-    )
-    op2 = qml.HilbertSchmidt(
-        v_params2, v_function=v_function1, v_wires=v_wires1, u=u_tape1.operations
-    )
-    op3_tapediff = qml.HilbertSchmidt(
-        v_params1, v_function=v_function2, v_wires=v_wires1, u=u_tape1.operations
-    )
-    op3_fundiff = qml.HilbertSchmidt(
-        v_params1, v_function=v_function4, v_wires=v_wires1, u=u_tape1.operations
-    )
-    op4 = qml.HilbertSchmidt(
-        v_params1, v_function=v_function1, v_wires=v_wires1, u=u_tape2.operations
-    )
-    op5 = qml.HilbertSchmidt(
-        v_params1_trainable, v_function=v_function1, v_wires=v_wires1, u=u_tape1.operations
-    )
-    op6 = qml.HilbertSchmidt(
-        v_params1_untrainable, v_function=v_function1, v_wires=v_wires1, u=u_tape1.operations
-    )
-    op7 = qml.HilbertSchmidt(
-        v_params1, v_function=v_function3, v_wires=v_wires2, u=u_tape1.operations
-    )
+    op1 = qml.HilbertSchmidt(V=v_function1(v_params1), U=u_tape1.operations)
+
+    op1_trainable = qml.HilbertSchmidt(V=v_function1(v_params1), U=u_tape1_trainable.operations)
+
+    op1_untrainable = qml.HilbertSchmidt(V=v_function1(v_params1), U=u_tape1_untrainable.operations)
+
+    op1_eps = qml.HilbertSchmidt(V=v_function1(v_params1_eps), U=u_tape1.operations)
+
+    op1_eps_tape = qml.HilbertSchmidt(V=v_function1(v_params1), U=u_tape1_eps.operations)
+
+    op2 = qml.HilbertSchmidt(V=v_function1(v_params2), U=u_tape1.operations)
+
+    op3_tapediff = qml.HilbertSchmidt(V=v_function2(v_params1), U=u_tape1.operations)
+
+    op3_fundiff = qml.HilbertSchmidt(V=v_function4(v_params1), U=u_tape1.operations)
+
+    op4 = qml.HilbertSchmidt(V=v_function1(v_params1), U=u_tape2.operations)
+
+    op5 = qml.HilbertSchmidt(V=v_function1(v_params1_trainable), U=u_tape1.operations)
+
+    op6 = qml.HilbertSchmidt(V=v_function1(v_params1_untrainable), U=u_tape1.operations)
+
+    op7 = qml.HilbertSchmidt(V=v_function3(v_params1), U=u_tape1.operations)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op1), (op2, op2), (op4, op4)])
     def test_equality(self, op, other_op):
@@ -2783,24 +2770,15 @@ class TestHilbertSchmidt:
         assert not qml.equal(op, other_op)
         other_op.data = op.data
 
-        v_ops = op.hyperparameters["v"]
+        v_ops = op.hyperparameters["V"]
         op_params = qml.tape.QuantumScript(v_ops).get_parameters()
 
-        new_ops = qml.tape.QuantumScript(other_op.hyperparameters["v"]).bind_new_parameters(
+        new_ops = qml.tape.QuantumScript(other_op.hyperparameters["V"]).bind_new_parameters(
             op_params, [0]
         )
 
         new_other_op = deepcopy(other_op)
-        new_other_op.hyperparameters["v"] = new_ops
-        assert qml.equal(op, new_other_op)
-
-    @pytest.mark.parametrize("op, other_op", [(op1, op3_fundiff)])
-    def test_non_equal_v_function(self, op, other_op):
-        """Test that differing v_functions are found."""
-        assert not qml.equal(op, other_op)
-
-        new_other_op = deepcopy(other_op)
-        new_other_op.hyperparameters["v_function"] = op.hyperparameters["v_function"]
+        new_other_op.hyperparameters["V"] = new_ops
         assert qml.equal(op, new_other_op)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op4)])
@@ -2809,18 +2787,7 @@ class TestHilbertSchmidt:
         assert not qml.equal(op, other_op)
 
         new_other_op = deepcopy(other_op)
-        new_other_op.hyperparameters["u"] = op.hyperparameters["u"]
-        assert qml.equal(op, new_other_op)
-
-    @pytest.mark.parametrize("op, other_op", [(op1, op3_tapediff)])
-    def test_non_equal_v_ops(self, op, other_op):
-        """Test that differing v_ops are found."""
-        assert not qml.equal(op, other_op)
-        # The v_function must have been different as well if it produced
-        # a different tape and the parameters and v_wires were fixed.
-        new_other_op = deepcopy(other_op)
-        new_other_op.hyperparameters["v_function"] = op.hyperparameters["v_function"]
-        new_other_op.hyperparameters["v"] = op.hyperparameters["v"]
+        new_other_op.hyperparameters["U"] = op.hyperparameters["U"]
         assert qml.equal(op, new_other_op)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op7)])
@@ -2830,9 +2797,7 @@ class TestHilbertSchmidt:
         # If the v_wires were different, so must have been the v_function and the
         # resulting operations in v.
         new_other_op = deepcopy(other_op)
-        new_other_op.hyperparameters["v_function"] = op.hyperparameters["v_function"]
-        new_other_op.hyperparameters["v"] = op.hyperparameters["v"]
-        new_other_op.hyperparameters["v_wires"] = op.hyperparameters["v_wires"]
+        new_other_op.hyperparameters["V"] = op.hyperparameters["V"]
         assert qml.equal(op, new_other_op)
 
     @pytest.mark.parametrize("op, other_op", [(op5, op6), (op1_trainable, op1_untrainable)])
