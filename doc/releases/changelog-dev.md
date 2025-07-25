@@ -279,6 +279,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Equipped `DefaultQubitLegacy` (test suite only) with seeded sampling.
+  This allows for reproducible sampling results across CI.
+  [(#7903)](https://github.com/PennyLaneAI/pennylane/pull/7903)
+
 * Adds `measurements` as a "core" module in the tach specification.
  [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 
