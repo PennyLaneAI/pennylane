@@ -138,7 +138,7 @@ def replace_relative_phase_toffoli(
 def replace_controlled_iX_gate(
     tape: QuantumScript, num_controls=1
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Quantum transform to replace controlled iX gates. An iX gate is a CS and a Toffoli. The
+    """Quantum transform to replace controlled iX gates. An iX gate is a controlled-S and a Toffoli gate. The
     equivalency used is given in figure two of (Amy, M. and Ross, N. J., 2021) and the simple case
     of one num_controls=1 in given in figure one.
 
