@@ -47,16 +47,6 @@
 
 <h3>Improvements 🛠</h3>
 
-* Decomposition rules that can be accessed with the new graph-based decomposition system are
-  implemented. The following decompositions have been added:
-  [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
-
-  * :class:`~.Reflection`
-
-  * :class:`~.TrotterProduct`
-
-  * :class:`~.MPSPrep`
-
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows 
   that include these templates to be decomposed in a resource-efficient and performant
@@ -78,6 +68,12 @@
   * :class:`~.OutMultiplier`
 
   * :class:`~.OutPoly`
+
+  * :class:`~.Reflection`
+
+  * :class:`~.TrotterProduct`
+
+  * :class:`~.MPSPrep`
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
