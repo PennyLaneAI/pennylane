@@ -265,8 +265,9 @@ def perturbation_error(
             If None (default), uses all commutators exactly without sampling for maximum accuracy.
             Only when a specific number is provided will fixed-size sampling be applied.
             This parameter is ignored if adaptive_sampling or convergence_sampling is True.
-        sampling_method (str): Sampling strategy to use. Options are "random" for uniform random sampling
-            or "importance" for importance sampling based on commutator magnitudes.
+        sampling_method (str): Sampling strategy to use. Options are "random" for uniform random sampling,
+            "importance" for importance sampling based on commutator magnitudes with replacement, or
+            "top_k" for selecting the k most important commutators without replacement.
             Only used when sample_size is specified, adaptive_sampling is True, or convergence_sampling is True.
         random_seed (Optional[int]): Random seed for reproducibility in sampling methods.
         adaptive_sampling (bool): If True, uses adaptive sampling that dynamically determines
@@ -331,6 +332,10 @@ def perturbation_error(
     >>> print(errors)
     [0.9189251160920877j, 4.797716682426847j]
     >>>
+    >>> # Use top-k sampling to select the 10 most important commutators
+    >>> errors_topk = perturbation_error(pf, frags, [state1, state2], order=3,
+    ...                                  sample_size=10, sampling_method="top_k")
+    >>>
     >>> errors, conv_info = perturbation_error(pf, frags, [state1, state2], order=3,
     ...                                         adaptive_sampling=True, return_convergence_info=True)
     >>> print(conv_info['states'][0]['mean_history'])  # Mean evolution for first state
@@ -338,6 +343,11 @@ def perturbation_error(
 
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
+
+    # Validate sampling_method parameter
+    valid_sampling_methods = {"random", "importance", "top_k"}
+    if sampling_method not in valid_sampling_methods:
+        raise ValueError(f"sampling_method must be one of {valid_sampling_methods}, got '{sampling_method}'")
 
     commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order))
 
@@ -839,7 +849,7 @@ def _setup_importance_probabilities(
         fragments: Dictionary mapping fragment keys to Fragment objects
         timestep: Time step for simulation
         gridpoints: Number of gridpoints for norm calculations
-        sampling_method: "random" or "importance"
+        sampling_method: "random", "importance", or "top_k"
 
     Returns:
         np.ndarray or None: Normalized probabilities for importance sampling,
@@ -848,6 +858,7 @@ def _setup_importance_probabilities(
     if sampling_method == "random":
         return None
 
+    # Both "importance" and "top_k" need the same probability calculation
     # Pre-calculate importance sampling probabilities
     probabilities = []
 
@@ -920,6 +931,13 @@ def _adaptive_sample_single_state(
     sigma2_over_n_history = []
     relative_error_history = []
 
+    # Initialize top-k sampler if needed
+    top_k_sampler = None
+    if sampling_method == "top_k":
+        if probabilities is None:
+            raise ValueError("top_k sampling requires probabilities to be calculated")
+        top_k_sampler = _TopKSampler(commutators, probabilities)
+
     # Start sampling
     while n_samples < max_sample_size:
         sample_start_time = time.time()
@@ -929,6 +947,11 @@ def _adaptive_sample_single_state(
             idx = np.random.choice(len(commutators))
             weight = len(commutators)  # Scaling factor for uniform sampling
             commutator = commutators[idx]
+        elif sampling_method == "top_k":
+            if not top_k_sampler.has_more_commutators():
+                print(f"  ⚠ All {len(commutators)} commutators exhausted for state {state_idx + 1}")
+                break
+            commutator, weight = top_k_sampler.get_next_commutator()
         else:  # importance sampling
             idx = np.random.choice(len(commutators), p=probabilities)
             weight = 1.0 / probabilities[idx]  # Importance weight
@@ -1226,6 +1249,13 @@ def _convergence_sample_single_state(
     relative_error_history = []
     convergence_checks_passed = 0
 
+    # Initialize top-k sampler if needed
+    top_k_sampler = None
+    if sampling_method == "top_k":
+        if probabilities is None:
+            raise ValueError("top_k sampling requires probabilities to be calculated")
+        top_k_sampler = _TopKSampler(commutators, probabilities)
+
     # Start sampling
     while n_samples < max_sample_size:
         sample_start_time = time.time()
@@ -1235,6 +1265,11 @@ def _convergence_sample_single_state(
             idx = np.random.choice(len(commutators))
             weight = len(commutators)  # Scaling factor for uniform sampling
             commutator = commutators[idx]
+        elif sampling_method == "top_k":
+            if not top_k_sampler.has_more_commutators():
+                print(f"  ⚠ All {len(commutators)} commutators exhausted for state {state_idx + 1}")
+                break
+            commutator, weight = top_k_sampler.get_next_commutator()
         else:  # importance sampling
             idx = np.random.choice(len(commutators), p=probabilities)
             weight = 1.0 / probabilities[idx]  # Importance weight
@@ -1418,7 +1453,7 @@ def _fixed_sampling(
         states: States to compute expectation values for
         timestep: Time step for simulation
         sample_size: Number of commutators to sample
-        sampling_method: "random" or "importance"
+        sampling_method: "random", "importance", or "top_k"
         random_seed: Random seed for reproducibility
         gridpoints: Number of gridpoints for norm calculations
         num_workers: Number of workers for parallel processing
@@ -1461,8 +1496,27 @@ def _fixed_sampling(
         sampled_commutators, commutator_weights = _sample_importance_commutators(
             commutators, probabilities, sample_size, random_seed
         )
+    elif sampling_method == "top_k":
+        print("=== Using Top-K Sampling ===")
+        print(f"Will select the top {sample_size} most important commutators (deterministic, without replacement)")
+        # Pre-calculate probabilities once (same as importance sampling)
+        start_time = time.time()
+        probabilities = _setup_importance_probabilities(
+            commutators, fragments, timestep, gridpoints, "importance"  # Force importance calculation
+        )
+        prob_time = time.time() - start_time
+        print(f"Probability calculation completed in {prob_time:.2f} seconds")
+
+        # Record probability calculation time
+        if convergence_info:
+            convergence_info['probability_calculation_time'] = prob_time
+
+        sampled_commutators, commutator_weights = _sample_top_k_commutators(
+            commutators, probabilities, sample_size
+        )
+        print(f"Selected top {len(sampled_commutators)} commutators (uniform weights: {commutator_weights[0] if commutator_weights else 'N/A'})")
     else:
-        raise ValueError("sampling_method must be 'random' or 'importance'")
+        raise ValueError("sampling_method must be 'random', 'importance', or 'top_k'")
 
     # Record sampling information
     if convergence_info:
@@ -1517,6 +1571,113 @@ def _sample_importance_commutators(
             weights.append(weight)
 
     return sampled_commutators, weights
+
+
+class _TopKSampler:
+    """
+    Helper class for sequential top-k sampling without replacement.
+
+    This class maintains state for sequential sampling of commutators in order
+    of importance, used by adaptive and convergence sampling methods.
+    """
+
+    def __init__(self, commutators: List[Tuple[Hashable | Set]], probabilities: np.ndarray):
+        """
+        Initialize the top-k sampler.
+
+        Args:
+            commutators: List of all available commutators
+            probabilities: Pre-calculated importance probabilities for each commutator
+        """
+        self.commutators = commutators
+        self.probabilities = probabilities
+
+        # Sort indices by probability (descending order)
+        self.sorted_indices = np.argsort(probabilities)[::-1]
+        self.current_position = 0
+
+    def get_next_commutator(self) -> Tuple[Tuple[Hashable | Set], float]:
+        """
+        Get the next most important commutator that hasn't been sampled yet.
+
+        Returns:
+            Tuple of (commutator, weight) where weight is always 1.0 for top_k
+
+        Raises:
+            IndexError: If all commutators have been exhausted
+        """
+        if self.current_position >= len(self.sorted_indices):
+            raise IndexError("All commutators have been sampled")
+
+        # Get the next most important commutator
+        idx = self.sorted_indices[self.current_position]
+        commutator = self.commutators[idx]
+        weight = 1.0  # Uniform weight for top_k sampling
+
+        # Move to next position
+        self.current_position += 1
+
+        return commutator, weight
+
+    def has_more_commutators(self) -> bool:
+        """Check if there are more commutators available."""
+        return self.current_position < len(self.sorted_indices)
+
+    def get_current_position(self) -> int:
+        """Get the current sampling position (0-indexed)."""
+        return self.current_position
+
+
+def _sample_top_k_commutators(
+    commutators: List[Tuple[Hashable | Set]],
+    probabilities: np.ndarray,
+    sample_size: int,
+) -> Tuple[List[Tuple[Hashable | Set]], List[float]]:
+    """
+    Sample top-k commutators by importance without replacement.
+
+    Selects the commutators with the highest importance probabilities without replacement.
+    All selected commutators receive uniform weights since they are deterministically chosen.
+
+    Args:
+        commutators: List of commutator tuples to sample from
+        probabilities: Pre-calculated normalized probabilities for each commutator
+        sample_size: Number of top commutators to select
+        random_seed: Random seed (not used for top_k but kept for API consistency)
+
+    Returns:
+        Tuple of (top_k_commutators, uniform_weights)
+    """
+    # Note: random_seed is not used in top_k sampling since it's deterministic
+    # but kept for consistency with _sample_importance_commutators API
+    # Determine effective sample size (cannot exceed number of commutators)
+    effective_sample_size = min(sample_size, len(commutators))
+
+    # Handle edge case: sample_size = 0
+    if effective_sample_size == 0:
+        return [], []
+
+    # Get indices of top-k commutators by probability
+    if effective_sample_size == len(commutators):
+        # If we want all commutators, sort all indices by probability (descending)
+        top_indices = np.argsort(probabilities)[::-1]
+    else:
+        # Use argpartition to find top-k indices efficiently
+        # Partition such that the k largest elements are at the end
+        partition_indices = np.argpartition(probabilities, -effective_sample_size)
+        # Get the k largest indices
+        top_indices = partition_indices[-effective_sample_size:]
+        # Sort them by probability (descending) for deterministic order
+        top_indices = top_indices[np.argsort(probabilities[top_indices])[::-1]]
+
+    # Select the top commutators
+    top_k_commutators = [commutators[idx] for idx in top_indices]
+
+    # Use uniform weights for top-k sampling since selection is deterministic
+    # Weight = 1.0 means each commutator contributes equally to the sum
+    uniform_weights = [1.0] * len(top_k_commutators)
+
+    return top_k_commutators, uniform_weights
 
 
 def _compute_expectation_values(
