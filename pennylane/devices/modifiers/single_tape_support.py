@@ -113,8 +113,6 @@ def _make_compute_vjp(batch_compute_vjp):
 
     @wraps(batch_compute_vjp)
     def compute_vjp(self, circuits, cotangents, execution_config: ExecutionConfig | None = None):
-        if execution_config is None:
-            execution_config = ExecutionConfig()
         is_single_circuit = False
         if isinstance(circuits, QuantumScript):
             is_single_circuit = True
