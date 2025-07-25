@@ -13,10 +13,14 @@
 # limitations under the License.
 """
 Transforms lowering gates and series of gates involving relative phases.
-Transformations fist published in:
+Transformations first published in:
 
-Amy, M. and Ross, N. J., “Phase-state duality in reversible circuit design”,
-Physical Review A, vol. 104, no. 5, Art. no. 052602, APS, 2021. doi:10.1103/PhysRevA.104.052602.
+Maslov, Dmitri. "On the Advantages of Using Relative Phase Toffolis with an Application to
+Multiple Control Toffoli Optimization", arXiv:1508.03273, arXiv, 2016.
+doi:10.48550/arXiv.1508.03273.
+
+Giles, Brett, and Peter Selinger. "Exact Synthesis of Multiqubit Clifford+T Circuits",
+arXiv:1212.0506, arXiv, 2013. doi:10.48550/arXiv.1212.0506.
 """
 
 import pennylane as qml
@@ -30,7 +34,7 @@ def replace_relative_phase_toffoli(
     tape: QuantumScript,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to replace 4-qubit relative phase toffoli gates, given in
-    figure three of (Amy, M. and Ross, N. J., 2021).
+    (Maslov, 2016).
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
@@ -41,33 +45,35 @@ def replace_relative_phase_toffoli(
 
     **Example**
 
-    The transform can be applied on :class:`QNode` directly.
-
     .. code-block:: python
 
-        @replace_relative_phase_toffoli
-        @qml.qnode(device=dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Barrier(wires=[0,1])
-            qml.X(0)
-
-            # begin relative phase 4-qubit Toffoli
-
+        def qfunc():
             qml.CCZ(wires=[0, 1, 3])
             qml.ctrl(qml.S(wires=[1]), control=[0])
             qml.ctrl(qml.S(wires=[2]), control=[0, 1])
             qml.MultiControlledX(wires=[0, 1, 2, 3])
-
-            # end relative phase 4-qubit Toffoli
-
-            qml.Hadamard(wires=1)
-            qml.Barrier(wires=[0,1])
-            qml.X(0)
             return qml.expval(qml.Z(0))
 
-    The relative phase 4-qubit Toffoli is then replaced before execution.
+    The circuit before decomposition:
+
+    >>> dev = qml.device('default.qubit', wires=4)
+    >>> qnode = qml.QNode(qfunc, dev)
+    >>> print(qml.draw(qnode)())
+        0: ─╭●─╭●─╭●─╭●─┤  <Z>
+        1: ─├●─╰S─├●─├●─┤
+        2: ─│─────╰S─├●─┤
+        3: ─╰Z───────╰X─┤
+
+    We can replace the relative phase 4-qubit Toffoli by running the transform:
+
+    >>> lowered_qfunc = replace_relative_phase_toffoli(qfunc)
+    >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
+    >>> print(qml.draw(lowered_qnode)())
+
+    0: ─────────────────╭●───────────╭●───────────────────────────┤  <Z>
+    1: ─────────────────│─────╭●─────│─────╭●─────────────────────┤
+    2: ───────╭●────────│─────│──────│─────│────────────╭●────────┤
+    3: ──H──T─╰X──T†──H─╰X──T─╰X──T†─╰X──T─╰X──T†──H──T─╰X──T†──H─┤
 
     .. details::
         :title: Usage Details
@@ -76,33 +82,29 @@ def replace_relative_phase_toffoli(
 
         .. code-block:: python
 
-            def qfunc():
+            @replace_relative_phase_toffoli
+            @qml.qnode(device=dev)
+            def circuit():
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=1)
+                qml.Barrier(wires=[0,1])
+                qml.X(0)
+
+                # begin relative phase 4-qubit Toffoli
+
                 qml.CCZ(wires=[0, 1, 3])
                 qml.ctrl(qml.S(wires=[1]), control=[0])
                 qml.ctrl(qml.S(wires=[2]), control=[0, 1])
                 qml.MultiControlledX(wires=[0, 1, 2, 3])
+
+                # end relative phase 4-qubit Toffoli
+
+                qml.Hadamard(wires=1)
+                qml.Barrier(wires=[0,1])
+                qml.X(0)
                 return qml.expval(qml.Z(0))
 
-        The circuit before decomposition:
-
-        >>> dev = qml.device('default.qubit', wires=4)
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> print(qml.draw(qnode)())
-            0: ─╭●─╭●─╭●─╭●─┤  <Z>
-            1: ─├●─╰S─├●─├●─┤
-            2: ─│─────╰S─├●─┤
-            3: ─╰Z───────╰X─┤
-
-        We can replace the relative phase 4-qubit Toffoli by running the transform:
-
-        >>> lowered_qfunc = replace_relative_phase_toffoli(qfunc)
-        >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
-        >>> print(qml.draw(lowered_qnode)())
-
-        0: ─────────────────╭●───────────╭●───────────────────────────┤  <Z>
-        1: ─────────────────│─────╭●─────│─────╭●─────────────────────┤
-        2: ───────╭●────────│─────│──────│─────│────────────╭●────────┤
-        3: ──H──T─╰X──T†──H─╰X──T─╰X──T†─╰X──T─╰X──T†──H──T─╰X──T†──H─┤
+    The relative phase 4-qubit Toffoli is then replaced before execution.
 
     """
     pattern_ops = [
@@ -139,8 +141,7 @@ def replace_controlled_iX_gate(
     tape: QuantumScript, num_controls=1
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to replace controlled iX gates. An iX gate is a CS and a Toffoli. The
-    equivalency used is given in figure two of (Amy, M. and Ross, N. J., 2021) and the simple case
-    of one num_controls=1 in given in figure one.
+    equivalency used is given in (Giles and Selinger, 2013).
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
@@ -152,65 +153,62 @@ def replace_controlled_iX_gate(
 
     **Example**
 
-    The transform can be applied on :class:`QNode` directly.
+    Consider the following quantum function:
 
     .. code-block:: python
 
-        @replace_iX_gate
-        @qml.qnode(device=dev)
-        def circuit():
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=1)
-            qml.Barrier(wires=[0,1])
-            qml.X(0)
-
-            # begin multi-controlled iX gate
-
+        def qfunc():
             qml.ctrl(qml.S(wires=[2]), control=[0, 1])
             qml.MultiControlledX(wires=[0, 1, 2, 3])
-
-            # end multi-controlled iX gate
-
-            qml.Hadamard(wires=1)
-            qml.Barrier(wires=[0,1])
-            qml.X(0)
             return qml.expval(qml.Z(0))
 
-    The relative multi-controlled iX gate (CS, Toffoli) is then replaced before execution.
+    The circuit before decomposition:
+
+    >>> dev = qml.device('default.qubit', wires=4)
+    >>> qnode = qml.QNode(qfunc, dev)
+    >>> print(qml.draw(qnode)())
+        0: ─╭●─╭●─┤  <Z>
+        1: ─├●─├●─┤
+        2: ─╰S─├●─┤
+        3: ────╰X─┤
+
+    We can replace the multi-controlled iX gate by running the transform:
+
+    >>> lowered_qfunc = replace_controlled_iX_gate(qfunc, 2)
+    >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
+    >>> print(qml.draw(lowered_qnode)())
+
+    0: ──────────────╭●───────────╭●────┤  <Z>
+    1: ──────────────├●───────────├●────┤
+    2: ────────╭●────│──────╭●────│─────┤
+    3: ──H──T†─╰X──T─╰X──T†─╰X──T─╰X──H─┤
 
     .. details::
         :title: Usage Details
 
-        Consider the following quantum function:
-
         .. code-block:: python
 
-            def qfunc():
+            @replace_iX_gate
+            @qml.qnode(device=dev)
+            def circuit():
+                qml.Hadamard(wires=0)
+                qml.Hadamard(wires=1)
+                qml.Barrier(wires=[0,1])
+                qml.X(0)
+
+                # begin multi-controlled iX gate
+
                 qml.ctrl(qml.S(wires=[2]), control=[0, 1])
                 qml.MultiControlledX(wires=[0, 1, 2, 3])
+
+                # end multi-controlled iX gate
+
+                qml.Hadamard(wires=1)
+                qml.Barrier(wires=[0,1])
+                qml.X(0)
                 return qml.expval(qml.Z(0))
 
-        The circuit before decomposition:
-
-        >>> dev = qml.device('default.qubit', wires=4)
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> print(qml.draw(qnode)())
-            0: ─╭●─╭●─┤  <Z>
-            1: ─├●─├●─┤
-            2: ─╰S─├●─┤
-            3: ────╰X─┤
-
-        We can replace the multi-controlled iX gate by running the transform:
-
-        >>> lowered_qfunc = replace_controlled_iX_gate(qfunc, 2)
-        >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
-        >>> print(qml.draw(lowered_qnode)())
-
-        0: ──────────────╭●───────────╭●────┤  <Z>
-        1: ──────────────├●───────────├●────┤
-        2: ────────╭●────│──────╭●────│─────┤
-        3: ──H──T†─╰X──T─╰X──T†─╰X──T─╰X──H─┤
-
+        The relative multi-controlled iX gate (CS, Toffoli) is then replaced before execution.
     """
     if num_controls < 1:
         raise ValueError(
