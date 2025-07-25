@@ -148,6 +148,9 @@
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
+* The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
+  [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
+
 <h3>Breaking changes 💔</h3>
 
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
@@ -224,6 +227,10 @@
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
   [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
+
+* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
+  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+  [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
 
 * `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
   Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
@@ -322,6 +329,9 @@
 
 <h3>Documentation 📝</h3>
 
+* The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
+  [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
+
 * Improved the docstrings of all optimizers for consistency and legibility.
   [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
 
@@ -351,16 +361,21 @@
   This allows for types to be inferred correctly when parsing.
   [(#7825)](https://github.com/PennyLaneAI/pennylane/pull/7825)
 
+* Fixes `SemiAdder` to work when inputs are defined with a single wire.
+  [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
 Marcus Edwards,
 Simone Gasperini,
 David Ittah,
+Mehrdad Malekmohammadi
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
