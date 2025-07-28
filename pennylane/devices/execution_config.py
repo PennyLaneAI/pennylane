@@ -51,7 +51,7 @@ class MCMConfig:
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
 
 
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=too-many-instance-attributes, too-many-branches
 @dataclass(frozen=True)
 class ExecutionConfig:
     """
@@ -86,10 +86,10 @@ class ExecutionConfig:
     gradient_method: str | TransformDispatcher | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict | None = None
+    gradient_keyword_arguments: dict | MappingProxyType | None = None
     """Arguments used to control a gradient transform"""
 
-    device_options: dict | None = None
+    device_options: dict | MappingProxyType | None = None
     """Various options for the device executing a quantum circuit"""
 
     interface: Interface = Interface.NUMPY
@@ -130,6 +130,8 @@ class ExecutionConfig:
             object.__setattr__(self, "device_options", MappingProxyType({}))
         elif isinstance(self.device_options, dict):
             object.__setattr__(self, "device_options", MappingProxyType(self.device_options))
+        elif isinstance(self.device_options, MappingProxyType):
+            pass
         else:
             raise ValueError(
                 f"device_options must be a dict or None. Got {type(self.device_options)} instead."
@@ -143,6 +145,8 @@ class ExecutionConfig:
                 "gradient_keyword_arguments",
                 MappingProxyType(self.gradient_keyword_arguments),
             )
+        elif isinstance(self.gradient_keyword_arguments, MappingProxyType):
+            pass
         else:
             raise ValueError(
                 f"gradient_keyword_arguments must be a dict or None. Got {type(self.gradient_keyword_arguments)} instead."
