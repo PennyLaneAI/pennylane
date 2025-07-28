@@ -15,6 +15,7 @@ r"""
 Contains the k-UpCCGSD template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-positional-arguments
 import copy
 from itertools import product
 
@@ -23,8 +24,10 @@ import numpy as np
 from pennylane import math
 from pennylane.operation import Operation
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.templates.subroutines import FermionicDoubleExcitation, FermionicSingleExcitation
 from pennylane.wires import Wires
+
+from .fermionic_double_excitation import FermionicDoubleExcitation
+from .fermionic_single_excitation import FermionicSingleExcitation
 
 
 def generalized_singles(wires, delta_sz):

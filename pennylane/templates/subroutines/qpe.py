@@ -30,8 +30,9 @@ from pennylane.operation import Operator
 from pennylane.ops import pow as qml_pow
 from pennylane.queuing import QueuingManager
 from pennylane.resource.error import ErrorOperation, SpectralNormError
-from pennylane.templates.subroutines import QFT
 from pennylane.wires import Wires
+
+from .qft import QFT
 
 
 class QuantumPhaseEstimation(ErrorOperation):

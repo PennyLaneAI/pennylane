@@ -20,8 +20,9 @@ import copy
 from pennylane import math
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
-from pennylane.templates.subroutines import ApproxTimeEvolution
 from pennylane.wires import Wires
+
+from .approx_time_evolution import ApproxTimeEvolution
 
 
 class CommutingEvolution(Operation):

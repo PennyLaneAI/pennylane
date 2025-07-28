@@ -14,7 +14,7 @@
 """
 Contains the QuantumMonteCarlo template and utility functions.
 """
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments,too-many-positional-arguments
 import copy
 
 import numpy as np
@@ -22,8 +22,9 @@ import numpy as np
 from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import QubitUnitary
-from pennylane.templates.subroutines import QuantumPhaseEstimation
 from pennylane.wires import Wires
+
+from .qpe import QuantumPhaseEstimation
 
 
 def probs_to_unitary(probs):

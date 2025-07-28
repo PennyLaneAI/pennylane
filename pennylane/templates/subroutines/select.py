@@ -30,8 +30,9 @@ from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, X, adjoint, ctrl
 from pennylane.queuing import QueuingManager
-from pennylane.templates.subroutines.temporary_and import TemporaryAND
 from pennylane.wires import Wires
+
+from .temporary_and import TemporaryAND
 
 
 class Select(Operation):

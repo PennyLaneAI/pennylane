@@ -21,8 +21,9 @@ from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, LinearCombination, adjoint
 from pennylane.templates.embeddings import AmplitudeEmbedding
-from pennylane.templates.subroutines import Select
 from pennylane.wires import Wires
+
+from .select import Select
 
 
 def _get_new_terms(lcu):
