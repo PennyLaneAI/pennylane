@@ -1527,7 +1527,7 @@ def _check_trace_preserving(Ks):
 
 def choi_matrix(Ks, check_Ks=False):
     r"""
-    Compute the choi matrix :math:`\Lambda` of a quantum channel :math:`\mathcal{E}`,
+    Compute the Choi matrix :math:`\Lambda` of a quantum channel :math:`\mathcal{E}`,
 
     .. math:: \Lambda = (\mathbb{1} \otimes \mathcal{E})(|\phi^+ \rangle \langle \phi^+|) = \frac{1}{2^n} \sum_{ij=0}^{2^n-1} |i \rangle \langle j| \otimes \mathcal{E}(|i \rangle \langle j|),
 
@@ -1595,10 +1595,9 @@ def choi_matrix(Ks, check_Ks=False):
 
     for i in aux_basis:
         for j in q_basis:
+            ketbraij = math.outer(i, j)
             for K in Ks:
-                choi += math.kron(
-                    math.outer(i, j), K @ np.outer(i, j) @ math.transpose(math.conj(K))
-                )
+                choi += math.kron(ketbraij, K @ ketbraij @ math.transpose(math.conj(K)))
 
     choi = choi / d
 
