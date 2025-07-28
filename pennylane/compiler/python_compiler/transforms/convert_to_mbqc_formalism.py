@@ -33,7 +33,7 @@ from .api import compiler_transform
 def _generate_graph(op_name):
     """Generate a network graph to represent the connectivity of auxiliary qubits of
     a gate."""
-    if op_name in ["RotXZX, RZ, Hadamard, S"]:
+    if op_name in ["RotXZX", "RZ", "Hadamard", "S"]:
         return _generate_one_wire_op_lattice()
     if op_name == "CNOT":
         return _generate_cnot_graph()
@@ -427,13 +427,13 @@ class ConvertToMBQCFormalismPattern(
         """Correct the result auxiliary qubit."""
         match op.gate_name.data:
             case "Hadamard":
-                return self._hadamard_corrections(mres, qubits[0], op, rewriter)
+                return self._hadamard_corrections(mres, qubits, op, rewriter)
             case "S":
-                return self._s_corrections(mres, qubits[0], op, rewriter)
+                return self._s_corrections(mres, qubits, op, rewriter)
             case "RotXZX":
-                return self._rot_corrections(mres, qubits[0], op, rewriter)
+                return self._rot_corrections(mres, qubits, op, rewriter)
             case "RZ":
-                return self._rot_corrections(mres, qubits[0], op, rewriter)
+                return self._rot_corrections(mres, qubits, op, rewriter)
             case "CNOT":
                 return self._cnot_corrections(mres, qubits, op, rewriter)
 
