@@ -377,6 +377,7 @@ def _qrom_decomposition_resources(
     hadamard_ops = {qml.Hadamard: num_target_wires}
 
     resources.update(hadamard_ops)
+    resources.update(resources)
     resources.update(select_ops)
     resources.update(resources)
 
@@ -401,14 +402,16 @@ def _qrom_decomposition(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, len(bitstrings))
 
-    ops = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
-    ops_identity = ops + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops))
+    def _new_ops(depth_new, target_wires_new):
 
-    def _new_ops(ops_new, ops_identity_new, depth_new, target_wires_new):
+        # TODO: refactor to get rid of these calls
+        ops_new = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+        ops_identity_new = ops_new + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops_new))
+
         n_columns = (
-            len(ops) // depth_new
-            if len(ops_new) % depth_new == 0
-            else len(ops_new) // depth_new + 1
+            len(bitstrings) // depth_new
+            if len(bitstrings) % depth_new == 0
+            else len(bitstrings) // depth_new + 1
         )
         new_ops = []
         for i in range(n_columns):
@@ -425,7 +428,7 @@ def _qrom_decomposition(
         return new_ops
 
     def _select_ops(
-        ops_select, ops_identity_select, control_wires_select, depth_select, target_wires_select
+        control_wires_select, depth_select, target_wires_select
     ):
         n_control_select_wires = int(
             math.ceil(math.log2(2 ** len(control_wires_select) / depth_select))
@@ -434,11 +437,11 @@ def _qrom_decomposition(
 
         if control_select_wires:
             qml.Select(
-                _new_ops(ops_select, ops_identity_select, depth_select, target_wires_select),
+                _new_ops(depth_select, target_wires_select),
                 control=control_select_wires,
             )
         else:
-            _new_ops(ops_select, ops_identity_select, depth_select, target_wires_select)
+            _new_ops(depth_select, target_wires_select)
 
     def _swap_ops(control_wires_swap, depth_swap, swap_wires_swap, target_wires_swap):
         n_control_select_wires = int(
@@ -460,7 +463,7 @@ def _qrom_decomposition(
                 qml.ctrl(new_op, control=control_swap_wires[-ind - 1])
 
     if not clean or depth == 1:
-        _select_ops(ops, ops_identity, control_wires, depth, target_wires)
+        _select_ops(control_wires, depth, target_wires)
         _swap_ops(control_wires, depth, swap_wires, target_wires)
 
     else:
@@ -468,7 +471,7 @@ def _qrom_decomposition(
             for w in target_wires:
                 qml.Hadamard(wires=w)
                 _swap_ops(control_wires, depth, swap_wires, target_wires)
-                _select_ops(ops, ops_identity, control_wires, depth, target_wires)
+                _select_ops(control_wires, depth, target_wires)
                 _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 
