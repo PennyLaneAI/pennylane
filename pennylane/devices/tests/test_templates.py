@@ -411,19 +411,17 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_HilbertSchmidt(self, device, V, U, tol):
         """Test the HilbertSchmidt template."""
         dev = device(2)
-        u_wires = U.wires if isinstance(U, qml.operation.Operation) else U[0].wires
-        v_wires = V.wires if isinstance(V, qml.operation.Operation) else V[0].wires
 
         @qml.qnode(dev)
         def hilbert_test(V, U):
             qml.HilbertSchmidt(V, U)
-            return qml.probs(u_wires + v_wires)
+            return qml.probs()
 
         def cost_hst(V, U):
             # pylint:disable=unsubscriptable-object
-            return 1 - hilbert_test(V=V, U=U)[0]
+            return 1 - hilbert_test(V, U)[0]
 
-        res = cost_hst(V=V, U=U)
+        res = cost_hst(V, U)
         expected = 1.0
         assert np.isclose(res, expected, atol=tol(dev.shots))
 
@@ -458,40 +456,33 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         _ = circuit(params)
 
     @pytest.mark.parametrize(
-        "u", [[qml.CZ(wires=(0, 1))], (qml.CZ(wires=(0, 1)),), qml.CZ(wires=(0, 1))]
+        "U", [[qml.CZ(wires=(0, 1))], (qml.CZ(wires=(0, 1)),), qml.CZ(wires=(0, 1))]
     )
-    def test_LocalHilbertSchmidt(self, device, u, tol):
+    def test_LocalHilbertSchmidt(self, device, U, tol):
         """Test the LocalHilbertSchmidt template."""
         dev = device(4)
-        u_wires = u.wires if isinstance(u, qml.operation.Operation) else qml.prod(*u).wires
 
-        def v_function(params):
-            qml.RZ(params[0], wires=2)
-            qml.RZ(params[1], wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.RZ(params[2], wires=3)
-            qml.CNOT(wires=[2, 3])
+        def V_function(params):
+            return [
+                qml.RZ(params[0], wires=2),
+                qml.RZ(params[1], wires=3),
+                qml.CNOT(wires=[2, 3]),
+                qml.RZ(params[2], wires=3),
+                qml.CNOT(wires=[2, 3]),
+            ]
 
         @qml.qnode(dev)
-        def local_hilbert_test(v_params, v_function, v_wires, u):
-            qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u=u)
-            return qml.probs(u_wires + v_wires)
+        def local_hilbert_test(V, U):
+            qml.LocalHilbertSchmidt(V, U)
+            return qml.probs()
 
-        def cost_lhst(parameters, v_function, v_wires, u):
+        def cost_lhst(V, U):
             # pylint:disable=unsubscriptable-object
-            return (
-                1
-                - local_hilbert_test(
-                    v_params=parameters, v_function=v_function, v_wires=v_wires, u=u
-                )[0]
-            )
+            return 1 - local_hilbert_test(V, U)[0]
 
-        res = cost_lhst(
-            [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2],
-            v_function=v_function,
-            v_wires=[2, 3],
-            u=u,
-        )
+        v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
+        V = V_function(v_params)
+        res = cost_lhst(V, U)
         expected = 0.5
         assert np.isclose(res, expected, atol=tol(dev.shots))
 
