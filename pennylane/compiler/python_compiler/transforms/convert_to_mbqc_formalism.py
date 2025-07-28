@@ -22,6 +22,7 @@ import networkx as nx
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
+from xdsl.ir import SSAValue
 from xdsl.rewriter import InsertPoint
 
 from ..dialects.mbqc import MeasureInBasisOp, MeasurementPlaneAttr, MeasurementPlaneEnum
@@ -29,42 +30,53 @@ from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp, QubitType
 from .api import compiler_transform
 
 
-def _generate_cnot_lattice():
-    """Generate lattice graph for a CNOT gate based on the textbook MBQC formalism."""
-    wires = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15]
+def _generate_graph(op_name):
+    """Generate a network graph to represent the connectivity of auxiliary qubits of
+    a gate."""
+    if op_name in ["RotXZX, RZ, Hadamard, S"]:
+        return _generate_one_wire_op_lattice()
+    if op_name == "CNOT":
+        return _generate_cnot_graph()
+    raise NotImplementedError(f"{op_name} is not supported in the MBQC formalism.")
+
+
+def _generate_cnot_graph():
+    """Generate a networkx graph to represent the connectivity of auxiliary qubits of
+    a CNOT gate based on the textbook MBQC formalism. Note that wire 1 is the control
+    wire and wire 9 is the target wire in the textbook MBQC formalism."""
     g = nx.Graph()
+    wires = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15]
+    edges = [
+        (2, 3),
+        (3, 4),
+        (4, 5),
+        (5, 6),
+        (6, 7),
+        (4, 8),
+        (8, 12),
+        (10, 11),
+        (11, 12),
+        (12, 13),
+        (13, 14),
+        (14, 15),
+    ]
     g.add_nodes_from(wires)
-    g.add_edges_from(
-        [
-            (2, 3),
-            (3, 4),
-            (4, 5),
-            (5, 6),
-            (6, 7),
-            (4, 8),
-            (8, 12),
-            (10, 11),
-            (11, 12),
-            (12, 13),
-            (13, 14),
-            (14, 15),
-        ]
-    )
+    g.add_edges_from(edges)
     return g
 
 
 def _generate_one_wire_op_lattice():
-    """Generate lattice graph for a one-wire gate based on the textbook MBQC formalism."""
-    wires = [2, 3, 4, 5]
+    """Generate lattice graph for a one-wire gate based on the textbook MBQC formalism.
+    Note wire 1 is the target wire in the textbook MBQC fomalism."""
     g = nx.Graph()
+    wires = [2, 3, 4, 5]
+    edges = [
+        (2, 3),
+        (3, 4),
+        (4, 5),
+    ]
     g.add_nodes_from(wires)
-    g.add_edges_from(
-        [
-            (2, 3),
-            (3, 4),
-            (4, 5),
-        ]
-    )
+    g.add_edges_from(edges)
     return g
 
 
@@ -95,53 +107,89 @@ class ConvertToMBQCFormalismPattern(
 ):  # pylint: disable=too-few-public-methods
     """RewritePattern for converting to the MBQC formalism."""
 
-    def _make_graph_state(self, op, rewriter):
-        """Make a graph state and return the allocated qubits"""
-        graph = None
-        if op.gate_name.data == "CNOT":
-            graph = _generate_cnot_lattice()
-        elif op.gate_name.data in [
-            "Hadamard",
-            "S",
-            "RZ",
-            "RotXZX",
-        ]:
-            graph = _generate_one_wire_op_lattice()
-        else:
-            raise NotImplementedError(f"{op.gate_name.data} gate is not implemented.")
+    def _prep_graph_state(self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter):
+        r"""Allocate auxiliary qubits and prepare a graph state. Auxiliary qubits are
+        entangled in the way described in the textbook MBQC form. **Note that all ops
+        inserted into the IR in this function could be abstracted into a primitive that
+        return a graph state that can be measured directly.**
+
+        Args:
+            op (CustomOp) : A `CustomOp` object. Note that op here is a quantum.customop object
+                 instead of a qml.ops.
+            rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
+
+        Return:
+            graph_qubits_dict : A dictionary of qubits of graph states. The key is the index of
+            a qubit described in the ref [Measurement-based quantum computation on cluster states]
+            and the corresponding value is the qubit.
+        """
+        graph = _generate_graph(op.gate_name.data)
+
+        graph_qubits_dict = dict()
 
         nodes = graph.nodes
         edges = graph.edges
 
-        # Allocate qubits
-        aux_qubits_dict = {}
+        # Allocate auxiliary qubits and insert ops into the IR
         for node in nodes:
-            aux_qubits_dict[node] = AllocQubitOp()
+            graph_qubits_dict[node] = AllocQubitOp()
 
-        # Insert qubit allocation ops before the op
-        for node in aux_qubits_dict:
-            rewriter.insert_op(aux_qubits_dict[node], InsertPoint.before(op))
+        for node in graph_qubits_dict:
+            rewriter.insert_op(graph_qubits_dict[node], InsertPoint.before(op))
 
-        # Apply Hadamard gate to each auxiliary qubit
+        # Prepare auxiliary qubits by applying Hadamard ops before entanglement
         for node in nodes:
-            in_qubits = aux_qubits_dict[node]
-            gate_name = "Hadamard"
-            HadamardOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
+            in_qubits = graph_qubits_dict[node]
+            HadamardOp = CustomOp(in_qubits=in_qubits, gate_name="Hadamard")
             rewriter.insert_op(HadamardOp, InsertPoint.before(op))
-            aux_qubits_dict[node] = HadamardOp.results[0]
+            graph_qubits_dict[node] = HadamardOp.results[0]
 
         # Apply CZ gate to entangle each nearest auxiliary qubit pair
         for edge in edges:
-            in_qubits = [aux_qubits_dict[node] for node in edge]
-            gate_name = "CZ"
-            CZOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
+            in_qubits = [graph_qubits_dict[node] for node in edge]
+            CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
             rewriter.insert_op(CZOp, InsertPoint.before(op))
-            aux_qubits_dict[edge[0]], aux_qubits_dict[edge[1]] = CZOp.results[0], CZOp.results[1]
+            graph_qubits_dict[edge[0]], graph_qubits_dict[edge[1]] = (
+                CZOp.results[0],
+                CZOp.results[1],
+            )
 
-        return aux_qubits_dict
+        # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
+        in_qubits = [op.in_qubits[0], graph_qubits_dict[2]]
+        CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
+        rewriter.insert_op(CZOp, InsertPoint.before(op))
 
-    def _insert_arbitary_basis_measure_op(self, angle, plane, qubit, op, rewriter):
-        """Insert arbitary basis measure related operations before the op operation."""
+        graph_qubits_dict[1], graph_qubits_dict[2] = CZOp.results
+
+        # Entangle op.in_qubits[1] with with the graph_qubits_dict[10] for a CNOT gate
+        if op.gate_name.data == "CNOT":
+            in_qubits = [op.in_qubits[1], graph_qubits_dict[10]]
+            CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
+            rewriter.insert_op(CZOp, InsertPoint.before(op))
+            graph_qubits_dict[9], graph_qubits_dict[10] = CZOp.results
+
+        return graph_qubits_dict
+
+    def _insert_arbitary_basis_measure_op(
+        self,
+        angle: float,
+        plane: str,
+        qubit: QubitType,
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """Insert arbitary basis measure related operations before the op operation.
+        Args:
+            angle (float) : Angle of the measurement basis.
+            plane (str): Plane of the measurement basis.
+            qubit (QubitType) : The target qubit to be measured.
+            op (CustomOp) : A `CustomOp` object. Note that op here is a quantum.customop object
+                 instead of a qml.ops.
+            rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
+
+        Returns:
+            The measurement results include the result qubit and the measurement result.
+        """
         in_qubit = qubit
         planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
         constAngleOp = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
@@ -152,7 +200,39 @@ class ConvertToMBQCFormalismPattern(
         rewriter.insert_op(measureOp, InsertPoint.before(op))
         return measureOp.results
 
-    def _cond_insert_arbitary_basis_measure_op(self, prev_mres, angle, plane, qubit, op, rewriter):
+    def _measure_x_op(self, qubit, op, rewriter):
+        """Insert X basis measure related operations before the op operation."""
+        return self._insert_arbitary_basis_measure_op(0.0, "XY", qubit, op, rewriter)
+
+    def _measure_y_op(self, qubit, op, rewriter):
+        """Insert Y basis measure related operations before the op operation."""
+        return self._insert_arbitary_basis_measure_op(math.pi / 2, "XY", qubit, op, rewriter)
+
+    def _cond_insert_arbitary_basis_measure_op(
+        self,
+        prev_mres: builtin.IntegerType,
+        angle: SSAValue[builtin.Float64Type],
+        plane: str,
+        qubit: QubitType,
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """
+        Insert a conditional arbitary basis measurement operation based on a previous measurement result.
+        Args:
+            pre_mres (builtin.IntegerType) : A previous measurement result.
+            angle (SSAValue[builtin.Float64Type]) : An angle SSAValue from a parametric gate operation. Note that
+                `_insert_arbitary_basis_measure_op` accepts a float value instead.
+            plane (str): Plane of the measurement basis.
+            qubit (QubitType) : The target qubit to be measured.
+            op (CustomOp) : A `CustomOp` object. Note that op here is a quantum.customop object
+                 instead of a qml.ops.
+            rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
+
+        Returns:
+            The measurement results include the result qubit and the measurement result.
+
+        """
         constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
         rewriter.insert_op(constantOneOp, InsertPoint.before(op))
         cmpOp = arith.CmpiOp(prev_mres, constantOneOp, "eq")
@@ -182,25 +262,76 @@ class ConvertToMBQCFormalismPattern(
         rewriter.insert_op(condOp, InsertPoint.before(op))
         return condOp.results
 
-    def _insert_byprod_exp_op(self, mres, insert_before_op, rewriter, add_one_op=False):
-        prev_res = mres[0]
-        addOp = None
-        for i in range(1, len(mres)):
-            addOp = arith.AddiOp(prev_res, mres[i])
-            rewriter.insert_op(addOp, InsertPoint.before(insert_before_op))
-            prev_res = addOp.result
+    def _hadamard_measurements(self, graph_qubits_dict, op, rewriter):
+        """Insert measurements for a Hadamard gate and return measurement results and the result graph qubits"""
+        m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
+        m2, graph_qubits_dict[2] = self._measure_y_op(graph_qubits_dict[2], op, rewriter)
+        m3, graph_qubits_dict[3] = self._measure_y_op(graph_qubits_dict[3], op, rewriter)
+        m4, graph_qubits_dict[4] = self._measure_y_op(graph_qubits_dict[4], op, rewriter)
+        return [m1, m2, m3, m4], graph_qubits_dict
 
-        constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
-        rewriter.insert_op(constantOneOp, InsertPoint.before(insert_before_op))
+    def _s_measurements(self, graph_qubits_dict, op, rewriter):
+        """Insert measurements for a S gate and return measurement results and the result graph qubits"""
+        m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
+        m2, graph_qubits_dict[2] = self._measure_x_op(graph_qubits_dict[2], op, rewriter)
+        m3, graph_qubits_dict[3] = self._measure_y_op(graph_qubits_dict[3], op, rewriter)
+        m4, graph_qubits_dict[4] = self._measure_x_op(graph_qubits_dict[4], op, rewriter)
+        return [m1, m2, m3, m4], graph_qubits_dict
 
-        if add_one_op:
-            addOp = arith.AddiOp(prev_res, constantOneOp)
-            rewriter.insert_op(addOp, InsertPoint.before(insert_before_op))
-            prev_res = addOp.result
+    def _cnot_measurements(self, graph_qubits_dict, op, rewriter):
+        """Insert measurements for a CNOT gate and return measurement results and the result graph qubits"""
+        m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
+        m2, graph_qubits_dict[2] = self._measure_y_op(graph_qubits_dict[2], op, rewriter)
+        m3, graph_qubits_dict[3] = self._measure_y_op(graph_qubits_dict[3], op, rewriter)
+        m4, graph_qubits_dict[4] = self._measure_y_op(graph_qubits_dict[4], op, rewriter)
+        m5, graph_qubits_dict[5] = self._measure_y_op(graph_qubits_dict[5], op, rewriter)
+        m6, graph_qubits_dict[6] = self._measure_y_op(graph_qubits_dict[6], op, rewriter)
+        m8, graph_qubits_dict[8] = self._measure_y_op(graph_qubits_dict[8], op, rewriter)
+        m9, graph_qubits_dict[9] = self._measure_x_op(graph_qubits_dict[9], op, rewriter)
+        m10, graph_qubits_dict[10] = self._measure_x_op(graph_qubits_dict[10], op, rewriter)
+        m11, graph_qubits_dict[11] = self._measure_x_op(graph_qubits_dict[11], op, rewriter)
+        m12, graph_qubits_dict[12] = self._measure_y_op(graph_qubits_dict[12], op, rewriter)
+        m13, graph_qubits_dict[13] = self._measure_x_op(graph_qubits_dict[13], op, rewriter)
+        m14, graph_qubits_dict[14] = self._measure_x_op(graph_qubits_dict[14], op, rewriter)
 
-        xorOp = arith.XOrIOp(prev_res, constantOneOp)
-        rewriter.insert_op(xorOp, InsertPoint.before(insert_before_op))
-        return xorOp.result
+        return [m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14], graph_qubits_dict
+
+    def _rz_measurements(self, graph_qubits_dict, op, rewriter):
+        """Insert measurements for a RZ gate and return measurement results and the result graph qubits"""
+        m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
+        m2, graph_qubits_dict[2] = self._measure_x_op(graph_qubits_dict[2], op, rewriter)
+        m3, graph_qubits_dict[3] = self._cond_insert_arbitary_basis_measure_op(
+            m2, op.params[0], "XY", graph_qubits_dict[3], op, rewriter
+        )
+        m4, graph_qubits_dict[4] = self._measure_x_op(graph_qubits_dict[4], op, rewriter)
+        return [m1, m2, m3, m4], graph_qubits_dict
+
+    def _rotxzx_measurements(self, graph_qubits_dict, op, rewriter):
+        """Insert measurements for a RotXZX gate and return measurement results and the result graph qubits"""
+        m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
+        m2, graph_qubits_dict[2] = self._cond_insert_arbitary_basis_measure_op(
+            m1, op.params[0], "XY", graph_qubits_dict[2], op, rewriter
+        )
+        m3, graph_qubits_dict[3] = self._cond_insert_arbitary_basis_measure_op(
+            m2, op.params[1], "XY", graph_qubits_dict[3], op, rewriter
+        )
+        m4, graph_qubits_dict[4] = self._cond_insert_arbitary_basis_measure_op(
+            m3, op.params[2], "XY", graph_qubits_dict[4], op, rewriter
+        )
+        return [m1, m2, m3, m4], graph_qubits_dict
+
+    def _queue_measurements(self, graph_qubits_dict, op, rewriter):
+        match op.gate_name.data:
+            case "Hadamard":
+                return self._hadamard_measurements(graph_qubits_dict, op, rewriter)
+            case "S":
+                return self._s_measurements(graph_qubits_dict, op, rewriter)
+            case "RZ":
+                return self._rz_measurements(graph_qubits_dict, op, rewriter)
+            case "RotXZX":
+                return self._rotxzx_measurements(graph_qubits_dict, op, rewriter)
+            case "CNOT":
+                return self._cnot_measurements(graph_qubits_dict, op, rewriter)
 
     def _insert_cond_byproduct_op(self, exp_index, gate_name, qubit, op, rewriter):
         constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
@@ -217,79 +348,116 @@ class ConvertToMBQCFormalismPattern(
         rewriter.insert_op(condOp, InsertPoint.before(op))
         return condOp.results
 
-    def _get_measurement_param_with_gatename(self, gatename):
-        match gatename:
+    def _parity_check(self, mres, op, rewriter, add_const_one=False):
+        prev_res = mres[0]
+        addOp = None
+        for i in range(1, len(mres)):
+            addOp = arith.AddiOp(prev_res, mres[i])
+            rewriter.insert_op(addOp, InsertPoint.before(op))
+            prev_res = addOp.result
+
+        constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+        rewriter.insert_op(constantOneOp, InsertPoint.before(op))
+
+        if add_const_one:
+            addOp = arith.AddiOp(prev_res, constantOneOp)
+            rewriter.insert_op(addOp, InsertPoint.before(op))
+            prev_res = addOp.result
+
+        xorOp = arith.XOrIOp(prev_res, constantOneOp)
+        rewriter.insert_op(xorOp, InsertPoint.before(op))
+        return xorOp.result
+
+    def _hadamard_corrections(self, mres, qubit, op, rewriter):
+        m1, m2, m3, m4 = mres
+
+        x_parity = self._parity_check([m1, m3, m4], op, rewriter)
+        res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit, op, rewriter)
+        z_parity = self._parity_check([m2, m3], op, rewriter)
+        res_aux_qubit = self._insert_cond_byproduct_op(
+            z_parity, "PauliZ", res_aux_qubit, op, rewriter
+        )
+
+        return res_aux_qubit
+
+    def _s_corrections(self, mres, qubit, op, rewriter):
+        m1, m2, m3, m4 = mres
+
+        x_parity = self._parity_check([m2, m4], op, rewriter)
+        res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit, op, rewriter)
+        z_parity = self._parity_check([m1, m2, m3], op, rewriter, add_const_one=True)
+        res_aux_qubit = self._insert_cond_byproduct_op(
+            z_parity, "PauliZ", res_aux_qubit, op, rewriter
+        )
+        return res_aux_qubit
+
+    def _rot_corrections(self, mres, qubit, op, rewriter):
+        m1, m2, m3, m4 = mres
+        x_parity = self._parity_check([m2, m4], op, rewriter)
+        res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit, op, rewriter)
+        z_parity = self._parity_check([m1, m3], op, rewriter)
+        res_aux_qubit = self._insert_cond_byproduct_op(
+            z_parity, "PauliZ", res_aux_qubit, op, rewriter
+        )
+        return res_aux_qubit
+
+    def _cnot_corrections(self, mres, qubits, op, rewriter):
+        m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = mres
+        # Corrections for the control qubit
+        x_parity = self._parity_check([m2, m3, m5, m6], op, rewriter)
+        ctrl_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubits[0], op, rewriter)
+        z_parity = self._parity_check(
+            [m1, m3, m4, m5, m8, m9, m11], op, rewriter, add_const_one=True
+        )
+        ctrl_aux_qubit = self._insert_cond_byproduct_op(
+            z_parity, "PauliZ", ctrl_aux_qubit, op, rewriter
+        )
+
+        # Corrections for the target qubit
+        x_parity = self._parity_check([m2, m3, m8, m10, m12, m14], op, rewriter)
+        tgt_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubits[1], op, rewriter)
+        z_parity = self._parity_check([m9, m11, m13], op, rewriter)
+        tgt_aux_qubit = self._insert_cond_byproduct_op(
+            x_parity, "PauliZ", tgt_aux_qubit, op, rewriter
+        )
+
+        return ctrl_aux_qubit, tgt_aux_qubit
+
+    def _queue_byprod_corrections(self, mres, qubits, op, rewriter):
+        """Correct the result auxiliary qubit."""
+        match op.gate_name.data:
             case "Hadamard":
-                xmres_add_one = False
-                zmres_add_one = False
-                x_mres_idx = [1, 3, 4]
-                z_mres_idx = [2, 3]
-                angles = {1: 0.0, 2: math.pi / 2, 3: math.pi / 2, 4: math.pi / 2}
-                planes = {1: "XY", 2: "XY", 3: "XY", 4: "XY"}
-                return x_mres_idx, z_mres_idx, angles, planes, xmres_add_one, zmres_add_one
-
+                return self._hadamard_corrections(mres, qubits[0], op, rewriter)
             case "S":
-                x_mres_idx = [2, 4]
-                z_mres_idx = [1, 2, 3]
-                angles = {1: 0.0, 2: 0.0, 3: math.pi / 2, 4: 0.0}
-                planes = {1: "XY", 2: "XY", 3: "XY", 4: "XY"}
-                xmres_add_one = False
-                zmres_add_one = True
-                return x_mres_idx, z_mres_idx, angles, planes, xmres_add_one, zmres_add_one
-
+                return self._s_corrections(mres, qubits[0], op, rewriter)
+            case "RotXZX":
+                return self._rot_corrections(mres, qubits[0], op, rewriter)
+            case "RZ":
+                return self._rot_corrections(mres, qubits[0], op, rewriter)
             case "CNOT":
-                xc_mres_idx = [2, 3, 5, 6]
-                xt_mres_idx = [2, 3, 8, 10, 12, 14]
-                zc_mres_idx = [1, 3, 4, 5, 8, 9, 11]
-                zt_mres_idx = [9, 11, 13]
+                return self._cnot_corrections(mres, qubits, op, rewriter)
 
-                xcmres_add_one = False
-                xtmres_add_one = False
-                zcmres_add_one = True
-                ztmres_add_one = True
+    def _swap_qb_in_reg_aux_res_qb(self, qb_in_reg, aux_res_qubit, op, rewriter):
+        # NOTE: IdentityOp inserted here is a temporal solution to fix the issue that SWAPOp can't accept
+        # `res_aux_qubit` as an in_qubits variable, i.e. SWAPOp = CustomOp(in_qubits=(target_qubit, res_aux_qubit), gate_name="SWAP").
+        # The error message would be "| Error while applying pattern: 'NoneType' object has no attribute 'add_use'". Is it a upstream
+        # issue or caused by the way how we define the `CustomOp` operation? Not sure why.
+        IdentityOp = CustomOp(in_qubits=(aux_res_qubit), gate_name="Identity")
+        rewriter.insert_op(IdentityOp, InsertPoint.before(op))
 
-                angles = {
-                    1: 0.0,
-                    2: math.pi / 2,
-                    3: math.pi / 2,
-                    4: math.pi / 2,
-                    5: math.pi / 2,
-                    6: math.pi / 2,
-                    8: math.pi / 2,
-                    9: 0.0,
-                    10: 0.0,
-                    11: 0.0,
-                    12: math.pi / 2,
-                    13: 0.0,
-                    14: 0.0,
-                }
-                planes = {
-                    1: "XY",
-                    2: "XY",
-                    3: "XY",
-                    4: "XY",
-                    5: "XY",
-                    6: "XY",
-                    8: "XY",
-                    9: "XY",
-                    10: "XY",
-                    11: "XY",
-                    12: "XY",
-                    13: "XY",
-                    14: "XY",
-                }
-                return (
-                    xc_mres_idx,
-                    xt_mres_idx,
-                    zc_mres_idx,
-                    zt_mres_idx,
-                    xcmres_add_one,
-                    xtmres_add_one,
-                    zcmres_add_one,
-                    ztmres_add_one,
-                    angles,
-                    planes,
-                )
+        in_qubits = (qb_in_reg, IdentityOp.results[0])
+
+        SWAPOp = CustomOp(in_qubits=in_qubits, gate_name="SWAP")
+        rewriter.insert_op(SWAPOp, InsertPoint.before(op))
+
+        return SWAPOp.results
+
+    def _deallocate_aux_qubits(self, graph_qubits_dict, qb_in_reg_key, op, rewriter):
+        # Deallocate aux_qubits
+        for node in graph_qubits_dict:
+            if node not in qb_in_reg_key:
+                deallocQubitOp = DeallocQubitOp(graph_qubits_dict[node])
+                rewriter.insert_op(deallocQubitOp, InsertPoint.before(op))
 
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
@@ -306,242 +474,49 @@ class ConvertToMBQCFormalismPattern(
                     "RZ",
                     "RotXZX",
                 ]:
-                    aux_qubits_dict = self._make_graph_state(op, rewriter)
-                    # Entangle the target wire to qubit 2 in the aux_qubits_dict
-                    in_qubits = [op.in_qubits[0], aux_qubits_dict[2]]
-                    gate_name = "CZ"
-                    CZOp = CustomOp(in_qubits=in_qubits, gate_name=gate_name)
-                    rewriter.insert_op(CZOp, InsertPoint.before(op))
+                    graph_qubits_dict = self._prep_graph_state(op, rewriter)
 
-                    # TODOs: the following line assign the target qubit to aux_qubits_dict[1] could be confusing, it's subject to be refactored.
-                    aux_qubits_dict[1], aux_qubits_dict[2] = CZOp.results
-                    res_aux_qubit = aux_qubits_dict[5]
-
-                    # Get measurement params with gate name
-
-                    x_mres_idx, z_mres_idx, angles, planes, xmres_add_one, zmres_add_one = (
-                        (self._get_measurement_param_with_gatename(op.gate_name.data))
-                        if op.gate_name.data in ["Hadamard", "S"]
-                        else [None] * 6
+                    mres, graph_qubits_dict = self._queue_measurements(
+                        graph_qubits_dict, op, rewriter
                     )
 
-                    x_mres = []
-                    z_mres = []
-                    if op.gate_name.data in ["Hadamard", "S"]:
-                        for key in angles:
-                            mres, aux_qubits_dict[key] = self._insert_arbitary_basis_measure_op(
-                                angle=angles[key],
-                                plane=planes[key],
-                                qubit=aux_qubits_dict[key],
-                                op=op,
-                                rewriter=rewriter,
-                            )
-                            if key in x_mres_idx:
-                                x_mres.append(mres)
-                            if key in z_mres_idx:
-                                z_mres.append(mres)
-                    if op.gate_name.data in ["RZ"]:
-                        m1, aux_qubits_dict[1] = self._insert_arbitary_basis_measure_op(
-                            angle=0.0,
-                            plane="XY",
-                            qubit=aux_qubits_dict[1],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        m2, aux_qubits_dict[2] = self._insert_arbitary_basis_measure_op(
-                            angle=0.0,
-                            plane="XY",
-                            qubit=aux_qubits_dict[2],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        m3, aux_qubits_dict[3] = self._cond_insert_arbitary_basis_measure_op(
-                            prev_mres=m2,
-                            angle=op.params[0],
-                            plane="XY",
-                            qubit=aux_qubits_dict[3],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        m4, aux_qubits_dict[4] = self._insert_arbitary_basis_measure_op(
-                            angle=0.0,
-                            plane="XY",
-                            qubit=aux_qubits_dict[4],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        x_mres = [m2, m4]
-                        z_mres = [m1, m3]
-
-                    if op.gate_name.data in ["RotXZX"]:
-                        m1, aux_qubits_dict[1] = self._insert_arbitary_basis_measure_op(
-                            angle=0.0,
-                            plane="XY",
-                            qubit=aux_qubits_dict[1],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        m2, aux_qubits_dict[2] = self._cond_insert_arbitary_basis_measure_op(
-                            prev_mres=m1,
-                            angle=op.params[0],
-                            plane="XY",
-                            qubit=aux_qubits_dict[2],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        m3, aux_qubits_dict[3] = self._cond_insert_arbitary_basis_measure_op(
-                            prev_mres=m2,
-                            angle=op.params[1],
-                            plane="XY",
-                            qubit=aux_qubits_dict[3],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        m4, aux_qubits_dict[4] = self._cond_insert_arbitary_basis_measure_op(
-                            prev_mres=m3,
-                            angle=op.params[2],
-                            plane="XY",
-                            qubit=aux_qubits_dict[4],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        x_mres = [m2, m4]
-                        z_mres = [m1, m3]
-                    # Apply corrections
-                    x_exp = self._insert_byprod_exp_op(x_mres, op, rewriter, xmres_add_one)
-                    z_exp = self._insert_byprod_exp_op(z_mres, op, rewriter, zmres_add_one)
-
-                    res_aux_qubit = self._insert_cond_byproduct_op(
-                        x_exp, "PauliX", res_aux_qubit, op, rewriter
+                    graph_qubits_dict[5] = self._queue_byprod_corrections(
+                        mres, graph_qubits_dict[5], op, rewriter
                     )
 
-                    res_aux_qubit = self._insert_cond_byproduct_op(
-                        z_exp, "PauliZ", res_aux_qubit, op, rewriter
+                    graph_qubits_dict[1], graph_qubits_dict[5] = self._swap_qb_in_reg_aux_res_qb(
+                        graph_qubits_dict[1], graph_qubits_dict[5], op, rewriter
                     )
 
-                    # NOTE: IdentityOp inserted here is a temporal solution to fix the issue that SWAPOp can't accept
-                    # `res_aux_qubit` as an in_qubits variable, i.e. SWAPOp = CustomOp(in_qubits=(target_qubit, res_aux_qubit), gate_name="SWAP").
-                    # The error message would be "| Error while applying pattern: 'NoneType' object has no attribute 'add_use'". Is it a upstream
-                    # issue or caused by the way how we define the `CustomOp` operation? Not sure why.
-                    IdentityOp = CustomOp(in_qubits=(res_aux_qubit), gate_name="Identity")
-                    rewriter.insert_op(IdentityOp, InsertPoint.before(op))
-                    in_qubits = (aux_qubits_dict[1], IdentityOp.results[0])
-                    SWAPOp = CustomOp(in_qubits=in_qubits, gate_name="SWAP")
-                    rewriter.insert_op(SWAPOp, InsertPoint.before(op))
-                    result_qubit, aux_qubits_dict[5] = SWAPOp.results
-
-                    # Deallocate aux_qubits
-                    for node in aux_qubits_dict:
-                        if node != 1:  # 1st qubit is the target qubit in the global register
-                            deallocQubitOp = DeallocQubitOp(aux_qubits_dict[node])
-                            rewriter.insert_op(deallocQubitOp, InsertPoint.before(op))
+                    self._deallocate_aux_qubits(graph_qubits_dict, [1], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result_qubit
-                    rewriter.replace_all_uses_with(op.results[0], result_qubit)
+                    rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[1])
                     # Remove op operation
                     rewriter.erase_op(op)
                 elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
-                    aux_qubits_dict = self._make_graph_state(op, rewriter)
-                    # Entangle the target wire to qubit 2 in the aux_qubits_dict
-                    in_qubits_ctrl = [op.in_qubits[0], aux_qubits_dict[2]]
-                    CZ_ctrl_Op = CustomOp(in_qubits=in_qubits_ctrl, gate_name="CZ")
-                    rewriter.insert_op(CZ_ctrl_Op, InsertPoint.before(op))
-                    aux_qubits_dict[1], aux_qubits_dict[2] = CZ_ctrl_Op.results
+                    graph_qubits_dict = self._prep_graph_state(op, rewriter)
 
-                    in_qubits_target = [op.in_qubits[1], aux_qubits_dict[10]]
-                    CZ_tgt_Op = CustomOp(in_qubits=in_qubits_target, gate_name="CZ")
-                    rewriter.insert_op(CZ_tgt_Op, InsertPoint.before(op))
-                    aux_qubits_dict[9], aux_qubits_dict[10] = CZ_tgt_Op.results
-
-                    ctrl_qubit = aux_qubits_dict[1]
-                    tgt_qubit = aux_qubits_dict[9]
-
-                    (
-                        xc_mres_idx,
-                        xt_mres_idx,
-                        zc_mres_idx,
-                        zt_mres_idx,
-                        xcmres_add_one,
-                        xtmres_add_one,
-                        zcmres_add_one,
-                        ztmres_add_one,
-                        angles,
-                        planes,
-                    ) = self._get_measurement_param_with_gatename(op.gate_name.data)
-                    xt_mres = []
-                    zt_mres = []
-                    xc_mres = []
-                    zc_mres = []
-                    for key in angles:
-                        mres, aux_qubits_dict[key] = self._insert_arbitary_basis_measure_op(
-                            angle=angles[key],
-                            plane=planes[key],
-                            qubit=aux_qubits_dict[key],
-                            op=op,
-                            rewriter=rewriter,
-                        )
-                        if key in xc_mres_idx:
-                            xc_mres.append(mres)
-                        if key in zc_mres_idx:
-                            zc_mres.append(mres)
-                        if key in xt_mres_idx:
-                            xt_mres.append(mres)
-                        if key in zt_mres_idx:
-                            zt_mres.append(mres)
-
-                    # Apply corrections
-                    xc_exp = self._insert_byprod_exp_op(xc_mres, op, rewriter, xcmres_add_one)
-                    zc_exp = self._insert_byprod_exp_op(zc_mres, op, rewriter, zcmres_add_one)
-
-                    xt_exp = self._insert_byprod_exp_op(xt_mres, op, rewriter, xtmres_add_one)
-                    zt_exp = self._insert_byprod_exp_op(zt_mres, op, rewriter, ztmres_add_one)
-
-                    res_c_qubit = self._insert_cond_byproduct_op(
-                        xc_exp, "PauliX", ctrl_qubit, op, rewriter
+                    mres, graph_qubits_dict = self._queue_measurements(
+                        graph_qubits_dict, op, rewriter
                     )
 
-                    res_c_qubit = self._insert_cond_byproduct_op(
-                        zc_exp, "PauliZ", res_c_qubit, op, rewriter
+                    graph_qubits_dict[7], graph_qubits_dict[15] = self._queue_byprod_corrections(
+                        mres, [graph_qubits_dict[7], graph_qubits_dict[15]], op, rewriter
                     )
 
-                    res_t_qubit = self._insert_cond_byproduct_op(
-                        xt_exp, "PauliX", tgt_qubit, op, rewriter
+                    graph_qubits_dict[1], graph_qubits_dict[7] = self._swap_qb_in_reg_aux_res_qb(
+                        graph_qubits_dict[1], graph_qubits_dict[7], op, rewriter
                     )
-
-                    res_t_qubit = self._insert_cond_byproduct_op(
-                        zt_exp, "PauliZ", res_t_qubit, op, rewriter
+                    graph_qubits_dict[9], graph_qubits_dict[15] = self._swap_qb_in_reg_aux_res_qb(
+                        graph_qubits_dict[9], graph_qubits_dict[15], op, rewriter
                     )
-
-                    # NOTE: IdentityOp inserted here is a temporal solution to fix the issue that SWAPOp can't accept
-                    # `res_aux_qubit` as an in_qubits variable, i.e. SWAPOp = CustomOp(in_qubits=(target_qubit, res_aux_qubit), gate_name="SWAP").
-                    # The error message would be "| Error while applying pattern: 'NoneType' object has no attribute 'add_use'". Is it a upstream
-                    # issue or caused by the way how we define the `CustomOp` operation? Not sure why.
-                    IdentityOp = CustomOp(in_qubits=(res_c_qubit), gate_name="Identity")
-                    rewriter.insert_op(IdentityOp, InsertPoint.before(op))
-
-                    in_qubits = (aux_qubits_dict[1], IdentityOp.results[0])
-                    SWAPOp = CustomOp(in_qubits=in_qubits, gate_name="SWAP")
-                    rewriter.insert_op(SWAPOp, InsertPoint.before(op))
-                    result_c_qubit, aux_qubits_dict[7] = SWAPOp.results
-
-                    IdentityOp = CustomOp(in_qubits=(res_t_qubit), gate_name="Identity")
-                    rewriter.insert_op(IdentityOp, InsertPoint.before(op))
-
-                    in_qubits = (aux_qubits_dict[9], IdentityOp.results[0])
-                    SWAPOp = CustomOp(in_qubits=in_qubits, gate_name="SWAP")
-                    rewriter.insert_op(SWAPOp, InsertPoint.before(op))
-                    result_t_qubit, aux_qubits_dict[15] = SWAPOp.results
 
                     # Deallocate aux_qubits
-                    for node in aux_qubits_dict:
-                        if (
-                            node != 1 and node != 9
-                        ):  # 1st qubit is the target qubit in the global register
-                            deallocQubitOp = DeallocQubitOp(aux_qubits_dict[node])
-                            rewriter.insert_op(deallocQubitOp, InsertPoint.before(op))
+                    self._deallocate_aux_qubits(graph_qubits_dict, [1, 9], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result_qubit
-                    rewriter.replace_all_uses_with(op.results[0], result_c_qubit)
-                    rewriter.replace_all_uses_with(op.results[1], result_t_qubit)
+                    rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[1])
+                    rewriter.replace_all_uses_with(op.results[1], graph_qubits_dict[9])
                     # Remove op operation
                     rewriter.erase_op(op)
