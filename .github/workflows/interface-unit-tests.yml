@@ -155,7 +155,7 @@ jobs:
           {
             "default": ["3.11", "3.12", "3.13"],
             "torch-tests": ["3.11", "3.13"],
-            "tf-tests": ["3.11", "3.13"],
+            "tf-tests": ["3.11", "3.12"],
             "jax-tests": ["3.11", "3.13"],
             "capture-jax-tests": ["3.11", "3.13"],
             "all-interfaces-tests": ["3.11"],
