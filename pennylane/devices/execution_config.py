@@ -15,6 +15,7 @@
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
@@ -126,10 +127,26 @@ class ExecutionConfig:
             )
 
         if self.device_options is None:
-            object.__setattr__(self, "device_options", {})
+            object.__setattr__(self, "device_options", MappingProxyType({}))
+        elif isinstance(self.device_options, dict):
+            object.__setattr__(self, "device_options", MappingProxyType(self.device_options))
+        else:
+            raise ValueError(
+                f"device_options must be a dict or None. Got {type(self.device_options)} instead."
+            )
 
         if self.gradient_keyword_arguments is None:
-            object.__setattr__(self, "gradient_keyword_arguments", {})
+            object.__setattr__(self, "gradient_keyword_arguments", MappingProxyType({}))
+        elif isinstance(self.gradient_keyword_arguments, dict):
+            object.__setattr__(
+                self,
+                "gradient_keyword_arguments",
+                MappingProxyType(self.gradient_keyword_arguments),
+            )
+        else:
+            raise ValueError(
+                f"gradient_keyword_arguments must be a dict or None. Got {type(self.gradient_keyword_arguments)} instead."
+            )
 
         if not (
             isinstance(self.gradient_method, (str, TransformDispatcher))
