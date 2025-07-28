@@ -614,7 +614,7 @@ class TestModifiedTemplates:
         eqn = jaxpr.eqns[0]
         assert eqn.primitive == qml.MPSPrep._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == {"id": None, "wires": wires}
+        assert eqn.params == {"id": None, "wires": wires, "work_wires": None}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
