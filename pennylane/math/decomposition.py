@@ -669,10 +669,14 @@ def givens_decomposition(unitary):
 
     """
     interface = math.get_deep_interface(unitary)
-    is_real = not math.get_dtype_name(unitary).startswith("complex")
+    is_real = math.is_real_obj_or_close(unitary)
+    unitary_mat = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
+    converted_dtype = False
+    if math.get_dtype_name(unitary).startswith("complex") and is_real:
+        converted_dtype = True
+        unitary_mat = math.real(unitary_mat)
 
-    unitary = math.copy(unitary) if interface == "jax" else math.toarray(unitary).copy()
-    shape = math.shape(unitary)
+    shape = math.shape(unitary_mat)
 
     if len(shape) != 2 or shape[0] != shape[1]:
         raise ValueError(f"The unitary matrix should be of shape NxN, got {shape}")
@@ -684,13 +688,17 @@ def givens_decomposition(unitary):
         if i % 2:
             for j in range(i):
                 indices = [i - j - 1, i - j]
-                unitary, grot_mat_conj = _right_givens(indices, unitary, N, j, is_real)
+                unitary_mat, grot_mat_conj = _right_givens(indices, unitary_mat, N, j, is_real)
                 right_givens.append((grot_mat_conj, indices))
         else:
             for j in range(1, i + 1):
                 indices = [N + j - i - 2, N + j - i - 1]
-                unitary, grot_mat = _left_givens(indices, unitary, j, is_real)
+                unitary_mat, grot_mat = _left_givens(indices, unitary_mat, j, is_real)
                 left_givens.append((grot_mat, indices))
-    return (_absorb_phases_so if is_real else _commute_phases_u)(
-        left_givens, right_givens, unitary, interface
+    unitary_mat, all_givens = (_absorb_phases_so if is_real else _commute_phases_u)(
+        left_givens, right_givens, unitary_mat, interface
     )
+    if converted_dtype:
+        unitary_mat = math.convert_like(unitary_mat, unitary)
+        all_givens = [(math.convert_like(mat, unitary), indices) for mat, indices in all_givens]
+    return unitary_mat, all_givens

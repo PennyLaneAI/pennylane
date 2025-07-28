@@ -234,6 +234,7 @@ __all__ = [
     "in_backprop",
     "is_abstract",
     "is_independent",
+    "is_real_obj_or_close",
     "iscomplex",
     "jacobian",
     "kron",
