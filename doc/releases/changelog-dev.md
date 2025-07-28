@@ -1,4 +1,3 @@
-:orphan:
 
 # Release 0.43.0-dev (development release)
 
@@ -47,6 +46,45 @@
 
 <h3>Improvements 🛠</h3>
 
+* Decomposition rules that can be accessed with the new graph-based decomposition system are
+  implemented. The following decompositions have been added:
+  [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
+
+  * :class:`~.Reflection`
+
+  * :class:`~.TrotterProduct`
+
+  * :class:`~.MPSPrep`
+
+* Several templates now have decompositions that can be accessed within the graph-based
+  decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows 
+  that include these templates to be decomposed in a resource-efficient and performant
+  manner.
+  [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
+  [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
+  
+  The included templates are:
+
+  * :class:`~.Adder`
+    
+  * :class:`~.ControlledSequence`
+  
+  * :class:`~.ModExp`
+
+  * :class:`~.Multiplier`
+
+  * :class:`~.OutAdder`
+
+  * :class:`~.OutMultiplier`
+
+  * :class:`~.OutPoly`
+
+  * :class:`~.Reflection`
+
+  * :class:`~.TrotterProduct`
+
+  * :class:`~.MPSPrep`
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -72,9 +110,10 @@
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
+  [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
 
   ```python
-  @qml.set_shots(shots=1000)
+  @qml.set_shots(shots=1000)  # or @qml.set_shots(1000)
   @qml.qnode(dev)
   def circuit():
       qml.H(0)
@@ -119,13 +158,30 @@
 * `default.qubit` will default to the tree-traversal MCM method when `mcm_method="device"`.
   [(#7885)](https://github.com/PennyLaneAI/pennylane/pull/7885)
 
+* The default implementation of `Device.setup_execution_config` now choses `"device"` as the default mcm method if it is available as specified by the device TOML file.
+  [(#7968)](https://github.com/PennyLaneAI/pennylane/pull/7968)
+
+<h4>Resource-efficient decompositions 🔎</h4>
+
+* With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
+
+  [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
+* Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
+  [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
+
+* The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
+  [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
+
 <h3>Breaking changes 💔</h3>
+
+* Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
+  [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
 * The boolean functions provided in `qml.operation` are deprecated. See the 
   :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These 
@@ -165,6 +221,61 @@
 
 <h3>Deprecations 👋</h3>
 
+* Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
+  Instead, use :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the
+  Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+
+  As a concrete example, consider the following case:
+
+  ```python
+  coeffs = [0.5, -0.6]
+  ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
+  H_flat = qml.dot(coeffs, ops)
+  ```
+
+  Instead of computing the Suzuki-Trotter product approximation as:
+
+  ```pycon
+  >>> qml.evolve(H_flat, num_steps=2).decomposition()
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
+
+  The same result can be obtained using :class:`~.TrotterProduct` as follows:
+
+  ```pycon
+  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+  [RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1]),
+  RX(0.5, wires=[0]),
+  PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
+  [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
+
+* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
+  `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
+  [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
+
+* `shots=` in `QNode` calls is deprecated and will be removed in v0.44.
+  Instead, please use the `qml.workflow.set_shots` transform to set the number of shots for a QNode.
+  [(#7906)](https://github.com/PennyLaneAI/pennylane/pull/7906)
+
+* ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` are deprecated and will be removed in version v0.44.
+  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
+  [(#7950)](https://github.com/PennyLaneAI/pennylane/pull/7950)
+
+* Some unnecessary methods of the `qml.CircuitGraph` class are deprecated and will be removed in version v0.44:
+  [(#7904)](https://github.com/PennyLaneAI/pennylane/pull/7904)
+
+    - `print_contents` in favor of `print(obj)`
+    - `observables_in_order` in favor of `observables`
+    - `operations_in_order` in favor of `operations`
+    - `ancestors_in_order` in favor of `ancestors(obj, sort=True)`
+    - `descendants_in_order` in favore of `descendants(obj, sort=True)`
+
 * The `QuantumScript.to_openqasm` method is deprecated and will be removed in version v0.44.
   Instead, the `qml.to_openqasm` function should be used.
   [(#7909)](https://github.com/PennyLaneAI/pennylane/pull/7909)
@@ -187,8 +298,21 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
+  PennyLane submodules.
+  [(#7959)](https://github.com/PennyLaneAI/pennylane/pull/7959)
+
+* Adds `measurements` as a "core" module in the tach specification.
+ [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
+
+* Improves type hints in the `measurements` module.
+  [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
+
 * Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
+
+* Improve the pre-commit hook to add gitleaks.
+  [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
 
 * Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
   `qml.compiler.python_compiler` submodule.
@@ -229,7 +353,15 @@
 * Update JAX version used in tests to `0.6.2`
   [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
 
+* The measurement-plane attribute of the Python compiler `mbqc` dialect now uses the "opaque syntax"
+  format when printing in the generic IR format. This enables usage of this attribute when IR needs
+  to be passed from the python compiler to Catalyst.
+  [(#7957)](https://github.com/PennyLaneAI/pennylane/pull/7957)
+
 <h3>Documentation 📝</h3>
+
+* The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
+  [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
 
 * Improved the docstrings of all optimizers for consistency and legibility.
   [(#7891)](https://github.com/PennyLaneAI/pennylane/pull/7891)
@@ -260,16 +392,21 @@
   This allows for types to be inferred correctly when parsing.
   [(#7825)](https://github.com/PennyLaneAI/pennylane/pull/7825)
 
+* Fixes `SemiAdder` to work when inputs are defined with a single wire.
+  [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
 
+Guillermo Alonso,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
 Marcus Edwards,
 Simone Gasperini,
 David Ittah,
+Mehrdad Malekmohammadi
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
