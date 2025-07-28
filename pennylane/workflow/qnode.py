@@ -22,7 +22,7 @@ import inspect
 import logging
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from typing import TYPE_CHECKING, Literal, Optional, get_args
+from typing import TYPE_CHECKING, Literal, get_args
 
 from cachetools import Cache, LRUCache
 
@@ -72,8 +72,8 @@ def _convert_to_interface(result, interface: Interface):
 
 
 def _make_execution_config(
-    circuit: Optional[QNode], diff_method=None, mcm_config=None
-) -> "qml.devices.ExecutionConfig":
+    circuit: QNode | None, diff_method=None, mcm_config=None
+) -> qml.devices.ExecutionConfig:
     circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
     gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
@@ -523,13 +523,13 @@ class QNode:
         cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
         max_diff: int = 1,
-        device_vjp: Optional[bool] = False,
-        postselect_mode: Optional[Literal["hw-like", "fill-shots"]] = None,
-        mcm_method: Optional[Literal["deferred", "one-shot", "tree-traversal"]] = None,
-        gradient_kwargs: Optional[dict] = None,
+        device_vjp: bool | None = False,
+        postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
+        mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+        gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         autograph: bool = True,
-        executor_backend: Optional[ExecBackends | str] = None,
+        executor_backend: ExecBackends | str | None = None,
     ):
         self._init_args = locals()
         del self._init_args["self"]
@@ -654,8 +654,18 @@ class QNode:
     def add_transform(self, transform_container: TransformContainer):
         """Add a transform (container) to the transform program.
 
+        .. warning::
+
+            This method is deprecated and will be removed in v0.43. Instead, please use :meth:`~.TransformProgram.push_back` on
+            the ``QNode.transform_program`` property to add transforms to the transform program.
+
         .. warning:: This is a developer facing feature and is called when a transform is applied on a QNode.
         """
+        warnings.warn(
+            "The `qml.QNode.add_transform` method is deprecated and will be removed in v0.43. "
+            "Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.",
+            PennyLaneDeprecationWarning,
+        )
         self._transform_program.push_back(transform_container=transform_container)
 
     def update(self, **kwargs) -> QNode:
@@ -773,96 +783,25 @@ class QNode:
         self._shots = Shots(shots)
         self._shots_override_device = True
 
-    # pylint: disable=too-many-return-statements, unused-argument
-    @staticmethod
-    @debug_logger
-    def get_gradient_fn(
-        device: SupportedDeviceAPIs,
-        interface: str,
-        diff_method: TransformDispatcher | SupportedDiffMethods = "best",
-        tape: Optional["qml.tape.QuantumTape"] = None,
-    ):
-        """Determine the best differentiation method, interface, and device
-        for a requested device, interface, and diff method.
-
-        .. warning::
-
-            This function is deprecated and will be removed in v0.43. Instead, use
-            :func:`~.workflow.get_best_diff_method` to determine the best differentiation method.
-
-
-        Args:
-            device (.device.Device): PennyLane device
-            interface (str): name of the requested interface
-            diff_method (str or .TransformDispatcher): The requested method of differentiation.
-                If a string, allowed options are ``"best"``, ``"backprop"``, ``"adjoint"``,
-                ``"device"``, ``"parameter-shift"``, ``"hadamard"``, ``"finite-diff"``, or ``"spsa"``.
-                A gradient transform may also be passed here.
-            tape (Optional[.QuantumTape]): the circuit that will be differentiated. Should include shots information.
-
-        Returns:
-            tuple[str or .TransformDispatcher, dict, .device.Device: Tuple containing the ``gradient_fn``,
-            ``gradient_kwargs``, and the device to use when calling the execute function.
-        """
-        warnings.warn(
-            "The `qml.QNode.get_gradient_fn` method is deprecated and will be removed in a future release."
-            "Instead, use `qml.workflow.get_best_diff_method` to determine the best differentiation method.",
-            PennyLaneDeprecationWarning,
-        )
-        if diff_method is None:
-            return None, {}, device
-
-        config = _make_execution_config(None, diff_method)
-
-        if device.supports_derivatives(config, circuit=tape):
-            new_config = device.setup_execution_config(config)
-            return new_config.gradient_method, {}, device
-
-        if diff_method in {"backprop", "adjoint", "device"}:  # device-only derivatives
-            raise QuantumFunctionError(
-                f"Device {device} does not support {diff_method} with requested circuit."
-            )
-
-        if diff_method == "best":
-            if tape and any(isinstance(o, qml.operation.CV) for o in tape):
-                return qml.gradients.param_shift_cv, {"dev": device}, device
-
-            return qml.gradients.param_shift, {}, device
-
-        if diff_method == "parameter-shift":
-            if tape and any(isinstance(o, qml.operation.CV) and o.name != "Identity" for o in tape):
-                return qml.gradients.param_shift_cv, {"dev": device}, device
-            return qml.gradients.param_shift, {}, device
-
-        if diff_method == "finite-diff":
-            return qml.gradients.finite_diff, {}, device
-
-        if diff_method == "spsa":
-            return qml.gradients.spsa_grad, {}, device
-
-        if diff_method == "hadamard":
-            return qml.gradients.hadamard_grad, {}, device
-
-        if isinstance(diff_method, qml.transforms.core.TransformDispatcher):
-            return diff_method, {}, device
-
-        raise QuantumFunctionError(
-            f"Differentiation method {diff_method} not recognized. Allowed "
-            f"options are {tuple(get_args(SupportedDiffMethods))}."
-        )
-
     @debug_logger
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
-        if "shots" in kwargs and self._shots_override_device:
-            _kwargs_shots = kwargs.pop("shots")
+        if "shots" in kwargs:
+            # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
-                "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                f"The transform will take precedence over 'shots={_kwargs_shots}.'",
-                UserWarning,
+                "'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
+                PennyLaneDeprecationWarning,
                 stacklevel=2,
             )
+            if self._shots_override_device:
+                _kwargs_shots = kwargs.pop("shots")
+                warnings.warn(
+                    "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                    f"The transform will take precedence over 'shots={_kwargs_shots}.'",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
         if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode._shots precedency:
             shots = self._shots

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit test module for pennylane/compiler/python_compiler/mbqc_dialect.py."""
+"""Unit test module for pennylane/compiler/python_compiler/dialects/mbqc.py."""
 
 import pytest
 
@@ -26,12 +26,10 @@ pytestmark = pytest.mark.external
 from xdsl.dialects import builtin, test
 from xdsl.utils.exceptions import VerifyException
 
-from pennylane.compiler.python_compiler import mbqc_dialect as mbqc
-from pennylane.compiler.python_compiler.mbqc_dialect import MBQCDialect
-from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
+from pennylane.compiler.python_compiler.dialects import Quantum, mbqc
 
-all_ops = list(MBQCDialect.operations)
-all_attrs = list(MBQCDialect.attributes)
+all_ops = list(mbqc.MBQC.operations)
+all_attrs = list(mbqc.MBQC.attributes)
 
 expected_ops_names = {
     "MeasureInBasisOp": "mbqc.measure_in_basis",
@@ -44,7 +42,7 @@ expected_attrs_names = {
 
 def test_mbqc_dialect_name():
     """Test that the MBQCDialect name is correct."""
-    assert MBQCDialect.name == "mbqc"
+    assert mbqc.MBQC.name == "mbqc"
 
 
 @pytest.mark.parametrize("op", all_ops)
@@ -88,18 +86,13 @@ def test_assembly_format(run_filecheck):
 
     // CHECK: [[mres4:%.+]], [[out_qubit4:%.+]] = mbqc.measure_in_basis{{\s*}}[XY, [[angle]]] [[qubit]] postselect 1 : i1, !quantum.bit
     %mres4, %out_qubit4 = mbqc.measure_in_basis [XY, %angle] %qubit postselect 1 : i1, !quantum.bit
+
+    // COM: Check generic format
+    // CHECK: {{%.+}}, {{%.+}} = mbqc.measure_in_basis[XY, [[angle]]] [[qubit]] postselect 0 : i1, !quantum.bit
+    %res:2 = "mbqc.measure_in_basis"(%qubit, %angle) <{plane = #mbqc<measurement_plane XY>, postselect = 0 : i32}> : (!quantum.bit, f64) -> (i1, !quantum.bit)
     """
 
-    ctx = xdsl.context.Context()
-
-    ctx.load_dialect(builtin.Builtin)
-    ctx.load_dialect(test.Test)
-    ctx.load_dialect(QuantumDialect)
-    ctx.load_dialect(MBQCDialect)
-
-    module = xdsl.parser.Parser(ctx, program).parse_module()
-
-    run_filecheck(program, module)
+    run_filecheck(program)
 
 
 class TestMeasureInBasisOp:
@@ -120,8 +113,8 @@ class TestMeasureInBasisOp:
 
         ctx.load_dialect(builtin.Builtin)
         ctx.load_dialect(test.Test)
-        ctx.load_dialect(QuantumDialect)
-        ctx.load_dialect(MBQCDialect)
+        ctx.load_dialect(Quantum)
+        ctx.load_dialect(mbqc.MBQC)
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
 
@@ -151,8 +144,8 @@ class TestMeasureInBasisOp:
 
         ctx.load_dialect(builtin.Builtin)
         ctx.load_dialect(test.Test)
-        ctx.load_dialect(QuantumDialect)
-        ctx.load_dialect(MBQCDialect)
+        ctx.load_dialect(Quantum)
+        ctx.load_dialect(mbqc.MBQC)
 
         module = xdsl.parser.Parser(ctx, program).parse_module()
 

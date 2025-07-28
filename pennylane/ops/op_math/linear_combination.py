@@ -16,15 +16,14 @@ LinearCombination class
 """
 import itertools
 import numbers
-import warnings
 
 # pylint: disable=too-many-arguments,protected-access
 from copy import copy
-from typing import Union
 
 import pennylane as qml
 from pennylane.operation import Operator
 
+from .sprod import SProd
 from .sum import Sum
 
 
@@ -151,7 +150,8 @@ class LinearCombination(Sum):
         self._hyperparameters = {"ops": self._ops}
 
         with qml.QueuingManager.stop_recording():
-            operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
+            # type.__call__ valid when capture is enabled and creating an instance
+            operands = tuple(type.__call__(SProd, c, op) for c, op in zip(coeffs, observables))
 
         super().__init__(
             *operands,
@@ -312,58 +312,6 @@ class LinearCombination(Sum):
         coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
-    def compare(self, other):
-        r"""Determines mathematical equivalence between operators
-
-        ``LinearCombination`` and other operators are equivalent if they mathematically represent the same operator
-        (their matrix representations are equal), acting on the same wires.
-
-        .. Warning::
-
-            This method does not compute explicit matrices but uses the underlyding operators and coefficients for comparisons. When both operators
-            consist purely of Pauli operators, and therefore have a valid ``op.pauli_rep``, the comparison is cheap.
-            When that is not the case (e.g. one of the operators contains a ``Hadamard`` gate), it can be more expensive as it involves mathematical simplification of both operators.
-
-        Returns:
-            (bool): True if equivalent.
-
-        **Examples**
-
-        >>> H = qml.ops.LinearCombination(
-        ...     [0.5, 0.5],
-        ...     [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")]
-        ... )
-        >>> obs = qml.PauliZ(0) @ qml.PauliY(1)
-        >>> print(H.compare(obs))
-        True
-
-        >>> H1 = qml.ops.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)])
-        >>> H2 = qml.ops.LinearCombination([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
-        >>> H1.compare(H2)
-        False
-
-        >>> ob1 = qml.ops.LinearCombination([1], [qml.PauliX(0)])
-        >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
-        >>> ob1.compare(ob2)
-        False
-        """
-        warnings.warn(
-            "The compare method is deprecated and will be removed in v0.43."
-            " op1 == op2 or qml.equal should be used instead.",
-            qml.exceptions.PennyLaneDeprecationWarning,
-        )
-        if isinstance(other, (Operator)):
-            if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
-                pr1.simplify()
-                pr2.simplify()
-                return pr1 == pr2
-
-            op1 = self.simplify()
-            op2 = other.simplify()
-            return qml.equal(op1, op2)
-
-        raise ValueError("Can only compare a LinearCombination and an Operator.")
-
     def __matmul__(self, other: Operator) -> Operator:
         """The product operation between Operator objects."""
         if isinstance(other, LinearCombination):
@@ -398,7 +346,7 @@ class LinearCombination(Sum):
 
         return NotImplemented
 
-    def __add__(self, H: Union[numbers.Number, Operator]) -> Operator:
+    def __add__(self, H: numbers.Number | Operator) -> Operator:
         r"""The addition operation between a LinearCombination and an Operator."""
         ops = copy(self.ops)
         self_coeffs = self.coeffs
@@ -432,7 +380,7 @@ class LinearCombination(Sum):
 
     __radd__ = __add__
 
-    def __mul__(self, a: Union[int, float, complex]) -> "LinearCombination":
+    def __mul__(self, a: int | float | complex) -> "LinearCombination":
         r"""The scalar multiplication operation between a scalar and a LinearCombination."""
         if isinstance(a, (int, float, complex)):
             self_coeffs = self.coeffs
@@ -443,9 +391,7 @@ class LinearCombination(Sum):
 
     __rmul__ = __mul__
 
-    def queue(
-        self, context: Union[qml.QueuingManager, qml.queuing.AnnotatedQueue] = qml.QueuingManager
-    ):
+    def queue(self, context: qml.QueuingManager | qml.queuing.AnnotatedQueue = qml.QueuingManager):
         """Queues a ``qml.ops.LinearCombination`` instance"""
         if qml.QueuingManager.recording():
             for o in self.ops:

@@ -447,6 +447,7 @@ class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     remains differentiable."""
 
+    @pytest.mark.xfail(reason="deprecated. To be removed in 0.44")
     def test_changing_shots(self):
         """Test that changing shots works on execution"""
         dev = DefaultQubit()
@@ -482,7 +483,9 @@ class TestShotsIntegration:
             return qml.expval(qml.PauliY(1))
 
         # TODO: fix the shot vectors issue
-        res = qml.jacobian(cost_fn)(a, b, shots=[10000, 10000, 10000])
+        # wrap cost_fn with shot vector for gradient computation
+        cost_fn_shots = qml.set_shots(shots=[10000, 10000, 10000])(cost_fn)
+        res = qml.jacobian(cost_fn_shots)(a, b)
         assert dev.shots is None
         assert isinstance(res, tuple) and len(res) == 2
         assert all(r.shape == (3,) for r in res)
@@ -506,7 +509,8 @@ class TestShotsIntegration:
             return qml.expval(qml.PauliY(1))
 
         with dev.tracker:
-            qml.grad(cost_fn)(a, b, shots=100)
+            cost_fn100 = qml.set_shots(shots=100)(cost_fn)
+            qml.grad(cost_fn100)(a, b)
         # since we are using finite shots, use parameter shift
         assert dev.tracker.totals["executions"] == 5
 
@@ -1427,7 +1431,7 @@ class TestQubitIntegration:
 
 
 @pytest.mark.parametrize(
-    "dev,diff_method,grad_on_execution, device_vjp", qubit_device_and_diff_method
+    "dev,diff_method,grad_on_execution,device_vjp", qubit_device_and_diff_method
 )
 class TestTapeExpansion:
     """Test that tape expansion within the QNode integrates correctly
@@ -1566,6 +1570,7 @@ class TestTapeExpansion:
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
+        @qml.set_shots(shots=50000)
         @qnode(
             dev,
             diff_method=diff_method,
@@ -1587,7 +1592,7 @@ class TestTapeExpansion:
         c = np.array([-0.6543, 0.24, 0.54], requires_grad=True)
 
         # test output
-        res = circuit(d, w, c, shots=50000)
+        res = circuit(d, w, c)
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
         assert np.allclose(res, expected, atol=tol)
 
@@ -1595,7 +1600,7 @@ class TestTapeExpansion:
         if diff_method in ["finite-diff", "spsa"]:
             pytest.skip(f"{diff_method} not compatible")
 
-        grad = qml.grad(circuit)(d, w, c, shots=50000)
+        grad = qml.grad(circuit)(d, w, c)
         expected_w = [
             -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
             -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
@@ -1606,10 +1611,10 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2 and dev.name != "param_shift.qubit":
-            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c, shots=50000)
+            grad2_c = qml.jacobian(qml.grad(circuit, argnum=2), argnum=2)(d, w, c)
             assert np.allclose(grad2_c, 0, atol=tol)
 
-            grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c, shots=50000)
+            grad2_w_c = qml.jacobian(qml.grad(circuit, argnum=1), argnum=2)(d, w, c)
             expected = [0, -np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]), 0], [
                 0,
                 -np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]),
@@ -1625,13 +1630,14 @@ class TestSample:
         """Test that sampling in backpropagation grad_on_execution raises an error"""
         dev = DefaultQubit()
 
+        @qml.set_shots(shots=10)
         @qnode(dev, diff_method="backprop")
         def circuit():
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
         with pytest.raises(QuantumFunctionError, match="does not support backprop with requested"):
-            circuit(shots=10)
+            circuit()
 
     def test_sample_dimension(self):
         """Test that the sample function outputs samples of the right size"""
@@ -1639,12 +1645,13 @@ class TestSample:
 
         dev = DefaultQubit()
 
+        @qml.set_shots(shots=n_sample)
         @qnode(dev, diff_method=None)
         def circuit():
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        res = circuit(shots=n_sample)
+        res = circuit()
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -1662,13 +1669,14 @@ class TestSample:
 
         dev = DefaultQubit()
 
+        @qml.set_shots(shots=n_sample)
         @qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.RX(0.54, wires=0)
 
             return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
 
-        result = circuit(shots=n_sample)
+        result = circuit()
 
         assert isinstance(result, tuple)
         assert len(result) == 3
@@ -1684,13 +1692,14 @@ class TestSample:
 
         dev = DefaultQubit()
 
+        @qml.set_shots(shots=n_sample)
         @qnode(dev, diff_method=None)
         def circuit():
             qml.RX(0.54, wires=0)
 
             return qml.sample(qml.PauliZ(0))
 
-        result = circuit(shots=n_sample)
+        result = circuit()
 
         assert isinstance(result, np.ndarray)
         assert np.array_equal(result.shape, (n_sample,))
@@ -1702,11 +1711,12 @@ class TestSample:
 
         dev = DefaultQubit()
 
+        @qml.set_shots(shots=n_sample)
         @qnode(dev, diff_method=None)
         def circuit():
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
-        result = circuit(shots=n_sample)
+        result = circuit()
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tuple)

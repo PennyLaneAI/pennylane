@@ -19,10 +19,11 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import (
+from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
 )
 from pennylane.ops.op_math import Evolution, Exp
 from pennylane.ops.op_math.exp import trotter_decomp
@@ -502,7 +503,12 @@ class TestDecomposition:
         phi = 1.23
         num_steps = 3
         op = qml.IsingXY(phi, wires=[0, 1])
-        exp = qml.evolve(op.generator(), coeff=-phi, num_steps=num_steps)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated",
+        ):
+            exp = qml.evolve(op.generator(), coeff=-phi, num_steps=num_steps)
+
         dec = exp.decomposition()
         assert qml.math.allclose(
             qml.matrix(qml.tape.QuantumScript(dec), wire_order=[0, 1]),
@@ -680,11 +686,10 @@ class TestMiscMethods:
         assert repr(op) == "Exp(3 PauliX)"
 
     # pylint: disable=protected-access
-    @pytest.mark.parametrize("exp_type", (Exp, Evolution))
-    def test_flatten_unflatten(self, exp_type):
-        """Tests the _unflatten and _flatten methods."""
+    def test_flatten_unflatten_Exp(self):
+        """Tests the _unflatten and _flatten methods for the Exp operator."""
         base = qml.RX(1.2, wires=0)
-        op = exp_type(base, 2.5, num_steps=5)
+        op = Exp(base, 2.5, num_steps=5)
 
         data, metadata = op._flatten()
         assert data[0] is base
@@ -696,6 +701,28 @@ class TestMiscMethods:
 
         new_op = type(op)._unflatten(*op._flatten())
         qml.assert_equal(new_op, op)
+
+    # pylint: disable=protected-access
+    def test_flatten_unflatten_Evolution(self):
+        """Tests the _unflatten and _flatten methods for the Evolution operator."""
+        base = qml.RX(1.2, wires=0)
+        op = Evolution(base, 2.5)
+
+        data, _ = op._flatten()
+        assert data[0] is base
+        assert data[1] == 2.5
+
+        new_op = type(op)._unflatten(*op._flatten())
+        qml.assert_equal(new_op, op)
+
+    def test_num_steps_is_deprecated(self):
+        """Test that providing `num_steps` raises a deprecation warning."""
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated",
+        ):
+            base = qml.RX(1.2, wires=0)
+            Evolution(base, 2.5, num_steps=5)
 
     def test_repr_tensor(self):
         """Test the __repr__ method when the base is a tensor."""

@@ -567,7 +567,7 @@ class TestMeasureSamples:
                     qml.expval(2 * (qml.Y(0) + qml.Y(0) - 5 * (qml.Y(0) + qml.Y(0)))),
                     qml.expval(
                         (2 * (qml.Y(0) + qml.Y(0)))
-                        @ ((5 * (qml.Y(0) + qml.Y(0)) + 3 * (qml.Y(0) + qml.Y(0))))
+                        @ (5 * (qml.Y(0) + qml.Y(0)) + 3 * (qml.Y(0) + qml.Y(0)))
                     ),
                 ],
                 (0.0, 16.0, 64.0),
@@ -986,7 +986,6 @@ class TestBroadcastingPRNG:
     # but the definition of `atol` is too arbitrary. Further
     # investigation is needed to establish a more systematic
     # approach to test the final sampling distribution. [sc-91887]
-    @pytest.mark.local_salt(2)
     @pytest.mark.parametrize(
         "measurement, expected",
         [

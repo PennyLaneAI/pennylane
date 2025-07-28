@@ -14,11 +14,12 @@
 
 """Utilities for translating JAX to xDSL"""
 
+from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import Callable, TypeAlias
+from typing import TypeAlias
 
-import jaxlib
 from catalyst import QJIT
+from jax._src.lib import _jax
 from jaxlib.mlir.dialects import stablehlo as jstablehlo  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Context as jContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jModule  # pylint: disable=no-name-in-module
@@ -30,12 +31,52 @@ from xdsl.dialects import scf as xscf
 from xdsl.dialects import stablehlo as xstablehlo
 from xdsl.dialects import tensor as xtensor
 from xdsl.dialects import transform as xtransform
+from xdsl.ir import Dialect as xDialect
 from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
-from pennylane.compiler.python_compiler.quantum_dialect import QuantumDialect
+from .dialects import MBQC, Catalyst, Quantum
 
-JaxJittedFunction: TypeAlias = jaxlib.xla_extension.PjitFunction
+JaxJittedFunction: TypeAlias = _jax.PjitFunction  # pylint: disable=c-extension-no-member
+
+
+class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-methods
+    """A subclass of ``xdsl.parser.Parser`` that automatically loads relevant dialects
+    into the input context.
+
+    Args:
+        ctx (xdsl.context.Context): Context to use for parsing.
+        input (str): Input program string to parse.
+        name (str): The name for the input. ``"<unknown>"`` by default.
+        extra_dialects (Sequence[xdsl.ir.Dialect]): Any additional dialects
+            that should be loaded into the context before parsing.
+    """
+
+    default_dialects: tuple[xDialect] = (
+        xarith.Arith,
+        xbuiltin.Builtin,
+        xfunc.Func,
+        xscf.Scf,
+        xstablehlo.StableHLO,
+        xtensor.Tensor,
+        xtransform.Transform,
+        Quantum,
+        MBQC,
+        Catalyst,
+    )
+
+    def __init__(
+        self,
+        ctx: xContext,
+        input: str,
+        name: str = "<unknown>",
+        extra_dialects: Sequence[xDialect] | None = (),
+    ) -> None:
+        super().__init__(ctx, input, name)
+
+        extra_dialects = extra_dialects or ()
+        for dialect in self.default_dialects + tuple(extra_dialects):
+            self.ctx.load_dialect(dialect)
 
 
 def _module_inline(func: JaxJittedFunction, *args, **kwargs) -> jModule:
@@ -70,18 +111,13 @@ def generic(func: JaxJittedFunction) -> Callable[..., str]:  # pragma: no cover
     return wrapper
 
 
-def parse_generic_to_xdsl_module(program: str) -> xbuiltin.ModuleOp:  # pragma: no cover
+def parse_generic_to_xdsl_module(
+    program: str, extra_dialects: Sequence[xDialect] | None = None
+) -> xbuiltin.ModuleOp:  # pragma: no cover
     """Parses generic MLIR program to xDSL module"""
     ctx = xContext(allow_unregistered=True)
-    ctx.load_dialect(xarith.Arith)
-    ctx.load_dialect(xbuiltin.Builtin)
-    ctx.load_dialect(xfunc.Func)
-    ctx.load_dialect(xscf.Scf)
-    ctx.load_dialect(xstablehlo.StableHLO)
-    ctx.load_dialect(xtensor.Tensor)
-    ctx.load_dialect(xtransform.Transform)
-    ctx.load_dialect(QuantumDialect)
-    moduleOp: xbuiltin.ModuleOp = xParser(ctx, program).parse_module()
+    parser = QuantumParser(ctx, program, extra_dialects=extra_dialects)
+    moduleOp: xbuiltin.ModuleOp = parser.parse_module()
     return moduleOp
 
 
