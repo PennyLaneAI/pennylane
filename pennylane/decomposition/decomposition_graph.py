@@ -27,7 +27,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import rustworkx as rx
 from rustworkx.visit import DijkstraVisitor, PruneSearch, StopSearch
@@ -256,10 +256,17 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op.name])
             return op_node_idx
 
+        make_op_work_wire_dependent = False
         for decomposition in self._get_decompositions(op):
             d_node = self._add_decomp(decomposition, op_node, op_node_idx, num_used_work_wires)
-            if d_node and d_node.work_wire_dependent:
-                op_node.work_wire_dependent = True
+            if d_node and d_node.work_wire_dependent and not op_node.work_wire_dependent:
+                make_op_work_wire_dependent = True
+
+        if make_op_work_wire_dependent:
+            new_op_node = replace(op_node, work_wire_dependent=True)
+            self._all_op_indices[new_op_node] = self._all_op_indices.pop(op_node)
+            self._op_to_op_nodes[op].remove(op_node)
+            self._op_to_op_nodes[op].add(new_op_node)
 
         if op_node.work_wire_dependent:
             self._work_wire_dependent_ops.add(op_node.op)
@@ -387,6 +394,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         # Special case: control of an adjoint
         if issubclass(base_class, qml.ops.Adjoint):
             return [flip_control_adjoint]
+
+        # Special case: when the base is GlobalPhase, none of the following automatically
+        # generated decomposition rules apply.
+        if base_class is qml.GlobalPhase:
+            return []
 
         # General case: apply control to the base op's decomposition rules.
         base = resource_rep(base_class, **base_params)
