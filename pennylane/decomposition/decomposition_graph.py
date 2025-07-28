@@ -84,8 +84,13 @@ class _OperatorNode:
     """
 
     def __hash__(self) -> int:
-        # We track the number of work wires for all operators when constructing the graph, but
-        # this may not be relevent for most operators.
+        # If the decomposition of an operator does not depend on the availability of work wires
+        # at all, we don't need to have multiple nodes representing the same operator with
+        # different work wire budgets. Therefore, we override the __hash__ and __eq__ of a node
+        # so that the num_work_wires_not_available is taken into account only when the operator
+        # depends on work wires. Since we keep track of all existing operator nodes in a set,
+        # this allows us to quickly find an existing operator node for another instance of the
+        # same operator with a different work wire budget that doesn't ultimately matter.
         if self.work_wire_dependent:
             return hash((self.op, self.num_work_wire_not_available))
         return hash(self.op)
@@ -219,7 +224,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         # Tracks the node indices of various operators.
         self._original_ops_indices: set[int] = set()
         self._all_op_indices: dict[_OperatorNode, int] = {}
+
+        # Keeps track of all operators that depend on work wires.
         self._work_wire_dependent_ops: set[CompressedResourceOp] = set()
+
+        # Maps operators to operator nodes. There might be multiple operator nodes mapped to
+        # the same operator, but each with a different work wire budget.
         self._op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]] = defaultdict(set)
 
         # Stores the library of custom decomposition rules
@@ -291,8 +301,19 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         An operator node is uniquely defined by its operator type and resource parameters, which
         are conveniently wrapped in a ``CompressedResourceOp``.
 
+        Args:
+            op: The operator to add to the graph.
+            num_used_work_wires: The number of wires taken from the overall budget.
+
         """
 
+        # If an operator has already been added to the graph, we return the existing node
+        # instead of creating a new one. Now when we see an operator with a different work
+        # wire budget from the one already in the graph, whether we need to create a new
+        # node for this operator is determined by whether this operator's decomposition is
+        # work-wire dependent. We have overriden __hash__ and __eq__ of the node class so
+        # that when we have a work-wire-independent operator with a different work wire
+        # budget from the existing one in the graph, the difference is ignored.
         work_wire_dependent = op in self._work_wire_dependent_ops
         op_node = _OperatorNode(op, num_used_work_wires, work_wire_dependent)
 
@@ -307,18 +328,26 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             self._graph.add_edge(self._start, op_node_idx, self._gate_set_weights[op.name])
             return op_node_idx
 
-        make_op_work_wire_dependent = False
+        op_depends_on_work_wires = False
         for decomposition in self._get_decompositions(op):
             d_node = self._add_decomp(decomposition, op_node, op_node_idx, num_used_work_wires)
+            # If any of the operator's decompositions depend on work wires, this operator
+            # should also depend on work wires.
             if d_node and d_node.work_wire_dependent and not op_node.work_wire_dependent:
-                make_op_work_wire_dependent = True
+                op_depends_on_work_wires = True
 
-        if make_op_work_wire_dependent:
+        # If we found that this operator depends on work wires, but it's currently recorded
+        # as independent of work wires, we must replace every record of this operator node
+        # with a new node with `work_wire_dependent` set to `True`.
+        if not op_node.work_wire_dependent and op_depends_on_work_wires:
             new_op_node = replace(op_node, work_wire_dependent=True)
             self._all_op_indices[new_op_node] = self._all_op_indices.pop(op_node)
             self._graph[op_node_idx] = new_op_node
             self._op_to_op_nodes[op].remove(op_node)
             self._op_to_op_nodes[op].add(new_op_node)
+            # Also record that this operator type depends on work wires, so in the future
+            # when we encounter other instances of the same operator type, we correctly
+            # identify it as work-wire dependent.
             self._work_wire_dependent_ops.add(op_node.op)
 
         return op_node_idx
@@ -352,6 +381,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         for op in decomp_resource.gate_counts:
             op_node_idx = self._add_op_node(op, num_used_work_wires + work_wire_spec.total)
             self._graph.add_edge(op_node_idx, d_node_idx, (op_node_idx, d_node_idx))
+            # If any of the operators in the decomposition depends on work wires, this
+            # decomposition is also dependent on work wires, even it itself does not use
+            # any work wires.
             if self._graph[op_node_idx].work_wire_dependent:
                 d_node.work_wire_dependent = True
 
