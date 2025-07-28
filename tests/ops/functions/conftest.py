@@ -22,11 +22,10 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane._deprecated_observable import Observable
 from pennylane.exceptions import DeviceError
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
-from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
-from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
+from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
+from pennylane.ops.op_math.pow import PowOperation
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
 
 
@@ -103,6 +102,26 @@ _INSTANCES_TO_TEST = [
         ),
         {"skip_pickle": True},
     ),
+    (
+        qml.SelectPauliRot(
+            np.array(
+                [
+                    0.69307448,
+                    0.2574346,
+                    0.84850003,
+                    0.06706336,
+                    0.33502536,
+                    0.79254386,
+                    0.76929339,
+                    0.66070049,
+                ]
+            ),
+            control_wires=[0, 1, 2],
+            target_wire=3,
+            rot_axis="Y",
+        ),
+        {},
+    ),
 ]
 """Valid operator instances that could not be auto-generated."""
 
@@ -151,12 +170,9 @@ These operators need to break PL conventions, and each one's reason is specified
 
 _ABSTRACT_OR_META_TYPES = {
     Adjoint,
-    AdjointOpObs,
     AdjointOperation,
-    AdjointObs,
     Operator,
     Operation,
-    Observable,
     Channel,
     qml.ops.Projector,
     qml.ops.SymbolicOp,
@@ -170,9 +186,7 @@ _ABSTRACT_OR_META_TYPES = {
     StatePrepBase,
     qml.resource.ResourcesOperation,
     qml.resource.ErrorOperation,
-    PowOpObs,
     PowOperation,
-    PowObs,
     qml.StatePrep,
     qml.FromBloq,
     qml.allocation.Allocate,  # no integer wires

@@ -23,7 +23,7 @@ import jax.numpy as jnp
 
 from pennylane.capture.primitives import AbstractOperator
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 @pytest.mark.unit
@@ -321,8 +321,8 @@ class TestMidMeasureExecute:
     capture enabled."""
 
     # NOTE: this test has an estimated fail rate of around 20%~30%
-    # We have to fix the seed to ensure that the test is deterministic.
-    @pytest.mark.local_salt(9)
+    # FIXME: [sc-95723]
+    @pytest.mark.local_salt(11)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
@@ -344,7 +344,7 @@ class TestMidMeasureExecute:
             res = f(phi)
             qml.capture.disable()
             expected = f(phi)
-            qml.capture.enable()
+
             if mp_fn is qml.expval:
                 assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.1)
             elif mp_fn is qml.var:

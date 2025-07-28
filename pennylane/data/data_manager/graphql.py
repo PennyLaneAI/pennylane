@@ -3,7 +3,7 @@ Module for containing graphql functionality for interacting with the Datasets Se
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 from requests import post
 
@@ -14,7 +14,7 @@ class GraphQLError(BaseException):
     """Exception for GraphQL"""
 
 
-def get_graphql(url: str, query: str, variables: Optional[dict[str, Any]] = None):
+def get_graphql(url: str, query: str, variables: dict[str, Any] | None = None):
     """
     Args:
         url: The URL to send a query to.

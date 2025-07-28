@@ -18,9 +18,13 @@ from .subroutines import (
     ResourcePhaseGradient,
     ResourceOutMultiplier,
     ResourceSemiAdder,
+    ResourceQFT,
+    ResourceAQFT,
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceSelectPauliRot,
+    ResourceQubitUnitary,
 )
 from .trotter import (
     ResourceTrotterCDF,

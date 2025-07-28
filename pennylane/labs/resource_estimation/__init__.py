@@ -122,9 +122,13 @@ Templates:
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
     ~ResourceSemiAdder
+    ~ResourceQFT
+    ~ResourceAQFT
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
+    ~ResourceSelectPauliRot
+    ~ResourceQubitUnitary
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
     ~ResourceTrotterVibrational
@@ -209,9 +213,13 @@ from .templates import (
     ResourcePhaseGradient,
     ResourceOutMultiplier,
     ResourceSemiAdder,
+    ResourceQFT,
+    ResourceAQFT,
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceQubitUnitary,
+    ResourceSelectPauliRot,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,

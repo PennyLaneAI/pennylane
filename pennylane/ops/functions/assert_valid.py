@@ -27,7 +27,7 @@ import scipy.sparse
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
-from pennylane.operation import EigvalsUndefinedError
+from pennylane.exceptions import EigvalsUndefinedError
 
 
 def _assert_error_raised(func, error, failure_comment):
@@ -364,12 +364,10 @@ def _check_capture(op):
         assert op == new_op
     except Exception as e:
         raise ValueError(
-            (
-                "The capture of the operation into jaxpr failed somehow."
-                " This capture mechanism is currently experimental and not a core"
-                " requirement, but will be necessary in the future."
-                " Please see the capture module documentation for more information."
-            )
+            "The capture of the operation into jaxpr failed somehow."
+            " This capture mechanism is currently experimental and not a core"
+            " requirement, but will be necessary in the future."
+            " Please see the capture module documentation for more information."
         ) from e
     finally:
         qml.capture.disable()
@@ -436,7 +434,17 @@ def _check_wires(op, skip_wire_mapping):
     assert mapped_op.wires == new_wires, "wires must be mappable with map_wires"
 
 
-def assert_valid(op: qml.operation.Operator, **kwargs) -> None:
+# pylint: disable=too-many-arguments
+def assert_valid(
+    op: qml.operation.Operator,
+    *,
+    skip_deepcopy=False,
+    skip_pickle=False,
+    skip_wire_mapping=False,
+    skip_differentiation=False,
+    skip_new_decomp=False,
+    heuristic_resources=False,
+) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
     sure it has been correctly defined.
 
@@ -496,20 +504,20 @@ def assert_valid(op: qml.operation.Operator, **kwargs) -> None:
         assert qml.math.allclose(d, p), "data and parameters must match."
 
     if len(op.wires) <= 26:
-        _check_wires(op, kwargs.get("skip_wire_mapping", False))
-    _check_copy(op, kwargs.get("skip_deepcopy", False))
+        _check_wires(op, skip_wire_mapping=skip_wire_mapping)
+    _check_copy(op, skip_deepcopy=skip_deepcopy)
     _check_pytree(op)
-    if not kwargs.get("skip_pickle", False):
+    if not skip_pickle:
         _check_pickle(op)
     _check_bind_new_parameters(op)
-    _check_decomposition(op, kwargs.get("skip_wire_mapping", False))
-    if not kwargs.get("skip_new_decomp", False):
-        _check_decomposition_new(op, heuristic_resources=kwargs.get("heuristic_resources", False))
+    _check_decomposition(op, skip_wire_mapping=skip_wire_mapping)
+    if not skip_new_decomp:
+        _check_decomposition_new(op, heuristic_resources=heuristic_resources)
     _check_matrix(op)
     _check_matrix_matches_decomp(op)
     _check_sparse_matrix(op)
     _check_eigendecomposition(op)
     _check_generator(op)
-    if not kwargs.get("skip_differentiation", False):
+    if not skip_differentiation:
         _check_differentiation(op)
     _check_capture(op)
