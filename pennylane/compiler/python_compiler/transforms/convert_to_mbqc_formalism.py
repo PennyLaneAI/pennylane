@@ -476,8 +476,9 @@ class ConvertToMBQCFormalismPattern(
                     graph_qubits_dict = self._prep_graph_state(op, rewriter)
 
                     # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
-                    in_qubits = [op.in_qubits[0], graph_qubits_dict[2]]
-                    CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
+                    CZOp = CustomOp(
+                        in_qubits=[op.in_qubits[0], graph_qubits_dict[2]], gate_name="CZ"
+                    )
                     rewriter.insert_op(CZOp, InsertPoint.before(op))
 
                     graph_qubits_dict[1], graph_qubits_dict[2] = CZOp.results
@@ -504,14 +505,16 @@ class ConvertToMBQCFormalismPattern(
                     graph_qubits_dict = self._prep_graph_state(op, rewriter)
 
                     # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
-                    in_qubits = [op.in_qubits[0], graph_qubits_dict[2]]
-                    CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
+                    CZOp = CustomOp(
+                        in_qubits=[op.in_qubits[0], graph_qubits_dict[2]], gate_name="CZ"
+                    )
                     rewriter.insert_op(CZOp, InsertPoint.before(op))
                     graph_qubits_dict[1], graph_qubits_dict[2] = CZOp.results
 
                     # Entangle op.in_qubits[1] with with the graph_qubits_dict[10] for a CNOT gate
-                    in_qubits = [op.in_qubits[1], graph_qubits_dict[10]]
-                    CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
+                    CZOp = CustomOp(
+                        in_qubits=[op.in_qubits[1], graph_qubits_dict[10]], gate_name="CZ"
+                    )
                     rewriter.insert_op(CZOp, InsertPoint.before(op))
                     graph_qubits_dict[9], graph_qubits_dict[10] = CZOp.results
 
