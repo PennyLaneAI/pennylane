@@ -50,23 +50,6 @@ def _adjust_determinant(matrix):
     return None, matrix
 
 
-def _isrealobj(obj):
-    """Convert an array to its real part if it is close to being real-valued, and afterwards
-    return whether the resulting data type is real.
-
-    Args:
-        obj (array): Array to check for being (close to) real.
-
-    Returns:
-        bool: Whether the array ``obj``, after potentially converting it to a real matrix,
-        has a real data type. This is obtained by checking whether the data type name starts with
-        ``"complex"`` and returning the negated result of this.
-    """
-    if not math.is_abstract(obj) and math.allclose(math.imag(obj), 0.0):
-        obj = math.real(obj)
-    return not math.get_dtype_name(obj).startswith("complex")
-
-
 class BasisRotation(Operation):
     r"""Implements a circuit that performs an exact single-body basis rotation using Givens
     rotations and phase shifts.
@@ -334,7 +317,10 @@ class BasisRotation(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"dim": math.shape(self.data[0])[0], "is_real": _isrealobj(self.data[0])}
+        return {
+            "dim": math.shape(self.data[0])[0],
+            "is_real": math.is_real_obj_or_close(self.data[0]),
+        }
 
     @property
     def num_params(self):
@@ -372,7 +358,7 @@ class BasisRotation(Operation):
 
         op_list = []
 
-        if _isrealobj(unitary_matrix):
+        if math.is_real_obj_or_close(unitary_matrix):
             angle, unitary_matrix = _adjust_determinant(unitary_matrix)
             if angle is not None:
                 op_list.append(PhaseShift(angle, wires=wires[0]))
@@ -415,7 +401,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
     def _phase_shift(_phi, _wires):
         PhaseShift(_phi, wires=_wires)
 
-    if _isrealobj(unitary_matrix):
+    if math.is_real_obj_or_close(unitary_matrix):
         angle, unitary_matrix = _adjust_determinant(unitary_matrix)
         if angle is not None:
             PhaseShift(angle, wires=wires[0])
