@@ -1,4 +1,3 @@
-:orphan:
 
 # Release 0.43.0-dev (development release)
 
@@ -155,11 +154,19 @@
 * `default.qubit` will default to the tree-traversal MCM method when `mcm_method="device"`.
   [(#7885)](https://github.com/PennyLaneAI/pennylane/pull/7885)
 
+<h4>Resource-efficient decompositions 🔎</h4>
+
+* With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
+
+  [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
+
+* Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
+  [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
 
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
@@ -283,6 +290,10 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
+  PennyLane submodules.
+  [(#7959)](https://github.com/PennyLaneAI/pennylane/pull/7959)
 
 * Adds `measurements` as a "core" module in the tach specification.
  [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
