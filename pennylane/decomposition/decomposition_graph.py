@@ -57,7 +57,7 @@ from .symbolic_decomposition import (
 from .utils import translate_op_alias
 
 
-@dataclass
+@dataclass(frozen=True)
 class _OperatorNode:
     """A node that represents an operator type."""
 
@@ -89,6 +89,16 @@ class _OperatorNode:
         if self.work_wire_dependent:
             return hash((self.op, self.num_work_wire_not_available))
         return hash(self.op)
+
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, _OperatorNode):
+            return False
+        if (
+            self.work_wire_dependent
+            and self.num_work_wire_not_available != other.num_work_wire_not_available
+        ):
+            return False
+        return self.op == other.op
 
 
 @dataclass
@@ -265,10 +275,9 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         if make_op_work_wire_dependent:
             new_op_node = replace(op_node, work_wire_dependent=True)
             self._all_op_indices[new_op_node] = self._all_op_indices.pop(op_node)
+            self._graph[op_node_idx] = new_op_node
             self._op_to_op_nodes[op].remove(op_node)
             self._op_to_op_nodes[op].add(new_op_node)
-
-        if op_node.work_wire_dependent:
             self._work_wire_dependent_ops.add(op_node.op)
 
         return op_node_idx
@@ -413,11 +422,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         return rules
 
-    def solve(self, num_available_work_wires: int | None = None, lazy=True):
+    def solve(self, num_work_wires: int | None = 0, lazy=True):
         """Solves the graph using the Dijkstra search algorithm.
 
         Args:
-            num_available_work_wires (int, optional): The total number of available work wires.
+            num_work_wires (int, optional): The total number of available work wires. Set this
+                to ``None`` if there is an unlimited number of work wires.
             lazy (bool): If True, the Dijkstra search will stop once optimal decompositions are
                 found for all operations that the graph was initialized with. Otherwise, the
                 entire graph will be explored.
@@ -427,7 +437,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             self._graph,
             self._gate_set_weights,
             self._original_ops_indices,
-            num_available_work_wires,
+            num_work_wires,
             lazy,
         )
         rx.dijkstra_search(
@@ -466,21 +476,21 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         return filter(_is_feasible, filter(_is_solved, self._op_to_op_nodes[op_rep]))
 
-    def is_solved_for(self, op: Operator, num_available_work_wires: int = 0):
+    def is_solved_for(self, op: Operator, num_work_wires: int = 0):
         """Tests whether the decomposition graph is solved for a given operator.
 
         Args:
             op (Operator): The operator to check.
-            num_available_work_wires (int): The maximum number of available work wires.
+            num_work_wires (int): The number of available work wires to decompose this operator.
 
         """
         if self._visitor is None:
             raise ValueError("The decomposition graph has not been solved yet.")
 
-        return any(self._all_solutions(self._visitor, op, num_available_work_wires))
+        return any(self._all_solutions(self._visitor, op, num_work_wires))
 
     def _get_best_solution(
-        self, visitor: _DecompositionSearchVisitor, op: Operator, num_available_work_wires: int
+        self, visitor: _DecompositionSearchVisitor, op: Operator, num_work_wires: int
     ) -> int:
         """Finds the best solution for an operator in terms of resource efficiency."""
 
@@ -491,7 +501,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
                 visitor.num_work_wires_used[op_node_idx],
             )
 
-        all_solutions = self._all_solutions(visitor, op, num_available_work_wires)
+        all_solutions = self._all_solutions(visitor, op, num_work_wires)
         solution = min(all_solutions, key=_resource, default=None)
 
         if not solution:
@@ -500,11 +510,12 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         op_node_idx = self._all_op_indices[solution]
         return op_node_idx
 
-    def resource_estimate(self, op: Operator, num_available_work_wires: int = 0) -> Resources:
+    def resource_estimate(self, op: Operator, num_work_wires: int = 0) -> Resources:
         """Returns the resource estimate for a given operator.
 
         Args:
             op (Operator): The operator for which to return the resource estimates.
+            num_work_wires (int): The number of work wires available to decompose this operator.
 
         Returns:
             Resources: The resource estimate.
@@ -539,14 +550,15 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         if self._visitor is None:
             raise ValueError("The decomposition graph has not been solved yet.")
 
-        op_node_idx = self._get_best_solution(self._visitor, op, num_available_work_wires)
+        op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)
         return self._visitor.distances[op_node_idx]
 
-    def decomposition(self, op: Operator, num_available_work_wires: int = 0) -> DecompositionRule:
+    def decomposition(self, op: Operator, num_work_wires: int = 0) -> DecompositionRule:
         """Returns the optimal decomposition rule for a given operator.
 
         Args:
             op (Operator): The operator for which to return the optimal decomposition.
+            num_work_wires (int): The number of work wires available to decompose this operator.
 
         Returns:
             DecompositionRule: The optimal decomposition.
@@ -578,7 +590,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         if self._visitor is None:
             raise ValueError("The decomposition graph has not been solved yet.")
 
-        op_node_idx = self._get_best_solution(self._visitor, op, num_available_work_wires)
+        op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)
         d_node_idx = self._visitor.predecessors[op_node_idx]
         return self._graph[d_node_idx].rule
 

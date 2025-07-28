@@ -387,17 +387,94 @@ class TestWorkWireBudget:
         graph = DecompositionGraph(
             [CustomOp(wires=[0, 1, 2])],
             gate_set={qml.Toffoli, qml.CRot},
-            alt_decomps={CustomOp: [_decomp_with_work_wire, _decomp_without_work_wire]},
+            alt_decomps={CustomOp: [_decomp_without_work_wire, _decomp_with_work_wire]},
         )
 
-        graph.solve(num_available_work_wires=0)
+        graph.solve(num_work_wires=0)
         assert graph.decomposition(CustomOp(wires=[0, 1, 2])) is _decomp_without_work_wire
 
-        graph.solve(num_available_work_wires=1)
+        graph.solve(num_work_wires=1)
         assert (
-            graph.decomposition(CustomOp(wires=[0, 1, 2]), num_available_work_wires=1)
+            graph.decomposition(CustomOp(wires=[0, 1, 2]), num_work_wires=1)
             is _decomp_with_work_wire
         )
+
+    def test_multiple_nodes_with_different_work_wire_budget(self):
+        """Tests that the same operator produced under different work wire budgets
+        are stored as different nodes in the graph, and results can be queried."""
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({qml.Toffoli: 2, qml.CRot: 1}, work_wires={"zeroed": 2})
+        def _decomp_with_work_wire(*_, **__):
+            raise NotImplementedError
+
+        @qml.register_resources({qml.Toffoli: 4, qml.CRot: 3})
+        def _decomp_without_work_wire(*_, **__):
+            raise NotImplementedError
+
+        class LargeOp(Operation):  # pylint: disable=too-few-public-methods
+            """A larger custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({qml.Toffoli: 2, CustomOp: 2}, work_wires={"zeroed": 1})
+        def _decomp2_with_work_wire(*_, **__):
+            raise NotImplementedError
+
+        @qml.register_resources({qml.Toffoli: 4, CustomOp: 2})
+        def _decomp2_without_work_wire(*_, **__):
+            raise NotImplementedError
+
+        op = LargeOp(wires=[0, 1, 2, 3])
+        small_op = CustomOp(wires=[0, 1, 2])
+
+        graph = DecompositionGraph(
+            [op, small_op],
+            gate_set={qml.Toffoli, qml.CRot},
+            alt_decomps={
+                CustomOp: [_decomp_without_work_wire, _decomp_with_work_wire],
+                LargeOp: [_decomp2_without_work_wire, _decomp2_with_work_wire],
+            },
+        )
+
+        # 1 node for LargerOp, 2 nodes for CustomOp, 1 for Toffoli, 1 for CRot, 1 dummy starting
+        # node, 2 decomposition nodes from LargerOp, 2 decompositions from each CustomOp
+        assert len(graph._graph.nodes()) == 12
+        assert len(graph._graph.edges()) == 20
+
+        graph.solve(num_work_wires=0)
+        assert graph.decomposition(op) is _decomp2_without_work_wire
+        assert graph.decomposition(small_op) is _decomp_without_work_wire
+
+        graph.solve(num_work_wires=1)
+        assert graph.decomposition(op, num_work_wires=1) is _decomp2_with_work_wire
+        assert graph.decomposition(small_op, num_work_wires=0) is _decomp_without_work_wire
+
+        graph.solve(num_work_wires=2)
+        # When there are only 2 work wires available, by construction, it is more
+        # resource efficient to use them on the CustomOp, so even where there are
+        # enough work wires to use the more efficient decomposition for the LargeOp,
+        # we should still choose the less efficient one to achieve better overall
+        # resource efficiency.
+        assert graph.decomposition(op, num_work_wires=2) is _decomp2_without_work_wire
+        assert graph.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
+
+        graph.solve(num_work_wires=3)
+        assert graph.decomposition(op, num_work_wires=3) is _decomp2_with_work_wire
+        assert graph.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
+        assert graph.decomposition(small_op, num_work_wires=3) is _decomp_with_work_wire
 
 
 @pytest.mark.unit
