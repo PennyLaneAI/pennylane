@@ -30,6 +30,24 @@ from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
+CONTROL_BASE = {
+    "CNOT": "PauliX",
+    "CZ": "PauliZ",
+    "CCZ": "PauliZ",
+    "CY": "PauliY",
+    "CH": "Hadamard",
+    "CSWAP": "SWAP",
+    "Toffoli": "PauliX",
+    "ControlledPhaseShift": "PhaseShift",
+    "CRX": "RX",
+    "CRY": "RY",
+    "CRZ": "RZ",
+    "C(S)": "S",
+    "CRot": "Rot",
+    "MultiControlledX": "PauliX",
+    "ControlledOperation": "ControlledOperation",
+}
+
 
 @transform
 def pattern_matching_optimization(
@@ -474,23 +492,6 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
         list: list of qubits to consider in circuit (with specific order).
     """
     # pylint: disable=too-many-branches
-    control_base = {
-        "CNOT": "PauliX",
-        "CZ": "PauliZ",
-        "CCZ": "PauliZ",
-        "CY": "PauliY",
-        "CH": "Hadamard",
-        "CSWAP": "SWAP",
-        "Toffoli": "PauliX",
-        "ControlledPhaseShift": "PhaseShift",
-        "CRX": "RX",
-        "CRY": "RY",
-        "CRZ": "RZ",
-        "C(S)": "S",
-        "CRot": "Rot",
-        "MultiControlledX": "PauliX",
-        "ControlledOperation": "ControlledOperation",
-    }
 
     first_match_qubits = []
 
@@ -499,7 +500,7 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
         circuit_control = node_c.op.control_wires
         circuit_target = Wires([w for w in node_c.op.wires if w not in node_c.op.control_wires])
         # Not symmetric target gate or acting on 1 wire (target wires cannot be permuted) (For example Toffoli)
-        if control_base[node_p.op.name] not in symmetric_over_all_wires:
+        if CONTROL_BASE[node_p.op.name] not in symmetric_over_all_wires:
             # Permute control
             for control_permuted in itertools.permutations(circuit_control):
                 control_permuted = list(control_permuted)
@@ -646,25 +647,8 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
     """
     # pylint: disable=too-many-arguments
 
-    control_base = {
-        "CNOT": "PauliX",
-        "CZ": "PauliZ",
-        "CCZ": "PauliZ",
-        "CY": "PauliY",
-        "CSWAP": "SWAP",
-        "Toffoli": "PauliX",
-        "ControlledPhaseShift": "PhaseShift",
-        "CRX": "RX",
-        "CRY": "RY",
-        "CRZ": "RZ",
-        "CRot": "Rot",
-        "C(S)": "S",
-        "MultiControlledX": "PauliX",
-        "ControlledOperation": "ControlledOperation",
-    }
-
     if control1 and set(control1) == set(control2):
-        if control_base[node1.op.name] in symmetric_over_all_wires and set(target1) == set(target2):
+        if CONTROL_BASE[node1.op.name] in symmetric_over_all_wires and set(target1) == set(target2):
             return True
         if target1 == target2:
             return True

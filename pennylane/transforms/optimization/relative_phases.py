@@ -36,7 +36,9 @@ def replace_relative_phase_toffoli(
     tape: QuantumScript,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to replace 4-qubit relative phase Toffoli gates, given in
-    (Maslov, 2016).
+    Maslov, Dmitri. "On the Advantages of Using Relative Phase Toffolis with an Application to
+    Multiple Control Toffoli Optimization", arXiv:1508.03273, arXiv, 2016.
+    `doi:10.48550/arXiv.1508.03273 <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.93.022311>`_.
 
     Args:
         tape (QNode or QuantumScript or Callable): A quantum circuit.
@@ -142,7 +144,8 @@ def replace_controlled_iX_gate(
     tape: QuantumScript, num_controls=1
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to replace controlled iX gates. An iX gate is a controlled-S and a Toffoli. The
-    equivalency used is given in (Giles and Selinger, 2013).
+    equivalency used is given in Giles, Brett, and Peter Selinger. "Exact Synthesis of Multiqubit Clifford+T Circuits",
+    arXiv:1212.0506, arXiv, 2013. `doi:10.48550/arXiv.1212.0506 <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.87.032332>`_.
 
     Args:
         tape (QNode or QuantumScript or Callable): A quantum circuit.
