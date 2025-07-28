@@ -14,8 +14,14 @@
 """
 Contains the Adder template.
 """
-
 import pennylane as qml
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 from pennylane.wires import WiresLike
 
@@ -101,6 +107,8 @@ class Adder(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_x_wires", "mod"}
+
     def __init__(
         self, k, x_wires: WiresLike, mod=None, work_wires: WiresLike = (), id=None
     ):  # pylint: disable=too-many-arguments
@@ -133,6 +141,13 @@ class Adder(Operation):
         self.hyperparameters["x_wires"] = x_wires
 
         super().__init__(wires=all_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "mod": self.hyperparameters["mod"],
+        }
 
     @property
     def num_params(self):
@@ -204,3 +219,89 @@ class Adder(Operation):
         op_list.append(qml.adjoint(qml.QFT)(qft_wires))
 
         return op_list
+
+
+def _adder_decomposition_resources(num_x_wires, mod) -> dict:
+
+    if mod == 2**num_x_wires:
+        qft_wires = num_x_wires
+    else:
+        qft_wires = 1 + num_x_wires
+
+    return {
+        resource_rep(qml.QFT, num_wires=qft_wires): 1,
+        resource_rep(qml.PhaseAdder, num_x_wires=qft_wires, mod=mod): 1,
+        adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
+    }
+
+
+# pylint: disable=no-value-for-parameter
+@register_resources(_adder_decomposition_resources)
+def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
+    if mod == 2 ** len(x_wires):
+        qft_wires = x_wires
+        work_wire = ()
+    else:
+        qft_wires = work_wires[:1] + x_wires
+        work_wire = work_wires[1:]
+
+    qml.QFT(qft_wires)
+    qml.PhaseAdder(k, qft_wires, mod, work_wire)
+    qml.adjoint(qml.QFT(qft_wires))
+
+
+add_decomps(Adder, _adder_decomposition)
+
+
+def _controlled_adder_resources(
+    *_,
+    num_control_wires,
+    num_work_wires,
+    work_wire_type,
+    base_class,
+    base_params,
+    **__,
+):  # pylint: disable=unused-argument
+    if base_params["mod"] == 2 ** base_params["num_x_wires"]:
+        qft_wires = base_params["num_x_wires"]
+    else:
+        qft_wires = 1 + base_params["num_x_wires"]
+
+    return {
+        resource_rep(qml.QFT, num_wires=qft_wires): 1,
+        controlled_resource_rep(
+            qml.PhaseAdder,
+            {"num_x_wires": qft_wires, "mod": base_params["mod"]},
+            num_control_wires=num_control_wires,
+            num_zero_control_values=0,
+            num_work_wires=num_work_wires,
+            work_wire_type=work_wire_type,
+        ): 1,
+        adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
+    }
+
+
+@register_resources(_controlled_adder_resources)
+def _controlled_adder_decomposition(
+    wires, control_wires, work_wires, work_wire_type, base, **__
+):  # pylint: disable=unused-argument
+    if base.hyperparameters["mod"] == 2 ** len(base.hyperparameters["x_wires"]):
+        qft_wires = base.hyperparameters["x_wires"]
+        base_work_wire = ()
+    else:
+        qft_wires = base.hyperparameters["work_wires"][:1] + base.hyperparameters["x_wires"]
+        base_work_wire = base.hyperparameters["work_wires"][1:]
+
+    qml.QFT(qft_wires)
+    qml.ctrl(
+        qml.PhaseAdder(
+            base.hyperparameters["k"], qft_wires, base.hyperparameters["mod"], base_work_wire
+        ),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    qml.adjoint(qml.QFT(qft_wires))
+
+
+add_decomps("C(Adder)", _controlled_adder_decomposition)

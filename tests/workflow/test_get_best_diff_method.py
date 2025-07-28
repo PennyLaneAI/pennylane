@@ -110,3 +110,20 @@ class TestValidation:
 
         res = get_best_diff_method(qn)(0.5)
         assert res == "parameter-shift"
+
+    def test_best_method_with_transforms(self):
+        """Test that transforms and execution parameters affect the supported differentiation method."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        x = qml.numpy.array(0.5)
+
+        original_method = get_best_diff_method(circuit)(x)
+        metric_tensor_method = get_best_diff_method(qml.metric_tensor(circuit))(x)
+
+        assert original_method == "adjoint"
+
+        assert metric_tensor_method == "parameter-shift"

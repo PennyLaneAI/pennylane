@@ -22,6 +22,7 @@ from typing import Dict, Hashable, List, Optional, Sequence, Set, Tuple
 import numpy as np
 from tqdm import tqdm
 
+
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator
@@ -41,7 +42,7 @@ class _AdditiveIdentity:
 
 def effective_hamiltonian(
     product_formula: ProductFormula,
-    fragments: Dict[Hashable, Fragment],
+    fragments: dict[Hashable, Fragment],
     order: int,
     timestep: float = 1.0,
 ):
@@ -93,8 +94,8 @@ def effective_hamiltonian(
 
 
 def _insert_fragments(
-    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment]
-) -> Tuple[Fragment]:
+    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment]
+) -> tuple[Fragment]:
     """This function transforms a commutator of labels to a commutator of concrete `Fragment` objects.
     The function recurses through the nested structure of the tuple replacing each hashable `label` with
     the concrete value `fragments[label]`."""
@@ -115,7 +116,7 @@ def _handle_return_value(expectations, convergence_info, return_convergence_info
 # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-branches, too-many-statements
 def perturbation_error(
     product_formula: ProductFormula,
-    fragments: Dict[Hashable, Fragment],
+    fragments: dict[Hashable, Fragment],
     states: Sequence[AbstractState],
     order: int,
     timestep: float = 1.0,
@@ -135,7 +136,7 @@ def perturbation_error(
     convergence_window: int = 10,
     min_convergence_checks: int = 3,
     return_convergence_info: bool = False,
-):
+) -> list[float]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
@@ -494,6 +495,7 @@ def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
 def _group_sums(
     term_dicts: List[Dict[Tuple[Hashable], complex]],
 ) -> List[Tuple[Hashable | Set]]:
+
     """
     Reduce the number of commutators by grouping them using linearity in the first argument.
 

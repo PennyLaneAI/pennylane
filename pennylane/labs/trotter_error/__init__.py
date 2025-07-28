@@ -102,9 +102,7 @@ from .fragments import (
     generic_fragments,
     vibrational_fragments,
     vibronic_fragments,
-    SparseFragment,
     sparse_fragments,
-    SparseState,
 )
 from .product_formulas import (
     ProductFormula,
