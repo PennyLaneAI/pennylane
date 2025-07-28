@@ -779,8 +779,8 @@ def device_resolve_dynamic_wires(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     if wires:
         zeroed = set(wires) - set(tape.wires)
-        print("IM HERE: ", zeroed, set(wires), set(tape.wires))
+        min_int = None
     else:
         zeroed = ()
-    min_int = max((i for i in tape.wires + (wires or ()) if isinstance(i, int)), default=0) + 1
+        min_int = max((i for i in tape.wires if isinstance(i, int)), default=-1) + 1
     return resolve_dynamic_wires(tape, zeroed=zeroed, min_int=min_int)
