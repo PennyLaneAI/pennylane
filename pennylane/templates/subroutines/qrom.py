@@ -342,6 +342,8 @@ def _qrom_decomposition_resources(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, num_bitstrings)
 
+    # TODO: all failing test cases seem to be due to how Prods are used in reqource params or
+    # how they don't have resource_params defined themselves. Wait for David and then refactor this.
     new_ops = {
         qml.ops.op_math.Prod: (
             num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
