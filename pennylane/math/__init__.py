@@ -23,8 +23,6 @@ differentiation to be preserved.
     Furthermore, the names and behaviour of these functions may differ from similar
     functions in common frameworks; please refer to the function docstrings for more details.
 
-.. currentmodule:: pennylane
-
 The following frameworks are currently supported:
 
 * NumPy
@@ -33,33 +31,7 @@ The following frameworks are currently supported:
 * PyTorch
 * JAX
 
-Overview
---------
-
-.. currentmodule:: pennylane.math
-
-.. automodapi:: pennylane.math
-    :no-heading:
-    :no-inherited-members:
-
-Utility functions for decompositions
-------------------------------------
-
-.. currentmodule:: pennylane.math.decomposition
-
-.. autosummary::
-    :toctree: api
-
-    ~math.decomposition.zyz_rotation_angles
-    ~math.decomposition.xyx_rotation_angles
-    ~math.decomposition.xzx_rotation_angles
-    ~math.decomposition.zxz_rotation_angles
-    ~math.decomposition.su2su2_to_tensor_products
-    ~math.decomposition.decomp_int_to_powers_of_two
-    ~math.decomposition.givens_decomposition
-
 """
-
 import autoray as ar
 
 from .is_independent import is_independent
@@ -141,7 +113,7 @@ from .interface_utils import (
     InterfaceLike,
 )
 from .grad import grad, jacobian
-from .decomposition import zyz_rotation_angles
+from . import decomposition
 
 sum = ar.numpy.sum
 conj = ar.numpy.conj
