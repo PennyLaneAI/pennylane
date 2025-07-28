@@ -37,7 +37,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     _make_hashable,
     resource_rep,
 )
-from pennylane.queuing import AnnotatedQueue
+from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.wires import Wires
 
 # pylint: disable=protected-access, too-few-public-methods, no-self-use, unused-argument, arguments-differ, no-member, comparison-with-itself
@@ -278,24 +278,46 @@ class TestResourceOperator:
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             res_op(x=1)
 
+    ops_to_queue = [
+        ResourceHadamard(wires=[0]),
+        ResourceHadamard(wires=[1]),
+        ResourceCNOT(wires=[0, 1]),
+        ResourceRX(x=1.23, wires=[0]),
+    ]
+
     def test_init_queuing(self):
         """Test that instantiating a resource operator correctly sets its arguments
         and queues it."""
-
         with AnnotatedQueue() as q:
             ResourceHadamard(wires=[0])
             ResourceHadamard(wires=[1])
             ResourceCNOT(wires=[0, 1])
             ResourceRX(x=1.23, wires=[0])
 
-        expected_queue = [
-            ResourceHadamard(wires=[0]),
-            ResourceHadamard(wires=[1]),
-            ResourceCNOT(wires=[0, 1]),
-            ResourceRX(x=1.23, wires=[0]),
-        ]
+        assert q.queue == self.ops_to_queue
 
-        assert q.queue == expected_queue
+    def test_dequeue(self):
+        """Test that we can remove a resource operator correctly."""
+        ops_to_remove = (
+            self.ops_to_queue[0],
+            [self.ops_to_queue[2]],
+            self.ops_to_queue[0:3],
+        )
+
+        expected_queues = (
+            self.ops_to_queue[1:],
+            self.ops_to_queue[:2] + self.ops_to_queue[3:],
+            self.ops_to_queue[3:],
+        )
+
+        for op_to_remove, expected_queue in zip(ops_to_remove, expected_queues):
+            with AnnotatedQueue() as q:
+                for op in self.ops_to_queue:
+                    qml.apply(op)
+
+                ResourceOperator.dequeue(op_to_remove)
+
+            assert q.queue == expected_queue
 
     def test_init_wire_override(self):
         """Test that setting the wires correctly overrides the num_wires argument."""

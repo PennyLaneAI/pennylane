@@ -318,7 +318,9 @@ class QueuingManager:
         Args:
             obj: the object to be removed
         """
+        print("in remove")
         if cls.recording():
+            print("is recording")
             cls.active_context().remove(obj)
 
     @classmethod
