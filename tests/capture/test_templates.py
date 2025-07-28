@@ -457,11 +457,11 @@ class TestModifiedTemplates:
         """Test the primitive bind call of HilbertSchmidt."""
 
         def qfunc(v_params):
-            # U = qml.Hadamard(0)
-            # V = qml.RZ(v_params[0], wires=1)
-            qml.HilbertSchmidt(U=qml.Hadamard(0), V=qml.RZ(v_params[0], wires=1))
+            U = qml.Hadamard(0)
+            V = qml.RZ(v_params[0], wires=1)
+            qml.HilbertSchmidt(U=U, V=V)
 
-        v_params = np.array([0.1])
+        v_params = jnp.array([0.1])
         # Validate inputs
         qfunc(v_params)
 
@@ -481,9 +481,10 @@ class TestModifiedTemplates:
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, v_params)
 
-        # TODO: investigate
-        # assert len(q) == 1
-        # TODO: complete this test
+        assert len(q) == 1
+        U = qml.Hadamard(0)
+        V = qml.RZ(v_params[0], wires=1)
+        assert q.queue[0] == qml.HilbertSchmidt(U=U, V=V)
 
     @pytest.mark.parametrize("template", [qml.MERA, qml.MPS, qml.TTN])
     def test_tensor_networks(self, template):

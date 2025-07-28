@@ -324,7 +324,7 @@ class TestHilbertSchmidt:
         V = "qml.RZ(0.1, wires=1)"
 
         with pytest.raises(
-            QuantumFunctionError,
+            ValueError,
             match="The argument 'V' must be an Operator or an iterable of Operators.",
         ):
             qml.HilbertSchmidt(V=V, U=U)
@@ -336,7 +336,7 @@ class TestHilbertSchmidt:
         V = qml.RZ(0.1, wires=1)
 
         with pytest.raises(
-            QuantumFunctionError,
+            ValueError,
             match="The argument 'U' must be an Operator or an iterable of Operators.",
         ):
             qml.HilbertSchmidt(V=V, U=U)
@@ -348,7 +348,7 @@ class TestHilbertSchmidt:
         V = qml.RZ(0.1, wires=1)
 
         with pytest.raises(
-            QuantumFunctionError,
+            ValueError,
             match="U and V must have the same number of wires.",
         ):
             qml.HilbertSchmidt(V=V, U=U)
@@ -360,7 +360,7 @@ class TestHilbertSchmidt:
         V = qml.RZ(0.1, wires=0)
 
         with pytest.raises(
-            QuantumFunctionError,
+            ValueError,
             match="Operations in U and V must act on distinct wires.",
         ):
             qml.HilbertSchmidt(V=V, U=U)
