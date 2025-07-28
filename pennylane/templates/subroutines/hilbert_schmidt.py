@@ -88,7 +88,7 @@ class HilbertSchmidt(Operation):
                 return qml.probs(U.wires + V.wires)
 
             def cost_hst(V, U):
-                return (1 - hilbert_test(V=V, U=U)[0])
+                return (1 - hilbert_test(V, U)[0])
 
         Now that the cost function has been defined it can be called as follows:
 
@@ -106,6 +106,7 @@ class HilbertSchmidt(Operation):
     @classmethod
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
         # pylint: disable=arguments-differ
+        # TODO: guard against V and U being iterables of Operators
         return cls._primitive.bind(V, U, **kwargs)
 
     @classmethod

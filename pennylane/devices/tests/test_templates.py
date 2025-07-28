@@ -399,14 +399,20 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         ]
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.parametrize("U", [[qml.Hadamard(0)], (qml.Hadamard(0),), qml.Hadamard(0)])
-    def test_HilbertSchmidt(self, device, U, tol):
+    @pytest.mark.parametrize(
+        ("V", "U"),
+        [
+            (qml.RZ(0, wires=1), qml.Hadamard(0)),
+            ((qml.RZ(0, wires=1),), (qml.Hadamard(0),)),
+            (qml.RZ(0, wires=1), (qml.Hadamard(0))),
+            ((qml.RZ(0, wires=1),), qml.Hadamard(0)),
+        ],
+    )
+    def test_HilbertSchmidt(self, device, V, U, tol):
         """Test the HilbertSchmidt template."""
         dev = device(2)
-        u_wires = U.wires if isinstance(U, qml.operation.Operation) else qml.prod(*U).wires
-
-        V = qml.RZ(0, wires=1)
-        v_wires = V.wires
+        u_wires = U.wires if isinstance(U, qml.operation.Operation) else U[0].wires
+        v_wires = V.wires if isinstance(V, qml.operation.Operation) else V[0].wires
 
         @qml.qnode(dev)
         def hilbert_test(V, U):
