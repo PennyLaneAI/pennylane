@@ -408,7 +408,9 @@ def _qrom_decomposition(
 
         with qml.QueuingManager.stop_recording():
             ops_new = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
-            ops_identity_new = ops_new + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops_new))
+            ops_identity_new = ops_new + [qml.I(target_wires)] * int(
+                2 ** len(control_wires) - len(ops_new)
+            )
 
         n_columns = (
             len(bitstrings) // depth_new
@@ -429,9 +431,7 @@ def _qrom_decomposition(
             new_ops.append(qml.prod(*column_ops))
         return new_ops
 
-    def _select_ops(
-        control_wires_select, depth_select, target_wires_select
-    ):
+    def _select_ops(control_wires_select, depth_select, target_wires_select):
         n_control_select_wires = int(
             math.ceil(math.log2(2 ** len(control_wires_select) / depth_select))
         )
