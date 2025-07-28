@@ -23,8 +23,9 @@ from pennylane import ops as qml_ops
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
-from pennylane.templates.subroutines import Select
 from pennylane.wires import Wires, WiresLike
+
+from .select import Select
 
 
 def _multi_swap(wires1, wires2):
@@ -227,9 +228,7 @@ class QROM(Operation):
                         ops_identity[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
                         for l in range(len(target_wires))
                     }
-                    column_ops.append(
-                        qml_ops.functions.map_wires(ops_identity[i * depth + j], dic_map)
-                    )
+                    column_ops.append(ops_identity[i * depth + j].map_wires(dic_map))
                 new_ops.append(qml_ops.prod(*column_ops))
 
             # Select block

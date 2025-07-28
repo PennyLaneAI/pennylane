@@ -28,9 +28,12 @@ from numpy.polynomial import Polynomial, chebyshev
 from pennylane import math, ops
 from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager, apply
-from pennylane.templates.subroutines import FABLE, PrepSelPrep, Qubitization
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
+
+from .fable import FABLE
+from .prepselprep import PrepSelPrep
+from .qubitization import Qubitization
 
 
 def _pauli_rep_process(A, poly, encoding_wires, block_encoding, angle_solver="root-finding"):
@@ -498,12 +501,9 @@ class QSVT(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["UA"] = ops.functions.map_wires(
-            new_op._hyperparameters["UA"], wire_map
-        )
+        new_op._hyperparameters["UA"] = new_op._hyperparameters["UA"].map_wires(wire_map)
         new_op._hyperparameters["projectors"] = [
-            ops.functions.map_wires(proj, wire_map)
-            for proj in new_op._hyperparameters["projectors"]
+            proj.map_wires(wire_map) for proj in new_op._hyperparameters["projectors"]
         ]
         return new_op
 
@@ -641,10 +641,9 @@ class QSVT(Operation):
         UA = kwargs["UA"]
         projectors = kwargs["projectors"]
 
-        with (
-            QueuingManager.stop_recording()
-        ):  # incase this method is called in a queue context, this prevents
-            UA_copy = copy.copy(UA)  # us from queuing operators unnecessarily
+        # incase this method is called in a queue context, this prevents queuing ops unnecessarily
+        with QueuingManager.stop_recording():
+            UA_copy = copy.copy(UA)
 
             for idx, op in enumerate(projectors[:-1]):
                 op_list.append(op)
@@ -654,7 +653,7 @@ class QSVT(Operation):
                     op_list.append(ops.adjoint(UA_copy))
 
             op_list.append(projectors[-1])
-            mat = ops.functions.matrix(ops.prod(*tuple(op_list[::-1])))
+            mat = ops.prod(*tuple(op_list[::-1])).matrix()
 
         return mat
 
@@ -761,7 +760,7 @@ def _compute_qsp_angle(poly_coeffs):
             poly_a, poly_b = polynomial_matrix[:, idx]
             rotation_angles[idx] = np.arctan2(poly_b.real, poly_a.real)
 
-            rotation_op = ops.functions.matrix(ops.RY(-2 * rotation_angles[idx], wires=0))
+            rotation_op = ops.RY.compute_matrix(-2 * rotation_angles[idx])
 
             updated_poly_matrix = rotation_op @ polynomial_matrix
             polynomial_matrix = np.array(

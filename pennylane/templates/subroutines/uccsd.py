@@ -15,6 +15,7 @@ r"""
 Contains the UCCSD template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-positional-arguments
 import copy
 
 import numpy as np
@@ -22,8 +23,10 @@ import numpy as np
 from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import BasisState
-from pennylane.templates.subroutines import FermionicDoubleExcitation, FermionicSingleExcitation
 from pennylane.wires import Wires
+
+from .fermionic_double_excitation import FermionicDoubleExcitation
+from .fermionic_single_excitation import FermionicSingleExcitation
 
 
 class UCCSD(Operation):

@@ -19,8 +19,10 @@ import copy
 
 from pennylane.operation import Operation
 from pennylane.ops import I, prod
-from pennylane.templates.subroutines import PrepSelPrep, Reflection
 from pennylane.wires import Wires
+
+from .prepselprep import PrepSelPrep
+from .reflection import Reflection
 
 
 class Qubitization(Operation):
