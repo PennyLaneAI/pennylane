@@ -25,8 +25,10 @@ arXiv:1212.0506, arXiv, 2013. doi:10.48550/arXiv.1212.0506.
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import pattern_matching_optimization, transform
+from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
+
+from .pattern_matching import pattern_matching_optimization
 
 
 @transform
@@ -69,11 +71,10 @@ def replace_relative_phase_toffoli(
     >>> lowered_qfunc = replace_relative_phase_toffoli(qfunc)
     >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
     >>> print(qml.draw(lowered_qnode)())
-
-    0: ─────────────────╭●───────────╭●───────────────────────────┤  <Z>
-    1: ─────────────────│─────╭●─────│─────╭●─────────────────────┤
-    2: ───────╭●────────│─────│──────│─────│────────────╭●────────┤
-    3: ──H──T─╰X──T†──H─╰X──T─╰X──T†─╰X──T─╰X──T†──H──T─╰X──T†──H─┤
+        0: ─────────────────╭●───────────╭●───────────────────────────┤  <Z>
+        1: ─────────────────│─────╭●─────│─────╭●─────────────────────┤
+        2: ───────╭●────────│─────│──────│─────│────────────╭●────────┤
+        3: ──H──T─╰X──T†──H─╰X──T─╰X──T†─╰X──T─╰X──T†──H──T─╰X──T†──H─┤
 
     .. details::
         :title: Usage Details
@@ -177,11 +178,10 @@ def replace_controlled_iX_gate(
     >>> lowered_qfunc = replace_controlled_iX_gate(qfunc, 2)
     >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
     >>> print(qml.draw(lowered_qnode)())
-
-    0: ──────────────╭●───────────╭●────┤  <Z>
-    1: ──────────────├●───────────├●────┤
-    2: ────────╭●────│──────╭●────│─────┤
-    3: ──H──T†─╰X──T─╰X──T†─╰X──T─╰X──H─┤
+        0: ──────────────╭●───────────╭●────┤  <Z>
+        1: ──────────────├●───────────├●────┤
+        2: ────────╭●────│──────╭●────│─────┤
+        3: ──H──T†─╰X──T─╰X──T†─╰X──T─╰X──H─┤
 
     .. details::
         :title: Usage Details
