@@ -196,7 +196,7 @@ class BasisRotation(Operation):
 
         .. math::
 
-            T_k(\theta) &= \exp(\theta E_{k,k+1}),
+            T_k(\theta) = \exp(\theta E_{k,k+1}),
 
         where :math:`E_{k,\ell}` is a matrix that is zero everywhere except for a
         :math:`-1` in position :math:`(k,\ell)` and a :math:`1` in position :math:`(\ell,k)`.
@@ -211,7 +211,7 @@ class BasisRotation(Operation):
 
         .. math::
 
-            P_j(\phi) &= \exp(i \phi D_{j}),
+            P_j(\phi) = \exp(i \phi D_{j}),
 
         where :math:`D_j` is zero everywhere except for a :math:`1` in position :math:`(j,j)`.
 
