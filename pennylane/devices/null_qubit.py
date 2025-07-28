@@ -350,6 +350,7 @@ class NullQubit(Device):
     ) -> tuple[TransformProgram, ExecutionConfig]:
         if execution_config is None:
             execution_config = ExecutionConfig()
+
         program = DefaultQubit.preprocess_transforms(self, execution_config)
         for t in program:
             if t.transform == decompose.transform:
