@@ -30,9 +30,14 @@ from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp, QubitType
 from .api import compiler_transform
 
 
-def _generate_graph(op_name):
+def _generate_graph(op_name: str):
     """Generate a network graph to represent the connectivity of auxiliary qubits of
-    a gate."""
+    a gate.
+    Args:
+        op_name (str): Gate name.
+    Returns:
+        A graph represents the connectivity of auxiliary qubits.
+    """
     if op_name in ["RotXZX", "RZ", "Hadamard", "S"]:
         return _generate_one_wire_op_lattice()
     if op_name == "CNOT":
@@ -43,7 +48,11 @@ def _generate_graph(op_name):
 def _generate_cnot_graph():
     """Generate a networkx graph to represent the connectivity of auxiliary qubits of
     a CNOT gate based on the textbook MBQC formalism. Note that wire 1 is the control
-    wire and wire 9 is the target wire in the textbook MBQC formalism."""
+    wire and wire 9 is the target wire in the textbook MBQC formalism.
+
+    Returns:
+        A graph represents the connectivity of auxiliary qubits of a CNOT gate.
+    """
     g = nx.Graph()
     wires = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15]
     edges = [
@@ -67,7 +76,11 @@ def _generate_cnot_graph():
 
 def _generate_one_wire_op_lattice():
     """Generate lattice graph for a one-wire gate based on the textbook MBQC formalism.
-    Note wire 1 is the target wire in the textbook MBQC fomalism."""
+    Note wire 1 is the target wire in the textbook MBQC fomalism.
+
+    Returns:
+        A graph represents the connectivity of auxiliary qubits of a one-wire gate.
+    """
     g = nx.Graph()
     wires = [2, 3, 4, 5]
     edges = [
@@ -108,7 +121,7 @@ class ConvertToMBQCFormalismPattern(
     """RewritePattern for converting to the MBQC formalism."""
 
     def _prep_graph_state(self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter):
-        r"""Allocate auxiliary qubits and prepare a graph state. Auxiliary qubits are
+        r"""Allocate auxiliary qubits and prepare a graph state for auxiliary qubits. Auxiliary qubits are
         entangled in the way described in the textbook MBQC form. **Note that all ops
         inserted into the IR in this function could be abstracted into a primitive that
         return a graph state that can be measured directly.**
@@ -119,7 +132,7 @@ class ConvertToMBQCFormalismPattern(
             rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
 
         Return:
-            graph_qubits_dict : A dictionary of qubits of graph states. The key is the index of
+            graph_qubits_dict : A dictionary of auxiliary qubits in the graph state. The key is the index of
             a qubit described in the ref [Measurement-based quantum computation on cluster states]
             and the corresponding value is the qubit.
         """
@@ -153,20 +166,6 @@ class ConvertToMBQCFormalismPattern(
                 CZOp.results[0],
                 CZOp.results[1],
             )
-
-        # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
-        in_qubits = [op.in_qubits[0], graph_qubits_dict[2]]
-        CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
-        rewriter.insert_op(CZOp, InsertPoint.before(op))
-
-        graph_qubits_dict[1], graph_qubits_dict[2] = CZOp.results
-
-        # Entangle op.in_qubits[1] with with the graph_qubits_dict[10] for a CNOT gate
-        if op.gate_name.data == "CNOT":
-            in_qubits = [op.in_qubits[1], graph_qubits_dict[10]]
-            CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
-            rewriter.insert_op(CZOp, InsertPoint.before(op))
-            graph_qubits_dict[9], graph_qubits_dict[10] = CZOp.results
 
         return graph_qubits_dict
 
@@ -476,6 +475,13 @@ class ConvertToMBQCFormalismPattern(
                 ]:
                     graph_qubits_dict = self._prep_graph_state(op, rewriter)
 
+                    # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
+                    in_qubits = [op.in_qubits[0], graph_qubits_dict[2]]
+                    CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
+                    rewriter.insert_op(CZOp, InsertPoint.before(op))
+
+                    graph_qubits_dict[1], graph_qubits_dict[2] = CZOp.results
+
                     mres, graph_qubits_dict = self._queue_measurements(
                         graph_qubits_dict, op, rewriter
                     )
@@ -496,6 +502,18 @@ class ConvertToMBQCFormalismPattern(
                     rewriter.erase_op(op)
                 elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
                     graph_qubits_dict = self._prep_graph_state(op, rewriter)
+
+                    # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
+                    in_qubits = [op.in_qubits[0], graph_qubits_dict[2]]
+                    CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
+                    rewriter.insert_op(CZOp, InsertPoint.before(op))
+                    graph_qubits_dict[1], graph_qubits_dict[2] = CZOp.results
+
+                    # Entangle op.in_qubits[1] with with the graph_qubits_dict[10] for a CNOT gate
+                    in_qubits = [op.in_qubits[1], graph_qubits_dict[10]]
+                    CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
+                    rewriter.insert_op(CZOp, InsertPoint.before(op))
+                    graph_qubits_dict[9], graph_qubits_dict[10] = CZOp.results
 
                     mres, graph_qubits_dict = self._queue_measurements(
                         graph_qubits_dict, op, rewriter
