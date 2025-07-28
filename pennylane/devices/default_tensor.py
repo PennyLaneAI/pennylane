@@ -585,13 +585,11 @@ class DefaultTensor(Device):
             **kwargs,
         )
 
-    def _setup_execution_config(self, config: ExecutionConfig | None = None) -> ExecutionConfig:
+    def _setup_execution_config(self, config: ExecutionConfig) -> ExecutionConfig:
         """
         Update the execution config with choices for how the device should be used and the device options.
         """
         # TODO: add options for gradients next quarter
-        if config is None:
-            config = ExecutionConfig()
         updated_values = {}
 
         new_device_options = dict(config.device_options)
@@ -629,6 +627,7 @@ class DefaultTensor(Device):
         """
         if execution_config is None:
             execution_config = ExecutionConfig()
+
         config = self._setup_execution_config(execution_config)
 
         program = TransformProgram()
