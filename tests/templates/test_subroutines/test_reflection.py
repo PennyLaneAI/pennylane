@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @qml.prod
@@ -80,6 +81,19 @@ def test_decomposition(op, expected):
     """Test that the decomposition of the Reflection operator is correct"""
     decomp = op.decomposition()
     assert decomp == expected
+
+
+@pytest.mark.parametrize(
+    ("op"),
+    [
+        qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0]),
+        qml.Reflection(qml.QFT(wires=[0, 1]), 0.5),
+    ],
+)
+def test_decomposition_new(op):
+    """Tests the decomposition rule implemented with the new system."""
+    for rule in qml.list_decomps(qml.Reflection):
+        _test_decomposition_rule(op, rule)
 
 
 def test_default_values():
@@ -164,7 +178,6 @@ class TestIntegration:
 
     # NOTE: the finite shot test of the results has a 3% chance to fail
     # due to the random nature of the sampling. Hence we just pin the salt
-    @pytest.mark.local_salt(1)
     @pytest.mark.autograd
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_autograd(self, shots, seed):
@@ -185,7 +198,6 @@ class TestIntegration:
 
         assert np.allclose(res, self.exp_jac, atol=0.005)
 
-    @pytest.mark.local_salt(1)
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])
@@ -218,7 +230,6 @@ class TestIntegration:
 
         assert np.allclose(jac, self.exp_jac, atol=0.005)
 
-    @pytest.mark.local_salt(1)
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
     def test_qnode_torch(self, shots, seed):

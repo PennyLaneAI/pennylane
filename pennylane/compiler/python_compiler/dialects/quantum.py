@@ -25,7 +25,8 @@ starting from the catalyst/mlir/include/Quantum/IR/QuantumOps.td file in the cat
 
 # pragma: no cover
 
-from typing import Sequence, TypeAlias
+from collections.abc import Sequence
+from typing import TypeAlias
 
 from xdsl.dialects.builtin import (
     I32,
@@ -159,9 +160,9 @@ class AllocOp(IRDLOperation):
 
     name = "quantum.alloc"
 
-    # assembly_format = """
-    #        `(` ($nqubits^):($nqubits_attr)? `)` attr-dict `:` type(results)
-    #    """
+    assembly_format = """
+           `(` ($nqubits^):($nqubits_attr)? `)` attr-dict `:` type(results)
+    """
 
     nqubits = opt_operand_def(i64)
 
@@ -369,6 +370,38 @@ class DeviceReleaseOp(IRDLOperation):
 
 
 @irdl_op_definition
+class AllocQubitOp(IRDLOperation):
+    """Allocate a single qubit."""
+
+    name = "quantum.alloc_qb"
+
+    assembly_format = """attr-dict `:` type(results)"""
+
+    qubit = result_def(QubitType)
+
+    def __init__(self):
+        super().__init__(
+            result_types=(QubitType(),),
+        )
+
+
+@irdl_op_definition
+class DeallocQubitOp(IRDLOperation):
+    """Deallocate a single qubit."""
+
+    name = "quantum.dealloc_qb"
+
+    assembly_format = """$qubit attr-dict `:` type(operands)"""
+
+    qubit = operand_def(QubitType)
+
+    def __init__(self, qubit: QubitSSAValue | Operation):
+        super().__init__(
+            operands=(qubit,),
+        )
+
+
+@irdl_op_definition
 class ExpvalOp(IRDLOperation):
     """Compute the expectation value of the given observable for the current state"""
 
@@ -390,15 +423,15 @@ class ExtractOp(IRDLOperation):
 
     name = "quantum.extract"
 
-    # assembly_format = """
-    #        $qreg `[` ($idx^):($idx_attr)? `]` attr-dict `:` type($qreg) `->` type(results)
-    #    """
+    assembly_format = """
+           $qreg `[` ($idx^):($idx_attr)? `]` attr-dict `:` type($qreg) `->` type(results)
+    """
 
     qreg = operand_def(QuregType)
 
     idx = opt_operand_def(IntegerType(64))
 
-    idx_attr = opt_prop_def(AnyAttr())
+    idx_attr = opt_prop_def(IntegerAttr[I64])
 
     qubit = result_def(QubitType)
 
@@ -543,15 +576,15 @@ class InsertOp(IRDLOperation):
 
     name = "quantum.insert"
 
-    # assembly_format = """
-    #        $in_qreg `[` ($idx^):($idx_attr)? `]` `,` $qubit attr-dict `:` type($in_qreg) `,` type($qubit)
-    #    """
+    assembly_format = """
+           $in_qreg `[` ($idx^):($idx_attr)? `]` `,` $qubit attr-dict `:` type($in_qreg) `,` type($qubit)
+    """
 
     in_qreg = operand_def(QuregType)
 
     idx = opt_operand_def(IntegerType(64))
 
-    idx_attr = opt_prop_def(AnyAttr())
+    idx_attr = opt_prop_def(IntegerAttr[I64])
 
     qubit = operand_def(QubitType)
 
@@ -856,15 +889,17 @@ class YieldOp(IRDLOperation):
     retvals = var_operand_def(QuregType)
 
 
-QuantumDialect = Dialect(
+Quantum = Dialect(
     "quantum",
     [
         AdjointOp,
         AllocOp,
+        AllocQubitOp,
         ComputationalBasisOp,
         CountsOp,
         CustomOp,
         DeallocOp,
+        DeallocQubitOp,
         DeviceInitOp,
         DeviceReleaseOp,
         ExpvalOp,

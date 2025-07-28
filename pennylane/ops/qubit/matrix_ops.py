@@ -17,7 +17,6 @@ accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
 import warnings
-from typing import Optional, Union
 
 import numpy as np
 import scipy as sp
@@ -29,7 +28,8 @@ from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import is_integer
-from pennylane.operation import DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.operation import FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     multi_qubit_decomp_rule,
     rot_decomp_rule,
@@ -45,7 +45,7 @@ from pennylane.wires import Wires, WiresLike
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 
 
-def _walsh_hadamard_transform(D: TensorLike, n: Optional[int] = None):
+def _walsh_hadamard_transform(D: TensorLike, n: int | None = None):
     r"""Compute the Walsh–Hadamard Transform of a one-dimensional array.
 
     Args:
@@ -139,9 +139,9 @@ class QubitUnitary(Operation):
 
     def __init__(
         self,
-        U: Union[TensorLike, csr_matrix],
+        U: TensorLike | csr_matrix,
         wires: WiresLike,
-        id: Optional[str] = None,
+        id: str | None = None,
         unitary_check: bool = False,
     ):
         wires = Wires(wires)
@@ -314,7 +314,7 @@ class QubitUnitary(Operation):
         # Note: it is necessary to explicitly cast back to csr, or it will become csc.
         return QubitUnitary(adjoint_sp_mat, wires=self.wires)
 
-    def pow(self, z: Union[int, float]):
+    def pow(self, z: int | float):
         if self.has_sparse_matrix:
             mat = self.sparse_matrix()
             pow_mat = sp.sparse.linalg.matrix_power(mat, z)
@@ -334,9 +334,9 @@ class QubitUnitary(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
@@ -628,9 +628,9 @@ class DiagonalQubitUnitary(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
@@ -763,7 +763,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
@@ -867,9 +867,9 @@ class BlockEncode(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
 

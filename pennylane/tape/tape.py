@@ -22,7 +22,7 @@ from threading import RLock
 import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import CountsMP, MeasurementProcess, ProbabilityMP, SampleMP
-from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
+from pennylane.operation import Operator, StatePrepBase
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
@@ -270,15 +270,12 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                     new_queue.append(obj)
                     continue
             elif isinstance(obj, qml.measurements.MeasurementProcess):
-                # Object is an operation; query it for its expansion
-                try:
-                    obj = obj.expand()
-                except DecompositionUndefinedError:
-                    # Object does not define an expansion; treat this as
-                    # a stopping condition.
+                if obj.obs is not None and obj.obs.has_diagonalizing_gates:
+                    new_mp = type(obj)(eigvals=obj.obs.eigvals(), wires=obj.obs.wires)
+                    obj = QuantumScript(obj.obs.diagonalizing_gates(), [new_mp])
+                else:
                     new_queue.append(obj)
                     continue
-
             # recursively expand out the newly created tape
             expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
 

@@ -17,21 +17,21 @@ PennyLane can be directly imported.
 """
 import warnings
 
-import pennylane.exceptions
+from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
-import pennylane.numpy
+from pennylane import numpy
 from pennylane.queuing import QueuingManager, apply
 
-import pennylane.compiler
+from pennylane import compiler
 from pennylane.compiler import qjit
-import pennylane.capture
-import pennylane.control_flow
+from pennylane import capture
+from pennylane import control_flow
 from pennylane.control_flow import for_loop, while_loop
-import pennylane.kernels
-import pennylane.math
-import pennylane.operation
-import pennylane.allocation
-import pennylane.decomposition
+from pennylane import kernels
+from pennylane import math
+from pennylane import operation
+from pennylane import allocation
+from pennylane import decomposition
 from pennylane.decomposition import (
     register_resources,
     register_condition,
@@ -39,12 +39,12 @@ from pennylane.decomposition import (
     list_decomps,
     resource_rep,
 )
-import pennylane.templates
-import pennylane.pauli
+from pennylane import templates
+from pennylane import pauli
 from pennylane.pauli import pauli_decompose
 from pennylane.resource import specs
-import pennylane.resource
-import pennylane.qchem
+from pennylane import resource
+from pennylane import qchem
 from pennylane.fermi import (
     FermiC,
     FermiA,
@@ -103,6 +103,7 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots
+from pennylane import workflow
 from pennylane.io import (
     from_pyquil,
     from_qasm,
@@ -131,7 +132,15 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
+)
+from pennylane.noise import (
     add_noise,
+    insert,
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
 )
 from pennylane.ops.functions import (
     dot,
@@ -162,51 +171,41 @@ from pennylane.debugging import (
 )
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
-import pennylane.pulse
+from pennylane import pulse
 
-import pennylane.fourier
+from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
-import pennylane.gradients  # pylint:disable=wrong-import-order
+from pennylane import gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl
 
 # pylint:disable=wrong-import-order
-import pennylane.logging  # pylint:disable=wrong-import-order
+from pennylane import logging  # pylint:disable=wrong-import-order
 
-import pennylane.data
+from pennylane import data
 
-import pennylane.noise
+from pennylane import noise
 from pennylane.noise import NoiseModel
 
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
-import pennylane.spin
+from pennylane import spin
 
-import pennylane.liealg
+from pennylane import liealg
 from pennylane.liealg import lie_closure, structure_constants, center
-import pennylane.qnn
+from pennylane import qnn
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
 
 def __getattr__(name):
-    if name in {
-        "DeviceError",
-        "PennyLaneDeprecationWarning",
-        "QuantumFunctionError",
-        "ExperimentalWarning",
-    }:  # pragma: no cover
-        warnings.warn(
-            f"pennylane.{name} is no longer accessible at top-level \
-                and must be imported as pennylane.exceptions.{name}. \
-                    Support for top-level access will be removed in v0.43.",
-            pennylane.exceptions.PennyLaneDeprecationWarning,
-        )
-        return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
-        return pennylane.devices.device_constructor.plugin_devices
+        # pylint: disable=import-outside-toplevel
+        from pennylane.devices.device_constructor import plugin_devices
+
+        return plugin_devices
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 

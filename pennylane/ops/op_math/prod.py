@@ -18,7 +18,7 @@ computing the product between operations.
 import itertools
 from collections import Counter
 from copy import copy
-from functools import reduce, wraps
+from functools import reduce
 from itertools import combinations
 from typing import Union
 
@@ -26,6 +26,7 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
+from pennylane.capture.autograph import wraps
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd

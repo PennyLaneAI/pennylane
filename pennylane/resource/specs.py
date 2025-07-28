@@ -13,8 +13,9 @@
 # limitations under the License.
 """Code for resource estimation"""
 import inspect
+from collections.abc import Callable
 from copy import copy
-from typing import Any, Callable, Literal, Union
+from typing import Any, Literal
 
 import pennylane as qml
 
@@ -24,8 +25,8 @@ def _get_absolute_import_path(fn):
 
 
 def specs(
-    qnode, level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient"
-) -> Callable[..., Union[list[dict[str, Any]], dict[str, Any]]]:
+    qnode, level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient"
+) -> Callable[..., list[dict[str, Any]] | dict[str, Any]]:
     r"""Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
@@ -114,7 +115,7 @@ def specs(
 
         We then check the resources after applying all transforms:
 
-        >>> print(qml.specs(circuit, level=None)(0.1)["resources"])
+        >>> print(qml.specs(circuit, level="device")(0.1)["resources"])
         num_wires: 2
         num_gates: 2
         depth: 1
@@ -143,7 +144,7 @@ def specs(
 
         However, if we apply all transforms, ``RandomLayers`` is decomposed into an ``RY`` and an ``RX``, giving us two trainable objects:
 
-        >>> qml.specs(circuit, level=None)(0.1)["num_trainable_params"]
+        >>> qml.specs(circuit, level="device")(0.1)["num_trainable_params"]
         2
 
         If a ``QNode`` with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, a dictionary
@@ -163,7 +164,7 @@ def specs(
         2
     """
 
-    def specs_qnode(*args, **kwargs) -> Union[list[dict], dict]:
+    def specs_qnode(*args, **kwargs) -> list[dict] | dict:
         """Returns information on the structure and makeup of provided QNode.
 
         Dictionary keys:

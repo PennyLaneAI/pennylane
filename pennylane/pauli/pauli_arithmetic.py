@@ -813,7 +813,7 @@ class PauliSentence(dict):
     @property
     def wires(self):
         """Track wires of the PauliSentence."""
-        return Wires.all_wires((pw.wires for pw in self.keys()))
+        return Wires.all_wires(pw.wires for pw in self.keys())
 
     def to_mat(self, wire_order=None, format="dense", buffer_size=None):
         """Returns the matrix representation.

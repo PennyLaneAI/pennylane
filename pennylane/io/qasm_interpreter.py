@@ -4,18 +4,20 @@ This submodule contains the interpreter for OpenQASM 3.0.
 
 import copy
 import functools
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from functools import partial
-from typing import Any, Callable, Iterable
+from functools import partial, reduce
+from typing import Any
 
 import numpy as np
 from numpy import uint
 from openqasm3 import ast
+from openqasm3.ast import FunctionCall
 from openqasm3.visitor import QASMNode
 
 from pennylane import ops
 from pennylane.control_flow import for_loop, while_loop
-from pennylane.measurements import MeasurementValue, measure
+from pennylane.measurements import MeasurementValue, MidMeasureMP, measure
 from pennylane.operation import Operator
 
 NON_PARAMETERIZED_GATES = {
@@ -25,7 +27,9 @@ NON_PARAMETERIZED_GATES = {
     "Y": ops.PauliY,
     "Z": ops.PauliZ,
     "S": ops.S,
+    "SDG": ops.adjoint(ops.S),
     "T": ops.T,
+    "TDG": ops.adjoint(ops.T),
     "SX": ops.SX,
     "CX": ops.CNOT,
     "CY": ops.CY,
@@ -45,6 +49,8 @@ PARAMETERIZED_GATES = {
     "U1": ops.U1,
     "U2": ops.U2,
     "U3": ops.U3,
+    "CU": lambda theta, phi, delta, gamma, wires: ops.PhaseShift(gamma, wires[0])
+    @ ops.ctrl(ops.U3(theta, phi, delta, wires[1]), wires[0]),
     "CP": ops.CPhase,
     "CPHASE": ops.CPhase,
     "CRX": ops.CRX,
@@ -209,6 +215,52 @@ class Variable:
     scope: str = "global"
 
 
+def _rotate(var: Variable | int, n: int, dir="left"):
+    """
+    Rotates a BitType variable left by n bits. Not we need a Variable b/c we need to know
+    the size of the register.
+
+    Args:
+        var (Variable | int): the variable to be rotated.
+        n (int): number of bits to rotate.
+        dir (Optional[str]): The direction of the rotation.
+
+    Returns:
+        int: the rotated value.
+
+    Raises:
+        TypeError: if the variable is not of BitType.
+    """
+    bits = _get_bit_type_val(var)
+    if dir == "left":
+        new_bits = bits[n:] + bits[:n]
+    else:
+        new_bits = bits[-n:] + bits[:-n]
+    return int(new_bits, 2)
+
+
+FUNCTIONS = {
+    "arccos": np.arccos,
+    "arcsin": np.arcsin,
+    "arctan": np.arctan,
+    "ceiling": np.ceil,
+    "cos": np.cos,
+    "exp": np.exp,
+    "floor": np.floor,
+    "log": np.log,
+    "mod": np.mod,
+    "popcount": lambda bit_val: reduce(
+        lambda acc, next: int(acc) + int(next == "1"), _get_bit_type_val(bit_val)
+    ),
+    "rotl": _rotate,
+    "rotr": partial(_rotate, dir="right"),
+    "sin": np.sin,
+    "sqrt": np.sqrt,
+    "tan": np.tan,
+    # the parser doesn't seem to support pow()
+}
+
+
 class Context:
     """Class with helper methods for managing, updating, checking context."""
 
@@ -225,6 +277,8 @@ class Context:
             context["aliases"] = {}
         if "wires" not in context:
             context["wires"] = []
+        if "registers" not in context:
+            context["registers"] = {}
         if "scopes" not in context:
             context["scopes"] = {"subroutines": {}, "custom_gates": {}}
         if "wire_map" not in context or context["wire_map"] is None:
@@ -248,6 +302,7 @@ class Context:
                 "params": [_resolve_name(param) for param in node.arguments]
                 + [_resolve_name(qubit) for qubit in node.qubits],
                 "wires": copy.deepcopy(self.wires),
+                "registers": copy.deepcopy(self.registers),
                 "name": node.name.name,
                 # we want subroutines declared in the global scope to be available
                 "scopes": {
@@ -271,6 +326,7 @@ class Context:
                 "vars": {k: v for k, v in self.vars.items() if v.constant},  # same namespace
                 "wire_map": {},
                 "wires": copy.deepcopy(self.wires),
+                "registers": copy.deepcopy(self.registers),
                 "name": node.name.name,
                 # we want subroutines declared in the global scope to be available
                 "scopes": {
@@ -302,6 +358,8 @@ class Context:
             if res.val is not None:
                 return res
             raise ValueError(f"Attempt to reference uninitialized parameter {name}!")
+        if name in self.registers:
+            return self.registers[name]
         if name in self.wires:
             return name
         if name in self.aliases:
@@ -341,7 +399,7 @@ class Context:
         Raises:
             NameError: If the context is missing a wire.
         """
-        missing_wires = set(wires) - set(self.wires)
+        missing_wires = set(wires) - (set(self.wires + list(self.registers)))
         if len(missing_wires) > 0:
             raise NameError(
                 f"Attempt to reference wire(s): {missing_wires} that have not been declared in {self.name}"
@@ -381,7 +439,13 @@ class Context:
 
 
 def _get_bit_type_val(var):
-    return bin(var.val)[2:].zfill(var.size)
+    if isinstance(var, Variable) and var.ty == "BitType":
+        return bin(var.val)[2:].zfill(var.size)
+    if isinstance(var, Variable) and var.ty == "IntType":
+        return bin(var.val)[2:].zfill(int(np.floor(np.log2(var.val))) + 1)
+    if isinstance(var, int):
+        return bin(var)[2:].zfill(int(np.floor(np.log2(var))) + 1)
+    raise TypeError(f"Cannot convert {type(var)} to bitstring.")
 
 
 def _resolve_name(node: QASMNode):
@@ -464,7 +528,7 @@ class QasmInterpreter:
         )
 
     @visit.register(list)
-    def visit_list(self, node_list: list, context: Context):
+    def visit_list(self, node_list: list, context: Context, allow_end: bool = True):
         """
         Visits a list of QASMNodes.
 
@@ -473,7 +537,17 @@ class QasmInterpreter:
             context (Context): the current context.
         """
         for sub_node in node_list:
-            self.visit(sub_node, context)
+            try:
+                self.visit(sub_node, context)
+            except EndProgram as e:
+                if allow_end:
+                    # this will end the interpretation of the QASM...
+                    # not good if we're building a qscript for a controlled branch
+                    raise e
+                # we are in the construction of the qscript for a controlled branch
+                raise NotImplementedError(
+                    "End statements in measurement conditioned branches are not supported."
+                ) from e
 
     def interpret(self, node: QASMNode, context: dict, **inputs):
         """
@@ -538,8 +612,11 @@ class QasmInterpreter:
             node (QuantumMeasurementStatement): the quantum measurement statement to register.
             context (Context): the current context.
         """
-        wire = self.visit(node.measure.qubit, context)
-        res = measure(context.wire_map.get(wire, wire))
+        wires = self.visit(node.measure.qubit, context)
+        if isinstance(wires, list):
+            res = [measure(context.wire_map.get(wire, wire)) for wire in wires]
+        else:
+            res = measure(context.wire_map.get(wires, wires))
         if node.target is not None:
             name = _resolve_name(node.target)  # str or Identifier
             context.vars[name].val = res
@@ -579,8 +656,9 @@ class QasmInterpreter:
             node (BranchingStatement): the branch QASMNode.
             context (Context): the current context.
         """
+        condition = self.visit(node.condition, context)
         ops.cond(
-            self.visit(node.condition, context),
+            condition,
             partial(
                 self.visit,
                 node.if_block,
@@ -595,7 +673,7 @@ class QasmInterpreter:
                 if hasattr(node, "else_block")
                 else None
             ),
-        )()
+        )(allow_end=(not isinstance(condition, (MeasurementValue, MidMeasureMP))))
 
     @visit.register(ast.SwitchStatement)
     def visit_switch_statement(self, node: ast.SwitchStatement, context: Context):
@@ -771,8 +849,33 @@ class QasmInterpreter:
             node (QASMNode): the quantum reset node.
             context (dict): the current context.
         """
-        wire = self.visit(node.qubits, context)
-        measure(context.wire_map.get(wire, wire), reset=True)
+        wires = self.visit(node.qubits, context)
+        if isinstance(wires, list):
+            for wire in wires:
+                measure(context.wire_map.get(wire, wire), reset=True)
+        else:
+            measure(context.wire_map.get(wires, wires), reset=True)
+
+    @staticmethod
+    def _bind_quantum_parameter(param, evald_arg, inner_context, context):
+        """
+        Binds a quantum parameter in a subroutine or custom gate context.
+
+        Args:
+            param (str): the name of the quantum parameter to bind.
+            evald_arg (str): the name of the qubit.
+            inner_context (Context): the custom gate or subroutine context.
+            context (Context): the outer context.
+        """
+        reg = False
+        if evald_arg in context.registers:
+            reg = True
+            del inner_context.wires[inner_context.wires.index(param)]
+            inner_context.registers[param] = context.registers[evald_arg]
+        elif evald_arg in context.wire_map:
+            evald_arg = context.wire_map[evald_arg]
+        if param != evald_arg and not reg:
+            inner_context.wire_map[param] = evald_arg
 
     def execute_custom_gate(self, node: ast.QuantumGate, context: Context):
         """
@@ -795,10 +898,7 @@ class QasmInterpreter:
                     evald_arg.__class__.__name__, evald_arg, None, node.span.start_line, False
                 )
             else:
-                if evald_arg in context.wire_map:
-                    evald_arg = context.wire_map[evald_arg]
-                if param != evald_arg:
-                    gate_context.wire_map[param] = evald_arg
+                self._bind_quantum_parameter(param, evald_arg, gate_context, context)
 
         # execute the subroutine
         self.visit(gate_context.body, gate_context)
@@ -808,38 +908,39 @@ class QasmInterpreter:
 
         # custom gates do not return a value
 
-    @visit.register(ast.FunctionCall)
-    def visit_function_call(self, node: ast.FunctionCall, context: Context):
+    def _execute_function(self, name: str, node: FunctionCall, context: Context):
         """
-        Registers a function call. The node must refer to a subroutine that has been defined and
-        is available in the current scope.
+        Executes a subroutine.
 
         Args:
-            node (FunctionCall): The FunctionCall QASMNode.
-            context (Context): The current context.
+            name (str): the name of the subroutine.
+            node (FunctionCall): the subroutine call.
+            context (Context): the current context.
 
-        Raises:
-            NameError: When the subroutine is not defined.
+        Returns:
+            Any: anything returned by the subroutine.
         """
-        name = _resolve_name(node)  # str or Identifier
-        if name not in context.scopes["subroutines"]:
-            raise NameError(
-                f"Reference to subroutine {name} not available in calling namespace "
-                f"on line {node.span.start_line}."
-            )
+
         func_context = context.scopes["subroutines"][name]
 
         # reset return
         func_context.context["return"] = None
 
         # bind subroutine arguments
-        evald_args = [self.visit(raw_arg, context) for raw_arg in node.arguments]
+        evald_args = [
+            # visit will resolve a qubit name to itself, but a register name to a list of its member qubits,
+            # we don't want to dereference yet... to behave consistently with execute_custom_gate
+            (
+                _resolve_name(raw_arg)
+                if isinstance(raw_arg, (str, ast.Identifier))
+                and _resolve_name(raw_arg) in context.registers
+                else self.visit(raw_arg, context)
+            )
+            for raw_arg in node.arguments
+        ]
         for evald_arg, param in list(zip(evald_args, func_context.params)):
             if isinstance(evald_arg, str):  # this would indicate a quantum parameter
-                if evald_arg in context.wire_map:
-                    evald_arg = context.wire_map[evald_arg]
-                if evald_arg != param:
-                    func_context.wire_map[param] = evald_arg
+                self._bind_quantum_parameter(param, evald_arg, func_context, context)
             else:
                 func_context.vars[param] = Variable(
                     evald_arg.__class__.__name__,
@@ -860,6 +961,39 @@ class QasmInterpreter:
 
         # the return value
         return getattr(func_context, "return")
+
+    @visit.register(ast.FunctionCall)
+    def visit_function_call(self, node: ast.FunctionCall, context: Context):
+        """
+        Registers a function call. The node must refer to a subroutine that has been defined and
+        is available in the current scope.
+
+        Args:
+            node (FunctionCall): The FunctionCall QASMNode.
+            context (Context): The current context.
+
+        Raises:
+            NameError: When the subroutine is not defined.
+        """
+        name = _resolve_name(node)  # str or Identifier
+
+        if name in context.scopes["subroutines"]:
+            return self._execute_function(name, node, context)
+
+        if name in FUNCTIONS:
+            # special handling since there is a loss of information when the parser encodes a bit string as an int
+            if name in ("rotr", "rotl"):
+                if isinstance(node.arguments[0], ast.Identifier):
+                    var = context.retrieve_variable(_resolve_name(node.arguments[0]))
+                    if var.ty == "BitType":
+                        return FUNCTIONS[name](var, self.visit(node.arguments[1], context))
+                    return FUNCTIONS[name](var.val, self.visit(node.arguments[1], context))
+            return FUNCTIONS[name](*(self.visit(raw_arg, context) for raw_arg in node.arguments))
+
+        raise NameError(
+            f"Reference to subroutine {name} not available in calling namespace "
+            f"on line {node.span.start_line}."
+        )
 
     @visit.register(ast.RangeDefinition)
     def visit_range(self, node: ast.RangeDefinition, context: Context):
@@ -958,11 +1092,13 @@ class QasmInterpreter:
         Raises:
             TypeError: if it is a qubit register declaration.
         """
-        if node.size is not None:
-            raise TypeError(
-                "Qubit registers are not yet supported, please declare each qubit individually."
-            )
-        context.wires.append(node.qubit.name)
+        if node.size is not None and isinstance(self.visit(node.size, context), int):
+            context.registers[node.qubit.name] = []
+            for i in range(self.visit(node.size, context)):
+                context.wires.append(f"{node.qubit.name}[{i}]")
+                context.registers[node.qubit.name].append(f"{node.qubit.name}[{i}]")
+        else:
+            context.wires.append(node.qubit.name)
 
     @visit.register(ast.ClassicalAssignment)
     def visit_classical_assignment(self, node: ast.ClassicalAssignment, context: Context):
@@ -1196,15 +1332,43 @@ class QasmInterpreter:
         gate = gates_dict[node.name.name.upper()]
 
         # setup wires
-        wires = [_resolve_name(node.qubits[q]) for q in range(len(node.qubits))]
+        wires = []
+        require_wires = []
+        for qubit in node.qubits:
+            if (not hasattr(qubit, "indices")) or qubit.indices is None:
+                # we are dealing with a wire label directly
+                wire = _resolve_name(qubit)
+                # require the qubit to have been declared
+                require_wires.append(wire)
+                # resolve any wire relabelling (mapping pennylane wires to qasm wires, or renaming between func contexts)
+                wires.append(context.wire_map[wire] if wire in context.wire_map else wire)
+            elif len(qubit.indices) == 1 and len(qubit.indices[0]) == 1:
+                # we are dealing with an index into a register
+                register = _resolve_name(qubit)
+                # required the register to have been declared
+                require_wires.append(register)
+                # evaluate the register to a list of the qubits that compose it
+                reg_var = context.retrieve_variable(register)
+                # evaluate the index into the register to a literal
+                index = self.visit(qubit.indices[0][0], context)
+                # check that the index is not out of bounds
+                if index < len(reg_var):
+                    # index into the register and return the wire acted on
+                    wires.append(reg_var[index])
+                else:
+                    raise IndexError(
+                        f"Index {index} into register {register} of length {len(reg_var)} out of bounds on line {node.span.start_line}."
+                    )
+            else:
+                raise (
+                    NotImplementedError(
+                        "Only a single Expression or Index is supported for indexing into registers."
+                    )
+                )
 
-        context.require_wires(wires)
+        context.require_wires(require_wires)
 
-        resolved_wires = list(
-            map(lambda wire: context.wire_map[wire] if wire in context.wire_map else wire, wires)
-        )
-
-        return gate, args, resolved_wires
+        return gate, args, wires
 
     def apply_modifier(
         self, mod: ast.QuantumGate, previous: Operator, context: Context, wires: list

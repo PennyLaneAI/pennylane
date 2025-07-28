@@ -14,8 +14,15 @@
 from copy import copy
 from functools import lru_cache
 
-import pennylane as qml
+from pennylane import math, templates
+from pennylane.devices.preprocess import decompose, null_postprocessing
+from pennylane.operation import DecompositionUndefinedError, Operator
+from pennylane.ops import Adjoint
+from pennylane.tape import make_qscript
 from pennylane.transforms.core import TransformContainer, transform
+from pennylane.workflow import get_transform_program
+
+from .conditionals import partial_wires
 
 
 # pylint: disable=too-many-branches
@@ -178,21 +185,21 @@ def add_noise(tape, noise_model, level=None):
     if level is None or level == "user":  # decompose templates and their adjoints
 
         def stop_at(obj):
-            if not isinstance(obj, qml.operation.Operator):
+            if not isinstance(obj, Operator):
                 return True
             if not obj.has_decomposition:
                 return True
-            return not (hasattr(qml.templates, obj.name) or isinstance(obj, qml.ops.Adjoint))
+            return not (hasattr(templates, obj.name) or isinstance(obj, Adjoint))
 
-        error_type = (qml.operation.DecompositionUndefinedError,)
-        decompose = qml.devices.preprocess.decompose
-        [tape], _ = decompose(tape, stopping_condition=stop_at, name="add_noise", error=error_type)
+        [tape], _ = decompose(
+            tape, stopping_condition=stop_at, name="add_noise", error=DecompositionUndefinedError
+        )
 
     conditions, noises = [], []
     metadata = noise_model.metadata
     for condition, noise in noise_model.model_map.items():
         conditions.append(lru_cache(maxsize=512)(condition))
-        noises.append(qml.tape.make_qscript(noise))
+        noises.append(make_qscript(noise))
 
     new_operations = []
     for operation in tape.operations:
@@ -209,12 +216,12 @@ def add_noise(tape, noise_model, level=None):
 
     if not noise_model.meas_map:
         new_tape = tape.copy(operations=new_operations)
-        return [new_tape], qml.devices.preprocess.null_postprocessing
+        return [new_tape], null_postprocessing
 
     meas_conds, meas_funcs = [], []
     for condition, noise in noise_model.meas_map.items():
         meas_conds.append(lru_cache(maxsize=512)(condition))
-        meas_funcs.append(qml.tape.make_qscript(noise))
+        meas_funcs.append(make_qscript(noise))
 
     split_operations, split_measurements = [], [[] for idx in tape.measurements]
     for midx, measurement in enumerate(tape.measurements):
@@ -228,7 +235,7 @@ def add_noise(tape, noise_model, level=None):
         split_measurements[split_operations.index(readout_operations)].append((midx, measurement))
 
     split_measurements = split_measurements[: len(split_operations)]
-    split_meas_indexes = qml.math.argsort(
+    split_meas_indexes = math.argsort(
         [m_ for ms in ([m[0] for m in meas] for meas in split_measurements) for m_ in ms]
     )
 
@@ -253,7 +260,7 @@ def _check_queue_op(operation, noise_func, metadata):
 
     test_id = "f49968bfc4W0H86df3A733bf6e92904d21a_!$-T-@!_c131S549b169b061I25b85398bfd8ec1S3c"
     test_queue = noise_func(
-        qml.noise.partial_wires(operation, id=test_id)(operation.wires), **metadata
+        partial_wires(operation, id=test_id)(operation.wires), **metadata
     ).operations
 
     return any(test_id == getattr(o, "id", "") for o in test_queue)
@@ -266,10 +273,10 @@ def custom_qnode_wrapper(self, qnode, targs, tkwargs):
     cqnode = copy(qnode)
     level = tkwargs.get("level", "user")
 
-    transform_program = qml.workflow.get_transform_program(qnode, level=level)
+    transform_program = get_transform_program(qnode, level=level)
 
     cqnode._transform_program = transform_program
-    cqnode.add_transform(
+    cqnode.transform_program.push_back(
         TransformContainer(
             self._transform,
             targs,
