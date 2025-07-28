@@ -170,6 +170,30 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses and cannot be mutated without the use of the `dataclass.replace` function. 
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+
+* Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
+  This prevents the potential mutation of a global object. 
+
+  This means that functions like,
+  ```python
+  ...
+    def some_func(..., execution_config = DefaultExecutionConfig):
+      ...
+  ...
+  ```
+  should be written as follows,
+  ```python
+  ...
+    def some_func(..., execution_config: ExecutionConfig | None = None):
+      if execution_config is None:
+          execution_config = ExecutionConfig()
+  ...
+  ```
+
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
