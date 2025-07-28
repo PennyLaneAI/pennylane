@@ -96,14 +96,7 @@ class _OperatorNode:
         return hash(self.op)
 
     def __eq__(self, other) -> bool:
-        if not isinstance(other, _OperatorNode):
-            return False
-        if (
-            self.work_wire_dependent
-            and self.num_work_wire_not_available != other.num_work_wire_not_available
-        ):
-            return False
-        return self.op == other.op
+        return hash(self) == hash(other)
 
 
 @dataclass
@@ -486,7 +479,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             )
 
     def _all_solutions(
-        self, visitor: _DecompositionSearchVisitor, op: Operator, num_work_wires: int
+        self, visitor: _DecompositionSearchVisitor, op: Operator, num_work_wires: int | None
     ) -> Iterable[_OperatorNode]:
         """Returns all valid solutions for an operator and a work wire constraint."""
 
@@ -501,14 +494,14 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             )
 
         def _is_feasible(op_node: _OperatorNode):
-            if visitor.num_available_work_wires is None:
+            if visitor.num_available_work_wires is None or num_work_wires is None:
                 return True
             op_node_idx = self._all_op_indices[op_node]
             return num_work_wires >= visitor.num_work_wires_used[op_node_idx]
 
         return filter(_is_feasible, filter(_is_solved, self._op_to_op_nodes[op_rep]))
 
-    def is_solved_for(self, op: Operator, num_work_wires: int = 0):
+    def is_solved_for(self, op: Operator, num_work_wires: int | None = 0):
         """Tests whether the decomposition graph is solved for a given operator.
 
         Args:
@@ -522,7 +515,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         return any(self._all_solutions(self._visitor, op, num_work_wires))
 
     def _get_best_solution(
-        self, visitor: _DecompositionSearchVisitor, op: Operator, num_work_wires: int
+        self, visitor: _DecompositionSearchVisitor, op: Operator, num_work_wires: int | None
     ) -> int:
         """Finds the best solution for an operator in terms of resource efficiency."""
 
@@ -542,7 +535,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         op_node_idx = self._all_op_indices[solution]
         return op_node_idx
 
-    def resource_estimate(self, op: Operator, num_work_wires: int = 0) -> Resources:
+    def resource_estimate(self, op: Operator, num_work_wires: int | None = 0) -> Resources:
         """Returns the resource estimate for a given operator.
 
         Args:
@@ -585,7 +578,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)
         return self._visitor.distances[op_node_idx]
 
-    def decomposition(self, op: Operator, num_work_wires: int = 0) -> DecompositionRule:
+    def decomposition(self, op: Operator, num_work_wires: int | None = 0) -> DecompositionRule:
         """Returns the optimal decomposition rule for a given operator.
 
         Args:

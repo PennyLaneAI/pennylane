@@ -471,6 +471,10 @@ class TestDecompositionGraph:
         assert graph.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
         assert graph.decomposition(small_op, num_work_wires=3) is _decomp_with_work_wire
 
+        graph.solve(num_work_wires=None)
+        assert graph.decomposition(op, num_work_wires=None) is _decomp2_with_work_wire
+        assert graph.decomposition(small_op, num_work_wires=None) is _decomp_with_work_wire
+
 
 @pytest.mark.unit
 @patch(
