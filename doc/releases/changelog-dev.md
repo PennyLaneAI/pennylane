@@ -14,6 +14,7 @@
   that include these templates to be decomposed in a resource-efficient and performant
   manner.
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
+  [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
   
   The included templates are:
 
@@ -30,6 +31,12 @@
   * :class:`~.OutMultiplier`
 
   * :class:`~.OutPoly`
+
+  * :class:`~.Reflection`
+
+  * :class:`~.TrotterProduct`
+
+  * :class:`~.MPSPrep`
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
@@ -90,6 +97,9 @@
 
 * `default.qubit` will default to the tree-traversal MCM method when `mcm_method="device"`.
   [(#7885)](https://github.com/PennyLaneAI/pennylane/pull/7885)
+
+* The default implementation of `Device.setup_execution_config` now choses `"device"` as the default mcm method if it is available as specified by the device TOML file.
+  [(#7968)](https://github.com/PennyLaneAI/pennylane/pull/7968)
 
 <h4>Resource-efficient decompositions 🔎</h4>
 
