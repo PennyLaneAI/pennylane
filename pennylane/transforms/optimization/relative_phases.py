@@ -62,7 +62,8 @@ def replace_relative_phase_toffoli(
 
     >>> dev = qml.device('default.qubit', wires=4)
     >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)())
+    >>> lowered_qnode = replace_relative_phase_toffoli(qnode)
+    >>> print(qml.draw(lowered_qnode, level=0)())
         0: ─╭●─╭●─╭●─╭●─┤  <Z>
         1: ─├●─╰S─├●─├●─┤
         2: ─│─────╰S─├●─┤
@@ -70,9 +71,7 @@ def replace_relative_phase_toffoli(
 
     We can replace the relative phase 4-qubit Toffoli by running the transform:
 
-    >>> lowered_qfunc = replace_relative_phase_toffoli(qfunc)
-    >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
-    >>> print(qml.draw(lowered_qnode)())
+    >>> print(qml.draw(lowered_qnode, level=1)())
         0: ─────────────────╭●───────────╭●───────────────────────────┤  <Z>
         1: ─────────────────│─────╭●─────│─────╭●─────────────────────┤
         2: ───────╭●────────│─────│──────│─────│────────────╭●────────┤
@@ -170,7 +169,8 @@ def replace_controlled_iX_gate(
 
     >>> dev = qml.device('default.qubit', wires=4)
     >>> qnode = qml.QNode(qfunc, dev)
-    >>> print(qml.draw(qnode)())
+    >>> lowered_qnode = replace_controlled_iX_gate(qnode, 2)
+    >>> print(qml.draw(lowered_qnode, level=0)())
         0: ─╭●─╭●─┤  <Z>
         1: ─├●─├●─┤
         2: ─╰S─├●─┤
@@ -178,9 +178,7 @@ def replace_controlled_iX_gate(
 
     We can replace the multi-controlled iX gate by running the transform:
 
-    >>> lowered_qfunc = replace_controlled_iX_gate(qfunc, 2)
-    >>> lowered_qnode = qml.QNode(lowered_qfunc, dev)
-    >>> print(qml.draw(lowered_qnode)())
+    >>> print(qml.draw(lowered_qnode, level=1)())
         0: ──────────────╭●───────────╭●────┤  <Z>
         1: ──────────────├●───────────├●────┤
         2: ────────╭●────│──────╭●────│─────┤
