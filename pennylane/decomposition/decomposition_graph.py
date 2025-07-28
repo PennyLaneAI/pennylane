@@ -236,6 +236,47 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._start = self._graph.add_node(None)
         self._construct_graph(operations)
 
+    def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
+        """Helper function to get a list of decomposition rules."""
+
+        op_name = _to_name(op)
+
+        if op_name in self._fixed_decomps:
+            return [self._fixed_decomps[op_name]]
+
+        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
+
+        if (
+            issubclass(op.op_type, qml.ops.Adjoint)
+            and self_adjoint not in decomps
+            and adjoint_rotation not in decomps
+        ):
+            # In general, we decompose the adjoint of an operator by applying adjoint to the
+            # decompositions of the operator. However, this is not necessary if the operator
+            # is self-adjoint or if it has a single rotation angle which can be trivially
+            # inverted to obtain its adjoint. In this case, `self_adjoint` or `adjoint_rotation`
+            # would've already been retrieved as a potential decomposition rule for this
+            # operator, so there is no need to consider the general case.
+            decomps.extend(self._get_adjoint_decompositions(op))
+
+        elif (
+            issubclass(op.op_type, qml.ops.Pow)
+            and pow_rotation not in decomps
+            and pow_involutory not in decomps
+        ):
+            # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
+            # approach we take to decompose powers of operators. However, if the operator is
+            # involutory or if it has a single rotation angle that can be trivially multiplied
+            # with the power, we would've already retrieved `pow_involutory` or `pow_rotation`
+            # as a potential decomposition rule for this operator, so there is no need to consider
+            # the general case.
+            decomps.extend(self._get_pow_decompositions(op))
+
+        elif op.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
+            decomps.extend(self._get_controlled_decompositions(op))
+
+        return decomps
+
     def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
         """Constructs the decomposition graph."""
         for op in operations:
@@ -316,47 +357,6 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         self._graph.add_edge(d_node_idx, op_idx, 0)
         return d_node
-
-    def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
-        """Helper function to get a list of decomposition rules."""
-
-        op_name = _to_name(op)
-
-        if op_name in self._fixed_decomps:
-            return [self._fixed_decomps[op_name]]
-
-        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
-
-        if (
-            issubclass(op.op_type, qml.ops.Adjoint)
-            and self_adjoint not in decomps
-            and adjoint_rotation not in decomps
-        ):
-            # In general, we decompose the adjoint of an operator by applying adjoint to the
-            # decompositions of the operator. However, this is not necessary if the operator
-            # is self-adjoint or if it has a single rotation angle which can be trivially
-            # inverted to obtain its adjoint. In this case, `self_adjoint` or `adjoint_rotation`
-            # would've already been retrieved as a potential decomposition rule for this
-            # operator, so there is no need to consider the general case.
-            decomps.extend(self._get_adjoint_decompositions(op))
-
-        elif (
-            issubclass(op.op_type, qml.ops.Pow)
-            and pow_rotation not in decomps
-            and pow_involutory not in decomps
-        ):
-            # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
-            # approach we take to decompose powers of operators. However, if the operator is
-            # involutory or if it has a single rotation angle that can be trivially multiplied
-            # with the power, we would've already retrieved `pow_involutory` or `pow_rotation`
-            # as a potential decomposition rule for this operator, so there is no need to consider
-            # the general case.
-            decomps.extend(self._get_pow_decompositions(op))
-
-        elif op.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
-            decomps.extend(self._get_controlled_decompositions(op))
-
-        return decomps
 
     def _get_adjoint_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the adjoint of an operator."""
