@@ -2711,9 +2711,6 @@ class TestHilbertSchmidt:
         produces the same tape at params[0]=0.2."""
         return qml.RZ(params[0] * 2 - 0.2, wires=1)
 
-    v_wires1 = [1]
-    v_wires2 = [2]
-
     u_tape1 = qml.tape.QuantumScript([qml.RX(0.2, 0)])
     u_tape1_eps = qml.tape.QuantumScript([qml.RX(0.2 + 1e-7, 0)])
     u_tape1_trainable = qml.tape.QuantumScript([qml.RX(npp.array(0.2, requires_grad=True), 0)])
@@ -2766,7 +2763,7 @@ class TestHilbertSchmidt:
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
     def test_non_equal_data(self, op, other_op):
-        """Test that differing parameters are found."""
+        """Test that differing data is found."""
         assert not qml.equal(op, other_op)
         other_op.data = op.data
 
@@ -2794,8 +2791,6 @@ class TestHilbertSchmidt:
     def test_non_equal_v_wires(self, op, other_op):
         """Test that differing v_wires are found."""
         assert not qml.equal(op, other_op)
-        # If the v_wires were different, so must have been the v_function and the
-        # resulting operations in v.
         new_other_op = deepcopy(other_op)
         new_other_op.hyperparameters["V"] = op.hyperparameters["V"]
         assert qml.equal(op, new_other_op)

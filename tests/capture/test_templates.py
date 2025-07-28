@@ -453,13 +453,14 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qml.FermionicDoubleExcitation(weight, **kwargs)
 
-    def test_hilbert_schmidt(self):
+    @pytest.mark.parametrize("template", [qml.HilbertSchmidt, qml.LocalHilbertSchmidt])
+    def test_hilbert_schmidt(self, template):
         """Test the primitive bind call of HilbertSchmidt."""
 
         def qfunc(v_params):
             U = qml.Hadamard(0)
             V = qml.RZ(v_params[0], wires=1)
-            qml.HilbertSchmidt(U=U, V=V)
+            template(V=V, U=U)
 
         v_params = jnp.array([0.1])
         # Validate inputs
@@ -469,11 +470,10 @@ class TestModifiedTemplates:
         jaxpr = jax.make_jaxpr(qfunc)(v_params)
 
         assert len(jaxpr.eqns) == 5
-
         assert jaxpr.eqns[0].primitive == qml.Hadamard._primitive
 
         eqn = jaxpr.eqns[-1]
-        assert eqn.primitive == qml.HilbertSchmidt._primitive
+        assert eqn.primitive == template._primitive
         assert eqn.params == {}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
@@ -484,7 +484,7 @@ class TestModifiedTemplates:
         assert len(q) == 1
         U = qml.Hadamard(0)
         V = qml.RZ(v_params[0], wires=1)
-        assert q.queue[0] == qml.HilbertSchmidt(U=U, V=V)
+        assert q.queue[0] == template(V=V, U=U)
 
     @pytest.mark.parametrize("template", [qml.MERA, qml.MPS, qml.TTN])
     def test_tensor_networks(self, template):

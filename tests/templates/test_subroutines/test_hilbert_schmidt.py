@@ -391,7 +391,7 @@ class TestHilbertSchmidt:
         @qml.qnode(device=qml.device("default.qubit", wires=2))
         def circuit(params):
             qml.HilbertSchmidt(V=qml.RZ(params[0], wires=1), U=U)
-            return qml.probs(U.wires + [1])
+            return qml.probs()
 
         jit_circuit = jax.jit(circuit)
         assert qml.math.allclose(circuit(np.array([np.pi / 2])), jit_circuit(np.array([np.pi / 2])))
