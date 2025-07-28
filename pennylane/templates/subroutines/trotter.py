@@ -508,17 +508,26 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
 def _trotter_product_decomposition_resources(n, order, ops):
     reps = {}
 
+    def _count(op, ops):
+        count = 0
+        for nxt in ops:
+            if nxt == op:
+                count += 1
+        return count
+
     if order == 1:
         for op in ops:
-            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = n
+            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = n * _count(op, ops)
         return reps
     if order == 2:
         for op in ops:
-            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = n * 2
+            reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = (
+                n * 2 * _count(op, ops)
+            )
         return reps
     for op in ops:
         reps[resource_rep(qml.ops.op_math.Exp, base=op, num_steps=None)] = (
-            n * 2 * 5 * (order - 2) / 2
+            n * _count(op, ops) * 2 * 5 * (order - 2) / 2
         )
     return reps
 

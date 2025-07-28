@@ -10,10 +10,8 @@ repos:
     - id: black
       name: "🐍 black · Format code"
       args: [
-              "--line-length=100",
-              "-t", "py311",
-              "-t", "py312",
-              "-t", "py313",
+              "--config",
+              "./pyproject.toml",
             ]
       exclude: ^doc/
 -   repo: https://github.com/PyCQA/isort
@@ -23,19 +21,8 @@ repos:
       name: "🐍 isort · Sort imports"
       args:
         [
-          "--py",
-          "311",
-          "--profile",
-          "black",
-          "-l",
-          "100",
-          "-o",
-          "autoray",
-          "-p",
-          "./pennylane",
-          "--skip",
-          "__init__.py",
-          "--filter-files",
+          "--settings-path",
+          "./pyproject.toml",
         ]
       files: ^(pennylane/|tests/)
 -   repo: https://github.com/gauge-sh/tach-pre-commit

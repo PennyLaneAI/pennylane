@@ -140,14 +140,14 @@ class SemiAdder(Operation):
 
         x_wires = qml.wires.Wires(x_wires)
         y_wires = qml.wires.Wires(y_wires)
-        work_wires = qml.wires.Wires(work_wires)
-
-        if len(work_wires) < len(y_wires) - 1:
-            raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
-        if work_wires.intersection(x_wires):
-            raise ValueError("None of the wires in work_wires should be included in x_wires.")
-        if work_wires.intersection(y_wires):
-            raise ValueError("None of the wires in work_wires should be included in y_wires.")
+        if work_wires:
+            work_wires = qml.wires.Wires(work_wires)
+            if len(work_wires) < len(y_wires) - 1:
+                raise ValueError(f"At least {len(y_wires)-1} work_wires should be provided.")
+            if work_wires.intersection(x_wires):
+                raise ValueError("None of the wires in work_wires should be included in x_wires.")
+            if work_wires.intersection(y_wires):
+                raise ValueError("None of the wires in work_wires should be included in y_wires.")
         if x_wires.intersection(y_wires):
             raise ValueError("None of the wires in y_wires should be included in x_wires.")
 
@@ -155,7 +155,10 @@ class SemiAdder(Operation):
         self.hyperparameters["y_wires"] = y_wires
         self.hyperparameters["work_wires"] = work_wires
 
-        all_wires = qml.wires.Wires.all_wires([x_wires, y_wires, work_wires])
+        if work_wires:
+            all_wires = qml.wires.Wires.all_wires([x_wires, y_wires, work_wires])
+        else:
+            all_wires = qml.wires.Wires.all_wires([x_wires, y_wires])
 
         super().__init__(wires=all_wires, id=id)
 
@@ -242,6 +245,10 @@ def _semiadder(x_wires, y_wires, work_wires, **_):
 
     num_y_wires = len(y_wires)
     num_x_wires = len(x_wires)
+
+    if num_y_wires == 1:
+        qml.CNOT([x_wires[-1], y_wires[0]])
+        return
 
     x_wires_pl = x_wires[::-1][:num_y_wires]
     y_wires_pl = y_wires[::-1]
