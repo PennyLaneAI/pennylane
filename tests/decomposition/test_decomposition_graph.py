@@ -359,12 +359,7 @@ class TestDecompositionGraph:
             {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1},
         )
 
-
-@pytest.mark.unit
-class TestWorkWireBudget:
-    """Tests that the decomposition graph can be solved under a work-wire constraint"""
-
-    def test_work_wire_requirement(self):
+    def test_work_wire_requirement(self, _):
         """Tests that the graph respects the work wire requirement."""
 
         class CustomOp(Operation):  # pylint: disable=too-few-public-methods
@@ -399,7 +394,7 @@ class TestWorkWireBudget:
             is _decomp_with_work_wire
         )
 
-    def test_multiple_nodes_with_different_work_wire_budget(self):
+    def test_multiple_nodes_with_different_work_wire_budget(self, _):
         """Tests that the same operator produced under different work wire budgets
         are stored as different nodes in the graph, and results can be queried."""
 
