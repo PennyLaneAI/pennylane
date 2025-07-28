@@ -135,7 +135,7 @@ def test_givens_decomposition(shape, seed):
     phase_mat, ordered_rotations = givens_decomposition(matrix)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
-    for grot_mat, (i, j) in ordered_rotations:
+    for grot_mat, (i, _) in ordered_rotations:
         rotation_matrix = np.eye(shape, dtype=complex)
         rotation_matrix[i : i + 2, i : i + 2] = grot_mat
         decomposed_matrix = decomposed_matrix @ rotation_matrix
@@ -158,7 +158,7 @@ def test_givens_decomposition_jax(shape, jit, seed):
     phase_mat, ordered_rotations = func(matrix)
     assert all(j == i + 1 for _, (i, j) in ordered_rotations)
     decomposed_matrix = np.diag(phase_mat)
-    for grot_mat, (i, j) in ordered_rotations:
+    for grot_mat, (i, _) in ordered_rotations:
         rotation_matrix = np.eye(shape, dtype=complex)
         rotation_matrix[i : i + 2, i : i + 2] = grot_mat
         decomposed_matrix = decomposed_matrix @ rotation_matrix
@@ -182,7 +182,7 @@ def test_givens_decomposition_real_valued(shape, dtype, seed):
     if dtype is np.float64:
         assert np.allclose(phase_mat, 1.0)
 
-    for grot_mat, (i, j) in ordered_rotations:
+    for grot_mat, (i, _) in ordered_rotations:
         rotation_matrix = np.eye(shape, dtype=dtype)
         rotation_matrix[i : i + 2, i : i + 2] = grot_mat
         decomposed_matrix = decomposed_matrix @ rotation_matrix
@@ -214,7 +214,7 @@ def test_givens_decomposition_real_valued_jax(shape, dtype, jit, seed):
     if dtype is np.float64:
         assert np.allclose(phase_mat, 1.0)
 
-    for grot_mat, (i, j) in ordered_rotations:
+    for grot_mat, (i, _) in ordered_rotations:
         rotation_matrix = np.eye(shape, dtype=dtype)
         rotation_matrix[i : i + 2, i : i + 2] = grot_mat
         decomposed_matrix = decomposed_matrix @ rotation_matrix
