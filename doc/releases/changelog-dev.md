@@ -51,6 +51,7 @@
   that include these templates to be decomposed in a resource-efficient and performant
   manner.
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
+  [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
   
   The included templates are:
 
