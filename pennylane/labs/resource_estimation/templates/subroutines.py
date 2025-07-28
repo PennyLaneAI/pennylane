@@ -24,7 +24,6 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ,protected-access,too-many-arguments,unused-argument,super-init-not-called
