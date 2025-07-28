@@ -23,43 +23,34 @@ from pennylane.exceptions import QuantumFunctionError
 # pylint: disable=expression-not-assigned
 
 
-def global_v_circuit(params):
-    qml.RZ(params, wires=1)
-
-
-# pylint: disable=protected-access
-@pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))
-def test_flatten_unflatten_standard_checks(op_type):
-    """Test the flatten and unflatten methods."""
-
-    u = (qml.Hadamard("a"), qml.Identity("b"))
-
-    v_wires = qml.wires.Wires((0, 1))
-    op = op_type([0.1], v_function=global_v_circuit, v_wires=v_wires, u=u)
-    qml.ops.functions.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
-
-    data, metadata = op._flatten()
-
-    assert data == (0.1,)
-    assert metadata == (
-        ("v_function", global_v_circuit),
-        ("v_wires", v_wires),
-        ("u", u),
-    )
-
-    assert hash(metadata)
-
-    new_op = type(op)._unflatten(*op._flatten())
-    assert qml.math.allclose(op.data, new_op.data)
-    assert op.hyperparameters["v_function"] == new_op.hyperparameters["v_function"]
-    assert op.hyperparameters["v_wires"] == new_op.hyperparameters["v_wires"]
-    for op1, op2 in zip(op.hyperparameters["u"], new_op.hyperparameters["u"]):
-        qml.assert_equal(op1, op2)
-    assert new_op is not op
-
-
 class TestHilbertSchmidt:
     """Tests for the Hilbert-Schmidt template."""
+
+    # pylint: disable=protected-access
+    def test_flatten_unflatten_standard_checks(self):
+        """Test the flatten and unflatten methods."""
+
+        U = (qml.Hadamard("a"), qml.Identity("b"))
+        V = (qml.RZ(0.1, wires=0), qml.RZ(0.2, wires=1))
+
+        op = qml.HilbertSchmidt(V=V, U=U)
+
+        qml.ops.functions.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
+
+        data, metadata = op._flatten()
+
+        assert data == (V, U)
+        assert not metadata
+
+        new_op = type(op)._unflatten(*op._flatten())
+        assert qml.math.allclose(op.data, new_op.data)
+
+        for op1, op2 in zip(op.hyperparameters["U"], new_op.hyperparameters["U"]):
+            qml.assert_equal(op1, op2)
+        for op1, op2 in zip(op.hyperparameters["V"], new_op.hyperparameters["V"]):
+            qml.assert_equal(op1, op2)
+
+        assert new_op is not op
 
     @pytest.mark.parametrize("param", [0.1, -np.pi / 2])
     def test_maximal_cost(self, param):
@@ -226,25 +217,22 @@ class TestHilbertSchmidt:
     @pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))
     def test_map_wires_errors_out(self, op_type):
         """Test that map_wires raises an error."""
-        u_tape = qml.tape.QuantumScript([qml.Hadamard("a"), qml.Identity("b")])
 
-        v_wires = qml.wires.Wires((0, 1))
-        op = op_type([0.1], v_function=global_v_circuit, v_wires=v_wires, u=u_tape.operations)
+        U = [qml.Hadamard("a"), qml.Identity("b")]
+        V = [qml.RZ(0.1, wires=0), qml.RZ(0.1, wires=1)]
+
+        op = op_type(V=V, U=U)
+
         with pytest.raises(NotImplementedError, match="Mapping the wires of HilbertSchmidt"):
             op.map_wires({0: "a", 1: "b"})
 
     def test_hs_decomposition_1_qubit(self):
         """Test if the HS operation is correctly decomposed for a 1 qubit unitary."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
+        U = qml.Hadamard(wires=0)
+        V = qml.RZ(0.1, wires=1)
 
-        U = qml.tape.QuantumScript.from_queue(q_U)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=1)
-
-        op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=U.operations)
+        op = qml.HilbertSchmidt(V=V, U=U)
 
         with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
@@ -266,16 +254,10 @@ class TestHilbertSchmidt:
     def test_hs_decomposition_2_qubits(self):
         """Test if the HS operation is correctly decomposed for 2 qubits."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.SWAP(wires=[0, 1])
+        U = qml.SWAP(wires=[0, 1])
+        V = [qml.RZ(0.1, wires=2), qml.CNOT(wires=[2, 3])]
 
-        U = qml.tape.QuantumScript.from_queue(q_U)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=2)
-            qml.CNOT(wires=[2, 3])
-
-        op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2, 3], u=U.operations)
+        op = qml.HilbertSchmidt(V=V, U=U)
 
         with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
@@ -303,16 +285,10 @@ class TestHilbertSchmidt:
     def test_hs_decomposition_2_qubits_custom_wires(self):
         """Test if the HS operation is correctly decomposed for 2 qubits with custom wires."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.SWAP(wires=["a", "b"])
+        U = qml.SWAP(wires=["a", "b"])
+        V = [qml.RZ(0.1, wires="c"), qml.CNOT(wires=["c", "d"])]
 
-        U = qml.tape.QuantumScript.from_queue(q_U)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires="c")
-            qml.CNOT(wires=["c", "d"])
-
-        op = qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=["c", "d"], u=U.operations)
+        op = qml.HilbertSchmidt(V=V, U=U)
 
         with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
@@ -341,104 +317,66 @@ class TestHilbertSchmidt:
         for op1, op2 in zip(decomp, expected_operations):
             qml.assert_equal(op1, op2)
 
-    def test_v_not_quantum_function(self):
-        """Test that we cannot pass a non quantum function to the HS operation"""
+    def test_v_not_operator(self):
+        """Test that V must be a an Operator or an iterable of Operators."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
+        U = qml.Hadamard(wires=0)
+        V = "qml.RZ(0.1, wires=1)"
 
-        U = qml.tape.QuantumScript.from_queue(q_U)
-        with qml.queuing.AnnotatedQueue() as q_v_circuit:
-            qml.RZ(0.1, wires=1)
-
-        v_circuit = qml.tape.QuantumScript.from_queue(q_v_circuit)
         with pytest.raises(
             QuantumFunctionError,
-            match="The argument v_function must be a callable quantum " "function.",
+            match="The argument 'V' must be an Operator or an iterable of Operators.",
         ):
-            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=U.operations)
+            qml.HilbertSchmidt(V=V, U=U)
 
-    def test_u_operator(self):
+    def test_u_not_operator(self):
         """Test that U must be a an Operator or an iterable of Operators."""
 
-        u = "qml.CNOT(wires=[0, 1])"
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=1)
+        U = "qml.CNOT(wires=[0, 1])"
+        V = qml.RZ(0.1, wires=1)
 
         with pytest.raises(
             QuantumFunctionError,
-            match="The argument 'u' must be an Operator or an iterable of Operators.",
+            match="The argument 'U' must be an Operator or an iterable of Operators.",
         ):
-            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=u)
+            qml.HilbertSchmidt(V=V, U=U)
 
     def test_u_v_same_number_of_wires(self):
         """Test that U and V must have the same number of wires."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.CNOT(wires=[0, 1])
-
-        U = qml.tape.QuantumScript.from_queue(q_U)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=1)
+        U = qml.CNOT(wires=[0, 1])
+        V = qml.RZ(0.1, wires=1)
 
         with pytest.raises(
             QuantumFunctionError,
             match="U and V must have the same number of wires.",
         ):
-            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2], u=U.operations)
-
-    def test_v_wires(self):
-        """Test that all wires in V are also in v_wires."""
-
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
-
-        U = qml.tape.QuantumScript.from_queue(q_U)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=2)
-
-        with pytest.raises(QuantumFunctionError, match="All wires in v must be in v_wires."):
-            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=U.operations)
+            qml.HilbertSchmidt(V=V, U=U)
 
     def test_distinct_wires(self):
         """Test that U and V have distinct wires."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
-
-        U = qml.tape.QuantumScript.from_queue(q_U)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=0)
+        U = qml.Hadamard(wires=0)
+        V = qml.RZ(0.1, wires=0)
 
         with pytest.raises(
             QuantumFunctionError,
-            match="operations in u and v must act on distinct wires",
+            match="Operations in U and V must act on distinct wires.",
         ):
-            qml.HilbertSchmidt([0.1], v_function=v_circuit, v_wires=[0], u=U.operations)
+            qml.HilbertSchmidt(V=V, U=U)
 
     @pytest.mark.jax
     def test_jax_jit(self):
         import jax
 
-        with qml.QueuingManager.stop_recording():
-            u_tape = qml.tape.QuantumTape([qml.Hadamard(0)])
+        U = qml.Hadamard(0)
 
-        def v_function(params):
-            qml.RZ(params[0], wires=1)
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(v_params):
-            qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=[1], u=u_tape.operations)
-            return qml.probs(u_tape.wires + [1])
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def circuit(params):
+            qml.HilbertSchmidt(V=qml.RZ(params[0], wires=1), U=U)
+            return qml.probs(U.wires + [1])
 
         jit_circuit = jax.jit(circuit)
-
         assert qml.math.allclose(circuit(np.array([np.pi / 2])), jit_circuit(np.array([np.pi / 2])))
 
 

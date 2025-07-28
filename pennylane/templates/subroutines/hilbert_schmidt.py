@@ -14,6 +14,7 @@
 """
 This submodule contains the templates for the Hilbert-Schmidt tests.
 """
+import copy
 from collections.abc import Iterable
 
 # pylint: disable-msg=too-many-arguments
@@ -103,22 +104,17 @@ class HilbertSchmidt(Operation):
     grad_method = None
 
     def _flatten(self):
-        metadata = (
-            ("v_function", self.hyperparameters["v_function"]),
-            ("v_wires", self.hyperparameters["v_wires"]),
-            ("u", self.hyperparameters["u"]),
-        )
-        return self.data, metadata
+        data = (self.hyperparameters["V"], self.hyperparameters["U"])
+        return data, tuple()
 
     @classmethod
-    def _primitive_bind_call(cls, *params, v_function, v_wires, u, id=None):
+    def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
         # pylint: disable=arguments-differ
-        kwargs = {"v_function": v_function, "v_wires": v_wires, "u": u, "id": id}
-        return cls._primitive.bind(*params, **kwargs)
+        return cls._primitive.bind(V, *U, **kwargs)
 
     @classmethod
-    def _unflatten(cls, data, metadata):
-        return cls(*data, **dict(metadata))
+    def _unflatten(cls, data, _) -> "HilbertSchmidt":
+        return cls(*data)
 
     def __init__(
         self,
@@ -132,7 +128,6 @@ class HilbertSchmidt(Operation):
             raise QuantumFunctionError(
                 "The argument 'U' must be an Operator or an iterable of Operators."
             )
-        self.hyperparameters["U"] = u_ops
         u_wires = qml.wires.Wires.all_wires([op.wires for op in u_ops])
 
         v_ops = (V,) if isinstance(V, Operation) else tuple(V)
@@ -140,30 +135,69 @@ class HilbertSchmidt(Operation):
             raise QuantumFunctionError(
                 "The argument 'V' must be an Operator or an iterable of Operators."
             )
-
-        self.hyperparameters["V"] = v_ops
         v_wires = qml.wires.Wires.all_wires([op.wires for op in v_ops])
+
+        self._hyperparameters = {
+            "U": u_ops,
+            "V": v_ops,
+        }
 
         if len(u_wires) != len(v_wires):
             raise QuantumFunctionError("U and V must have the same number of wires.")
 
         if len(qml.wires.Wires.shared_wires([u_wires, v_wires])) != 0:
-            raise QuantumFunctionError("operations in u and v must act on distinct wires.")
+            raise QuantumFunctionError("Operations in U and V must act on distinct wires.")
 
         with qml.QueuingManager.stop_recording():
             params = qml.prod(*v_ops).parameters
 
         self._num_params = len(params)
         total_wires = qml.wires.Wires(u_wires + v_wires)
-
-        super().__init__(*params, wires=total_wires, id=id)
+        super().__init__(wires=total_wires, id=id)
 
     def map_wires(self, wire_map: dict):
         raise NotImplementedError("Mapping the wires of HilbertSchmidt is not implemented.")
 
     @property
+    def data(self):
+        r"""Flattened list of operator data in this HilbertSchmidt operation."""
+        return tuple(datum for op in self._operators for datum in op.data)
+
+    @data.setter
+    def data(self, new_data):
+        # We need to check if ``new_data`` is empty because ``Operator.__init__()``  will attempt to
+        # assign the HilbertSchmidt data to an empty tuple (since no positional arguments are provided).
+        if new_data:
+            for op in self._operators:
+                if op.num_params > 0:
+                    op.data = new_data[: op.num_params]
+                    new_data = new_data[op.num_params :]
+
+    def __copy__(self):
+        # Override Operator.__copy__() to avoid setting the "data" property before the new instance
+        # is assigned hyper-parameters since HilbertSchmidt data is derived from the hyper-parameters.
+        clone = HilbertSchmidt.__new__(HilbertSchmidt)
+
+        # Ensure the operators in the hyper-parameters are copied instead of aliased.
+        clone._hyperparameters = {
+            "U": list(map(copy.copy, self._hyperparameters["U"])),
+            "V": list(map(copy.copy, self._hyperparameters["V"])),
+        }
+
+        for attr, value in vars(self).items():
+            if attr != "_hyperparameters":
+                setattr(clone, attr, value)
+
+        return clone
+
+    @property
     def num_params(self):
         return self._num_params
+
+    @property
+    def _operators(self) -> list[qml.operation.Operator]:
+        """Flattened list of operators that compose this HilbertSchmidt operation."""
+        return [*self._hyperparameters["V"], *self._hyperparameters["U"]]
 
     @staticmethod
     def compute_decomposition(
@@ -214,6 +248,14 @@ class HilbertSchmidt(Operation):
         # Hadamard second layer
         decomp_ops.extend(qml.Hadamard(wires[i]) for i in first_range)
         return decomp_ops
+
+
+# # pylint: disable=protected-access
+# if HilbertSchmidt._primitive is not None:
+
+#     @HilbertSchmidt._primitive.def_impl
+#     def _(UA, *projectors, **kwargs):  # kwarg might be id
+#         return type.__call__(HilbertSchmidt, UA, projectors, **kwargs)
 
 
 class LocalHilbertSchmidt(HilbertSchmidt):

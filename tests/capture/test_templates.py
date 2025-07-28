@@ -453,32 +453,30 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qml.FermionicDoubleExcitation(weight, **kwargs)
 
-    @pytest.mark.parametrize("template", [qml.HilbertSchmidt, qml.LocalHilbertSchmidt])
-    def test_hilbert_schmidt(self, template):
-        """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt."""
+    def test_hilbert_schmidt(self):
+        """Test the primitive bind call of HilbertSchmidt."""
 
         v_params = np.array([0.6])
 
         kwargs = {
-            "u": qml.Hadamard(0),
-            "v_function": lambda params: qml.RZ(params[0], wires=1),
-            "v_wires": [1],
+            "U": [qml.Hadamard(0)],
+            "V": qml.RZ(v_params[0], wires=1),
             "id": None,
         }
 
-        def qfunc(v_params):
-            template(v_params, **kwargs)
+        def qfunc():
+            qml.HilbertSchmidt(**kwargs)
 
         # Validate inputs
-        qfunc(v_params)
+        qfunc()
 
         # Actually test primitive bind
-        jaxpr = jax.make_jaxpr(qfunc)(v_params)
+        jaxpr = jax.make_jaxpr(qfunc)()
 
         assert len(jaxpr.eqns) == 1
 
         eqn = jaxpr.eqns[0]
-        assert eqn.primitive == template._primitive
+        assert eqn.primitive == qml.HilbertSchmidt._primitive
         assert eqn.invars == jaxpr.jaxpr.invars
         assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
