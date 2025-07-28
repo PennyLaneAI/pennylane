@@ -416,7 +416,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         @qml.qnode(dev)
         def hilbert_test(V, U):
-            qml.HilbertSchmidt(V=V, U=U)
+            qml.HilbertSchmidt(V, U)
             return qml.probs(u_wires + v_wires)
 
         def cost_hst(V, U):

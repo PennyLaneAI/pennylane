@@ -85,10 +85,10 @@ class HilbertSchmidt(Operation):
             @qml.qnode(dev)
             def hilbert_test(V, U):
                 qml.HilbertSchmidt(V, U)
-                return qml.probs(U.wires + V.wires)
+                return qml.probs()
 
             def cost_hst(V, U):
-                return (1 - hilbert_test(V, U)[0])
+                return 1 - hilbert_test(V, U)[0]
 
         Now that the cost function has been defined it can be called as follows:
 
@@ -243,14 +243,6 @@ class HilbertSchmidt(Operation):
         return decomp_ops
 
 
-# # pylint: disable=protected-access
-# if HilbertSchmidt._primitive is not None:
-
-#     @HilbertSchmidt._primitive.def_impl
-#     def _(V, U, **kwargs):  # kwarg might be id
-#         return type.__call__(HilbertSchmidt, V, U, **kwargs)
-
-
 class LocalHilbertSchmidt(HilbertSchmidt):
     r"""Create a Local Hilbert-Schmidt template that can be used to compute the Local Hilbert-Schmidt Test (LHST).
 
@@ -265,17 +257,15 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         :target: javascript:void(0);
 
     Args:
-        params (array): Parameters for the quantum function `V`.
-        v_function (Callable): Quantum function that represents the approximate compiled unitary `V`.
-        v_wires (int or Iterable[Number, str]]): the wire(s) on which the approximate compiled unitary acts.
-        u (Operation or Iterable[Operation]): The operations that represent the unitary `U`.
+        V (Operation or Iterable[Operation]): The operations that represent the approximate compiled unitary `V`.
+        U (Operation or Iterable[Operation]): The operations that represent the unitary `U`.
+        id (str or None): Identifier for the operation.
 
     Raises:
-        QuantumFunctionError: The argument ``u`` is not an Operator or an iterable of Operators.
-        QuantumFunctionError: ``v_function`` is not a valid Quantum function.
-        QuantumFunctionError: ``U`` and ``V`` do not have the same number of wires.
-        QuantumFunctionError: The wires ``v_wires`` are a subset of `V` wires.
-        QuantumFunctionError: Operations in ``u`` must act on distinct wires from those in ``v_wires``.
+        ValueError: ``V`` is not an Operator or an iterable of Operators.
+        ValueError: ``U`` is not an Operator or an iterable of Operators.
+        ValueError: ``U`` and ``V`` do not have the same number of wires.
+        ValueError: Operations in ``U`` must act on distinct wires from those in ``v_wires``.
 
     **Reference**
 
@@ -297,45 +287,44 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
             import numpy as np
 
-            u = qml.CZ(wires=(0,1))
+            U = qml.CZ(wires=(0,1))
 
-            def v_function(params):
-                qml.RZ(params[0], wires=2)
-                qml.RZ(params[1], wires=3)
-                qml.CNOT(wires=[2, 3])
-                qml.RZ(params[2], wires=3)
-                qml.CNOT(wires=[2, 3])
+            def V_function(params):
+                return [qml.RZ(params[0], wires=2),
+                        qml.RZ(params[1], wires=3),
+                        qml.CNOT(wires=[2, 3]),
+                        qml.RZ(params[2], wires=3),
+                        qml.CNOT(wires=[2, 3])]
 
             dev = qml.device("default.qubit", wires=4)
 
             @qml.qnode(dev)
-            def local_hilbert_test(v_params, v_function, v_wires, u):
-                qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u=u)
-                return qml.probs(u.wires + v_wires)
+            def local_hilbert_test(V, U):
+                qml.LocalHilbertSchmidt(V, U)
+                return qml.probs()
 
-            def cost_lhst(parameters, v_function, v_wires, u):
-                return (1 - local_hilbert_test(v_params=parameters, v_function=v_function, v_wires=v_wires, u=u)[0])
+            def cost_lhst(V, U):
+                return 1 - local_hilbert_test(V, U)[0]
 
         Now that the cost function has been defined it can be called for specific parameters:
 
-        >>> cost_lhst([3*np.pi/2, 3*np.pi/2, np.pi/2], v_function = v_function, v_wires = [2,3], u = u)
+        >>> V = V_function([3*np.pi/2, 3*np.pi/2, np.pi/2])
+        >>> cost_lhst(V, U)
         np.float64(0.5)
     """
 
     @staticmethod
     def compute_decomposition(
-        params: TensorLike,
+        *params: TensorLike,
         wires: int | Iterable[int | str] | qml.wires.Wires,
-        u: Operation | Iterable[Operation],
-        v: Operation | Iterable[Operation],
-        v_function: Callable = None,
-        v_wires: int | Iterable[int | str] | qml.wires.Wires = None,
+        U: Operation | Iterable[Operation],
+        V: Operation | Iterable[Operation],
     ) -> list[Operation]:
         # pylint: disable=too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
 
-        u_ops = (u,) if isinstance(u, Operation) else tuple(u)
-        v_ops = (v,) if isinstance(v, Operation) else tuple(v)
+        u_ops = (U,) if isinstance(U, Operation) else tuple(U)
+        v_ops = (V,) if isinstance(V, Operation) else tuple(V)
         u_wires = qml.wires.Wires.all_wires([op.wires for op in u_ops])
         v_wires = qml.wires.Wires.all_wires([op.wires for op in v_ops])
 
@@ -367,3 +356,14 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
 
         return decomp_ops
+
+    def __copy__(self):
+        clone = LocalHilbertSchmidt.__new__(LocalHilbertSchmidt)
+        clone._hyperparameters = {
+            "U": list(map(copy.copy, self._hyperparameters["U"])),
+            "V": list(map(copy.copy, self._hyperparameters["V"])),
+        }
+        for attr, value in vars(self).items():
+            if attr != "_hyperparameters":
+                setattr(clone, attr, value)
+        return clone

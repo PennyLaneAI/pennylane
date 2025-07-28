@@ -25,48 +25,46 @@ from pennylane.exceptions import QuantumFunctionError
 # pylint: disable=expression-not-assigned
 
 
+# pylint: disable=protected-access
+@pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))
+def test_flatten_unflatten_standard_checks(op_type):
+    """Test the flatten and unflatten methods."""
+
+    U = (qml.Hadamard("a"), qml.Identity("b"))
+    V = (qml.RZ(0.1, wires=0), qml.RZ(0.2, wires=1))
+
+    op = op_type(V, U)
+    qml.ops.functions.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
+
+    data, metadata = op._flatten()
+    assert data == (V, U)
+    assert not metadata
+
+    new_op = type(op)._unflatten(*op._flatten())
+    assert qml.math.allclose(op.data, new_op.data)
+
+    for op1, op2 in zip(op.hyperparameters["U"], new_op.hyperparameters["U"]):
+        qml.assert_equal(op1, op2)
+    for op1, op2 in zip(op.hyperparameters["V"], new_op.hyperparameters["V"]):
+        qml.assert_equal(op1, op2)
+
+    assert new_op is not op
+
+
 class TestHilbertSchmidt:
     """Tests for the Hilbert-Schmidt template."""
-
-    # pylint: disable=protected-access
-    def test_flatten_unflatten_standard_checks(self):
-        """Test the flatten and unflatten methods."""
-
-        U = (qml.Hadamard("a"), qml.Identity("b"))
-        V = (qml.RZ(0.1, wires=0), qml.RZ(0.2, wires=1))
-
-        op = qml.HilbertSchmidt(V=V, U=U)
-
-        qml.ops.functions.assert_valid(op, skip_wire_mapping=True, skip_differentiation=True)
-
-        data, metadata = op._flatten()
-
-        assert data == (V, U)
-        assert not metadata
-
-        new_op = type(op)._unflatten(*op._flatten())
-        assert qml.math.allclose(op.data, new_op.data)
-
-        for op1, op2 in zip(op.hyperparameters["U"], new_op.hyperparameters["U"]):
-            qml.assert_equal(op1, op2)
-        for op1, op2 in zip(op.hyperparameters["V"], new_op.hyperparameters["V"]):
-            qml.assert_equal(op1, op2)
-
-        assert new_op is not op
 
     @pytest.mark.parametrize("param", [0.1, -np.pi / 2])
     def test_maximal_cost(self, param):
         """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
 
         U = [qml.Hadamard(wires=0)]
-        u_wires = [0]
         V = [qml.Identity(wires=1), qml.GlobalPhase(param, wires=1)]
-        v_wires = [1]
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def hilbert_test(V, U):
-            qml.HilbertSchmidt(V=V, U=U)
-            return qml.probs(u_wires + v_wires)
+            qml.HilbertSchmidt(V, U)
+            return qml.probs()
 
         result = hilbert_test(V, U)[0]
         # This is expected to be 0, since Tr(V†U) = 0
@@ -77,14 +75,12 @@ class TestHilbertSchmidt:
         """Test that the result is 1 when the Hilbert-Schmidt inner product is maximal."""
 
         U = [qml.Hadamard(0)]
-        u_wires = [0]
         V = [qml.Hadamard(wires=1), qml.GlobalPhase(param, wires=1)]
-        v_wires = [1]
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def hilbert_test(V, U):
-            qml.HilbertSchmidt(V=V, U=U)
-            return qml.probs(u_wires + v_wires)
+            qml.HilbertSchmidt(V, U)
+            return qml.probs()
 
         result = hilbert_test(V, U)[0]
         # This is expected to be 1, since U and V are the same up to a global phase
@@ -95,15 +91,12 @@ class TestHilbertSchmidt:
         """Test that Hilbert-Schmidt test provides the correct cost for a 1 qubit unitary."""
 
         U = [qml.Hadamard(0)]
-        u_wires = [0]
-
         V = qml.RZ(param, wires=1)
-        v_wires = [1]
 
         @qml.qnode(qml.device("default.qubit", wires=2))
         def hilbert_test(V, U):
-            qml.HilbertSchmidt(V=V, U=U)
-            return qml.probs(u_wires + v_wires)
+            qml.HilbertSchmidt(V, U)
+            return qml.probs()
 
         result = hilbert_test(V, U)[0]
 
@@ -127,7 +120,6 @@ class TestHilbertSchmidt:
             qml.Hadamard(wires=0) @ qml.RY(0.1, wires=1),
             qml.CNOT(wires=[0, 1]),
         ]
-        u_wires = [0, 1]
 
         V = [
             qml.RZ(param, wires=2) @ qml.CNOT(wires=[2, 3]),
@@ -135,12 +127,11 @@ class TestHilbertSchmidt:
             qml.RY(param, wires=3) @ qml.Z(3),
             qml.RX(param, wires=2),
         ]
-        v_wires = [2, 3]
 
         @qml.qnode(qml.device("default.qubit", wires=4))
         def hilbert_test(V, U):
-            qml.HilbertSchmidt(V=V, U=U)
-            return qml.probs(u_wires + v_wires)
+            qml.HilbertSchmidt(V, U)
+            return qml.probs()
 
         result = hilbert_test(V, U)[0]
 
@@ -179,15 +170,12 @@ class TestHilbertSchmidt:
         """Test that Hilbert-Schmidt test provides the correct cost for a 3 qubit unitary."""
 
         U = [qml.RY(0.1, wires=0), qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[1, 2])]
-        u_wires = [0, 1, 2]
-
         V = [qml.RY(param, wires=3), qml.CNOT(wires=[3, 4]), qml.Hadamard(wires=5)]
-        v_wires = [3, 4, 5]
 
         @qml.qnode(qml.device("default.qubit", wires=6))
         def hilbert_test(V, U):
-            qml.HilbertSchmidt(V=V, U=U)
-            return qml.probs(u_wires + v_wires)
+            qml.HilbertSchmidt(V, U)
+            return qml.probs()
 
         result = hilbert_test(V, U)[0]
 
@@ -234,7 +222,7 @@ class TestHilbertSchmidt:
         U = qml.Hadamard(wires=0)
         V = qml.RZ(0.1, wires=1)
 
-        op = qml.HilbertSchmidt(V=V, U=U)
+        op = qml.HilbertSchmidt(V, U)
 
         with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
@@ -259,7 +247,7 @@ class TestHilbertSchmidt:
         U = qml.SWAP(wires=[0, 1])
         V = [qml.RZ(0.1, wires=2), qml.CNOT(wires=[2, 3])]
 
-        op = qml.HilbertSchmidt(V=V, U=U)
+        op = qml.HilbertSchmidt(V, U)
 
         with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
@@ -290,7 +278,7 @@ class TestHilbertSchmidt:
         U = qml.SWAP(wires=["a", "b"])
         V = [qml.RZ(0.1, wires="c"), qml.CNOT(wires=["c", "d"])]
 
-        op = qml.HilbertSchmidt(V=V, U=U)
+        op = qml.HilbertSchmidt(V, U)
 
         with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
@@ -369,7 +357,7 @@ class TestHilbertSchmidt:
     def test_queuing_ops(self, U, V, results):
         """Test that qml.HilbertSchmidt queues operations in the correct order."""
         with qml.tape.QuantumTape() as tape:
-            qml.HilbertSchmidt(V=V, U=U)
+            qml.HilbertSchmidt(V, U)
 
         for idx, val in enumerate(tape.expand().operations):
             assert val.name == results[idx].name
@@ -386,7 +374,7 @@ class TestHilbertSchmidt:
             ValueError,
             match="The argument 'V' must be an Operator or an iterable of Operators.",
         ):
-            qml.HilbertSchmidt(V=V, U=U)
+            qml.HilbertSchmidt(V, U)
 
     def test_u_not_operator(self):
         """Test that U must be a an Operator or an iterable of Operators."""
@@ -398,7 +386,7 @@ class TestHilbertSchmidt:
             ValueError,
             match="The argument 'U' must be an Operator or an iterable of Operators.",
         ):
-            qml.HilbertSchmidt(V=V, U=U)
+            qml.HilbertSchmidt(V, U)
 
     def test_u_v_same_number_of_wires(self):
         """Test that U and V must have the same number of wires."""
@@ -410,7 +398,7 @@ class TestHilbertSchmidt:
             ValueError,
             match="U and V must have the same number of wires.",
         ):
-            qml.HilbertSchmidt(V=V, U=U)
+            qml.HilbertSchmidt(V, U)
 
     def test_distinct_wires(self):
         """Test that U and V have distinct wires."""
@@ -422,7 +410,7 @@ class TestHilbertSchmidt:
             ValueError,
             match="Operations in U and V must act on distinct wires.",
         ):
-            qml.HilbertSchmidt(V=V, U=U)
+            qml.HilbertSchmidt(V, U)
 
     @pytest.mark.jax
     def test_jax_jit(self):
@@ -446,20 +434,15 @@ class TestLocalHilbertSchmidt:
     def test_maximal_cost(self, param):
         """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
 
-        u_tape = qml.tape.QuantumScript([qml.Hadamard(wires=0)])
-
-        def v_function(param):
-            qml.Identity(wires=1)
-            qml.GlobalPhase(param, wires=1)
+        U = [qml.Hadamard(wires=0)]
+        V = [qml.Identity(wires=1), qml.GlobalPhase(param, wires=1)]
 
         @qml.qnode(qml.device("default.qubit", wires=2))
-        def hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.LocalHilbertSchmidt(
-                v_params, v_function=v_function, v_wires=v_wires, u=u_tape.operations
-            )
-            return qml.probs(u_tape.wires + v_wires)
+        def hilbert_test(V, U):
+            qml.LocalHilbertSchmidt(V, U)
+            return qml.probs()
 
-        result = hilbert_test(param, v_function, [1], u_tape)[0]
+        result = hilbert_test(V, U)[0]
         # This is expected to be 0, since Tr(V†U) = 0
         assert qml.math.allclose(result, 0)
 
@@ -467,34 +450,25 @@ class TestLocalHilbertSchmidt:
     def test_minimal_cost(self, param):
         """Test that the result is 1 when the Hilbert-Schmidt inner product is maximal."""
 
-        u_tape = qml.tape.QuantumScript([qml.Hadamard(wires=0)])
-
-        def v_function(param):
-            qml.Hadamard(wires=1)
-            qml.GlobalPhase(param, wires=1)
+        U = [qml.Hadamard(0)]
+        V = [qml.Hadamard(wires=1), qml.GlobalPhase(param, wires=1)]
 
         @qml.qnode(qml.device("default.qubit", wires=2))
-        def hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.LocalHilbertSchmidt(
-                v_params, v_function=v_function, v_wires=v_wires, u=u_tape.operations
-            )
-            return qml.probs(u_tape.wires + v_wires)
+        def hilbert_test(V, U):
+            qml.LocalHilbertSchmidt(V, U)
+            return qml.probs()
 
-        result = hilbert_test(param, v_function, [1], u_tape)[0]
+        result = hilbert_test(V, U)[0]
         # This is expected to be 1, since U and V are the same up to a global phase
         assert qml.math.allclose(result, 1)
 
     def test_lhs_decomposition_1_qubit(self):
         """Test if the LHS operation is correctly decomposed"""
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
 
-        U = qml.tape.QuantumScript.from_queue(q_U)
+        U = qml.Hadamard(wires=0)
+        V = qml.RZ(0.1, wires=1)
 
-        def v_circuit(params):
-            qml.RZ(params[0], wires=1)
-
-        op = qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=U.operations)
+        op = qml.LocalHilbertSchmidt(V, U)
 
         with qml.queuing.AnnotatedQueue() as q_tape_dec:
             decomp = op.decomposition()
@@ -524,15 +498,11 @@ class TestLocalHilbertSchmidt:
 
     def test_lhs_decomposition_1_qubit_custom_wires(self):
         """Test if the LHS operation is correctly decomposed with custom wires."""
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires="a")
 
-        U = qml.tape.QuantumScript.from_queue(q_U)
+        U = qml.Hadamard(wires="a")
+        V = qml.RZ(0.1, wires="b")
 
-        def v_circuit(params):
-            qml.RZ(params[0], wires="b")
-
-        op = qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=["b"], u=U.operations)
+        op = qml.LocalHilbertSchmidt(V, U)
 
         with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
@@ -555,16 +525,10 @@ class TestLocalHilbertSchmidt:
     def test_lhs_decomposition_2_qubits(self):
         """Test if the LHS operation is correctly decomposed for 2 qubits."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.SWAP(wires=[0, 1])
+        U = qml.SWAP(wires=[0, 1])
+        V = [qml.RZ(0.1, wires=2), qml.CNOT(wires=[2, 3])]
 
-        U = qml.tape.QuantumScript.from_queue(q_U)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=2)
-            qml.CNOT(wires=[2, 3])
-
-        op = qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2, 3], u=U.operations)
+        op = qml.LocalHilbertSchmidt(V, U)
 
         with qml.queuing.AnnotatedQueue() as q_tape_dec:
             op.decomposition()
@@ -586,39 +550,31 @@ class TestLocalHilbertSchmidt:
     def test_qnode_integration(self):
         """Test that the local hilbert schmidt template can be used inside a qnode."""
 
-        u_tape = qml.tape.QuantumTape([qml.CZ(wires=(0, 1))])
+        U = [qml.CZ(wires=(0, 1))]
 
-        def v_function(params):
-            qml.RZ(params[0], wires=2)
-            qml.RZ(params[1], wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.RZ(params[2], wires=3)
-            qml.CNOT(wires=[2, 3])
+        def V_function(params):
+            return [
+                qml.RZ(params[0], wires=2),
+                qml.RZ(params[1], wires=3),
+                qml.CNOT(wires=[2, 3]),
+                qml.RZ(params[2], wires=3),
+                qml.CNOT(wires=[2, 3]),
+            ]
 
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
-        def local_hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.LocalHilbertSchmidt(
-                v_params, v_function=v_function, v_wires=v_wires, u=u_tape.operations
-            )
-            return qml.probs(u_tape.wires + v_wires)
+        def local_hilbert_test(V, U):
+            qml.LocalHilbertSchmidt(V, U)
+            return qml.probs()
 
         # pylint: disable=unsubscriptable-object
-        def cost_lhst(parameters, v_function, v_wires, u_tape):
-            return (
-                1
-                - local_hilbert_test(
-                    v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape
-                )[0]
-            )
+        def cost_lhst(V, U):
+            return 1 - local_hilbert_test(V, U)[0]
 
-        res = cost_lhst(
-            [3 * qml.numpy.pi / 2, 3 * qml.numpy.pi / 2, qml.numpy.pi / 2],
-            v_function=v_function,
-            v_wires=[2, 3],
-            u_tape=u_tape,
-        )
+        v_params = [3 * qml.numpy.pi / 2, 3 * qml.numpy.pi / 2, qml.numpy.pi / 2]
+        V = V_function(v_params)
+        res = cost_lhst(V, U)
 
         # The exact analytic expression to be compared against is given by eq. (25) of https://arxiv.org/pdf/1807.00800 with j=1.
         # Unfortunately, we don't have an immediate way to compute such an expression in PennyLane. However, since the
@@ -629,107 +585,75 @@ class TestLocalHilbertSchmidt:
         # the answer is currently 0.5, and I'm going to assume that's correct. This test will let us know
         # if the answer changes.
 
-    def test_v_not_quantum_function(self):
-        """Test that we cannot pass a non quantum function to the HS operation"""
+    def test_v_not_operator(self):
+        """Test that V must be a an Operator or an iterable of Operators."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
+        U = qml.Hadamard(wires=0)
+        V = "qml.RZ(0.1, wires=1)"
 
-        U = qml.tape.QuantumScript.from_queue(q_U)
-        with qml.queuing.AnnotatedQueue() as q_v_circuit:
-            qml.RZ(0.1, wires=1)
-
-        v_circuit = qml.tape.QuantumScript.from_queue(q_v_circuit)
         with pytest.raises(
-            QuantumFunctionError,
-            match="The argument v_function must be a callable quantum " "function.",
+            ValueError,
+            match="The argument 'V' must be an Operator or an iterable of Operators.",
         ):
-            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=U.operations)
+            qml.LocalHilbertSchmidt(V, U)
 
-    def test_u_operator(self):
+    def test_u_not_operator(self):
         """Test that U must be a an Operator or an iterable of Operators."""
 
-        u = "qml.CNOT(wires=[0, 1])"
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=1)
+        U = "qml.CNOT(wires=[0, 1])"
+        V = qml.RZ(0.1, wires=1)
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="The argument 'u' must be an Operator or an iterable of Operators.",
+            ValueError,
+            match="The argument 'U' must be an Operator or an iterable of Operators.",
         ):
-            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=u)
+            qml.LocalHilbertSchmidt(V, U)
 
     def test_u_v_same_number_of_wires(self):
         """Test that U and V must have the same number of wires."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.CNOT(wires=[0, 1])
-
-        U = qml.tape.QuantumScript.from_queue(q_U)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=1)
+        U = qml.CNOT(wires=[0, 1])
+        V = qml.RZ(0.1, wires=1)
 
         with pytest.raises(
-            QuantumFunctionError,
+            ValueError,
             match="U and V must have the same number of wires.",
         ):
-            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[2], u=U.operations)
-
-    def test_v_wires(self):
-        """Test that all wires in V are also in v_wires."""
-
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
-
-        U = qml.tape.QuantumScript.from_queue(q_U)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=2)
-
-        with pytest.raises(QuantumFunctionError, match="All wires in v must be in v_wires"):
-            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[1], u=U.operations)
+            qml.LocalHilbertSchmidt(V, U)
 
     def test_distinct_wires(self):
         """Test that U and V have distinct wires."""
 
-        with qml.queuing.AnnotatedQueue() as q_U:
-            qml.Hadamard(wires=0)
-
-        U = qml.tape.QuantumScript.from_queue(q_U)
-
-        def v_circuit(params):
-            qml.RZ(params[0], wires=0)
+        U = qml.Hadamard(wires=0)
+        V = qml.RZ(0.1, wires=0)
 
         with pytest.raises(
-            QuantumFunctionError,
-            match="operations in u and v must act on distinct wires",
+            ValueError,
+            match="Operations in U and V must act on distinct wires.",
         ):
-            qml.LocalHilbertSchmidt([0.1], v_function=v_circuit, v_wires=[0], u=U.operations)
+            qml.LocalHilbertSchmidt(V, U)
 
     @pytest.mark.jax
     def test_jit(self):
         import jax
 
-        with qml.QueuingManager.stop_recording():
-            u_tape = qml.tape.QuantumTape([qml.CZ(wires=(0, 1))])
+        U = qml.CZ(wires=(0, 1))
 
-        def v_function(params):
-            qml.RZ(params[0], wires=2)
-            qml.RZ(params[1], wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.RZ(params[2], wires=3)
-            qml.CNOT(wires=[2, 3])
+        def V_function(params):
+            return [
+                qml.RZ(params[0], wires=2),
+                qml.RZ(params[1], wires=3),
+                qml.CNOT(wires=[2, 3]),
+                qml.RZ(params[2], wires=3),
+                qml.CNOT(wires=[2, 3]),
+            ]
 
         dev = qml.device("default.qubit", wires=4)
 
         @qml.qnode(dev)
         def circuit(v_params):
-            qml.LocalHilbertSchmidt(
-                v_params, v_function=v_function, v_wires=[2, 3], u=u_tape.operations
-            )
-            return qml.probs(u_tape.wires + [2, 3])
+            qml.LocalHilbertSchmidt(V=V_function(v_params), U=U)
+            return qml.probs()
 
         jit_circuit = jax.jit(circuit)
 
