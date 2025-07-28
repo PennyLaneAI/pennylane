@@ -349,46 +349,40 @@ def _givens_matrix_core(a, b, left=True, tol=1e-8, real_valued=False):
     sine = math.where(abs_b < tol, 1.0, abs_a / hypot)
     sine = math.where(abs_a < tol, 0.0, sine)
 
-    if real_valued:
-        sign = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))
-        if interface == "jax":
-            return jax.lax.cond(
-                left,
-                lambda cosine, sine: math.array(
-                    [[cosine, -sign * sine], [sign * sine, cosine]], like=interface
-                ),
-                lambda cosine, sine: math.array(
-                    [[sine, sign * cosine], [-sign * cosine, sine]], like=interface
-                ),
-                cosine,
-                sine,
-            )
-        if not left:
-            cosine, sine = sine, -cosine
-        return math.array([[cosine, -sign * sine], [sign * sine, cosine]], like=interface)
-
-    aprod = math.nan_to_num(abs_b * abs_a)
-    phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + 1e-15))
-    phase = math.where(abs_a < tol, 1.0, phase)
-
+    # The following logic produces four different matrices for the four possible settings
+    # of ``left`` and ``real_valued``:
+    # (left, real_valued) = (True, True)
+    # array = [[cosine, -phase * sine], [phase * sine, cosine]]
+    # (left, real_valued) = (False, True)
+    # array = [[sine, phase * cosine], [-phase * cosine, sine]]
+    # (left, real_valued) = (True, False)
+    # array = [[phase * cosine, -sine], [phase * sine, cosine]]
+    # (left, real_valued) = (False, False)
+    # array = [[phase * sine, cosine], [-phase * cosine, sine]]
     if interface == "jax":
-        return jax.lax.cond(
+        cosine, sine = jax.lax.cond(
             left,
-            lambda phase, cosine, sine: math.array(
-                [[phase * cosine, -sine], [phase * sine, cosine]], like=interface
-            ),
-            lambda phase, cosine, sine: math.array(
-                [[phase * sine, cosine], [-phase * cosine, sine]], like=interface
-            ),
-            phase,
+            lambda cosine, sine: (cosine, sine),
+            lambda cosine, sine: (sine, -cosine),
             cosine,
             sine,
         )
+    elif not left:
+        cosine, sine = sine, -cosine
 
-    if left:
-        cosine, sine = -sine, cosine
+    g00, g01 = cosine, -sine
+    if real_valued:
+        phase = math.where((abs_a < tol) + (abs_b < tol), 1.0, math.sign(a * b))  # previously sign
+        g01 *= phase
+    else:
+        aprod = math.nan_to_num(abs_b * abs_a)
+        phase = math.where(abs_b < tol, 1.0, (b * math.conj(a)) / (aprod + 1e-15))
+        phase = math.where(abs_a < tol, 1.0, phase)
+        g00 = phase * g00
 
-    return math.array([[phase * sine, cosine], [-phase * cosine, sine]], like=interface)
+    g10, g11 = phase * sine, cosine
+
+    return math.array([[g00, g01], [g10, g11]], like=interface)
 
 
 def _absorb_phases_so(left_givens, right_givens, phases, interface):
@@ -439,12 +433,16 @@ def _absorb_phases_so(left_givens, right_givens, phases, interface):
     last_rotations = left_givens if mod else right_givens
     for k in range(len(last_rotations) - 1, len(last_rotations) - N, -1):
         grot_mat, (i, j) = last_rotations[k]
-        idx0, idx1 = (j, i) if mod else (i, j)
-        if phases[idx0, idx0] < 0:
-            phases = _set_unitary_matrix(phases, (i, i), -phases[i, i], like=interface)
-            phases = _set_unitary_matrix(phases, (j, j), -phases[j, j], like=interface)
-            grot_mat = -grot_mat
-        if phases[idx1, idx1] < 0:
+
+        ph0 = math.sign(phases[j, j]) if mod else math.sign(phases[i, i])
+        phases = _set_unitary_matrix(phases, (i, i), ph0 * phases[i, i], like=interface)
+        phases = _set_unitary_matrix(phases, (j, j), ph0 * phases[j, j], like=interface)
+        grot_mat = ph0 * grot_mat
+        ph1 = phases[i, i] if mod else phases[j, j]
+        if interface == "jax":
+            grot_mat = jax.lax.cond(ph1 < 0, lambda mat: mat.T, lambda mat: mat, grot_mat)
+
+        elif ph1 < 0:
             grot_mat = grot_mat.T
 
         last_rotations[k] = (grot_mat, (i, j))

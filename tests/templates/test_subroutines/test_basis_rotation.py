@@ -177,6 +177,7 @@ class TestDecomposition:
         queue = op.decomposition()
 
         assert len(queue) == len(gate_ops)  # number of gates
+        assert [type(op) for op in queue].count(qml.PhaseShift) <= 1  # at most one phase shift
 
         for idx, _op in enumerate(queue):
             assert isinstance(_op, gate_ops[idx])  # gate operation
