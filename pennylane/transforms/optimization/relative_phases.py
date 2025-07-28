@@ -58,7 +58,7 @@ def replace_relative_phase_toffoli(
             qml.MultiControlledX(wires=[0, 1, 2, 3])
             return qml.expval(qml.Z(0))
 
-    The circuit before decomposition:
+    The circuit (a 4-qubit relative phase Toffoli) before decomposition:
 
     >>> dev = qml.device('default.qubit', wires=4)
     >>> qnode = qml.QNode(qfunc, dev)
@@ -165,7 +165,7 @@ def replace_controlled_iX_gate(
             qml.MultiControlledX(wires=[0, 1, 2, 3])
             return qml.expval(qml.Z(0))
 
-    The circuit before decomposition:
+    The circuit (a controlled iX gate) before decomposition:
 
     >>> dev = qml.device('default.qubit', wires=4)
     >>> qnode = qml.QNode(qfunc, dev)
