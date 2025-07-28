@@ -404,9 +404,9 @@ def _qrom_decomposition(
 
     def _new_ops(depth_new, target_wires_new):
 
-        # TODO: refactor to get rid of these calls
-        ops_new = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
-        ops_identity_new = ops_new + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops_new))
+        with qml.QueuingManager.stop_recording():
+            ops_new = [qml.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+            ops_identity_new = ops_new + [qml.I(target_wires)] * int(2 ** len(control_wires) - len(ops_new))
 
         n_columns = (
             len(bitstrings) // depth_new
