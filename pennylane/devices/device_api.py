@@ -1052,12 +1052,10 @@ def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -
     supports_one_shot = "one-shot" in capabilities.supported_mcm_methods
     has_device_support = "device" in capabilities.supported_mcm_methods
 
-    # In finite shots mode, the one-shot method is the default even if there is device support.
-    # This is to ensure consistency with old behaviour. Although I'm not too sure about this.
-    if supports_one_shot and shots_present:
-        return "one-shot"
-
     if has_device_support:
         return "device"
+
+    if supports_one_shot and shots_present:
+        return "one-shot"
 
     return "deferred"
