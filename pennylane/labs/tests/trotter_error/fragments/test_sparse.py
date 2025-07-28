@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-from pennylane.labs.trotter_error.fragments import sparse_fragments, SparseFragment, SparseState
+from pennylane.labs.trotter_error.fragments import SparseFragment, SparseState, sparse_fragments
 
 # pylint: disable=no-self-use
 
@@ -226,12 +226,14 @@ class TestLinearCombinations:
     basis_states = [SparseState(csr_matrix([[1, 0]])), SparseState(csr_matrix([[0, 1]]))]
 
     @pytest.mark.parametrize("frag, basis_states", [(frag, basis_states)])
-    def test_linear_combination_pauli_x(self, frag, basis_states):  # pylint: disable=unused-argument
+    def test_linear_combination_pauli_x(
+        self, frag, basis_states
+    ):  # pylint: disable=unused-argument
         """Test expectation values with linear combinations for Pauli-X"""
 
         # Create superposition states |+⟩ = (|0⟩ + |1⟩)/√2 and |-⟩ = (|0⟩ - |1⟩)/√2
-        plus_state = SparseState(csr_matrix([[1/np.sqrt(2), 1/np.sqrt(2)]]))
-        minus_state = SparseState(csr_matrix([[1/np.sqrt(2), -1/np.sqrt(2)]]))
+        plus_state = SparseState(csr_matrix([[1 / np.sqrt(2), 1 / np.sqrt(2)]]))
+        minus_state = SparseState(csr_matrix([[1 / np.sqrt(2), -1 / np.sqrt(2)]]))
 
         # Test that ⟨+|X|+⟩ = 1 and ⟨-|X|-⟩ = -1
         expectation_plus = frag.expectation(plus_state, plus_state)
@@ -260,8 +262,7 @@ class TestLinearCombinations:
         rotated_states = []
         for i in range(2):
             rotated_coeff = unitary[:, i]
-            rotated_state = (basis_states[0] * rotated_coeff[0] +
-                           basis_states[1] * rotated_coeff[1])
+            rotated_state = basis_states[0] * rotated_coeff[0] + basis_states[1] * rotated_coeff[1]
             rotated_states.append(rotated_state)
 
         # Compute expectation matrix in rotated basis

@@ -16,11 +16,13 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Sequence
+
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import norm
 
 from pennylane.labs.trotter_error import Fragment
 from pennylane.labs.trotter_error.abstract import AbstractState
+
 
 def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
     """Instantiates :class:`~.pennylane.labs.trotter_error.SparseFragment` objects.
@@ -134,9 +136,9 @@ class SparseState(AbstractState):
     * ``zero_state``: returns a representation of the zero state
     * ``dot``: implments the dot product of two states
     """
+
     def __init__(self, matrix: csr_matrix):
-        """Initialize the SparseState.
-        """
+        """Initialize the SparseState."""
         self.csr_matrix = matrix
 
     def __add__(self, other: SparseState) -> SparseState:
@@ -146,7 +148,7 @@ class SparseState(AbstractState):
         return SparseState(self.csr_matrix - other.csr_matrix)
 
     def __mul__(self, scalar: float) -> SparseState:
-        return  SparseState(scalar * self.csr_matrix)
+        return SparseState(scalar * self.csr_matrix)
 
     def __rmul__(self, scalar: float) -> SparseState:
         return self.__mul__(scalar)
@@ -170,7 +172,7 @@ class SparseState(AbstractState):
         complex: the dot product of self and other
         """
         # Handle _AdditiveIdentity (zero state)
-        if hasattr(other, '__class__') and 'AdditiveIdentity' in other.__class__.__name__:
+        if hasattr(other, "__class__") and "AdditiveIdentity" in other.__class__.__name__:
             return 0.0
 
         # Handle SparseState objects
