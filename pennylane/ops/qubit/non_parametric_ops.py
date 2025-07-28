@@ -1937,7 +1937,7 @@ class SQSWAP(Operation):
             qml.CNOT(wires=[wires[0], wires[1]]),
         ]
 
-    def pow(self, z: Union[int, float]) -> list[qml.operation.Operator]:
+    def pow(self, z: int | float) -> list[qml.operation.Operator]:
         z_mod8 = z % 4
         if abs(z_mod8 - 2) < 1e-6:
             return [SWAP(wires=self.wires)]
