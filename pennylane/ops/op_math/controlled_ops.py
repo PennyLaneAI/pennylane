@@ -1734,10 +1734,9 @@ class CSX(ControlledOp):
          CGlobalPhase(-0.7853981633974483, wires=[0, 1])]
         """
         return [
-            qml.CRZ(np.pi / 2, wires=wires),
-            qml.CRY(np.pi / 2, wires=wires),
+            qml.ControlledPhaseShift(3 * np.pi / 2, wires=wires),
+            qml.CH(wires=wires),
             qml.CRZ(-np.pi / 2, wires=wires),
-            qml.ctrl(qml.GlobalPhase(-np.pi / 4, wires=wires), wires[0]),
         ]
 
     @property
