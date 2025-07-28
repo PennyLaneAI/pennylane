@@ -46,6 +46,8 @@
 
 <h3>Improvements 🛠</h3>
 
+<h4>Graph-based decompositions support</h4>
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows 
   that include these templates to be decomposed in a resource-efficient and performant
@@ -172,13 +174,12 @@
 
 * Removed access for `lie_closure`, `structure_constants` and `center` via `qml.pauli`.
   Top level import and usage is advised. The functions now live in the `liealg` module.
+  [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
 
   ```python
   import pennylane.liealg
   from pennylane.liealg import lie_closure, structure_constants, center
   ```
-
-  [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
 
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
   PennyLane now depends on the more general `Operator` interface instead. The
@@ -205,7 +206,8 @@
 * Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
   Instead, use :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the
   Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
-
+  [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
+  
   As a concrete example, consider the following case:
 
   ```python
@@ -234,7 +236,6 @@
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
-  [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
 
 * `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
   `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
