@@ -271,64 +271,6 @@
   Instead, please use `QNode.transform_program.push_back(transform_container=transform_container)`.
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
-<h3>Internal changes ⚙️</h3>
-
-* Adds `measurements` as a "core" module in the tach specification.
- [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
-
-* Improves type hints in the `measurements` module.
-  [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
-
-* Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
-  [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
-
-* Improve the pre-commit hook to add gitleaks.
-  [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
-
-* Added a `run_filecheck_qjit` fixture that can be used to run FileCheck on integration tests for the
-  `qml.compiler.python_compiler` submodule.
-  [(#7888)](https://github.com/PennyLaneAI/pennylane/pull/7888)
-
-* Added a `dialects` submodule to `qml.compiler.python_compiler` which now houses all the xDSL dialects we create.
-  Additionally, the `MBQCDialect` and `QuantumDialect` dialects have been renamed to `MBQC` and `Quantum`.
-  [(#7897)](https://github.com/PennyLaneAI/pennylane/pull/7897)
-
-* Update minimum supported `pytest` version to `8.4.1`.
-  [(#7853)](https://github.com/PennyLaneAI/pennylane/pull/7853)
-
-* `DefaultQubitLegacy` (test suite only) no longer provides a customized classical shadow
-  implementation
-  [(#7895)](https://github.com/PennyLaneAI/pennylane/pull/7895)
-
-* Make `pennylane.io` a tertiary module.
-  [(#7877)](https://github.com/PennyLaneAI/pennylane/pull/7877)
-
-* Seeded tests for the `split_to_single_terms` transformation.
-  [(#7851)](https://github.com/PennyLaneAI/pennylane/pull/7851)
-
-* Upgrade `rc_sync.yml` to work with latest `pyproject.toml` changes.
-  [(#7808)](https://github.com/PennyLaneAI/pennylane/pull/7808)
-  [(#7818)](https://github.com/PennyLaneAI/pennylane/pull/7818)
-
-* `LinearCombination` instances can be created with `_primitive.impl` when
-  capture is enabled and tracing is active.
-  [(#7893)](https://github.com/PennyLaneAI/pennylane/pull/7893)
-
-* The `TensorLike` type is now compatible with static type checkers.
-  [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
-
-* Update xDSL supported version to `0.46`.
-  [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
-  [(#7932)](https://github.com/PennyLaneAI/pennylane/pull/7932)
-
-* Update JAX version used in tests to `0.6.2`
-  [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
-
-* The measurement-plane attribute of the Python compiler `mbqc` dialect now uses the "opaque syntax"
-  format when printing in the generic IR format. This enables usage of this attribute when IR needs
-  to be passed from the python compiler to Catalyst.
-  [(#7957)](https://github.com/PennyLaneAI/pennylane/pull/7957)
-
 <h3>Documentation 📝</h3>
 
 * The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
