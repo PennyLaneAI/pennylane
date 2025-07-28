@@ -106,7 +106,7 @@ class TemporaryAND(Operation):
         return cls(wires=metadata[0], control_values=metadata[1])
 
     @staticmethod
-    @lru_cache()
+    @lru_cache
     def compute_matrix(**kwargs):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 

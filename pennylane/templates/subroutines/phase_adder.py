@@ -27,8 +27,9 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, ControlledPhaseShift, PhaseShift, X, adjoint, ctrl
-from pennylane.templates.subroutines import QFT
 from pennylane.wires import Wires, WiresLike
+
+from .qft import QFT
 
 
 def _add_k_fourier(k, wires: WiresLike):
@@ -136,7 +137,7 @@ class PhaseAdder(Operation):
 
     resource_keys = {"num_x_wires", "mod"}
 
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, k, x_wires: WiresLike, mod=None, work_wire: WiresLike = (), id=None):
 
         work_wire = Wires(() if work_wire is None else work_wire)

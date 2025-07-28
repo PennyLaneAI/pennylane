@@ -16,7 +16,7 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
-# pylint: disable-msg=too-many-arguments
+# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
 import copy
 
 import numpy as np
@@ -25,8 +25,9 @@ from pennylane.operation import Operation
 from pennylane.ops import Hadamard, PhaseShift
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager, apply
-from pennylane.templates.subroutines import Reflection
 from pennylane.wires import WireError, Wires
+
+from .reflection import Reflection
 
 
 def _get_fixed_point_angles(iters, p_min):
