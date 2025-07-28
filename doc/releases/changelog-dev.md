@@ -170,6 +170,33 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
+  They now accept a list of operations instead of a `qml.tape.QuantumScript` of operations and quantum functions with separate parameters and wires.
+  Instead, the wires and parameters of the provided unitaries are inferred from the inputs.
+
+  As a concrete example, this is how the Hilbert-Schmidt Test cost between the unitary `U` and an approximate unitary ``V`` can be evaluated:
+
+  ```python
+  U = qml.Hadamard(0)
+  V = qml.RZ(0, wires=1)
+
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.qnode(dev)
+  def hilbert_test(V, U):
+      qml.HilbertSchmidt(V, U)
+      return qml.probs()
+
+  def cost_hst(V, U):
+      return 1 - hilbert_test(V, U)[0]
+  ```
+
+  ```pycon
+  >>> cost_hst(V, U)
+  np.float64(1.0)
+  ```
+  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
+
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
@@ -188,10 +215,6 @@
   ```
 
   [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
-
-* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated so that they accept a list of operations 
-  instead of a `qml.tape.QuantumScript` of operations.
-  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
 
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
   PennyLane now depends on the more general `Operator` interface instead. The

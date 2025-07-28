@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
 
 # pylint: disable=expression-not-assigned
 
@@ -135,34 +134,17 @@ class TestHilbertSchmidt:
 
         result = hilbert_test(V, U)[0]
 
-        # TODO: find a better way to handle the matrix computation
-        u_tape = qml.tape.QuantumScript(
-            [
-                qml.SWAP(wires=[0, 1]),
-                qml.Hadamard(wires=0) @ qml.RY(0.1, wires=1),
-                qml.CNOT(wires=[0, 1]),
-            ]
-        )
-
-        def v_function(param):
-            qml.RZ(param, wires=2) @ qml.CNOT(wires=[2, 3])
-            qml.CNOT(wires=[2, 3])
-            qml.RY(param, wires=3) @ qml.Z(3)
-            qml.RX(param, wires=2)
+        u_tape = qml.tape.QuantumScript(U)
+        v_tape = qml.tape.QuantumScript(V)
 
         # We compare the result with 1/d^2 * | Tr(V†U) |^2
         # (see Section 4.1 of https://arxiv.org/pdf/1807.00800 for more details)
         d = 4
         u_matrix = qml.matrix(u_tape, wire_order=[0, 1])
-
-        with qml.queuing.AnnotatedQueue() as v_queue:
-            v_function(param)
-        v_tape = qml.tape.QuantumScript.from_queue(v_queue)
         v_matrix = qml.matrix(v_tape, wire_order=[2, 3]).reshape(d, d)
 
         trace = np.trace(np.conj(v_matrix).T @ u_matrix)
         expected = (1 / d**2) * abs(trace) ** 2
-
         assert qml.math.allclose(result, expected)
 
     @pytest.mark.parametrize("param", [0.1, -np.pi / 2, 0.5])
@@ -179,29 +161,17 @@ class TestHilbertSchmidt:
 
         result = hilbert_test(V, U)[0]
 
-        # TODO: find a better way to handle the matrix computation
-        u_tape = qml.tape.QuantumScript(
-            [qml.RY(0.1, wires=0), qml.CNOT(wires=[0, 1]), qml.CNOT(wires=[1, 2])]
-        )
-
-        def v_function(param):
-            qml.RY(param, wires=3)
-            qml.CNOT(wires=[3, 4])
-            qml.Hadamard(wires=5)
+        u_tape = qml.tape.QuantumScript(U)
+        v_tape = qml.tape.QuantumScript(V)
 
         # We compare the result with 1/d^2 * | Tr(V†U) |^2
         # (see Section 4.1 of https://arxiv.org/pdf/1807.00800 for more details)
         d = 8
         u_matrix = qml.matrix(u_tape, wire_order=[0, 1, 2])
-
-        with qml.queuing.AnnotatedQueue() as v_queue:
-            v_function(param)
-        v_tape = qml.tape.QuantumScript.from_queue(v_queue)
         v_matrix = qml.matrix(v_tape, wire_order=[3, 4, 5]).reshape(d, d)
 
         trace = np.trace(np.conj(v_matrix).T @ u_matrix)
         expected = (1 / d**2) * abs(trace) ** 2
-
         assert qml.math.allclose(result, expected)
 
     @pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))

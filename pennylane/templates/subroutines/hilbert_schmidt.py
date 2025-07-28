@@ -19,9 +19,9 @@ from collections.abc import Iterable
 
 # pylint: disable-msg=too-many-arguments
 import pennylane as qml
-from pennylane.queuing import QueuingManager
 from pennylane.operation import Operation
-from pennylane.typing import Callable, TensorLike
+from pennylane.queuing import QueuingManager
+from pennylane.typing import TensorLike
 
 
 class HilbertSchmidt(Operation):
@@ -285,8 +285,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         .. code-block:: python
 
-            import numpy as np
-
             U = qml.CZ(wires=(0,1))
 
             def V_function(params):
@@ -308,6 +306,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         Now that the cost function has been defined it can be called for specific parameters:
 
+        >>> import numpy as np
         >>> V = V_function([3*np.pi/2, 3*np.pi/2, np.pi/2])
         >>> cost_lhst(V, U)
         np.float64(0.5)
