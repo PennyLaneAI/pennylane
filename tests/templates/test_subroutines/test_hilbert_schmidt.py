@@ -14,6 +14,8 @@
 """
 Unit tests for the Hilbert-Schmidt templates.
 """
+import copy
+
 import numpy as np
 import pytest
 
@@ -316,6 +318,63 @@ class TestHilbertSchmidt:
 
         for op1, op2 in zip(decomp, expected_operations):
             qml.assert_equal(op1, op2)
+
+    def test_data(self):
+        """Test that the data property gets and sets the correct values"""
+        op = qml.HilbertSchmidt(
+            [qml.RX(1, wires=0), qml.RX(2, wires=1)], [qml.RY(3, wires=2), qml.RZ(4, wires=3)]
+        )
+        assert op.data == (1, 2, 3, 4)
+        op.data = [4, 5, 6, 7]
+        assert op.data == (4, 5, 6, 7)
+
+    def test_copy(self):
+        """Test that a HilbertSchmidt operator can be copied."""
+        orig_op = qml.HilbertSchmidt(
+            [qml.RX(1, wires=0), qml.RX(2, wires=1)], [qml.RY(3, wires=2), qml.RZ(4, wires=3)]
+        )
+        copy_op = copy.copy(orig_op)
+        qml.assert_equal(orig_op, copy_op)
+
+        # Ensure the (nested) operations are copied instead of aliased.
+        assert orig_op is not copy_op
+
+        orig_U = orig_op.hyperparameters["U"]
+        copy_U = copy_op.hyperparameters["U"]
+        assert all(u1 is not u2 for u1, u2 in zip(orig_U, copy_U))
+
+        orig_V = orig_op.hyperparameters["V"]
+        copy_V = copy_op.hyperparameters["V"]
+        assert all(v1 is not v2 for v1, v2 in zip(orig_V, copy_V))
+
+    @pytest.mark.parametrize(
+        ("U", "V", "results"),
+        [
+            (
+                qml.Hadamard(wires=0),
+                qml.RX(0, wires=1),
+                [
+                    qml.H(0),
+                    qml.CNOT(wires=[0, 1]),
+                    qml.H(0),
+                    qml.QubitUnitary(
+                        [[1.0 - 0.0j, 0.0 + 0.0j], [0.0 + 0.0j, 1.0 - 0.0j]], wires=[1]
+                    ),
+                    qml.CNOT(wires=[0, 1]),
+                    qml.H(0),
+                ],
+            ),
+        ],
+    )
+    def test_queuing_ops(self, U, V, results):
+        """Test that qml.HilbertSchmidt queues operations in the correct order."""
+        with qml.tape.QuantumTape() as tape:
+            qml.HilbertSchmidt(V=V, U=U)
+
+        for idx, val in enumerate(tape.expand().operations):
+            assert val.name == results[idx].name
+            assert val.wires == results[idx].wires
+            assert qml.math.allclose(val.parameters, results[idx].parameters)
 
     def test_v_not_operator(self):
         """Test that V must be a an Operator or an iterable of Operators."""
