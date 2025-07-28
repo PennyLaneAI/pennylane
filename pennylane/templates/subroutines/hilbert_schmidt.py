@@ -110,7 +110,7 @@ class HilbertSchmidt(Operation):
     @classmethod
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
         # pylint: disable=arguments-differ
-        return cls._primitive.bind(V, *U, **kwargs)
+        return cls._primitive.bind(V, U, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, _) -> "HilbertSchmidt":
