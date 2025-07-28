@@ -453,34 +453,28 @@ class TestModifiedTemplates:
         assert len(q) == 1
         assert q.queue[0] == qml.FermionicDoubleExcitation(weight, **kwargs)
 
-    @pytest.mark.parametrize("template", [qml.HilbertSchmidt, qml.LocalHilbertSchmidt])
-    def test_hilbert_schmidt(self, template):
-        """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt."""
-
-        v_params = np.array([0.6])
-
-        kwargs = {
-            "u": qml.Hadamard(0),
-            "v_function": lambda params: qml.RZ(params[0], wires=1),
-            "v_wires": [1],
-            "id": None,
-        }
+    def test_hilbert_schmidt(self):
+        """Test the primitive bind call of HilbertSchmidt."""
 
         def qfunc(v_params):
-            template(v_params, **kwargs)
+            U = qml.Hadamard(0)
+            V = qml.RZ(v_params[0], wires=1)
+            qml.HilbertSchmidt(U=U, V=V)
 
+        v_params = jnp.array([0.1])
         # Validate inputs
         qfunc(v_params)
 
         # Actually test primitive bind
         jaxpr = jax.make_jaxpr(qfunc)(v_params)
 
-        assert len(jaxpr.eqns) == 1
+        assert len(jaxpr.eqns) == 5
 
-        eqn = jaxpr.eqns[0]
-        assert eqn.primitive == template._primitive
-        assert eqn.invars == jaxpr.jaxpr.invars
-        assert eqn.params == kwargs
+        assert jaxpr.eqns[0].primitive == qml.Hadamard._primitive
+
+        eqn = jaxpr.eqns[-1]
+        assert eqn.primitive == qml.HilbertSchmidt._primitive
+        assert eqn.params == {}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -488,7 +482,9 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, v_params)
 
         assert len(q) == 1
-        qml.assert_equal(q.queue[0], template(v_params, **kwargs))
+        U = qml.Hadamard(0)
+        V = qml.RZ(v_params[0], wires=1)
+        assert q.queue[0] == qml.HilbertSchmidt(U=U, V=V)
 
     @pytest.mark.parametrize("template", [qml.MERA, qml.MPS, qml.TTN])
     def test_tensor_networks(self, template):
