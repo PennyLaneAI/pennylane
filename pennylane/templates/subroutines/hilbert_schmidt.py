@@ -17,11 +17,14 @@ This submodule contains the templates for the Hilbert-Schmidt tests.
 import copy
 from collections.abc import Iterable
 
+from pennylane.math import is_abstract
+
 # pylint: disable-msg=too-many-arguments
-import pennylane as qml
-from pennylane.operation import Operation
-from pennylane.queuing import QueuingManager
+from pennylane.operation import Operation, Operator
+from pennylane.ops import CNOT, Hadamard, QubitUnitary
+from pennylane.queuing import QueuingManager, apply
 from pennylane.typing import TensorLike
+from pennylane.wires import Wires
 
 
 class HilbertSchmidt(Operation):
@@ -106,8 +109,8 @@ class HilbertSchmidt(Operation):
     @classmethod
     def _primitive_bind_call(cls, V, U, **kwargs):
         # pylint: disable=arguments-differ
-        U = [U] if not hasattr(U, "__iter__") or qml.math.is_abstract(U) else U
-        V = [V] if not hasattr(V, "__iter__") or qml.math.is_abstract(V) else V
+        U = [U] if not hasattr(U, "__iter__") or is_abstract(U) else U
+        V = [V] if not hasattr(V, "__iter__") or is_abstract(V) else V
         num_v_ops = len(V)
         return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops, **kwargs)
 
@@ -123,14 +126,14 @@ class HilbertSchmidt(Operation):
     ) -> None:
 
         u_ops = (U,) if isinstance(U, Operation) else tuple(U)
-        if not all(isinstance(op, qml.operation.Operator) for op in u_ops):
+        if not all(isinstance(op, Operator) for op in u_ops):
             raise ValueError("The argument 'U' must be an Operator or an iterable of Operators.")
-        u_wires = qml.wires.Wires.all_wires([op.wires for op in u_ops])
+        u_wires = Wires.all_wires([op.wires for op in u_ops])
 
         v_ops = (V,) if isinstance(V, Operation) else tuple(V)
-        if not all(isinstance(op, qml.operation.Operator) for op in v_ops):
+        if not all(isinstance(op, Operator) for op in v_ops):
             raise ValueError("The argument 'V' must be an Operator or an iterable of Operators.")
-        v_wires = qml.wires.Wires.all_wires([op.wires for op in v_ops])
+        v_wires = Wires.all_wires([op.wires for op in v_ops])
 
         self._hyperparameters = {
             "U": u_ops,
@@ -140,10 +143,10 @@ class HilbertSchmidt(Operation):
         if len(u_wires) != len(v_wires):
             raise ValueError("U and V must have the same number of wires.")
 
-        if len(qml.wires.Wires.shared_wires([u_wires, v_wires])) != 0:
+        if len(Wires.shared_wires([u_wires, v_wires])) != 0:
             raise ValueError("Operations in U and V must act on distinct wires.")
 
-        total_wires = qml.wires.Wires(u_wires + v_wires)
+        total_wires = Wires(u_wires + v_wires)
         super().__init__(wires=total_wires, id=id)
 
     def map_wires(self, wire_map: dict):
@@ -182,7 +185,7 @@ class HilbertSchmidt(Operation):
         return clone
 
     @property
-    def _operators(self) -> list[qml.operation.Operator]:
+    def _operators(self) -> list[Operator]:
         """Flattened list of operators that compose this HilbertSchmidt operation."""
         return [*self._hyperparameters["V"], *self._hyperparameters["U"]]
 
@@ -197,17 +200,17 @@ class HilbertSchmidt(Operation):
     @staticmethod
     def compute_decomposition(
         *params: TensorLike,
-        wires: int | Iterable[int | str] | qml.wires.Wires,
+        wires: int | Iterable[int | str] | Wires,
         U: Operation | Iterable[Operation],
         V: Operation | Iterable[Operation],
     ) -> list[Operation]:
-        # pylint: disable=arguments-differ,unused-argument,too-many-positional-arguments
+        # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators."""
 
         u_ops = (U,) if isinstance(U, Operation) else tuple(U)
         v_ops = (V,) if isinstance(V, Operation) else tuple(V)
-        u_wires = qml.wires.Wires.all_wires([op.wires for op in u_ops])
-        v_wires = qml.wires.Wires.all_wires([op.wires for op in v_ops])
+        u_wires = Wires.all_wires([op.wires for op in u_ops])
+        v_wires = Wires.all_wires([op.wires for op in v_ops])
 
         n_wires = len(u_wires + v_wires)
         first_range = range(n_wires // 2)
@@ -233,7 +236,7 @@ class HilbertSchmidt(Operation):
         # using the QubitUnitary operation.
         for op_v in v_ops:
             mat = op_v.matrix().conjugate()
-            decomp_ops.append(qml.QubitUnitary(mat, wires=op_v.wires))
+            decomp_ops.append(QubitUnitary(mat, wires=op_v.wires))
 
         # CNOT second layer
         decomp_ops.extend(
@@ -327,7 +330,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     @staticmethod
     def compute_decomposition(
         *params: TensorLike,
-        wires: int | Iterable[int | str] | qml.wires.Wires,
+        wires: int | Iterable[int | str] | Wires,
         U: Operation | Iterable[Operation],
         V: Operation | Iterable[Operation],
     ) -> list[Operation]:
@@ -336,8 +339,8 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         u_ops = (U,) if isinstance(U, Operation) else tuple(U)
         v_ops = (V,) if isinstance(V, Operation) else tuple(V)
-        u_wires = qml.wires.Wires.all_wires([op.wires for op in u_ops])
-        v_wires = qml.wires.Wires.all_wires([op.wires for op in v_ops])
+        u_wires = Wires.all_wires([op.wires for op in u_ops])
+        v_wires = Wires.all_wires([op.wires for op in v_ops])
 
         n_wires = len(u_wires + v_wires)
         first_range = range(n_wires // 2)
@@ -351,8 +354,8 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         )
 
         # Unitary U
-        if qml.QueuingManager.recording():
-            decomp_ops.extend(qml.apply(op_u) for op_u in u_ops)
+        if QueuingManager.recording():
+            decomp_ops.extend(apply(op_u) for op_u in u_ops)
         else:
             decomp_ops.extend(u_ops)
 
@@ -361,7 +364,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         # apply the complex conjugate of each operation in the V tape and append it to the decomposition
         # using the QubitUnitary operation.
         decomp_ops.extend(
-            qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v_ops
+            QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v_ops
         )
         # Single qubit measurement
         decomp_ops.extend((CNOT(wires=[wires[0], wires[n_wires // 2]]), Hadamard(wires[0])))
