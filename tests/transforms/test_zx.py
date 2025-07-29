@@ -610,7 +610,7 @@ class TestReducerZX:
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+        (new_qs,), _ = qml.transforms.zx_full_reduce(qs)
 
         assert new_qs.operations == []
 
@@ -626,7 +626,7 @@ class TestReducerZX:
         ops = [qml.S(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+        (new_qs,), _ = qml.transforms.zx_full_reduce(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -643,7 +643,7 @@ class TestReducerZX:
         ops = [qml.T(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+        (new_qs,), _ = qml.transforms.zx_full_reduce(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -659,7 +659,7 @@ class TestReducerZX:
         ops = [qml.RX(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+        (new_qs,), _ = qml.transforms.zx_full_reduce(qs)
 
         assert len(new_qs.operations) == 3
 
@@ -687,7 +687,7 @@ class TestReducerZX:
         ops = [qml.RY(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+        (new_qs,), _ = qml.transforms.zx_full_reduce(qs)
 
         assert len(new_qs.operations) == 5
 
@@ -717,7 +717,7 @@ class TestReducerZX:
         ops = [qml.RZ(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.reduce_zx_calculus(qs)
+        (new_qs,), _ = qml.transforms.zx_full_reduce(qs)
 
         assert len(new_qs.operations) == 1
 
@@ -750,7 +750,7 @@ class TestReducerZX:
             qml.CNOT(wires=[1, 2])
             return qml.state()
 
-        reduced_circ = qml.transforms.reduce_zx_calculus(original_circ)
+        reduced_circ = qml.transforms.zx_full_reduce(original_circ)
 
         params = [3.2, -2.2]
         state1 = original_circ(*params)

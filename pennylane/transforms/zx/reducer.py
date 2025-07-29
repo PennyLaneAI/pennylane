@@ -29,7 +29,7 @@ except ModuleNotFoundError:
 
 
 @transform
-def reduce_zx_calculus(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Reduce the circuit applying simplification rules based on the ZX calculus.
 
     This transform returns an equivalent reduced version of the given quantum circuit, performing
@@ -74,7 +74,7 @@ def reduce_zx_calculus(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpro
 
     To simplify the circuit using the ZX calculus rules you can do:
 
-    >>> new_circuit = qml.transforms.reduce_zx_calculus(circuit)
+    >>> new_circuit = qml.transforms.zx_full_reduce(circuit)
     >>> print(qml.draw(new_circuit)(3.2, -2.2))
     0: ────╭Z──S───────────┤  State
     1: ──H─╰●──RZ(1.00)──H─┤  State
