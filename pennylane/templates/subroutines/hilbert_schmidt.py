@@ -104,14 +104,14 @@ class HilbertSchmidt(Operation):
     grad_method = None
 
     @classmethod
-    def _primitive_bind_call(cls, V, U):
+    def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
         # pylint: disable=arguments-differ
         # AbstractOperator cannot be imported from the capture module
         # because of a circular import, so we rely on this check instead.
         U = (U,) if not hasattr(U, "__iter__") or is_abstract(U) else U
         V = (V,) if not hasattr(V, "__iter__") or is_abstract(V) else V
         num_v_ops = len(V)
-        return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops)
+        return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops, **kwargs)
 
     def _flatten(self):
         data = (self.hyperparameters["V"], self.hyperparameters["U"])
@@ -255,10 +255,10 @@ class HilbertSchmidt(Operation):
 if HilbertSchmidt._primitive is not None:
 
     @HilbertSchmidt._primitive.def_impl
-    def _(*ops, num_v_ops):
+    def _(*ops, num_v_ops, **kwargs):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
-        return type.__call__(HilbertSchmidt, V, U)
+        return type.__call__(HilbertSchmidt, V, U, **kwargs)
 
 
 class LocalHilbertSchmidt(HilbertSchmidt):
@@ -390,7 +390,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 if LocalHilbertSchmidt._primitive is not None:
 
     @LocalHilbertSchmidt._primitive.def_impl
-    def _(*ops, num_v_ops):
+    def _(*ops, num_v_ops, **kwargs):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
-        return type.__call__(LocalHilbertSchmidt, V, U)
+        return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)
