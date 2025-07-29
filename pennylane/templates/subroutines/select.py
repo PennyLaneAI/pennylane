@@ -700,9 +700,45 @@ def _add_k_units(ops, controls, work_wires, k):
 # pylint: disable=unused-argument
 def _select_resources_partial_unary(op_reps, num_control_wires, partial):
     if not partial:
-        raise NotImplementedError(
-            "Resources for unary iteration with partial=False not implemented yet."
-        )
+
+        resources = defaultdict(int)
+        c = num_control_wires
+        K = len(op_reps)
+
+        resources[resource_rep(TemporaryAND)] += c - 1
+        num_first_bit_flipped = 0
+        for k, target_rep in enumerate(op_reps):
+            resources[
+                qml.decomposition.controlled_resource_rep(
+                    base_class=target_rep.op_type,
+                    base_params=target_rep.params,
+                    num_control_wires=1,
+                    num_work_wires=0,
+                    num_zero_control_values=0,
+                )
+            ] += 1
+            if k < K - 1:
+                first_flip_bit = list(np.binary_repr(k, width=c)[::-1]).index("0")
+                resources[qml.decomposition.adjoint_resource_rep(TemporaryAND)] += first_flip_bit
+                if first_flip_bit == c - 1:  # Most significant bit flips
+                    if num_first_bit_flipped == 0:
+                        resources[resource_rep(qml.X)] += 1
+                    resources[resource_rep(qml.CNOT)] += 1
+                    if num_first_bit_flipped == 0:
+                        resources[resource_rep(qml.X)] += 1
+                    elif num_first_bit_flipped == 1:
+                        resources[resource_rep(qml.CNOT)] += 1
+                    num_first_bit_flipped += 1
+                else:
+                    resources[resource_rep(qml.CNOT)] += 1
+
+                resources[resource_rep(TemporaryAND)] += first_flip_bit
+            else:
+                resources[qml.decomposition.adjoint_resource_rep(TemporaryAND)] += c - 1
+                resources[qml.decomposition.adjoint_resource_rep(TemporaryAND)] += 1
+
+        return dict(resources)
+
     num_ops = len(op_reps)
     counts = Counter()
 
@@ -745,7 +781,7 @@ def _unary_select_not_partial(ops, control, work_wires):
         aux_control.append(ctrl_wire)
         aux_control.append(work_wire)
     unary_triples = [aux_control[2 * i : 2 * i + 3] for i in range(c - 1)]
-    work_wires = work_wires[len(control) - 1 :]
+    work_wires = work_wires[c - 1 :]
 
     ops_decomp = [
         TemporaryAND(triple, control_values=((0, 0) if i == 0 else (1, 0)))
