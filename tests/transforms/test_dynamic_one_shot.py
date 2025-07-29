@@ -65,7 +65,7 @@ def test_get_legacy_capability():
 def test_parse_native_mid_circuit_measurements_unsupported_meas(measurement):
     circuit = qml.tape.QuantumScript([qml.RX(1.0, 0)], [measurement])
     with pytest.raises(TypeError, match="Native mid-circuit measurement mode does not support"):
-        parse_native_mid_circuit_measurements(circuit, [circuit], [np.empty((0,))])
+        parse_native_mid_circuit_measurements(circuit, [circuit], [np.empty((1, 1))])
 
 
 def test_postselection_error_with_wrong_device():
@@ -290,11 +290,21 @@ def generate_dummy_raw_results(measure_f, n_mcms, shots, postselect, interface):
         # When postselecting, we start by creating results for two shots as alternating indices
         # will have valid results.
         # Alternating tuple. Only the values at odd indices are valid
-        obs_res_two_shot = (
-            (qml.math.array([1.0, 0.0], like=interface), qml.math.array([0.0, 1.0], like=interface))
-            if measure_f == qml.probs
-            else (qml.math.array(1.0, like=interface), qml.math.array(0.0, like=interface))
-        )
+        if measure_f == qml.probs:
+            obs_res_two_shot = (
+                qml.math.array([1.0, 0.0], like=interface),
+                qml.math.array([0.0, 1.0], like=interface),
+            )
+        elif measure_f == qml.sample:
+            obs_res_two_shot = (
+                qml.math.array([1.0], like=interface),
+                qml.math.array([0.0], like=interface),
+            )
+        else:
+            obs_res_two_shot = (
+                qml.math.array(1.0, like=interface),
+                qml.math.array(0.0, like=interface),
+            )
         obs_res = obs_res_two_shot * (shots // 2)
         # Tuple of alternating 1s and 0s.
         postselect_res = (
@@ -405,7 +415,7 @@ class TestInterfaces:
             expected2 = [expected2 for _ in shots] if isinstance(shots, list) else expected2
 
         if use_interface_for_results:
-            expected_interface = "numpy" if interface in (None, "autograd") else interface
+            expected_interface = "numpy" if interface is None else interface
             assert qml.math.get_deep_interface(processed_results) == expected_interface
         else:
             assert qml.math.get_deep_interface(processed_results) == "numpy"
@@ -418,6 +428,7 @@ class TestInterfaces:
                 assert qml.math.allclose(r[1], e2)
         else:
             # Expected result is 2-list since we have two measurements in the tape
+            print(processed_results[0], expected1)
             assert qml.math.allclose(processed_results[0], expected1)
             assert qml.math.allclose(processed_results[1], expected2)
 
@@ -489,7 +500,7 @@ class TestInterfaces:
             expected2 = [expected2 for _ in shots] if isinstance(shots, list) else expected2
 
         if use_interface_for_results:
-            expected_interface = "numpy" if interface in (None, "autograd") else interface
+            expected_interface = "numpy" if interface is None else interface
             assert qml.math.get_deep_interface(processed_results) == expected_interface
         else:
             assert qml.math.get_deep_interface(processed_results) == "numpy"
