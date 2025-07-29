@@ -16,12 +16,14 @@ This module contains the Abstract Base Class for the next generation of devices.
 """
 
 import abc
+import warnings
 from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
 from typing import overload
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
@@ -187,6 +189,11 @@ class Device(abc.ABC):
     def __init__(self, wires=None, shots=None) -> None:
         # each instance should have its own Tracker.
         self.tracker = Tracker()
+        if shots is not None:
+            warnings.warn(
+                "Setting shots on device is deprecated. Please use `set_shots` on QNode instead.",
+                PennyLaneDeprecationWarning,
+            )
         self._shots = Shots(shots)
 
         if wires is not None:
