@@ -40,8 +40,8 @@
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
 
-
-* The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
+* The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`,
+  providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
   [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
 
@@ -83,9 +83,10 @@
 
 <h4>Resource-efficient decompositions 🔎</h4>
 
-* With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
-
+* With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules.
+  This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
@@ -278,7 +279,7 @@
 * Calling `QNode.update` no longer acts as if `set_shots` has been applied.
   [(#7881)](https://github.com/PennyLaneAI/pennylane/pull/7881)
 
-* Fixes attributes and types in the quantum dialect.
+* Fixed attributes and types in the quantum dialect.
   This allows for types to be inferred correctly when parsing.
   [(#7825)](https://github.com/PennyLaneAI/pennylane/pull/7825)
 
@@ -303,4 +304,4 @@ Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
 Jay Soni,
-Jake Zaia
+Jake Zaia.

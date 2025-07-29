@@ -55,25 +55,15 @@
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
   
   The included templates are:
-
   * :class:`~.Adder`
-    
   * :class:`~.ControlledSequence`
-  
   * :class:`~.ModExp`
-
   * :class:`~.Multiplier`
-
   * :class:`~.OutAdder`
-
   * :class:`~.OutMultiplier`
-
   * :class:`~.OutPoly`
-
   * :class:`~.Reflection`
-
   * :class:`~.TrotterProduct`
-
   * :class:`~.MPSPrep`
 
 <h4>OpenQASM-PennyLane interoperability</h4>
@@ -98,8 +88,8 @@
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
 
-
-* The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
+* The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`,
+  providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
   [(#7919)](https://github.com/PennyLaneAI/pennylane/pull/7919)
 
