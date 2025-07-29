@@ -313,8 +313,8 @@ from .optimization import (
     undo_swaps,
     pattern_matching,
     pattern_matching_optimization,
-    replace_controlled_iX_gate,
-    replace_relative_phase_toffoli,
+    match_controlled_iX_gate,
+    match_relative_phase_toffoli,
 )
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot

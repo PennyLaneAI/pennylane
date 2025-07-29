@@ -32,7 +32,7 @@ from .pattern_matching import pattern_matching_optimization
 
 
 @transform
-def replace_relative_phase_toffoli(
+def match_relative_phase_toffoli(
     tape: QuantumScript,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to replace 4-qubit relative phase Toffoli gates, given in
@@ -67,7 +67,7 @@ def replace_relative_phase_toffoli(
 
     >>> dev = qml.device('default.qubit', wires=4)
     >>> qnode = qml.QNode(qfunc, dev)
-    >>> lowered_qnode = replace_relative_phase_toffoli(qnode)
+    >>> lowered_qnode = match_relative_phase_toffoli(qnode)
     >>> print(qml.draw(lowered_qnode, level=0)())
         0: ─╭●─╭●─╭●─╭●─┤  <Z>
         1: ─├●─╰S─├●─├●─┤
@@ -144,7 +144,7 @@ def replace_relative_phase_toffoli(
 
 
 @transform
-def replace_controlled_iX_gate(
+def match_controlled_iX_gate(
     tape: QuantumScript, num_controls=1
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to replace controlled iX gates. An iX gate is a controlled-S and a Toffoli. The
@@ -179,7 +179,7 @@ def replace_controlled_iX_gate(
 
     >>> dev = qml.device('default.qubit', wires=4)
     >>> qnode = qml.QNode(qfunc, dev)
-    >>> lowered_qnode = replace_controlled_iX_gate(qnode, 2)
+    >>> lowered_qnode = match_controlled_iX_gate(qnode, 2)
     >>> print(qml.draw(lowered_qnode, level=0)())
         0: ─╭●─╭●─┤  <Z>
         1: ─├●─├●─┤
