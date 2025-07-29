@@ -112,6 +112,32 @@ class TestExecutionConfig:
 
         assert config.grad_on_execution is True
 
+    @pytest.mark.xfail(
+        reason="This test will fail until device_options and gradient_keyword_arguments are immutable.",
+        strict=True,
+    )
+    def test_dict_immutability(self):
+        """Test that the device_options and gradient_keyword_arguments are immutable."""
+        config = ExecutionConfig(
+            device_options={"hi": "bye"}, gradient_keyword_arguments={"foo": "bar"}
+        )
+
+        with pytest.raises(
+            TypeError,
+            match="'mappingproxy' object does not support item assignment",
+        ):
+            config.device_options["hi"] = "there"
+
+        with pytest.raises(
+            TypeError,
+            match="'mappingproxy' object does not support item assignment",
+        ):
+            config.gradient_keyword_arguments["foo"] = "buzz"
+
+        # Verify the original dictionaries were not changed
+        assert config.device_options == {"hi": "bye"}
+        assert config.gradient_keyword_arguments == {"foo": "bar"}
+
 
 class TestMCMConfig:
     """Tests for the MCMConfig class."""
