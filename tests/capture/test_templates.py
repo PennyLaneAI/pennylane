@@ -455,12 +455,14 @@ class TestModifiedTemplates:
 
     @pytest.mark.parametrize("template", [qml.HilbertSchmidt, qml.LocalHilbertSchmidt])
     def test_hilbert_schmidt(self, template):
-        """Test the primitive bind call of HilbertSchmidt."""
+        """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt."""
+
+        kwargs = {"num_v_ops": 1}
 
         def qfunc(v_params):
-            U = qml.Hadamard(0)
-            V = qml.RZ(v_params[0], wires=1)
-            template(V=V, U=U)
+            U = [qml.Hadamard(0)]
+            V = [qml.RZ(v_params[0], wires=1)]
+            template(V, U)
 
         v_params = jnp.array([0.1])
         # Validate inputs
@@ -474,7 +476,7 @@ class TestModifiedTemplates:
 
         eqn = jaxpr.eqns[-1]
         assert eqn.primitive == template._primitive
-        assert eqn.params == {}
+        assert eqn.params == kwargs
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 

@@ -104,10 +104,12 @@ class HilbertSchmidt(Operation):
         return data, tuple()
 
     @classmethod
-    def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
+    def _primitive_bind_call(cls, V, U, **kwargs):
         # pylint: disable=arguments-differ
-        # TODO: guard against V and U being iterables of Operators
-        return cls._primitive.bind(V, U, **kwargs)
+        U = [U] if not hasattr(U, "__iter__") or qml.math.is_abstract(U) else U
+        V = [V] if not hasattr(V, "__iter__") or qml.math.is_abstract(V) else V
+        num_v_ops = len(V)
+        return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, _) -> "HilbertSchmidt":
@@ -117,7 +119,7 @@ class HilbertSchmidt(Operation):
         self,
         V: Operation | Iterable[Operation],
         U: Operation | Iterable[Operation],
-        id: str | None = None,
+        **kwargs: dict[str, TensorLike] | None,
     ) -> None:
 
         u_ops = (U,) if isinstance(U, Operation) else tuple(U)
@@ -134,6 +136,8 @@ class HilbertSchmidt(Operation):
             "U": u_ops,
             "V": v_ops,
         }
+
+        print(f"u_ops: {u_ops}, v_ops: {v_ops}")  # Debugging line to check operators
 
         if len(u_wires) != len(v_wires):
             raise ValueError("U and V must have the same number of wires.")
@@ -241,6 +245,16 @@ class HilbertSchmidt(Operation):
         # Hadamard second layer
         decomp_ops.extend(qml.Hadamard(wires[i]) for i in first_range)
         return decomp_ops
+
+
+# pylint: disable=protected-access
+if HilbertSchmidt._primitive is not None:
+
+    @HilbertSchmidt._primitive.def_impl
+    def _(*ops, num_v_ops, **kwargs):
+        V = ops[:num_v_ops]
+        U = ops[num_v_ops:]
+        return type.__call__(HilbertSchmidt, V, U, num_v_ops=num_v_ops, **kwargs)
 
 
 class LocalHilbertSchmidt(HilbertSchmidt):
