@@ -257,6 +257,7 @@
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
   [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
+  [(#7977)](https://github.com/PennyLaneAI/pennylane/pull/7977)
 
 * `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
   `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
