@@ -88,6 +88,22 @@ def test_error_if_overridden_shot_vector():
         jax.make_jaxpr(partial(circuit, shots=(1, 1, 1)))()
 
 
+def test_error_if_no_device_wires():
+    """Test that a NotImplementedError is raised if the device does not provide wires."""
+
+    dev = qml.device("default.qubit", wires=None)
+
+    @qml.qnode(dev)
+    def circuit():
+        return qml.sample()
+
+    with pytest.raises(NotImplementedError, match="devices must specify wires"):
+        jax.make_jaxpr(circuit)()
+
+    with pytest.raises(NotImplementedError, match="devices must specify wires"):
+        circuit()
+
+
 def test_simple_qnode():
     """Test capturing a qnode for a simple use."""
 
