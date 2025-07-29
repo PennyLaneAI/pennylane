@@ -481,7 +481,9 @@ class TestDecompositionGraph:
         # resource efficient to use them on the CustomOp, so even where there are
         # enough work wires to use the more efficient decomposition for the LargeOp,
         # we should still choose the less efficient one to achieve better overall
-        # resource efficiency.
+        # resource efficiency. Because if we use one of the work wires to decompose
+        # the LargeOp, there won't be enough work wires left to further decompose
+        # the 2 CustomOp and it would result in significantly more gates.
         assert graph.decomposition(op, num_work_wires=2) is _decomp2_without_work_wire
         assert graph.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
 
