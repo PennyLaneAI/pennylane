@@ -505,7 +505,7 @@ class TestDecomposition:
         op = qml.IsingXY(phi, wires=[0, 1])
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated",
+            match="Providing 'num_steps' to qml.evolve and Evolution is deprecated",
         ):
             exp = qml.evolve(op.generator(), coeff=-phi, num_steps=num_steps)
 
@@ -719,7 +719,7 @@ class TestMiscMethods:
         """Test that providing `num_steps` raises a deprecation warning."""
         with pytest.warns(
             PennyLaneDeprecationWarning,
-            match="Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated",
+            match="Providing 'num_steps' to qml.evolve and Evolution is deprecated",
         ):
             base = qml.RX(1.2, wires=0)
             Evolution(base, 2.5, num_steps=5)
