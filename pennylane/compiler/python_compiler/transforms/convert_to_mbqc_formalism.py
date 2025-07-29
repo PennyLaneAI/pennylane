@@ -23,6 +23,7 @@ from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
 from xdsl.ir import SSAValue
+from xdsl.ir.core import OpResult
 from xdsl.rewriter import InsertPoint
 
 from ..dialects.mbqc import MeasureInBasisOp, MeasurementPlaneAttr, MeasurementPlaneEnum
@@ -199,11 +200,11 @@ class ConvertToMBQCFormalismPattern(
         rewriter.insert_op(measureOp, InsertPoint.before(op))
         return measureOp.results
 
-    def _measure_x_op(self, qubit, op, rewriter):
+    def _measure_x_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert X basis measure related operations before the op operation."""
         return self._insert_arbitary_basis_measure_op(0.0, "XY", qubit, op, rewriter)
 
-    def _measure_y_op(self, qubit, op, rewriter):
+    def _measure_y_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert Y basis measure related operations before the op operation."""
         return self._insert_arbitary_basis_measure_op(math.pi / 2, "XY", qubit, op, rewriter)
 
@@ -261,7 +262,9 @@ class ConvertToMBQCFormalismPattern(
         rewriter.insert_op(condOp, InsertPoint.before(op))
         return condOp.results
 
-    def _hadamard_measurements(self, graph_qubits_dict, op, rewriter):
+    def _hadamard_measurements(
+        self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter
+    ):
         """Insert measurements for a Hadamard gate and return measurement results and the result graph qubits"""
         m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
         m2, graph_qubits_dict[2] = self._measure_y_op(graph_qubits_dict[2], op, rewriter)
@@ -269,7 +272,7 @@ class ConvertToMBQCFormalismPattern(
         m4, graph_qubits_dict[4] = self._measure_y_op(graph_qubits_dict[4], op, rewriter)
         return [m1, m2, m3, m4], graph_qubits_dict
 
-    def _s_measurements(self, graph_qubits_dict, op, rewriter):
+    def _s_measurements(self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert measurements for a S gate and return measurement results and the result graph qubits"""
         m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
         m2, graph_qubits_dict[2] = self._measure_x_op(graph_qubits_dict[2], op, rewriter)
@@ -277,7 +280,7 @@ class ConvertToMBQCFormalismPattern(
         m4, graph_qubits_dict[4] = self._measure_x_op(graph_qubits_dict[4], op, rewriter)
         return [m1, m2, m3, m4], graph_qubits_dict
 
-    def _cnot_measurements(self, graph_qubits_dict, op, rewriter):
+    def _cnot_measurements(self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert measurements for a CNOT gate and return measurement results and the result graph qubits"""
         m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
         m2, graph_qubits_dict[2] = self._measure_y_op(graph_qubits_dict[2], op, rewriter)
@@ -295,7 +298,7 @@ class ConvertToMBQCFormalismPattern(
 
         return [m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14], graph_qubits_dict
 
-    def _rz_measurements(self, graph_qubits_dict, op, rewriter):
+    def _rz_measurements(self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert measurements for a RZ gate and return measurement results and the result graph qubits"""
         m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
         m2, graph_qubits_dict[2] = self._measure_x_op(graph_qubits_dict[2], op, rewriter)
@@ -305,7 +308,9 @@ class ConvertToMBQCFormalismPattern(
         m4, graph_qubits_dict[4] = self._measure_x_op(graph_qubits_dict[4], op, rewriter)
         return [m1, m2, m3, m4], graph_qubits_dict
 
-    def _rotxzx_measurements(self, graph_qubits_dict, op, rewriter):
+    def _rotxzx_measurements(
+        self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter
+    ):
         """Insert measurements for a RotXZX gate and return measurement results and the result graph qubits"""
         m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
         m2, graph_qubits_dict[2] = self._cond_insert_arbitary_basis_measure_op(
@@ -319,7 +324,18 @@ class ConvertToMBQCFormalismPattern(
         )
         return [m1, m2, m3, m4], graph_qubits_dict
 
-    def _queue_measurements(self, graph_qubits_dict, op, rewriter):
+    def _queue_measurements(
+        self, graph_qubits_dict: dict, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter
+    ):
+        """Add mid-measurement to the IR and return the measurement results and the updated graph qubit dict.
+        Args:
+            graph_qubits_dict (dict) : A dict stores all qubit info in a graph state.
+            op (CustomOp) : A gate operation object.
+            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
+
+        Returns:
+            A list of mid-measurement results and the updated graph qubit dict.
+        """
         match op.gate_name.data:
             case "Hadamard":
                 return self._hadamard_measurements(graph_qubits_dict, op, rewriter)
@@ -332,22 +348,57 @@ class ConvertToMBQCFormalismPattern(
             case "CNOT":
                 return self._cnot_measurements(graph_qubits_dict, op, rewriter)
 
-    def _insert_cond_byproduct_op(self, exp_index, gate_name, qubit, op, rewriter):
+    def _insert_cond_byproduct_op(
+        self,
+        parity_res: OpResult,
+        gate_name: str,
+        qubit: QubitType,
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """Insert byproduct operations.
+        Args:
+            parity_res (OpResult) : Parity check result.
+            gate_name (str) : The name of gate to be corrected.
+            qubit (QubitType) : The result auxiliary qubit to be corrected.
+            op (CustomOp) : A gate operation object.
+            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
+
+        Return:
+            The result auxiliary qubit.
+        """
         constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
         rewriter.insert_op(constantOneOp, InsertPoint.before(op))
-        cmpOp = arith.CmpiOp(exp_index, constantOneOp, "eq")
+        cmpOp = arith.CmpiOp(parity_res, constantOneOp, "eq")
         rewriter.insert_op(cmpOp, InsertPoint.before(op))
         in_qubit = qubit
         byproductOp = CustomOp(in_qubits=in_qubit, gate_name=gate_name)
         ture_region = [byproductOp, scf.YieldOp(byproductOp.results[0])]
         identityOp = CustomOp(in_qubits=in_qubit, gate_name="Identity")
+        # TODOs check if we can set false_region = [scf.YieldOp(in_qubit)]
         false_region = [identityOp, scf.YieldOp(identityOp.results[0])]
         condOp = IfOp(cmpOp, QubitType(), ture_region, false_region)
         # Insert condOp before op operations
         rewriter.insert_op(condOp, InsertPoint.before(op))
         return condOp.results
 
-    def _parity_check(self, mres, op, rewriter, add_const_one=False):
+    def _parity_check(
+        self,
+        mres: list[builtin.IntegerType],
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+        add_const_one: bool = False,
+    ):
+        """Add operations for parity check.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            op (CustomOp) : A gate operatio object.
+            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
+            add_const_one (bool) : Whether we need to add a const one to get the parity or not. Defaults to False.
+
+        Returns:
+            The result of parity check.
+        """
         prev_res = mres[0]
         addOp = None
         for i in range(1, len(mres)):
@@ -367,7 +418,23 @@ class ConvertToMBQCFormalismPattern(
         rewriter.insert_op(xorOp, InsertPoint.before(op))
         return xorOp.result
 
-    def _hadamard_corrections(self, mres, qubit, op, rewriter):
+    def _hadamard_corrections(
+        self,
+        mres: list[builtin.IntegerType],
+        qubit: QubitType,
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """Add corrections for the Hadamard gate.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            qubit (QubitType) : An auxiliary result qubit.
+            op (CustomOp) : A gate operatio object.
+            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
+
+        Returns:
+            The result auxiliary qubit.
+        """
         m1, m2, m3, m4 = mres
 
         x_parity = self._parity_check([m1, m3, m4], op, rewriter)
@@ -379,7 +446,23 @@ class ConvertToMBQCFormalismPattern(
 
         return res_aux_qubit
 
-    def _s_corrections(self, mres, qubit, op, rewriter):
+    def _s_corrections(
+        self,
+        mres: list[builtin.IntegerType],
+        qubit: QubitType,
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """Add corrections for the S gate.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            qubit (QubitType) : An auxiliary result qubit.
+            op (CustomOp) : A gate operatio object.
+            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
+
+        Returns:
+            The result auxiliary qubit.
+        """
         m1, m2, m3, m4 = mres
 
         x_parity = self._parity_check([m2, m4], op, rewriter)
@@ -390,7 +473,23 @@ class ConvertToMBQCFormalismPattern(
         )
         return res_aux_qubit
 
-    def _rot_corrections(self, mres, qubit, op, rewriter):
+    def _rot_corrections(
+        self,
+        mres: list[builtin.IntegerType],
+        qubit: QubitType,
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """Add corrections for the RotXZX or RZ gate.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            qubit (QubitType) : An auxiliary result qubit.
+            op (CustomOp) : A gate operatio object.
+            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
+
+        Returns:
+            The result auxiliary qubit.
+        """
         m1, m2, m3, m4 = mres
         x_parity = self._parity_check([m2, m4], op, rewriter)
         res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit, op, rewriter)
@@ -400,7 +499,23 @@ class ConvertToMBQCFormalismPattern(
         )
         return res_aux_qubit
 
-    def _cnot_corrections(self, mres, qubits, op, rewriter):
+    def _cnot_corrections(
+        self,
+        mres: list[builtin.IntegerType],
+        qubits: list[QubitType],
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """Add corrections for the CNOT gate.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            qubits (list[QubitType]) : A list of auxiliary result qubits.
+            op (CustomOp) : A gate operatio object.
+            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
+
+        Returns:
+            The result auxiliary qubits.
+        """
         m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14 = mres
         # Corrections for the control qubit
         x_parity = self._parity_check([m2, m3, m5, m6], op, rewriter)
@@ -422,8 +537,23 @@ class ConvertToMBQCFormalismPattern(
 
         return ctrl_aux_qubit, tgt_aux_qubit
 
-    def _queue_byprod_corrections(self, mres, qubits, op, rewriter):
-        """Correct the result auxiliary qubit."""
+    def _queue_byprod_corrections(
+        self,
+        mres: list[builtin.IntegerType],
+        qubits: QubitType | list[QubitType],
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """Add corrections for the result auxiliary qubit/s.
+        Args:
+            mres (list[builtin.IntegerType]): A list of the mid-measurement results.
+            qubits (QubitType | list[QubitType]) : An or a list of auxiliary result qubit.
+            op (CustomOp) : A gate operatio object.
+            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
+
+        Returns:
+            The result auxiliary qubits.
+        """
         match op.gate_name.data:
             case "Hadamard":
                 return self._hadamard_corrections(mres, qubits, op, rewriter)
@@ -436,11 +566,30 @@ class ConvertToMBQCFormalismPattern(
             case "CNOT":
                 return self._cnot_corrections(mres, qubits, op, rewriter)
 
-    def _swap_qb_in_reg_aux_res_qb(self, qb_in_reg, aux_res_qubit, op, rewriter):
+    def _swap_qb_in_reg_aux_res_qb(
+        self,
+        qb_in_reg: QubitType,
+        aux_res_qubit: QubitType,
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """Swap the target qubit in the global register with the corresonding result auxiliary qubit.
+        Args:
+            qb_in_reg (QubitType): A qubit in the global qubit register.
+            aux_res_qubit (QubitType): The result auxiliary qubit.
+            op (CustomOp) : A gate operatio object.
+            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
+
+        Return:
+            The result qubits, which are the swapping result of the qubit in the global register and the auxiliary result qubit.
+        """
         # NOTE: IdentityOp inserted here is a temporal solution to fix the issue that SWAPOp can't accept
         # `res_aux_qubit` as an in_qubits variable, i.e. SWAPOp = CustomOp(in_qubits=(target_qubit, res_aux_qubit), gate_name="SWAP").
         # The error message would be "| Error while applying pattern: 'NoneType' object has no attribute 'add_use'". Is it a upstream
         # issue or caused by the way how we define the `CustomOp` operation? Not sure why.
+        # NOTE: It is also worth noting here. The target qubit in the global register is measured and I assume that
+        # physically the target qubit can not be swapped with the result auxiliary qubit, right?
+        # TODOS: We need more clarifications for the questions above in the following steps.
         IdentityOp = CustomOp(in_qubits=(aux_res_qubit), gate_name="Identity")
         rewriter.insert_op(IdentityOp, InsertPoint.before(op))
 
@@ -451,7 +600,20 @@ class ConvertToMBQCFormalismPattern(
 
         return SWAPOp.results
 
-    def _deallocate_aux_qubits(self, graph_qubits_dict, qb_in_reg_key, op, rewriter):
+    def _deallocate_aux_qubits(
+        self,
+        graph_qubits_dict: dict,
+        qb_in_reg_key: list[int],
+        op: CustomOp,
+        rewriter: pattern_rewriter.PatternRewriter,
+    ):
+        """Deallocate the auxiliary qubits in the graph qubit dict.
+        Args:
+            graph_qubits_dict (dict) : A dict stores all qubits in a graph state.
+            qb_in_reg_key (list[int]) : A list of keys to qubits in the global register.
+            op (CustomOp) : A gate operatio object.
+            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
+        """
         # Deallocate aux_qubits
         for node in graph_qubits_dict:
             if node not in qb_in_reg_key:
