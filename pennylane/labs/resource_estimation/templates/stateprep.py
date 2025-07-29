@@ -26,7 +26,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 
 # pylint: disable=arguments-differ, unused-argument
 class ResourceUniformStatePrep(ResourceOperator):
-    r"""Resource class for preparing a uniform superposition.
+    r"""Resource class for preparing a uniform superposition
 
     .. math::
 
@@ -153,6 +153,7 @@ class ResourceAliasSampling(ResourceOperator):
 
     Resources:
         The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+        The circuit uses coherent alias sampling to prepare a state with the given coefficients.
 
     **Example**
 
