@@ -180,6 +180,10 @@
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
 
+* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
+  instantiation of resource operators which require resource operators as input.
+  [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
+
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 
@@ -302,6 +306,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
+  [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
 
 * Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
   PennyLane submodules.
