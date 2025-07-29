@@ -15,7 +15,7 @@
 Tests for the :mod:`pennylane.data.base.typing_util` functions.
 """
 
-from typing import Optional, Type, Union
+from typing import Optional, Union
 
 import pytest
 

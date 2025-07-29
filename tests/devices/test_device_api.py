@@ -14,7 +14,6 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-from typing import Optional
 
 import pytest
 
