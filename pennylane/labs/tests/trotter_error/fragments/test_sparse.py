@@ -210,7 +210,7 @@ def test_dot_product(x, y, expected):
     assert np.isclose(x.dot(y), expected)
 
 
-def test_fragment_equality():
+def test_fragment_equality_type_error():
     """Test equality comparison between SparseFragments"""
 
     mat1 = csr_matrix([[1, 0], [0, 1]])

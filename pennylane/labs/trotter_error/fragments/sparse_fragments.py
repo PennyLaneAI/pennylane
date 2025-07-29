@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Sequence
+from typing import Dict, List, Sequence
 
 import numpy as np
 import scipy as sp
@@ -112,7 +112,7 @@ class SparseFragment(Fragment):
         return complex(result.toarray().flatten()[0])
 
     def norm(self, params: Dict = None) -> float:
-        if params == None:
+        if params is None:
             params = {}
 
         ord = params.get("ord")
