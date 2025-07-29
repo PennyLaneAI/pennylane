@@ -40,6 +40,11 @@ def replace_relative_phase_toffoli(
     Multiple Control Toffoli Optimization", arXiv:1508.03273, arXiv, 2016.
     `doi:10.48550/arXiv.1508.03273 <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.93.022311>`_.
 
+    .. note::
+
+        Will also replace any subcircuits from the full pattern (composed of the 4-qubit relative phase Toffoli
+        and its decomposition) that can replaced by the rest of the pattern.
+
     Args:
         tape (QNode or QuantumScript or Callable): A quantum circuit.
 
@@ -145,6 +150,11 @@ def replace_controlled_iX_gate(
     """Quantum transform to replace controlled iX gates. An iX gate is a controlled-S and a Toffoli. The
     equivalency used is given in Giles, Brett, and Peter Selinger. "Exact Synthesis of Multiqubit Clifford+T Circuits",
     arXiv:1212.0506, arXiv, 2013. `doi:10.48550/arXiv.1212.0506 <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.87.032332>`_.
+
+    .. note::
+
+        Will also replace any subcircuits from the full pattern (composed of the controlled iX gate
+        and its decomposition) that can replaced by the rest of the pattern.
 
     Args:
         tape (QNode or QuantumScript or Callable): A quantum circuit.
