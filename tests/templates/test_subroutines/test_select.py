@@ -36,9 +36,9 @@ def test_standard_checks(num_ops, partial, work_wires):
     ops = [qml.PauliX(0) for _ in range(num_ops)]
     control = [1, 2, 3, 4]
 
-    op = qml.Select(ops, control, work_wires, partial=partial)
+    op = qml.Select(ops, control, work_wires, partial=not partial)
     assert op.target_wires == qml.wires.Wires(0)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=partial)
 
 
 def test_repr():
@@ -378,7 +378,7 @@ class TestSelect:
     def test_resources(self):
         """Test the resources property"""
 
-        assert qml.Select.resource_keys == frozenset(("op_reps", "num_control_wires"))
+        assert qml.Select.resource_keys == frozenset(("op_reps", "num_control_wires", "partial"))
 
         ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
 
@@ -396,9 +396,12 @@ class TestSelect:
 
         assert resources["op_reps"] == op_reps
 
-    def test_new_decomposition(self):
-        """Test that the decomposition is properly register."""
-
+    @pytest.mark.parametrize("partial", [False, True])
+    def test_new_decomposition_multi_control(self, partial):
+        """Test that the multi-control decomposition is properly registered in the new system.
+        This test uses two control qubits and four target operators, so that the Select
+        template is never a partial Select, and the kwarg ``partial`` has no effect.
+        """
         decomp = qml.list_decomps(qml.Select)[0]
 
         ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
@@ -410,7 +413,7 @@ class TestSelect:
         )
         control = (0, 1)
 
-        resource_obj = decomp.compute_resources(op_reps, num_control_wires=2)
+        resource_obj = decomp.compute_resources(op_reps, num_control_wires=2, partial=partial)
 
         assert resource_obj.num_gates == 4
 
@@ -425,7 +428,7 @@ class TestSelect:
         }
         assert resource_obj.gate_counts == expected_counts
 
-        op = qml.Select(ops, control)
+        op = qml.Select(ops, control, partial=partial)
         with qml.queuing.AnnotatedQueue() as q:
             decomp(*op.data, wires=op.wires, **op.hyperparameters)
 
@@ -435,6 +438,62 @@ class TestSelect:
         qml.assert_equal(decomp_ops[1], qml.ctrl(qml.X(3), (0, 1), control_values=[0, 1]))
         qml.assert_equal(decomp_ops[2], qml.ctrl(qml.X(4), (0, 1), control_values=[1, 0]))
         qml.assert_equal(decomp_ops[3], qml.ctrl(qml.Y(2), (0, 1), control_values=[1, 1]))
+
+    @pytest.mark.parametrize("partial", [False, True])
+    def test_new_decomposition_multi_control_partial(self, partial):
+        """Test that the multi-control decomposition is properly registered in the new system.
+        This test uses two control qubits and three target operators, so that the Select
+        template is a partial Select, and the kwarg ``partial`` has an effect.
+        """
+
+        decomp = qml.list_decomps(qml.Select)[0]
+
+        ops = [qml.X(2), qml.X(3), qml.SWAP([2, 3])]
+        op_reps = (
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.SWAP),
+        )
+        control = (0, 1)
+
+        resource_obj = decomp.compute_resources(op_reps, num_control_wires=2, partial=partial)
+
+        assert resource_obj.num_gates == 3
+
+        c_resource = qml.decomposition.resources.controlled_resource_rep
+
+        kwargs22 = {"base_params": {}, "num_control_wires": 2, "num_zero_control_values": 2}
+        kwargs21 = {"base_params": {}, "num_control_wires": 2, "num_zero_control_values": 1}
+        kwargs10 = {"base_params": {}, "num_control_wires": 1, "num_zero_control_values": 0}
+
+        if partial:
+            expected_counts = {
+                c_resource(base_class=qml.X, **kwargs22): 1,
+                c_resource(base_class=qml.X, **kwargs10): 1,
+                c_resource(base_class=qml.SWAP, **kwargs10): 1,
+            }
+        else:
+            expected_counts = {
+                c_resource(base_class=qml.X, **kwargs22): 1,
+                c_resource(base_class=qml.X, **kwargs21): 1,
+                c_resource(base_class=qml.SWAP, **kwargs21): 1,
+            }
+        assert resource_obj.gate_counts == expected_counts
+
+        op = qml.Select(ops, control, partial=partial)
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(*op.data, wires=op.wires, **op.hyperparameters)
+
+        decomp_ops = qml.tape.QuantumScript.from_queue(q).operations
+
+        if partial:
+            ctrls = [(0, 1), (1,), (0,)]
+            ctrl_vals = [[0, 0], [1], [1]]
+        else:
+            ctrls = [(0, 1)] * 3
+            ctrl_vals = [[0, 0], [0, 1], [1, 0]]
+        for decomp_op, op, ctrl, ctrl_val in zip(decomp_ops, ops, ctrls, ctrl_vals, strict=True):
+            qml.assert_equal(decomp_op, qml.ctrl(op, ctrl, control_values=ctrl_val))
 
 
 class TestErrorMessages:
@@ -657,25 +716,28 @@ num_controls_and_num_ops = (
 )
 
 
+@pytest.mark.parametrize("partial", [False, True])
 class TestUnaryIterator:
     """Tests for the auxiliary qubit-based unary iterator decomposition of Select."""
 
     @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
-    def test_no_ops(self, num_controls):
+    def test_no_ops(self, num_controls, partial):
         """Test that the unary iterator does not return any operators for an empty list
         of target operators."""
 
         control = list(range(num_controls))
         work = list(range(num_controls, 2 * num_controls - 1))
 
-        decomp = _select_decomp_partial_unary([], control=control, work_wires=work)
+        decomp = _select_decomp_partial_unary([], control=control, work_wires=work, partial=partial)
         assert decomp == []
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
-    def test_identity_with_basis_states(self, num_controls, num_ops):
+    def test_identity_with_basis_states(self, num_controls, num_ops, partial):
         """Test that the unary iterator is correct by asserting that the identity
         matrix is created by preparing the i-th computational basis state conditioned on the
         i-th basis state in the control qubits."""
+        if not partial:
+            pytest.xfail(reason="partial=False not supported with unary iteration yet.")
 
         dev = qml.device("default.qubit")
 
@@ -693,7 +755,7 @@ class TestUnaryIterator:
         def circuit():
             for w, angle in zip(control, angles, strict=True):
                 qml.RX(angle, w)
-            _select_decomp_partial_unary(ops, control=control, work_wires=work)
+            _select_decomp_partial_unary(ops, control=control, work_wires=work, partial=partial)
             return qml.probs(target)
 
         probs = circuit()
@@ -704,20 +766,28 @@ class TestUnaryIterator:
         [(9, 4, 1, "Can't use this decomposition")],
     )
     def test_operation_and_test_wires_error(
-        self, num_ops, control, work, msg_match
+        self, num_ops, control, work, msg_match, partial
     ):  # pylint: disable=too-many-arguments
         """Test that proper errors are raised"""
+
+        if not partial:
+            pytest.xfail(reason="partial=False not supported with unary iteration yet.")
 
         wires = qml.registers({"target": num_ops, "control": control, "work": work})
         ops = [qml.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
 
         with pytest.raises(ValueError, match=msg_match):
-            _select_decomp_partial_unary(ops, control=wires["control"], work_wires=wires["work"])
+            _select_decomp_partial_unary(
+                ops, control=wires["control"], work_wires=wires["work"], partial=partial
+            )
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
-    def test_comparison_with_select(self, num_controls, num_ops, seed):
+    def test_comparison_with_select(self, num_controls, num_ops, seed, partial):
         """Test that the unary iterator is correct by comparing it to the standard Select
         decomposition."""
+
+        if not partial:
+            pytest.xfail(reason="partial=False not supported with unary iteration yet.")
 
         angles = [list(map(int, np.binary_repr(i, width=num_controls))) for i in range(num_ops)]
         angles = np.pi * np.array(angles).T
@@ -736,8 +806,8 @@ class TestUnaryIterator:
         def circuit():
             for w, angle in zip(control, angles, strict=True):
                 qml.RX(angle, w)
-            _select_decomp_partial_unary(ops, control=control, work_wires=work)
-            qml.Select(adj_ops, control=control, work_wires=None)
+            _select_decomp_partial_unary(ops, control=control, work_wires=work, partial=partial)
+            qml.Select(adj_ops, control=control, work_wires=None, partial=partial)
             return qml.probs(target)
 
         probs = circuit()

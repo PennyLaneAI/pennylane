@@ -16,10 +16,8 @@ Contains the Select template.
 """
 
 import copy
-import itertools
 from collections import Counter, defaultdict
-
-import numpy as np
+from itertools import product
 
 import pennylane as qml
 from pennylane import math
@@ -69,7 +67,7 @@ def _partial_select(K, control):
         ]
         for j in range(K)
     ]
-    return [list(zip(*ctrl)) for ctrl in controls]
+    return [list(zip(*ctrl_)) for ctrl_ in controls]
 
 
 class Select(Operation):
@@ -115,7 +113,7 @@ class Select(Operation):
     **Example**
 
     >>> dev = qml.device('default.qubit', wires=4)
-    >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2,3])]
+    >>> ops = [qml.X(2), qml.X(3), qml.Y(2), qml.SWAP([2, 3])]
     >>> @qml.qnode(dev)
     >>> def circuit():
     >>>     qml.Select(ops, control=[0,1])
@@ -134,10 +132,10 @@ class Select(Operation):
     :math:`j>K-1`). Passing ``partial=True`` tells ``Select`` that this criterion is
     satisfied, and allows the decomposition to make use of the simplification:
 
-    >>> ops = [qml.X(2), qml.X(3), qml.SWAP([2,3])]
+    >>> ops = [qml.X(2), qml.X(3), qml.SWAP([2, 3])]
     >>> @qml.qnode(dev)
     >>> def circuit():
-    >>>     qml.Select(ops, control=[0,1], partial=True)
+    >>>     qml.Select(ops, control=[0, 1], partial=True)
     >>>     return qml.state()
     ...
     >>> print(qml.draw(circuit, level='device')())
@@ -493,17 +491,18 @@ class Select(Operation):
         """
         if partial:
             if len(ops) == 1:
-                qml.apply(ops[0])
+                if qml.queuing.QueuingManager.recording():
+                    qml.apply(ops[0])
                 return ops
             controls_and_values = _partial_select(len(ops), control)
             decomp_ops = [
-                qml.ctrl(op, ctrl, control_values=values)
-                for (ctrl, values), op in zip(controls_and_values, ops)
+                ctrl(op, ctrl_, control_values=values)
+                for (ctrl_, values), op in zip(controls_and_values, ops)
             ]
             return decomp_ops
 
-        states = itertools.product([0, 1], repeat=len(control))
-        return [qml.ctrl(op, control, control_values=state) for state, op in zip(states, ops)]
+        states = product([0, 1], repeat=len(control))
+        return [ctrl(op, control, control_values=state) for state, op in zip(states, ops)]
 
     @property
     def ops(self):
@@ -526,7 +525,7 @@ class Select(Operation):
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
 
 
-# Decomposition of Select using full + multi-control strategy
+# Decomposition of Select using multi-control strategy
 
 
 def _multi_controlled_rep(target_rep, num_control_wires, state):
@@ -539,26 +538,43 @@ def _multi_controlled_rep(target_rep, num_control_wires, state):
     )
 
 
-def _select_resources_full_mc(op_reps, num_control_wires):
-    state_iterator = itertools.product([0, 1], repeat=num_control_wires)
-
+def _select_resources_multi_control(op_reps, num_control_wires, partial):
     resources = defaultdict(int)
-    for rep, state in zip(op_reps, state_iterator):
-        resources[_multi_controlled_rep(rep, num_control_wires, state)] += 1
+    if partial:
+        if len(op_reps) == 1:
+            resources[op_reps[0]] += 1
+        else:
+            # Use dummy control values, we will only care about the length of the outputs
+            controls_and_states = _partial_select(len(op_reps), list(range(num_control_wires)))
+            for (ctrl_, state), rep in zip(controls_and_states, op_reps):
+                resources[_multi_controlled_rep(rep, len(ctrl_), state)] += 1
+    else:
+        state_iterator = product([0, 1], repeat=num_control_wires)
+
+        for state, rep in zip(state_iterator, op_reps):
+            resources[_multi_controlled_rep(rep, num_control_wires, state)] += 1
     return dict(resources)
 
 
 # pylint: disable=unused-argument
-@qml.register_resources(_select_resources_full_mc)
-def _select_decomp_full_mc(ops, control, work_wires, **_):
-    state_iterator = itertools.product([0, 1], repeat=len(control))
-    for state, op in zip(state_iterator, ops):
-        qml.ctrl(op, control, control_values=state)
+@qml.register_resources(_select_resources_multi_control)
+def _select_decomp_multi_control(ops, control, work_wires, partial, **_):
+
+    if partial:
+        if len(ops) == 1:
+            qml.apply(ops[0])
+        else:
+            controls_and_values = _partial_select(len(ops), control)
+            for (ctrl_, values), op in zip(controls_and_values, ops):
+                ctrl(op, ctrl_, control_values=values)
+    else:
+        for state, op in zip(product([0, 1], repeat=len(control)), ops):
+            ctrl(op, control, control_values=state)
 
 
-qml.add_decomps(Select, _select_decomp_full_mc)
+qml.add_decomps(Select, _select_decomp_multi_control)
 
-# Decomposition of Select using partial + unary iterator strategy
+# Decomposition of Select using unary iterator
 
 
 def _ceil(a):
@@ -731,65 +747,6 @@ def _select_resources_partial_unary(op_reps, num_control_wires, partial):
     return dict(counts)
 
 
-def _unary_select_not_partial(ops, control, work_wires):
-    c = len(control)
-    K = len(ops)
-    min_num_controls = max(_ceil_log(K), 1)
-    assert 1 < c >= min_num_controls
-    if len(work_wires) < c - 1:
-        raise ValueError(
-            f"Can't use this decomposition with less than {len(control) - 1} work wires for {len(control)} controls."
-        )
-    aux_control = [control[0]]
-    for ctrl_wire, work_wire in zip(control[1:], work_wires, strict=False):
-        aux_control.append(ctrl_wire)
-        aux_control.append(work_wire)
-    unary_triples = [aux_control[2 * i : 2 * i + 3] for i in range(c - 1)]
-    work_wires = work_wires[len(control) - 1 :]
-
-    ops_decomp = [
-        TemporaryAND(triple, control_values=((0, 0) if i == 0 else (1, 0)))
-        for i, triple in enumerate(unary_triples)
-    ]
-    num_first_bit_flipped = 0
-    for k, op in enumerate(ops):
-        # Apply target operator, always controlled on last unary iteration wire
-        ops_decomp.append(qml.ctrl(op, control=aux_control[-1]))
-        if k < K - 1:
-            first_flip_bit = list(np.binary_repr(k, width=c)[::-1]).index("0")
-            ops_decomp.extend(
-                [
-                    qml.adjoint(TemporaryAND(triple))
-                    for triple in unary_triples[c - 2 : c - 2 - first_flip_bit : -1]
-                ]
-            )
-            if first_flip_bit == c - 1:  # Most significant bit flips
-                c0, c1, c2 = unary_triples[0]
-                inter_ops = []
-                if num_first_bit_flipped == 0:
-                    inter_ops.append(qml.X(c0))
-                inter_ops.append(qml.CNOT([c0, c2]))
-                if num_first_bit_flipped == 0:
-                    inter_ops.append(qml.X(c0))
-                elif num_first_bit_flipped == 1:
-                    inter_ops.append(qml.CNOT([c1, c2]))
-                num_first_bit_flipped += 1
-            else:
-                inter_ops = [qml.CNOT(unary_triples[c - 2 - first_flip_bit])]
-
-            ops_decomp.extend(inter_ops)
-            ops_decomp.extend(
-                [TemporaryAND(triple) for triple in unary_triples[c - 1 - first_flip_bit : c - 1]]
-            )
-        else:
-            ops_decomp.extend(
-                [qml.adjoint(TemporaryAND(triple)) for triple in unary_triples[c - 2 : 0 : -1]]
-            )
-            ops_decomp.append(qml.adjoint(TemporaryAND(unary_triples[0], control_values=(0, 1))))
-
-    return ops_decomp
-
-
 @register_resources(_select_resources_partial_unary)
 def _select_decomp_partial_unary(ops, control, work_wires, partial, **_):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
@@ -802,14 +759,12 @@ def _select_decomp_partial_unary(ops, control, work_wires, partial, **_):
         This decomposition assumes that the state on the control wires does not have any overlap
         with :math:`|i\rangle` for :math:`i\geq K`.
     """
-    # Note that there might be a slightly improved implementation if a modified embedding is used
-    # during state preparation in a PrepSelPrep pattern.
 
     if len(ops) == 0:
         return []
 
     if not partial:
-        _unary_select_not_partial(ops, control, work_wires)
+        raise NotImplementedError("Unary iteration with partial=False not implemented yet.")
 
     min_num_controls = max(_ceil_log(len(ops)), 1)
     assert len(control) >= min_num_controls
