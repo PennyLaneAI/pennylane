@@ -15,10 +15,10 @@
 This module contains the template for performing basis transformation defined by a set of fermionic ladder operators.
 """
 
-import pennylane as qml
 from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
+from pennylane.ops import PhaseShift, SingleExcitation, cond
 from pennylane.wires import WiresLike
 
 
@@ -134,7 +134,7 @@ class BasisRotation(Operation):
 
     @property
     def resource_params(self) -> dict:
-        return {"dim": qml.math.shape(self.data[0])[0]}
+        return {"dim": math.shape(self.data[0])[0]}
 
     @property
     def num_params(self):
@@ -181,18 +181,18 @@ class BasisRotation(Operation):
         phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
 
         for idx, phase in enumerate(phase_list):
-            op_list.append(qml.PhaseShift(math.angle(phase), wires=wires[idx]))
+            op_list.append(PhaseShift(math.angle(phase), wires=wires[idx]))
 
         for grot_mat, indices in givens_list:
             theta = math.arccos(math.real(grot_mat[1, 1]))
             phi = math.angle(grot_mat[0, 0])
 
             op_list.append(
-                qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
+                SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
             )
 
             if math.is_abstract(phi) or not math.isclose(phi, 0.0):
-                op_list.append(qml.PhaseShift(phi, wires=wires[indices[0]]))
+                op_list.append(PhaseShift(phi, wires=wires[indices[0]]))
 
         return op_list
 
@@ -200,25 +200,25 @@ class BasisRotation(Operation):
 def _basis_rotation_decomp_resources(dim):
     se_count = dim * (dim - 1) / 2
     ps_count = dim + se_count
-    return {qml.PhaseShift: ps_count, qml.SingleExcitation: se_count}
+    return {PhaseShift: ps_count, SingleExcitation: se_count}
 
 
 @register_resources(_basis_rotation_decomp_resources)
 def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
     def _phase_shift(_phi, _wires):
-        qml.PhaseShift(_phi, wires=_wires)
+        PhaseShift(_phi, wires=_wires)
 
     phase_list, givens_list = math.decomposition.givens_decomposition(unitary_matrix)
 
     for idx, phase in enumerate(phase_list):
-        qml.PhaseShift(math.angle(phase), wires=wires[idx])
+        PhaseShift(math.angle(phase), wires=wires[idx])
 
     for grot_mat, indices in givens_list:
         theta = math.arccos(math.real(grot_mat[1, 1]))
         phi = math.angle(grot_mat[0, 0])
-        qml.SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
-        qml.cond(~math.allclose(phi, 0.0), _phase_shift)(phi, wires[indices[0]])
+        SingleExcitation(2 * theta, wires=[wires[indices[0]], wires[indices[1]]])
+        cond(~math.allclose(phi, 0.0), _phase_shift)(phi, wires[indices[0]])
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)

@@ -301,6 +301,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
+  [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
+
 * Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
   PennyLane submodules.
   [(#7959)](https://github.com/PennyLaneAI/pennylane/pull/7959)
