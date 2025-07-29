@@ -342,13 +342,24 @@ def _qrom_decomposition_resources(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, num_bitstrings)
 
-    # TODO: all failing test cases seem to be due to how Prods are used in reqource params or
-    # how they don't have resource_params defined themselves. Wait for David and then refactor this.
-    new_ops = {
-        qml.ops.op_math.Prod: (
-            num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
-        )
-    }
+    ops = [resource_rep(qml.BasisEmbedding, num_wires=num_target_wires) for _ in num_bitstrings]
+    ops_identity = ops + [qml.I] * int(
+        2 ** num_control_wires - num_bitstrings
+    )
+
+    n_columns = (
+        num_bitstrings // depth
+        if num_bitstrings % depth == 0
+        else num_bitstrings // depth + 1
+    )
+
+    # New ops block
+    new_ops = Counter()
+    for i in range(n_columns):
+        column_ops = Counter()
+        for j in range(depth):
+            column_ops[ops_identity[i * depth + j]] += 1
+        new_ops[resource_rep(qml.ops.op_math.Prod, resources=column_ops)] += 1
 
     # Select block
     num_control_select_wires = int(math.ceil(math.log2(2**num_control_wires / depth)))
@@ -360,17 +371,17 @@ def _qrom_decomposition_resources(
 
     # Swap block
     num_control_swap_wires = num_control_wires - num_control_select_wires
-    resources = Counter({})
+    resources = Counter()
     for ind in range(num_control_swap_wires):
-        resources[
-            controlled_resource_rep(
-                base_class=qml.ops.op_math.Prod,
-                base_params={},
-                num_control_wires=1,
-            )
-        ] += (
-            2**ind
-        )
+        for j in range(2 ** ind):
+            swaps = {qml.SWAP: min((j + 1) * num_target_wires - (j) * num_target_wires, (j + 2 ** (ind + 1)) * num_target_wires - (j + 2 ** ind) * num_target_wires)}
+            resources[
+                controlled_resource_rep(
+                    base_class=qml.ops.op_math.Prod,
+                    base_params={resources: swaps},
+                    num_control_wires=1,
+                )
+            ] += 1
 
     if not clean or depth == 1:
         resources.update(select_ops)
