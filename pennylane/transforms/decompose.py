@@ -821,7 +821,7 @@ def decompose(
     return (tape,), null_postprocessing
 
 
-def _operator_decomposition_gen(
+def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
     op: Operator,
     acceptance_function: Callable[[Operator], bool],
     max_expansion: int | None = None,
@@ -841,7 +841,7 @@ def _operator_decomposition_gen(
         yield op
     elif isinstance(op, (Allocate, Deallocate)):
         yield op
-    elif decomp_graph is not None and decomp_graph.is_solved_for(op):
+    elif decomp_graph is not None and decomp_graph.is_solved_for(op, num_available_work_wires):
         op_rule = decomp_graph.decomposition(op, num_work_wires=num_available_work_wires)
         with queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
