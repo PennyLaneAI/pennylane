@@ -139,7 +139,7 @@ class ConvertToMBQCFormalismPattern(
         """
         graph = _generate_graph(op.gate_name.data)
 
-        graph_qubits_dict = dict()
+        graph_qubits_dict = {}
 
         nodes = graph.nodes
         edges = graph.edges
@@ -177,7 +177,7 @@ class ConvertToMBQCFormalismPattern(
         qubit: QubitType,
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
-    ):
+    ): # pylint: disable=too-many-arguments, too-many-positional-arguments
         """Insert arbitary basis measure related operations before the op operation.
         Args:
             angle (float) : Angle of the measurement basis.
@@ -216,7 +216,7 @@ class ConvertToMBQCFormalismPattern(
         qubit: QubitType,
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
-    ):
+    ): # pylint: disable=too-many-arguments, too-many-positional-arguments
         """
         Insert a conditional arbitary basis measurement operation based on a previous measurement result.
         Args:
@@ -355,7 +355,7 @@ class ConvertToMBQCFormalismPattern(
         qubit: QubitType,
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
-    ):
+    ): # pylint: disable=too-many-arguments, too-many-positional-arguments
         """Insert byproduct operations.
         Args:
             parity_res (OpResult) : Parity check result.
