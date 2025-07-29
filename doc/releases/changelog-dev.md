@@ -46,6 +46,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
+  with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. This uses the fact that
+  no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant :math:`\pm 1`.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows 
   that include these templates to be decomposed in a resource-efficient and performant
@@ -102,6 +107,12 @@
 
 <h4>Other improvements</h4>
 
+* The matrix factorization using :func:`~.math.decomposition.givens_decomposition` has
+  been optimized to factor out the redundant sign in the diagonal phase matrix for the
+  real-valued (orthogonal) rotation matrices. For example, in case the determinant of a matrix is
+  :math:`-1`, only a single element of the phase matrix is required.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 * The error message raised when using Python compiler transforms with :func:`pennylane.qjit` has been updated
   with suggested fixes.
   [(#7916)](https://github.com/PennyLaneAI/pennylane/pull/7916)
@@ -109,7 +120,6 @@
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
-
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
@@ -363,6 +373,11 @@
 
 <h3>Documentation 📝</h3>
 
+* The theoretical background section of :class:`~.BasisRotation` has been extended to explain
+  the underlying Lie group/algebra homomorphism between the (dense) rotation matrix and the
+  performed operations on the target qubits.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 * The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
   [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
 
@@ -416,4 +431,5 @@ Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
 Jay Soni,
-Jake Zaia
+Jake Zaia,
+David Wierichs,
