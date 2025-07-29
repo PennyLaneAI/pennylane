@@ -27,6 +27,32 @@ from pennylane.compiler.python_compiler.transforms import (
     ConvertToMBQCFormalismPass,
     convert_to_mbqc_formalism_pass,
 )
+from pennylane.ftqc import RotXZX
+
+# TODOs: check if the following list can be dropped using the feature added in https://github.com/PennyLaneAI/catalyst/pull/1942
+mbqc_pipeline = [
+    (
+        "default-pipeline",
+        [
+            "enforce-runtime-invariants-pipeline",
+            "hlo-lowering-pipeline",
+            "quantum-compilation-pipeline",
+            "bufferization-pipeline",
+        ],
+    ),
+    (
+        "mbqc-pipeline",
+        [
+            "convert-mbqc-to-llvm",
+        ],
+    ),
+    (
+        "llvm-dialect-lowering-pipeline",
+        [
+            "llvm-dialect-lowering-pipeline",
+        ],
+    ),
+]
 
 
 class TestConvertToMBQCFormalismPass:
@@ -346,3 +372,56 @@ class TestConvertToMBQCFormalismPass:
 
         pipeline = (ConvertToMBQCFormalismPass(),)
         run_filecheck(program, pipeline)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_gates_in_mbqc_gate_set_lowering(self, run_filecheck_qjit):
+        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit."""
+        dev = qml.device("null.qubit", wires=1000, shots=100000)
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+            pipelines=mbqc_pipeline,
+            autograph=True,
+        )
+        @convert_to_mbqc_formalism_pass
+        @qml.qnode(dev)
+        def circuit():
+            # CHECK-NOT: quantum.custom "CNOT"()
+            # CHECK-NOT: quantum.custom "S"()
+            # CHECK-NOT: quantum.custom "RZ"()
+            # CHECK-NOT: quantum.custom "RotXZX"()
+            for i in range(1000):
+                qml.H(i)
+                qml.S(i)
+                RotXZX(0.1, 0.2, 0.3, wires=[i])
+                qml.RZ(phi=0.1, wires=[i])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Z(wires=0))
+
+        run_filecheck_qjit(circuit)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_gates_in_mbqc_gate_set_e2e(self, run_filecheck_qjit):
+        """Test that the convert_to_mbqc_formalism_pass end to end on null.qubit."""
+        dev = qml.device("null.qubit", wires=1000, shots=100000)
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+            pipelines=mbqc_pipeline,
+            autograph=True,
+        )
+        @convert_to_mbqc_formalism_pass
+        @qml.qnode(dev)
+        def circuit():
+            for i in range(1000):
+                qml.H(i)
+                qml.S(i)
+                RotXZX(0.1, 0.2, 0.3, wires=[i])
+                qml.RZ(phi=0.1, wires=[i])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Z(wires=0))
+
+        res = circuit()
+        assert res == 0.0
