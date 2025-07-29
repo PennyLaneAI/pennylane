@@ -188,6 +188,10 @@
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
 
+* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
+  instantiation of resource operators which require resource operators as input.
+  [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
+
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 
@@ -311,6 +315,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
+  [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
+
 * Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
   PennyLane submodules.
   [(#7959)](https://github.com/PennyLaneAI/pennylane/pull/7959)
@@ -384,6 +391,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug in :func:`~.matrix` where an operator's
+  constituents were incorrectly queued if its decomposition was requested.
+  [(#7975)](https://github.com/PennyLaneAI/pennylane/pull/7975)
+
 * An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
   [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
 
@@ -426,4 +437,5 @@ Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
 Jay Soni,
+David Wierichs,
 Jake Zaia
