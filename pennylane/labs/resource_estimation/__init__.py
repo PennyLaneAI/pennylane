@@ -145,8 +145,6 @@ State Preparation:
 
     ~ResourceUniformStatePrep
     ~ResourceAliasSampling
-    ~ResourceUniformStatePrep
-    ~ResourceAliasSampling
 
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~

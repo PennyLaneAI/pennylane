@@ -28,12 +28,13 @@ from pennylane.labs.resource_estimation.resource_operator import (
 class ResourceUniformStatePrep(ResourceOperator):
     r"""Resource class for preparing a uniform superposition.
 
-    .. math:
+    .. math::
 
         \frac{1}{\sqrt{2^{k}L}} \sum_{l=0}^{2^{k}L-1} |l\rangle
 
     where :math:`L` is odd.
-    This operation uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states, where :math:`l` is not a power of 2.
+    This operation uses amplitude amplification to prepare a uniform superposition over :math:`l`
+    basis states, where :math:`l` is not a power of 2.
 
     Args:
         num_states (int): the number of states in the uniform superposition
@@ -41,7 +42,8 @@ class ResourceUniformStatePrep(ResourceOperator):
 
     Resources:
         The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
-        The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states, where :math:`l = 2^{k}L`.
+        The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l`
+        basis states, where :math:`l = 2^{k}L`.
 
     **Example**
 
@@ -100,7 +102,8 @@ class ResourceUniformStatePrep(ResourceOperator):
 
         Resources:
             The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
-            The circuit uses amplitude amplification to prepare a uniform superposition over l basis states, where :math:`l = 2^{k}L`.
+            The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l` basis
+            states, where :math:`l = 2^{k}L`.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
