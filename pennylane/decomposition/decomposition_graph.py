@@ -95,8 +95,15 @@ class _OperatorNode:
             return hash((self.op, self.num_work_wire_not_available))
         return hash(self.op)
 
-    def __eq__(self, other) -> bool:
-        return hash(self) == hash(other)
+    def __eq__(self, other) -> bool:  # pragma: no cover
+        if not isinstance(other, _OperatorNode):
+            return False
+        if self.work_wire_dependent:
+            return (
+                self.op == other.op
+                and self.num_work_wire_not_available == other.num_work_wire_not_available
+            )
+        return self.op == other.op
 
 
 @dataclass
