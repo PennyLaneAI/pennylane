@@ -58,10 +58,9 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     .. code-block:: python3
 
         import pennylane as qml
+        from pennylane.transforms import zx_full_reduce
 
-        dev = qml.device("default.qubit")
-
-        @qml.qnode(dev)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(x, y):
             qml.T(wires=0)
             qml.Hadamard(wires=0)
@@ -74,10 +73,10 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     To simplify the circuit using the ZX calculus rules you can do:
 
-    >>> new_circuit = qml.transforms.zx_full_reduce(circuit)
+    >>> new_circuit = zx_full_reduce(circuit)
     >>> print(qml.draw(new_circuit)(3.2, -2.2))
-    0: ────╭Z──S───────────┤  State
-    1: ──H─╰●──RZ(1.00)──H─┤  State
+    0: ──S─╭●─────────────────┤  State
+    1: ────╰X──H──RZ(1.00)──H─┤  State
 
     You can check that the final state is matching the one returned by the original circuit by:
 
@@ -107,9 +106,14 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         )
 
     zx_graph = to_zx(tape)
-    pyzx.full_reduce(zx_graph)
-    zx_graph = pyzx.extract_circuit(zx_graph).to_graph()
-    qscript = from_zx(zx_graph)
+
+    pyzx.hsimplify.from_hypergraph_form(zx_graph)
+    pyzx.simplify.full_reduce(zx_graph)
+    zx_circ = pyzx.extract_circuit(zx_graph)
+    zx_circ = pyzx.basic_optimization(zx_circ)
+
+    qscript = from_zx(zx_circ.to_graph())
+
     new_tape = tape.copy(operations=qscript.operations)
 
     def null_postprocessing(results):
