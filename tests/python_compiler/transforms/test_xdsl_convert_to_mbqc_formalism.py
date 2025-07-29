@@ -329,3 +329,20 @@ class TestConvertToMBQCFormalismPass:
 
         pipeline = (ConvertToMBQCFormalismPass(),)
         run_filecheck(program, pipeline)
+
+    def test_cnot_gate(self, run_filecheck):
+        """Test for lowering a CNOT gate to a MBQC formalism."""
+        program = """
+            func.func @test_func() {
+                // CHECK: [[q1:%.+]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q9:%.+]] = "test.op"() : () -> !quantum.bit
+                %0 = "test.op"() : () -> !quantum.bit
+                %1 = "test.op"() : () -> !quantum.bit
+                // CHECK-NOT: quantum.custom "CNOT"()
+                %2, %3 = quantum.custom "CNOT"() %0, %1 : !quantum.bit, !quantum.bit
+                return
+            }
+        """
+
+        pipeline = (ConvertToMBQCFormalismPass(),)
+        run_filecheck(program, pipeline)
