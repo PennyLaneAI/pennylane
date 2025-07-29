@@ -455,17 +455,18 @@ class TestDecompositionGraph:
 
         graph = DecompositionGraph(
             [op, small_op],
-            gate_set={qml.Toffoli, qml.CRot},
+            gate_set={qml.Toffoli, qml.RZ, qml.RY, qml.CNOT},
             alt_decomps={
                 CustomOp: [_decomp_without_work_wire, _decomp_with_work_wire],
                 LargeOp: [_decomp2_without_work_wire, _decomp2_with_work_wire],
             },
         )
 
-        # 1 node for LargerOp, 2 nodes for CustomOp, 1 for Toffoli, 1 for CRot, 1 dummy starting
+        # 1 node for LargerOp, 2 nodes for CustomOp, 1 for Toffoli, 1 for CRot, 1 for RZ,
+        # 1 for RY, 1 for CNOT, and 1 dummy starting node, 1 decomposition from CRot,
         # node, 2 decomposition nodes from LargerOp, 2 decompositions from each CustomOp
-        assert len(graph._graph.nodes()) == 12
-        assert len(graph._graph.edges()) == 20
+        assert len(graph._graph.nodes()) == 16
+        assert len(graph._graph.edges()) == 26
 
         graph.solve(num_work_wires=0)
         assert graph.decomposition(op) is _decomp2_without_work_wire
