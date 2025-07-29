@@ -14,7 +14,7 @@
 r"""
 Contains the ArbitraryUnitary template.
 """
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import PauliRot
 
@@ -97,7 +97,7 @@ class ArbitraryUnitary(Operation):
     ndim_params = (1,)
 
     def __init__(self, weights, wires, id=None):
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
         dim = 4 ** len(wires) - 1
         if len(shape) not in (1, 2) or shape[-1] != dim:
             raise ValueError(
