@@ -232,6 +232,228 @@ class TestResourceSemiAdder:
         assert op.resource_decomp(**op.resource_params) == expected_res
 
 
+class TestResourceQFT:
+    """Test the ResourceQFT class."""
+
+    @pytest.mark.parametrize("num_wires", (1, 2, 3, 4))
+    def test_resource_params(self, num_wires):
+        """Test that the resource params are correct."""
+        op = plre.ResourceQFT(num_wires)
+        assert op.resource_params == {"num_wires": num_wires}
+
+    @pytest.mark.parametrize("num_wires", (1, 2, 3, 4))
+    def test_resource_rep(self, num_wires):
+        """Test that the compressed representation is correct."""
+        expected = plre.CompressedResourceOp(plre.ResourceQFT, {"num_wires": num_wires})
+        assert plre.ResourceQFT.resource_rep(num_wires=num_wires) == expected
+
+    @pytest.mark.parametrize(
+        "num_wires, expected_res",
+        (
+            (
+                1,
+                [GateCount(resource_rep(plre.ResourceHadamard))],
+            ),
+            (
+                2,
+                [
+                    GateCount(resource_rep(plre.ResourceHadamard), 2),
+                    GateCount(resource_rep(plre.ResourceSWAP)),
+                    GateCount(resource_rep(plre.ResourceControlledPhaseShift)),
+                ],
+            ),
+            (
+                3,
+                [
+                    GateCount(resource_rep(plre.ResourceHadamard), 3),
+                    GateCount(resource_rep(plre.ResourceSWAP)),
+                    GateCount(resource_rep(plre.ResourceControlledPhaseShift), 3),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, num_wires, expected_res):
+        """Test that the resources are correct."""
+        assert plre.ResourceQFT.resource_decomp(num_wires) == expected_res
+
+    @pytest.mark.parametrize(
+        "num_wires, expected_res",
+        (
+            (
+                1,
+                [GateCount(resource_rep(plre.ResourceHadamard))],
+            ),
+            (
+                2,
+                [
+                    GateCount(resource_rep(plre.ResourceHadamard), 2),
+                    GateCount(resource_rep(plre.ResourceSWAP)),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourceSemiAdder.resource_rep(max_register_size=1),
+                            num_ctrl_wires=1,
+                            num_ctrl_values=0,
+                        )
+                    ),
+                ],
+            ),
+            (
+                3,
+                [
+                    GateCount(resource_rep(plre.ResourceHadamard), 3),
+                    GateCount(resource_rep(plre.ResourceSWAP)),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourceSemiAdder.resource_rep(max_register_size=1),
+                            num_ctrl_wires=1,
+                            num_ctrl_values=0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourceSemiAdder.resource_rep(max_register_size=2),
+                            num_ctrl_wires=1,
+                            num_ctrl_values=0,
+                        )
+                    ),
+                ],
+            ),
+        ),
+    )
+    def test_resources_phasegrad(self, num_wires, expected_res):
+        """Test that the resources are correct for phase gradient method."""
+        assert plre.ResourceQFT.phase_grad_resource_decomp(num_wires) == expected_res
+
+
+class TestResourceAQFT:
+    """Test the ResourceAQFT class."""
+
+    @pytest.mark.parametrize(
+        "num_wires, order",
+        (
+            (3, 2),
+            (3, 3),
+            (4, 2),
+            (4, 3),
+            (5, 5),
+        ),
+    )
+    def test_resource_params(self, num_wires, order):
+        """Test that the resource params are correct."""
+        op = plre.ResourceAQFT(order, num_wires)
+        assert op.resource_params == {"order": order, "num_wires": num_wires}
+
+    @pytest.mark.parametrize(
+        "num_wires, order",
+        (
+            (3, 2),
+            (3, 3),
+            (4, 2),
+            (4, 3),
+            (5, 5),
+        ),
+    )
+    def test_resource_rep(self, order, num_wires):
+        """Test that the compressed representation is correct."""
+        expected = plre.CompressedResourceOp(
+            plre.ResourceAQFT, {"order": order, "num_wires": num_wires}
+        )
+        assert plre.ResourceAQFT.resource_rep(order=order, num_wires=num_wires) == expected
+
+    @pytest.mark.parametrize(
+        "num_wires, order, expected_res",
+        (
+            (
+                5,
+                1,
+                [
+                    GateCount(resource_rep(plre.ResourceHadamard), 5),
+                ],
+            ),
+            (
+                5,
+                3,
+                [
+                    GateCount(resource_rep(plre.ResourceHadamard), 5),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            base_cmpr_op=resource_rep(plre.ResourceS),
+                            num_ctrl_wires=1,
+                            num_ctrl_values=0,
+                        ),
+                        4,
+                    ),
+                    AllocWires(1),
+                    GateCount(resource_rep(plre.ResourceTempAND), 1),
+                    GateCount(plre.ResourceSemiAdder.resource_rep(1)),
+                    GateCount(resource_rep(plre.ResourceHadamard)),
+                    GateCount(
+                        plre.ResourceAdjoint.resource_rep(resource_rep(plre.ResourceTempAND)),
+                        1,
+                    ),
+                    FreeWires(1),
+                    AllocWires(2),
+                    GateCount(resource_rep(plre.ResourceTempAND), 2 * 2),
+                    GateCount(plre.ResourceSemiAdder.resource_rep(2), 2),
+                    GateCount(resource_rep(plre.ResourceHadamard), 2),
+                    GateCount(
+                        plre.ResourceAdjoint.resource_rep(resource_rep(plre.ResourceTempAND)),
+                        2 * 2,
+                    ),
+                    FreeWires(2),
+                    GateCount(resource_rep(plre.ResourceSWAP), 2),
+                ],
+            ),
+            (
+                5,
+                5,
+                [
+                    GateCount(resource_rep(plre.ResourceHadamard), 5),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            base_cmpr_op=resource_rep(plre.ResourceS),
+                            num_ctrl_wires=1,
+                            num_ctrl_values=0,
+                        ),
+                        4,
+                    ),
+                    AllocWires(1),
+                    GateCount(resource_rep(plre.ResourceTempAND), 1),
+                    GateCount(plre.ResourceSemiAdder.resource_rep(1)),
+                    GateCount(resource_rep(plre.ResourceHadamard)),
+                    GateCount(
+                        plre.ResourceAdjoint.resource_rep(resource_rep(plre.ResourceTempAND)),
+                        1,
+                    ),
+                    FreeWires(1),
+                    AllocWires(2),
+                    GateCount(resource_rep(plre.ResourceTempAND), 2),
+                    GateCount(plre.ResourceSemiAdder.resource_rep(2)),
+                    GateCount(resource_rep(plre.ResourceHadamard)),
+                    GateCount(
+                        plre.ResourceAdjoint.resource_rep(resource_rep(plre.ResourceTempAND)),
+                        2,
+                    ),
+                    FreeWires(2),
+                    AllocWires(3),
+                    GateCount(resource_rep(plre.ResourceTempAND), 3),
+                    GateCount(plre.ResourceSemiAdder.resource_rep(3)),
+                    GateCount(resource_rep(plre.ResourceHadamard)),
+                    GateCount(
+                        plre.ResourceAdjoint.resource_rep(resource_rep(plre.ResourceTempAND)),
+                        3,
+                    ),
+                    FreeWires(3),
+                    GateCount(resource_rep(plre.ResourceSWAP), 2),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, order, num_wires, expected_res):
+        """Test that the resources are correct."""
+        assert plre.ResourceAQFT.resource_decomp(order, num_wires) == expected_res
+
+
 class TestResourceBasisRotation:
     """Test the BasisRotation class."""
 
@@ -461,6 +683,19 @@ class TestResourceQROM:
             )
             == expected_res
         )
+
+    # pylint: disable=protected-access
+    def test_t_select_swap_width(self):
+        """Test that the private function doesn't give negative or
+        fractional values for the depth"""
+        num_bitstrings = 8
+        size_bitstring = 17
+
+        opt_width = plre.ResourceQROM._t_optimized_select_swap_width(
+            num_bitstrings,
+            size_bitstring,
+        )
+        assert opt_width == 1
 
 
 class TestResourceQubitUnitary:

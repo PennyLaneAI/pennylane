@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.default_qubit import stopping_condition
+from pennylane.devices.execution_config import MCMConfig
 from pennylane.exceptions import DeviceError
 from pennylane.operation import classproperty
 
@@ -191,6 +192,13 @@ class TestConfigSetup:
         dev = qml.device("default.qubit")
         processed = dev.setup_execution_config(config)
         assert processed.convert_to_numpy
+
+    def test_resolve_native_mcm_method(self):
+        """Tests that mcm_method="device" resolves to tree-traversal"""
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="device"))
+        dev = qml.device("default.qubit")
+        processed = dev.setup_execution_config(config)
+        assert processed.mcm_config.mcm_method == "tree-traversal"
 
 
 # pylint: disable=too-few-public-methods

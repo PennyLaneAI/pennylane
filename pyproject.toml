@@ -88,7 +88,17 @@ pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]
 
 [tool.black]
 line-length = 100
+target-version = ["py311", "py312", "py313"]
 include = '\.pyi?$'
+
+[tool.isort]
+py_version = 311
+profile = "black"
+line_length = 100
+known_third_party = ["autoray"]
+known_first_party = ["pennylane"]
+skip = ["__init__.py"]
+filter_files = true
 
 [tool.bandit]
 targets = "pennylane"

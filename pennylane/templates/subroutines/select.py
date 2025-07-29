@@ -19,7 +19,6 @@ import copy
 import itertools
 from collections import Counter
 
-import pennylane as qml
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
@@ -30,8 +29,10 @@ from pennylane.decomposition import (
 from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, X, adjoint, ctrl
-from pennylane.templates.subroutines.temporary_and import TemporaryAND
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+
+from .temporary_and import TemporaryAND
 
 
 class Select(Operation):
@@ -275,7 +276,7 @@ class Select(Operation):
 
     """
 
-    resource_keys = set(["ops"])
+    resource_keys = {"ops"}
 
     def _flatten(self):
         return (self.ops), (self.control, self.hyperparameters["work_wires"])
@@ -311,7 +312,7 @@ class Select(Operation):
             raise ValueError("Control wires should be different from operation wires.")
 
         for op in ops:
-            qml.QueuingManager.remove(op)
+            QueuingManager.remove(op)
 
         target_wires = Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires
