@@ -1550,6 +1550,9 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 "Toffoli": 21,
                 "C(S)": 4,
                 "CCZ": 21,
+                # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
+                # see exercise 4.29 in Nielsen and Chuang
+                "MultiControlledX": lambda op: 2 * 4 * len(op.control_wires) ** 2
             }
 
     def _pred_block(self, circuit_sublist, index):
@@ -1583,19 +1586,17 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         """
         cost_left = 0
         for i in left:
-            if self.template_dag.get_node(i).op.name != "MultiControlledX":
-                cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
+            if isinstance(self.quantum_cost[self.template_dag.get_node(i).op.name], callable):
+                cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name](self.template_dag.get_node(i).op)
             else:
-                # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
-                # see exercise 4.29 in Nielsen and Chuang
-                cost_left += 2 * 4 * len(self.template_dag.get_node(i).op.control_wires) ** 2
+                cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
 
         cost_right = 0
         for j in right:
-            if self.template_dag.get_node(j).op.name != "MultiControlledX":
-                cost_right += self.quantum_cost[self.template_dag.get_node(j).op.name]
+            if isinstance(self.quantum_cost[self.template_dag.get_node(j).op.name], callable):
+                cost_left += self.quantum_cost[self.template_dag.get_node(j).op.name](self.template_dag.get_node(j).op)
             else:
-                cost_right += 2 * 4 * len(self.template_dag.get_node(j).op.control_wires) ** 2
+                cost_left += self.quantum_cost[self.template_dag.get_node(j).op.name]
 
         return cost_left > cost_right
 
