@@ -169,6 +169,7 @@
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
+  [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
 
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
