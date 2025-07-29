@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
@@ -194,7 +195,7 @@ def _resolve_hadamard(
         "direct-hadamard": "direct",
         "reversed-direct-hadamard": "reversed-direct",
     }
-    gradient_kwargs = dict(initial_config.gradient_keyword_arguments)
+    gradient_kwargs = copy(initial_config.gradient_keyword_arguments)
     if "mode" not in gradient_kwargs:
         gradient_kwargs["mode"] = hadamard_mode_map[diff_method]
 
