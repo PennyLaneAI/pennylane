@@ -27,16 +27,16 @@ from pennylane.templates.subroutines.select import _partial_select, _select_deco
 
 
 @pytest.mark.parametrize("num_ops", [3, 10, 15, 16])
-@pytest.mark.parametrize("new_option", [True, False])
+@pytest.mark.parametrize("partial", [True, False])
 @pytest.mark.parametrize("work_wires", [None, [5, 6, 7]])
-def test_standard_checks(num_ops, new_option, work_wires):
+def test_standard_checks(num_ops, partial, work_wires):
     """Run standard validity tests."""
     if work_wires is None:
         pytest.xfail()
     ops = [qml.PauliX(0) for _ in range(num_ops)]
     control = [1, 2, 3, 4]
 
-    op = qml.Select(ops, control, work_wires, new_option=new_option)
+    op = qml.Select(ops, control, work_wires, partial=partial)
     assert op.target_wires == qml.wires.Wires(0)
     qml.ops.functions.assert_valid(op)
 
@@ -219,8 +219,8 @@ class TestSelect:
             ),
         ],
     )
-    def test_operation_result_new_option(self, ops, control, expected_gates, wires, seed):
-        """Test the correctness of the Select template output with new_option=True."""
+    def test_operation_result_partial(self, ops, control, expected_gates, wires, seed):
+        """Test the correctness of the Select template output with partial=True."""
         dev = qml.device("default.qubit", wires=wires)
 
         # Prepare a state that only has overlap with the basis states used in Select
@@ -232,7 +232,7 @@ class TestSelect:
         @qml.qnode(dev)
         def circuit1():
             qml.StatePrep(state, wires=control)
-            qml.Select(ops, control, new_option=True)
+            qml.Select(ops, control, partial=True)
             return qml.state()
 
         @qml.qnode(dev)
@@ -245,7 +245,7 @@ class TestSelect:
         assert np.allclose(circuit1(), circuit2())
 
     @pytest.mark.parametrize(
-        ("ops", "control", "expected_gates", "expected_gates_new_option"),
+        ("ops", "control", "expected_gates", "expected_gates_partial"),
         [
             (
                 [qml.X(wires=0), qml.Y(wires=0)],
@@ -301,7 +301,7 @@ class TestSelect:
             ),
         ],
     )
-    def test_queued_ops(self, ops, control, expected_gates, expected_gates_new_option):
+    def test_queued_ops(self, ops, control, expected_gates, expected_gates_partial):
         """Test the correctness of the Select template queued operations."""
         with qml.tape.OperationRecorder() as recorder:
             qml.Select(ops, control=control)
@@ -312,13 +312,13 @@ class TestSelect:
         assert [op.wires for op in select_ops] == [op.wires for op in expected_gates]
 
         with qml.tape.OperationRecorder() as recorder:
-            qml.Select(ops, control=control, new_option=True)
+            qml.Select(ops, control=control, partial=True)
 
-        expected_gates_new_option = expected_gates_new_option or expected_gates
+        expected_gates_partial = expected_gates_partial or expected_gates
         select_ops = recorder.expand().operations
 
-        assert [op.name for op in select_ops] == [op.name for op in expected_gates_new_option]
-        assert [op.wires for op in select_ops] == [op.wires for op in expected_gates_new_option]
+        assert [op.name for op in select_ops] == [op.name for op in expected_gates_partial]
+        assert [op.wires for op in select_ops] == [op.wires for op in expected_gates_partial]
 
     @pytest.mark.parametrize(
         ("ops", "control", "expected_gates"),
@@ -360,7 +360,7 @@ class TestSelect:
         """Unit test checking that compute_decomposition and decomposition work as expected."""
         op = qml.Select(ops, control=control)
         select_decomposition = op.decomposition()
-        select_compute_decomposition = op.compute_decomposition(ops, control, new_option=False)
+        select_compute_decomposition = op.compute_decomposition(ops, control, partial=False)
 
         for op1, op2 in zip(select_decomposition, expected_gates):
             qml.assert_equal(op1, op2)

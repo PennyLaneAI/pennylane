@@ -107,7 +107,7 @@ class Select(Operation):
         ``index = int(state_string, 2)``. For example, ``2 = int('10', 2)``.
 
     .. note::
-        Using ``new_option=True`` assumes that the quantum state :math:`|\psi\rangle` on the
+        Using ``partial=True`` assumes that the quantum state :math:`|\psi\rangle` on the
         ``control`` wires satisfies :math:`\langle j|\psi\rangle=0` for all :math:`j\in [K, 2^c)`,
         where :math:`K` is the number of operators (``len(ops)``) and :math:`c` is the number of
         control wires (``len(control)``).
@@ -131,13 +131,13 @@ class Select(Operation):
     wires, we call the ``Select`` operator a *partial Select*.
     In this case, the control structure can be simplified if the state on the control wires
     does not have overlap with the unused computational basis states (:math:`|j\rangle` with
-    :math:`j>K-1`). Passing ``new_option=True`` tells ``Select`` that this criterion is
+    :math:`j>K-1`). Passing ``partial=True`` tells ``Select`` that this criterion is
     satisfied, and allows the decomposition to make use of the simplification:
 
     >>> ops = [qml.X(2), qml.X(3), qml.SWAP([2,3])]
     >>> @qml.qnode(dev)
     >>> def circuit():
-    >>>     qml.Select(ops, control=[0,1], new_option=True)
+    >>>     qml.Select(ops, control=[0,1], partial=True)
     >>>     return qml.state()
     ...
     >>> print(qml.draw(circuit, level='device')())
@@ -340,7 +340,7 @@ class Select(Operation):
 
     """
 
-    resource_keys = {"op_reps", "num_control_wires", "new_option"}
+    resource_keys = {"op_reps", "num_control_wires", "partial"}
 
     @property
     def resource_params(self):
@@ -348,14 +348,14 @@ class Select(Operation):
         return {
             "op_reps": op_reps,
             "num_control_wires": len(self.control),
-            "new_option": self.hyperparameters["new_option"],
+            "partial": self.hyperparameters["partial"],
         }
 
     def _flatten(self):
         return (self.ops), (
             self.control,
             self.hyperparameters["work_wires"],
-            self.hyperparameters["new_option"],
+            self.hyperparameters["partial"],
         )
 
     # pylint: disable=arguments-differ
@@ -365,19 +365,19 @@ class Select(Operation):
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
-        return cls(data, control=metadata[0], work_wires=metadata[1], new_option=metadata[2])
+        return cls(data, control=metadata[0], work_wires=metadata[1], partial=metadata[2])
 
     def __repr__(self):
         return f"Select(ops={self.ops}, control={self.control})"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    def __init__(self, ops, control, work_wires=None, new_option=False, id=None):
+    def __init__(self, ops, control, work_wires=None, partial=False, id=None):
         control = Wires(control)
         work_wires = Wires(() if work_wires is None else work_wires)
         self.hyperparameters["ops"] = tuple(ops)
         self.hyperparameters["control"] = control
         self.hyperparameters["work_wires"] = work_wires
-        self.hyperparameters["new_option"] = new_option
+        self.hyperparameters["partial"] = partial
 
         if 2 ** len(control) < len(ops):
             raise ValueError(
@@ -404,8 +404,8 @@ class Select(Operation):
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
         new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
         new_work_wires = [wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]]
-        new_option = self.hyperparameters["new_option"]
-        return Select(new_ops, new_control, work_wires=new_work_wires, new_option=new_option)
+        new_partial = self.hyperparameters["partial"]
+        return Select(new_ops, new_control, work_wires=new_work_wires, partial=new_partial)
 
     def __copy__(self):
         """Copy this op"""
@@ -458,15 +458,12 @@ class Select(Operation):
          Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
-        new_option = self.hyperparameters["new_option"]
-        return self.compute_decomposition(self.ops, control=self.control, new_option=new_option)
+        partial = self.hyperparameters["partial"]
+        return self.compute_decomposition(self.ops, control=self.control, partial=partial)
 
+    # pylint: disable=arguments-differ
     @staticmethod
-    def compute_decomposition(
-        ops,
-        control,
-        new_option,
-    ):  # pylint: disable=arguments-differ
+    def compute_decomposition(ops, control, partial):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -494,7 +491,7 @@ class Select(Operation):
          Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
-        if new_option:
+        if partial:
             if len(ops) == 1:
                 qml.apply(ops[0])
                 return ops
@@ -701,10 +698,10 @@ def _add_k_units(ops, controls, work_wires, k):
 
 
 # pylint: disable=unused-argument
-def _select_resources_partial_unary(op_reps, num_control_wires, new_option):
-    if not new_option:
+def _select_resources_partial_unary(op_reps, num_control_wires, partial):
+    if not partial:
         raise NotImplementedError(
-            "Resources for unary iteration with new_option=False not implemented yet."
+            "Resources for unary iteration with partial=False not implemented yet."
         )
     num_ops = len(op_reps)
     counts = Counter()
@@ -734,7 +731,7 @@ def _select_resources_partial_unary(op_reps, num_control_wires, new_option):
     return dict(counts)
 
 
-def _unary_select_not_new_option(ops, control, work_wires):
+def _unary_select_not_partial(ops, control, work_wires):
     c = len(control)
     K = len(ops)
     min_num_controls = max(_ceil_log(K), 1)
@@ -794,7 +791,7 @@ def _unary_select_not_new_option(ops, control, work_wires):
 
 
 @register_resources(_select_resources_partial_unary)
-def _select_decomp_partial_unary(ops, control, work_wires, new_option, **_):
+def _select_decomp_partial_unary(ops, control, work_wires, partial, **_):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
     For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
     control wires (as usual for Select), and :math:`c-1` additional work wires.
@@ -811,8 +808,8 @@ def _select_decomp_partial_unary(ops, control, work_wires, new_option, **_):
     if len(ops) == 0:
         return []
 
-    if not new_option:
-        _unary_select_not_new_option(ops, control, work_wires)
+    if not partial:
+        _unary_select_not_partial(ops, control, work_wires)
 
     min_num_controls = max(_ceil_log(len(ops)), 1)
     assert len(control) >= min_num_controls
