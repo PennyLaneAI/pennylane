@@ -410,17 +410,17 @@ class TestErrorMessages:
             (
                 [qml.X(wires=0), qml.Y(wires=0), qml.Z(wires=0)],
                 [1],
-                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required.",
+                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires are required.",
             ),
             (
                 [qml.X(wires=0)] * 10,
                 [1, 2, 3],
-                r"Not enough control wires \(3\) for the desired number of operations \(10\). At least 4 control wires required.",
+                r"Not enough control wires \(3\) for the desired number of operations \(10\). At least 4 control wires are required.",
             ),
             (
                 [qml.X(wires="a"), qml.Y(wires="b"), qml.Z(wires="c")],
                 [1],
-                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required.",
+                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires are required.",
             ),
         ],
     )

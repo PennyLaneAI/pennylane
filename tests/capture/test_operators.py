@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 def test_abstract_operator():
