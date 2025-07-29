@@ -51,187 +51,48 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[qb3:%.+]], [[qb4:%.+]] = quantum.custom "CZ"() [[qb3:%.+]], [[qb4:%.+]] : !quantum.bit, !quantum.bit
                 // CHECK: [[q0:%.+]], [[qb1:%.+]] = quantum.custom "CZ"() [[q0:%.+]], [[qb1:%.+]] : !quantum.bit, !quantum.bit
                 // CHECK: [[cst_zero:%.+]] = arith.constant {{0.+}} : f64
-                // CHECK: [[m1:%.+]], [[q0:%.+]] = mbqc.measure_in_basis[XY, [[cst_zero:%+]]] [[q0:%.+]] : i1, !quantum.bit
-                // CHECK: [[half_pi:%.+]] = arith.constant {{1.57+}} : f64
-                // CHECK: %27, %28 = mbqc.measure_in_basis[XY, %26] %22 : i1, !quantum.bit
-                // CHECK: %29 = arith.constant 1.5707963267948966 : f64
-                // CHECK: %30, %31 = mbqc.measure_in_basis[XY, %29] %17 : i1, !quantum.bit
-                // CHECK: %32 = arith.constant 1.5707963267948966 : f64
-                // CHECK: %33, %34 = mbqc.measure_in_basis[XY, %32] %19 : i1, !quantum.bit
-                // CHECK: %35 = arith.addi %24, %30 : i1
-                // CHECK: %36 = arith.addi %35, %33 : i1
-                // CHECK: %37 = arith.constant true
-                // CHECK: %38 = arith.xori %36, %37 : i1
-                // CHECK: %39 = arith.constant true
-                // CHECK: %40 = arith.cmpi eq, %38, %39 : i1
-                // CHECK: %41 = scf.if %40 -> (!quantum.bit) {
-                // CHECK:     %42 = quantum.custom "PauliX"() %20 : !quantum.bit
-                // CHECK:     scf.yield %42 : !quantum.bit
+                // CHECK: [[m1:%.+]], [[q0:%.+]] = mbqc.measure_in_basis[XY, [[q0:%.+]]] [[cst_zero:%.+]] : i1, !quantum.bit
+                // CHECK: [[half_pi:%.+]] = arith.constant {{1.+}} : f64
+                // CHECK: [[m2:%.+]], [[qb1:%.+]] = mbqc.measure_in_basis[XY, [[qb1:%.+]]] [[half_pi:%.+]] : i1, !quantum.bit
+                // CHECK: [[half_pi:%.+]] = arith.constant {{1.+}} : f64
+                // CHECK: [[m3:%.+]], [[qb2:%.+]] = mbqc.measure_in_basis[XY, [[qb2:%.+]]] [[half_pi:%.+]] : i1, !quantum.bit
+                // CHECK: [[half_pi:%.+]] = arith.constant {{1.+}} : f64
+                // CHECK: [[m4:%.+]], [[qb3:%.+]] = mbqc.measure_in_basis[XY, [[qb3:%.+]]] [[half_pi:%.+]] : i1, !quantum.bit
+                // CHECK: [[m13:%.+]] = arith.addi [[m1:%.+]], [[m3:%.+]] : i1
+                // CHECK: [[m134:%.+]] = arith.addi [[m13:%.+]], [[m4:%.+]] : i1
+                // CHECK: [[cst_ture:%.+]] = arith.constant true
+                // CHECK: [[x_idx:%.+]] = arith.xori [[m134:%.+]], [[cst_ture:%.+]] : i1
+                // CHECK: [[cst_ture:%.+]] = arith.constant true
+                // CHECK: [[cmp_res:%.+]] = arith.cmpi eq, [[x_idx:%.+]], [[cst_ture:%.+]] : i1
+                // CHECK: [[qb4_x_res:%.+]] = scf.if [[cmp_res:%.+]] -> (!quantum.bit) {
+                // CHECK: [[qb4:%.+]] = quantum.custom "PauliX"() [[qb4:%.+]] : !quantum.bit
+                // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: } else {
-                // CHECK:     %43 = quantum.custom "Identity"() %20 : !quantum.bit
-                // CHECK:     scf.yield %43 : !quantum.bit
+                // CHECK: [[qb4:%.+]] = quantum.custom "Identity"() [[qb4:%.+]] : !quantum.bit
+                // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: }
-                // CHECK: %44 = arith.addi %27, %30 : i1
-                // CHECK: %45 = arith.constant true
-                // CHECK: %46 = arith.xori %44, %45 : i1
-                // CHECK: %47 = arith.constant true
-                // CHECK: %48 = arith.cmpi eq, %46, %47 : i1
-                // CHECK: %49 = scf.if %48 -> (!quantum.bit) {
-                // CHECK:     %50 = quantum.custom "PauliZ"() %41 : !quantum.bit
-                // CHECK:     scf.yield %50 : !quantum.bit
+                // CHECK: [[m23:%.+]] = arith.addi [[m2:%.+]], [[m3:%.+]] : i1
+                // CHECK: [[cst_ture:%.+]] = arith.constant true
+                // CHECK: [[z_idx:%.+]] = arith.xori [[m23:%.+]], [[cst_ture:%.+]] : i1
+                // CHECK: [[cst_ture:%.+]] = arith.constant true
+                // CHECK: [[cmp_res:%.+]] = arith.cmpi eq, [[z_idx:%.+]], [[cst_ture:%.+]] : i1
+                // CHECK: [[qb4_res:%.+]] = scf.if [[cmp_res:%.+]] -> (!quantum.bit) {
+                // CHECK: [[qb4_x_res:%.+]] = quantum.custom "PauliZ"() [[qb4_x_res:%.+]] : !quantum.bit
+                // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: } else {
-                // CHECK:     %51 = quantum.custom "Identity"() %41 : !quantum.bit
-                // CHECK:     scf.yield %51 : !quantum.bit
+                // CHECK: [[qb4_x_res:%.+]] = quantum.custom "Identity"() [[qb4_x_res:%.+]] : !quantum.bit
+                // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: }
-                // CHECK: %52 = quantum.custom "Identity"() %49 : !quantum.bit
-                // CHECK: %53, %54 = quantum.custom "SWAP"() %25, %52 : !quantum.bit, !quantum.bit
-                // CHECK: quantum.dealloc_qb %28 : !quantum.bit
-                // CHECK: quantum.dealloc_qb %31 : !quantum.bit
-                // CHECK: quantum.dealloc_qb %34 : !quantum.bit
-                // CHECK: quantum.dealloc_qb %54 : !quantum.bit
-                1% = quantum.custom "Hadamard" () %0 : !quantum.bit 
+                // CHECK: [[qb4_res:%.+]] = quantum.custom "Identity"() [[qb4_res:%.+]] : !quantum.bit
+                // CHECK: [[q0_res:%.+]], [[qb4:%.+]] = quantum.custom "SWAP"() [[q0:%.+]], [[qb4_res:%.+]] : !quantum.bit, !quantum.bit
+                // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
+                // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
+                // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
+                // CHECK: quantum.dealloc_qb [[qb4:%.+]] : !quantum.bit
+                %1 = quantum.custom "Hadamard"() %0 : !quantum.bit
                 return
             }
         """
 
         pipeline = (ConvertToMBQCFormalismPass(),)
         run_filecheck(program, pipeline)
-
-    # def test_allocop_aux_wires(self, run_filecheck):
-    #     """Test that ConvertToMBQCFormalismPass can pre-allocate 13 aux wires. Note that
-    #     this is a temporal solution.
-    #     """
-    #     program = """
-    #         func.func @test_func() {
-    #           // CHECK: %0 = "quantum.alloc"() <{nqubits_attr = 15 : i64}> : () -> !quantum.reg
-    #           %0 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
-    #           return
-    #         }
-    #     """
-
-    #     ctx = Context()
-    #     ctx.load_dialect(func.Func)
-    #     ctx.load_dialect(test.Test)
-    #     ctx.load_dialect(Quantum)
-
-    #     module = xdsl.parser.Parser(ctx, program).parse_module()
-    #     pipeline = xdsl.passes.PipelinePass((ConvertToMBQCFormalismPass(),))
-    #     pipeline.apply(ctx, module)
-
-    #     run_filecheck(program, module)
-
-    # def test_qubit_mgr_1_qubit_gate(self, run_filecheck):
-    #     """Test that ConvertToMBQCFormalismPass can extract and swap the target qubit and
-    #     the result qubit in the auxiliary wires.
-    #     """
-    #     program = """
-    #         func.func @test_func() {
-    #           // CHECK: %0 = "quantum.alloc"() <{nqubits_attr = 15 : i64}> : () -> !quantum.reg
-    #           %0 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
-    #           // CHECK: %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
-    #           %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
-    #           // CHECK: %out_qubits = quantum.custom "Hadamard"() %1 : !quantum.bit
-    #           %out_qubits = quantum.custom "Hadamard"() %1 : !quantum.bit
-    #           // CHECK: %2 = "quantum.extract"(%0) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
-    #           // CHECK: %3 = "quantum.extract"(%0) <{idx_attr = 5 : i64}> : (!quantum.reg) -> !quantum.bit
-    #           // CHECK: %4 = "quantum.insert"(%0, %2) <{idx_attr = 5 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-    #           // CHECK: %5 = "quantum.insert"(%4, %3) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-
-    #           return
-    #         }
-    #     """
-
-    #     ctx = Context()
-    #     ctx.load_dialect(func.Func)
-    #     ctx.load_dialect(test.Test)
-    #     ctx.load_dialect(Quantum)
-
-    #     module = xdsl.parser.Parser(ctx, program).parse_module()
-    #     pipeline = xdsl.passes.PipelinePass((ConvertToMBQCFormalismPass(),))
-    #     pipeline.apply(ctx, module)
-
-    #     run_filecheck(program, module)
-
-    # def test_qubit_mgr_cnot(self, run_filecheck):
-    #     """Test that ConvertToMBQCFormalismPass can extract and swap the target qubit and
-    #     the result qubit in the auxiliary wires.
-    #     """
-    #     program = """
-    #         func.func @test_func() {
-    #           // CHECK: %0 = "quantum.alloc"() <{nqubits_attr = 15 : i64}> : () -> !quantum.reg
-    #           %0 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
-    #           // CHECK: %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
-    #           %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
-    #           %2 = "quantum.extract"() <{idx_attr = 1 : i64}> : () -> !quantum.bit
-    #           %out_qubits0, %out_qubits1 = quantum.custom "CNOT"() %1, %2 : !quantum.bit, !quantum.bit
-    #           // CHECK: %3 = "quantum.extract"(%0) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
-    #           // CHECK: %4 = "quantum.extract"(%0) <{idx_attr = 13 : i64}> : (!quantum.reg) -> !quantum.bit
-    #           // CHECK: %5 = "quantum.insert"(%0, %3) <{idx_attr = 13 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-    #           // CHECK: %6 = "quantum.insert"(%5, %4) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-    #           // CHECK: %7 = "quantum.extract"(%6) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
-    #           // CHECK: %8 = "quantum.extract"(%6) <{idx_attr = 14 : i64}> : (!quantum.reg) -> !quantum.bit
-    #           // CHECK: %9 = "quantum.insert"(%6, %7) <{idx_attr = 14 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-    #           // CHECK: %10 = "quantum.insert"(%9, %8) <{idx_attr = 1 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-
-    #           return
-    #         }
-    #     """
-
-    #     ctx = Context()
-    #     ctx.load_dialect(func.Func)
-    #     ctx.load_dialect(test.Test)
-    #     ctx.load_dialect(Quantum)
-
-    #     module = xdsl.parser.Parser(ctx, program).parse_module()
-    #     pipeline = xdsl.passes.PipelinePass((ConvertToMBQCFormalismPass(),))
-    #     pipeline.apply(ctx, module)
-
-    #     run_filecheck(program, module)
-
-    # @pytest.xfail(
-    #     reason="This unit test is not complete and will be updated once PR#7888 is merged."
-    # )
-    # @pytest.mark.usefixtures("enable_disable_plxpr")
-    # def test_qubit_mgr_integrate(self, run_filecheck):
-    #     """Test that ConvertToMBQCFormalismPass can extract and swap the target qubit and
-    #     the result qubit in the auxiliary wires.
-    #     """
-    #     program = """
-    #         func.func @test_func() {
-    #           // CHECK: %0 = "quantum.alloc"() <{nqubits_attr = 15 : i64}> : () -> !quantum.reg
-    #           %0 = "quantum.alloc"() <{nqubits_attr = 2 : i64}> : () -> !quantum.reg
-    #           // CHECK: %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
-    #           %1 = "quantum.extract"() <{idx_attr = 0 : i64}> : () -> !quantum.bit
-    #           %2 = "quantum.extract"() <{idx_attr = 1 : i64}> : () -> !quantum.bit
-    #           %out_qubits0, %out_qubits1 = quantum.custom "CNOT"() %1, %2 : !quantum.bit, !quantum.bit
-    #           // CHECK: %3 = "quantum.extract"(%0) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
-    #           // CHECK: %4 = "quantum.extract"(%0) <{idx_attr = 13 : i64}> : (!quantum.reg) -> !quantum.bit
-    #           // CHECK: %5 = "quantum.insert"(%0, %3) <{idx_attr = 13 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-    #           // CHECK: %6 = "quantum.insert"(%5, %4) <{idx_attr = 0 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-    #           // CHECK: %7 = "quantum.extract"(%6) <{idx_attr = 1 : i64}> : (!quantum.reg) -> !quantum.bit
-    #           // CHECK: %8 = "quantum.extract"(%6) <{idx_attr = 14 : i64}> : (!quantum.reg) -> !quantum.bit
-    #           // CHECK: %9 = "quantum.insert"(%6, %7) <{idx_attr = 14 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-    #           // CHECK: %10 = "quantum.insert"(%9, %8) <{idx_attr = 1 : i64}> : (!quantum.reg, !quantum.bit) -> !quantum.reg
-
-    #           return
-    #         }
-    #     """
-
-    #     dev = qml.device("lightning.qubit", wires=2)
-
-    #     @qml.qjit(target="mlir", pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
-    #     @convert_to_mbqc_formalism_pass
-    #     @qml.qnode(dev)
-    #     def circuit_ref():
-    #         qml.H(0)
-    #         qml.H(0)
-    #         return qml.expval(qml.X(0))
-
-    #     compiler = Compiler()
-    #     mlir_module = compiler.run(circuit_ref.mlir_module)
-    #     mod_str = mlir_module.operation.get_asm(
-    #         binary=False, print_generic_op_form=True, assume_verified=True
-    #     )
-    #     xdsl_module = parse_generic_to_xdsl_module(mod_str)
-
-    #     run_filecheck(program, xdsl_module)
