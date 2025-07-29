@@ -25,8 +25,9 @@ pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
 catalyst = pytest.importorskip("catalyst")
-import pennylane as qml
 from catalyst.passes import xdsl_plugin
+
+import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
     MeasurementsFromSamplesPass,
     measurements_from_samples_pass,

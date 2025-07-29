@@ -19,14 +19,15 @@ pytestmark = pytest.mark.external
 xdsl = pytest.importorskip("xdsl")
 catalyst = pytest.importorskip("catalyst")
 
-import pennylane as qml
-
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
+
+import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
     ConvertToMBQCFormalismPass,
     convert_to_mbqc_formalism_pass,
 )
+
 
 class TestConvertToMBQCFormalismPass:
     """Unit tests for ConvertToMBQCFormalismPass."""

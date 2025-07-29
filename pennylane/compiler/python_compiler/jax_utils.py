@@ -18,6 +18,7 @@ from collections.abc import Callable, Sequence
 from functools import wraps
 from typing import TypeAlias
 
+from catalyst import QJIT
 from jax._src.lib import _jax
 from jaxlib.mlir.dialects import stablehlo as jstablehlo  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Context as jContext  # pylint: disable=no-name-in-module
@@ -33,8 +34,6 @@ from xdsl.dialects import transform as xtransform
 from xdsl.ir import Dialect as xDialect
 from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
-
-from catalyst import QJIT
 
 from .dialects import MBQC, Catalyst, Quantum
 
