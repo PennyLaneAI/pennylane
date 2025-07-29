@@ -17,7 +17,8 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-from pennylane.labs.trotter_error.fragments import SparseFragment, SparseState, sparse_fragments
+from pennylane.labs.trotter_error.fragments import SparseState, sparse_fragments
+from pennylane.labs.trotter_error.fragments.sparse_fragments import SparseFragment
 
 # pylint: disable=no-self-use
 
@@ -31,7 +32,6 @@ def _sparse_hamiltonian(matrices):
 def test_sparse_fragments_basic():
     """Test that sparse_fragments returns SparseFragment objects correctly."""
 
-    # Test with identity and Pauli-X matrices
     identity = csr_matrix([[1, 0], [0, 1]])
     pauli_x = csr_matrix([[0, 1], [1, 0]])
     matrices = [identity, pauli_x]
@@ -120,7 +120,7 @@ class TestBasicOperations:
         frag = SparseFragment(mat)
 
         norm_val = frag.norm()
-        expected_norm = 5.0  # sqrt(3^2 + 4^2)
+        expected_norm = 5.0
 
         assert np.isclose(norm_val, expected_norm)
 
@@ -136,12 +136,10 @@ class TestSingleMatrix:
     def test_expectation_identity(self, frag, states):
         """Test expectation values with identity matrix"""
 
-        # Test that <ψ|I|ψ> = 1 for normalized states
         for state in states:
             expectation = frag.expectation(state, state)
             assert np.isclose(expectation, 1.0)
 
-        # Test that <0|I|1> = 0 and <1|I|0> = 0
         expectation_01 = frag.expectation(states[0], states[1])
         expectation_10 = frag.expectation(states[1], states[0])
 
@@ -283,13 +281,16 @@ class TestLinearCombinations:
 class TestSparseState:
     """Test SparseState operations"""
 
-    def test_state_arithmetic(self):
+    state1 = SparseState(csr_matrix([[1, 0]]))
+    state2 = SparseState(csr_matrix([[0, 1]]))
+    state3 = SparseState(csr_matrix([[1, 1]]))
+
+    @pytest.mark.parametrize("state1, state2", [
+        (state1, state2),
+    ])
+    def test_state_arithmetic(self, state1, state2):
         """Test basic arithmetic operations on SparseStates"""
 
-        state1 = SparseState(csr_matrix([[1, 0]]))
-        state2 = SparseState(csr_matrix([[0, 1]]))
-
-        # Test addition
         sum_state = state1 + state2
         expected_sum = csr_matrix([[1, 1]])
         assert np.allclose(sum_state.csr_matrix.toarray(), expected_sum.toarray())
@@ -308,30 +309,19 @@ class TestSparseState:
         assert np.allclose(scaled_state.csr_matrix.toarray(), expected_scaled.toarray())
         assert np.allclose(scaled_state_rmul.csr_matrix.toarray(), expected_scaled_rmul.toarray())
 
-    def test_dot_product(self):
+    @pytest.mark.parametrize("x, y, expected", [
+        (state1, state2, 0.0),
+        (state2, state1, 0.0),
+        (state1, state1, 1.0),
+        (state2, state2, 1.0),
+        (state1, state3, 1.0),
+        (state3, state1, 1.0),
+    ])
+    def test_dot_product(self, x, y, expected):
         """Test dot product between SparseStates"""
 
-        state1 = SparseState(csr_matrix([[1, 0]]))
-        state2 = SparseState(csr_matrix([[0, 1]]))
-        state3 = SparseState(csr_matrix([[1, 1]]))
+        assert np.isclose(x.dot(y), expected)
 
-        # Test orthogonal states
-        dot_12 = state1.dot(state2)
-        dot_21 = state2.dot(state1)
-        assert np.isclose(dot_12, 0.0)
-        assert np.isclose(dot_21, 0.0)
-
-        # Test state with itself
-        dot_11 = state1.dot(state1)
-        dot_22 = state2.dot(state2)
-        assert np.isclose(dot_11, 1.0)
-        assert np.isclose(dot_22, 1.0)
-
-        # Test overlapping states
-        dot_13 = state1.dot(state3)
-        dot_31 = state3.dot(state1)
-        assert np.isclose(dot_13, 1.0)
-        assert np.isclose(dot_31, 1.0)
 
 
 class TestEdgeCases:

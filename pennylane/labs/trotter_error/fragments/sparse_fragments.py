@@ -17,8 +17,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, List, Sequence
 
+import numpy as np
+import scipy as sp
 from scipy.sparse import csr_matrix
-from scipy.sparse.linalg import norm
 
 from pennylane.labs.trotter_error import Fragment
 from pennylane.labs.trotter_error.abstract import AbstractState
@@ -28,8 +29,7 @@ def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
     """Instantiates :class:`~.pennylane.labs.trotter_error.SparseFragment` objects.
 
     Args:
-        fragments (Sequence[Any]): A sequence of objects of the same type. The type is assumed to implement ``__add__``, ``__mul__``, and ``__matmul__``.
-        norm_fn (Callable): A function that computes the norm of the fragments.
+        fragments (Sequence[csr_matrix]): A sequence of sparse matrices to be used as fragments.
 
     Returns:
         List[SparseFragment]: A list of :class:`~.pennylane.labs.trotter_error.SparseFragment` objects instantiated from `fragments`.
@@ -43,7 +43,7 @@ def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
     >>> matrices = [csr_matrix([[1, 0], [0, 1]]), csr_matrix([[0, 1], [1, 0]])]
     >>> fragments = sparse_fragments(matrices)
     >>> fragments
-    [SparseFragment(type=<class 'scipy.sparse.csr_matrix'>), SparseFragment(type=<class 'scipy.sparse.csr_matrix'>)]
+    [SparseFragment(shape=(2, 2), dtype=int64), SparseFragment(shape=(2, 2), dtype=int64)]
     >>> fragments[0].norm()
     1.4142135623730951
     """
@@ -58,16 +58,12 @@ def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
 
 
 class SparseFragment(Fragment):
-    """Abstract class used to define a scipy spares fragment object for product formula error estimation.
-
-    This class allows using any object implementing arithmetic dunder methods to be used
-    for product formula error estimation.
+    """A wrapper class to allow scipy sparse matrices to be used in the Trotter error functions.
 
     Args:
-        fragment (Any): An object that implements the following arithmetic methods:
-            ``__add__``, ``__mul__``, and ``__matmul__``.
+        fragment (csr_matrix): The `csr_matrix` to be used as a `~.pennylane.labs.trotter_error.abstract.Fragment`.
 
-    .. note:: :class:`~.pennylane.labs.trotter_error.SparseFragment` objects should be instantated through the ``sparse_fragments`` function.
+    .. note:: :class:`~.pennylane.labs.trotter_error.SparseFragment` objects should be instantated through the ``~.pennylane.labs.trotter_error.sparse_fragments`` function.
 
     **Example**
 
@@ -75,7 +71,7 @@ class SparseFragment(Fragment):
     >>> from scipy.sparse import csr_matrix
     >>> matrices = [csr_matrix([[1, 0], [0, 1]]), csr_matrix([[0, 1], [1, 0]])]
     >>> sparse_fragments(matrices)
-    [SparseFragment(type=<class 'scipy.sparse.csr_matrix'>), SparseFragment(type=<class 'scipy.sparse.csr_matrix'>)]
+    [SparseFragment(shape=(2, 2), dtype=int64), SparseFragment(shape=(2, 2), dtype=int64)]
     """
 
     def __init__(self, fragment: csr_matrix):
@@ -95,7 +91,13 @@ class SparseFragment(Fragment):
         if not isinstance(other, SparseFragment):
             raise TypeError(f"Cannot compare SparseFragment with type {type(other)}.")
 
-        return self.fragment == other.fragment
+        if not np.all(self.fragment.indices == other.fragment.indices):
+            return False
+
+        if not np.all(self.fragment.indptr == other.fragment.indptr):
+            return False
+
+        return np.allclose(self.fragment.data, other.fragment.data)
 
     __rmul__ = __mul__
 
@@ -103,40 +105,24 @@ class SparseFragment(Fragment):
         return SparseFragment(self.fragment.dot(other.fragment))
 
     def apply(self, state: SparseState) -> Any:
-        """Apply the fragment to a state using the underlying object's ``__matmul__`` method."""
         return SparseState(self.fragment.dot(state.csr_matrix.transpose()).transpose())
 
     def expectation(self, left: SparseState, right: Any) -> complex:
-        """Compute the expectation value using the underlying object's ``__matmul__`` method."""
         result = left.csr_matrix.conjugate().dot(self.fragment.dot(right.csr_matrix.transpose()))
-        # Convert to scalar - handle both sparse matrix and array cases
         return complex(result.toarray().flatten()[0])
 
     def norm(self, params: Dict = None) -> float:
-        return norm(self.fragment)
-
-    def dot(self, other: Any) -> float:
-        """Compute the dot product with another SparseFragment."""
-        return SparseFragment(self.fragment.dot(other.fragment))
+        return sp.sparse.linalg.norm(self.fragment)
 
     def __repr__(self):
-        return self.fragment.__repr__()
+        return f"SparseFragment(shape={self.fragment.shape}, dtype={self.fragment.dtype})"
 
 
 class SparseState(AbstractState):
-    """Abstract class used to define a state object for product formula error estimation.
-
-    A class inheriting from ``MPSState`` must implement the following dunder methods.
-
-    * ``__add__``: implements addition
-    * ``__mul__``: implements multiplication
-
-    Additionally, it requires the following methods.
-
-    * ``zero_state``: returns a representation of the zero state
-    * ``dot``: implments the dot product of two states
+    """A wrapper class to allow scipy sparse vectors to be used in the Trotter error esimation functions.
+    This class is intended to instantiate states to be used along with the `SparseFragment` class.
+    
     """
-
     def __init__(self, matrix: csr_matrix):
         """Initialize the SparseState."""
         self.csr_matrix = matrix
@@ -154,13 +140,13 @@ class SparseState(AbstractState):
         return self.__mul__(scalar)
 
     @classmethod
-    def zero_state(cls) -> SparseState:
+    def zero_state(cls, dim: int) -> SparseState: #pylint: disable=arguments-differ
         """Return a representation of the zero state.
 
         Returns:
             SparseState: an ``SparseState`` representation of the zero state
         """
-        raise NotImplementedError
+        return csr_matrix((dim, dim))
 
     def dot(self, other) -> complex:
         """Compute the dot product of two states.
@@ -169,17 +155,11 @@ class SparseState(AbstractState):
             other: the state to take the dot product with
 
         Returns:
-        complex: the dot product of self and other
+            complex: the dot product of self and other
         """
-        # Handle _AdditiveIdentity (zero state)
-        if hasattr(other, "__class__") and "AdditiveIdentity" in other.__class__.__name__:
-            return 0.0
 
-        # Handle SparseState objects
         if isinstance(other, SparseState):
-            # For row vectors (1,n), dot product is self.conj() @ other.T
             result = self.csr_matrix.conjugate().dot(other.csr_matrix.transpose())
-            # Convert to scalar - handle both sparse matrix and array cases
             return complex(result.toarray().flatten()[0])
 
         raise TypeError(f"Cannot compute dot product between SparseState and {type(other)}")
