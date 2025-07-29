@@ -131,7 +131,7 @@ def no_analytic(
     that can only return samples/counts based results.
     """
     if not tape.shots:
-        raise qml.DeviceError(f"Analytic execution is not supported with {name}")
+        raise DeviceError(f"Analytic execution is not supported with {name}")
     return (tape,), null_postprocessing
 
 
