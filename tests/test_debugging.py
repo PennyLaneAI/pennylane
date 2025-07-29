@@ -245,6 +245,9 @@ class TestSnapshotGeneral:
     def test_override_shots(self, dev):
         """Test that override shots allow snapshots to work with different numbers of measurements."""
 
+        if dev.name == "lightning.qubit":
+            pytest.mark.xfail("Just till remove squeezing on lightning.qubit.")  # [sc-96550]
+
         @qml.qnode(dev)
         def c():
             if dev.name != "default.qutrit":
@@ -264,6 +267,9 @@ class TestSnapshotGeneral:
 
     def test_override_analytic(self, dev):
         """Test that finite shots can be written with analytic calculations."""
+
+        if dev.name == "lightning.qubit":
+            pytest.mark.xfail("Just till remove squeezing on lightning.qubit.")  # [sc-96550]
 
         if dev.name == "default.qutrit":
             pytest.skip("hard to write generic test that works with qutrits.")
