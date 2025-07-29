@@ -14,8 +14,8 @@
 r"""
 Contains the FlipSign template.
 """
-import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.ops import X, Z, ctrl
 
 
 class FlipSign(Operation):
@@ -132,11 +132,11 @@ class FlipSign(Operation):
         op_list = []
 
         if arr_bin[-1] == 0:
-            op_list.append(qml.X(wires[-1]))
+            op_list.append(X(wires[-1]))
 
-        op_list.append(qml.ctrl(qml.Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1]))
+        op_list.append(ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1]))
 
         if arr_bin[-1] == 0:
-            op_list.append(qml.X(wires[-1]))
+            op_list.append(X(wires[-1]))
 
         return op_list
