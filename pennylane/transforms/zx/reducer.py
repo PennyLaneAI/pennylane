@@ -60,7 +60,9 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         import pennylane as qml
         from pennylane.transforms import zx_full_reduce
 
-        @qml.qnode(qml.device("default.qubit"))
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
         def circuit(x, y):
             qml.T(wires=0)
             qml.Hadamard(wires=0)
