@@ -14,7 +14,6 @@
 """
 Contains the OutMultiplier template.
 """
-import pennylane as qml
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -22,7 +21,12 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.ops import adjoint
+from pennylane.wires import Wires, WiresLike
+
+from .controlled_sequence import ControlledSequence
+from .phase_adder import PhaseAdder
+from .qft import QFT
 
 
 class OutMultiplier(Operation):
@@ -156,12 +160,12 @@ class OutMultiplier(Operation):
         mod=None,
         work_wires: WiresLike = (),
         id=None,
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
-        x_wires = qml.wires.Wires(x_wires)
-        y_wires = qml.wires.Wires(y_wires)
-        output_wires = qml.wires.Wires(output_wires)
-        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
+        x_wires = Wires(x_wires)
+        y_wires = Wires(y_wires)
+        output_wires = Wires(output_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         num_work_wires = len(work_wires)
 
@@ -199,7 +203,7 @@ class OutMultiplier(Operation):
             wires_name.append("work_wires")
 
         for name, wires in zip(wires_name, wires_list):
-            self.hyperparameters[name] = qml.wires.Wires(wires)
+            self.hyperparameters[name] = Wires(wires)
         self.hyperparameters["mod"] = mod
 
         # pylint: disable=consider-using-generator
@@ -281,16 +285,16 @@ class OutMultiplier(Operation):
         else:
             qft_output_wires = output_wires
             work_wire = ()
-        op_list.append(qml.QFT(wires=qft_output_wires))
+        op_list.append(QFT(wires=qft_output_wires))
         op_list.append(
-            qml.ControlledSequence(
-                qml.ControlledSequence(
-                    qml.PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
+            ControlledSequence(
+                ControlledSequence(
+                    PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
                 ),
                 control=y_wires,
             )
         )
-        op_list.append(qml.adjoint(qml.QFT)(wires=qft_output_wires))
+        op_list.append(adjoint(QFT)(wires=qft_output_wires))
 
         return op_list
 
@@ -305,18 +309,18 @@ def _out_multiplier_decomposition_resources(
         qft_wires = num_output_wires
 
     return {
-        resource_rep(qml.QFT, num_wires=qft_wires): 1,
+        resource_rep(QFT, num_wires=qft_wires): 1,
         resource_rep(
-            qml.ControlledSequence,
-            base_class=qml.ControlledSequence,
+            ControlledSequence,
+            base_class=ControlledSequence,
             base_params={
-                "base_class": qml.PhaseAdder,
+                "base_class": PhaseAdder,
                 "base_params": {"num_x_wires": qft_wires, "mod": mod},
                 "num_control_wires": num_x_wires,
             },
             num_control_wires=num_y_wires,
         ): 1,
-        adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
+        adjoint_resource_rep(QFT, {"num_wires": qft_wires}): 1,
     }
 
 
@@ -336,14 +340,12 @@ def _out_multiplier_decomposition(
     else:
         qft_output_wires = output_wires
         work_wire = ()
-    qml.QFT(wires=qft_output_wires)
-    qml.ControlledSequence(
-        qml.ControlledSequence(
-            qml.PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
-        ),
+    QFT(wires=qft_output_wires)
+    ControlledSequence(
+        ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
         control=y_wires,
     )
-    qml.adjoint(qml.QFT(wires=qft_output_wires))
+    adjoint(QFT(wires=qft_output_wires))
 
 
 add_decomps(OutMultiplier, _out_multiplier_decomposition)
