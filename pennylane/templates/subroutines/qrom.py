@@ -343,14 +343,10 @@ def _qrom_decomposition_resources(
     depth = min(depth, num_bitstrings)
 
     ops = [resource_rep(qml.BasisEmbedding, num_wires=num_target_wires) for _ in num_bitstrings]
-    ops_identity = ops + [qml.I] * int(
-        2 ** num_control_wires - num_bitstrings
-    )
+    ops_identity = ops + [qml.I] * int(2**num_control_wires - num_bitstrings)
 
     n_columns = (
-        num_bitstrings // depth
-        if num_bitstrings % depth == 0
-        else num_bitstrings // depth + 1
+        num_bitstrings // depth if num_bitstrings % depth == 0 else num_bitstrings // depth + 1
     )
 
     # New ops block
@@ -373,8 +369,13 @@ def _qrom_decomposition_resources(
     num_control_swap_wires = num_control_wires - num_control_select_wires
     resources = Counter()
     for ind in range(num_control_swap_wires):
-        for j in range(2 ** ind):
-            swaps = {qml.SWAP: min((j + 1) * num_target_wires - (j) * num_target_wires, (j + 2 ** (ind + 1)) * num_target_wires - (j + 2 ** ind) * num_target_wires)}
+        for j in range(2**ind):
+            swaps = {
+                qml.SWAP: min(
+                    (j + 1) * num_target_wires - (j) * num_target_wires,
+                    (j + 2 ** (ind + 1)) * num_target_wires - (j + 2**ind) * num_target_wires,
+                )
+            }
             resources[
                 controlled_resource_rep(
                     base_class=qml.ops.op_math.Prod,
