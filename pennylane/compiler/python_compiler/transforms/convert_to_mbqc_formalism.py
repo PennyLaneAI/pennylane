@@ -376,6 +376,8 @@ class ConvertToMBQCFormalismPattern(
         ture_region = [byproductOp, scf.YieldOp(byproductOp.results[0])]
         identityOp = CustomOp(in_qubits=in_qubit, gate_name="Identity")
         # TODOs check if we can set false_region = [scf.YieldOp(in_qubit)]
+        # The answer is no as xDSL==0.46.0, the error msg is:
+        # "'NoneType' object has no attribute 'add_use'""
         false_region = [identityOp, scf.YieldOp(identityOp.results[0])]
         condOp = IfOp(cmpOp, QubitType(), ture_region, false_region)
         # Insert condOp before op operations
@@ -425,7 +427,7 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Add corrections for the Hadamard gate.
+        """Add corrections for a Hadamard gate.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
@@ -453,7 +455,7 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Add corrections for the S gate.
+        """Add corrections for a S gate.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
@@ -480,7 +482,7 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Add corrections for the RotXZX or RZ gate.
+        """Add corrections for a RotXZX or RZ gate.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
