@@ -604,6 +604,9 @@ class TestReducerZX:
             qml.CZ(wires=[0, 1]),
             qml.CH(wires=[0, 1]),
             qml.SWAP(wires=[0, 1]),
+            # 3-qubit hermitian gates
+            qml.Toffoli(wires=[0, 1, 2]),
+            qml.CCZ(wires=[0, 1, 2]),
         ),
     )
     def test_hermitian_gates_cancellation(self, gate):
