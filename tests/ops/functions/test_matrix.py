@@ -593,7 +593,10 @@ class TestTemplates:
 
         weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         x = 0.54
-        res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
+        with qml.queuing.AnnotatedQueue() as q_test:
+            res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
+
+        assert len(q_test) == 0  # Test that no operators were leaked
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 
