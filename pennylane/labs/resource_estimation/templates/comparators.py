@@ -29,8 +29,9 @@ class ResourceSingleQubitCompare(ResourceOperator):
     r"""Resource class for comparing two qubits.
 
     This operation provides the cost for implementing a comparison between two qubits.
-    The comparison result is stored on three qubits: the original :math:`y` qubit (which stores :math:`x=y`),
-    and two additional qubits initialized to the state :math:`|0\rangle` (which store :math:`x \lt y` and :math:`x \gt y`).
+    The comparison result is stored on three qubits: the second qubit stores :math:`x=y`,
+    and the two additional qubits initialized to the state :math:`|0\rangle` store
+    :math:`x \lt y` and :math:`x \gt y`.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
@@ -128,8 +129,7 @@ class ResourceTwoQubitCompare(ResourceOperator):
 
     This operation provides the cost for implementing a comparison between two quantum registers of
     two qubits each. This circuit takes a pair of 2-bit integers, and outputs a pair of single bits such
-    that the sign of their difference preserves the inequality of the input integers:
-    :math:`\text{sign}(x' - y') = \text{sign}(x - y)`.
+    that the sign of their difference preserves the inequality of the input integers.
 
     The input registers get modified here, and can be reset to their original values by using the
     adjoint of this operation.
@@ -235,9 +235,8 @@ class ResourceTwoQubitCompare(ResourceOperator):
 class ResourceIntegerComparator(ResourceOperator):
     r"""Resource class for comparing a state to a positive integer.
 
-    This operation provides the cost for comparing basis state, :code:`x`, and a fixed positive integer, :code:`val`.
+    This operation provides the cost for comparing a basis state, :code:`x`, and a fixed positive integer, :code:`val`.
     It flips a target qubit if :math:`x \geq val` or :math:`x \lt val`, depending on the parameter :code:`geq`.
-    It applies a controlled flip to a target qubit based on the comparison result.
 
     Args:
         val (int): the integer to be compared against
