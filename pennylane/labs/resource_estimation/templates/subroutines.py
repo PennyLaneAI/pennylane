@@ -1492,7 +1492,7 @@ class ResourceQubitUnitary(ResourceOperator):
         return {"num_wires": self.num_wires, "precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, num_wires, precision) -> CompressedResourceOp:
+    def resource_rep(cls, num_wires, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 

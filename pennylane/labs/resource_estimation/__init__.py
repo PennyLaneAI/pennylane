@@ -135,6 +135,15 @@ Templates:
     ~ResourceTrotterVibronic
     ~ResourceQubitizeTHC
 
+State Preparation:
+~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~ResourceMPSPrep
+    ~ResourceQROMStatePreparation
+    
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -226,4 +235,6 @@ from .templates import (
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
     ResourceQubitizeTHC,
+    ResourceMPSPrep,
+    ResourceQROMStatePreparation,
 )
