@@ -21,13 +21,16 @@ schema = 3
 #
 [operators.gates]
 
-CZ                     = { }
-GlobalPhase            = { properties = [ "invertible", "controllable", "differentiable" ] }
-Hadamard               = { properties = [ "invertible", "controllable", "differentiable" ] }
-Identity               = { properties = [ "invertible",                 "differentiable" ] }
-PauliX                 = { properties = [ "invertible", "controllable", "differentiable" ] }
-PauliY                 = { properties = [ "invertible", "controllable", "differentiable" ] }
-PauliZ                 = { properties = [ "invertible", "controllable", "differentiable" ] }
+CNOT                   = { }
+GlobalPhase            = { }
+Hadamard               = { }
+Identity               = { }
+PauliX                 = { }
+PauliY                 = { }
+PauliZ                 = { }
+RotXZX                 = { }
+RZ                     = { }
+S                      = { }
 
 
 # Observables supported by the device
