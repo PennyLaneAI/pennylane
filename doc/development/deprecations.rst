@@ -9,6 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Setting shots on device is deprecated. Please use `set_shots` on QNode instead.
+
+  - Deprecated in v0.43
+  - Will be removed in a future version
+
 * Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version.
   Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
   Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
