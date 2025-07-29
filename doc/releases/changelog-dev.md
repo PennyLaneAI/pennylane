@@ -188,7 +188,7 @@
 <h3>Breaking changes 💔</h3>
 
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
-  They now accept a list of operations instead of a `qml.tape.QuantumScript` of operations and quantum functions with separate parameters and wires.
+  They now accept an operation or a list of operations instead of a `qml.tape.QuantumScript` and quantum functions with separate parameters and wires.
   Instead, the wires and parameters of the provided unitaries are inferred from the inputs.
 
   As a concrete example, this is how the Hilbert-Schmidt Test cost between the unitary `U` and an approximate unitary ``V`` can be evaluated:

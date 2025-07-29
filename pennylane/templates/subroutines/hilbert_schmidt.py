@@ -74,9 +74,10 @@ class HilbertSchmidt(Operation):
         :title: Usage Details
 
         Consider that we want to evaluate the Hilbert-Schmidt Test cost between the unitary ``U`` and an approximate
-        unitary ``V``. We need to define some functions where it is possible to use the :class:`~.HilbertSchmidt`
-        template. Here the considered unitary is ``Hadamard`` and we try to compute the cost for the approximate
-        unitary ``RZ``. For an angle that is equal to ``0`` (``Identity``), we have the maximal cost which is ``1``.
+        unitary ``V``. If the approximate unitary has fewer wires than the target unitary, a placeholder identity can be included.
+        We need to define some functions where it is possible to use the :class:`~.HilbertSchmidt`
+        template. In the example below, the considered unitary is ``Hadamard`` and we try to compute the cost for the approximate
+        unitary ``RZ``. For an angle that is equal to ``0`` (``Identity``), we have the maximal cost, which is ``1``.
 
         .. code-block:: python
 
@@ -102,17 +103,19 @@ class HilbertSchmidt(Operation):
 
     grad_method = None
 
-    def _flatten(self):
-        data = (self.hyperparameters["V"], self.hyperparameters["U"])
-        return data, tuple()
-
     @classmethod
     def _primitive_bind_call(cls, V, U):
         # pylint: disable=arguments-differ
-        U = [U] if not hasattr(U, "__iter__") or is_abstract(U) else U
-        V = [V] if not hasattr(V, "__iter__") or is_abstract(V) else V
+        # AbstractOperator cannot be imported from the capture module
+        # because of a circular import, so we rely on this check instead.
+        U = (U,) if not hasattr(U, "__iter__") or is_abstract(U) else U
+        V = (V,) if not hasattr(V, "__iter__") or is_abstract(V) else V
         num_v_ops = len(V)
         return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops)
+
+    def _flatten(self):
+        data = (self.hyperparameters["V"], self.hyperparameters["U"])
+        return data, tuple()
 
     @classmethod
     def _unflatten(cls, data, _) -> "HilbertSchmidt":

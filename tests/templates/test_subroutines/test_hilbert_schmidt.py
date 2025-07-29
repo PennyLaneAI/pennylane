@@ -53,6 +53,31 @@ def test_flatten_unflatten_standard_checks(op_type):
 class TestHilbertSchmidt:
     """Tests for the Hilbert-Schmidt template."""
 
+    @pytest.mark.parametrize(
+        ("V", "U"),
+        [
+            (qml.RZ(0, wires=1), qml.Hadamard(0)),
+            ((qml.RZ(0, wires=1),), (qml.Hadamard(0),)),
+            (qml.RZ(0, wires=1), (qml.Hadamard(0))),
+            ((qml.RZ(0, wires=1),), qml.Hadamard(0)),
+        ],
+    )
+    def test_HilbertSchmidt(self, V, U):
+        """Test the HilbertSchmidt template with multiple operations format."""
+
+        @qml.qnode(device=qml.device("default.qubit", wires=2))
+        def hilbert_test(V, U):
+            qml.HilbertSchmidt(V, U)
+            return qml.probs()
+
+        def cost_hst(V, U):
+            # pylint:disable=unsubscriptable-object
+            return 1 - hilbert_test(V, U)[0]
+
+        res = cost_hst(V, U)
+        expected = 1.0
+        assert np.isclose(res, expected)
+
     @pytest.mark.parametrize("param", [0.1, -np.pi / 2])
     def test_maximal_cost(self, param):
         """Test that the result is 0 when when the Hilbert-Schmidt inner product is vanishing."""
@@ -399,6 +424,36 @@ class TestHilbertSchmidt:
 
 class TestLocalHilbertSchmidt:
     """Tests for the Local Hilbert-Schmidt template."""
+
+    @pytest.mark.parametrize(
+        "U", [[qml.CZ(wires=(0, 1))], (qml.CZ(wires=(0, 1)),), qml.CZ(wires=(0, 1))]
+    )
+    def test_LocalHilbertSchmidt(self, U):
+        """Test the LocalHilbertSchmidt template with multiple operations format."""
+
+        def V_function(params):
+            return [
+                qml.RZ(params[0], wires=2),
+                qml.RZ(params[1], wires=3),
+                qml.CNOT(wires=[2, 3]),
+                qml.RZ(params[2], wires=3),
+                qml.CNOT(wires=[2, 3]),
+            ]
+
+        @qml.qnode(device=qml.device("default.qubit", wires=4))
+        def local_hilbert_test(V, U):
+            qml.LocalHilbertSchmidt(V, U)
+            return qml.probs()
+
+        def cost_lhst(V, U):
+            # pylint:disable=unsubscriptable-object
+            return 1 - local_hilbert_test(V, U)[0]
+
+        v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
+        V = V_function(v_params)
+        res = cost_lhst(V, U)
+        expected = 0.5
+        assert np.isclose(res, expected)
 
     @pytest.mark.parametrize("param", [0.1, -np.pi / 2])
     def test_maximal_cost(self, param):

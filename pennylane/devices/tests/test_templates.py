@@ -399,18 +399,12 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         ]
         assert np.allclose(res, expected, atol=tol(dev.shots))
 
-    @pytest.mark.parametrize(
-        ("V", "U"),
-        [
-            (qml.RZ(0, wires=1), qml.Hadamard(0)),
-            ((qml.RZ(0, wires=1),), (qml.Hadamard(0),)),
-            (qml.RZ(0, wires=1), (qml.Hadamard(0))),
-            ((qml.RZ(0, wires=1),), qml.Hadamard(0)),
-        ],
-    )
-    def test_HilbertSchmidt(self, device, V, U, tol):
+    def test_HilbertSchmidt(self, device, tol):
         """Test the HilbertSchmidt template."""
         dev = device(2)
+
+        V = qml.RZ(0, wires=1)
+        U = qml.Hadamard(0)
 
         @qml.qnode(dev)
         def hilbert_test(V, U):
@@ -455,12 +449,11 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
 
         _ = circuit(params)
 
-    @pytest.mark.parametrize(
-        "U", [[qml.CZ(wires=(0, 1))], (qml.CZ(wires=(0, 1)),), qml.CZ(wires=(0, 1))]
-    )
-    def test_LocalHilbertSchmidt(self, device, U, tol):
+    def test_LocalHilbertSchmidt(self, device, tol):
         """Test the LocalHilbertSchmidt template."""
         dev = device(4)
+
+        U = qml.CZ(wires=(0, 1))
 
         def V_function(params):
             return [
