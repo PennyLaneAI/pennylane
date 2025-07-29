@@ -26,11 +26,7 @@ def _get_new_terms(lcu):
     coeffs, ops = lcu.terms()
     coeffs = qml.math.stack(coeffs)
     angles = qml.math.angle(coeffs)
-    new_ops = []
-
-    for angle, op in zip(angles, ops):
-        new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
-        new_ops.append(new_op)
+    new_ops = [op @ qml.GlobalPhase(-angle, wires=op.wires) for angle, op in zip(angles, ops)]
 
     return qml.math.abs(coeffs), new_ops
 
@@ -70,6 +66,14 @@ class PrepSelPrep(Operation):
     [[-0.25  0.75]
      [ 0.75  0.25]]
     """
+
+    resource_keys = frozenset({"num_control", "op_reps"})
+
+    @property
+    def resource_params(self):
+        ops = self.lcu.terms()[1]
+        op_reps = tuple(qml.resource_rep(type(op), **op.resource_params) for op in ops)
+        return {"op_reps": op_reps, "num_control": len(self.control)}
 
     grad_method = None
 
@@ -203,3 +207,30 @@ class PrepSelPrep(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+
+def _prepselprep_resources(op_reps, num_control):
+    prod_reps = tuple(
+        qml.resource_rep(qml.ops.Prod, resources={qml.resource_rep(qml.GlobalPhase): 1, rep: 1})
+        for rep in op_reps
+    )
+    return {
+        qml.resource_rep(qml.Select, op_reps=prod_reps, num_control_wires=num_control): 1,
+        qml.resource_rep(qml.StatePrep, num_wires=num_control): 1,
+        qml.decomposition.adjoint_resource_rep(
+            qml.StatePrep, base_params={"num_wires": num_control}
+        ): 1,
+    }
+
+
+# pylint: disable=unused-argument, too-many-arguments
+@qml.register_resources(_prepselprep_resources)
+def _prepselprep_decomp(*_, wires, lcu, coeffs, ops, control, target_wires):
+    coeffs, ops = _get_new_terms(lcu)
+    sqrt_coeffs = qml.math.sqrt(coeffs)
+    qml.StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control)
+    qml.Select(ops, control)
+    qml.adjoint(qml.StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control))
+
+
+qml.add_decomps(PrepSelPrep, _prepselprep_decomp)

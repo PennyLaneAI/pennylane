@@ -57,6 +57,7 @@
   manner.
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
   [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
+  [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   
   The included templates are:
 
@@ -66,6 +67,10 @@
   
   * :class:`~.ModExp`
 
+  * :class:`~.MottonenStatePreparation`
+
+  * :class:`~.MPSPrep`
+
   * :class:`~.Multiplier`
 
   * :class:`~.OutAdder`
@@ -74,11 +79,17 @@
 
   * :class:`~.OutPoly`
 
+  * :class:`~.PrepSelPrep`
+
+  * :class:`~.ops.Prod`
+
   * :class:`~.Reflection`
 
-  * :class:`~.TrotterProduct`
+  * :class:`~.Select`
 
-  * :class:`~.MPSPrep`
+  * :class:`~.StatePrep`
+
+  * :class:`~.TrotterProduct`
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
@@ -101,7 +112,6 @@
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
-
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)

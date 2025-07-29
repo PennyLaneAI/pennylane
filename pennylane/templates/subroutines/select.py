@@ -17,7 +17,7 @@ Contains the Select template.
 
 import copy
 import itertools
-from collections import Counter
+from collections import Counter, defaultdict
 
 import numpy as np
 
@@ -340,7 +340,16 @@ class Select(Operation):
 
     """
 
-    resource_keys = {"ops", "new_option"}
+    resource_keys = {"op_reps", "num_control_wires", "new_option"}
+
+    @property
+    def resource_params(self):
+        op_reps = tuple(qml.resource_rep(type(op), **op.resource_params) for op in self.ops)
+        return {
+            "op_reps": op_reps,
+            "num_control_wires": len(self.control),
+            "new_option": self.hyperparameters["new_option"],
+        }
 
     def _flatten(self):
         return (self.ops), (
@@ -519,14 +528,40 @@ class Select(Operation):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
 
-    @property
-    def resource_params(self) -> dict:
-        return {
-            "ops": [
-                resource_rep(type(op), **op.resource_params) for op in self.hyperparameters["ops"]
-            ],
-            "new_option": self.hyperparameters["new_option"],
-        }
+
+# Decomposition of Select using full + multi-control strategy
+
+
+def _multi_controlled_rep(target_rep, num_control_wires, state):
+    return qml.decomposition.controlled_resource_rep(
+        base_class=target_rep.op_type,
+        base_params=target_rep.params,
+        num_control_wires=num_control_wires,
+        num_work_wires=0,
+        num_zero_control_values=num_control_wires - sum(state),
+    )
+
+
+def _select_resources_full_mc(op_reps, num_control_wires):
+    state_iterator = itertools.product([0, 1], repeat=num_control_wires)
+
+    resources = defaultdict(int)
+    for rep, state in zip(op_reps, state_iterator):
+        resources[_multi_controlled_rep(rep, num_control_wires, state)] += 1
+    return dict(resources)
+
+
+# pylint: disable=unused-argument
+@qml.register_resources(_select_resources_full_mc)
+def _select_decomp_full_mc(ops, control, work_wires, **_):
+    state_iterator = itertools.product([0, 1], repeat=len(control))
+    for state, op in zip(state_iterator, ops):
+        qml.ctrl(op, control, control_values=state)
+
+
+qml.add_decomps(Select, _select_decomp_full_mc)
+
+# Decomposition of Select using partial + unary iterator strategy
 
 
 def _ceil(a):
@@ -665,16 +700,17 @@ def _add_k_units(ops, controls, work_wires, k):
     )
 
 
-def _unary_select_resources(ops, new_option):
+# pylint: disable=unused-argument
+def _select_resources_partial_unary(op_reps, num_control_wires, new_option):
     if not new_option:
         raise NotImplementedError(
             "Resources for unary iteration with new_option=False not implemented yet."
         )
-    num_ops = len(ops)
-    cnt = Counter()
+    num_ops = len(op_reps)
+    counts = Counter()
 
     if num_ops / 2 ** _ceil_log(num_ops) > 3 / 4:
-        cnt.update(
+        counts.update(
             {
                 resource_rep(TemporaryAND): num_ops - 3,
                 adjoint_resource_rep(TemporaryAND): num_ops - 3,
@@ -683,7 +719,7 @@ def _unary_select_resources(ops, new_option):
             }
         )
     else:
-        cnt.update(
+        counts.update(
             {
                 resource_rep(TemporaryAND): num_ops - 2,
                 adjoint_resource_rep(TemporaryAND): num_ops - 2,
@@ -692,11 +728,10 @@ def _unary_select_resources(ops, new_option):
             }
         )
 
-    for op in ops:
-        key = controlled_resource_rep(op.op_type, op.params, num_control_wires=1)
-        cnt[key] += 1
+    for op in op_reps:
+        counts[controlled_resource_rep(op.op_type, op.params, num_control_wires=1)] += 1
 
-    return dict(cnt)
+    return dict(counts)
 
 
 def _unary_select_not_new_option(ops, control, work_wires):
@@ -758,8 +793,8 @@ def _unary_select_not_new_option(ops, control, work_wires):
     return ops_decomp
 
 
-@register_resources(_unary_select_resources)
-def _unary_select(ops, control, work_wires, new_option, **_):
+@register_resources(_select_resources_partial_unary)
+def _select_decomp_partial_unary(ops, control, work_wires, new_option, **_):
     r"""This function reproduces the unary iterator behaviour in https://arxiv.org/abs/1805.03662.
     For :math:`K` operators this decomposition requires at least :math:`c=\lceil\log_2 K\rceil`
     control wires (as usual for Select), and :math:`c-1` additional work wires.
@@ -800,12 +835,4 @@ def _unary_select(ops, control, work_wires, new_option, **_):
     return _add_first_k_units(ops, aux_control, work_wires, len(ops))
 
 
-add_decomps(Select, _unary_select)
-
-# pylint: disable=protected-access
-if Select._primitive is not None:
-
-    @Select._primitive.def_impl
-    def _(*args, n_wires, **kwargs):
-        ops, control = args[:-n_wires], args[-n_wires:]
-        return type.__call__(Select, ops, control, **kwargs)
+add_decomps(Select, _select_decomp_partial_unary)
