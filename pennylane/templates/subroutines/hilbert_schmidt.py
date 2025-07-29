@@ -107,12 +107,12 @@ class HilbertSchmidt(Operation):
         return data, tuple()
 
     @classmethod
-    def _primitive_bind_call(cls, V, U, **kwargs):
+    def _primitive_bind_call(cls, V, U):
         # pylint: disable=arguments-differ
         U = [U] if not hasattr(U, "__iter__") or is_abstract(U) else U
         V = [V] if not hasattr(V, "__iter__") or is_abstract(V) else V
         num_v_ops = len(V)
-        return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops, **kwargs)
+        return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops)
 
     @classmethod
     def _unflatten(cls, data, _) -> "HilbertSchmidt":
@@ -189,7 +189,7 @@ class HilbertSchmidt(Operation):
         """Flattened list of operators that compose this HilbertSchmidt operation."""
         return [*self._hyperparameters["V"], *self._hyperparameters["U"]]
 
-    def queue(self, context=QueuingManager):
+    def queue(self, context=QueuingManager) -> "HilbertSchmidt":
         for op in self._hyperparameters["V"]:
             context.remove(op)
         for op in self._hyperparameters["U"]:
@@ -252,10 +252,10 @@ class HilbertSchmidt(Operation):
 if HilbertSchmidt._primitive is not None:
 
     @HilbertSchmidt._primitive.def_impl
-    def _(*ops, num_v_ops, **kwargs):
+    def _(*ops, num_v_ops):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
-        return type.__call__(HilbertSchmidt, V, U, **kwargs)
+        return type.__call__(HilbertSchmidt, V, U)
 
 
 class LocalHilbertSchmidt(HilbertSchmidt):
@@ -387,7 +387,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 if LocalHilbertSchmidt._primitive is not None:
 
     @LocalHilbertSchmidt._primitive.def_impl
-    def _(*ops, num_v_ops, **kwargs):
+    def _(*ops, num_v_ops):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
-        return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)
+        return type.__call__(LocalHilbertSchmidt, V, U)
