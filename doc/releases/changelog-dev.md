@@ -361,6 +361,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug that caused operators to be queued from within :func:`~.matrix` if it required
+  decomposition of an operator that in turn queues its constituents in its decomposition method.
+  [(#7975)](https://github.com/PennyLaneAI/pennylane/pull/7975)
+
 * An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
   [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
 
@@ -402,4 +406,5 @@ Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
 Jay Soni,
+David Wierichs,
 Jake Zaia
