@@ -64,6 +64,7 @@ class TestIsRealObjOrClose:
         """Test with TensorFlow."""
         import tensorflow as tf
 
+        dtype = tf.float64 if dtype == "float" else tf.complex128
         x = tf.Variable(data, dtype=dtype)
         assert qml.math.is_real_obj_or_close(x) is exp_output
 
