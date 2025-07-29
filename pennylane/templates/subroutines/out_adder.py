@@ -16,7 +16,6 @@ Contains the OutAdder template.
 """
 from collections import Counter
 
-import pennylane as qml
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -24,7 +23,12 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.wires import WiresLike
+from pennylane.ops import adjoint
+from pennylane.wires import Wires, WiresLike
+
+from .controlled_sequence import ControlledSequence
+from .phase_adder import PhaseAdder
+from .qft import QFT
 
 
 class OutAdder(Operation):
@@ -157,12 +161,12 @@ class OutAdder(Operation):
         mod=None,
         work_wires: WiresLike = (),
         id=None,
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
-        x_wires = qml.wires.Wires(x_wires)
-        y_wires = qml.wires.Wires(y_wires)
-        output_wires = qml.wires.Wires(output_wires)
-        work_wires = qml.wires.Wires(() if work_wires is None else work_wires)
+        x_wires = Wires(x_wires)
+        y_wires = Wires(y_wires)
+        output_wires = Wires(output_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
         num_work_wires = len(work_wires)
 
@@ -189,7 +193,7 @@ class OutAdder(Operation):
         if any(wire in y_wires for wire in output_wires):
             raise ValueError("None of the wires in y_wires should be included in output_wires.")
         for key in ["x_wires", "y_wires", "output_wires", "work_wires"]:
-            self.hyperparameters[key] = qml.wires.Wires(locals()[key])
+            self.hyperparameters[key] = Wires(locals()[key])
 
         # pylint: disable=consider-using-generator
         all_wires = sum(
@@ -275,18 +279,14 @@ class OutAdder(Operation):
         else:
             qft_new_output_wires = output_wires
             work_wire = ()
-        op_list.append(qml.QFT(wires=qft_new_output_wires))
+        op_list.append(QFT(wires=qft_new_output_wires))
         op_list.append(
-            qml.ControlledSequence(
-                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires
-            )
+            ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
         )
         op_list.append(
-            qml.ControlledSequence(
-                qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires
-            )
+            ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
         )
-        op_list.append(qml.adjoint(qml.QFT)(wires=qft_new_output_wires))
+        op_list.append(adjoint(QFT)(wires=qft_new_output_wires))
 
         return op_list
 
@@ -299,15 +299,15 @@ def _out_adder_decomposition_resources(num_output_wires, num_x_wires, num_y_wire
 
     resources = Counter(
         {
-            resource_rep(qml.QFT, num_wires=qft_wires): 1,
-            adjoint_resource_rep(qml.QFT, {"num_wires": qft_wires}): 1,
+            resource_rep(QFT, num_wires=qft_wires): 1,
+            adjoint_resource_rep(QFT, {"num_wires": qft_wires}): 1,
         }
     )
 
     for num_wires in (num_x_wires, num_y_wires):
         rep = resource_rep(
-            qml.ControlledSequence,
-            base_class=qml.PhaseAdder,
+            ControlledSequence,
+            base_class=PhaseAdder,
             base_params={"num_x_wires": qft_wires, "mod": mod},
             num_control_wires=num_wires,
         )
@@ -326,12 +326,12 @@ def _out_adder_decomposition(x_wires, y_wires, output_wires, mod, work_wires, **
         qft_new_output_wires = output_wires
         work_wire = ()
 
-    qml.QFT(wires=qft_new_output_wires)
+    QFT(wires=qft_new_output_wires)
 
-    qml.ControlledSequence(qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
+    ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=x_wires)
 
-    qml.ControlledSequence(qml.PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
-    qml.adjoint(qml.QFT(wires=qft_new_output_wires))
+    ControlledSequence(PhaseAdder(1, qft_new_output_wires, mod, work_wire), control=y_wires)
+    adjoint(QFT(wires=qft_new_output_wires))
 
 
 add_decomps(OutAdder, _out_adder_decomposition)
