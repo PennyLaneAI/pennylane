@@ -38,7 +38,7 @@ pytestmark = pytest.mark.data
         (Optional[int], "Union[int, None]"),
         (Union[int, "str", Molecule], "Union[int, str, pennylane.qchem.molecule.Molecule]"),
         (str, "str"),
-        (Type[str], "type[str]"),
+        (type[str], "type[str]"),
         (Union[list[list[int]], str], "Union[list[list[int]], str]"),
     ],
 )

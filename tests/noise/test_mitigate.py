@@ -144,7 +144,7 @@ class TestMitigateWithZNE:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = (np.random.random(s) for s in shapes)
 
         @partial(
             mitigate_with_zne,
@@ -311,7 +311,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = (np.random.random(s) for s in shapes)
 
         @partial(
             mitigate_with_zne,
@@ -361,7 +361,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = (np.random.random(s) for s in shapes)
 
         @partial(
             mitigate_with_zne,
@@ -401,7 +401,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = (np.random.random(s) for s in shapes)
 
         @partial(
             mitigate_with_zne,
@@ -445,7 +445,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = (np.random.random(s) for s in shapes)
 
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -503,7 +503,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s, requires_grad=True) for s in shapes]
+        w1, w2 = (np.random.random(s, requires_grad=True) for s in shapes)
 
         @partial(
             mitigate_with_zne,
@@ -561,7 +561,7 @@ class TestDifferentiableZNE:
         n_wires = 3
         template = qml.SimplifiedTwoDesign
         weights_shape = template.shape(n_layers, n_wires)
-        w1, w2 = [np.arange(np.prod(s)).reshape(s) for s in weights_shape]
+        w1, w2 = (np.arange(np.prod(s)).reshape(s) for s in weights_shape)
 
         dev = qml.device("default.qubit", wires=range(n_wires))
 
