@@ -20,6 +20,13 @@ import copy
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -106,6 +113,8 @@ class Reflection(Operation):
 
     grad_method = None
 
+    resource_keys = {"base_class", "base_params", "num_wires", "num_reflection_wires"}
+
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
         return cls._primitive.bind(*args, **kwargs)
@@ -139,6 +148,15 @@ class Reflection(Operation):
         }
 
         super().__init__(alpha, *U.data, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "base_class": self.hyperparameters["base"].__class__,
+            "base_params": self.hyperparameters["base"].resource_params,
+            "num_wires": None,
+            "num_reflection_wires": len(self.hyperparameters["reflection_wires"]),
+        }
 
     def map_wires(self, wire_map: dict):
         # pylint: disable=protected-access
@@ -198,3 +216,65 @@ class Reflection(Operation):
         ops.append(U)
 
         return ops
+
+
+def _reflection_decomposition_resources(
+    base_class, base_params, num_wires, num_reflection_wires=None
+) -> dict:
+
+    num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
+
+    resources = {
+        qml.GlobalPhase: 1,
+        adjoint_resource_rep(base_class, base_params): 1,
+        qml.PauliX: 2,
+    }
+
+    if num_wires > 1:
+        resources[
+            controlled_resource_rep(
+                qml.PhaseShift,
+                {},
+                num_control_wires=num_wires - 1,
+                num_zero_control_values=num_wires - 1,
+            )
+        ] = 1
+    else:
+        resources[resource_rep(qml.PhaseShift)] = 1
+
+    resources[resource_rep(base_class, **base_params)] = 1
+
+    return resources
+
+
+@register_resources(_reflection_decomposition_resources)
+def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
+    alpha = parameters[0]
+    U = hyperparameters["base"]
+    reflection_wires = hyperparameters["reflection_wires"]
+
+    wires = qml.wires.Wires(reflection_wires) if reflection_wires is not None else wires
+
+    qml.GlobalPhase(np.pi)
+    qml.adjoint(U)
+
+    if len(wires) > 1:
+        qml.PauliX(wires=wires[-1])
+
+        qml.ctrl(
+            qml.PhaseShift(alpha, wires=wires[-1]),
+            control=wires[:-1],
+            control_values=[0] * (len(wires) - 1),
+        )
+
+        qml.PauliX(wires=wires[-1])
+
+    else:
+        qml.PauliX(wires=wires)
+        qml.PhaseShift(alpha, wires=wires)
+        qml.PauliX(wires=wires)
+
+    U._unflatten(*U._flatten())  # pylint: disable=protected-access
+
+
+add_decomps(Reflection, _reflection_decomposition)
