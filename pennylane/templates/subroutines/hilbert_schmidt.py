@@ -214,17 +214,17 @@ class HilbertSchmidt(Operation):
         second_range = range(n_wires // 2, n_wires)
 
         # Hadamard first layer
-        decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
+        decomp_ops = [Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
-            qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
         )
 
         # Unitary U
         for op_u in u_ops:
             # The operation has been defined outside of this function, to queue it we call qml.apply.
-            if qml.QueuingManager.recording():
-                qml.apply(op_u)
+            if QueuingManager.recording():
+                apply(op_u)
             decomp_ops.append(op_u)
 
         # Unitary V conjugate
@@ -237,11 +237,11 @@ class HilbertSchmidt(Operation):
 
         # CNOT second layer
         decomp_ops.extend(
-            qml.CNOT(wires=[wires[i], wires[j]])
+            CNOT(wires=[wires[i], wires[j]])
             for i, j in zip(reversed(first_range), reversed(second_range))
         )
         # Hadamard second layer
-        decomp_ops.extend(qml.Hadamard(wires[i]) for i in first_range)
+        decomp_ops.extend(Hadamard(wires[i]) for i in first_range)
         return decomp_ops
 
 
@@ -344,10 +344,10 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         second_range = range(n_wires // 2, n_wires)
 
         # Hadamard first layer
-        decomp_ops = [qml.Hadamard(wires[i]) for i in first_range]
+        decomp_ops = [Hadamard(wires[i]) for i in first_range]
         # CNOT first layer
         decomp_ops.extend(
-            qml.CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
+            CNOT(wires=[wires[i], wires[j]]) for i, j in zip(first_range, second_range)
         )
 
         # Unitary U
@@ -364,7 +364,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
             qml.QubitUnitary(op_v.matrix().conjugate(), wires=op_v.wires) for op_v in v_ops
         )
         # Single qubit measurement
-        decomp_ops.extend((qml.CNOT(wires=[wires[0], wires[n_wires // 2]]), qml.Hadamard(wires[0])))
+        decomp_ops.extend((CNOT(wires=[wires[0], wires[n_wires // 2]]), Hadamard(wires[0])))
 
         return decomp_ops
 
