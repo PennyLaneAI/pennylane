@@ -587,7 +587,7 @@ class TestDevicePreprocessing:
         """Test that using a qnode with postselect_mode="hw-like" gives the expected results."""
 
         if dev_name == "lightning.qubit":
-            pytest.mark.xfail("still squeezing samples")  # [sc-96550]
+            pytest.xfail("still squeezing samples")  # [sc-96550]
 
         shots = 1000
         dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
@@ -620,7 +620,7 @@ class TestDevicePreprocessing:
         """Test that single-branch-statistics works as expected."""
 
         if dev_name == "lightning.qubit":
-            pytest.mark.xfail("still squeezing samples")  # [sc-96550]
+            pytest.xfail("still squeezing samples")  # [sc-96550]
 
         shots = 1000
         dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
