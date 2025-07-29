@@ -22,9 +22,10 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import CondCallable, ConditionalTransformError
+from pennylane.exceptions import ConditionalTransformError
+from pennylane.ops.op_math.condition import CondCallable
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 

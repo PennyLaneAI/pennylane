@@ -195,6 +195,7 @@ class TestCaching:
                 [tape],
                 dev,
                 diff_method=param_shift,
+                cache=True,
                 cachesize=cachesize,
             )[0]
 

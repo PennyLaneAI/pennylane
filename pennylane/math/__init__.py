@@ -30,6 +30,7 @@ The following frameworks are currently supported:
 * TensorFlow
 * PyTorch
 * JAX
+
 """
 import autoray as ar
 
@@ -89,6 +90,7 @@ from .quantum import (
     max_entropy,
     min_entropy,
     trace_distance,
+    choi_matrix,
 )
 from .fidelity import fidelity, fidelity_statevector
 from .utils import (
@@ -113,7 +115,6 @@ from .interface_utils import (
 )
 from .grad import grad, jacobian
 from . import decomposition
-from .decomposition import givens_decomposition
 
 sum = ar.numpy.sum
 conj = ar.numpy.conj
@@ -232,6 +233,6 @@ __all__ = [
     "unwrap",
     "vn_entropy",
     "vn_entanglement_entropy",
-    "givens_decomposition",
     "where",
+    "choi_matrix",
 ]

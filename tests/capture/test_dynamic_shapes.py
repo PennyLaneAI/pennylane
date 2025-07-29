@@ -20,7 +20,7 @@ import pytest
 
 from pennylane.capture import determine_abstracted_axes, register_custom_staging_rule
 
-pytestmark = pytest.mark.jax
+pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")

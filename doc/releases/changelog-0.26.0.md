@@ -1,4 +1,3 @@
-:orphan:
 
 # Release 0.26.0
 

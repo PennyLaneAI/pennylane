@@ -17,7 +17,7 @@ computing the product between operations.
 """
 import itertools
 from copy import copy
-from functools import reduce, wraps
+from functools import reduce
 from itertools import combinations
 from typing import Union
 
@@ -25,6 +25,7 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
+from pennylane.capture.autograph import wraps
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
@@ -54,7 +55,8 @@ def prod(*ops, id=None, lazy=True):
 
     Keyword Args:
         id (str or None): id for the product operator. Default is None.
-        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
+            of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
@@ -639,7 +641,7 @@ class _ProductFactorsGrouping:
             if pauli_word != "Identity":
                 pauli_op = self._paulis[pauli_word](wire)
                 self._factors += ((pauli_op,),)
-                self.global_phase *= pauli_coeff
+            self.global_phase *= pauli_coeff
 
     def remove_factors(self, wires: list[int]):
         """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``

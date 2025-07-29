@@ -14,7 +14,7 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-from typing import Optional, Union
+from typing import Optional
 
 import pytest
 
@@ -246,7 +246,7 @@ class TestSetupExecutionConfig:
             (EXAMPLE_TOML_FILE, None, "deferred"),
             (EXAMPLE_TOML_FILE_ONE_SHOT, 10, "one-shot"),
             (EXAMPLE_TOML_FILE_ONE_SHOT, None, "deferred"),
-            (EXAMPLE_TOML_FILE_ALL_SUPPORT, 10, "one-shot"),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, 10, "device"),
             (EXAMPLE_TOML_FILE_ALL_SUPPORT, None, "device"),
         ],
         indirect=("create_temporary_toml_file",),
@@ -329,7 +329,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -364,7 +364,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -407,7 +407,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -460,7 +460,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()

@@ -23,8 +23,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.exceptions import DeviceError
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.exceptions import DeviceError, MatrixUndefinedError
+from pennylane.operation import Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
@@ -1242,6 +1242,33 @@ class TestSimplify:
         )
         final_op = qml.sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
         simplified_op = prod_op.simplify()
+        qml.assert_equal(simplified_op, final_op)
+
+    def test_grouping_with_equal_paulis_single_wire(self):
+        """Test that equal Pauli operators, creating global phase contributions, are simplified
+        correctly on one wire."""
+        prod_op = qml.prod(qml.X(0) @ qml.Y(0) @ qml.Z(0) @ qml.H(0))
+        final_op = 1j * qml.H(0)
+        simplified_op = prod_op.simplify()
+        assert np.allclose(qml.matrix(prod_op), qml.matrix(final_op))
+        qml.assert_equal(simplified_op, final_op)
+
+    def test_grouping_with_equal_paulis_two_wires(self):
+        """Test that equal Pauli operators, creating global phase contributions, are simplified
+        correctly on two wires."""
+        prod_op = qml.prod(
+            qml.X(0)
+            @ qml.Z("a")
+            @ qml.Y(0)
+            @ qml.Z(0)
+            @ qml.X("a")
+            @ qml.Y("a")
+            @ qml.H(0)
+            @ qml.H("a")
+        )
+        final_op = qml.simplify(-1 * qml.H(0) @ qml.H("a"))
+        simplified_op = prod_op.simplify()
+        assert np.allclose(qml.matrix(prod_op), qml.matrix(final_op))
         qml.assert_equal(simplified_op, final_op)
 
     def test_grouping_with_product_of_sums(self):

@@ -15,23 +15,181 @@
 This module contains the qml.sample measurement.
 """
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
+from pennylane import math
+from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, SampleMeasurement
+from .counts import CountsMP
+from .measurements import SampleMeasurement
 from .mid_measure import MeasurementValue
+from .process_samples import process_raw_samples
+
+
+class SampleMP(SampleMeasurement):
+    """Measurement process that returns the samples of a given observable. If no observable is
+    provided then basis state samples are returned directly from the device.
+
+    Please refer to :func:`pennylane.sample` for detailed documentation.
+
+    Args:
+        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
+            as part of the measurement process. Not all measurement processes require observables
+            (for example ``Probability``); this argument is optional.
+        wires (.Wires): The wires the measurement process applies to.
+            This can only be specified if an observable was not provided.
+        eigvals (array): A flat array representing the eigenvalues of the measurement.
+            This can only be specified if an observable was not provided.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+    """
+
+    _shortname = "sample"
+
+    def __init__(self, obs=None, wires=None, eigvals=None, id=None):
+
+        if isinstance(obs, MeasurementValue):
+            super().__init__(obs=obs)
+            return
+
+        if isinstance(obs, Sequence):
+            if not all(
+                isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
+            ) and not all(math.is_abstract(o) for o in obs):
+                raise QuantumFunctionError(
+                    "Only sequences of single MeasurementValues can be passed with the op "
+                    "argument. MeasurementValues manipulated using arithmetic operators cannot be "
+                    "used when collecting statistics for a sequence of mid-circuit measurements."
+                )
+
+            super().__init__(obs=obs)
+            return
+
+        if wires is not None:
+            if obs is not None:
+                raise ValueError(
+                    "Cannot specify the wires to sample if an observable is provided. The wires "
+                    "to sample will be determined directly from the observable."
+                )
+            wires = Wires(wires)
+
+        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
+
+    @classmethod
+    def _abstract_eval(
+        cls,
+        n_wires: int | None = None,
+        has_eigvals=False,
+        shots: int | None = None,
+        num_device_wires: int = 0,
+    ):
+        if shots is None:
+            raise ValueError("finite shots are required to use SampleMP")
+        sample_eigvals = n_wires is None or has_eigvals
+        dtype = float if sample_eigvals else int
+
+        if n_wires == 0:
+            dim = num_device_wires
+        elif sample_eigvals:
+            dim = 1
+        else:
+            dim = n_wires
+
+        shape = []
+        if shots != 1:
+            shape.append(shots)
+        if dim != 1:
+            shape.append(dim)
+        return tuple(shape), dtype
+
+    @property
+    def numeric_type(self):
+        if self.obs is None:
+            # Computational basis samples
+            return int
+        return float
+
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
+        if not shots:
+            raise MeasurementShapeError(
+                "Shots are required to obtain the shape of the measurement "
+                f"{self.__class__.__name__}."
+            )
+        if self.obs:
+            num_values_per_shot = 1  # one single eigenvalue
+        elif self.mv is not None:
+            num_values_per_shot = 1 if isinstance(self.mv, MeasurementValue) else len(self.mv)
+        else:
+            # one value per wire
+            num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires
+
+        shape = []
+        if shots != 1:
+            shape.append(shots)
+        if num_values_per_shot != 1:
+            shape.append(num_values_per_shot)
+        return tuple(shape)
+
+    def process_samples(
+        self,
+        samples: Sequence[complex],
+        wire_order: Wires,
+        shot_range: None | tuple[int, ...] = None,
+        bin_size: None | int = None,
+    ):
+        return process_raw_samples(
+            self, samples, wire_order, shot_range=shot_range, bin_size=bin_size
+        )
+
+    def process_counts(self, counts: dict, wire_order: Wires):
+        samples = []
+        mapped_counts = self._map_counts(counts, wire_order)
+        for outcome, count in mapped_counts.items():
+            outcome_sample = self._compute_outcome_sample(outcome)
+            if len(self.wires) == 1 and self.eigvals() is None:
+                # For sampling wires, if only one wire is sampled, flatten the list
+                outcome_sample = outcome_sample[0]
+            samples.extend([outcome_sample] * count)
+
+        return np.array(samples)
+
+    def _map_counts(self, counts_to_map, wire_order) -> dict:
+        """
+        Args:
+            counts_to_map: Dictionary where key is binary representation of the outcome and value is its count
+            wire_order: Order of wires to which counts_to_map should be ordered in
+
+        Returns:
+            Dictionary where counts_to_map has been reordered according to wire_order
+        """
+        with QueuingManager.stop_recording():
+            helper_counts = CountsMP(wires=self.wires, all_outcomes=False)
+        return helper_counts.process_counts(counts_to_map, wire_order)
+
+    def _compute_outcome_sample(self, outcome) -> list:
+        """
+        Args:
+            outcome (str): The binary string representation of the measurement outcome.
+
+        Returns:
+            list: A list of outcome samples for given binary string.
+                If eigenvalues exist, the binary outcomes are mapped to their corresponding eigenvalues.
+        """
+        if self.eigvals() is not None:
+            eigvals = self.eigvals()
+            return eigvals[int(outcome, 2)]
+
+        return [int(bit) for bit in outcome]
 
 
 def sample(
-    op: Optional[Union[Operator, MeasurementValue, Sequence[MeasurementValue]]] = None,
+    op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
     wires=None,
-) -> "SampleMP":
+) -> SampleMP:
     r"""Sample from the supplied observable, with the number of shots
     determined from the ``dev.shots`` attribute of the corresponding device,
     returning raw samples. If no observable is provided then basis state samples are returned
@@ -143,205 +301,4 @@ def sample(
            [0, 0]])
 
     """
-    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires))
-
-
-class SampleMP(SampleMeasurement):
-    """Measurement process that returns the samples of a given observable. If no observable is
-    provided then basis state samples are returned directly from the device.
-
-    Please refer to :func:`pennylane.sample` for detailed documentation.
-
-    Args:
-        obs (Union[.Operator, .MeasurementValue]): The observable that is to be measured
-            as part of the measurement process. Not all measurement processes require observables
-            (for example ``Probability``); this argument is optional.
-        wires (.Wires): The wires the measurement process applies to.
-            This can only be specified if an observable was not provided.
-        eigvals (array): A flat array representing the eigenvalues of the measurement.
-            This can only be specified if an observable was not provided.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
-    """
-
-    _shortname = "sample"
-
-    def __init__(self, obs=None, wires=None, eigvals=None, id=None):
-
-        if isinstance(obs, MeasurementValue):
-            super().__init__(obs=obs)
-            return
-
-        if isinstance(obs, Sequence):
-            if not all(
-                isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
-            ) and not all(qml.math.is_abstract(o) for o in obs):
-                raise QuantumFunctionError(
-                    "Only sequences of single MeasurementValues can be passed with the op "
-                    "argument. MeasurementValues manipulated using arithmetic operators cannot be "
-                    "used when collecting statistics for a sequence of mid-circuit measurements."
-                )
-
-            super().__init__(obs=obs)
-            return
-
-        if wires is not None:
-            if obs is not None:
-                raise ValueError(
-                    "Cannot specify the wires to sample if an observable is provided. The wires "
-                    "to sample will be determined directly from the observable."
-                )
-            wires = Wires(wires)
-
-        super().__init__(obs=obs, wires=wires, eigvals=eigvals, id=id)
-
-    @classmethod
-    def _abstract_eval(
-        cls,
-        n_wires: Optional[int] = None,
-        has_eigvals=False,
-        shots: Optional[int] = None,
-        num_device_wires: int = 0,
-    ):
-        if shots is None:
-            raise ValueError("finite shots are required to use SampleMP")
-        sample_eigvals = n_wires is None or has_eigvals
-        dtype = float if sample_eigvals else int
-
-        if n_wires == 0:
-            dim = num_device_wires
-        elif sample_eigvals:
-            dim = 1
-        else:
-            dim = n_wires
-
-        shape = []
-        if shots != 1:
-            shape.append(shots)
-        if dim != 1:
-            shape.append(dim)
-        return tuple(shape), dtype
-
-    @property
-    def numeric_type(self):
-        if self.obs is None:
-            # Computational basis samples
-            return int
-        return float
-
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
-        if not shots:
-            raise MeasurementShapeError(
-                "Shots are required to obtain the shape of the measurement "
-                f"{self.__class__.__name__}."
-            )
-        if self.obs:
-            num_values_per_shot = 1  # one single eigenvalue
-        elif self.mv is not None:
-            num_values_per_shot = 1 if isinstance(self.mv, MeasurementValue) else len(self.mv)
-        else:
-            # one value per wire
-            num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires
-
-        shape = []
-        if shots != 1:
-            shape.append(shots)
-        if num_values_per_shot != 1:
-            shape.append(num_values_per_shot)
-        return tuple(shape)
-
-    def process_samples(
-        self,
-        samples: Sequence[complex],
-        wire_order: Wires,
-        shot_range: tuple[int, ...] = None,
-        bin_size: int = None,
-    ):
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
-        # Select the samples from samples that correspond to ``shot_range`` if provided
-        if shot_range is not None:
-            # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
-            # colon (:) is required because shots is the second-to-last axis and the
-            # Ellipsis (...) otherwise would take up broadcasting and shots axes.
-            samples = samples[..., slice(*shot_range), :]
-
-        if mapped_wires:
-            # if wires are provided, then we only return samples from those wires
-            samples = samples[..., mapped_wires]
-
-        num_wires = samples.shape[-1]  # wires is the last dimension
-
-        # If we're sampling wires or a list of mid-circuit measurements
-        if self.obs is None and not isinstance(self.mv, MeasurementValue) and self._eigvals is None:
-            # if no observable was provided then return the raw samples
-            return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
-
-        # If we're sampling observables
-        try:
-            eigvals = self.eigvals()
-        except qml.operation.EigvalsUndefinedError as e:
-            # if observable has no info on eigenvalues, we cannot return this measurement
-            raise qml.operation.EigvalsUndefinedError(
-                f"Cannot compute samples of {self.obs.name}."
-            ) from e
-
-        if np.array_equal(eigvals, [1.0, -1.0]):
-            # special handling for observables with eigvals +1/-1
-            # (this is JIT-compatible, the next block is not)
-            # type should be float
-            samples = 1.0 - 2 * qml.math.squeeze(samples, axis=-1)
-        else:
-            # Replace the basis state in the computational basis with the correct eigenvalue.
-            # Extract only the columns of the basis samples required based on ``wires``.
-            powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
-            indices = samples @ powers_of_two
-            indices = qml.math.array(indices)  # Add np.array here for Jax support.
-            # This also covers statistics for mid-circuit measurements manipulated using
-            # arithmetic operators
-            if qml.math.is_abstract(indices):
-                samples = qml.math.take(eigvals, indices, like=indices)
-            else:
-                samples = eigvals[indices]
-
-        return samples if bin_size is None else samples.reshape((bin_size, -1))
-
-    def process_counts(self, counts: dict, wire_order: Wires):
-        samples = []
-        mapped_counts = self._map_counts(counts, wire_order)
-        for outcome, count in mapped_counts.items():
-            outcome_sample = self._compute_outcome_sample(outcome)
-            if len(self.wires) == 1 and self.eigvals() is None:
-                # For sampling wires, if only one wire is sampled, flatten the list
-                outcome_sample = outcome_sample[0]
-            samples.extend([outcome_sample] * count)
-
-        return np.array(samples)
-
-    def _map_counts(self, counts_to_map, wire_order) -> dict:
-        """
-        Args:
-            counts_to_map: Dictionary where key is binary representation of the outcome and value is its count
-            wire_order: Order of wires to which counts_to_map should be ordered in
-
-        Returns:
-            Dictionary where counts_to_map has been reordered according to wire_order
-        """
-        with qml.QueuingManager.stop_recording():
-            helper_counts = qml.counts(wires=self.wires, all_outcomes=False)
-        return helper_counts.process_counts(counts_to_map, wire_order)
-
-    def _compute_outcome_sample(self, outcome) -> list:
-        """
-        Args:
-            outcome (str): The binary string representation of the measurement outcome.
-
-        Returns:
-            list: A list of outcome samples for given binary string.
-                If eigenvalues exist, the binary outcomes are mapped to their corresponding eigenvalues.
-        """
-        if self.eigvals() is not None:
-            eigvals = self.eigvals()
-            return eigvals[int(outcome, 2)]
-
-        return [int(bit) for bit in outcome]
+    return SampleMP(obs=op, wires=None if wires is None else Wires(wires))

@@ -17,7 +17,6 @@ accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
 import warnings
-from typing import Optional, Union
 
 import numpy as np
 import scipy as sp
@@ -29,7 +28,8 @@ from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.decomposition.symbolic_decomposition import is_integer
-from pennylane.operation import DecompositionUndefinedError, FlatPytree, Operation
+from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.operation import FlatPytree, Operation
 from pennylane.ops.op_math.decompositions.unitary_decompositions import (
     multi_qubit_decomp_rule,
     rot_decomp_rule,
@@ -45,7 +45,7 @@ from pennylane.wires import Wires, WiresLike
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 
 
-def _walsh_hadamard_transform(D: TensorLike, n: Optional[int] = None):
+def _walsh_hadamard_transform(D: TensorLike, n: int | None = None):
     r"""Compute the Walsh–Hadamard Transform of a one-dimensional array.
 
     Args:
@@ -139,9 +139,9 @@ class QubitUnitary(Operation):
 
     def __init__(
         self,
-        U: Union[TensorLike, csr_matrix],
+        U: TensorLike | csr_matrix,
         wires: WiresLike,
-        id: Optional[str] = None,
+        id: str | None = None,
         unitary_check: bool = False,
     ):
         wires = Wires(wires)
@@ -314,7 +314,7 @@ class QubitUnitary(Operation):
         # Note: it is necessary to explicitly cast back to csr, or it will become csc.
         return QubitUnitary(adjoint_sp_mat, wires=self.wires)
 
-    def pow(self, z: Union[int, float]):
+    def pow(self, z: int | float):
         if self.has_sparse_matrix:
             mat = self.sparse_matrix()
             pow_mat = sp.sparse.linalg.matrix_power(mat, z)
@@ -334,9 +334,9 @@ class QubitUnitary(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
 
@@ -516,8 +516,8 @@ class DiagonalQubitUnitary(Operation):
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, :class:`~.RZ`,
-        :class:`~.IsingZZ`, and/or :class:`~.MultiRZ` depending on the number of wires.
+        ``DiagonalQubitUnitary`` decomposes into :class:`~.DiagonalQubitUnitary`, :class:`~.SelectPauliRot`,
+        :class:`~.RZ`, and/or :class:`~.GlobalPhase` depending on the number of wires.
 
         .. note::
 
@@ -546,11 +546,10 @@ class DiagonalQubitUnitary(Operation):
 
         >>> diag = np.exp(1j * np.array([0.4, 2.1, 0.5, 1.8]))
         >>> qml.DiagonalQubitUnitary.compute_decomposition(diag, wires=[0, 1])
-        [SelectPauliRot(array([1.7, 1.3]), wires=[0, 1]),
-         DiagonalQubitUnitary(array([0.31532236+0.94898462j, 0.40848744+0.91276394j]), wires=[0])]
+        [DiagonalQubitUnitary(array([0.31532236+0.94898462j, 0.40848744+0.91276394j]), wires=[0]),
+        SelectPauliRot(array([1.7, 1.3]), wires=[0, 1])]
 
         .. details::
-
             :title: Finding the parameters
 
             Theorem 7 referenced above only tells us the structure of the circuit, but not the
@@ -629,11 +628,36 @@ class DiagonalQubitUnitary(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
+
+
+def _diagonal_qu_resource(num_wires):  # pylint: disable=unused-argument
+    if num_wires == 1:
+        return {qml.RZ: 1, qml.GlobalPhase: 1}
+    return {
+        resource_rep(DiagonalQubitUnitary, num_wires=num_wires - 1): 1,
+        resource_rep(qml.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 1,
+    }
+
+
+@register_resources(_diagonal_qu_resource)
+def _diagonal_qu_decomp(D, wires):
+    angles = qml.math.angle(D)
+    diff = angles[..., 1::2] - angles[..., ::2]
+    mean = (angles[..., ::2] + angles[..., 1::2]) / 2
+    if len(wires) == 1:
+        qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires)
+        qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires)
+    else:
+        qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1])
+        qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
+
+
+add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp)
 
 
 def _diagonal_qubit_unitary_resource(base_class, base_params, **_):
@@ -739,7 +763,7 @@ class BlockEncode(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
@@ -843,9 +867,9 @@ class BlockEncode(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
 

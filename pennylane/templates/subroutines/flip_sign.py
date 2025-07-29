@@ -14,9 +14,8 @@
 r"""
 Contains the FlipSign template.
 """
-
-import pennylane as qml
 from pennylane.operation import Operation
+from pennylane.ops import X, Z, ctrl
 
 
 class FlipSign(Operation):
@@ -31,10 +30,8 @@ class FlipSign(Operation):
     where n is the basis state to flip and m is the input.
 
     Args:
-        n (array[int] or int): binary array or integer value representing the state on which to
-            flip the sign
-        wires (array[int]): wires that the template acts on
-
+        n (array[int] or int): binary array or integer value representing the state on which to flip the sign
+        wires (array[int] or int): wires that the template acts on
 
     **Example**
 
@@ -44,15 +41,14 @@ class FlipSign(Operation):
 
     .. code-block:: python
 
-        basis_state = [1, 0]
-
-        dev = qml.device("default.qubit", wires=2)
+        num_wires = 2
+        dev = qml.device("default.qubit", wires=num_wires)
 
         @qml.qnode(dev)
         def circuit():
-            for wire in list(range(2)):
-                qml.Hadamard(wires=wire)
-            qml.FlipSign(basis_state, wires=list(range(2)))
+            for wire in range(num_wires):
+                qml.Hadamard(wire)
+            qml.FlipSign([1, 0], wires=range(num_wires))
             return qml.state()
 
     The result for the above circuit is:
@@ -60,7 +56,7 @@ class FlipSign(Operation):
     .. code-block:: python
 
         >>> circuit()
-        tensor([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j], requires_grad=True)
+        array([ 0.5+0.j,  0.5+0.j, -0.5+0.j,  0.5+0.j])
 
     """
 
@@ -73,44 +69,40 @@ class FlipSign(Operation):
 
     def __init__(self, n, wires, id=None):
         if not isinstance(wires, int) and len(wires) == 0:
-            raise ValueError("expected at least one wire representing the qubit ")
+            raise ValueError("At least one valid wire is required.")
 
         if isinstance(wires, int):
-            wires = 1 if wires == 0 else wires
-            wires = list(range(wires))
+            wires = [wires]
 
         if isinstance(n, int):
-            if n >= 0:
-                n = self.to_list(n, len(wires))
-            else:
-                raise ValueError(
-                    "expected an integer equal or greater than zero for basic flipping state"
-                )
+            if n < 0:
+                raise ValueError("The given basis state cannot be a negative integer number.")
+            n = self.to_list(n, len(wires))
+
         n = tuple(n)
 
         if len(wires) != len(n):
-            raise ValueError(
-                "Wires length and flipping state length does not match, they must be equal length "
-            )
+            raise ValueError(f"The basis state {n} and wires {wires} must be of equal length.")
 
         self._hyperparameters = {"arr_bin": n}
         super().__init__(wires=wires, id=id)
 
     @staticmethod
     def to_list(n, n_wires):
-        r"""Convert an integer into a binary integer list
+        r"""Convert the given basis state from integer number into list of bits.
+
         Args:
-            n (int): Basis state as integer
-            n_wires (int): Numer of wires to transform the basis state
+            n (int): basis state as integer number
+            n_wires (int): number of wires
 
         Raises:
-            ValueError: "cannot encode n with n wires "
+            ValueError: "Cannot encode basis state ``n`` on ``n_wires`` wires."
 
         Returns:
-            (array[int]): integer binary array
+            list[int]: basis state as list of bits
         """
         if n >= 2**n_wires:
-            raise ValueError(f"cannot encode {n} with {n_wires} wires ")
+            raise ValueError(f"Cannot encode basis state {n} on {n_wires} wires.")
 
         b_str = f"{n:b}".zfill(n_wires)
         bin_list = [int(i) for i in b_str]
@@ -140,11 +132,11 @@ class FlipSign(Operation):
         op_list = []
 
         if arr_bin[-1] == 0:
-            op_list.append(qml.X(wires[-1]))
+            op_list.append(X(wires[-1]))
 
-        op_list.append(qml.ctrl(qml.Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1]))
+        op_list.append(ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1]))
 
         if arr_bin[-1] == 0:
-            op_list.append(qml.X(wires[-1]))
+            op_list.append(X(wires[-1]))
 
         return op_list

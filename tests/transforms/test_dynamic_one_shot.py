@@ -32,11 +32,19 @@ from pennylane.measurements import (
 from pennylane.transforms.dynamic_one_shot import (
     _supports_one_shot,
     fill_in_value,
+    gather_non_mcm,
     get_legacy_capabilities,
     parse_native_mid_circuit_measurements,
 )
 
 # pylint: disable=too-few-public-methods, too-many-arguments
+
+
+def test_gather_non_mcm_unsupported_measurement():
+    """Test that gather_non_mcm raises an error on supported measurements."""
+
+    with pytest.raises(TypeError, match="does not support"):
+        gather_non_mcm(qml.state(), np.array([0, 0]), np.array([True, True]))
 
 
 def test_get_legacy_capability():
