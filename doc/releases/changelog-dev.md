@@ -75,6 +75,19 @@
 
   * :class:`~.MPSPrep`
 
+* A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
+  This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
+  [(#7951)](https://github.com/PennyLaneAI/pennylane/pull/7951)
+
+  ```pycon
+  >>> import numpy as np
+  >>> Ks = [np.sqrt(0.3) * qml.CNOT((0, 1)), np.sqrt(1-0.3) * qml.X(0)]
+  >>> Ks = [qml.matrix(op, wire_order=range(2)) for op in Ks]
+  >>> Lambda = qml.math.choi_matrix(Ks)
+  >>> np.trace(Lambda), np.trace(Lambda @ Lambda)
+  (np.float64(1.0), np.float64(0.58))
+  ```
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -164,6 +177,10 @@
 
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
+
+* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
+  instantiation of resource operators which require resource operators as input.
+  [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
 
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
@@ -291,6 +308,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
+  [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
+
 * Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
   PennyLane submodules.
   [(#7959)](https://github.com/PennyLaneAI/pennylane/pull/7959)
@@ -399,6 +419,7 @@ Yushao Chen,
 Marcus Edwards,
 Simone Gasperini,
 David Ittah,
+Korbinian Kottmann,
 Mehrdad Malekmohammadi
 Erick Ochoa,
 Mudit Pandey,

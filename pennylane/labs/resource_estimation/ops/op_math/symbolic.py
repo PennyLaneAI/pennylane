@@ -24,7 +24,6 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourcesNotDefined,
     resource_rep,
 )
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called
@@ -92,7 +91,8 @@ class ResourceAdjoint(ResourceOperator):
     resource_keys = {"base_cmpr_op"}
 
     def __init__(self, base_op: ResourceOperator, wires=None) -> None:
-        self.queue(remove_op=base_op)
+        self.dequeue(op_to_remove=base_op)
+        self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
 
         self.base_op = base_cmpr_op
@@ -103,13 +103,6 @@ class ResourceAdjoint(ResourceOperator):
         else:
             self.wires = None or base_op.wires
             self.num_wires = base_op.num_wires
-
-    # pylint: disable=arguments-renamed
-    def queue(self, remove_op, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        context.remove(remove_op)
-        context.append(self)
-        return self
 
     @property
     def resource_params(self) -> dict:
@@ -302,7 +295,8 @@ class ResourceControlled(ResourceOperator):
         num_ctrl_values: int,
         wires=None,
     ) -> None:
-        self.queue(remove_base_op=base_op)
+        self.dequeue(op_to_remove=base_op)
+        self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
 
         self.base_op = base_cmpr_op
@@ -316,13 +310,6 @@ class ResourceControlled(ResourceOperator):
             self.wires = None
             num_base_wires = base_op.num_wires
             self.num_wires = num_ctrl_wires + num_base_wires
-
-    # pylint: disable=arguments-renamed
-    def queue(self, remove_base_op, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        context.remove(remove_base_op)
-        context.append(self)
-        return self
 
     @property
     def resource_params(self) -> dict:
@@ -571,7 +558,8 @@ class ResourcePow(ResourceOperator):
     resource_keys = {"base_cmpr_op", "z"}
 
     def __init__(self, base_op: ResourceOperator, z: int, wires=None) -> None:
-        self.queue(remove_op=base_op)
+        self.dequeue(op_to_remove=base_op)
+        self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
 
         self.z = z
@@ -583,13 +571,6 @@ class ResourcePow(ResourceOperator):
         else:
             self.wires = None or base_op.wires
             self.num_wires = base_op.num_wires
-
-    # pylint: disable=arguments-renamed
-    def queue(self, remove_op, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        context.remove(remove_op)
-        context.append(self)
-        return self
 
     @property
     def resource_params(self) -> dict:
@@ -785,7 +766,8 @@ class ResourceProd(ResourceOperator):
             ops.append(op)
             counts.append(count)
 
-        self.queue(ops)
+        self.dequeue(op_to_remove=ops)
+        self.queue()
 
         try:
             cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -807,14 +789,6 @@ class ResourceProd(ResourceOperator):
             else:
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires)
-
-    # pylint: disable=arguments-renamed
-    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        for op in ops_to_remove:
-            context.remove(op)
-        context.append(self)
-        return self
 
     @property
     def resource_params(self) -> dict:
@@ -966,7 +940,8 @@ class ResourceChangeBasisOp(ResourceOperator):
         uncompute_op = uncompute_op or ResourceAdjoint(compute_op)
         ops_to_remove = [compute_op, base_op, uncompute_op]
 
-        self.queue(ops_to_remove)
+        self.dequeue(op_to_remove=ops_to_remove)
+        self.queue()
 
         try:
             self.cmpr_compute_op = compute_op.resource_rep_from_op()
@@ -989,14 +964,6 @@ class ResourceChangeBasisOp(ResourceOperator):
             else:
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires)
-
-    # pylint: disable=arguments-renamed
-    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        for op in ops_to_remove:
-            context.remove(op)
-        context.append(self)
-        return self
 
     @property
     def resource_params(self) -> dict:

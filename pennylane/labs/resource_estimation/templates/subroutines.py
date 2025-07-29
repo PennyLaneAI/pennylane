@@ -24,7 +24,6 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ,protected-access,too-many-arguments,unused-argument,super-init-not-called
@@ -914,7 +913,8 @@ class ResourceSelect(ResourceOperator):
     resource_keys = {"cmpr_ops"}
 
     def __init__(self, select_ops, wires=None) -> None:
-        self.queue(select_ops)
+        self.dequeue(op_to_remove=select_ops)
+        self.queue()
         num_select_ops = len(select_ops)
         num_ctrl_wires = math.ceil(math.log2(num_select_ops))
 
@@ -937,14 +937,6 @@ class ResourceSelect(ResourceOperator):
             else:
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires) + num_ctrl_wires
-
-    # pylint: disable=arguments-renamed
-    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        for op in ops_to_remove:
-            context.remove(op)
-        context.append(self)
-        return self
 
     @classmethod
     def default_resource_decomp(cls, cmpr_ops, **kwargs):  # pylint: disable=unused-argument
