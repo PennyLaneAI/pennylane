@@ -734,7 +734,40 @@ class TestReducerZX:
             exp_angle += 2 * np.pi
         assert np.isclose(new_angle, exp_angle)
 
-    def test_qnode_state_equivalence(self):
+    def test_transformed_tape(self):
+        ops = [
+            qml.CNOT(wires=[0, 1]),
+            qml.T(wires=0),
+            qml.CNOT(wires=[3, 2]),
+            qml.T(wires=1),
+            qml.CNOT(wires=[1, 2]),
+            qml.T(wires=2),
+            qml.RZ(0.5, wires=1),
+            qml.CNOT(wires=[1, 2]),
+            qml.T(wires=1),
+            qml.CNOT(wires=[3, 2]),
+            qml.T(wires=0),
+            qml.CNOT(wires=[0, 1]),
+        ]
+        original_tape = qml.tape.QuantumScript(ops=ops, measurements=[])
+
+        (reduced_tape,), _ = qml.transforms.zx_full_reduce(original_tape)
+
+        expected_ops = [
+            qml.S(wires=0),
+            qml.CNOT(wires=[2, 3]),
+            qml.CNOT(wires=[0, 1]),
+            qml.RZ(2.070796326790258, wires=[1]),
+            qml.CNOT(wires=[1, 3]),
+            qml.T(wires=3),
+            qml.CNOT(wires=[1, 3]),
+            qml.CNOT(wires=[2, 3]),
+            qml.CNOT(wires=[0, 1]),
+        ]
+
+        assert reduced_tape.operations == expected_ops
+
+    def test_equivalent_state(self):
         num_wires = 3
         device = qml.device("default.qubit", wires=num_wires)
 
