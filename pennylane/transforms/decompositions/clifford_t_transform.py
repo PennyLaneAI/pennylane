@@ -498,7 +498,6 @@ def clifford_t_decomposition(
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
         for op in compiled_tape.operations:
-            print(op, type(op))
             # Check whether operation is to be skipped
             if isinstance(op, _SKIP_OP_TYPES + _CATALYST_SKIP_OP_TYPES):
                 decomp_ops.append(op)
