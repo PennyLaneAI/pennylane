@@ -170,7 +170,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses and cannot be mutated without the use of the `dataclass.replace` function. 
+* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
 * Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
