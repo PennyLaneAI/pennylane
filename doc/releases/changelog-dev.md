@@ -320,6 +320,7 @@
 
 * Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
+  [(#7982)](https://github.com/PennyLaneAI/pennylane/pull/7982)
 
 * Improve the pre-commit hook to add gitleaks.
   [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
