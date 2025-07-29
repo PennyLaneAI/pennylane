@@ -119,7 +119,7 @@ class HilbertSchmidt(Operation):
         self,
         V: Operation | Iterable[Operation],
         U: Operation | Iterable[Operation],
-        **kwargs: dict[str, TensorLike] | None,
+        id: str | None = None,
     ) -> None:
 
         u_ops = (U,) if isinstance(U, Operation) else tuple(U)
@@ -136,8 +136,6 @@ class HilbertSchmidt(Operation):
             "U": u_ops,
             "V": v_ops,
         }
-
-        print(f"u_ops: {u_ops}, v_ops: {v_ops}")  # Debugging line to check operators
 
         if len(u_wires) != len(v_wires):
             raise ValueError("U and V must have the same number of wires.")
@@ -254,7 +252,7 @@ if HilbertSchmidt._primitive is not None:
     def _(*ops, num_v_ops, **kwargs):
         V = ops[:num_v_ops]
         U = ops[num_v_ops:]
-        return type.__call__(HilbertSchmidt, V, U, num_v_ops=num_v_ops, **kwargs)
+        return type.__call__(HilbertSchmidt, V, U, **kwargs)
 
 
 class LocalHilbertSchmidt(HilbertSchmidt):
@@ -380,3 +378,13 @@ class LocalHilbertSchmidt(HilbertSchmidt):
             if attr != "_hyperparameters":
                 setattr(clone, attr, value)
         return clone
+
+
+# pylint: disable=protected-access
+if LocalHilbertSchmidt._primitive is not None:
+
+    @LocalHilbertSchmidt._primitive.def_impl
+    def _(*ops, num_v_ops, **kwargs):
+        V = ops[:num_v_ops]
+        U = ops[num_v_ops:]
+        return type.__call__(LocalHilbertSchmidt, V, U, **kwargs)

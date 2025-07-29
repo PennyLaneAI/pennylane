@@ -457,11 +457,9 @@ class TestModifiedTemplates:
     def test_hilbert_schmidt(self, template):
         """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt."""
 
-        kwargs = {"num_v_ops": 1}
-
         def qfunc(v_params):
-            U = [qml.Hadamard(0)]
-            V = [qml.RZ(v_params[0], wires=1)]
+            U = qml.Hadamard(0)
+            V = qml.RZ(v_params[0], wires=1)
             template(V, U)
 
         v_params = jnp.array([0.1])
@@ -473,10 +471,11 @@ class TestModifiedTemplates:
 
         assert len(jaxpr.eqns) == 5
         assert jaxpr.eqns[0].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[-2].primitive == qml.RZ._primitive
 
         eqn = jaxpr.eqns[-1]
         assert eqn.primitive == template._primitive
-        assert eqn.params == kwargs
+        assert eqn.params == {"num_v_ops": 1}
         assert len(eqn.outvars) == 1
         assert isinstance(eqn.outvars[0], jax.core.DropVar)
 
@@ -484,9 +483,47 @@ class TestModifiedTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, v_params)
 
         assert len(q) == 1
+
         U = qml.Hadamard(0)
         V = qml.RZ(v_params[0], wires=1)
-        assert q.queue[0] == template(V=V, U=U)
+        assert qml.equal(q.queue[0], template(V, U))
+
+    @pytest.mark.parametrize("template", [qml.HilbertSchmidt, qml.LocalHilbertSchmidt])
+    def test_hilbert_schmidt_multiple_ops(self, template):
+        """Test the primitive bind call of HilbertSchmidt and LocalHilbertSchmidt with multiple ops."""
+
+        def qfunc(v_params):
+            U = [qml.Hadamard(0), qml.Hadamard(1)]
+            V = [qml.RZ(v_params[0], wires=2), qml.RX(v_params[1], wires=3)]
+            template(V, U)
+
+        v_params = jnp.array([0.1, 0.2])
+        # Validate inputs
+        qfunc(v_params)
+
+        # Actually test primitive bind
+        jaxpr = jax.make_jaxpr(qfunc)(v_params)
+
+        assert len(jaxpr.eqns) == 9
+        assert jaxpr.eqns[0].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[1].primitive == qml.Hadamard._primitive
+        assert jaxpr.eqns[-5].primitive == qml.RZ._primitive
+        assert jaxpr.eqns[-2].primitive == qml.RX._primitive
+
+        eqn = jaxpr.eqns[-1]
+        assert eqn.primitive == template._primitive
+        assert eqn.params == {"num_v_ops": 2}
+        assert len(eqn.outvars) == 1
+        assert isinstance(eqn.outvars[0], jax.core.DropVar)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, v_params)
+
+        assert len(q) == 1
+
+        U = [qml.Hadamard(0), qml.Hadamard(1)]
+        V = [qml.RZ(v_params[0], wires=2), qml.RX(v_params[1], wires=3)]
+        assert qml.equal(q.queue[0], template(V, U))
 
     @pytest.mark.parametrize("template", [qml.MERA, qml.MPS, qml.TTN])
     def test_tensor_networks(self, template):
