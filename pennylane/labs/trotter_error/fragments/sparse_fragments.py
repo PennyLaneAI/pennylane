@@ -82,7 +82,7 @@ class SparseFragment(Fragment):
         return SparseFragment(new_fragment)
 
     def __sub__(self, other: SparseFragment):
-        return SparseFragment(self.fragment + (-1) * other.fragment)
+        return SparseFragment(self.fragment - other.fragment)
 
     def __mul__(self, scalar: float):
         return SparseFragment(scalar * self.fragment)
@@ -104,15 +104,19 @@ class SparseFragment(Fragment):
     def __matmul__(self, other: SparseFragment):
         return SparseFragment(self.fragment.dot(other.fragment))
 
-    def apply(self, state: SparseState) -> Any:
+    def apply(self, state: SparseState) -> SparseFragment:
         return SparseState(self.fragment.dot(state.csr_matrix.transpose()).transpose())
 
-    def expectation(self, left: SparseState, right: Any) -> complex:
-        result = left.csr_matrix.conjugate().dot(self.fragment.dot(right.csr_matrix.transpose()))
+    def expectation(self, left: SparseState, right: SparseFragment) -> complex:
+        result = left.state.conjugate().dot(self.fragment.dot(right.state.transpose()))
         return complex(result.toarray().flatten()[0])
 
     def norm(self, params: Dict = None) -> float:
-        return sp.sparse.linalg.norm(self.fragment)
+        if params == None:
+            params = {}
+
+        ord = params.get("ord")
+        return sp.sparse.linalg.norm(self.fragment, ord=ord)
 
     def __repr__(self):
         return f"SparseFragment(shape={self.fragment.shape}, dtype={self.fragment.dtype})"
@@ -121,24 +125,50 @@ class SparseFragment(Fragment):
 class SparseState(AbstractState):
     """A wrapper class to allow scipy sparse vectors to be used in the Trotter error esimation functions.
     This class is intended to instantiate states to be used along with the `SparseFragment` class.
-
     """
 
-    def __init__(self, matrix: csr_matrix):
+    def __init__(self, state: csr_matrix):
         """Initialize the SparseState."""
-        self.csr_matrix = matrix
+
+        if not isinstance(state, csr_matrix):
+            raise TypeError(
+                f"SparseState must be instantiated from a csr_matrix. Got {type(state)}."
+            )
+
+        shape = state.shape
+
+        if not len(shape) == 2 or not shape[0] == 1:
+            raise ValueError(
+                f"Input csr_matrix must be one-dimensional with shape (1, k). Got shape {shape}."
+            )
+
+        self.state = state
 
     def __add__(self, other: SparseState) -> SparseState:
-        return SparseState(self.csr_matrix + other.csr_matrix)
+        return SparseState(self.state + other.state)
 
     def __sub__(self, other: SparseState) -> SparseState:
-        return SparseState(self.csr_matrix - other.csr_matrix)
+        return SparseState(self.state - other.state)
 
     def __mul__(self, scalar: float) -> SparseState:
-        return SparseState(scalar * self.csr_matrix)
+        return SparseState(scalar * self.state)
 
-    def __rmul__(self, scalar: float) -> SparseState:
-        return self.__mul__(scalar)
+    __rmul__ = __mul__
+
+    def __repr__(self) -> str:
+        return f"SparseState({self.state.__repr__()})"
+
+    def __eq__(self, other: SparseState) -> SparseState:
+        if not isinstance(other, SparseState):
+            raise TypeError(f"Cannot compare SparseFragment with type {type(other)}.")
+
+        if not np.all(self.state.indices == other.state.indices):
+            return False
+
+        if not np.all(self.state.indptr == other.state.indptr):
+            return False
+
+        return np.allclose(self.state.data, other.state.data)
 
     @classmethod
     def zero_state(cls, dim: int) -> SparseState:  # pylint: disable=arguments-differ
@@ -160,7 +190,7 @@ class SparseState(AbstractState):
         """
 
         if isinstance(other, SparseState):
-            result = self.csr_matrix.conjugate().dot(other.csr_matrix.transpose())
+            result = self.state.conjugate().dot(other.state.transpose())
             return complex(result.toarray().flatten()[0])
 
         raise TypeError(f"Cannot compute dot product between SparseState and {type(other)}")
