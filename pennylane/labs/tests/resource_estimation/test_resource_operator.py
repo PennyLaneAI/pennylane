@@ -184,14 +184,17 @@ class DummyOp(ResourceOperator):
 
     @property
     def resource_params(self):
+        """dummy resource params method"""
         return {"x": self.x}
 
     @classmethod
     def resource_rep(cls, x):
+        """dummy resource rep method"""
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
     def default_resource_decomp(cls, x) -> list:
+        """dummy resources"""
         return [x]
 
 
@@ -204,10 +207,12 @@ class DummyOp_no_resource_rep(ResourceOperator):
 
     @property
     def resource_params(self):
+        """dummy resource params method"""
         return DummyCmprsRep({"x": self.x})
 
     @classmethod
     def default_resource_decomp(cls, x) -> list:
+        """dummy resources"""
         return [x]
 
 
@@ -220,10 +225,12 @@ class DummyOp_no_resource_params(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, x):
+        """dummy resource rep method"""
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
     def default_resource_decomp(cls, x) -> list:
+        """dummy resources"""
         return [x]
 
 
@@ -236,10 +243,12 @@ class DummyOp_no_resource_decomp(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, x):
+        """dummy resource rep method"""
         return DummyCmprsRep(cls.__name__, param=x)
 
     @property
     def resource_params(self):
+        """dummy resource params method"""
         return DummyCmprsRep({"x": self.x})
 
 
@@ -497,6 +506,7 @@ def test_set_adj_decomp():
 
         @classmethod
         def default_adjoint_resource_decomp(cls, x):
+            """dummy adjoint resource decomp method"""
             return cls.default_resource_decomp(x=x)
 
     op1 = DummyAdjOp(x=5)
@@ -524,6 +534,7 @@ def test_set_ctrl_decomp():
 
         @classmethod
         def default_controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x):
+            """dummy control resource decomp method"""
             return cls.default_resource_decomp(x=x + ctrl_num_ctrl_values)
 
     op1 = DummyCtrlOp(x=5)
@@ -551,6 +562,7 @@ def test_set_pow_decomp():
 
         @classmethod
         def default_pow_resource_decomp(cls, pow_z, x):
+            """dummy adjoint resource decomp method"""
             return cls.default_resource_decomp(x=x)
 
     op1 = DummyPowOp(x=5)
@@ -650,6 +662,7 @@ def test_resource_rep():
 
         @classmethod
         def default_resource_decomp(cls, num_wires, continuous_param, bool_param):
+            """dummy default resource decomp method"""
             raise NotImplementedError
 
     class ResourceOpB(ResourceOperator):
@@ -669,6 +682,7 @@ def test_resource_rep():
 
         @classmethod
         def default_resource_decomp(cls, **kwargs):
+            """dummy default resource decomp method"""
             raise NotImplementedError
 
     expected_resource_rep_A = CompressedResourceOp(
