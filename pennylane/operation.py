@@ -200,6 +200,7 @@ from pennylane.exceptions import (
     GeneratorUndefinedError,
     MatrixUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
     PowUndefinedError,
     SparseMatrixUndefinedError,
     TermsUndefinedError,
@@ -1304,6 +1305,13 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         >>> qml.is_hermitian(op)
         True
         """
+
+        warnings.warn(
+            "The `is_hermitian` property is deprecated and will be removed in v0.44. "
+            "Use the `qml.is_hermitian` function instead.",
+            PennyLaneDeprecationWarning,
+        )
+
         return False
 
     # pylint: disable=no-self-argument, comparison-with-callable

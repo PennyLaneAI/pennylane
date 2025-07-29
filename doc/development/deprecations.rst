@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* The `qml.operation.Operator.is_hermitian` property is deprecated and will be removed in v0.44.
+  Use the `qml.is_hermitian` function instead.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version.
   Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
   Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.

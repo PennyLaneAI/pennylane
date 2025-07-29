@@ -52,10 +52,6 @@ class ValidOp(CompositeOp):
     def _build_pauli_rep(self):
         return qml.pauli.PauliSentence({})
 
-    @property
-    def is_hermitian(self):
-        return False
-
     def matrix(self, wire_order=None):
         return np.eye(2**self.num_wires)
 
