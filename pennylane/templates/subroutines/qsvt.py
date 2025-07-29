@@ -653,7 +653,7 @@ class QSVT(Operation):
                     op_list.append(ops.adjoint(UA_copy))
 
             op_list.append(projectors[-1])
-            mat = ops.prod(*tuple(op_list[::-1])).matrix()
+            mat = ops.functions.matrix(ops.prod(*tuple(op_list[::-1])))
 
         return mat
 
