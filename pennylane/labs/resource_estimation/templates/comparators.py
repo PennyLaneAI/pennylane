@@ -28,10 +28,13 @@ from pennylane.labs.resource_estimation.resource_operator import (
 class ResourceSingleQubitCompare(ResourceOperator):
     r"""Resource class for comparing two qubits.
 
-    This operation provides the cost for implementing a comparison between two qubits.
-    The comparison result is stored on three qubits: the second qubit stores :math:`x=y`,
-    and the two additional qubits initialized to the state :math:`|0\rangle` store
-    :math:`x \lt y` and :math:`x \gt y`.
+    This operation provides the cost for implementing a comparison between two qubits, :math:`x`
+    and :math:`y`. The comparison result is stored on three qubits: the second qubit stores :math:`x=y`,
+    and the two additional qubits initialized to the state :math:`|0\rangle`
+    store :math:`x \lt y` and :math:`x \gt y`, respectively.
+
+    The input registers get modified here, and can be reset to their original values by using the
+    adjoint of this operation.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
@@ -129,7 +132,7 @@ class ResourceTwoQubitCompare(ResourceOperator):
 
     This operation provides the cost for implementing a comparison between two quantum registers of
     two qubits each. This circuit takes a pair of 2-bit integers, and outputs a pair of single bits such
-    that the sign of their difference preserves the inequality of the input integers.
+    that they preserve the inequality of the input integers.
 
     The input registers get modified here, and can be reset to their original values by using the
     adjoint of this operation.
