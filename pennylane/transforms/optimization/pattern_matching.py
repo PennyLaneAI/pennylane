@@ -1552,7 +1552,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 "CCZ": 21,
                 # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
                 # see exercise 4.29 in Nielsen and Chuang
-                "MultiControlledX": lambda op: 2 * 4 * len(op.control_wires) ** 2
+                "MultiControlledX": lambda op: 2 * 4 * len(op.control_wires) ** 2,
             }
 
     def _pred_block(self, circuit_sublist, index):
@@ -1587,14 +1587,18 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         cost_left = 0
         for i in left:
             if isinstance(self.quantum_cost[self.template_dag.get_node(i).op.name], callable):
-                cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name](self.template_dag.get_node(i).op)
+                cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name](
+                    self.template_dag.get_node(i).op
+                )
             else:
                 cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
 
         cost_right = 0
         for j in right:
             if isinstance(self.quantum_cost[self.template_dag.get_node(j).op.name], callable):
-                cost_left += self.quantum_cost[self.template_dag.get_node(j).op.name](self.template_dag.get_node(j).op)
+                cost_left += self.quantum_cost[self.template_dag.get_node(j).op.name](
+                    self.template_dag.get_node(j).op
+                )
             else:
                 cost_left += self.quantum_cost[self.template_dag.get_node(j).op.name]
 

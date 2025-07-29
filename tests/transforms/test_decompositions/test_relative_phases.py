@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the decompositions transforms ``replace_relative_phase_toffoli`` and ``replace_controlled_iX_gate``.
+Unit tests for the decompositions transforms ``match_relative_phase_toffoli`` and ``match_controlled_iX_gate``.
 """
 from functools import partial
 from itertools import permutations

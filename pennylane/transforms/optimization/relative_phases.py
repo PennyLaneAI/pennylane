@@ -89,7 +89,7 @@ def match_relative_phase_toffoli(
 
         .. code-block:: python
 
-            @replace_relative_phase_toffoli
+            @match_relative_phase_toffoli
             @qml.qnode(device=dev)
             def circuit():
                 qml.Hadamard(wires=0)

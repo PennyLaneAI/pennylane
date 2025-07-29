@@ -58,8 +58,8 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.merge_rotations
     ~transforms.pattern_matching_optimization
     ~transforms.remove_barrier
-    ~transforms.replace_relative_phase_toffoli
-    ~transforms.replace_controlled_iX_gate
+    ~transforms.match_relative_phase_toffoli
+    ~transforms.match_controlled_iX_gate
     ~transforms.single_qubit_fusion
     ~transforms.transpile
     ~transforms.undo_swaps

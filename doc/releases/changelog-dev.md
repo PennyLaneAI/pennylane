@@ -4,8 +4,8 @@
 
 <h3>New features since last release</h3>
 
-* New transforms called :func:`~.transforms.replace_relative_phase_toffoli` and 
-  :func:`~.transforms.replace_controlled_iX_gate` have been added to implement passes that make use
+* New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
+  :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
   [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
 
