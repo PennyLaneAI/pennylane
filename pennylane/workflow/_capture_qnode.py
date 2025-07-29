@@ -554,10 +554,10 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         # Questions over the pytrees and the nested result object shape
         raise NotImplementedError("shot vectors are not yet supported in plxpr.")
 
-    if not qnode.device.wires:
-        raise NotImplementedError(
-            "devices must specify wires for integration with program capture."
-        )
+    # if not qnode.device.wires:
+    #     raise NotImplementedError(
+    #         "devices must specify wires for integration with program capture."
+    #     )
 
     # We compute ``abstracted_axes`` using the flattened arguments because trying to flatten
     # pytree ``abstracted_axes`` causes the abstract axis dictionaries to get flattened, which
