@@ -122,6 +122,8 @@ Templates:
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
     ~ResourceSemiAdder
+    ~ResourceQFT
+    ~ResourceAQFT
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
@@ -215,6 +217,8 @@ from .templates import (
     ResourcePhaseGradient,
     ResourceOutMultiplier,
     ResourceSemiAdder,
+    ResourceQFT,
+    ResourceAQFT,
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
