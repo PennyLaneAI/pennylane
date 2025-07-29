@@ -26,11 +26,7 @@ def _get_new_terms(lcu):
     coeffs, ops = lcu.terms()
     coeffs = qml.math.stack(coeffs)
     angles = qml.math.angle(coeffs)
-    new_ops = []
-
-    for angle, op in zip(angles, ops):
-        new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
-        new_ops.append(new_op)
+    new_ops = [op @ qml.GlobalPhase(-angle, wires=op.wires) for angle, op in zip(angles, ops)]
 
     return qml.math.abs(coeffs), new_ops
 
@@ -213,20 +209,11 @@ class PrepSelPrep(Operation):
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
 
 
-def _add_phase_to_resource_rep(rep):
-    """Conservatively add a GlobalPhase to a resource rep, because it will be passed to
-    the Select resource rep, which in turn will create controlled resource reps from it.
-    This makes the "global" phase, which may have been discarded otherwise, relevant.
-    If the incoming resource rep is a product, unpack it.
-    """
-    if rep.op_type == qml.ops.Prod:
-        return {qml.resource_rep(qml.GlobalPhase): 1, **rep.params["resources"]}
-    return {qml.resource_rep(qml.GlobalPhase): 1, rep: 1}
-
-
 def _prepselprep_resources(op_reps, num_control):
-    op_reps_with_phase = (_add_phase_to_resource_rep(rep) for rep in op_reps)
-    prod_reps = tuple(qml.resource_rep(qml.ops.Prod, resources=res) for res in op_reps_with_phase)
+    prod_reps = tuple(
+        qml.resource_rep(qml.ops.Prod, resources={qml.resource_rep(qml.GlobalPhase): 1, rep: 1})
+        for rep in op_reps
+    )
     return {
         qml.resource_rep(qml.Select, op_reps=prod_reps, num_control_wires=num_control): 1,
         qml.resource_rep(qml.StatePrep, num_wires=num_control): 1,
