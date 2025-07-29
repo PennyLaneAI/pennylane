@@ -285,9 +285,12 @@ class TestSparseState:
     state2 = SparseState(csr_matrix([[0, 1]]))
     state3 = SparseState(csr_matrix([[1, 1]]))
 
-    @pytest.mark.parametrize("state1, state2", [
-        (state1, state2),
-    ])
+    @pytest.mark.parametrize(
+        "state1, state2",
+        [
+            (state1, state2),
+        ],
+    )
     def test_state_arithmetic(self, state1, state2):
         """Test basic arithmetic operations on SparseStates"""
 
@@ -309,19 +312,21 @@ class TestSparseState:
         assert np.allclose(scaled_state.csr_matrix.toarray(), expected_scaled.toarray())
         assert np.allclose(scaled_state_rmul.csr_matrix.toarray(), expected_scaled_rmul.toarray())
 
-    @pytest.mark.parametrize("x, y, expected", [
-        (state1, state2, 0.0),
-        (state2, state1, 0.0),
-        (state1, state1, 1.0),
-        (state2, state2, 1.0),
-        (state1, state3, 1.0),
-        (state3, state1, 1.0),
-    ])
+    @pytest.mark.parametrize(
+        "x, y, expected",
+        [
+            (state1, state2, 0.0),
+            (state2, state1, 0.0),
+            (state1, state1, 1.0),
+            (state2, state2, 1.0),
+            (state1, state3, 1.0),
+            (state3, state1, 1.0),
+        ],
+    )
     def test_dot_product(self, x, y, expected):
         """Test dot product between SparseStates"""
 
         assert np.isclose(x.dot(y), expected)
-
 
 
 class TestEdgeCases:

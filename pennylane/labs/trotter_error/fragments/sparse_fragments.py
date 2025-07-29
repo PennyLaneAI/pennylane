@@ -121,8 +121,9 @@ class SparseFragment(Fragment):
 class SparseState(AbstractState):
     """A wrapper class to allow scipy sparse vectors to be used in the Trotter error esimation functions.
     This class is intended to instantiate states to be used along with the `SparseFragment` class.
-    
+
     """
+
     def __init__(self, matrix: csr_matrix):
         """Initialize the SparseState."""
         self.csr_matrix = matrix
@@ -140,7 +141,7 @@ class SparseState(AbstractState):
         return self.__mul__(scalar)
 
     @classmethod
-    def zero_state(cls, dim: int) -> SparseState: #pylint: disable=arguments-differ
+    def zero_state(cls, dim: int) -> SparseState:  # pylint: disable=arguments-differ
         """Return a representation of the zero state.
 
         Returns:
