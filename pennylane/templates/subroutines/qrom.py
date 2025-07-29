@@ -342,7 +342,7 @@ def _qrom_decomposition_resources(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, num_bitstrings)
 
-    ops = [resource_rep(qml.BasisEmbedding, num_wires=num_target_wires) for _ in num_bitstrings]
+    ops = [resource_rep(qml.BasisEmbedding, num_wires=num_target_wires) for _ in range(num_bitstrings)]
     ops_identity = ops + [qml.I] * int(2**num_control_wires - num_bitstrings)
 
     n_columns = (
