@@ -23,7 +23,7 @@ from copy import copy
 
 import pennylane as qml
 from pennylane.allocation import DynamicWire
-from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
+from pennylane.exceptions import AllocationError, DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement, StateMP
 from pennylane.operation import StatePrepBase
@@ -777,10 +777,49 @@ def _get_diagonalized_tape_and_wires(tape):
 def device_resolve_dynamic_wires(
     tape: QuantumScript, wires: None | Wires
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Allocate dynamic wires in a manner consistent with the provided device wires.
+
+    Args:
+        tape (QuantumScript): a circuit that may contain dynamic wire allocation
+        wires (None| Wires): the device wires
+
+    If device wires are provided, possible values for dynamic wires are determined from
+    device wires not present in the tape.
+
+    >>> from pennylane.devices.preprocess import device_resolve_dynamic_wires
+    >>> def f():
+    ...     qml.H(0)
+    ...     with qml.allocation.allocate(1) as wires:
+    ...         qml.X(wires)
+    ...     with qml.allocation.allocate(1) as wires:
+    ...         qml.X(wires)
+
+    >>> transformed = device_resolve_dynamic_wires(f, wires=qml.wires.Wires((0,"a", "b")))
+    >>> print(qml.draw(transformed)())
+    0: ──H─┤
+    b: ──X─┤
+    a: ──X─┤
+
+    If the device has no wires, then wires are allocated started at the smallest
+    integer not present in the ``tape``.
+
+    >>> transformed_None = device_resolve_dynamic_wires(f, wires=None)
+    >>> print(qml.draw(transformed_None)())
+    0: ──H──────────────┤
+    1: ──X──┤↗│  │0⟩──X─┤
+
+    See :func:`resolve_dynamic_wires` for a more detailed description.
+
+    """
     if wires:
-        zeroed = set(wires) - set(tape.wires)
+        zeroed = reversed(list(set(wires) - set(tape.wires)))
         min_int = None
     else:
         zeroed = ()
         min_int = max((i for i in tape.wires if isinstance(i, int)), default=-1) + 1
-    return resolve_dynamic_wires(tape, zeroed=zeroed, min_int=min_int)
+    try:
+        return resolve_dynamic_wires(tape, zeroed=zeroed, min_int=min_int)
+    except AllocationError as e:
+        raise AllocationError(
+            f"Not enough available wires on device with wires {wires} for requested dynamic wires."
+        ) from e

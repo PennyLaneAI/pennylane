@@ -276,3 +276,26 @@ class TestCaptureIntegration:
 
         with pytest.raises(NotImplementedError):
             deallocate(2)
+
+
+@pytest.mark.integration
+class TestDeviceIntegration:
+
+    @pytest.mark.parametrize("device_wires", (None, (0, 1, 2, 3)))
+    def test_simple_allocation(self, device_wires):
+        """Test that a simple dynamic allocation can be executed."""
+
+        @qml.qnode(qml.device("default.qubit", wires=device_wires))
+        def c():
+            with allocate(1) as wires:
+                qml.H(wires)
+                qml.CNOT((wires[0], 0))
+
+            with allocate(1) as wires:
+                qml.H(wires)
+                qml.CNOT((wires[0], 1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        res1, res2 = c()
+        assert qml.math.allclose(res1, 0)
+        assert qml.math.allclose(res2, 0)
