@@ -263,7 +263,7 @@
 
 * Separated the release notes from the changelog. The release notes are meant to be more user-facing,
   whereas the changelog is meant to be more developer-facing.
-  [#7966](https://github.com/PennyLaneAI/pennylane/pull/7966)
+  [(#7966)](https://github.com/PennyLaneAI/pennylane/pull/7966)
 
 * The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
   [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
