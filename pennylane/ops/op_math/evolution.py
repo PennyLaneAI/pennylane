@@ -109,8 +109,8 @@ class Evolution(Exp):
     def __init__(self, generator, param=1, num_steps=None, id=None):
         if num_steps is not None:
             warn(
-                "Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version. "
-                "Instead, use ``qml.TrotterProduct`` for approximate methods, providing the ``n`` parameter to perform the "
+                "Providing 'num_steps' to qml.evolve and Evolution is deprecated and will be removed in a future version. "
+                "Instead, use qml.TrotterProduct for approximate methods, providing the 'n' parameter to perform the "
                 "Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.",
                 PennyLaneDeprecationWarning,
             )
