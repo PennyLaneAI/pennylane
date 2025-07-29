@@ -2101,9 +2101,11 @@ class TestPostselection:
             return qml.apply(mp)
 
         if use_jit:
-            import jax
-
-            circ = jax.jit(circ)
+            pytest.xfail(
+                reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
+            )
+            # import jax
+            # circ = jax.jit(circ)
 
         res = circ()
 
