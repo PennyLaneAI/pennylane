@@ -1751,10 +1751,6 @@ class SWAP(Operation):
     def _controlled(self, wire: WiresLike) -> "qml.CSWAP":
         return qml.CSWAP(wires=wire + self.wires)
 
-    @property
-    def is_hermitian(self) -> bool:
-        return True
-
 
 def _swap_to_cnot_resources():
     return {qml.CNOT: 3}
