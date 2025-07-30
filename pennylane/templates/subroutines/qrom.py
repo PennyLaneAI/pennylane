@@ -42,6 +42,69 @@ def _multi_swap(wires1, wires2):
         qml_ops.SWAP(wires=[wire1, wire2])
 
 
+def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
+
+    with QueuingManager.stop_recording():
+        ops_new = [BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+        ops_identity_new = ops_new + [qml_ops.I(target_wires)] * int(
+            2 ** len(control_wires) - len(ops_new)
+        )
+
+    n_columns = (
+        len(bitstrings) // depth
+        if len(bitstrings) % depth == 0
+        else len(bitstrings) // depth + 1
+    )
+    new_ops = []
+    for i in range(n_columns):
+        column_ops = []
+        for j in range(depth):
+            dic_map = {
+                ops_identity_new[i * depth + j].wires[l]: swap_wires[
+                    j * len(target_wires) + l
+                ]
+                for l in range(len(target_wires))
+            }
+            column_ops.append(ops_identity_new[i * depth + j].map_wires(dic_map))
+        new_ops.append(qml_ops.prod(*column_ops))
+    return new_ops
+
+
+def _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings):
+    n_control_select_wires = int(
+        math.ceil(math.log2(2 ** len(control_wires) / depth))
+    )
+    control_select_wires = control_wires[:n_control_select_wires]
+
+    if control_select_wires:
+        Select(
+            _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings),
+            control=control_select_wires,
+        )
+    else:
+        _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings)
+
+
+def _swap_ops(control_wires, depth, swap_wires, target_wires):
+    n_control_select_wires = int(
+        math.ceil(math.log2(2 ** len(control_wires) / depth))
+    )
+    control_swap_wires = control_wires[n_control_select_wires:]
+    for ind in range(len(control_swap_wires)):
+        for j in range(2**ind):
+            new_op = qml_ops.prod(_multi_swap)(
+                swap_wires[
+                    (j) * len(target_wires) : (j + 1) * len(target_wires)
+                ],
+                swap_wires[
+                    (j + 2**ind)
+                    * len(target_wires) : (j + 2 ** (ind + 1))
+                    * len(target_wires)
+                ],
+            )
+            qml_ops.ctrl(new_op, control=control_swap_wires[-ind - 1])
+
+
 class QROM(Operation):
     r"""Applies the QROM operator.
 
@@ -449,68 +512,8 @@ def _qrom_decomposition(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, len(bitstrings))
 
-    def _new_ops(depth_new, target_wires_new):
-
-        with QueuingManager.stop_recording():
-            ops_new = [BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
-            ops_identity_new = ops_new + [qml_ops.I(target_wires)] * int(
-                2 ** len(control_wires) - len(ops_new)
-            )
-
-        n_columns = (
-            len(bitstrings) // depth_new
-            if len(bitstrings) % depth_new == 0
-            else len(bitstrings) // depth_new + 1
-        )
-        new_ops = []
-        for i in range(n_columns):
-            column_ops = []
-            for j in range(depth_new):
-                dic_map = {
-                    ops_identity_new[i * depth_new + j].wires[l]: swap_wires[
-                        j * len(target_wires_new) + l
-                    ]
-                    for l in range(len(target_wires))
-                }
-                column_ops.append(ops_identity_new[i * depth_new + j].map_wires(dic_map))
-            new_ops.append(qml_ops.prod(*column_ops))
-        return new_ops
-
-    def _select_ops(control_wires_select, depth_select, target_wires_select):
-        n_control_select_wires = int(
-            math.ceil(math.log2(2 ** len(control_wires_select) / depth_select))
-        )
-        control_select_wires = control_wires_select[:n_control_select_wires]
-
-        if control_select_wires:
-            Select(
-                _new_ops(depth_select, target_wires_select),
-                control=control_select_wires,
-            )
-        else:
-            _new_ops(depth_select, target_wires_select)
-
-    def _swap_ops(control_wires_swap, depth_swap, swap_wires_swap, target_wires_swap):
-        n_control_select_wires = int(
-            math.ceil(math.log2(2 ** len(control_wires_swap) / depth_swap))
-        )
-        control_swap_wires = control_wires_swap[n_control_select_wires:]
-        for ind in range(len(control_swap_wires)):
-            for j in range(2**ind):
-                new_op = qml_ops.prod(_multi_swap)(
-                    swap_wires_swap[
-                        (j) * len(target_wires_swap) : (j + 1) * len(target_wires_swap)
-                    ],
-                    swap_wires_swap[
-                        (j + 2**ind)
-                        * len(target_wires_swap) : (j + 2 ** (ind + 1))
-                        * len(target_wires_swap)
-                    ],
-                )
-                qml_ops.ctrl(new_op, control=control_swap_wires[-ind - 1])
-
     if not clean or depth == 1:
-        _select_ops(control_wires, depth, target_wires)
+        _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings)
         _swap_ops(control_wires, depth, swap_wires, target_wires)
 
     else:
@@ -518,7 +521,7 @@ def _qrom_decomposition(
             for w in target_wires:
                 qml_ops.Hadamard(wires=w)
                 _swap_ops(control_wires, depth, swap_wires, target_wires)
-                _select_ops(control_wires, depth, target_wires)
+                _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings)
                 _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 
