@@ -210,7 +210,7 @@ class NonDifferentiableError(Exception):
     :class:`~.tensor` using Autograd."""
 
 
-_TENSORFLOW_DEPRECATION_WARNING = (
+_TF_DEPRECATION_MSG = (
     "The TensorFlow interface is deprecated and will be removed in a future release. "
     "Please consider migrating to use JAX / torch interface instead."
 )
