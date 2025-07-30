@@ -15,11 +15,10 @@
 Contains the GQSP template.
 """
 
-
 import copy
 
-import pennylane as qml
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
+from pennylane import ops
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -86,9 +85,9 @@ class GQSP(Operation):
     resource_keys = {"unitary", "num_iters"}
 
     def __init__(self, unitary, angles, control, id=None):
-        total_wires = qml.wires.Wires(control) + unitary.wires
+        total_wires = Wires(control) + unitary.wires
 
-        self._hyperparameters = {"unitary": unitary, "control": qml.wires.Wires(control)}
+        self._hyperparameters = {"unitary": unitary, "control": Wires(control)}
 
         super().__init__(angles, *unitary.data, wires=total_wires, id=id)
 
@@ -118,7 +117,7 @@ class GQSP(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["unitary"] = qml.map_wires(
+        new_op._hyperparameters["unitary"] = ops.functions.map_wires(
             new_op._hyperparameters["unitary"], wire_map
         )
         new_op._hyperparameters["control"] = tuple(
@@ -155,19 +154,19 @@ class GQSP(Operation):
         op_list = []
 
         # These four gates adapt PennyLane's qml.U3 to the chosen U3 format in the GQSP paper.
-        op_list.append(qml.X(control))
-        op_list.append(qml.U3(2 * thetas[0], phis[0], lambds[0], wires=control))
-        op_list.append(qml.X(control))
-        op_list.append(qml.Z(control))
+        op_list.append(ops.X(control))
+        op_list.append(ops.U3(2 * thetas[0], phis[0], lambds[0], wires=control))
+        op_list.append(ops.X(control))
+        op_list.append(ops.Z(control))
 
         for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
 
-            op_list.append(qml.ctrl(unitary, control=control, control_values=0))
+            op_list.append(ops.ctrl(unitary, control=control, control_values=0))
 
-            op_list.append(qml.X(control))
-            op_list.append(qml.U3(2 * theta, phi, lamb, wires=control))
-            op_list.append(qml.X(control))
-            op_list.append(qml.Z(control))
+            op_list.append(ops.X(control))
+            op_list.append(ops.U3(2 * theta, phi, lamb, wires=control))
+            op_list.append(ops.X(control))
+            op_list.append(ops.Z(control))
 
         return op_list
 
@@ -179,9 +178,9 @@ class GQSP(Operation):
 
 def _GQSP_resources(unitary, num_iters):
     resources = {
-        qml.X: 2 + 2 * (num_iters - 1),
-        qml.U3: num_iters,
-        qml.Z: num_iters,
+        ops.X: 2 + 2 * (num_iters - 1),
+        ops.U3: num_iters,
+        ops.Z: num_iters,
         controlled_resource_rep(
             base_class=unitary.__class__,
             base_params={},
@@ -203,19 +202,19 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
 
     thetas, phis, lambds = angles[0], angles[1], angles[2]
 
-    # These four gates adapt PennyLane's qml.U3 to the chosen U3 format in the GQSP paper.
-    qml.X(control)
-    qml.U3(2 * thetas[0], phis[0], lambds[0], wires=control)
-    qml.X(control)
-    qml.Z(control)
+    # These four gates adapt PennyLane's ops.U3 to the chosen U3 format in the GQSP paper.
+    ops.X(control)
+    ops.U3(2 * thetas[0], phis[0], lambds[0], wires=control)
+    ops.X(control)
+    ops.Z(control)
 
     for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
-        qml.ops.Controlled(unitary, control_wires=[control], control_values=[0])
+        ops.Controlled(unitary, control_wires=[control], control_values=[0])
 
-        qml.X(control)
-        qml.U3(2 * theta, phi, lamb, wires=control)
-        qml.X(control)
-        qml.Z(control)
+        ops.X(control)
+        ops.U3(2 * theta, phi, lamb, wires=control)
+        ops.X(control)
+        ops.Z(control)
 
 
 add_decomps(GQSP, _GQSP_decomposition)

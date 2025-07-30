@@ -168,7 +168,7 @@ def _validate_resource_rep(op_type, params):
     if not issubclass(op_type, qml.operation.Operator):
         raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
-    if not isinstance(op_type.resource_keys, set):
+    if not isinstance(op_type.resource_keys, (set, frozenset)):
         raise TypeError(
             f"{op_type.__name__}.resource_keys must be a set, not a {type(op_type.resource_keys)}"
         )
@@ -293,7 +293,7 @@ def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     return CompressedResourceOp(op_type, params)
 
 
-def controlled_resource_rep(  # pylint: disable=too-many-arguments
+def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
     base_class: type[Operator],
     base_params: dict,
     num_control_wires: int,
@@ -447,7 +447,7 @@ def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, wor
     return "clean"
 
 
-def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments
+def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
     base_class,
     base_params,
     num_control_wires,
@@ -484,7 +484,7 @@ def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments
     )
 
 
-def _controlled_x_rep(  # pylint: disable=too-many-arguments
+def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
     base_class,
     base_params,
     num_control_wires,

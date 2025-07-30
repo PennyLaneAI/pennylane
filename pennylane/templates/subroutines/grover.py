@@ -16,8 +16,9 @@ Contains the Grover Operation template.
 """
 import numpy as np
 
-import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane import math
+from pennylane.control_flow import for_loop
 from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
 from pennylane.wires import Wires, WiresLike
@@ -192,10 +193,10 @@ class GroverOperator(Operation):
     def compute_qfunc_decomposition(
         *wires, work_wires, n_wires
     ):  # pylint: disable=arguments-differ
-        wires = qml.math.array(wires, like="jax")
+        wires = math.array(wires, like="jax")
         ctrl_values = [0] * (n_wires - 1)
 
-        @qml.for_loop(len(wires) - 1)
+        @for_loop(len(wires) - 1)
         def hadamard_loop(i):
             Hadamard(wires[i])
 
@@ -241,9 +242,9 @@ class GroverOperator(Operation):
 
 def _grover_operator_resources(num_wires, num_work_wires):
     return {
-        qml.Hadamard: (num_wires - 1) * 2,
-        qml.PauliZ: 2,
-        qml.GlobalPhase: 1,
+        Hadamard: (num_wires - 1) * 2,
+        PauliZ: 2,
+        GlobalPhase: 1,
         resource_rep(
             MultiControlledX,
             num_control_wires=num_wires - 1,

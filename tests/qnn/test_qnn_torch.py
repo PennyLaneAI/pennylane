@@ -711,9 +711,9 @@ class TestTorchLayerIntegration:
         state_dict = module.state_dict()
         dict_keys = set(state_dict.keys())
 
-        clayer_weights = set(f"clayer{i + 1}.weight" for i in range(3))
-        clayer_biases = set(f"clayer{i + 1}.bias" for i in range(3))
-        qlayer_params = set(f"qlayer{i + 1}.w{j + 1}" for i in range(2) for j in range(len(w)))
+        clayer_weights = {f"clayer{i + 1}.weight" for i in range(3)}
+        clayer_biases = {f"clayer{i + 1}.bias" for i in range(3)}
+        qlayer_params = {f"qlayer{i + 1}.w{j + 1}" for i in range(2) for j in range(len(w))}
 
         all_params = clayer_weights | clayer_biases | qlayer_params
 

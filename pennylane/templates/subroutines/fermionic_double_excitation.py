@@ -19,8 +19,8 @@ import copy
 
 import numpy as np
 
-import pennylane as qml
 from pennylane.decomposition import add_decomps, register_resources
+from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.wires import Wires
@@ -526,12 +526,12 @@ class FermionicDoubleExcitation(Operation):
                 f"got {len(wires2)}"
             )
 
-        shape = qml.math.shape(weight)
+        shape = math.shape(weight)
         if shape != ():
             raise ValueError(f"Weight must be a scalar; got shape {shape}.")
 
-        wires1 = qml.wires.Wires(wires1)
-        wires2 = qml.wires.Wires(wires2)
+        wires1 = Wires(wires1)
+        wires2 = Wires(wires2)
 
         self._hyperparameters = {
             "wires1": wires1,
@@ -612,7 +612,7 @@ class FermionicDoubleExcitation(Operation):
 def _fermionic_double_excitation_resources(num_wires_1, num_wires_2):
     num_set_cnot_wires = num_wires_1 + num_wires_2 - 1
 
-    return {qml.Hadamard: 32, qml.RX: 32, qml.CNOT: 16 * num_set_cnot_wires, qml.RZ: 8}
+    return {Hadamard: 32, RX: 32, CNOT: 16 * num_set_cnot_wires, RZ: 8}
 
 
 def _layer_qfunc1(weight, s, r, q, p, set_cnot_wires):
