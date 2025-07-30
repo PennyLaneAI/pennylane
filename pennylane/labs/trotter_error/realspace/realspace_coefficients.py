@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
 from enum import Enum
 from itertools import product
 from typing import Dict, Tuple
@@ -22,6 +23,7 @@ from typing import Dict, Tuple
 import numpy as np
 from numpy import allclose, isclose, ndarray, zeros
 
+from line_profiler import profile
 
 class RealspaceCoeffs:
     """Lightweight representation of a tensor of coefficients.
@@ -493,6 +495,7 @@ class _RealspaceTree:  # pylint: disable=too-many-instance-attributes
 
         return True
 
+    @profile
     def nonzero(self, threshold: float = 0.0):
         """Return the nonzero coefficients in a dictionary.
 
@@ -544,20 +547,13 @@ def _add_dicts(d1: Dict, d2: Dict, threshold: float):
     Returns:
         dict: the sum of ``d1`` and ``d2``
     """
-    add_dict = {}
+    add_dict = defaultdict(float)
 
-    d1_keys = set(d1.keys())
-    d2_keys = set(d2.keys())
+    for index, coeff in d1.items():
+        add_dict[index] += coeff
 
-    for key in d1_keys.intersection(d2_keys):
-        if abs(d1[key] + d2[key]) > threshold:
-            add_dict[key] = d1[key] + d2[key]
-
-    for key in d1_keys.difference(d2_keys):
-        add_dict[key] = d1[key]
-
-    for key in d2_keys.difference(d1_keys):
-        add_dict[key] = d2[key]
+    for index, coeff in d2.items():
+        add_dict[index] += coeff
 
     return add_dict
 
@@ -593,12 +589,11 @@ def _scale_dict(scalar, d, threshold):
     Returns:
         dict: the product of ``d`` and ``scalar``
     """
-    scaled = {}
     for key in d.keys():
         if abs(scalar * d[key]) > threshold:
-            scaled[key] = scalar * d[key]
+            d[key] *= scalar
 
-    return scaled
+    return d
 
 
 def _numpy_to_dict(arr, threshold):
@@ -612,7 +607,7 @@ def _numpy_to_dict(arr, threshold):
         dict: a dictionary representation of the numpy array
     """
     nz = arr.nonzero()
-    d = {}
+    d = defaultdict(float)
 
     for index in zip(*nz):
         if abs(arr[index]) > threshold:
