@@ -41,7 +41,7 @@ from xdsl.dialects import arith, builtin, func, tensor
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern
 from xdsl.rewriter import InsertPoint
 
-from pennylane.compiler.compiler import CompileError
+from pennylane.exceptions import CompileError
 
 from ..dialects import quantum
 from ..jax_utils import xdsl_module

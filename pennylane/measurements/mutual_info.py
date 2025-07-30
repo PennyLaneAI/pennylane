@@ -18,73 +18,12 @@ This module contains the qml.mutual_info measurement.
 from collections.abc import Sequence
 from copy import copy
 
-import pennylane as qml
+from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
 from .measurements import StateMeasurement
-
-
-def mutual_info(wires0, wires1, log_base=None):
-    r"""Mutual information between the subsystems prior to measurement:
-
-    .. math::
-
-        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
-
-    where :math:`S` is the von Neumann entropy.
-
-    The mutual information is a measure of correlation between two subsystems.
-    More specifically, it quantifies the amount of information obtained about
-    one system by measuring the other system.
-
-    Args:
-        wires0 (Sequence[int] or int): the wires of the first subsystem
-        wires1 (Sequence[int] or int): the wires of the second subsystem
-        log_base (float): Base for the logarithm.
-
-    Returns:
-        MutualInfoMP: measurement process instance
-
-    **Example:**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit_mutual(x):
-            qml.IsingXX(x, wires=[0, 1])
-            return qml.mutual_info(wires0=[0], wires1=[1])
-
-    Executing this QNode:
-
-    >>> circuit_mutual(np.pi/2)
-    1.3862943611198906
-
-    It is also possible to get the gradient of the previous QNode:
-
-    >>> param = np.array(np.pi/4, requires_grad=True)
-    >>> qml.grad(circuit_mutual)(param)
-    tensor(1.24645048, requires_grad=True)
-
-    .. note::
-
-        Calculating the derivative of :func:`~.mutual_info` is currently supported when
-        using the classical backpropagation differentiation method (``diff_method="backprop"``)
-        with a compatible device and finite differences (``diff_method="finite-diff"``).
-
-    .. seealso:: :func:`~pennylane.vn_entropy`, :func:`pennylane.math.mutual_info`
-    """
-    wires0 = qml.wires.Wires(wires0)
-    wires1 = qml.wires.Wires(wires1)
-
-    # the subsystems cannot overlap
-    if not any(qml.math.is_abstract(w) for w in wires0 + wires1) and [
-        wire for wire in wires0 if wire in wires1
-    ]:
-        raise QuantumFunctionError("Subsystems for computing mutual information must not overlap.")
-    return MutualInfoMP(wires=(wires0, wires1), log_base=log_base)
 
 
 class MutualInfoMP(StateMeasurement):
@@ -155,9 +94,9 @@ class MutualInfoMP(StateMeasurement):
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         return ()
 
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
-        state = qml.math.dm_from_state_vector(state)
-        return qml.math.mutual_info(
+    def process_state(self, state: TensorLike, wire_order: Wires):
+        state = math.dm_from_state_vector(state)
+        return math.mutual_info(
             state,
             indices0=list(self._wires[0]),
             indices1=list(self._wires[1]),
@@ -165,8 +104,8 @@ class MutualInfoMP(StateMeasurement):
             base=self.log_base,
         )
 
-    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
-        return qml.math.mutual_info(
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
+        return math.mutual_info(
             density_matrix,
             indices0=list(self._wires[0]),
             indices1=list(self._wires[1]),
@@ -182,3 +121,65 @@ if MutualInfoMP._wires_primitive is not None:
         wires0 = all_wires[:n_wires0]
         wires1 = all_wires[n_wires0:]
         return type.__call__(MutualInfoMP, wires=(wires0, wires1), **kwargs)
+
+
+def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
+    r"""Mutual information between the subsystems prior to measurement:
+
+    .. math::
+
+        I(A, B) = S(\rho^A) + S(\rho^B) - S(\rho^{AB})
+
+    where :math:`S` is the von Neumann entropy.
+
+    The mutual information is a measure of correlation between two subsystems.
+    More specifically, it quantifies the amount of information obtained about
+    one system by measuring the other system.
+
+    Args:
+        wires0 (Sequence[int] or int): the wires of the first subsystem
+        wires1 (Sequence[int] or int): the wires of the second subsystem
+        log_base (float): Base for the logarithm.
+
+    Returns:
+        MutualInfoMP: measurement process instance
+
+    **Example:**
+
+    .. code-block:: python3
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit_mutual(x):
+            qml.IsingXX(x, wires=[0, 1])
+            return qml.mutual_info(wires0=[0], wires1=[1])
+
+    Executing this QNode:
+
+    >>> circuit_mutual(np.pi/2)
+    1.3862943611198906
+
+    It is also possible to get the gradient of the previous QNode:
+
+    >>> param = np.array(np.pi/4, requires_grad=True)
+    >>> qml.grad(circuit_mutual)(param)
+    tensor(1.24645048, requires_grad=True)
+
+    .. note::
+
+        Calculating the derivative of :func:`~.mutual_info` is currently supported when
+        using the classical backpropagation differentiation method (``diff_method="backprop"``)
+        with a compatible device and finite differences (``diff_method="finite-diff"``).
+
+    .. seealso:: :func:`~pennylane.vn_entropy`, :func:`pennylane.math.mutual_info`
+    """
+    wires0 = Wires(wires0)
+    wires1 = Wires(wires1)
+
+    # the subsystems cannot overlap
+    if not any(math.is_abstract(w) for w in wires0 + wires1) and [
+        wire for wire in wires0 if wire in wires1
+    ]:
+        raise QuantumFunctionError("Subsystems for computing mutual information must not overlap.")
+    return MutualInfoMP(wires=(wires0, wires1), log_base=log_base)

@@ -22,7 +22,7 @@ from collections.abc import Callable, Generator, Sequence
 from copy import copy
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
@@ -30,7 +30,6 @@ from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import WireError
 
 from .execution_config import MCMConfig
 
