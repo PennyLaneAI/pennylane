@@ -19,6 +19,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import time
 
+import os
+
 import numpy as np
 import scipy as sp
 
@@ -55,15 +57,19 @@ TIMES_TABLE = {(MPI.COMM_WORLD.Get_rank()): {}}
 def timeit(func):
     def wrapper(*args, **kwargs):
         rank = MPI.COMM_WORLD.Get_rank()
+        
         start = time.perf_counter()
         result = func(*args, **kwargs)
         end = time.perf_counter()
-        print(f"Rank {rank} finished {func.__name__} in {end - start} seconds")
+        
+        print(f"Rank {rank:<3} finished {func.__name__} | local rank: {args[0]:<3} | jobs: {len(args[1]):<3} in {end - start} seconds")
+        # print args, kwargs
+        # print(f"FDX: {func.__name__} called with args: {args}, kwargs: {kwargs}")
 
-        if func.__name__ not in TIMES_TABLE[rank]:
-            TIMES_TABLE[rank][func.__name__] = {"hit_count": 0, "runs": []}
-        TIMES_TABLE[rank][func.__name__]["hit_count"] += 1
-        TIMES_TABLE[rank][func.__name__]["runs"].append(end - start)
+        # if func.__name__ not in TIMES_TABLE[rank]:
+        #     TIMES_TABLE[rank][func.__name__] = {"hit_count": 0, "runs": []}
+        # TIMES_TABLE[rank][func.__name__]["hit_count"] += 1
+        # TIMES_TABLE[rank][func.__name__]["runs"].append(end - start)
 
         return result
     return wrapper
@@ -180,7 +186,7 @@ def _pes_onemode(
     print("FDX: _pes_onemode called starting calculations...")
     quad_order = len(grid)
     all_jobs = range(quad_order)
-    jobs_on_rank = np.array_split(all_jobs, num_workers-1)
+    jobs_on_rank = np.array_split(all_jobs, num_workers)
 
     arguments = [
         (j, i, molecule, scf_result, freqs, vectors, grid, path, method, dipole)
@@ -189,22 +195,20 @@ def _pes_onemode(
 
     print(f"FDX: arguments for _pes_onemode: {len(arguments)}, quad_order: {quad_order}, num_workers: {num_workers}")
     executor_class = concurrency.backends.get_executor(backend)
+    
     time_star = time.perf_counter()
-    time_star_t = time.time()
+
     with executor_class(max_workers=num_workers) as executor:
         executor.starmap(_local_pes_onemode, arguments)
     
     time_end = time.perf_counter() - time_star
-    time_end_t = time.time() - time_star_t
     
     print(f"FDX: mpi_rank {MPI.COMM_WORLD.Get_rank()} finished _pes_onemode calculations..., took {time_end:.2f} seconds")
-    print(f"FDX: mpi_rank {MPI.COMM_WORLD.Get_rank()} finished _pes_onemode calculations..., took {time_end_t:.2f} seconds")
-    print(TIMES_TABLE)
 
     pes_onebody = None
     dipole_onebody = None
     pes_onebody, dipole_onebody = _load_pes_onemode(
-        num_workers-1, len(freqs), len(grid), path, dipole=dipole
+        num_workers, len(freqs), len(grid), path, dipole=dipole
     )
 
     if dipole:
@@ -214,12 +218,8 @@ def _pes_onemode(
 
     return pes_onebody, None
 
-def _local_pes_onemode(
-    rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, path, method="rhf", dipole=False
-):
-    __local_pes_onemode(
-        rank, jobs_on_rank, molecule, scf_result, freqs, vectors, grid, path, method=method, dipole=dipole
-    )
+def _local_pes_onemode(*args, **kwargs):
+    __local_pes_onemode(*args, **kwargs)
 
 @timeit
 def __local_pes_onemode(
@@ -376,6 +376,7 @@ def _pes_twomode(
         for (i, gridpoint_1), (j, gridpoint_2) in itertools.product(enumerate(grid), repeat=2)
     ]
 
+    print(f"FDX: _pes_twomode called with {len(all_jobs)} jobs, num_workers: {num_workers}, grid size: {len(grid)}" )
     jobs_on_rank = np.array_split(all_jobs, num_workers)
     arguments = [
         (
@@ -467,7 +468,7 @@ def __local_pes_twomode(
 
     """
 
-    init_geom = molecule.coordinates * BOHR_TO_ANG
+    init_geom = molecule.coordinates * BOHR_TO_ANG    
     nmodes = len(freqs)
 
     all_mode_combos = [(mode_a, mode_b) for mode_a in range(nmodes) for mode_b in range(mode_a)]
@@ -476,10 +477,18 @@ def __local_pes_twomode(
     if dipole:
         local_dipole_twobody = np.zeros((len(all_mode_combos) * len(jobs_on_rank), 3), dtype=float)
         ref_dipole = _get_dipole(scf_result, method)
+        
+    loop_hits = 0
+    skipt_hits = 0
+    time_start = time.perf_counter()
+    
+    time_modes = []
 
     for mode_idx, [mode_a, mode_b] in enumerate(all_mode_combos):
 
+        time_mode_start = time.perf_counter()
         if (freqs[mode_a].imag) > 1e-6 or (freqs[mode_b].imag) > 1e-6:
+            skipt_hits += 1
             continue  # pragma: no cover
 
         vec_a = vectors[mode_a]
@@ -517,6 +526,15 @@ def __local_pes_twomode(
                     - dipole_onebody[mode_b, j, :]
                     - ref_dipole
                 )
+            loop_hits += 1
+        time_mode_end = time.perf_counter() - time_mode_start
+        time_modes.append(time_mode_end)
+    
+    time_end = time.perf_counter() - time_start
+
+    # print(f"FDX: _local_pes_twomode called with {loop_hits} loop hits, {skipt_hits} skip hits, rank {rank}, time taken: {time_end:.2f} seconds")
+    # for i, t in enumerate(time_modes):
+    #     print(f"FDX: _local_pes_twomode mode {i} took {t:.2f} seconds, rank {rank}")
 
     _write_data(path, rank, "v2data", "V2_PES", local_pes_twobody)
     if dipole:
@@ -955,6 +973,7 @@ def vibrational_pes(
             raise ValueError("Number of sample points cannot be less than 1.")
 
         if optimize:
+
             geom_eq = optimize_geometry(molecule, method)
             mol_eq = qchem.Molecule(
                 molecule.symbols,
@@ -965,6 +984,7 @@ def vibrational_pes(
                 mult=molecule.mult,
                 load_data=molecule.load_data,
             )
+            
         else:
             mol_eq = molecule
 
@@ -980,6 +1000,7 @@ def vibrational_pes(
 
         dipole = True
 
+        time_start = time.perf_counter()
         pes_onebody, dipole_onebody = _pes_onemode(
             mol_eq,
             scf_result,
@@ -992,12 +1013,17 @@ def vibrational_pes(
             backend=backend,
             path=path,
         )
+        time_end = time.perf_counter()
+        print(f"FDX: vibrational_pes called finished one-mode PES calculations in {time_end - time_start:.2f} seconds.")
+
+        # exit()
 
         # build PES -- two-body
         if dipole_level < 2:
             dipole = False
 
-        exit()
+        print("FDX: vibrational_pes called starting two-mode PES calculations...")
+        time_start = time.perf_counter()
         pes_twobody, dipole_twobody = _pes_twomode(
             mol_eq,
             scf_result,
@@ -1013,6 +1039,9 @@ def vibrational_pes(
             path=path,
         )
 
+        time_end = time.perf_counter()
+        print(f"FDX: vibrational_pes called finished two-mode PES calculations in {time_end - time_start:.2f} seconds.")
+        
         pes_data = [pes_onebody, pes_twobody]
         dipole_data = [dipole_onebody, dipole_twobody]
 

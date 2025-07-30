@@ -23,6 +23,22 @@ from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
+import time
+import mpi4py
+
+def timeit(func):
+    def wrapper(*args, **kwargs):
+        rank = mpi4py.MPI.COMM_WORLD.Get_rank()
+        
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        end = time.perf_counter()
+        
+        print(f"Rank {rank:<3} finished {func.__name__} in {end - start} seconds")
+        
+        return result
+    return wrapper
+
 
 class _AdditiveIdentity:
     """Only used to initialize accumulators for summing Fragments"""
@@ -185,11 +201,12 @@ def perturbation_error(
         return expectations
 
     if parallel_mode == "state":
+        states_execution = [(commutators, fragments, state) for state in states]
         executor = concurrency.backends.get_executor(backend)
         with executor(max_workers=num_workers) as ex:
-            expectations = ex.starmap(
+            ex.starmap(
                 _get_expval_state,
-                [(commutators, fragments, state) for state in states],
+                states_execution
             )
 
         return expectations
@@ -214,8 +231,12 @@ def perturbation_error(
 
     raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
 
+def _get_expval_state(*args, **kwargs):
+    """This function is used to get the expectation value of a state with respect to the operator obtained by substituting fragments into commutators."""
+    return __get_expval_state(*args, **kwargs)
 
-def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
+@timeit
+def __get_expval_state(commutators, fragments, state: AbstractState) -> float:
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
     new_state = _AdditiveIdentity()
@@ -224,8 +245,12 @@ def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
 
     return state.dot(new_state)
 
+def _apply_commutator(*args, **kwargs):
+    """This function is used to apply a commutator to a state. It is used in the parallelization of the perturbation error computation."""
+    return __apply_commutator(*args, **kwargs)
 
-def _apply_commutator(
+@timeit
+def __apply_commutator(
     commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
 ) -> AbstractState:
     """Returns the state obtained from applying ``commutator`` to ``state``."""
@@ -289,3 +314,5 @@ def _group_sums_in_dict(term_dict: dict[tuple[Hashable], complex]) -> list[tuple
         grouped_comms[tail].add((head, coeff))
 
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
+
+
