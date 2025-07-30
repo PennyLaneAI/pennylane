@@ -149,7 +149,7 @@ def validate_device_wires(
         )
 
     if extra_wires := tuple(
-        w for w in set(tape.wires) - set(wires) if not isinstance(w, DynamicWire)
+        w for w in set(tape.wires) - set(wires)
     ):
         raise WireError(
             f"Cannot run circuit(s) on {name} as they contain wires "
