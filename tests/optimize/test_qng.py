@@ -344,7 +344,7 @@ class TestOptimize:
         # check final cost
         assert np.allclose(circuit(theta), -1)
 
-    def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol):
+    def test_single_qubit_vqe_using_expval_h_multiple_input_params(self, tol, recwarn):
         """Test single-qubit VQE by returning qml.expval(H) in the QNode and
         check for the correct QNG value every step, the correct parameter updates, and
         correct cost after a few steps"""
@@ -392,6 +392,7 @@ class TestOptimize:
 
         # check final cost
         assert np.allclose(circuit(x, y), qml.eigvals(H).min(), atol=tol, rtol=0)
+        assert len(recwarn) == 0
 
 
 flat_dummy_array = np.linspace(-1, 1, 64)
