@@ -390,9 +390,7 @@ class LegacyDeviceFacade(Device):
         self, circuits, execution_config: ExecutionConfig | None = None
     ):
         if execution_config is None:
-            execution_config = ExecutionConfig(
-                gradient_method="device", gradient_keyword_arguments={"method": "adjoint_jacobian"}
-            )
+            execution_config = ExecutionConfig(gradient_method="device")
 
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
@@ -406,9 +404,7 @@ class LegacyDeviceFacade(Device):
 
     def compute_derivatives(self, circuits, execution_config: ExecutionConfig | None = None):
         if execution_config is None:
-            execution_config = ExecutionConfig(
-                gradient_method="device", gradient_keyword_arguments={"method": "adjoint_jacobian"}
-            )
+            execution_config = ExecutionConfig(gradient_method="device")
 
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):

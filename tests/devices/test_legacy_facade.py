@@ -136,7 +136,7 @@ def test_shot_distribution(execution_config):
         def new_gradient(self, circuit):  # pylint: disable=unused-argument
             return 0
 
-        def adjoint_jacobian(self, circuit):  # pylint: disable=unused-argument
+        def jacobian(self, circuit):  # pylint: disable=unused-argument
             return 1
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())
