@@ -198,6 +198,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Capture does not block `wires=0` anymore. This allows Catalyst to work with zero-wire devices.
+  Note that `wires=None` is still illegal.
+  [(#7978)](https://github.com/PennyLaneAI/pennylane/pull/7978)
+
 * Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
   [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
 
