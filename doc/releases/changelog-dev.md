@@ -396,6 +396,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes an issue with tree-traversal and non-standard wire orders.
+
 * Fixes a bug in :func:`~.matrix` where an operator's
   constituents were incorrectly queued if its decomposition was requested.
   [(#7975)](https://github.com/PennyLaneAI/pennylane/pull/7975)

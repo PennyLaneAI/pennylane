@@ -1651,3 +1651,12 @@ class TestMidMeasurements:
             )
             expected_sample = simulate(equivalent_tape, rng=rng)
             fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
+
+    def test_tree_traversal_non_standard_wire_order(self):
+        """Test that tree-traversal still works with a non-standard wire order."""
+
+        ops = [qml.H(0), qml.CNOT((0, 2)), qml.measurements.MidMeasureMP(wires=0), qml.S(1)]
+
+        tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, 0)
