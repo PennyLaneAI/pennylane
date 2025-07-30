@@ -1258,53 +1258,6 @@ class TestShots:
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
             qml.jacobian(circuit, argnum=0)(0.3)
 
-    # pylint: disable=unexpected-keyword-arg
-    @pytest.mark.parametrize(
-        "shots, total_shots, shot_vector",
-        [
-            (None, None, ()),
-            (1, 1, ((1, 1),)),
-            (10, 10, ((10, 1),)),
-            ([1, 1, 2, 3, 1], 8, ((1, 2), (2, 1), (3, 1), (1, 1))),
-        ],
-    )
-    def test_tape_shots_set_on_call(self, shots, total_shots, shot_vector):
-        """test that shots are placed on the tape if they are specified during a call."""
-        dev = qml.device("default.qubit", wires=2)
-
-        def func(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            return qml.expval(qml.PauliZ(0))
-
-        qn = qml.set_shots(QNode(func, dev), shots=5)
-
-        # No override
-        tape = qml.workflow.construct_tape(qn)(0.1, 0.2)
-        assert tape.shots.total_shots == 5
-
-        # Override
-        tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
-        assert tape.shots.total_shots == total_shots
-        assert tape.shots.shot_vector == shot_vector
-
-        # Decorator syntax
-        @qml.set_shots(5)
-        @qnode(dev)
-        def qn2(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=1)
-            return qml.expval(qml.PauliZ(0))
-
-        # No override
-        tape = qml.workflow.construct_tape(qn2)(0.1, 0.2)
-        assert tape.shots.total_shots == 5
-
-        # Override
-        tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
-        assert tape.shots.total_shots == total_shots
-        assert tape.shots.shot_vector == shot_vector
-
     def test_shots_update_with_device(self):
         """Test that _shots is updated when updating the QNode with a new device."""
         dev1 = qml.device("default.qubit", wires=1)
