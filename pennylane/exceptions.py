@@ -208,3 +208,9 @@ class InvalidCapabilitiesError(Exception):
 class NonDifferentiableError(Exception):
     """Exception raised if attempting to differentiate non-trainable
     :class:`~.tensor` using Autograd."""
+
+
+_TENSORFLOW_DEPRECATION_WARNING = (
+    "The TensorFlow interface is deprecated and will be removed in a future release. "
+    "Please consider migrating to use JAX / torch interface instead."
+)

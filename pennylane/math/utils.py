@@ -389,6 +389,10 @@ def is_abstract(tensor, like=None):
 
     .. code-block:: python
 
+        from pennylane.exceptions import PennyLaneDeprecationWarning, _TF_DEPRECATION_MSG
+        import warnings
+
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
 
         def function(x):
@@ -431,6 +435,11 @@ def is_abstract(tensor, like=None):
         return isinstance(tensor, DynamicJaxprTracer)
 
     if interface == "tensorflow":
+        import warnings
+
+        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
         from tensorflow.python.framework.ops import EagerTensor
 
@@ -518,6 +527,11 @@ def requires_grad(tensor, interface=None):
     interface = interface or math.get_interface(tensor)
 
     if interface == "tensorflow":
+        import warnings
+
+        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
 
         should_record_backprop = import_should_record_backprop()
@@ -570,6 +584,11 @@ def in_backprop(tensor, interface=None):
     interface = interface or math.get_interface(tensor)
 
     if interface == "tensorflow":
+        import warnings
+
+        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
 
         should_record_backprop = import_should_record_backprop()
