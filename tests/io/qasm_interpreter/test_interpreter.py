@@ -929,7 +929,7 @@ class TestVariables:
             match=r"No attribute potato on Context and no potato key found "
             r"on context retrieve-non-existent-attr",
         ):
-            print(context.potato)
+            _ = context.potato
 
     def test_bad_alias(self):
         # parse the QASM

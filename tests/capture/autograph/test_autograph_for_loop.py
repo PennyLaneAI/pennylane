@@ -408,8 +408,7 @@ class TestForLoops:
         @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
         def f():
             params = {"a": 0.0, "b": 1 / 4 * jnp.pi, "c": 2 / 4 * jnp.pi}
-            for k, v in params.items():
-                print(k)
+            for _, v in params.items():
                 qml.RY(v, wires=0)
             return qml.expval(qml.PauliZ(0))
 

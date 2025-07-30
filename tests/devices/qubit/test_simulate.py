@@ -588,7 +588,6 @@ class TestDebugger:
 
         assert list(debugger.snapshots.keys()) == [0, "final_state"]
         assert qml.math.allclose(debugger.snapshots[0], [1, 0])
-        print(debugger.snapshots["final_state"])
         assert qml.math.allclose(
             debugger.snapshots["final_state"],
             torch.tensor([torch.cos(phi / 2), -torch.sin(phi / 2) * 1j]),

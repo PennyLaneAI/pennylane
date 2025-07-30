@@ -3036,8 +3036,6 @@ class TestFft:
         assert qml.math.allclose(out, self.exp_fft[name])
         jac_real = torch.autograd.functional.jacobian(partial(self.fft_real, func=func), arg)
         jac_imag = torch.autograd.functional.jacobian(partial(self.fft_imag, func=func), arg)
-        print(jac_real + 1j * jac_imag)
-        print(self.exp_jac_fft[name])
         assert qml.math.allclose(jac_real + 1j * jac_imag, self.exp_jac_fft[name])
 
     @pytest.mark.tf

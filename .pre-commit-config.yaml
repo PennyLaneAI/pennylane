@@ -1,10 +1,10 @@
 repos:
--   repo: https://github.com/gitleaks/gitleaks
+  - repo: https://github.com/gitleaks/gitleaks
     rev: v8.28.0
     hooks:
       - id: gitleaks
         name: "🔒 gitleaks · Detect hardcoded secrets"
--   repo: https://github.com/psf/black
+  - repo: https://github.com/psf/black
     rev: 25.1.0
     hooks:
     - id: black
@@ -14,7 +14,7 @@ repos:
               "./pyproject.toml",
             ]
       exclude: ^doc/
--   repo: https://github.com/PyCQA/isort
+  - repo: https://github.com/PyCQA/isort
     rev: 6.0.1
     hooks:
     - id: isort
@@ -25,52 +25,58 @@ repos:
           "./pyproject.toml",
         ]
       files: ^(pennylane/|tests/)
--   repo: https://github.com/gauge-sh/tach-pre-commit
+  - repo: https://github.com/gauge-sh/tach-pre-commit
     rev: v0.29.0
     hooks:
     -   id: tach
         name: "🐍 tach · Check module dependencies"
--   repo: https://github.com/asottile/pyupgrade
+  - repo: https://github.com/asottile/pyupgrade
     rev: v3.20.0
     hooks:
     -   id: pyupgrade
         name: "🐍 pyupgrade · Check language features"
         args: [--py311-plus]
-- repo: local
-  hooks:
-    - id: pylint
-      name: "🐍 pylint · Lint codebase"
-      entry: pylint
-      language: system
-      types: [python]
-      args:
-        [
-          "-rn", # Only display messages
-          "-sn", # Don't display the score
-          "--rcfile=.pylintrc", # Link to your config file
-        ]
-      exclude: ^(doc/|tests/)
-    - id: pylint-test
-      name: "🐍 pylint · Lint test suite"
-      entry: pylint
-      language: system
-      types: [python]
-      args:
-        [
-          "-rn", # Only display messages
-          "-sn", # Don't display the score
-          "--rcfile=tests/.pylintrc", # Link to your config file
-        ]
-      files: ^tests/
-    - id: labs-pylint-test
-      name: "🐍 pylint · Lint labs test suite"
-      entry: pylint
-      language: system
-      types: [python]
-      args:
-        [
-          "-rn", # Only display messages
-          "-sn", # Don't display the score
-          "--rcfile=tests/.pylintrc", # Link to your config file
-        ]
-      files: ^pennylane/labs/tests/
+  - repo: local
+    hooks:
+      - id: pylint
+        name: "🐍 pylint · Lint codebase"
+        entry: pylint
+        language: system
+        types: [python]
+        args:
+          [
+            "-rn", # Only display messages
+            "-sn", # Don't display the score
+            "--rcfile=.pylintrc", # Link to your config file
+          ]
+        exclude: ^(doc/|tests/)
+      - id: pylint-test
+        name: "🐍 pylint · Lint test suite"
+        entry: pylint
+        language: system
+        types: [python]
+        args:
+          [
+            "-rn", # Only display messages
+            "-sn", # Don't display the score
+            "--rcfile=tests/.pylintrc", # Link to your config file
+          ]
+        files: ^tests/
+      - id: labs-pylint-test
+        name: "🐍 pylint · Lint labs test suite"
+        entry: pylint
+        language: system
+        types: [python]
+        args:
+          [
+            "-rn", # Only display messages
+            "-sn", # Don't display the score
+            "--rcfile=tests/.pylintrc", # Link to your config file
+          ]
+        files: ^pennylane/labs/tests/
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.5
+    hooks:
+      - id: ruff
+        name: "🐍 ruff · Lint codebase"
+        args: [ --fix ]

@@ -92,7 +92,6 @@ class TestJacobian:
         y = math.asarray(3.0, like=interface, requires_grad=True)
 
         g = math.jacobian(f)(x, y)
-        print(g)
         if interface != "autograd":
             assert math.get_interface(g) == interface
         expected = math.asarray([[3.0, 0.0], [0.0, 3.0]])

@@ -118,7 +118,6 @@ def test_optimize_geometry(sym, geom, unit, expected_geom):
 
     mol = qml.qchem.Molecule(sym, geom, basis_name="6-31g", unit=unit)
     coordinates = vibrational.optimize_geometry(mol)
-    print(coordinates, geom)
     assert np.allclose(coordinates, expected_geom)
 
 

@@ -1629,8 +1629,6 @@ class TestPassthruIntegrationJax:
 
         res = circuit(a, b)
         expected_cost = 0.25 * (jnp.cos(a) * jnp.cos(b) - jnp.cos(a) + jnp.cos(b) + 3)
-        print(res, "\n")
-        print(expected_cost)
         assert jnp.allclose(res, expected_cost, atol=tol, rtol=0)
 
         res = jax.jacobian(circuit, argnums=[0, 1])(a, b)
