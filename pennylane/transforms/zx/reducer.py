@@ -112,7 +112,7 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     pyzx.hsimplify.from_hypergraph_form(zx_graph)
     pyzx.simplify.full_reduce(zx_graph)
     zx_circ = pyzx.extract_circuit(zx_graph)
-    zx_circ = pyzx.basic_optimization(zx_circ)
+    zx_circ = pyzx.basic_optimization(zx_circ.to_basic_gates())
 
     qscript = from_zx(zx_circ.to_graph())
 
