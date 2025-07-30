@@ -14,7 +14,6 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-from typing import Optional
 
 import pytest
 
@@ -773,13 +772,13 @@ def test_device_with_ambiguous_preprocess():
 
             def setup_execution_config(
                 self,
-                config: Optional[ExecutionConfig] = None,
-                circuit: Optional[QuantumScript] = None,
+                config: ExecutionConfig | None = None,
+                circuit: QuantumScript | None = None,
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 
             def preprocess_transforms(
-                self, execution_config: Optional[ExecutionConfig] = None
+                self, execution_config: ExecutionConfig | None = None
             ) -> TransformProgram:
                 return TransformProgram()
 
