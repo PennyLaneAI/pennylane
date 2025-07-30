@@ -117,7 +117,7 @@ class TestIntegrationSingleReturn:
             func(x)
             return [qml.expval(obs)]
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
 
         assert qml.math.shape(res) == ((1,) if shots is None else (2, 1))
@@ -291,7 +291,7 @@ class TestIntegrationSingleReturn:
             func(x)
             return qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
 
         assert isinstance(res, (np.ndarray, np.float64))
@@ -326,7 +326,7 @@ class TestIntegrationSingleReturn:
             func(x)
             return qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
 
         assert isinstance(res, dict)
@@ -517,7 +517,7 @@ class TestIntegrationSingleReturnTensorFlow:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(tf.Variable(0.5))
 
         assert isinstance(res, tf.Tensor)
@@ -542,7 +542,7 @@ class TestIntegrationSingleReturnTensorFlow:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(tf.Variable(0.5))
 
         assert isinstance(res, dict)
@@ -731,7 +731,7 @@ class TestIntegrationSingleReturnTorch:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         assert isinstance(res, torch.Tensor)
@@ -757,7 +757,7 @@ class TestIntegrationSingleReturnTorch:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         assert isinstance(res, dict)
@@ -947,7 +947,7 @@ class TestIntegrationSingleReturnJax:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(jax.numpy.array(0.5))
 
         assert isinstance(res, jax.numpy.ndarray)
@@ -972,7 +972,7 @@ class TestIntegrationSingleReturnJax:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(jax.numpy.array(0.5))
 
         assert isinstance(res, dict)
@@ -1236,7 +1236,7 @@ class TestIntegrationMultipleReturns:
             func(x)
             return qml.expval(obs), qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
 
         # Expval
@@ -1268,7 +1268,7 @@ class TestIntegrationMultipleReturns:
             func(x)
             return qml.expval(obs), qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
 
         # Expval
@@ -1320,7 +1320,7 @@ class TestIntegrationMultipleReturns:
                 for i in range(0, wires)
             ]
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
         if shot_vector is None:
@@ -1356,7 +1356,7 @@ class TestIntegrationMultipleReturns:
             func(x)
             return qml.apply(comp_basis_sampling), qml.expval(obs), qml.probs(wires=[0])
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_num)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_num)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -1533,7 +1533,7 @@ class TestIntegrationMultipleReturnsTensorflow:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(tf.Variable(0.5))
 
         # Expval
@@ -1560,7 +1560,7 @@ class TestIntegrationMultipleReturnsTensorflow:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(tf.Variable(0.5))
 
         # Expval
@@ -1613,7 +1613,7 @@ class TestIntegrationMultipleReturnsTensorflow:
             qml.CRX(x, wires=[0, 1])
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, wires)]
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(tf.Variable(0.5))
 
         if shot_vector is None:
@@ -1794,7 +1794,7 @@ class TestIntegrationMultipleReturnsTorch:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         # Expval
@@ -1821,7 +1821,7 @@ class TestIntegrationMultipleReturnsTorch:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         # Expval
@@ -1875,7 +1875,7 @@ class TestIntegrationMultipleReturnsTorch:
             qml.CRX(x, wires=[0, 1])
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, wires)]
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         if shot_vector is None:
@@ -2056,7 +2056,7 @@ class TestIntegrationMultipleReturnJax:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(jax.numpy.array(0.5))
 
         # Expval
@@ -2083,7 +2083,7 @@ class TestIntegrationMultipleReturnJax:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shots)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(jax.numpy.array(0.5))
 
         # Expval
@@ -2136,7 +2136,7 @@ class TestIntegrationMultipleReturnJax:
             qml.CRX(x, wires=[0, 1])
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, wires)]
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(jax.numpy.array(0.5))
 
         if shot_vector is None:
@@ -2199,19 +2199,10 @@ class TestIntegrationShotVectors:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2222,6 +2213,7 @@ class TestIntegrationShotVectors:
     def test_probs(self, shot_vector, op, wires, device):
         """Test a single probability measurement."""
         dev = qml.device("default.qubit", wires=2)
+        shot_vector = qml.measurements.Shots(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -2229,19 +2221,10 @@ class TestIntegrationShotVectors:
             return qml.probs(op=op, wires=wires)
 
         # Diff method is to be set to None otherwise use Interface execute
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2254,6 +2237,7 @@ class TestIntegrationShotVectors:
     def test_samples(self, shot_vector, measurement, device):
         """Test the sample measurement."""
         dev = qml.device(device, wires=2)
+        shot_vector = qml.measurements.Shots(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -2261,18 +2245,10 @@ class TestIntegrationShotVectors:
             return qml.apply(measurement)
 
         # Diff method is to be set to None otherwise use Interface execute
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shot_copies = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res) == len(all_shot_copies)
         for r, shots in zip(res, all_shot_copies):
@@ -2286,6 +2262,7 @@ class TestIntegrationShotVectors:
     def test_counts(self, shot_vector, measurement, device):
         """Test the counts measurement."""
         dev = qml.device(device, wires=2)
+        shot_vector = qml.measurements.Shots(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -2293,19 +2270,10 @@ class TestIntegrationShotVectors:
             return qml.apply(measurement)
 
         # Diff method is to be set to None otherwise use Interface execute
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2321,25 +2289,17 @@ class TestIntegrationSameMeasurementShotVector:
     def test_scalar(self, shot_vector, device):
         """Test multiple scalar-valued measurements."""
         dev = qml.device(device, wires=2)
+        shot_vector = qml.measurements.Shots(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2366,19 +2326,10 @@ class TestIntegrationSameMeasurementShotVector:
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2401,18 +2352,10 @@ class TestIntegrationSameMeasurementShotVector:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement1), qml.apply(measurement2)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shot_copies = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res) == len(all_shot_copies)
         for r, shots in zip(res, all_shot_copies):
@@ -2430,19 +2373,10 @@ class TestIntegrationSameMeasurementShotVector:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement1), qml.apply(measurement2)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2529,19 +2463,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2567,34 +2492,17 @@ class TestIntegrationMultipleMeasurementsShotVector:
         """Test scalar-valued and sample measurements where sample takes an
         observable."""
         dev = qml.device(device, wires=3)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2625,19 +2533,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2648,9 +2547,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
             for m in measurement_res
         )
 
-        for shot_tuple in (
-            dev.shot_vector if isinstance(dev, qml.devices.LegacyDevice) else dev.shots.shot_vector
-        ):
+        for shot_tuple in shot_vector:
             for idx in range(shot_tuple.copies):
                 for i, r in enumerate(res[idx]):
                     if i % 2 == 0 or shot_tuple.shots == 1:
@@ -2665,34 +2562,17 @@ class TestIntegrationMultipleMeasurementsShotVector:
         """Test scalar-valued and counts measurements where counts takes an
         observable."""
         dev = qml.device(device, wires=3)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2721,34 +2601,17 @@ class TestIntegrationMultipleMeasurementsShotVector:
         """Test scalar-valued and computational basis counts measurements."""
         dev = qml.device(device, wires=3)
 
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2773,15 +2636,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
         """Test probs and sample measurements."""
         dev = qml.device(device, wires=3)
 
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
@@ -2796,19 +2651,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
             # Only wires provided to sample
             return qml.probs(wires=meas1_wires), qml.sample(wires=meas2_wires)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2838,15 +2684,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
     def test_probs_counts(self, shot_vector, sample_obs, device):
         """Test probs and counts measurements."""
         dev = qml.device(device, wires=3)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
@@ -2861,19 +2699,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
             # Only wires provided to sample
             return qml.probs(wires=meas1_wires), qml.counts(wires=meas2_wires)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2903,15 +2732,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
         """Test sample and counts measurements, each measurement with custom
         samples or computational basis state samples."""
         dev = qml.device(device, wires=6)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -2932,19 +2753,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
             # 4. Sample no obs and Counts no obs
             return qml.sample(wires=sample_wires), qml.counts(wires=counts_wires)
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2971,15 +2783,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
         """Test scalar-valued, probability, sample and counts measurements all
         in a single qfunc."""
         dev = qml.device(device, wires=5)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -2991,20 +2795,11 @@ class TestIntegrationMultipleMeasurementsShotVector:
                 qml.counts(qml.PauliX(3)),
             )
 
-        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = shot_vector)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
 
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -3484,3 +3279,13 @@ class TestIntegrationJacobianBackpropMultipleReturns:
                 assert elem.shape == (4, 3)
             elif i == 2:
                 assert elem.shape == (3,)
+
+
+def _get_all_shots(shot_vector):
+    """Helper function to get the total number of shots from a shot vector."""
+    return qml.measurements.Shots(shot_vector).num_copies
+
+
+def _get_all_shot_copies(shot_vector):
+    """Helper function to get the total number of shot copies from a shot vector."""
+    return list(qml.measurements.Shots(shot_vector))

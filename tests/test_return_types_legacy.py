@@ -22,6 +22,17 @@ import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import MeasurementProcess
 
+
+def _get_all_shots(shot_vector):
+    """Helper function to get the total number of shots from a shot vector."""
+    return qml.measurements.Shots(shot_vector).num_copies
+
+
+def _get_all_shot_copies(shot_vector):
+    """Helper function to get the total number of shot copies from a shot vector."""
+    return list(qml.measurements.Shots(shot_vector))
+
+
 test_wires = [2, 3, 4]
 
 
@@ -515,7 +526,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -537,7 +548,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -563,7 +574,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -586,9 +597,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shot_copies = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
+        all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res[0]) == len(all_shot_copies)
         for r, shots in zip(res[0], all_shot_copies):
@@ -614,7 +623,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -641,7 +650,7 @@ class TestSameMeasurementShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -674,7 +683,7 @@ class TestSameMeasurementShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -703,9 +712,7 @@ class TestSameMeasurementShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shot_copies = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
+        all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res[0]) == len(all_shot_copies)
         for r, shots in zip(res[0], all_shot_copies):
@@ -729,7 +736,7 @@ class TestSameMeasurementShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -820,7 +827,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -842,9 +849,7 @@ class TestMixMeasurementsShotVector:
         """Test scalar-valued and sample measurements where sample takes an
         observable."""
         dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -857,7 +862,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -890,7 +895,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -912,9 +917,7 @@ class TestMixMeasurementsShotVector:
         """Test scalar-valued and counts measurements where counts takes an
         observable."""
         dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -927,7 +930,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -954,9 +957,7 @@ class TestMixMeasurementsShotVector:
     def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and computational basis counts measurements."""
         dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -969,7 +970,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -989,9 +990,7 @@ class TestMixMeasurementsShotVector:
     def test_probs_sample(self, shot_vector, sample_obs):
         """Test probs and sample measurements."""
         dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
@@ -1013,7 +1012,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1039,9 +1038,7 @@ class TestMixMeasurementsShotVector:
     def test_probs_counts(self, shot_vector, sample_obs):
         """Test probs and counts measurements."""
         dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
@@ -1063,7 +1060,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1091,9 +1088,7 @@ class TestMixMeasurementsShotVector:
         """Test sample and counts measurements, each measurement with custom
         samples or computational basis state samples."""
         dev = DefaultQubitLegacy(wires=6, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         @qml.qnode(device=dev)
         def circuit(x):
@@ -1121,7 +1116,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1146,9 +1141,7 @@ class TestMixMeasurementsShotVector:
         """Test scalar-valued, probability, sample and counts measurements all
         in a single qfunc."""
         dev = DefaultQubitLegacy(wires=5, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots for shot_tuple in dev.shot_vector for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1166,7 +1159,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = sum([shot_tuple.copies for shot_tuple in dev.shot_vector])
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
