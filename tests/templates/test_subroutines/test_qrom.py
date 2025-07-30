@@ -196,6 +196,7 @@ class TestQROM:
     @pytest.mark.parametrize(
         ("bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
         [
+            (["11", "01", "00", "10"], [2, 3], [0, 1], [4, 5, 6, 7, 8, 9], True),
             (["1", "0", "0", "1"], [0, 1], [2], [3], True),
             (["1"], [], [0], [1], True),
             (["10", "00", "00", "01", "01", "00", "00", "01"], [0, 1, 2], [3, 4], [5], False),
