@@ -4439,7 +4439,9 @@ class TestCutCircuitTransform:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(3))
 
         circuit = qml.QNode(f, dev_original)
-        cut_circuit = qcut.cut_circuit(qml.set_shots(qml.QNode(f, dev_cut), shots = shots), use_opt_einsum=use_opt_einsum)
+        cut_circuit = qcut.cut_circuit(
+            qml.set_shots(qml.QNode(f, dev_cut), shots=shots), use_opt_einsum=use_opt_einsum
+        )
 
         res_expected = circuit()
 
@@ -4617,7 +4619,7 @@ class TestCutCircuitExpansion:
             qml.TTN(range(n_wires), n_block_wires, block, n_params_block, template_weights)
             return qml.sample(wires=[n_wires - 1])
 
-        qnode_cut = qcut.cut_circuit_mc(qml.set_shots(qml.QNode(circuit, dev_cut), shots = 10))
+        qnode_cut = qcut.cut_circuit_mc(qml.set_shots(qml.QNode(circuit, dev_cut), shots=10))
 
         spy_tapes = mocker.spy(qcut.tapes, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
@@ -5264,7 +5266,9 @@ class TestAutoCutCircuit:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(3))
 
         circuit = qml.QNode(f, dev_original)
-        cut_circuit = qcut.cut_circuit(qml.set_shots(qml.QNode(f, dev_cut), shots = shots), auto_cutter=True)
+        cut_circuit = qcut.cut_circuit(
+            qml.set_shots(qml.QNode(f, dev_cut), shots=shots), auto_cutter=True
+        )
 
         res_expected = circuit()
 

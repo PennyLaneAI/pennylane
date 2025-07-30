@@ -71,7 +71,7 @@ def test_all_invalid_shots_circuit(obs, mcm_method):
         )
 
     res1 = qml.QNode(circuit_op, dev, mcm_method="deferred")()
-    res2 = qml.set_shots(qml.QNode(circuit_op, dev_shots, mcm_method=mcm_method), shots = 10)()
+    res2 = qml.set_shots(qml.QNode(circuit_op, dev_shots, mcm_method=mcm_method), shots=10)()
     for r1, r2 in zip(res1, res2):
         if isinstance(r1, Sequence):
             assert len(r1) == len(r2)
@@ -170,8 +170,8 @@ def test_multiple_measurements_and_reset(mcm_method, shots, params, postselect, 
             )
         )
 
-    results0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots = shots)(*params)
-    results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots = shots)(*params)
+    results0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots=shots)(*params)
+    results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots=shots)(*params)
 
     measurements = (
         [qml.expval, qml.probs, qml.var, qml.expval, qml.probs, qml.var]
@@ -243,8 +243,8 @@ def test_composite_mcms(mcm_method, shots, mcm_name, mcm_func, measure_f, seed):
         )
         return measure_f(op=obs)
 
-    results0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots = shots)(*param)
-    results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots = shots)(*param)
+    results0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots=shots)(*param)
+    results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots=shots)(*param)
 
     mcm_utils.validate_measurements(measure_f, shots, results1, results0)
 
@@ -331,9 +331,9 @@ class TestJaxIntegration:
             obs_tape(x, y, None, postselect=postselect)
             return qml.sample(op=obs)
 
-        func0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots = shots)
+        func0 = qml.set_shots(qml.QNode(func, dev, mcm_method=mcm_method), shots=shots)
         results0 = func0(*params)
-        results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots = shots)(*params)
+        results1 = qml.set_shots(qml.QNode(func, dev, mcm_method="deferred"), shots=shots)(*params)
 
         mcm_utils.validate_measurements(qml.sample, shots, results1, results0, batch_size=None)
 

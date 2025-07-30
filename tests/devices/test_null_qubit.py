@@ -1356,8 +1356,8 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
         qml.CNOT([0, 1])
         return qml.apply(mp)
 
-    res = qml.set_shots(qml.QNode(circuit, nq), shots = shots)(x)
-    target = qml.set_shots(qml.QNode(circuit, dq), shots = shots)(x)
+    res = qml.set_shots(qml.QNode(circuit, nq), shots=shots)(x)
+    target = qml.set_shots(qml.QNode(circuit, dq), shots=shots)(x)
     assert qml.math.shape(res) == qml.math.shape(target)
 
 

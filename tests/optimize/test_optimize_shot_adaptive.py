@@ -119,7 +119,7 @@ class TestSingleShotGradientIntegration:
 
         dev = qml.device("default.qubit", wires=1, seed=seed)
         x_init = np.array(0.5, requires_grad=True)
-        qnode = qml.set_shots(qml.QNode(self.cost_fn0, device=dev), shots = 100)
+        qnode = qml.set_shots(qml.QNode(self.cost_fn0, device=dev), shots=100)
         new_x = opt.step(qnode, x_init)
 
         assert isinstance(new_x, np.tensor)
@@ -174,7 +174,7 @@ class TestSingleShotGradientIntegration:
         dev = qml.device("default.qubit", wires=1, seed=seed)
 
         x_init = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-        qnode = qml.set_shots(qml.QNode(self.cost_fn1, device=dev), shots = 100)
+        qnode = qml.set_shots(qml.QNode(self.cost_fn1, device=dev), shots=100)
         new_x = opt.step(qnode, x_init)
 
         assert isinstance(new_x, np.ndarray)
@@ -241,7 +241,7 @@ class TestSingleShotGradientIntegration:
         shape = qml.StronglyEntanglingLayers.shape(n_layers=1, n_wires=2)
         x_init = np.ones(shape) * 0.5
         dev = qml.device("default.qubit", wires=2, seed=seed)
-        qnode = qml.set_shots(qml.QNode(self.cost_fn2, device=dev), shots = 100)
+        qnode = qml.set_shots(qml.QNode(self.cost_fn2, device=dev), shots=100)
         new_x = opt.step(qnode, x_init)
 
         assert isinstance(new_x, np.ndarray)

@@ -362,7 +362,10 @@ class TestFiniteDiff:
             return qml.probs([0, 1]), qml.probs([2, 3])
 
         x = np.random.rand(3)
-        circuits = [qml.set_shots(qml.QNode(cost, dev), shots = (1, 1000, 1001)) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
+        circuits = [
+            qml.set_shots(qml.QNode(cost, dev), shots=(1, 1000, 1001))
+            for cost in (cost1, cost2, cost3, cost4, cost5, cost6)
+        ]
 
         transform = [qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x)) for c in circuits]
         expected = [(3, 3), (3, 1, 3), (3, 2, 3), (3, 4, 3), (3, 1, 4, 3), (3, 2, 4, 3)]
@@ -381,7 +384,9 @@ class TestFiniteDiff:
             return qml.probs([0, 1]), qml.probs([2, 3])
 
         x, y, z = np.random.rand(3, 2)
-        circuits = [qml.set_shots(qml.QNode(cost, dev), shots = (1, 1000, 1001)) for cost in (cost1, cost2)]
+        circuits = [
+            qml.set_shots(qml.QNode(cost, dev), shots=(1, 1000, 1001)) for cost in (cost1, cost2)
+        ]
 
         transform = [
             qml.math.shape(qml.gradients.finite_diff(c, h=h_val)(x, y, z)) for c in circuits

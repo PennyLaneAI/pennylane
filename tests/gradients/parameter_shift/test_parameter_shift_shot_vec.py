@@ -1884,7 +1884,7 @@ class TestParameterShiftRule:
         dev = qml.device("default.qubit", wires=4)
 
         x = np.random.rand(3)
-        circuit = qml.set_shots(qml.QNode(cost, dev), shots = shot_vec)
+        circuit = qml.set_shots(qml.QNode(cost, dev), shots=shot_vec)
 
         all_res = qml.gradients.param_shift(circuit, broadcast=broadcast)(x)
         assert len(all_res) == len(many_shots_shot_vector)
@@ -1907,7 +1907,7 @@ class TestParameterShiftRule:
         dev = qml.device("default.qubit", wires=4)
 
         x = np.random.rand(3)
-        circuit = qml.set_shots(qml.QNode(cost, dev), shots = shot_vec)
+        circuit = qml.set_shots(qml.QNode(cost, dev), shots=shot_vec)
 
         all_res = qml.gradients.param_shift(circuit, broadcast=broadcast)(x)
         assert len(all_res) == len(many_shots_shot_vector)

@@ -205,7 +205,9 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", wires=4, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots = shots)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
+        )
         x = qml.numpy.array(self.x, requires_grad=True)
 
         res = qnode(x)
@@ -230,7 +232,9 @@ class TestIntegration:
         dev = qml.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots = shots)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
+        )
         if use_jit:
             qnode = jax.jit(qnode)
 
@@ -258,7 +262,9 @@ class TestIntegration:
         dev = qml.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots = shots)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots=shots
+        )
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
@@ -280,7 +286,9 @@ class TestIntegration:
 
         dev = qml.device("default.qubit", seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots = shots)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
+        )
 
         x = tf.Variable(self.x)
         with tf.GradientTape() as tape:

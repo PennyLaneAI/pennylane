@@ -644,7 +644,7 @@ class TestTapeConstruction:
             qml.CNOT([1, 0])
             return qml.counts()
 
-        qn = qml.set_shots(qml.QNode(circuit1, dev), shots = 5)
+        qn = qml.set_shots(qml.QNode(circuit1, dev), shots=5)
         jitted_qnode1 = jax.jit(qn)
 
         with pytest.raises(
@@ -1233,7 +1233,7 @@ class TestShots:
         with pytest.warns(
             UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
-            circuit = qml.set_shots(QNode(circuit, dev), shots = 10)
+            circuit = qml.set_shots(QNode(circuit, dev), shots=10)
 
         assert len(circuit(0.8)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8)
@@ -1269,7 +1269,7 @@ class TestShots:
         with pytest.warns(
             UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
-            circuit = qml.set_shots(QNode(ansatz0, dev), shots = 10)
+            circuit = qml.set_shots(QNode(ansatz0, dev), shots=10)
 
         assert len(circuit(0.8, 1)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 1)
@@ -1403,7 +1403,7 @@ class TestShots:
             qml.RY(y, wires=1)
             return qml.expval(qml.PauliZ(0))
 
-        qn = qml.set_shots(QNode(func, dev), shots = 5)
+        qn = qml.set_shots(QNode(func, dev), shots=5)
 
         # No override
         tape = qml.workflow.construct_tape(qn)(0.1, 0.2)
@@ -1434,7 +1434,7 @@ class TestShots:
     def test_shots_update_with_device(self):
         """Test that _shots is updated when updating the QNode with a new device."""
         dev1 = qml.device("default.qubit", wires=1)
-        qn = qml.set_shots(qml.QNode(dummyfunc, dev1), shots = 100)
+        qn = qml.set_shots(qml.QNode(dummyfunc, dev1), shots=100)
         assert qn._shots == qml.measurements.Shots(100)
 
         # _shots should take precedence over device shots
@@ -1448,7 +1448,7 @@ class TestShots:
     def test_shots_preserved_in_other_updates(self):
         """Test that _shots is preserved when updating other QNode parameters."""
         dev = qml.device("default.qubit", wires=1)
-        qn = qml.set_shots(qml.QNode(dummyfunc, dev), shots = 50)
+        qn = qml.set_shots(qml.QNode(dummyfunc, dev), shots=50)
         assert qn._shots == qml.measurements.Shots(50)
 
         # Update something unrelated to shots or device
@@ -1458,7 +1458,7 @@ class TestShots:
     def test_shots_direct_update(self):
         """Test that _shots can be updated via the shots parameter in update()."""
         dev = qml.device("default.qubit", wires=1)
-        qn = qml.set_shots(qml.QNode(dummyfunc, dev), shots = 30)
+        qn = qml.set_shots(qml.QNode(dummyfunc, dev), shots=30)
         assert qn._shots == qml.measurements.Shots(30)
 
         # Update shots directly
@@ -1753,7 +1753,7 @@ class TestMCMConfiguration:
             return qml.sample(wires=[0, 1])
 
         with pytest.raises(ValueError, match="Invalid postselection mode 'foo'"):
-            _ = qml.set_shots(qml.QNode(f, dev, postselect_mode="foo"), shots = shots)
+            _ = qml.set_shots(qml.QNode(f, dev, postselect_mode="foo"), shots=shots)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", [None, "best"])
@@ -2056,7 +2056,7 @@ class TestSetShots:
     def test_shots_initialization(self):
         """Test that _shots is correctly initialized from the device."""
         dev = qml.device("default.qubit", wires=1)
-        qn = qml.set_shots(qml.QNode(dummyfunc, dev), shots = 42)
+        qn = qml.set_shots(qml.QNode(dummyfunc, dev), shots=42)
         assert qn._shots == qml.measurements.Shots(42)
 
         dev_analytic = qml.device("default.qubit", wires=1)

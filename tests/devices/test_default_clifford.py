@@ -201,7 +201,7 @@ def test_meas_expval(shots, ops, seed):
         circuit_1()
         return qml.expval(ops)
 
-    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots = shots)
+    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots=shots)
     qnode_qubit = qml.QNode(circuit_fn, dev_q)
 
     assert np.allclose(qnode_clfrd(), qnode_qubit(), atol=1e-2 if shots else 1e-8)
@@ -229,7 +229,7 @@ def test_meas_var(shots, ops, seed):
         circuit_1()
         return qml.var(ops)
 
-    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots = shots)
+    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots=shots)
     qnode_qubit = qml.QNode(circuit_fn, dev_q)
 
     assert np.allclose(qnode_clfrd(), qnode_qubit(), atol=1e-2 if shots else 1e-8)
@@ -282,7 +282,7 @@ def test_meas_probs(tableau, shots, ops, seed):
             qml.PauliZ(wire)
         return qml.probs(op=ops) if ops else qml.probs(wires=[0, 1])
 
-    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots = shots)
+    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots=shots)
     qnode_qubit = qml.QNode(circuit_fn, dev_q)
 
     gotten_probs, target_probs = qnode_clfrd(), qnode_qubit()
@@ -330,8 +330,8 @@ def test_meas_counts(shots, ops, seed):
         qml.PauliX(1)
         return qml.counts(op=ops) if ops else qml.counts(wires=[0, 1])
 
-    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots = shots)
-    qnode_qubit = qml.set_shots(qml.QNode(circuit_fn, dev_q), shots = shots)
+    qnode_clfrd = qml.set_shots(qml.QNode(circuit_fn, dev_c), shots=shots)
+    qnode_qubit = qml.set_shots(qml.QNode(circuit_fn, dev_q), shots=shots)
 
     counts_clfrd = qnode_clfrd()
     counts_qubit = qnode_qubit()
@@ -367,8 +367,8 @@ def test_meas_classical_shadows(shots, ops, seed):
         circuit()
         return qml.classical_shadow(wires=[0, 1], seed=seed)
 
-    qnode_clfrd_shadow = qml.set_shots(qml.QNode(circuit_shadow, dev_c), shots = shots)
-    qnode_qubit_shadow = qml.set_shots(qml.QNode(circuit_shadow, dev_q), shots = shots)
+    qnode_clfrd_shadow = qml.set_shots(qml.QNode(circuit_shadow, dev_c), shots=shots)
+    qnode_qubit_shadow = qml.set_shots(qml.QNode(circuit_shadow, dev_q), shots=shots)
 
     bits1, recipes1 = qnode_clfrd_shadow()
     bits2, recipes2 = qnode_qubit_shadow()
@@ -381,7 +381,7 @@ def test_meas_classical_shadows(shots, ops, seed):
         circuit()
         return qml.shadow_expval(ops, seed=seed)
 
-    qnode_clfrd_expval = qml.set_shots(qml.QNode(circuit_expval, dev_c), shots = shots)
+    qnode_clfrd_expval = qml.set_shots(qml.QNode(circuit_expval, dev_c), shots=shots)
     expval = qnode_clfrd_expval()
 
     assert -1.0 <= expval <= 1.0
@@ -719,8 +719,8 @@ def test_meas_noisy_distribution(channel_op):
         qml.apply(channel_op)
         return qml.probs()
 
-    qnode_clfrd = qml.set_shots(qml.QNode(circuit, dev_c), shots = 10000)
-    qnode_qubit = qml.set_shots(qml.QNode(circuit, dev_q), shots = 10000)
+    qnode_clfrd = qml.set_shots(qml.QNode(circuit, dev_c), shots=10000)
+    qnode_qubit = qml.set_shots(qml.QNode(circuit, dev_q), shots=10000)
 
     kl_d = np.ma.masked_invalid(sp.special.rel_entr(qnode_clfrd(), qnode_qubit()))
     assert qml.math.allclose(np.abs(kl_d.sum()), 0.0, atol=1e-1)

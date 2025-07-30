@@ -1171,8 +1171,8 @@ class TestProbabilityIntegration:
             qml.QutritUnitary(TADD, wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        prob = qml.set_shots(qml.QNode(circuit, dev), shots = 1000)
-        prob_analytic = qml.set_shots(qml.QNode(circuit, dev_analytic), shots = None)
+        prob = qml.set_shots(qml.QNode(circuit, dev), shots=1000)
+        prob_analytic = qml.set_shots(qml.QNode(circuit, dev_analytic), shots=None)
 
         assert np.isclose(prob(x).sum(), 1, atol=tol, rtol=0)
         assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)

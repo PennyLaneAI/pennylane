@@ -162,7 +162,9 @@ class TestDifferentiability:
 
         dev = qml.device("default.qubit", wires=3, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots = shots)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
+        )
 
         params = qml.numpy.array(self.params, requires_grad=True)
         res = qml.grad(qnode)(params)
@@ -182,7 +184,9 @@ class TestDifferentiability:
         dev = qml.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots = shots)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
+        )
         if use_jit:
             qnode = jax.jit(qnode)
 
@@ -206,7 +210,9 @@ class TestDifferentiability:
         dev = qml.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots = shots)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots=shots
+        )
 
         params = torch.tensor(self.params, requires_grad=True)
         jac = torch.autograd.functional.jacobian(qnode, params)
@@ -223,7 +229,9 @@ class TestDifferentiability:
 
         dev = qml.device("default.qubit", seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.set_shots(qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots = shots)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
+        )
 
         params = tf.Variable(self.params)
         with tf.GradientTape() as tape:

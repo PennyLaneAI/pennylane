@@ -68,7 +68,7 @@ def test_finite_shots_adjoint():
         return qml.expval(qml.PauliZ(0))
 
     with pytest.raises(QuantumFunctionError, match="does not support adjoint"):
-        qml.set_shots(qml.QNode(circuit, dev, diff_method="adjoint"), shots = 2)()
+        qml.set_shots(qml.QNode(circuit, dev, diff_method="adjoint"), shots=2)()
 
 
 @flaky(max_runs=5)
@@ -83,8 +83,8 @@ def test_finite_shots(seed):
         qml.RY(-np.pi / 4, 1)
         return qml.expval(qml.PauliY(0))
 
-    circ0 = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots = 50000)
-    circ1 = qml.set_shots(qml.QNode(circuit, dq, diff_method=None), shots = 50000)
+    circ0 = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=50000)
+    circ1 = qml.set_shots(qml.QNode(circuit, dq, diff_method=None), shots=50000)
 
     assert np.allclose(circ0(), circ1(), rtol=0.01)
 

@@ -169,7 +169,7 @@ class TestIntegration:
 
         params = rng.random(2, requires_grad=True)
 
-        circ_hard = qml.set_shots(qml.QNode(qfunc, dev_hard), shots = 1000)
+        circ_hard = qml.set_shots(qml.QNode(qfunc, dev_hard), shots=1000)
         QFIM_hard = quantum_fisher(circ_hard)(params)
         QFIM1_hard = 4.0 * qml.metric_tensor(circ_hard)(params)
 

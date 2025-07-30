@@ -427,7 +427,10 @@ class TestSpsaGradient:
             return qml.probs([0, 1]), qml.probs([2, 3])
 
         x = pnp.random.rand(3)
-        circuits = [qml.set_shots(qml.QNode(cost, dev), shots = many_shots_shot_vector) for cost in (cost1, cost2, cost3, cost4, cost5, cost6)]
+        circuits = [
+            qml.set_shots(qml.QNode(cost, dev), shots=many_shots_shot_vector)
+            for cost in (cost1, cost2, cost3, cost4, cost5, cost6)
+        ]
 
         transform = [qml.math.shape(spsa_grad(c, h=h_val)(x)) for c in circuits]
 
