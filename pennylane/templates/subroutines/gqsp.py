@@ -183,7 +183,7 @@ def _GQSP_resources(unitary, num_iters):
         ops.Z: num_iters,
         controlled_resource_rep(
             base_class=unitary.__class__,
-            base_params={},
+            base_params=unitary.resource_params,
             num_control_wires=1,
             num_zero_control_values=1,
         ): num_iters
