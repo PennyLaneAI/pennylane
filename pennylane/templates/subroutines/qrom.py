@@ -446,7 +446,7 @@ def _qrom_decomposition_resources(
                 (j + 2 ** (ind + 1)) * num_target_wires - (j + 2**ind) * num_target_wires,
             )
             if num_swaps > 1:
-                swaps = {qml_ops.SWAP: num_swaps}
+                swaps = {resource_rep(qml_ops.SWAP): num_swaps}
                 swap_resources[
                     controlled_resource_rep(
                         base_class=qml_ops.op_math.Prod,
@@ -508,9 +508,9 @@ def _qrom_decomposition(
         for _ in range(2):
             for w in target_wires:
                 qml_ops.Hadamard(wires=w)
-                _swap_ops(control_wires, depth, swap_wires, target_wires)
-                _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings)
-                _swap_ops(control_wires, depth, swap_wires, target_wires)
+            _swap_ops(control_wires, depth, swap_wires, target_wires)
+            _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings)
+            _swap_ops(control_wires, depth, swap_wires, target_wires)
 
 
 add_decomps(QROM, _qrom_decomposition)
