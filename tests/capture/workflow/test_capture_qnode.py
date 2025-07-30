@@ -57,9 +57,8 @@ def get_qnode_output_eqns(jaxpr):
 def test_error_if_shot_vector():
     """Test that a NotImplementedError is raised if a shot vector is provided."""
 
-    dev = qml.device("default.qubit", wires=1)
+    dev = qml.device("default.qubit", wires=1, shots=(50, 50))
 
-    @qml.set_shots((50, 50))
     @qml.qnode(dev)
     def circuit():
         return qml.sample()
@@ -518,10 +517,9 @@ class TestDevicePreprocessing:
     def test_mcms_execution_deferred(self, dev_name, mcm_method, shots, seed):
         """Test that defer_measurements is reflected in the execution results of a device."""
 
-        dev = qml.device(dev_name, wires=3, seed=seed)
+        dev = qml.device(dev_name, wires=3, shots=shots, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
 
-        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method=mcm_method)
         def circuit():
             qml.Hadamard(0)
@@ -557,10 +555,9 @@ class TestDevicePreprocessing:
         """Test that using a qnode with postselect_mode="fill-shots" gives the expected results."""
 
         shots = 1000
-        dev = qml.device(dev_name, wires=3, seed=seed)
+        dev = qml.device(dev_name, wires=3, shots=shots, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
 
-        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="fill-shots")
         def circuit():
             qml.Hadamard(0)
@@ -590,11 +587,10 @@ class TestDevicePreprocessing:
         """Test that using a qnode with postselect_mode="hw-like" gives the expected results."""
 
         shots = 1000
-        dev = qml.device(dev_name, wires=2, seed=seed)
+        dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
         n_postselects = 3
 
-        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="hw-like")
         def circuit():
             for _ in range(n_postselects):
@@ -621,9 +617,8 @@ class TestDevicePreprocessing:
         """Test that single-branch-statistics works as expected."""
 
         shots = 1000
-        dev = qml.device(dev_name, wires=2, seed=seed)
+        dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
 
-        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method="single-branch-statistics")
         def circuit():
             qml.Hadamard(0)
