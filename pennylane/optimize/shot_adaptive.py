@@ -285,18 +285,18 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         return [np.concatenate(i) for i in zip(*grads)]
 
     @staticmethod
-    def check_device(dev):
-        r"""Verifies that the device used by the objective function is non-analytic.
+    def check_finite_shots(qnode):
+        r"""Verifies that the qnode used by the objective function is non-analytic.
 
         Args:
-            dev (.devices.Device): the device to verify
+            qnode (.QNode): the qnode to verify
 
         Raises:
-            ValueError: if the device is analytic
+            ValueError: if the qnode is analytic
         """
-        if not dev.shots:
+        if not qnode._shots:  # pylint: disable=protected-access
             raise ValueError(
-                "The Rosalin optimizer can only be used with devices "
+                "The Rosalin optimizer can only be used with qnodes "
                 "that estimate expectation values with a finite number of shots."
             )
 
@@ -318,7 +318,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     def _single_shot_qnode_gradients(self, qnode, args, kwargs):
         """Compute the single shot gradients of a QNode."""
-        self.check_device(qnode.device)
+        self.check_finite_shots(qnode)
 
         tape = construct_tape(qnode)(*args, **kwargs)
         [expval] = tape.measurements
