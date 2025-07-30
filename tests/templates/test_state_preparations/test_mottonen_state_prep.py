@@ -21,7 +21,12 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.mottonen import _get_alpha_y, compute_theta, gray_code
+from pennylane.templates.state_preparations.mottonen import (
+    _get_alpha_y,
+    compute_theta,
+    gray_code,
+    mottonen_decomp,
+)
 
 
 def test_standard_validity():
@@ -322,6 +327,38 @@ class TestDecomposition:
         qml.assert_equal(q[8], qml.RZ(-np.pi / 4, 1))
         qml.assert_equal(q[9], qml.CNOT((0, 1)))
         qml.assert_equal(q[10], qml.GlobalPhase(-np.pi / 8, wires=(0, 1)))
+
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decomposition_capture(self):
+        """Tests that the new decomposition works with capture."""
+        from jax import numpy as jnp
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        state = jnp.array([0, 0, 0, 1j])
+
+        def circuit(state):
+            mottonen_decomp(state, (0, 1))
+
+        plxpr = qml.capture.make_plxpr(circuit)(state)
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, state)
+        q = collector.state["ops"]
+        assert len(q) == 11
+
+        pi = jnp.array(jnp.pi)
+        qml.assert_equal(q[0], qml.RY(pi, 0))
+        qml.assert_equal(q[1], qml.RY(pi / 2, 1))
+        qml.assert_equal(q[2], qml.CNOT((0, 1)))
+        qml.assert_equal(q[3], qml.RY(-pi / 2, 1))
+        qml.assert_equal(q[4], qml.CNOT((0, 1)))
+        qml.assert_equal(q[5], qml.RZ(pi / 4, 0))
+        qml.assert_equal(q[6], qml.RZ(pi / 4, 1))
+        qml.assert_equal(q[7], qml.CNOT((0, 1)))
+        qml.assert_equal(q[8], qml.RZ(-pi / 4, 1))
+        qml.assert_equal(q[9], qml.CNOT((0, 1)))
+        qml.assert_equal(q[10], qml.GlobalPhase(-pi / 8, wires=(0, 1)))
 
 
 class TestInputs:

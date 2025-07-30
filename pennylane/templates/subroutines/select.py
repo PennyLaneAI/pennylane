@@ -19,19 +19,20 @@ import copy
 from collections import Counter, defaultdict
 from itertools import product
 
-import pennylane as qml
 from pennylane import math
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
     controlled_resource_rep,
     register_resources,
+    resource_rep,
 )
-from pennylane.decomposition.resources import resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, X, adjoint, ctrl
-from pennylane.templates.subroutines.temporary_and import TemporaryAND
+from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
+
+from .temporary_and import TemporaryAND
 
 
 def _partial_select(K, control):
@@ -342,7 +343,7 @@ class Select(Operation):
 
     @property
     def resource_params(self):
-        op_reps = tuple(qml.resource_rep(type(op), **op.resource_params) for op in self.ops)
+        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in self.ops)
         return {
             "op_reps": op_reps,
             "num_control_wires": len(self.control),
@@ -390,7 +391,7 @@ class Select(Operation):
             raise ValueError("Control wires should be different from operation wires.")
 
         for op in ops:
-            qml.QueuingManager.remove(op)
+            QueuingManager.remove(op)
 
         target_wires = Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires
@@ -491,8 +492,8 @@ class Select(Operation):
         """
         if partial:
             if len(ops) == 1:
-                if qml.queuing.QueuingManager.recording():
-                    qml.apply(ops[0])
+                if QueuingManager.recording():
+                    apply(ops[0])
                 return ops
             controls_and_values = _partial_select(len(ops), control)
             decomp_ops = [
@@ -529,7 +530,7 @@ class Select(Operation):
 
 
 def _multi_controlled_rep(target_rep, num_control_wires, state):
-    return qml.decomposition.controlled_resource_rep(
+    return controlled_resource_rep(
         base_class=target_rep.op_type,
         base_params=target_rep.params,
         num_control_wires=num_control_wires,
@@ -557,12 +558,12 @@ def _select_resources_multi_control(op_reps, num_control_wires, partial):
 
 
 # pylint: disable=unused-argument
-@qml.register_resources(_select_resources_multi_control)
+@register_resources(_select_resources_multi_control)
 def _select_decomp_multi_control(ops, control, work_wires, partial, **_):
 
     if partial:
         if len(ops) == 1:
-            qml.apply(ops[0])
+            apply(ops[0])
         else:
             controls_and_values = _partial_select(len(ops), control)
             for (ctrl_, values), op in zip(controls_and_values, ops):
@@ -572,7 +573,7 @@ def _select_decomp_multi_control(ops, control, work_wires, partial, **_):
             ctrl(op, control, control_values=state)
 
 
-qml.add_decomps(Select, _select_decomp_multi_control)
+add_decomps(Select, _select_decomp_multi_control)
 
 # Decomposition of Select using unary iterator
 

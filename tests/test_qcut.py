@@ -4672,7 +4672,7 @@ class TestCutStrategy:
 
         devices = [devices] if not isinstance(devices, list) else devices
 
-        max_dev_wires = max((len(d.wires) for d in devices))
+        max_dev_wires = max(len(d.wires) for d in devices)
         assert strategy.max_free_wires == max_free_wires or max_dev_wires or min_free_wires
         assert strategy.min_free_wires == min_free_wires or max_free_wires or max_dev_wires
         assert strategy.imbalance_tolerance == imbalance_tolerance
@@ -5415,7 +5415,7 @@ class TestAutoCutCircuit:
         assert all(lower <= f.order() <= upper for f in frags)
 
         # each frag should have the device size constraint satisfied.
-        assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+        assert all(len({e[2] for e in f.edges.data("wire")}) <= device_size for f in frags)
 
 
 class TestCutCircuitWithHamiltonians:
@@ -5592,7 +5592,7 @@ class TestCutCircuitWithHamiltonians:
             assert all(frag_ords[idx][0] <= f.order() <= frag_ords[idx][1] for f in frags)
 
             # each frag should have the device size constraint satisfied.
-            assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+            assert all(len({e[2] for e in f.edges.data("wire")}) <= device_size for f in frags)
 
     def test_hamiltonian_with_tape(self):
         """Test that an expand function that generates multiple tapes is applied before the transform and the transform

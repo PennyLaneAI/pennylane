@@ -19,7 +19,7 @@ import copy
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import ops
 from pennylane.decomposition import (
     add_decomps,
     adjoint_resource_rep,
@@ -162,7 +162,7 @@ class Reflection(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["base"] = qml.map_wires(new_op._hyperparameters["base"], wire_map)
+        new_op._hyperparameters["base"] = new_op._hyperparameters["base"].map_wires(wire_map)
         new_op._hyperparameters["reflection_wires"] = tuple(
             wire_map.get(w, w) for w in new_op._hyperparameters["reflection_wires"]
         )
@@ -190,32 +190,32 @@ class Reflection(Operation):
         U = hyperparameters["base"]
         reflection_wires = hyperparameters["reflection_wires"]
 
-        wires = qml.wires.Wires(reflection_wires) if reflection_wires is not None else wires
+        wires = Wires(reflection_wires) if reflection_wires is not None else wires
 
-        ops = []
+        decomp_ops = []
 
-        ops.append(qml.GlobalPhase(np.pi))
-        ops.append(qml.adjoint(U))
+        decomp_ops.append(ops.GlobalPhase(np.pi))
+        decomp_ops.append(ops.adjoint(U))
 
         if len(wires) > 1:
-            ops.append(qml.PauliX(wires=wires[-1]))
-            ops.append(
-                qml.ctrl(
-                    qml.PhaseShift(alpha, wires=wires[-1]),
+            decomp_ops.append(ops.X(wires=wires[-1]))
+            decomp_ops.append(
+                ops.ctrl(
+                    ops.PhaseShift(alpha, wires=wires[-1]),
                     control=wires[:-1],
                     control_values=[0] * (len(wires) - 1),
                 )
             )
-            ops.append(qml.PauliX(wires=wires[-1]))
+            decomp_ops.append(ops.X(wires=wires[-1]))
 
         else:
-            ops.append(qml.PauliX(wires=wires))
-            ops.append(qml.PhaseShift(alpha, wires=wires))
-            ops.append(qml.PauliX(wires=wires))
+            decomp_ops.append(ops.X(wires=wires))
+            decomp_ops.append(ops.PhaseShift(alpha, wires=wires))
+            decomp_ops.append(ops.X(wires=wires))
 
-        ops.append(U)
+        decomp_ops.append(U)
 
-        return ops
+        return decomp_ops
 
 
 def _reflection_decomposition_resources(
@@ -225,22 +225,22 @@ def _reflection_decomposition_resources(
     num_wires = num_reflection_wires if num_reflection_wires is not None else num_wires
 
     resources = {
-        qml.GlobalPhase: 1,
+        ops.GlobalPhase: 1,
         adjoint_resource_rep(base_class, base_params): 1,
-        qml.PauliX: 2,
+        ops.PauliX: 2,
     }
 
     if num_wires > 1:
         resources[
             controlled_resource_rep(
-                qml.PhaseShift,
+                ops.PhaseShift,
                 {},
                 num_control_wires=num_wires - 1,
                 num_zero_control_values=num_wires - 1,
             )
         ] = 1
     else:
-        resources[resource_rep(qml.PhaseShift)] = 1
+        resources[resource_rep(ops.PhaseShift)] = 1
 
     resources[resource_rep(base_class, **base_params)] = 1
 
@@ -253,26 +253,26 @@ def _reflection_decomposition(*parameters, wires=None, **hyperparameters):
     U = hyperparameters["base"]
     reflection_wires = hyperparameters["reflection_wires"]
 
-    wires = qml.wires.Wires(reflection_wires) if reflection_wires is not None else wires
+    wires = Wires(reflection_wires) if reflection_wires is not None else wires
 
-    qml.GlobalPhase(np.pi)
-    qml.adjoint(U)
+    ops.GlobalPhase(np.pi)
+    ops.adjoint(U)
 
     if len(wires) > 1:
-        qml.PauliX(wires=wires[-1])
+        ops.PauliX(wires=wires[-1])
 
-        qml.ctrl(
-            qml.PhaseShift(alpha, wires=wires[-1]),
+        ops.ctrl(
+            ops.PhaseShift(alpha, wires=wires[-1]),
             control=wires[:-1],
             control_values=[0] * (len(wires) - 1),
         )
 
-        qml.PauliX(wires=wires[-1])
+        ops.PauliX(wires=wires[-1])
 
     else:
-        qml.PauliX(wires=wires)
-        qml.PhaseShift(alpha, wires=wires)
-        qml.PauliX(wires=wires)
+        ops.PauliX(wires=wires)
+        ops.PhaseShift(alpha, wires=wires)
+        ops.PauliX(wires=wires)
 
     U._unflatten(*U._flatten())  # pylint: disable=protected-access
 
