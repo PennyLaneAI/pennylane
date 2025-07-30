@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
+  Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version.
   Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
   Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
