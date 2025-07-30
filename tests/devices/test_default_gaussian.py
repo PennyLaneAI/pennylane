@@ -854,7 +854,7 @@ class TestDefaultGaussianIntegration:
             match="Specifying a list of shots is only supported for QubitDevice based devices.",
         ):
             circuit()
-        assert dev.shots.total_shots == sum(shots)
+        assert circuit._shots.total_shots == sum(shots)
 
     def test_new_return_type_error_multi_measurements(self):
         """Test that multiple measurements raise an error with the new return type."""
