@@ -149,8 +149,8 @@ class ConvertToMBQCFormalismPattern(
             graph_qubits_dict[node] = AllocQubitOp()
 
         # Insert auxiliary qubit allocation objects into the IR
-        for node in graph_qubits_dict:
-            rewriter.insert_op(graph_qubits_dict[node], InsertPoint.before(op))
+        for _, qubit in graph_qubits_dict.items():
+            rewriter.insert_op(qubit, InsertPoint.before(op))
 
         # Prepare auxiliary qubits by applying Hadamard ops before entanglement
         for node in nodes:
