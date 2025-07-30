@@ -59,7 +59,7 @@ def generate_polynomial_coeffs(degree, parity=None):
         )
     if parity == 0:
         assert degree % 2 == 0.0
-        polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
+        polynomial_coeffs_in_canonical_basis = np.zeros(degree + 1)
         polynomial_coeffs_in_canonical_basis[0::2] = rng.normal(size=degree // 2 + 1)
         return polynomial_coeffs_in_canonical_basis / np.sum(
             np.abs(polynomial_coeffs_in_canonical_basis)
@@ -67,7 +67,7 @@ def generate_polynomial_coeffs(degree, parity=None):
 
     if parity == 1:
         assert degree % 2 == 1.0
-        polynomial_coeffs_in_canonical_basis = np.zeros((degree + 1))
+        polynomial_coeffs_in_canonical_basis = np.zeros(degree + 1)
         polynomial_coeffs_in_canonical_basis[1::2] = rng.uniform(size=degree // 2 + 1)
         return polynomial_coeffs_in_canonical_basis / np.sum(
             np.abs(polynomial_coeffs_in_canonical_basis)

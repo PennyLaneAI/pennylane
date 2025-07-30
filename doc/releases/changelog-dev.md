@@ -52,6 +52,7 @@
   manner.
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
   [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
+  [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   
   The included templates are:
 
@@ -61,6 +62,10 @@
   
   * :class:`~.ModExp`
 
+  * :class:`~.MottonenStatePreparation`
+
+  * :class:`~.MPSPrep`
+
   * :class:`~.Multiplier`
 
   * :class:`~.OutAdder`
@@ -69,11 +74,17 @@
 
   * :class:`~.OutPoly`
 
+  * :class:`~.PrepSelPrep`
+
+  * :class:`~.ops.Prod`
+
   * :class:`~.Reflection`
 
-  * :class:`~.TrotterProduct`
+  * :class:`~.Select`
 
-  * :class:`~.MPSPrep`
+  * :class:`~.StatePrep`
+
+  * :class:`~.TrotterProduct`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
@@ -109,7 +120,6 @@
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
-
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
@@ -324,6 +334,7 @@
 
 * Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
+  [(#7982)](https://github.com/PennyLaneAI/pennylane/pull/7982)
 
 * Improve the pre-commit hook to add gitleaks.
   [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
