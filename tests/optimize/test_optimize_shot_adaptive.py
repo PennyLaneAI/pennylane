@@ -38,7 +38,7 @@ class TestExceptions:
 
         x = np.array(0.5, requires_grad=True)
 
-        with pytest.raises(ValueError, match="can only be used with devices that"):
+        with pytest.raises(ValueError, match="can only be used with qnodes that"):
             opt.step(expval_cost, x)
 
     def test_learning_error(self):
