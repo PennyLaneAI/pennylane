@@ -376,6 +376,16 @@ class TestConvertToMBQCFormalismPass:
             # CHECK-NOT: quantum.custom "S"()
             # CHECK-NOT: quantum.custom "RZ"()
             # CHECK-NOT: quantum.custom "RotXZX"()
+            # CHECK: quantum.custom "PauliX"
+            # CHECK: quantum.custom "PauliZ"
+            # CHECK: quantum.custom "Identity"
+            # CHECK: quantum.custom "SWAP"
+            # CHECK: quantum.custom "CZ"
+            # CHECK: quantum.custom "Hadamard"
+            # CHECK: quantum.alloc_qb
+            # CHECK: quantum.dealloc_qb
+            # CHECK: mbqc.measure_in_basis
+            # CHECK: scf.if
             for i in range(1000):
                 qml.H(i)
                 qml.S(i)
