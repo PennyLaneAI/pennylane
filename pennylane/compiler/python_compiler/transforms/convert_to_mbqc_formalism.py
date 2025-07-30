@@ -119,7 +119,7 @@ convert_to_mbqc_formalism_pass = compiler_transform(ConvertToMBQCFormalismPass)
 
 class ConvertToMBQCFormalismPattern(
     pattern_rewriter.RewritePattern
-):  # pylint: disable=too-few-public-methods
+):  # pylint: disable=too-few-public-methods, no-self-use, unpacking-non-sequence
     """RewritePattern for converting to the MBQC formalism."""
 
     def _prep_graph_state(self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter):
