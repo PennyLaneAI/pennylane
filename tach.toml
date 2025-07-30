@@ -208,6 +208,11 @@ layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
 [[modules]]
+path = "pennylane.templates.subroutines"
+layer = "auxiliary"
+cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
+
+[[modules]]
 path = "pennylane.templates.swapnetworks"
 layer = "auxiliary"
 cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
@@ -226,11 +231,6 @@ cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.pyth
 
 # [[modules]]
 # path = "pennylane.templates.state_preparations"
-# layer = "auxiliary"
-# cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
-
-# [[modules]]
-# path = "pennylane.templates.subroutines"
 # layer = "auxiliary"
 # cannot_depend_on = ["pennylane.ftqc", "pennylane.labs", "pennylane.compiler.python_compiler"]
 
