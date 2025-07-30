@@ -49,7 +49,8 @@ def _generate_graph(op_name: str):
 def _generate_cnot_graph():
     """Generate a networkx graph to represent the connectivity of auxiliary qubits of
     a CNOT gate based on the textbook MBQC formalism. Note that wire 1 is the control
-    wire and wire 9 is the target wire in the textbook MBQC formalism.
+    wire and wire 9 is the target wire as described in the Fig.2 of
+    [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
 
     Returns:
         A graph represents the connectivity of auxiliary qubits of a CNOT gate.
@@ -77,7 +78,7 @@ def _generate_cnot_graph():
 
 def _generate_one_wire_op_lattice():
     """Generate lattice graph for a one-wire gate based on the textbook MBQC formalism.
-    Note wire 1 is the target wire in the textbook MBQC fomalism.
+    Note wire 1 is the target wire in the Fig. 2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
 
     Returns:
         A graph represents the connectivity of auxiliary qubits of a one-wire gate.
@@ -122,7 +123,7 @@ class ConvertToMBQCFormalismPattern(
     """RewritePattern for converting to the MBQC formalism."""
 
     def _prep_graph_state(self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter):
-        r"""Allocate auxiliary qubits and prepare a graph state for auxiliary qubits. Auxiliary qubits are
+        """Allocate auxiliary qubits and prepare a graph state for auxiliary qubits. Auxiliary qubits are
         entangled in the way described in the textbook MBQC form. **Note that all ops
         inserted into the IR in this function could be abstracted into a primitive that
         return a graph state that can be measured directly.**
@@ -184,7 +185,7 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
-        """Insert arbitary basis measure related operations before the op operation.
+        """Insert an arbitary basis measure related operations to the IR.
         Args:
             angle (float) : Angle of the measurement basis.
             plane (str): Plane of the measurement basis.
@@ -211,11 +212,11 @@ class ConvertToMBQCFormalismPattern(
         return measureOp.results
 
     def _measure_x_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
-        """Insert X basis measure related operations before the op operation."""
+        """Insert a X-basis measure op related operations to the IR."""
         return self._insert_arbitary_basis_measure_op(0.0, "XY", qubit, op, rewriter)
 
     def _measure_y_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
-        """Insert Y basis measure related operations before the op operation."""
+        """Insert a Y-basis measure op related operations to the IR."""
         return self._insert_arbitary_basis_measure_op(math.pi / 2, "XY", qubit, op, rewriter)
 
     def _cond_insert_arbitary_basis_measure_op(
@@ -383,7 +384,7 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
-        """Insert byproduct operations.
+        """Insert a byproduct op related operations to the IR.
         Args:
             parity_res (OpResult) : Parity check result.
             gate_name (str) : The name of gate to be corrected.
@@ -426,7 +427,7 @@ class ConvertToMBQCFormalismPattern(
         rewriter: pattern_rewriter.PatternRewriter,
         add_const_one: bool = False,
     ):
-        """Add operations for parity check.
+        """Insert parity check related operations to the IR.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             op (CustomOp) : A gate operatio object.
@@ -468,7 +469,7 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Add corrections for a Hadamard gate.
+        """Insert correction ops of a Hadamard gate to the IR.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
@@ -499,7 +500,7 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Add corrections for a S gate.
+        """Insert correction ops of a S gate to the IR.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
@@ -529,7 +530,7 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Add corrections for a RotXZX or RZ gate.
+        """Insert correction ops of a RotXZX or RZ gate to the IR.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
@@ -558,7 +559,7 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Add corrections for the CNOT gate.
+        """Insert correction ops of a CNOT gate to the IR.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubits (list[QubitType]) : A list of auxiliary result qubits.
@@ -596,7 +597,7 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Add corrections for the result auxiliary qubit/s.
+        """Insert correction ops for the result auxiliary qubit/s to the IR.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubits (QubitType | list[QubitType]) : An or a list of auxiliary result qubit.
