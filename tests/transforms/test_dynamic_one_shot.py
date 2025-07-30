@@ -407,7 +407,6 @@ class TestInterfaces:
             postselect=None,
             interface=interface if use_interface_for_results else None,
         )
-        print(raw_results)
         processed_results = fn(raw_results)
 
         if measure_f is qml.sample:
