@@ -332,7 +332,7 @@
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
   [(#7982)](https://github.com/PennyLaneAI/pennylane/pull/7982)
 
-* Improve the pre-commit hook to add `gitleaks` and `ruff`.
+* Improve the pre-commit hook to add support for: `gitleaks`, `ruff`.
   [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
   [(#7986)](https://github.com/PennyLaneAI/pennylane/pull/7986)
 
