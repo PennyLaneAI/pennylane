@@ -336,7 +336,7 @@ def _qrom_decomposition_resources(
     num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
 ):
     if num_control_wires == 0:
-        return {resource_rep(qml_ops.BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
+        return {resource_rep(BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
 
     num_swap_wires = num_target_wires + num_work_wires
 
@@ -345,7 +345,7 @@ def _qrom_decomposition_resources(
     depth = int(2 ** np.floor(np.log2(depth)))
     depth = min(depth, num_bitstrings)
 
-    ops = [resource_rep(qml_ops.BasisEmbedding, num_wires=num_target_wires) for _ in range(num_bitstrings)]
+    ops = [resource_rep(BasisEmbedding, num_wires=num_target_wires) for _ in range(num_bitstrings)]
     ops_identity = ops + [qml_ops.I] * int(2**num_control_wires - num_bitstrings)
 
     n_columns = (
@@ -364,7 +364,7 @@ def _qrom_decomposition_resources(
     num_control_select_wires = int(math.ceil(math.log2(2**num_control_wires / depth)))
 
     if num_control_select_wires > 0:
-        select_ops = {resource_rep(qml_ops.Select, ops=new_ops): 1}
+        select_ops = {resource_rep(Select, ops=new_ops): 1}
     else:
         select_ops = new_ops
 
@@ -410,7 +410,7 @@ def _qrom_decomposition(
 ):  # pylint: disable=unused-argument, too-many-arguments
     if len(control_wires) == 0:
         for bits in bitstrings:
-            qml_ops.BasisEmbedding(int(bits, 2), wires=target_wires)
+            BasisEmbedding(int(bits, 2), wires=target_wires)
 
     swap_wires = target_wires + work_wires
 
@@ -421,8 +421,8 @@ def _qrom_decomposition(
 
     def _new_ops(depth_new, target_wires_new):
 
-        with qml_ops.QueuingManager.stop_recording():
-            ops_new = [qml_ops.BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
+        with QueuingManager.stop_recording():
+            ops_new = [BasisEmbedding(int(bits, 2), wires=target_wires) for bits in bitstrings]
             ops_identity_new = ops_new + [qml_ops.I(target_wires)] * int(
                 2 ** len(control_wires) - len(ops_new)
             )
@@ -442,7 +442,7 @@ def _qrom_decomposition(
                     ]
                     for l in range(len(target_wires))
                 }
-                column_ops.append(qml_ops.map_wires(ops_identity_new[i * depth_new + j], dic_map))
+                column_ops.append(ops_identity_new[i * depth_new + j].map_wires(dic_map))
             new_ops.append(qml_ops.prod(*column_ops))
         return new_ops
 
@@ -453,7 +453,7 @@ def _qrom_decomposition(
         control_select_wires = control_wires_select[:n_control_select_wires]
 
         if control_select_wires:
-            qml_ops.Select(
+            Select(
                 _new_ops(depth_select, target_wires_select),
                 control=control_select_wires,
             )
