@@ -25,7 +25,7 @@ import pennylane as qml
 from pennylane.allocation import DynamicWire
 from pennylane.exceptions import AllocationError, DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
-from pennylane.measurements import SampleMeasurement, StateMeasurement, StateMP
+from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -154,14 +154,6 @@ def validate_device_wires(
         raise WireError(
             f"Cannot run circuit(s) on {name} as they contain wires "
             f"not found on the device: {extra_wires}"
-        )
-
-    if any(isinstance(w, DynamicWire) for w in tape.wires) and any(
-        isinstance(mp, StateMP) for mp in tape.measurements
-    ):
-        raise DeviceError(
-            "returning the state is currently not supported with dynamic wires. "
-            " Consider using the density_matrix or probabilities instead."
         )
 
     modified = False
