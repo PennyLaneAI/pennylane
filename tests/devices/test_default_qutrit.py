@@ -557,9 +557,8 @@ class TestExpval:
     def test_expval_estimate(self):
         """Test that the expectation value is not analytically calculated"""
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qml.device("default.qutrit", wires=1, shots=3)
 
-        @qml.set_shots(3)
         @qml.qnode(dev)
         def circuit():
             return qml.expval(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
@@ -687,9 +686,8 @@ class TestVar:
     def test_var_estimate(self):
         """Test that the var is not analytically calculated"""
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qml.device("default.qutrit", wires=1, shots=3)
 
-        @qml.set_shots(3)
         @qml.qnode(dev)
         def circuit():
             return qml.var(qml.THermitian(np.array([[0, 1, 0], [1, 0, 0], [0, 0, 0]]), wires=0))
@@ -707,7 +705,7 @@ class TestSample:
     def test_sample_dtype(self):
         """Test that if the raw samples are requested, they are of dtype int."""
 
-        dev = qml.device("default.qutrit", wires=1)
+        dev = qml.device("default.qutrit", wires=1, shots=10)
 
         tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
         res = dev.execute(tape)
@@ -722,7 +720,7 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qml.device("default.qutrit", wires=2, shots=1000)
 
         dev.apply([qml.QutritUnitary(TSHIFT, wires=0)])
 
@@ -754,7 +752,7 @@ class TestSample:
         # Explicitly resetting is necessary as the internal
         # state is set to None in __init__ and only properly
         # initialized during reset
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qml.device("default.qutrit", wires=2, shots=1000)
 
         dev.apply([qml.QutritUnitary(TSHIFT, wires=0)])
         dev.target_device._wires_measured = {0}
@@ -1070,7 +1068,7 @@ class TestTensorSample:
     @pytest.mark.parametrize("index_2", list(range(1, 9)))
     def test_gell_mann_obs(self, index_1, index_2, tol_stochastic):
         """Test that sampling tensor products involving Gell-Mann observables works correctly"""
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qml.device("default.qutrit", wires=2, shots=int(1e6))
 
         obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
 
@@ -1111,7 +1109,7 @@ class TestTensorSample:
         correctly"""
 
         np.random.seed(seed)
-        dev = qml.device("default.qutrit", wires=3)
+        dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
 
         A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
 
@@ -1162,8 +1160,8 @@ class TestProbabilityIntegration:
     )
     def test_probability(self, x, tol):
         """Test that the probability function works for finite and infinite shots"""
-        dev = qml.device("default.qutrit", wires=2)
-        dev_analytic = qml.device("default.qutrit", wires=2)
+        dev = qml.device("default.qutrit", wires=2, shots=1000)
+        dev_analytic = qml.device("default.qutrit", wires=2, shots=None)
 
         def circuit(x):
             qml.QutritUnitary(x[0], wires=0)
@@ -1171,8 +1169,8 @@ class TestProbabilityIntegration:
             qml.QutritUnitary(TADD, wires=[0, 1])
             return qml.probs(wires=[0, 1])
 
-        prob = qml.set_shots(qml.QNode(circuit, dev), shots=1000)
-        prob_analytic = qml.set_shots(qml.QNode(circuit, dev_analytic), shots=None)
+        prob = qml.QNode(circuit, dev)
+        prob_analytic = qml.QNode(circuit, dev_analytic)
 
         assert np.isclose(prob(x).sum(), 1, atol=tol, rtol=0)
         assert np.allclose(prob_analytic(x), prob(x), atol=0.1, rtol=0)
@@ -1183,7 +1181,7 @@ class TestProbabilityIntegration:
         """Test analytic_probability call when generating samples"""
         self.analytic_counter = False
 
-        dev = qml.device("default.qutrit", wires=2)
+        dev = qml.device("default.qutrit", wires=2, shots=1000)
         monkeypatch.setattr(dev.target_device, "analytic_probability", self.mock_analytic_counter)
 
         # generate samples through `generate_samples` (using 'analytic_probability')
