@@ -14,7 +14,6 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-from typing import Optional
 
 import pytest
 
@@ -246,7 +245,7 @@ class TestSetupExecutionConfig:
             (EXAMPLE_TOML_FILE, None, "deferred"),
             (EXAMPLE_TOML_FILE_ONE_SHOT, 10, "one-shot"),
             (EXAMPLE_TOML_FILE_ONE_SHOT, None, "deferred"),
-            (EXAMPLE_TOML_FILE_ALL_SUPPORT, 10, "one-shot"),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, 10, "device"),
             (EXAMPLE_TOML_FILE_ALL_SUPPORT, None, "device"),
         ],
         indirect=("create_temporary_toml_file",),
@@ -773,13 +772,13 @@ def test_device_with_ambiguous_preprocess():
 
             def setup_execution_config(
                 self,
-                config: Optional[ExecutionConfig] = None,
-                circuit: Optional[QuantumScript] = None,
+                config: ExecutionConfig | None = None,
+                circuit: QuantumScript | None = None,
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 
             def preprocess_transforms(
-                self, execution_config: Optional[ExecutionConfig] = None
+                self, execution_config: ExecutionConfig | None = None
             ) -> TransformProgram:
                 return TransformProgram()
 

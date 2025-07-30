@@ -16,7 +16,7 @@ Contains the ControlledSequence template.
 """
 from copy import copy
 
-import pennylane as qml
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -24,7 +24,8 @@ from pennylane.decomposition import (
     register_resources,
 )
 from pennylane.operation import Operation
-from pennylane.ops.op_math.symbolicop import SymbolicOp
+from pennylane.ops.op_math import SymbolicOp, ctrl
+from pennylane.ops.op_math import pow as qml_pow
 from pennylane.wires import Wires
 
 
@@ -208,7 +209,7 @@ class ControlledSequence(SymbolicOp, Operation):
         ops = []
 
         for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
-            ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
+            ops.append(qml_pow(ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops
 
@@ -235,12 +236,12 @@ def _ctrl_seq_decomposition_resources(base_class, base_params, num_control_wires
 def _ctrl_seq_decomposition(*_, base=None, control_wires=None, **__):
     powers_of_two = [2**i for i in range(len(control_wires))]
 
-    @qml.for_loop(len(powers_of_two) - 1, -1, -1)
+    @for_loop(len(powers_of_two) - 1, -1, -1)
     def _powers_loop(i):
         j = len(powers_of_two) - 1 - i
         ctrl_wire = control_wires[j]
         z = powers_of_two[i]
-        qml.pow(qml.ctrl(base, control=ctrl_wire), z=z)
+        qml_pow(ctrl(base, control=ctrl_wire), z=z)
 
     _powers_loop()
 
