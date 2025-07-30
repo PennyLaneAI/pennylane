@@ -403,7 +403,7 @@ class QROM(Operation):
 
 def _qrom_decomposition_resources(
     num_bitstrings, num_control_wires, num_target_wires, num_work_wires, clean
-):
+):  # pylint: disable=too-many-branches
     if num_control_wires == 0:
         return {resource_rep(BasisEmbedding, num_wires=num_target_wires): num_bitstrings}
 
