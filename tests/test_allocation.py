@@ -281,15 +281,38 @@ class TestCaptureIntegration:
 @pytest.mark.integration
 class TestDeviceIntegration:
 
-    @pytest.mark.parametrize("device_wires", (None, (0, 1, 2, 3)))
-    def test_simple_allocation(self, device_wires):
+    @pytest.mark.parametrize("dev_name", ("default.qubit",))
+    @pytest.mark.parametrize("device_wires", (None, (0, 1, 2)))
+    def test_reuse_without_mcms(self, dev_name, device_wires):
         """Test that a simple dynamic allocation can be executed."""
 
-        @qml.qnode(qml.device("default.qubit", wires=device_wires))
+        @qml.qnode(qml.device(dev_name, wires=device_wires))
         def c():
-            with allocate(1) as wires:
+            with allocate(1, restored=True) as wires:
                 qml.H(wires)
                 qml.CNOT((wires[0], 0))
+                qml.H(wires)
+
+            with allocate(1) as wires:
+                qml.H(wires)
+                qml.CNOT((wires[0], 1))
+            return qml.expval(qml.Z(0)), qml.expval(qml.Z(1))
+
+        res1, res2 = c()
+        assert qml.math.allclose(res1, 0)
+        assert qml.math.allclose(res2, 0)
+
+    @pytest.mark.parametrize("dev_name", ("default.qubit",))
+    @pytest.mark.parametrize("device_wires", (None, (0, 1, 2)))
+    def test_reuse_with_mcms(self, dev_name, device_wires):
+        """Test that a simple dynamic allocation can be executed."""
+
+        @qml.qnode(qml.device(dev_name, wires=device_wires), mcm_method="tree-traversal")
+        def c():
+            with allocate(1, restored=False) as wires:
+                qml.H(wires)
+                qml.CNOT((wires[0], 0))
+                qml.H(wires)
 
             with allocate(1) as wires:
                 qml.H(wires)
