@@ -786,21 +786,21 @@ def device_resolve_dynamic_wires(
     ...     with qml.allocation.allocate(1) as wires:
     ...         qml.X(wires)
 
-    >>> transformed = device_resolve_dynamic_wires(f, wires=qml.wires.Wires((0,"a", "b")))
+    >>> transformed = device_resolve_dynamic_wires(f, wires=qml.wires.Wires((0, "a", "b")))
     >>> print(qml.draw(transformed)())
     0: ──H─┤
     b: ──X─┤
     a: ──X─┤
 
-    If the device has no wires, then wires are allocated started at the smallest
-    integer not present in the ``tape``.
+    If the device has no wires, then wires are allocated starting at the smallest
+    integer that is larger than all integer wires present in the ``tape``.
 
     >>> transformed_None = device_resolve_dynamic_wires(f, wires=None)
     >>> print(qml.draw(transformed_None)())
     0: ──H──────────────┤
     1: ──X──┤↗│  │0⟩──X─┤
 
-    See :func:`resolve_dynamic_wires` for a more detailed description.
+    See :func:`~.resolve_dynamic_wires` for a more detailed description.
 
     """
     if wires:

@@ -822,7 +822,7 @@ class TestDeviceResolveDynamicWires:
             device_resolve_dynamic_wires(tape, wires=qml.wires.Wires([0]))
 
     def test_many_allocations_device_wires(self):
-        """Test that min integer will keep incrementing to higher numbers."""
+        """Test that provided device wires are used properly."""
 
         allocations = [qml.allocation.Allocate.from_num_wires(1) for _ in range(10)]
         ops = [qml.X(op.wires) for op in allocations]
@@ -846,7 +846,7 @@ class TestDeviceResolveDynamicWires:
         qml.assert_equal(new_tape[-1], qml.X(0))
 
     def test_min_int_unsorted_wires(self):
-        """Test that the min_int is still the smallest integer not in the operations."""
+        """Test that the min_int is the smallest integer larger than all integers in operation wires."""
         allocation = qml.allocation.Allocate.from_num_wires(1)
         ops = [qml.Z(5), qml.Z(11), qml.Z(4), qml.X(allocation.wires)]
         tape = qml.tape.QuantumScript([allocation] + ops)
