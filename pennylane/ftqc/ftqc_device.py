@@ -154,7 +154,81 @@ class LightningQubitBackend:
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
     def execute(self, circuits, execution_config):
-        return self.device.execute(circuits, execution_config)
+        """Execute a circuit or a batch of circuits and turn it into results.
+
+        Args:
+            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the quantum circuits to be executed
+            execution_config (ExecutionConfig): a datastructure with additional information required for execution
+
+        Returns:
+            TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
+        """
+        mcmc = {
+            "mcmc": self.device._mcmc,
+            "kernel_name": self.device._kernel_name,
+            "num_burnin": self.device._num_burnin,
+        }
+        results = []
+        for circuit in circuits:
+            if self.device._wire_map is not None:
+                [circuit], _ = qml.map_wires(circuit, self.device._wire_map)
+            results.append(
+                self.simulate(
+                    self.device.dynamic_wires_from_circuit(circuit),
+                    self.device._statevector,
+                    mcmc=mcmc,
+                    postselect_mode=execution_config.mcm_config.postselect_mode,
+                )
+            )
+
+        return tuple(results)
+
+    def simulate(
+        self,
+        circuit: QuantumScript,
+        state: LightningStateVector,
+        mcmc: dict = None,
+        postselect_mode: str = None,
+    ) -> Result:
+        """Simulate a single quantum script.
+
+        Args:
+            circuit (QuantumTape): The single circuit to simulate
+            state (LightningStateVector): handle to Lightning state vector
+            mcmc (dict): Dictionary containing the Markov Chain Monte Carlo
+                parameters: mcmc, kernel_name, num_burnin. Descriptions of
+                these fields are found in :class:`~.LightningQubit`.
+            postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+                postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+                keep the same number of shots. Default is ``None``.
+
+        Returns:
+            Tuple[TensorLike]: The results of the simulation
+
+        Note that this function can return measurements for non-commuting observables simultaneously.
+        """
+        if mcmc is None:
+            mcmc = {}
+
+        results = []
+        aux_circ = qml.tape.QuantumScript(
+            circuit.operations,
+            circuit.measurements,
+            shots=[1],
+            trainable_params=circuit.trainable_params,
+        )
+        for _ in range(circuit.shots.total_shots):
+            state.reset_state()
+            mid_measurements = {}
+            final_state = state.get_final_state(
+                aux_circ, mid_measurements=mid_measurements, postselect_mode=postselect_mode
+            )
+            results.append(
+                self.device.LightningMeasurements(final_state, **mcmc).measure_final_state(
+                    aux_circ, mid_measurements=mid_measurements
+                )
+            )
+        return tuple(results)
 
 
 class NullQubitBackend:
