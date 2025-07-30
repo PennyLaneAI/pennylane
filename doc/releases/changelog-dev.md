@@ -238,6 +238,9 @@
 
 <h3>Deprecations 👋</h3>
 
+* The `tensorflow` interface has been deprecated and instead we recommended migrating to `jax` or `torch`.
+  [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
+
 * Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
   Instead, use :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the
   Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
