@@ -133,9 +133,8 @@ class ConvertToMBQCFormalismPattern(
             rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
 
         Return:
-            graph_qubits_dict : A dictionary of auxiliary qubits in the graph state. The key is the index of
-            a qubit described in the ref [Measurement-based quantum computation on cluster states]
-            and the corresponding value is the qubit.
+            graph_qubits_dict : A dictionary of auxiliary qubits in the graph state. The keys represents
+            the indices of qubits described in the [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
         """
         graph = _generate_graph(op.gate_name.data)
 
