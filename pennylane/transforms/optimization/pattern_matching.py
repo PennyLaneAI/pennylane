@@ -1586,12 +1586,8 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         """
         cost_left = 0
         for i in left:
-            if callable(self.quantum_cost[self.template_dag.get_node(i).op.name]):
-                cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name](
-                    self.template_dag.get_node(i).op
-                )
-            else:
-                cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
+            cost = self.quantum_cost[self.template_dag.get_node(i).op.name]
+            cost_left += cost(self.template_dag.get_node(i).op) if callable(cost) else cost
 
         cost_right = 0
         for j in right:
