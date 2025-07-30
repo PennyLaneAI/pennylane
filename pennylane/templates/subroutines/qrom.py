@@ -364,12 +364,17 @@ def _qrom_decomposition_resources(
         column_ops = Counter()
         for j in range(depth):
             column_ops[ops_identity[i * depth + j]] += 1
-        new_ops[resource_rep(qml_ops.op_math.Prod, resources=dict(column_ops))] += 1
+        if len(column_ops) == 1 and list(column_ops.values())[0] == 1:
+            new_ops[list(column_ops.keys())[0]] += 1
+        else:
+            new_ops[resource_rep(qml_ops.op_math.Prod, resources=dict(column_ops))] += 1
 
     # Select block
     num_control_select_wires = int(math.ceil(math.log2(2**num_control_wires / depth)))
 
-    new_ops_reps = reduce(lambda acc, lst: acc + lst, [[key for _ in range(val)] for key, val in new_ops.items()])
+    new_ops_reps = reduce(
+        lambda acc, lst: acc + lst, [[key for _ in range(val)] for key, val in new_ops.items()]
+    )
 
     if num_control_select_wires > 0:
         select_ops = {
@@ -390,9 +395,7 @@ def _qrom_decomposition_resources(
                 (j + 2 ** (ind + 1)) * num_target_wires - (j + 2**ind) * num_target_wires,
             )
             if num_swaps > 1:
-                swaps = {
-                    qml_ops.SWAP: num_swaps
-                }
+                swaps = {qml_ops.SWAP: num_swaps}
                 swap_resources[
                     controlled_resource_rep(
                         base_class=qml_ops.op_math.Prod,
