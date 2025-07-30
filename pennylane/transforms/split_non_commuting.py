@@ -427,7 +427,7 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript, shots_distribution_fn
 
 def _split_using_qwc_grouping(
     tape: qml.tape.QuantumScript,
-    single_term_obs_mps: SingleTermMP,
+    single_term_obs_mps: dict[MeasurementProcess, tuple[list[int], list[TensorLike]]],
     offsets: list[TensorLike],
 ):
     """Split tapes using group_observables in the Pauli module.
@@ -664,7 +664,7 @@ def _processing_fn_no_grouping(
 
 def _processing_fn_with_grouping(
     res: ResultBatch,
-    single_term_mps: dict[MeasurementProcess, SingleTermMP],
+    single_term_mps: dict[MeasurementProcess, tuple[list[int], list[TensorLike]]],
     offsets: list[TensorLike],
     group_sizes: list[int],
     batch_size: int,
@@ -674,7 +674,7 @@ def _processing_fn_with_grouping(
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
             of (n_groups [,n_shots] [,n_mps_in_group] [,batch_size])
-        single_term_mps (Dict[MeasurementProcess, Tuple[List[int], List[float | TensorLike], int, int]]):
+        single_term_mps (dict[MeasurementProcess, tuple[list[int], list[TensorLike]]]):
             A dictionary of measurements of each unique single-term observable, mapped to the
             indices of the original measurements it belongs to, its coefficients, its group
             index, and the index of the measurement within the group.
