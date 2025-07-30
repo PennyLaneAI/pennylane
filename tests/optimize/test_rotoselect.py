@@ -36,18 +36,20 @@ class TestRotoselectOptimizer:
         possible_generators = [qml.RX, qml.RY, qml.RZ]
         rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", shots=None, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
             generators[1](params[1], wires=1)
             qml.CNOT(wires=[0, 1])
 
+        @qml.set_shots(None)
         @qml.qnode(dev)
         def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
+        @qml.set_shots(None)
         @qml.qnode(dev)
         def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
@@ -80,18 +82,20 @@ class TestRotoselectOptimizer:
         possible_generators = [qml.RX, qml.RY, qml.RZ]
         rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", shots=None, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
             generators[1](params[1], wires=1)
             qml.CNOT(wires=[0, 1])
 
+        @qml.set_shots(None)
         @qml.qnode(dev)
         def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
+        @qml.set_shots(None)
         @qml.qnode(dev)
         def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
@@ -134,18 +138,20 @@ class TestRotoselectOptimizer:
         possible_generators = [qml.RX, qml.RY, qml.RZ]
         rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", shots=None, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
             generators[1](params[1], wires=1)
             qml.CNOT(wires=[0, 1])
 
+        @qml.set_shots(None)
         @qml.qnode(dev)
         def circuit_1(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)
             return qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))
 
+        @qml.set_shots(None)
         @qml.qnode(dev)
         def circuit_2(params, generators=None):  # generators will be passed as a keyword arg
             ansatz(params, generators)

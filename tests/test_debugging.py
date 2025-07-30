@@ -405,10 +405,11 @@ class TestSnapshotSupportedQNode:
         # TODO: not sure what to do with this test so leaving this here for now.
         np.random.seed(9872653)
 
-        dev = qml.device("default.qutrit.mixed", wires=2, shots=100)
+        dev = qml.device("default.qutrit.mixed", wires=2)
 
         assert qml.debugging.snapshot._is_snapshot_compatible(dev)
 
+        @qml.set_shots(100)
         @qml.qnode(dev, diff_method=diff_method)
         def circuit(add_bad_snapshot: bool):
             qml.THadamard(wires=0)
@@ -557,8 +558,9 @@ class TestSnapshotSupportedQNode:
         # TODO: The fact that this entire test depends on a global seed is not good
         np.random.seed(9872653)
 
-        dev = qml.device("default.qubit", wires=1, shots=10)
+        dev = qml.device("default.qubit", wires=1)
 
+        @qml.set_shots(10)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -644,8 +646,9 @@ class TestSnapshotUnsupportedQNode:
     # FIXME: [sc-92966]
     @pytest.mark.local_salt(2)
     def test_lightning_qubit_finite_shots(self, seed):
-        dev = qml.device("lightning.qubit", wires=2, shots=500, seed=seed)
+        dev = qml.device("lightning.qubit", wires=2, seed=seed)
 
+        @qml.set_shots(500)
         @qml.qnode(dev, diff_method=None)
         def circuit():
             qml.Hadamard(0)

@@ -161,8 +161,9 @@ class TestIntegration:
     @pytest.mark.parametrize("shots", [1000, [1, 10, 10, 1000]])
     def test_finite_shots_error(self, shots):
         """Test an error is raised when using shot vectors with mutual_info."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])

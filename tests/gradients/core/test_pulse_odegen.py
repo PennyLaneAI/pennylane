@@ -1008,7 +1008,7 @@ class TestPulseOdegenTape:
         import jax.numpy as jnp
 
         prng_key = jax.random.PRNGKey(seed)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=prng_key)
+        dev = qml.device("default.qubit", wires=1, seed=prng_key)
 
         H = jnp.polyval * X(0)
         x = jnp.array([0.4, 0.2, 0.1])
@@ -1044,14 +1044,15 @@ class TestPulseOdegenTape:
         import jax.numpy as jnp
 
         prng_key = jax.random.PRNGKey(seed)
-        dev = qml.device("default.qubit", wires=1, shots=None)
-        dev_shots = qml.device("default.qubit", wires=1, shots=shots, seed=prng_key)
+        dev = qml.device("default.qubit", wires=1)
+        dev_shots = qml.device("default.qubit", wires=1, seed=prng_key)
 
         H = 0.1 * Z(0) + jnp.polyval * X(0) + qml.pulse.constant * Y(0)
         x = jnp.array([0.4, 0.2, 0.1])
         y = jnp.array(-0.5)
         t = [0.2, 0.3]
 
+        @qml.set_shots(None)
         @qml.qnode(dev, interface="jax")
         def circuit(par):
             qml.evolve(H)(par, t=t)
@@ -1124,8 +1125,8 @@ class TestPulseOdegenTape:
         import jax.numpy as jnp
 
         prng_key = jax.random.PRNGKey(seed)
-        dev = qml.device("default.qubit", wires=1, shots=None)
-        dev_shots = qml.device("default.qubit", wires=1, shots=shots, seed=prng_key)
+        dev = qml.device("default.qubit", wires=1)
+        dev_shots = qml.device("default.qubit", wires=1, seed=prng_key)
 
         H0 = 0.1 * Z(0) + jnp.polyval * X(0)
         H1 = 0.2 * Y(0) + qml.pulse.constant * Y(0) + jnp.polyval * Z(0)
@@ -1134,6 +1135,7 @@ class TestPulseOdegenTape:
         z = jnp.array([-0.3, 0.6])
         t = [0.2, 0.3]
 
+        @qml.set_shots(None)
         @qml.qnode(dev, interface="jax")
         def circuit(par):
             qml.evolve(H0)(par[:1], t=t)
@@ -1246,10 +1248,11 @@ class TestPulseOdegenQNode:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=None)
+        dev = qml.device("default.qubit", wires=1)
         T = 0.2
         ham_single_q_const = jnp.polyval * Y(0) + qml.pulse.constant * Y(0)
 
+        @qml.set_shots(None)
         @qml.qnode(dev, interface="jax")
         def circuit(params, c):
             qml.evolve(ham_single_q_const)([params, c], T)

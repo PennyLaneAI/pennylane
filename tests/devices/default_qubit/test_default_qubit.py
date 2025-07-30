@@ -1507,8 +1507,9 @@ class TestPRNGKeySeed:
         @jax.jit
         def workflow(key, param):
 
-            dev = qml.device("default.qubit", seed=key, shots=100)
+            dev = qml.device("default.qubit", seed=key)
 
+            @qml.set_shots(100)
             @qml.qnode(dev)
             def circuit(x):
                 qml.RX(x, 0)

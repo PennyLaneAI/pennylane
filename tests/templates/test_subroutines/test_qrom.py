@@ -96,8 +96,9 @@ class TestQROM:
         self, bitstrings, target_wires, control_wires, work_wires, clean
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the QROM template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(j):
             qml.BasisEmbedding(j, wires=control_wires)
@@ -139,8 +140,9 @@ class TestQROM:
     )
     def test_work_wires_output(self, bitstrings, target_wires, control_wires, work_wires):
         """Tests that the ``clean = True`` version don't modify the initial state in work_wires."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
 

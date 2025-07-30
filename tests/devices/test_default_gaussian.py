@@ -819,10 +819,11 @@ class TestDefaultGaussianIntegration:
         """Test that the default gaussian plugin provides correct result for high shot number"""
 
         shots = 10**4
-        dev = qml.device("default.gaussian", wires=1, shots=shots)
+        dev = qml.device("default.gaussian", wires=1)
 
         p = 0.543
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(x):
             """Test quantum function"""
@@ -840,8 +841,9 @@ class TestDefaultGaussianIntegration:
         default.gaussian and emits a warning"""
 
         shots = [10, 10, 10]
-        dev = qml.device("default.gaussian", wires=1, shots=shots)
+        dev = qml.device("default.gaussian", wires=1)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             """Test quantum function"""

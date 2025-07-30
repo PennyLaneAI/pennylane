@@ -643,9 +643,10 @@ class TestDeferMeasurementsHigherOrderPrimitives:
 
     def test_qnode(self, postselect):
         """Test that a qnode primitive is transformed correctly."""
-        dev = qml.device("default.qubit", wires=10, shots=10)
+        dev = qml.device("default.qubit", wires=10)
 
         @DeferMeasurementsInterpreter(num_wires=10)
+        @qml.set_shots(10)
         @qml.qnode(dev, diff_method="parameter-shift")
         def f(x):
             m0 = qml.measure(0, postselect=postselect)

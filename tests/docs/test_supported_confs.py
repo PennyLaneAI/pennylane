@@ -103,9 +103,10 @@ def get_qnode(interface, diff_method, return_type, shots, wire_specs):
     """
     device_wires, wire_labels, single_meas_wire, multi_meas_wire = wire_specs
 
-    dev = qml.device("default.qubit", wires=device_wires, shots=shots)
+    dev = qml.device("default.qubit", wires=device_wires)
 
     # pylint: disable=too-many-return-statements
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface, diff_method=diff_method)
     def circuit(x):
         for i, wire_label in enumerate(wire_labels):
