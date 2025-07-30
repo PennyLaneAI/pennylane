@@ -17,6 +17,7 @@ This submodule contains the template for QROM.
 
 import math
 from collections import Counter
+from functools import reduce
 
 import numpy as np
 
@@ -363,15 +364,17 @@ def _qrom_decomposition_resources(
         column_ops = Counter()
         for j in range(depth):
             column_ops[ops_identity[i * depth + j]] += 1
-        new_ops[resource_rep(qml_ops.op_math.Prod, resources=column_ops)] += 1
+        new_ops[resource_rep(qml_ops.op_math.Prod, resources=dict(column_ops))] += 1
 
     # Select block
     num_control_select_wires = int(math.ceil(math.log2(2**num_control_wires / depth)))
 
+    new_ops_reps = reduce(lambda acc, lst: acc + lst, [[key for _ in range(val)] for key, val in new_ops.items()])
+
     if num_control_select_wires > 0:
         select_ops = {
             resource_rep(
-                Select, num_control_wires=num_control_select_wires, op_reps=tuple(new_ops.keys())
+                Select, num_control_wires=num_control_select_wires, op_reps=tuple(new_ops_reps)
             ): 1
         }
     else:
@@ -379,33 +382,48 @@ def _qrom_decomposition_resources(
 
     # Swap block
     num_control_swap_wires = num_control_wires - num_control_select_wires
-    resources = Counter()
+    swap_resources = Counter()
     for ind in range(num_control_swap_wires):
         for j in range(2**ind):
-            swaps = {
-                qml_ops.SWAP: min(
-                    (j + 1) * num_target_wires - (j) * num_target_wires,
-                    (j + 2 ** (ind + 1)) * num_target_wires - (j + 2**ind) * num_target_wires,
-                )
-            }
-            resources[
-                controlled_resource_rep(
-                    base_class=qml_ops.op_math.Prod,
-                    base_params={resources: swaps},
-                    num_control_wires=1,
-                )
-            ] += 1
+            num_swaps = min(
+                (j + 1) * num_target_wires - (j) * num_target_wires,
+                (j + 2 ** (ind + 1)) * num_target_wires - (j + 2**ind) * num_target_wires,
+            )
+            if num_swaps > 1:
+                swaps = {
+                    qml_ops.SWAP: num_swaps
+                }
+                swap_resources[
+                    controlled_resource_rep(
+                        base_class=qml_ops.op_math.Prod,
+                        base_params={"resources": swaps},
+                        num_control_wires=1,
+                    )
+                ] += 1
+            else:
+                swap_resources[
+                    controlled_resource_rep(
+                        base_class=qml_ops.SWAP,
+                        base_params={},
+                        num_control_wires=1,
+                    )
+                ] += 1
 
     if not clean or depth == 1:
+        resources = swap_resources
         resources.update(select_ops)
         return resources
 
+    resources = {}
+
     hadamard_ops = {qml_ops.Hadamard: num_target_wires}
 
+    for key, val in swap_resources.items():
+        swap_resources[key] = val * 2
+
     resources.update(hadamard_ops)
-    resources.update(resources)
+    resources.update(swap_resources)
     resources.update(select_ops)
-    resources.update(resources)
 
     for key, val in resources.items():
         resources[key] = val * 2
