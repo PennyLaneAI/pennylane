@@ -362,12 +362,12 @@ class TestPrepSelPrep:
         ops = [qml.X(0), qml.X(1), qml.X(0) @ qml.Y(1)]
         grep = qml.resource_rep(qml.GlobalPhase)
         xrep = qml.resource_rep(qml.X)
+        yrep = qml.resource_rep(qml.Y)
+        prodrep = qml.resource_rep(qml.ops.Prod, resources={xrep: 1, yrep: 1})
         op_reps = (
             qml.resource_rep(qml.ops.Prod, resources={grep: 1, xrep: 1}),
             qml.resource_rep(qml.ops.Prod, resources={grep: 1, xrep: 1}),
-            qml.resource_rep(
-                qml.ops.Prod, resources={grep: 1, **ops[-1].resource_params["resources"]}
-            ),
+            qml.resource_rep(qml.ops.Prod, resources={grep: 1, prodrep: 1}),
         )
         lcu = qml.dot([1, 4, 9], ops)
         op = qml.PrepSelPrep(lcu, (3, 4))
@@ -393,7 +393,7 @@ class TestPrepSelPrep:
 
         q = q.queue
 
-        phase_ops = [op @ qml.GlobalPhase(0, wires=op.wires) for op in ops]
+        phase_ops = [qml.prod(op, qml.GlobalPhase(0, wires=op.wires)) for op in ops]
 
         prep = qml.StatePrep(np.array([1, 2, 3]), normalize=True, pad_with=0, wires=(3, 4))
         qml.assert_equal(q[0], prep)

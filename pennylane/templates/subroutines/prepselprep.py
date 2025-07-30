@@ -25,7 +25,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import GlobalPhase, LinearCombination, Prod, StatePrep, adjoint
+from pennylane.ops import GlobalPhase, LinearCombination, Prod, StatePrep, adjoint, prod
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires
 
@@ -37,7 +37,8 @@ def _get_new_terms(lcu):
     coeffs, ops = lcu.terms()
     coeffs = math.stack(coeffs)
     angles = math.angle(coeffs)
-    new_ops = [op @ GlobalPhase(-angle, wires=op.wires) for angle, op in zip(angles, ops)]
+    # The following will produce a nested `Prod` object for a `Prod` object in`ops`
+    new_ops = [prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops)]
 
     return math.abs(coeffs), new_ops
 
