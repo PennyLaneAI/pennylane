@@ -20,8 +20,13 @@ from collections import Counter
 
 import numpy as np
 
-from pennylane.decomposition import add_decomps, controlled_resource_rep, resource_rep, register_resources
 from pennylane import ops as qml_ops
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager, apply
 from pennylane.templates.embeddings import BasisEmbedding
