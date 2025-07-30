@@ -15,8 +15,10 @@
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows 
   that include these templates to be decomposed in a resource-efficient and performant
   manner. The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`,
-  :class:`~.ModExp`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`,
-  :class:`~.OutPoly`, :class:`~.Reflection`, :class:`~.TrotterProduct`, :class:`~.MPSPrep`.
+  :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, :class:`~.MPSPrep`,
+  :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`,
+  :class:`~.OutPoly`, :class:`~.PrepSelPrep`, :class:`~.ops.Prod`, :class:`~.Reflection`,
+  :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, .
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
   [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
 
@@ -211,6 +213,7 @@
 
 * Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
+  [(#7982)](https://github.com/PennyLaneAI/pennylane/pull/7982)
 
 * Improve the pre-commit hook to add gitleaks.
   [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
@@ -276,6 +279,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug in :func:`~.matrix` where an operator's
+  constituents were incorrectly queued if its decomposition was requested.
+  [(#7975)](https://github.com/PennyLaneAI/pennylane/pull/7975)
+
 * An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
   [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
 
@@ -319,4 +326,5 @@ Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
 Jay Soni,
+David Wierichs,
 Jake Zaia.
