@@ -204,6 +204,11 @@
   >>> qml.set_shots(c, shots=1)()
   array([[0]])
 
+  Previous behavior can be recovered by squeezing the output:
+
+  >>> qml.math.squeeze(qml.set_shots(c, shots=1)())
+  0
+
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
