@@ -21,8 +21,8 @@ from collections import Counter
 
 import numpy as np
 
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane import math
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState
 from pennylane.wires import Wires
@@ -313,9 +313,7 @@ def _UCCSD_resources(num_wires, n_repeats, num_d_wires, num_s_wires):
 
     for _ in range(n_repeats):
         for w1, w2 in num_d_wires:
-            resources[
-                resource_rep(FermionicDoubleExcitation, num_wires_1=w1, num_wires_2=w2)
-            ] += 1
+            resources[resource_rep(FermionicDoubleExcitation, num_wires_1=w1, num_wires_2=w2)] += 1
 
         for s in num_s_wires:
             resources[resource_rep(FermionicSingleExcitation, num_wires=s)] += 1

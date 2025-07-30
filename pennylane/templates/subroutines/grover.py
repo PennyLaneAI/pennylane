@@ -16,9 +16,9 @@ Contains the Grover Operation template.
 """
 import numpy as np
 
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane import math
 from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
 from pennylane.wires import Wires, WiresLike

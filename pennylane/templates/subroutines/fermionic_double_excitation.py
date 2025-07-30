@@ -19,8 +19,8 @@ import copy
 
 import numpy as np
 
-from pennylane.decomposition import add_decomps, register_resources
 from pennylane import math
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.wires import Wires
