@@ -51,18 +51,14 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
         )
 
     n_columns = (
-        len(bitstrings) // depth
-        if len(bitstrings) % depth == 0
-        else len(bitstrings) // depth + 1
+        len(bitstrings) // depth if len(bitstrings) % depth == 0 else len(bitstrings) // depth + 1
     )
     new_ops = []
     for i in range(n_columns):
         column_ops = []
         for j in range(depth):
             dic_map = {
-                ops_identity_new[i * depth + j].wires[l]: swap_wires[
-                    j * len(target_wires) + l
-                ]
+                ops_identity_new[i * depth + j].wires[l]: swap_wires[j * len(target_wires) + l]
                 for l in range(len(target_wires))
             }
             column_ops.append(ops_identity_new[i * depth + j].map_wires(dic_map))
@@ -71,9 +67,7 @@ def _new_ops(depth, target_wires, control_wires, swap_wires, bitstrings):
 
 
 def _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings):
-    n_control_select_wires = int(
-        math.ceil(math.log2(2 ** len(control_wires) / depth))
-    )
+    n_control_select_wires = int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
     control_select_wires = control_wires[:n_control_select_wires]
 
     if control_select_wires:
@@ -86,20 +80,14 @@ def _select_ops(control_wires, depth, target_wires, swap_wires, bitstrings):
 
 
 def _swap_ops(control_wires, depth, swap_wires, target_wires):
-    n_control_select_wires = int(
-        math.ceil(math.log2(2 ** len(control_wires) / depth))
-    )
+    n_control_select_wires = int(math.ceil(math.log2(2 ** len(control_wires) / depth)))
     control_swap_wires = control_wires[n_control_select_wires:]
     for ind in range(len(control_swap_wires)):
         for j in range(2**ind):
             new_op = qml_ops.prod(_multi_swap)(
+                swap_wires[(j) * len(target_wires) : (j + 1) * len(target_wires)],
                 swap_wires[
-                    (j) * len(target_wires) : (j + 1) * len(target_wires)
-                ],
-                swap_wires[
-                    (j + 2**ind)
-                    * len(target_wires) : (j + 2 ** (ind + 1))
-                    * len(target_wires)
+                    (j + 2**ind) * len(target_wires) : (j + 2 ** (ind + 1)) * len(target_wires)
                 ],
             )
             qml_ops.ctrl(new_op, control=control_swap_wires[-ind - 1])
