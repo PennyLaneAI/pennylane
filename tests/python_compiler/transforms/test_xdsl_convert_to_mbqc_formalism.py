@@ -19,10 +19,9 @@ pytestmark = pytest.mark.external
 xdsl = pytest.importorskip("xdsl")
 catalyst = pytest.importorskip("catalyst")
 
-from catalyst.ftqc import mbqc_pipeline
-
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
+from catalyst.ftqc import mbqc_pipeline
 
 import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
