@@ -146,7 +146,7 @@ parso==0.8.4
 pathspec==0.12.1
 pbr==6.1.1
 PennyLane-qiskit @ git+https://github.com/PennyLaneAI/pennylane-qiskit.git@10217d401a7c75d6260ee71e0e668ecbdc911961
-pennylane_catalyst==0.13.0.dev11
+pennylane_catalyst==0.13.0.dev18
 pennylane_lightning==0.42.0
 pennylane_lightning_kokkos==0.42.0
 pexpect==4.9.0
