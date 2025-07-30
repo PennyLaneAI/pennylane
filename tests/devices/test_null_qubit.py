@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig, NullQubit
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import (
     ClassicalShadowMP,
     SampleMeasurement,
@@ -1393,7 +1394,11 @@ def test_execute_plxpr_shots():
 
     jaxpr = jax.make_jaxpr(f)(0.5)
 
-    dev = qml.device("null.qubit", wires=4)
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="Setting shots on device is deprecated",
+    ):
+        dev = qml.device("null.qubit", wires=4, shots=50)
     res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
     assert qml.math.allclose(res[0], 0)
     assert qml.math.allclose(res[1], 0)
