@@ -768,6 +768,11 @@ class QuantumScript:
         Returns:
             Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result
 
+        .. warning::
+
+            The ``QuantumScript.shape`` method is deprecated and will be removed in v0.44.
+            Instead, please use ``MeasurementProcess.shape``.
+
         **Examples**
 
         .. code-block:: pycon
@@ -781,6 +786,12 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
+        warnings.warn(
+            "``QuantumScript.shape`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``MeasurementProcess.shape``.",
+            PennyLaneDeprecationWarning,
+        )
+
         num_device_wires = len(device.wires) if device.wires else len(self.wires)
 
         def get_shape(mp, _shots):
@@ -807,6 +818,11 @@ class QuantumScript:
             Union[type, Tuple[type]]: The numeric type corresponding to the result type of the
             quantum script, or a tuple of such types if the script contains multiple measurements
 
+        .. warning::
+
+            The ``QuantumScript.numeric_type`` method is deprecated and will be removed in v0.44.
+            Instead, please use ``MeasurementProcess.numeric_type``.
+
         **Example:**
 
         .. code-block:: pycon
@@ -816,6 +832,12 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
+        warnings.warn(
+            "``QuantumScript.numeric_type`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``MeasurementProcess.numeric_type``.",
+            PennyLaneDeprecationWarning,
+        )
+
         types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types

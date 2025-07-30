@@ -30,14 +30,13 @@ from pennylane import BasisState, Snapshot, StatePrep
 from pennylane._version import __version__
 from pennylane.devices._qubit_device import QubitDevice
 from pennylane.devices.qubit import measure
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, WireError
 from pennylane.measurements import ExpectationMP
 from pennylane.operation import Operation
 from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.typing import TensorLike
-from pennylane.wires import WireError
 
 ascii_letter_arr = np.array(list(ascii_letters))
 
@@ -243,7 +242,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return qml.BooleanFn(accepts_obj)
 
-    @functools.lru_cache()
+    @functools.lru_cache
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects

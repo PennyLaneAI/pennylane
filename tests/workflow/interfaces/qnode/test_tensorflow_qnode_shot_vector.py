@@ -70,6 +70,7 @@ class TestReturnWithShotVectors:
     ):
         """For one measurement and one param, the gradient is a float."""
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
@@ -79,7 +80,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable(0.1)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, a)
@@ -92,6 +93,7 @@ class TestReturnWithShotVectors:
     ):
         """For one measurement and multiple param, the gradient is a tuple of arrays."""
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -102,7 +104,7 @@ class TestReturnWithShotVectors:
         b = tf.Variable(0.2)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, b, shots=shots)
+            res = circuit(a, b)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, (a, b))
@@ -118,6 +120,7 @@ class TestReturnWithShotVectors:
     ):
         """For one measurement and multiple param as a single array params, the gradient is an array."""
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -127,7 +130,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable([0.1, 0.2])
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, a)
@@ -141,6 +144,7 @@ class TestReturnWithShotVectors:
         """For a multi dimensional measurement (probs), check that a single array is returned with the correct
         dimension"""
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
@@ -150,7 +154,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable(0.1)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, a)
@@ -164,6 +168,7 @@ class TestReturnWithShotVectors:
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -174,7 +179,7 @@ class TestReturnWithShotVectors:
         b = tf.Variable(0.2)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, b, shots=shots)
+            res = circuit(a, b)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, (a, b))
@@ -191,6 +196,7 @@ class TestReturnWithShotVectors:
         """For a multi dimensional measurement (probs), check that a single tuple is returned containing arrays with
         the correct dimension"""
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -200,7 +206,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable([0.1, 0.2])
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack(res)
 
         jac = tape.jacobian(res, a)
@@ -216,6 +222,7 @@ class TestReturnWithShotVectors:
         par_0 = tf.Variable(0.1)
         par_1 = tf.Variable(0.2)
 
+        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             diff_method=diff_method,
@@ -230,7 +237,7 @@ class TestReturnWithShotVectors:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
         with tf.GradientTape() as tape:
-            res = circuit(par_0, par_1, shots=shots)
+            res = circuit(par_0, par_1)
             res = qml.math.stack([qml.math.stack(r) for r in res])
 
         jac = tape.jacobian(res, (par_0, par_1))
@@ -246,6 +253,7 @@ class TestReturnWithShotVectors:
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -256,7 +264,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable([0.1, 0.2, 0.3])
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack([qml.math.stack(r) for r in res])
 
         jac = tape.jacobian(res, a)
@@ -269,6 +277,7 @@ class TestReturnWithShotVectors:
     ):
         """The jacobian of multiple measurements with a single params return an array."""
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a, wires=0)
@@ -278,7 +287,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable(0.1)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack([tf.experimental.numpy.hstack(r) for r in res])
 
         jac = tape.jacobian(res, a)
@@ -291,6 +300,7 @@ class TestReturnWithShotVectors:
     ):
         """The jacobian of multiple measurements with a multiple params return a tuple of arrays."""
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a, b):
             qml.RY(a, wires=0)
@@ -301,7 +311,7 @@ class TestReturnWithShotVectors:
         b = tf.Variable(0.2)
 
         with tf.GradientTape() as tape:
-            res = circuit(a, b, shots=shots)
+            res = circuit(a, b)
             res = qml.math.stack([tf.experimental.numpy.hstack(r) for r in res])
 
         jac = tape.jacobian(res, (a, b))
@@ -317,6 +327,7 @@ class TestReturnWithShotVectors:
     ):
         """The jacobian of multiple measurements with a multiple params array return a single array."""
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(a):
             qml.RY(a[0], wires=0)
@@ -326,7 +337,7 @@ class TestReturnWithShotVectors:
         a = tf.Variable([0.1, 0.2])
 
         with tf.GradientTape() as tape:
-            res = circuit(a, shots=shots)
+            res = circuit(a)
             res = qml.math.stack([tf.experimental.numpy.hstack(r) for r in res])
 
         jac = tape.jacobian(res, a)
@@ -349,6 +360,7 @@ class TestReturnShotVectorHessian:
         par_0 = tf.Variable(0.1, dtype=tf.float64)
         par_1 = tf.Variable(0.2, dtype=tf.float64)
 
+        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             diff_method=diff_method,
@@ -364,7 +376,7 @@ class TestReturnShotVectorHessian:
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
-                res = circuit(par_0, par_1, shots=shots)
+                res = circuit(par_0, par_1)
                 res = qml.math.stack(res)
 
             jac = tape2.jacobian(res, (par_0, par_1), experimental_use_pfor=False)
@@ -385,6 +397,7 @@ class TestReturnShotVectorHessian:
 
         params = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
+        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             diff_method=diff_method,
@@ -400,7 +413,7 @@ class TestReturnShotVectorHessian:
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
-                res = circuit(params, shots=shots)
+                res = circuit(params)
                 res = qml.math.stack(res)
 
             jac = tape2.jacobian(res, params, experimental_use_pfor=False)
@@ -418,6 +431,7 @@ class TestReturnShotVectorHessian:
         par_0 = tf.Variable(0.1, dtype=tf.float64)
         par_1 = tf.Variable(0.2, dtype=tf.float64)
 
+        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             diff_method=diff_method,
@@ -433,7 +447,7 @@ class TestReturnShotVectorHessian:
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
-                res = circuit(par_0, par_1, shots=shots)
+                res = circuit(par_0, par_1)
                 res = qml.math.stack([tf.experimental.numpy.hstack(r) for r in res])
 
             jac = tape2.jacobian(res, (par_0, par_1), experimental_use_pfor=False)
@@ -454,6 +468,7 @@ class TestReturnShotVectorHessian:
 
         params = tf.Variable([0.1, 0.2], dtype=tf.float64)
 
+        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             diff_method=diff_method,
@@ -469,7 +484,7 @@ class TestReturnShotVectorHessian:
 
         with tf.GradientTape() as tape1:
             with tf.GradientTape(persistent=True) as tape2:
-                res = circuit(params, shots=shots)
+                res = circuit(params)
                 res = qml.math.stack([tf.experimental.numpy.hstack(r) for r in res])
 
             jac = tape2.jacobian(res, params, experimental_use_pfor=False)
@@ -497,6 +512,7 @@ class TestReturnShotVectorIntegration:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -505,7 +521,7 @@ class TestReturnShotVectorIntegration:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
         with tf.GradientTape() as tape:
-            res = circuit(x, y, shots=shots)
+            res = circuit(x, y)
             res = qml.math.stack(res)
 
         all_res = tape.jacobian(res, (x, y))
@@ -530,6 +546,7 @@ class TestReturnShotVectorIntegration:
         x = tf.Variable(0.543, dtype=tf.float64)
         y = tf.Variable(-0.654, dtype=tf.float64)
 
+        @qml.set_shots(shots=shots)
         @qnode(dev, diff_method=diff_method, interface=interface, gradient_kwargs=gradient_kwargs)
         def circuit(x, y):
             qml.RX(x, wires=[0])
@@ -538,7 +555,7 @@ class TestReturnShotVectorIntegration:
             return qml.expval(qml.PauliZ(0)), qml.probs(wires=[0, 1])
 
         with tf.GradientTape() as tape:
-            res = circuit(x, y, shots=shots)
+            res = circuit(x, y)
             res = qml.math.stack([tf.experimental.numpy.hstack(r) for r in res])
 
         all_res = tape.jacobian(res, (x, y))

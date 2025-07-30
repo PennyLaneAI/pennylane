@@ -18,9 +18,10 @@ from functools import partial
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.exceptions import TransformError
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.exceptions import MatrixUndefinedError, TransformError
+from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, TensorLike
 
@@ -234,7 +235,9 @@ def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorL
     if op.has_sparse_matrix:
         return op.sparse_matrix(wire_order=wire_order).todense()
     if op.has_decomposition:
-        return matrix(QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
+        with QueuingManager.stop_recording():
+            ops = op.decomposition()
+        return matrix(QuantumScript(ops), wire_order=wire_order or op.wires)
     raise MatrixUndefinedError(
         "Operator must define a matrix, sparse matrix, or decomposition for use with qml.matrix."
     )
