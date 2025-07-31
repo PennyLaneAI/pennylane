@@ -104,11 +104,6 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
-
- - Deprecated in v0.40
- - Will be removed in v0.41
-
 Completed removal of legacy operator arithmetic
 -----------------------------------------------
 
