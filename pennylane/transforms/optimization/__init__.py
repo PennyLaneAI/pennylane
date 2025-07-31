@@ -25,6 +25,6 @@ from .undo_swaps import undo_swaps
 from .relative_phases import (
     match_relative_phase_toffoli,
     match_controlled_iX_gate,
-    match_4_plus_qubit_multi_controlled_X_gate,
+    match_mcx_gt4wires,
 )
 from .pattern_matching import pattern_matching, pattern_matching_optimization

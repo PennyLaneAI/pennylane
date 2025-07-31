@@ -21,8 +21,8 @@ import pytest
 
 import pennylane as qml
 from pennylane.transforms.optimization.relative_phases import (  # pylint: disable=no-name-in-module
-    match_4_plus_qubit_multi_controlled_X_gate,
     match_controlled_iX_gate,
+    match_mcx_gt4wires,
     match_relative_phase_toffoli,
 )
 
@@ -40,7 +40,7 @@ class TestMultiControlledXGate:
             qml.MultiControlledX(wires=list(range(controls)) + [controls + 2])
             return qml.expval(qml.Z(0))
 
-        lowered_qfunc = match_4_plus_qubit_multi_controlled_X_gate(
+        lowered_qfunc = match_mcx_gt4wires(
             qfunc,
             additional_controls=controls - 4,
             custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1},
@@ -83,7 +83,7 @@ class TestMultiControlledXGate:
             qml.X(controls + 1)
             return qml.expval(qml.Z(0))
 
-        lowered_qfunc = match_4_plus_qubit_multi_controlled_X_gate(
+        lowered_qfunc = match_mcx_gt4wires(
             qfunc,
             additional_controls=controls - 4,
             custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1},
@@ -125,7 +125,7 @@ class TestMultiControlledXGate:
             qml.X(controls + 1)
             return qml.expval(qml.Z(0))
 
-        lowered_qfunc = match_4_plus_qubit_multi_controlled_X_gate(
+        lowered_qfunc = match_mcx_gt4wires(
             qfunc,
             additional_controls=controls - 4,
             custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1},

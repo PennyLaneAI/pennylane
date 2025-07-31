@@ -248,7 +248,7 @@ def match_controlled_iX_gate(
 
 
 @transform
-def match_4_plus_qubit_multi_controlled_X_gate(
+def match_mcx_gt4wires(
     tape: QuantumScript, custom_quantum_cost=None, additional_controls=0
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum transform to match (greater than or equal to 4)-qubit multi controlled X gates, simple case given on
@@ -296,7 +296,7 @@ def match_4_plus_qubit_multi_controlled_X_gate(
 
     >>> dev = qml.device('default.qubit', wires=7)
     >>> qnode = qml.QNode(qfunc, dev)
-    >>> lowered_qnode = match_4_plus_qubit_multi_controlled_X_gate(
+    >>> lowered_qnode = match_mcx_gt4wires(
     >>>     qnode,
     >>>     custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1}
     >>> )
