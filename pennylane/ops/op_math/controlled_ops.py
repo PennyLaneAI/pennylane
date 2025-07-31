@@ -1727,10 +1727,10 @@ class CSX(ControlledOp):
 
         **Example:**
         >>> print(qml.CSX.compute_decomposition([0, 1]))
-        [CRZ(1.5707963267948966, wires=[0, 1]),
-         CRY(1.5707963267948966, wires=[0, 1]),
-         CRZ(-1.5707963267948966, wires=[0, 1]),
-         CGlobalPhase(-0.7853981633974483, wires=[0, 1])]
+
+        [ControlledPhaseShift(4.7123889804, wires=[0,1]),
+         CH(wires=[0, 1]),
+         CRZ(-1.5707963267948966, wires=[0, 1])]
         """
         return [
             qml.ControlledPhaseShift(3 * np.pi / 2, wires=wires),
@@ -1777,19 +1777,18 @@ class CSX(ControlledOp):
         )
 
 
-def _csx_to_crz_cry_ps_resources():
-    return {qml.CRZ: 2, qml.CRY: 1, qml.GlobalPhase: 1}
+def _csx_to_cps_ch_crz_resources():
+    return {qml.ControlledPhaseShift: 1, qml.CH: 1, qml.CRZ: 1}
 
 
-@register_resources(_csx_to_crz_cry_ps_resources)
-def _csx_to_crz_cry_ps(wires: WiresLike, **__):
-    qml.CRZ(np.pi / 2, wires=wires)
-    qml.CRY(np.pi / 2, wires=wires)
+@register_resources(_csx_to_cps_ch_crz_resources)
+def _csx_to_cps_ch_crz(wires: WiresLike, **__):
+    qml.ControlledPhaseShift(3 * np.pi / 2, wires=wires)
+    qml.CH(wires=wires)
     qml.CRZ(-np.pi / 2, wires=wires)
-    qml.GlobalPhase(-np.pi / 4, wires=wires)
 
 
-add_decomps(CSX, _csx_to_crz_cry_ps)
+add_decomps(CSX, _csx_to_cps_ch_crz)
 
 
 class CRX(ControlledOp):
