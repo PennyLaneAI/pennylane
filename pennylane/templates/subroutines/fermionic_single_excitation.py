@@ -16,6 +16,7 @@ Contains the FermionicSingleExcitation template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
+from pennylane.control_flow import for_loop
 
 from pennylane import math
 from pennylane.decomposition import add_decomps, register_resources
@@ -232,16 +233,20 @@ def _fermionic_single_excitation_decomposition(weight, wires):
     RX(-np.pi / 2, wires=r)
     Hadamard(wires=p)
 
-    # Applying CNOTs between wires 'r' and 'p'
-    for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+    # Applying CNOTs
+    @for_loop(len(set_cnot_wires))
+    def apply_cnots(i):
+        CNOT(wires=set_cnot_wires[i])
+    apply_cnots()
 
     # Z rotation acting on wire 'p'
     RZ(weight / 2, wires=p)
 
     # Applying CNOTs in reverse order
-    for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+    @for_loop(len(set_cnot_wires) - 1, -1, -1)
+    def apply_cnots_reversed(i):
+        CNOT(wires=set_cnot_wires[i])
+    apply_cnots_reversed()
 
     # U_1^+, U_2^+ acting on wires 'r' and 'p'
     RX(np.pi / 2, wires=r)
@@ -254,16 +259,20 @@ def _fermionic_single_excitation_decomposition(weight, wires):
     Hadamard(wires=r)
     RX(-np.pi / 2, wires=p)
 
-    # Applying CNOTs between wires 'r' and 'p'
-    for cnot_wires in set_cnot_wires:
-        CNOT(wires=cnot_wires)
+    # Applying CNOTs
+    @for_loop(len(set_cnot_wires))
+    def apply_cnots(i):
+        CNOT(wires=set_cnot_wires[i])
+    apply_cnots()
 
     # Z rotation acting on wire 'p'
     RZ(-weight / 2, wires=p)
 
     # Applying CNOTs in reverse order
-    for cnot_wires in reversed(set_cnot_wires):
-        CNOT(wires=cnot_wires)
+    @for_loop(len(set_cnot_wires) - 1, -1, -1)
+    def apply_cnots_reversed(i):
+        CNOT(wires=set_cnot_wires[i])
+    apply_cnots_reversed()
 
     # U_1^+, U_2^+ acting on wires 'r' and 'p'
     Hadamard(wires=r)
