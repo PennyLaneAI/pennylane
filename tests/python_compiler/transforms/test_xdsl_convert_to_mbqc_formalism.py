@@ -20,7 +20,7 @@ xdsl = pytest.importorskip("xdsl")
 catalyst = pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
-from catalyst.ftqc import mbqc_pipeline
+# from catalyst.ftqc import mbqc_pipeline
 
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
@@ -33,6 +33,31 @@ from pennylane.compiler.python_compiler.transforms import (
 )
 from pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism import _generate_graph
 from pennylane.ftqc import RotXZX
+
+# FIXME: mbqc_pipeline will be replaced with from catalyst.ftqc import mbqc_pipeline
+mbqc_pipeline = [
+    (
+        "default-pipeline",
+        [
+            "enforce-runtime-invariants-pipeline",
+            "hlo-lowering-pipeline",
+            "quantum-compilation-pipeline",
+            "bufferization-pipeline",
+        ],
+    ),
+    (
+        "mbqc-pipeline",
+        [
+            "convert-mbqc-to-llvm",
+        ],
+    ),
+    (
+        "llvm-dialect-lowering-pipeline",
+        [
+            "llvm-dialect-lowering-pipeline",
+        ],
+    ),
+]
 
 
 class TestConvertToMBQCFormalismPass:
@@ -367,7 +392,7 @@ class TestConvertToMBQCFormalismPass:
         @qml.qjit(
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
-            pipelines=mbqc_pipeline(),
+            pipelines=mbqc_pipeline,  # FIXME
             autograph=True,
         )
         @convert_to_mbqc_formalism_pass
@@ -405,7 +430,7 @@ class TestConvertToMBQCFormalismPass:
         @qml.qjit(
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
-            pipelines=mbqc_pipeline(),
+            pipelines=mbqc_pipeline,  # FIXME
             autograph=True,
         )
         @convert_to_mbqc_formalism_pass
