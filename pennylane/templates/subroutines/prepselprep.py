@@ -25,7 +25,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import GlobalPhase, LinearCombination, Prod, StatePrep, adjoint, prod
+from pennylane.ops import LinearCombination, Prod, StatePrep, adjoint
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires
 
