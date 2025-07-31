@@ -21,6 +21,9 @@ doi:10.48550/arXiv.1508.03273.
 
 Giles, Brett, and Peter Selinger. "Exact Synthesis of Multiqubit Clifford+T Circuits",
 arXiv:1212.0506, arXiv, 2013. doi:10.48550/arXiv.1212.0506.
+
+Amy, M. and Ross, N. J., “Phase-state duality in reversible circuit design”,
+Physical Review A, vol. 104, no. 5, Art. no. 052602, APS, 2021. doi:10.1103/PhysRevA.104.052602.
 """
 
 import pennylane as qml
@@ -43,7 +46,7 @@ def match_relative_phase_toffoli(
     .. note::
 
         Will also replace any subcircuits from the full pattern (composed of the 4-qubit relative phase Toffoli
-        and its decomposition) that can replaced by the rest of the pattern.
+        and its decomposition) that can be replaced by the rest of the pattern.
 
     Args:
         tape (QNode or QuantumScript or Callable): A quantum circuit.
@@ -74,7 +77,7 @@ def match_relative_phase_toffoli(
         2: ─│─────╰S─├●─┤
         3: ─╰Z───────╰X─┤
 
-    We can replace the relative phase 4-qubit Toffoli by running the transform:
+    By running the transform we replaced the relative phase 4-qubit Toffoli:
 
     >>> print(qml.draw(lowered_qnode, level=1)())
         0: ─────────────────╭●───────────╭●───────────────────────────┤  <Z>
@@ -154,7 +157,7 @@ def match_controlled_iX_gate(
     .. note::
 
         Will also replace any subcircuits from the full pattern (composed of the controlled iX gate
-        and its decomposition) that can replaced by the rest of the pattern.
+        and its decomposition) that can be replaced by the rest of the pattern.
 
     Args:
         tape (QNode or QuantumScript or Callable): A quantum circuit.
@@ -186,7 +189,7 @@ def match_controlled_iX_gate(
         2: ─╰S─├●─┤
         3: ────╰X─┤
 
-    We can replace the multi-controlled iX gate by running the transform:
+    By running the transform we replaced the multi-controlled iX gate:
 
     >>> print(qml.draw(lowered_qnode, level=1)())
         0: ──────────────╭●───────────╭●────┤  <Z>
@@ -242,3 +245,131 @@ def match_controlled_iX_gate(
     ]
     pattern = QuantumScript(pattern_ops)
     return pattern_matching_optimization(tape, pattern_tapes=[pattern])
+
+
+@transform
+def match_4_plus_qubit_multi_controlled_X_gate(
+    tape: QuantumScript, custom_quantum_cost=None, additional_controls=0
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Quantum transform to match (greater than or equal to 4)-qubit multi controlled X gates, simple case given on
+    page six of Amy, M. and Ross, N. J., “Phase-state duality in reversible circuit design”,
+    Physical Review A, vol. 104, no. 5, Art. no. 052602, APS, 2021. `doi:10.1103/PhysRevA.104.052602
+    <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.104.052602>`_.
+
+    Args:
+        tape (QNode or QuantumTape or Callable): A quantum circuit.
+        additional_controls (int): Additional controls in excess of 4.
+        custom_quantum_cost (dict): Custom cost dict for involved gates.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    .. note::
+
+        Will also replace any subcircuits from the full pattern (composed of the greater-than-or-equal-to-4-qubit
+        multi-controlled-X gate and its decomposition) that can be replaced by the rest of the pattern.
+
+    .. note::
+
+        This decomposition introduces a phase which must be managed appropriately! When trading local uncomputations
+        for relative phases as we do here, the work wires must remain in the same state when matched with a global
+        uncomputation later (Amy, M. and Ross, N. J., 2021).
+
+        i.e. if a compiler pass using match_controlled_iX_gate() yields a circuit with 4-qubit multi controlled X
+        gates in it, a second compiler pass using this transfom would lower these to Toffolis + Hadamards. This yields
+        an improved decomposition in terms of the number of expensive gates.
+
+    **Example**
+
+    Consider the following quantum function:
+
+        .. code-block:: python
+
+            def qfunc():
+                qml.X(4)
+                qml.MultiControlledX(wires=[0, 1, 2, 3, 6])
+                qml.X(5)
+                return qml.expval(qml.Z(0))
+
+        The circuit before decomposition:
+
+        >>> dev = qml.device('default.qubit', wires=7)
+        >>> qnode = qml.QNode(qfunc, dev)
+        >>> lowered_qnode = match_4_plus_qubit_multi_controlled_X_gate(
+        >>>     qnode,
+        >>>     custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1}
+        >>> )
+        >>> print(qml.draw(lowered_qnode, level=0)())
+            0: ────╭●─┤  <Z>
+            1: ────├●─┤
+            2: ────├●─┤
+            3: ────├●─┤
+            4: ──X─│──┤
+            6: ────╰X─┤
+            5: ──X────┤
+
+        By running the transform we replaced the 4-qubit multi controlled X gate:
+
+        >>> print(qml.draw(lowered_qnode, level=1)())
+            0: ──────────╭●─────────────┤  <Z>
+            1: ──────────├●─────────────┤
+            2: ───────╭●─│──╭●──────────┤
+            3: ────╭●─│──│──│──╭●───────┤
+            5: ──H─├●─├X─│──├X─├●──H──X─┤
+            4: ──H─│──╰●─╰X─╰●─│───H──X─┤
+            6: ────╰X──────────╰X───────┤
+
+    .. details::
+        :title: Usage Details
+
+        The transform can be applied on :class:`QNode` directly.
+
+        .. code-block:: python
+
+            @replace_relative_phase_toffoli(custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1})
+            @qml.qnode(device=dev)
+            def circuit():
+                qml.MultiControlledX(wires=[0, 1, 2, 3, 6])
+                qml.X(4)
+                qml.X(5)
+                return qml.expval(qml.Z(0))
+
+        The 4-qubit multi controlled X gate is then replaced before execution.
+    """
+    pattern_ops = [
+        qml.MultiControlledX(
+            wires=list(range(additional_controls))
+            + list(range(additional_controls, additional_controls + 4))
+            + [additional_controls + 6]
+        ),
+        # ------------
+        qml.ctrl(qml.Hadamard(additional_controls + 4), list(range(additional_controls))),
+        qml.ctrl(qml.Hadamard(additional_controls + 5), list(range(additional_controls))),
+        qml.MultiControlledX(
+            list(range(additional_controls))
+            + [additional_controls + 3, additional_controls + 5, additional_controls + 6]
+        ),
+        qml.MultiControlledX(
+            list(range(additional_controls))
+            + [additional_controls + 2, additional_controls + 4, additional_controls + 5]
+        ),
+        qml.MultiControlledX(
+            list(range(additional_controls))
+            + [additional_controls + 0, additional_controls + 1, additional_controls + 4]
+        ),
+        qml.MultiControlledX(
+            list(range(additional_controls))
+            + [additional_controls + 2, additional_controls + 4, additional_controls + 5]
+        ),
+        qml.MultiControlledX(
+            list(range(additional_controls))
+            + [additional_controls + 3, additional_controls + 5, additional_controls + 6]
+        ),
+        qml.ctrl(qml.Hadamard(additional_controls + 4), list(range(additional_controls))),
+        qml.ctrl(qml.Hadamard(additional_controls + 5), list(range(additional_controls))),
+    ]
+    pattern = QuantumScript(pattern_ops)
+    return pattern_matching_optimization(
+        tape, pattern_tapes=[pattern], custom_quantum_cost=custom_quantum_cost, allow_phase=True
+    )

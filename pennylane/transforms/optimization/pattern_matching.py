@@ -1535,38 +1535,39 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         self.unmatched_list = []
         self.allow_phase = allow_phase
 
+        self.quantum_cost = {
+            "Identity": 0,
+            "PauliX": 1,
+            "PauliY": 1,
+            "PauliZ": 1,
+            "RX": 1,
+            "RY": 1,
+            "RZ": 1,
+            "Hadamard": 1,
+            "T": 1,
+            "Adjoint(T)": 1,
+            "S": 1,
+            "Adjoint(S)": 1,
+            "CNOT": 2,
+            "CZ": 4,
+            "C(Hadamard)": 4,
+            "CH": 4,
+            "SWAP": 6,
+            "CSWAP": 63,
+            "Toffoli": 21,
+            "C(S)": 4,
+            "CCZ": 21,
+            "MultiControlledX": lambda op: (
+                # special case possible due to phase trick, approx. MultiControlledX cost == MultiControlledH cost
+                9 * (2 * 4 * (2 + len(op.control_wires) - 4) ** 2)
+                if len(op.control_wires) >= 4 and self.allow_phase
+                # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
+                # see exercise 4.29 in Nielsen and Chuang
+                else 2 * 4 * len(op.control_wires) ** 2
+            ),
+        }
         if custom_quantum_cost is not None:
-            self.quantum_cost = dict(custom_quantum_cost)
-        else:
-            self.quantum_cost = {
-                "Identity": 0,
-                "PauliX": 1,
-                "PauliY": 1,
-                "PauliZ": 1,
-                "RX": 1,
-                "RY": 1,
-                "RZ": 1,
-                "Hadamard": 1,
-                "T": 1,
-                "Adjoint(T)": 1,
-                "S": 1,
-                "Adjoint(S)": 1,
-                "CNOT": 2,
-                "CZ": 4,
-                "SWAP": 6,
-                "CSWAP": 63,
-                "Toffoli": 21,
-                "C(S)": 4,
-                "CCZ": 21,
-                "MultiControlledX": lambda op: (
-                    # special case possible due to phase trick, approx. MultiControlledX cost == MultiControlledH cost
-                    9 * (2 * 4 * (2 + len(op.control_wires) - 4) ** 2)
-                    if len(op.control_wires) >= 4 and self.allow_phase
-                    # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
-                    # see exercise 4.29 in Nielsen and Chuang
-                    else 2 * 4 * len(op.control_wires) ** 2
-                ),
-            }
+            self.quantum_cost.update(custom_quantum_cost)
 
     def _pred_block(self, circuit_sublist, index):
         """It returns the predecessors of a given part of the circuit.

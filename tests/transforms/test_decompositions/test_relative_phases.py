@@ -23,7 +23,7 @@ import pennylane as qml
 from pennylane.transforms.optimization.relative_phases import (  # pylint: disable=no-name-in-module
     match_controlled_iX_gate,
     match_relative_phase_toffoli,
-    replace_gte_4_qubit_multi_controlled_X_gate,
+    match_4_plus_qubit_multi_controlled_X_gate,
 )
 
 
@@ -40,10 +40,10 @@ class TestMultiControlledXGate:
             qml.MultiControlledX(wires=list(range(controls)) + [controls + 2])
             return qml.expval(qml.Z(0))
 
-        lowered_qfunc = replace_gte_4_qubit_multi_controlled_X_gate(
+        lowered_qfunc = match_4_plus_qubit_multi_controlled_X_gate(
             qfunc,
             additional_controls=controls - 4,
-            custom_quantum_cost={"Toffoli": 2, "C(Hadamard)": 1, "CH": 1},
+            custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1},
         )
 
         tape = qml.tape.make_qscript(lowered_qfunc)()
@@ -83,10 +83,10 @@ class TestMultiControlledXGate:
             qml.X(controls + 1)
             return qml.expval(qml.Z(0))
 
-        lowered_qfunc = replace_gte_4_qubit_multi_controlled_X_gate(
+        lowered_qfunc = match_4_plus_qubit_multi_controlled_X_gate(
             qfunc,
             additional_controls=controls - 4,
-            custom_quantum_cost={"Toffoli": 2, "C(Hadamard)": 1, "CH": 1},
+            custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1},
         )
 
         tape = qml.tape.make_qscript(lowered_qfunc)()
@@ -125,10 +125,10 @@ class TestMultiControlledXGate:
             qml.X(controls + 1)
             return qml.expval(qml.Z(0))
 
-        lowered_qfunc = replace_gte_4_qubit_multi_controlled_X_gate(
+        lowered_qfunc = match_4_plus_qubit_multi_controlled_X_gate(
             qfunc,
             additional_controls=controls - 4,
-            custom_quantum_cost={"Toffoli": 2, "C(Hadamard)": 1, "CH": 1},
+            custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1},
         )
 
         tape = qml.tape.make_qscript(lowered_qfunc)()
