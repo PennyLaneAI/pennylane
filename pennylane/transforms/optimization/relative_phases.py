@@ -284,41 +284,41 @@ def match_4_plus_qubit_multi_controlled_X_gate(
 
     Consider the following quantum function:
 
-        .. code-block:: python
+    .. code-block:: python
 
-            def qfunc():
-                qml.X(4)
-                qml.MultiControlledX(wires=[0, 1, 2, 3, 6])
-                qml.X(5)
-                return qml.expval(qml.Z(0))
+        def qfunc():
+            qml.X(4)
+            qml.MultiControlledX(wires=[0, 1, 2, 3, 6])
+            qml.X(5)
+            return qml.expval(qml.Z(0))
 
-        The circuit before decomposition:
+    The circuit before decomposition:
 
-        >>> dev = qml.device('default.qubit', wires=7)
-        >>> qnode = qml.QNode(qfunc, dev)
-        >>> lowered_qnode = match_4_plus_qubit_multi_controlled_X_gate(
-        >>>     qnode,
-        >>>     custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1}
-        >>> )
-        >>> print(qml.draw(lowered_qnode, level=0)())
-            0: ────╭●─┤  <Z>
-            1: ────├●─┤
-            2: ────├●─┤
-            3: ────├●─┤
-            4: ──X─│──┤
-            6: ────╰X─┤
-            5: ──X────┤
+    >>> dev = qml.device('default.qubit', wires=7)
+    >>> qnode = qml.QNode(qfunc, dev)
+    >>> lowered_qnode = match_4_plus_qubit_multi_controlled_X_gate(
+    >>>     qnode,
+    >>>     custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1}
+    >>> )
+    >>> print(qml.draw(lowered_qnode, level=0)())
+        0: ────╭●─┤  <Z>
+        1: ────├●─┤
+        2: ────├●─┤
+        3: ────├●─┤
+        4: ──X─│──┤
+        6: ────╰X─┤
+        5: ──X────┤
 
-        By running the transform we replaced the 4-qubit multi controlled X gate:
+    By running the transform we replaced the 4-qubit multi controlled X gate:
 
-        >>> print(qml.draw(lowered_qnode, level=1)())
-            0: ──────────╭●─────────────┤  <Z>
-            1: ──────────├●─────────────┤
-            2: ───────╭●─│──╭●──────────┤
-            3: ────╭●─│──│──│──╭●───────┤
-            5: ──H─├●─├X─│──├X─├●──H──X─┤
-            4: ──H─│──╰●─╰X─╰●─│───H──X─┤
-            6: ────╰X──────────╰X───────┤
+    >>> print(qml.draw(lowered_qnode, level=1)())
+        0: ──────────╭●─────────────┤  <Z>
+        1: ──────────├●─────────────┤
+        2: ───────╭●─│──╭●──────────┤
+        3: ────╭●─│──│──│──╭●───────┤
+        5: ──H─├●─├X─│──├X─├●──H──X─┤
+        4: ──H─│──╰●─╰X─╰●─│───H──X─┤
+        6: ────╰X──────────╰X───────┤
 
     .. details::
         :title: Usage Details
