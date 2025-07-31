@@ -752,6 +752,7 @@ jobs:
       - autograd-tests
       - tf-tests
       - jax-tests
+      - capture-jax-tests
       - core-tests
       - all-interfaces-tests
       - external-libraries-tests
@@ -794,6 +795,7 @@ jobs:
       - autograd-tests
       - tf-tests
       - jax-tests
+      - capture-jax-tests
       - core-tests
       - all-interfaces-tests
       - external-libraries-tests
