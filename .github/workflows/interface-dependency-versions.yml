@@ -67,7 +67,7 @@ jobs:
       
       - name: Default Tensorflow Version
         id: tensorflow
-        run: echo "--upgrade version=${{ inputs.tensorflow_version }}" >> $GITHUB_OUTPUT
+        run: echo "version=${{ inputs.tensorflow_version }}" >> $GITHUB_OUTPUT
       
       - name: Default PyTorch Version
         id: pytorch
