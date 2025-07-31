@@ -30,16 +30,22 @@ except ModuleNotFoundError:
 
 @transform
 def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Reduce the circuit applying simplification rules based on the ZX calculus.
+    """Reduce an arbitrary circuit applying the full ZX-based pipeline for T-gate optimization,
+    available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package.
 
-    This transform returns an equivalent reduced version of the given quantum circuit, performing
-    a graph-theoretic simplification based on ZX calculus rules. It works as follows:
+    This transform performs a graph-theoretic circuit simplification based on ZX calculus rules.
+    It works as follows:
 
         - convert the quantum circuit into the corresponding ``pyzx`` graph;
 
-        - apply ZX calculus simplification rules on the graph;
+        - apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
+        optimization pass to the ``pyzx`` graph;
 
-        - convert the simplified ``pyzx`` graph back to its quantum circuit representation.
+        - use `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__ and
+        apply the `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass
+        to the extracted ``pyzx`` circuit;
+
+        - build a new simplified ``pyzx`` graph and convert it back to its quantum circuit representation.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
@@ -53,7 +59,7 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     **Example:**
 
-    Consider the following QNode function as an example:
+    Consider the following simple circuit:
 
     .. code-block:: python3
 
@@ -73,17 +79,12 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
             qml.RX(y, wires=1)
             return qml.state()
 
-    To simplify the circuit using the ZX calculus rules you can do:
+    To apply this ZX-based optimization pass you can do:
 
     >>> new_circuit = zx_full_reduce(circuit)
     >>> print(qml.draw(new_circuit)(3.2, -2.2))
     0: ──S─╭●─────────────────┤  State
     1: ────╰X──H──RZ(1.00)──H─┤  State
-
-    You can check that the final state is matching the one returned by the original circuit by:
-
-    >>> qml.math.allclose(circuit(3.2, -2.2), new_circuit(3.2, -2.2))
-    True
 
     .. note::
 
@@ -99,8 +100,8 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
         - Aleks Kissinger, John van de Wetering (2020), "Reducing T-count with the ZX-calculus", <https://arxiv.org/abs/1903.10477>.
 
-    For the list of ZX calculus-based simplification rules implemented in ``pyzx``, see the 
-    `online documentation <https://pyzx.readthedocs.io/en/latest/api.html#list-of-simplifications>`__
+    For the list of ZX calculus-based simplification rules implemented in ``pyzx``, see the
+    `online documentation <https://pyzx.readthedocs.io/en/latest/api.html#list-of-simplifications>`__.
     """
 
     if not has_pyzx:  # pragma: no cover
