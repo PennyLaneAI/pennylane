@@ -129,6 +129,7 @@ Templates:
     ~ResourceQROM
     ~ResourceSelectPauliRot
     ~ResourceQubitUnitary
+    ~ResourceTrotterProduct
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
     ~ResourceTrotterVibrational
@@ -220,6 +221,7 @@ from .templates import (
     ResourceQROM,
     ResourceQubitUnitary,
     ResourceSelectPauliRot,
+    ResourceTrotterProduct,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,
