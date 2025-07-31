@@ -62,8 +62,6 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.match_controlled_iX_gate
     ~transforms.single_qubit_fusion
     ~transforms.transpile
-    ~transforms.decompose
-    ~transforms.combine_global_phases
     ~transforms.zx_full_reduce
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
