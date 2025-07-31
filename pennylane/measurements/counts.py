@@ -18,13 +18,15 @@ from collections.abc import Sequence
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+from .measurement_value import MeasurementValue
 from .measurements import SampleMeasurement
-from .mid_measure import MeasurementValue
+from .process_samples import process_raw_samples
 
 
 class CountsMP(SampleMeasurement):
@@ -105,16 +107,16 @@ class CountsMP(SampleMeasurement):
 
     def process_samples(
         self,
-        samples: Sequence[complex],
+        samples: TensorLike,
         wire_order: Wires,
         shot_range: tuple[int, ...] | None = None,
         bin_size: int | None = None,
     ):
-        with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=self.obs or self.mv, wires=self._wires).process_samples(
-                samples, wire_order, shot_range, bin_size
-            )
-
+        dummy_mp = CountsMP(obs=self.obs or self.mv, wires=self._wires)
+        # cant use `self` due to eigvals differences
+        samples = process_raw_samples(
+            dummy_mp, samples, wire_order, shot_range=shot_range, bin_size=bin_size
+        )
         if bin_size is None:
             return self._samples_to_counts(samples)
 
@@ -179,16 +181,16 @@ class CountsMP(SampleMeasurement):
 
         # if an observable was provided, batched samples will have shape (batch_size, shots)
         batched_ndims = 2
-        shape = qml.math.shape(samples)
+        shape = math.shape(samples)
 
         if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
 
             # remove nans
-            mask = qml.math.isnan(samples)
+            mask = math.isnan(samples)
             num_wires = shape[-1]
-            if qml.math.any(mask):
+            if math.any(mask):
                 mask = np.logical_not(np.any(mask, axis=tuple(range(1, samples.ndim))))
                 samples = samples[mask, ...]
 
@@ -221,13 +223,13 @@ class CountsMP(SampleMeasurement):
             samples = samples[None]
 
         # generate empty outcome dict, populate values with state counts
-        base_dict = {k: qml.math.int64(0) for k in outcomes}
+        base_dict = {k: math.int64(0) for k in outcomes}
         outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
-        results = [qml.math.unique(batch, return_counts=True) for batch in samples]
+        results = [math.unique(batch, return_counts=True) for batch in samples]
 
         for result, outcome_dict in zip(results, outcome_dicts):
             states, _counts = result
-            for state, count in zip(qml.math.unwrap(states), _counts):
+            for state, count in zip(math.unwrap(states), _counts):
                 outcome_dict[state] = count
 
         def outcome_to_eigval(outcome: str):
@@ -251,7 +253,7 @@ class CountsMP(SampleMeasurement):
 
         if self.eigvals() is not None:
             eigvals = self.eigvals()
-            eigvals_dict = {k: qml.math.int64(0) for k in eigvals}
+            eigvals_dict = {k: math.int64(0) for k in eigvals}
             for outcome, count in mapped_counts.items():
                 val = eigvals[int(outcome, 2)]
                 eigvals_dict[val] += count
@@ -418,8 +420,7 @@ def counts(
 
     if isinstance(op, Sequence):
         if not all(
-            qml.math.is_abstract(o)
-            or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
+            math.is_abstract(o) or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
             for o in op
         ):
             raise QuantumFunctionError(
