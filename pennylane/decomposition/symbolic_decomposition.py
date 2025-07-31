@@ -309,7 +309,7 @@ def flip_control_adjoint(
 def _controlled_decomp_with_work_wire_condition(
     num_control_wires, num_work_wires, work_wire_type, **__
 ):
-    return num_work_wires > 1 and num_control_wires > 1 and work_wire_type == "clean"
+    return num_work_wires > 1 and num_control_wires > 1 and work_wire_type == "zeroed"
 
 
 def _controlled_decomp_with_work_wire_resource(
