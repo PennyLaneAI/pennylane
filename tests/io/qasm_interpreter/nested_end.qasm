@@ -1,5 +1,5 @@
 bool target = false;
-qubit[1] q0;
+qubit q0;
 bit[2] bits = "00";
 
 if (target == bits[0]) {

@@ -361,13 +361,13 @@ class _CachedCallable:
                 self.decompose_fn = lru_cache(maxsize=cache_size)(
                     partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
                 )
-            case "rs":
+            case "gridsynth":
                 self.decompose_fn = lru_cache(maxsize=cache_size)(
                     partial(rs_decomposition, epsilon=epsilon, **method_kwargs)
                 )
             case _:
                 raise NotImplementedError(
-                    f"Currently we only support Solovay-Kitaev ('sk') and Ross-Selinger ('rs') decompositions, got {method}"
+                    f"Currently we only support Solovay-Kitaev ('sk') and Ross-Selinger ('gridsynth') decompositions, got {method}"
                 )
 
         self.method = method
@@ -420,13 +420,13 @@ def clifford_t_decomposition(
     :math:`\epsilon > 0` error. By default, we use the Solovay-Kitaev algorithm described in
     `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ for this.
     Alternatively, the Ross-Selinger algorithm described in `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_
-    can be used by setting the ``method`` to ``"rs"``.
+    can be used by setting the ``method`` to ``"gridsynth"``.
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev. Alternatively,
-            the Ross-Selinger algorithm can be used with ``"rs"``.
+            the Ross-Selinger algorithm can be used with ``"gridsynth"``.
         cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
@@ -440,9 +440,9 @@ def clifford_t_decomposition(
         **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
         where the decomposition is performed using the :func:`~.sk_decomposition` method.
 
-    - Ross-Selinger decomposition --
-        **max_trials** (int) -- argument for the ``"rs"`` method, where the decomposition is performed using the
-        :func:`~.rs_decomposition` method.
+    - Ross-Selinger (``gridsynth``) decomposition --
+        **max_search_trials** (int), **max_factoring_trials** (int) -- arguments for the ``"gridsynth"`` method,
+        where the decomposition is performed using the :func:`~.rs_decomposition` method.
 
     Raises:
         ValueError: If a gate operation does not have a decomposition when required.

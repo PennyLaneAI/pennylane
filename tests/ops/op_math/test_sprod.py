@@ -23,7 +23,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError, MatrixUndefinedError
 from pennylane.ops.op_math import Prod, SProd, Sum, s_prod
 from pennylane.wires import Wires
 

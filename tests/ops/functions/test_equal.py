@@ -1885,19 +1885,6 @@ class TestSymbolicOpComparison:
         assert qml.equal(op1, op2, check_interface=False, check_trainability=False)
         assert not qml.equal(op1, op2, check_interface=False, check_trainability=True)
 
-    def test_adjoint_observable_with_non_adjoint(self):
-        """Test that comparing an adjoint observable with a non-adjoint operation returns False"""
-
-        base = qml.X(0)
-        adj_op = qml.adjoint(base)
-
-        # if we get rid of Observable or stop having adjoint(Observable) be an Observable,
-        # this test is no longer relevant. Ref: https://github.com/PennyLaneAI/pennylane/pull/7107/
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert isinstance(adj_op, qml.operation.Observable)
-
-        assert not qml.equal(adj_op, qml.exp(base, 2))
-
     @pytest.mark.parametrize(("wire1", "wire2", "res"), WIRES)
     def test_conditional_base_operator_wire_comparison(self, wire1, wire2, res):
         """Test that equal compares operator wires for Conditional operators"""
@@ -2612,7 +2599,7 @@ class TestQuantumScriptComparisons:
         [qml.PauliX(0)],
         [qml.expval(qml.PauliZ(0))],
         shots=10,
-        trainable_params=2,
+        trainable_params=[2],
     )
     tape6 = qml.tape.QuantumScript([qml.PauliX(0)], [qml.expval(qml.PauliX(0))], shots=10)
     tape7 = qml.tape.QuantumScript(
@@ -2912,3 +2899,30 @@ def test_ops_with_abstract_parameters_not_equal():
 def test_not_equal_prep_sel_prep(op, other_op):
     """Test that two PrepSelPrep operators with different Hamiltonian are not equal."""
     assert not qml.equal(op, other_op)
+
+
+def test_select():
+    """Test that Select operators can be compared."""
+
+    op1 = qml.Select((qml.X(0),), control=2)
+    op2 = qml.Select((qml.X(0),), control=3)
+    with pytest.raises(AssertionError, match=r"different control wires"):
+        qml.assert_equal(op1, op2)
+    assert qml.equal(op1, op2) is False
+
+    op1 = qml.Select((qml.X(0), qml.Y(0)), control=2)
+    op2 = qml.Select((qml.X(0),), control=2)
+    with pytest.raises(AssertionError, match=r"different number of target operators"):
+        qml.assert_equal(op1, op2)
+    assert qml.equal(op1, op2) is False
+
+    op1 = qml.Select((qml.X(0), qml.Y(0)), control=2)
+    op2 = qml.Select((qml.X(0), qml.X(0)), control=2)
+    with pytest.raises(AssertionError, match=r"different operations at index 1"):
+        qml.assert_equal(op1, op2)
+    assert qml.equal(op1, op2) is False
+
+    op1 = qml.Select((qml.X(0),), control=2)
+    op2 = qml.Select((qml.X(0),), control=2)
+    qml.assert_equal(op1, op2)
+    assert qml.equal(op1, op2)

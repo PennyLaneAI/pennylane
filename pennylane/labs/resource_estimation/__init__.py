@@ -122,9 +122,26 @@ Templates:
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
     ~ResourceSemiAdder
+    ~ResourceQFT
+    ~ResourceAQFT
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
+    ~ResourceSelectPauliRot
+    ~ResourceQubitUnitary
+    ~ResourceTrotterCDF
+    ~ResourceTrotterTHC
+    ~ResourceTrotterVibrational
+    ~ResourceTrotterVibronic
+    ~ResourceQubitizeTHC
+
+Compact Hamiltonian Class:
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~CompactHamiltonian
 
 """
 
@@ -191,13 +208,22 @@ from .ops import (
     ResourceChangeBasisOp,
     ResourcePow,
 )
-
 from .templates import (
     ResourceOutOfPlaceSquare,
     ResourcePhaseGradient,
     ResourceOutMultiplier,
     ResourceSemiAdder,
+    ResourceQFT,
+    ResourceAQFT,
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceQubitUnitary,
+    ResourceSelectPauliRot,
+    ResourceTrotterCDF,
+    ResourceTrotterTHC,
+    CompactHamiltonian,
+    ResourceTrotterVibrational,
+    ResourceTrotterVibronic,
+    ResourceQubitizeTHC,
 )
