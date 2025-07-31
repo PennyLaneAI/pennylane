@@ -229,7 +229,7 @@ class ResourceTwoQubitComparator(ResourceOperator):
 class ResourceIntegerComparator(ResourceOperator):
     r"""Resource class for comparing the integer value encoded in a quantum register to a positive integer.
 
-    This operation applies a controlled Pauli X gate using integer comparison as the condition.
+    This operation applies a controlled `X` gate using integer comparison as the condition.
     Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive
     integer, and a fixed positive integer :math:`L`, a target qubit is flipped if
     :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n \lt L`.
