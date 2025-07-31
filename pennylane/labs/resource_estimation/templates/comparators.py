@@ -251,7 +251,7 @@ class ResourceIntegerComparator(ResourceOperator):
         :code:`num_wires` is :math:`6`:
 
         - Evaluating most significant bit: For all :math:`6`-bit numbers where the first two control qubits
-          are in the :math:`00` state, :math:`\vert n \rangle \lt 22` condition is always ``True``. A ``MultiControlledX`` gate
+          are in the :math:`00` state, :math:`n \lt 22` condition is always ``True``. A ``MultiControlledX`` gate
           can be applied with these two wires as controls and control values corresponding to :math:`00`.
         - Refining with subsequent bits: Considering the next most significant bit, since the target value
           begins with :math:`0101`. Therefore, all :math:`6`-bit numbers beginning with :math:`0100` will
