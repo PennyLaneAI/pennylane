@@ -3,7 +3,7 @@
 
 <h3>New features since last release</h3>
 
-* A new transform :func:`~.transforms.zx_full_reduce` has been added to reduce a given circuit applying
+* A new transform :func:`~.transforms.zx_full_reduce` has been added to reduce a given circuit by applying
   simplification rules based on the ZX calculus. Here is an example showcasing somes simple optimizations
   applied to the original circuit (e.g. inverses cancellation, rotations merging):
 
