@@ -126,8 +126,8 @@ class ResourceTwoQubitComparator(ResourceOperator):
     r"""Resource class for comparing the integer values encoded in
     two quantum registers of two qubits each.
 
-    Note that the input registers are modified by this operation, and their
-    original values can be restored by applying its adjoint.
+    This operation modifies the input registers. The original values can be restored
+    by applying the operation's adjoint.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
@@ -227,9 +227,8 @@ class ResourceTwoQubitComparator(ResourceOperator):
 
 
 class ResourceIntegerComparator(ResourceOperator):
-    r"""Resource class for comparing the integer value encoded in a quantum register to a positive integer.
+    r"""This operation applies a controlled `X` gate using integer comparison as the condition.
 
-    This operation applies a controlled `X` gate using integer comparison as the condition.
     Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive
     integer, and a fixed positive integer :math:`L`, a target qubit is flipped if
     :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n \lt L`.
@@ -456,9 +455,8 @@ class ResourceIntegerComparator(ResourceOperator):
 
 
 class ResourceRegisterComparator(ResourceOperator):
-    r"""Resource class for comparing the integer values encoded in two quantum registers of any size.
+    r"""This operation applies a controlled `X` gate using register comparison as the condition.
 
-    This operation applies a controlled Pauli X gate using register comparison as the condition.
     Given the basis states :math:`\vert a \rangle`, and  :math:`\vert b \rangle`,
     where :math:`a` and :math:`b` are positive
     integers, a target qubit is flipped if
