@@ -59,6 +59,7 @@ class TestDecomposition:
         ),
     ]
 
+    @pytest.mark.jax
     def test_decomposition_new(self, batch_dim):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
         weights = np.random.random(
