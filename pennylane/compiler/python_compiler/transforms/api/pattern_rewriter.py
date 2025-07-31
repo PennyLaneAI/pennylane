@@ -40,19 +40,22 @@ class StateManagement:
         """Wire labels."""
         return self._wires
 
-    def update_qubit(self, old_qubit: SSAValue, new_qubit: SSAValue):
+    def update_qubit(self, old_qubit: SSAValue, new_qubit: SSAValue) -> None:
         """Update a qubit."""
         wire = self.qubit_to_wire_map[old_qubit]
         self.wire_to_qubit_map[wire] = new_qubit
         self.qubit_to_wire_map[new_qubit] = wire
         self.qubit_to_wire_map.pop(old_qubit, None)
 
-    def __getitem__(self, val: int | SSAValue) -> int | SSAValue:
+    def __getitem__(self, val: int | SSAValue) -> int | SSAValue | None:
         if isinstance(val, SSAValue):
             return self.qubit_to_wire_map[val]
-        return self.wire_to_qubit_map[val]
 
-    def __setitem__(self, key: int | SSAValue, item: SSAValue | int):
+        if val not in self._wires:
+            raise ValueError(f"{val} is not an available wire.")
+        return self.wire_to_qubit_map.get(val, None)
+
+    def __setitem__(self, key: int | SSAValue, item: SSAValue | int) -> None:
         if isinstance(key, SSAValue):
             old_wire = self.qubit_to_wire_map.pop(key, None)
             self.wire_to_qubit_map.pop(old_wire, None)
