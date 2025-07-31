@@ -367,7 +367,7 @@ class Select(Operation):
         return cls(data, control=metadata[0], work_wires=metadata[1], partial=metadata[2])
 
     def __repr__(self):
-        return f"Select(ops={self.ops}, control={self.control})"
+        return f"Select(ops={self.ops}, control={self.control}, partial={self.partial})"
 
     # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(self, ops, control, work_wires=None, partial=False, id=None):
@@ -524,6 +524,11 @@ class Select(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+    @property
+    def partial(self):
+        """Operations to be applied."""
+        return self.hyperparameters["partial"]
 
 
 # Decomposition of Select using multi-control strategy

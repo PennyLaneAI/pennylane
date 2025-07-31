@@ -221,7 +221,7 @@ def _prepselprep_resources(op_reps, num_control):
         resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
     )
     return {
-        resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control): 1,
+        resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control, partial=False): 1,
         resource_rep(StatePrep, num_wires=num_control): 1,
         adjoint_resource_rep(StatePrep, base_params={"num_wires": num_control}): 1,
     }
