@@ -84,13 +84,13 @@ def test_assembly_format(run_filecheck):
     // CHECK: [[ROTATED:%.+]] = qec.ppr ["X", "I", "Z"](4) [[QUBIT]] : !quantum.bit
     %rotated = qec.ppr ["X", "I", "Z"](4) %qubit : !quantum.bit
 
-    // CHECK: [[MEASURED:%.+]], [[OUT_QUBITS:%.+]] = qec.ppm ["X", "I", "Z"] [[QUBIT]] : !quantum.bit
-    %measured, %out_qubits = qec.ppm ["X", "I", "Z"] %qubit : !quantum.bit
+    // CHECK: [[MEASURED:%.+]], [[OUT_QUBITS:%.+]] = qec.ppm ["X", "I", "Z"] [[QUBIT]] : i1, !quantum.bit
+    %measured, %out_qubits = qec.ppm ["X", "I", "Z"] %qubit : i1, !quantum.bit
 
-    // CHECK: [[MEASURED_COND:%.+]], [[OUT_QUBITS_COND:%.+]] = qec.ppm ["X", "I", "Z"] [[QUBIT]] cond([[COND]]) : i1,  !quantum.bit
+    // CHECK: [[MEASURED_COND:%.+]], [[OUT_QUBITS_COND:%.+]] = qec.ppm ["X", "I", "Z"] [[QUBIT]] cond([[COND]]) : i1, !quantum.bit
     %measured_cond, %out_qubits_cond = qec.ppm ["X", "I", "Z"] %qubit cond(%cond) : i1, !quantum.bit
 
-    // CHECK: [[SELECT_MEASURED:%.+]], [[SELECT_OUT:%.+]] = qec.select.ppm ([[COND]], ["X"], ["Z"]) [[QUBIT]] : i1, !quantum.bit
+    // CHECK: [[SELECT_MEASURED:%.+]], [[SELECT_OUT:%.+]] = qec.select.ppm([[COND]], ["X"], ["Z"]) [[QUBIT]] : i1, !quantum.bit
     %select_measured, %select_out = qec.select.ppm (%cond, ["X"], ["Z"]) %qubit : i1, !quantum.bit
 
     """
