@@ -3,6 +3,23 @@
 
 <h3>New features since last release</h3>
 
+* Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
+  [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
+
+  ```python
+  @qml.qnode(qml.device('default.qubit'))
+  def c():
+      with qml.allocation.allocate(1) as wires:
+          qml.H(wires)
+          qml.CNOT((wires[0], 0))
+      return qml.probs(wires=0)
+
+  c()
+  ```
+  ```
+  array([0.5, 0.5])
+  ```
+
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
