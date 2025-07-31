@@ -195,7 +195,7 @@ class Exp(ScalarSymbolicOp, Operation):
         if num_steps is not None:
             warn(
                 "Providing 'num_steps' to 'qml.evolve' and 'qml.exp' is deprecated and will be "
-                "removed in a future version. Instead, use 'qml.TrotterProduct' for approximate "
+                "removed in a future release. Instead, use 'qml.TrotterProduct' for approximate "
                 "methods, providing the 'n' parameter to perform the Suzuki-Trotter product "
                 "approximation of a Hamiltonian with the specified number of Trotter steps.",
                 PennyLaneDeprecationWarning,
