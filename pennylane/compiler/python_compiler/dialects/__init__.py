@@ -16,8 +16,10 @@
 
 from .mbqc import MBQC
 from .quantum import Quantum
+from .transform import Transform
 
 __all__ = [
     "MBQC",
     "Quantum",
+    "Transform",
 ]
