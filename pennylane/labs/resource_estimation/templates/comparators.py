@@ -29,7 +29,7 @@ class ResourceSingleQubitComparator(ResourceOperator):
     r"""Resource class for comparing the values encoded in two input qubits.
 
     This operation modifies the input qubits. The original values can be restored
-    by applying its adjoint.
+    by applying the operation's adjoint.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
