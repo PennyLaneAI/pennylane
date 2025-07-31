@@ -243,6 +243,11 @@
 
 <h3>Deprecations 👋</h3>
 
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+  ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
+  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
+  work wires are restored to their original state upon completing the decomposition.
+
 * Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
   Instead, use :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the
   Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
