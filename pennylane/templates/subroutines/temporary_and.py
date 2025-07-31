@@ -75,7 +75,7 @@ class TemporaryAND(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [1 1 0 1]
+        [[1 1 0 1]]
     """
 
     num_wires = 3
