@@ -29,8 +29,10 @@ from pennylane.devices.preprocess import (
     validate_observables,
 )
 from pennylane.ftqc import convert_to_mbqc_formalism, convert_to_mbqc_gateset, diagonalize_mcms
+from pennylane.measurements import MidMeasureMP
 from pennylane.tape.qscript import QuantumScript
 from pennylane.transforms import combine_global_phases, split_non_commuting
+from pennylane.typing import Result
 
 
 class FTQCQubit(Device):
@@ -164,25 +166,36 @@ class LightningQubitBackend:
             "kernel_name": self.device._kernel_name,
             "num_burnin": self.device._num_burnin,
         }
+
+        state = self.device._statevector
         results = []
         for circuit in circuits:
             if self.device._wire_map is not None:
                 [circuit], _ = qml.map_wires(circuit, self.device._wire_map)
-            results.append(
-                self.simulate(
-                    self.device.dynamic_wires_from_circuit(circuit),
-                    self.device._statevector,
-                    mcmc=mcmc,
-                    postselect_mode=execution_config.mcm_config.postselect_mode,
-                )
-            )
 
+            aux_circ = qml.tape.QuantumScript(
+                circuit.operations,
+                circuit.measurements,
+                shots=[1],
+                trainable_params=circuit.trainable_params,
+            )
+            for shot in range(circuit.shots.total_shots):
+                if state is not None:
+                    state.reset_state()
+                results.append(
+                    self.simulate(
+                        self.device.dynamic_wires_from_circuit(aux_circ),
+                        self.device._statevector,
+                        mcmc=mcmc,
+                        postselect_mode=execution_config.mcm_config.postselect_mode,
+                    )
+                )
         return tuple(results)
 
     def simulate(
         self,
         circuit: QuantumScript,
-        state: LightningStateVector,
+        state: "LightningStateVector",
         mcmc: dict = None,
         postselect_mode: str = None,
     ) -> Result:
@@ -206,25 +219,17 @@ class LightningQubitBackend:
         if mcmc is None:
             mcmc = {}
 
-        results = []
-        aux_circ = qml.tape.QuantumScript(
-            circuit.operations,
-            circuit.measurements,
-            shots=[1],
-            trainable_params=circuit.trainable_params,
+        if circuit.shots.total_shots != 1:
+            raise RuntimeError("Lightning backend expects single-shot for simulation")
+
+        mid_measurements = {}
+        final_state = state.get_final_state(
+            circuit, mid_measurements=mid_measurements, postselect_mode=postselect_mode
         )
-        for _ in range(circuit.shots.total_shots):
-            state.reset_state()
-            mid_measurements = {}
-            final_state = state.get_final_state(
-                aux_circ, mid_measurements=mid_measurements, postselect_mode=postselect_mode
-            )
-            results.append(
-                self.device.LightningMeasurements(final_state, **mcmc).measure_final_state(
-                    aux_circ, mid_measurements=mid_measurements
-                )
-            )
-        return tuple(results)
+
+        return self.device.LightningMeasurements(final_state, **mcmc).measure_final_state(
+            circuit, mid_measurements=mid_measurements
+        )
 
 
 class NullQubitBackend:
@@ -243,3 +248,43 @@ class NullQubitBackend:
     def execute(self, circuits, execution_config):
         """Probably not in need of any modification, since its mocked."""
         return self.device.execute(circuits, execution_config)
+
+
+class QuantumScriptSequence:
+    """A sequence of tapes meant to be executed in order without resetting the system state.
+    Intermediate tapes may return mid-circuit measurements, or nothing. The final tape
+    returns terminal measurements."""
+
+    def __init__(self, tapes):
+        self._tapes = tapes
+
+    @property
+    def tapes(self):
+        return self._tapes
+
+    @property
+    def final_tape(self):
+        return self._tapes[-1]
+
+    @property
+    def intermediate_tapes(self):
+        return self._tapes[:-1]
+
+    @property
+    def measurements(self):
+        return self.final_tape.measurements
+
+    @property
+    def intermediate_measurements(self):
+        return [tape.measurements for tape in self.intermediate_tapes]
+
+    @property
+    def operations(self):
+        return [tape.operations for tape in self.tapes]
+
+    @property
+    def wires(self):
+        return sum([tape.wires for tape in self.tapes])
+
+    def __repr__(self):
+        return f"<QuantumScriptSequence: wires={list(self.wires)}>"
