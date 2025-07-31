@@ -459,7 +459,7 @@ class ResourceRegisterComparator(ResourceOperator):
     r"""Resource class for comparing the integer values encoded in two quantum registers of any size.
 
     This operation applies a controlled Pauli X gate using register comparison as the condition.
-    Given the basis states :math:`\vert a \rangle`, and  :math:`\vert a \rangle`,
+    Given the basis states :math:`\vert a \rangle`, and  :math:`\vert b \rangle`,
     where :math:`a` and :math:`b` are positive
     integers, a target qubit is flipped if
     :math:`a \geq b`. Alternatively, the flipping condition can be :math:`a \lt b`.
