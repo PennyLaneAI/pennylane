@@ -21,9 +21,9 @@ import pytest
 
 import pennylane as qml
 from pennylane.transforms.optimization.relative_phases import (  # pylint: disable=no-name-in-module
+    match_4_plus_qubit_multi_controlled_X_gate,
     match_controlled_iX_gate,
     match_relative_phase_toffoli,
-    match_4_plus_qubit_multi_controlled_X_gate,
 )
 
 

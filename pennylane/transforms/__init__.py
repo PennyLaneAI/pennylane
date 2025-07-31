@@ -316,7 +316,7 @@ from .optimization import (
     pattern_matching_optimization,
     match_controlled_iX_gate,
     match_relative_phase_toffoli,
-    match_4_plus_qubit_multi_controlled_X_gate
+    match_4_plus_qubit_multi_controlled_X_gate,
 )
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
