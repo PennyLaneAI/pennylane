@@ -28,7 +28,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 class ResourceSingleQubitComparator(ResourceOperator):
     r"""Resource class for comparing two qubits.
 
-    This operation computes a comparison between the value encoded in two input qubits.
+    This operation computes a comparison between the values encoded in two input qubits.
     Note that the input qubits are modified, and their original values can be restored
     by applying the adjoint of this operation.
 
@@ -127,7 +127,7 @@ class ResourceTwoQubitComparator(ResourceOperator):
     r"""Resource class for comparing two quantum registers of two qubits each.
 
     This operation computes a comparison between the integer values encoded in
-    2-qubit quantum registers. The input registers are modified
+    two quantum registers of two qubits each. The input registers are modified
     by this operation, and their original values can be restored by applying its adjoint.
 
     Args:
