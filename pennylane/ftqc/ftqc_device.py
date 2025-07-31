@@ -28,8 +28,8 @@ from pennylane.devices.preprocess import (
     validate_device_wires,
     validate_observables,
 )
-from pennylane.ftqc import convert_to_mbqc_formalism, convert_to_mbqc_gateset, diagonalize_mcms
-from pennylane.measurements import MidMeasureMP
+from pennylane.ftqc import RotXZX, convert_to_mbqc_formalism, convert_to_mbqc_gateset, diagonalize_mcms
+from pennylane.ops import RZ
 from pennylane.tape.qscript import QuantumScript
 from pennylane.transforms import combine_global_phases, split_non_commuting
 from pennylane.typing import Result
@@ -288,3 +288,19 @@ class QuantumScriptSequence:
 
     def __repr__(self):
         return f"<QuantumScriptSequence: wires={list(self.wires)}>"
+
+
+def split_at_clifford_gates(tape):
+    all_operations = [[]]
+
+    for op in tape.operations:
+        if isinstance(op, (RotXZX, RZ)) and all_operations[-1] != []:
+            all_operations.append([])
+        all_operations[-1].append(op)
+
+    tapes = []
+    for ops_list in all_operations[:-1]:
+        tapes.append(tape.copy(operations=ops_list, measurements=[]))
+    tapes.append(tape.copy(operations=all_operations[-1]))
+
+    return QuantumScriptSequence(tapes)
