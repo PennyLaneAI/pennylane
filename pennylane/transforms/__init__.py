@@ -60,6 +60,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.remove_barrier
     ~transforms.match_relative_phase_toffoli
     ~transforms.match_controlled_iX_gate
+    ~transforms.match_4_plus_qubit_multi_controlled_X_gate
     ~transforms.single_qubit_fusion
     ~transforms.transpile
     ~transforms.undo_swaps
@@ -315,6 +316,7 @@ from .optimization import (
     pattern_matching_optimization,
     match_controlled_iX_gate,
     match_relative_phase_toffoli,
+    match_4_plus_qubit_multi_controlled_X_gate
 )
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
