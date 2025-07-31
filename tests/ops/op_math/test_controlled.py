@@ -37,7 +37,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.tape import QuantumScript
@@ -200,6 +200,13 @@ class TestControlledInit:
         """Test checking work wires are not in contorl wires."""
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
+
+    @pytest.mark.parametrize("old_name, new_name", [("clean", "zeroed"), ("dirty", "borrowed")])
+    def test_old_work_wire_type_deprecated(self, old_name, new_name):
+        """Tests that specifying work_wire_type as 'clean' or 'dirty' is deprecated"""
+        with pytest.raises(PennyLaneDeprecationWarning, match="work_wire_type"):
+            op = Controlled(self.temp_op, "b", work_wires="c", work_wire_type=old_name)
+            assert op.work_wire_type == new_name
 
 
 class TestControlledProperties:
