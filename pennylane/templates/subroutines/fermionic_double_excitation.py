@@ -1023,14 +1023,14 @@ def _fermionic_double_excitation_decomopsition(
 
     set_cnot_wires = cnots_occ + [[r, q]] + cnots_unocc
 
-    _layer1(weight, s, r, q, p, set_cnot_wires)
-    _layer2(weight, s, r, q, p, set_cnot_wires)
-    _layer3(weight, s, r, q, p, set_cnot_wires)
-    _layer4(weight, s, r, q, p, set_cnot_wires)
-    _layer5(weight, s, r, q, p, set_cnot_wires)
-    _layer6(weight, s, r, q, p, set_cnot_wires)
-    _layer7(weight, s, r, q, p, set_cnot_wires)
-    _layer8(weight, s, r, q, p, set_cnot_wires)
+    _layer_qfunc1(weight, s, r, q, p, set_cnot_wires)
+    _layer_qfunc2(weight, s, r, q, p, set_cnot_wires)
+    _layer_qfunc3(weight, s, r, q, p, set_cnot_wires)
+    _layer_qfunc4(weight, s, r, q, p, set_cnot_wires)
+    _layer_qfunc5(weight, s, r, q, p, set_cnot_wires)
+    _layer_qfunc6(weight, s, r, q, p, set_cnot_wires)
+    _layer_qfunc7(weight, s, r, q, p, set_cnot_wires)
+    _layer_qfunc8(weight, s, r, q, p, set_cnot_wires)
 
 
 add_decomps(FermionicDoubleExcitation, _fermionic_double_excitation_decomopsition)
