@@ -3,6 +3,11 @@
 
 <h3>New features since last release</h3>
 
+* New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
+  :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
+  of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
+  [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
+
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the momentum
   quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.
   [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
@@ -171,6 +176,12 @@
 * `default.qubit` will default to the tree-traversal MCM method when `mcm_method="device"`.
   [(#7885)](https://github.com/PennyLaneAI/pennylane/pull/7885)
 
+* The :func:`~.clifford_t_decomposition` transform can now handle circuits with mid-circuit
+  measurements including Catalyst's measurements operations. It also now handles `RZ` and `PhaseShift`
+  operations where angles are odd multiples of `±pi/4` more efficiently while using `method="gridsynth"`.
+  [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
+  [(#7942)](https://github.com/PennyLaneAI/pennylane/pull/7942)
+
 * The default implementation of `Device.setup_execution_config` now choses `"device"` as the default mcm method if it is available as specified by the device TOML file.
   [(#7968)](https://github.com/PennyLaneAI/pennylane/pull/7968)
 
@@ -215,6 +226,7 @@
   ```
 
   [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
+  [(#7994)](https://github.com/PennyLaneAI/pennylane/pull/7994)
 
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
   PennyLane now depends on the more general `Operator` interface instead. The
@@ -315,6 +327,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Capture does not block `wires=0` anymore. This allows Catalyst to work with zero-wire devices.
+  Note that `wires=None` is still illegal.
+  [(#7978)](https://github.com/PennyLaneAI/pennylane/pull/7978)
+
 * Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
   [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
 
@@ -391,6 +407,9 @@
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes an issue with tree-traversal and non-sequential wire orders.
+  [(#7991)](https://github.com/PennyLaneAI/pennylane/pull/7991)
 
 * Fixes a bug in :func:`~.matrix` where an operator's
   constituents were incorrectly queued if its decomposition was requested.
