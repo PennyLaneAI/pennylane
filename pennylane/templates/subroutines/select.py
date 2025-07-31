@@ -347,20 +347,19 @@ class Select(Operation):
         return {
             "op_reps": op_reps,
             "num_control_wires": len(self.control),
-            "partial": self.hyperparameters["partial"],
+            "partial": self.partial,
         }
 
     def _flatten(self):
         return (self.ops), (
             self.control,
             self.hyperparameters["work_wires"],
-            self.hyperparameters["partial"],
+            self.partial,
         )
 
-    # pylint: disable=arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, ops, control, **kwargs):
-        return super()._primitive_bind_call(*ops, wires=control, **kwargs)
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return cls._primitive.bind(*args, **kwargs)
 
     @classmethod
     def _unflatten(cls, data, metadata) -> "Select":
@@ -403,8 +402,7 @@ class Select(Operation):
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
         new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
         new_work_wires = [wire_map.get(wire, wire) for wire in self.hyperparameters["work_wires"]]
-        new_partial = self.hyperparameters["partial"]
-        return Select(new_ops, new_control, work_wires=new_work_wires, partial=new_partial)
+        return Select(new_ops, new_control, work_wires=new_work_wires, partial=self.partial)
 
     def __copy__(self):
         """Copy this op"""
@@ -457,8 +455,7 @@ class Select(Operation):
          Controlled(Y(2), control_wires=[0, 1], control_values=[True, False]),
          Controlled(SWAP(wires=[2, 3]), control_wires=[0, 1])]
         """
-        partial = self.hyperparameters["partial"]
-        return self.compute_decomposition(self.ops, control=self.control, partial=partial)
+        return self.compute_decomposition(self.ops, control=self.control, partial=self.partial)
 
     # pylint: disable=arguments-differ
     @staticmethod
