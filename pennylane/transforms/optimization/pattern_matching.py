@@ -1517,7 +1517,7 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         template_dag,
         custom_quantum_cost=None,
         allow_phase=False,
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         """
         Initialize TemplateSubstitution with necessary arguments.
         Args:
