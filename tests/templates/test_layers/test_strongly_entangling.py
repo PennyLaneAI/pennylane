@@ -28,12 +28,12 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
-    n_wires = 2
+    num_wires = 2
     weight_shape = (1, 2, 3)
 
     weights = np.random.random(size=weight_shape)
 
-    op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires))
+    op = qml.StronglyEntanglingLayers(weights, wires=range(num_wires))
 
     qml.ops.functions.assert_valid(op)
 
@@ -69,8 +69,8 @@ class TestDecomposition:
         for rule in qml.list_decomps(qml.StronglyEntanglingLayers):
             _test_decomposition_rule(op, rule)
 
-    @pytest.mark.parametrize("n_wires, weight_shape, expected_names, expected_wires", QUEUES)
-    def test_expansion(self, n_wires, weight_shape, expected_names, expected_wires, batch_dim):
+    @pytest.mark.parametrize("num_wires, weight_shape, expected_names, expected_wires", QUEUES)
+    def test_expansion(self, num_wires, weight_shape, expected_names, expected_wires, batch_dim):
         """Checks the queue for the default settings."""
         # pylint: disable=too-many-arguments
 
@@ -78,7 +78,7 @@ class TestDecomposition:
             weight_shape = (batch_dim,) + weight_shape
         weights = np.random.random(size=weight_shape)
 
-        op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires))
+        op = qml.StronglyEntanglingLayers(weights, wires=range(num_wires))
         tape = qml.tape.QuantumScript(op.decomposition())
 
         if batch_dim is None:
@@ -95,20 +95,20 @@ class TestDecomposition:
                 assert gate.batch_size is None
             assert gate.wires.labels == tuple(expected_wires[i])
 
-    @pytest.mark.parametrize("n_layers, n_wires", [(2, 2), (1, 3), (2, 4)])
-    def test_uses_correct_imprimitive(self, n_layers, n_wires, batch_dim):
+    @pytest.mark.parametrize("num_layers, num_wires", [(2, 2), (1, 3), (2, 4)])
+    def test_uses_correct_imprimitive(self, num_layers, num_wires, batch_dim):
         """Test that correct number of entanglers are used in the circuit."""
 
-        shape = (n_layers, n_wires, 3)
+        shape = (num_layers, num_wires, 3)
         if batch_dim is not None:
             shape = (batch_dim,) + shape
         weights = np.random.randn(*shape)
 
-        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), imprimitive=qml.CZ)
+        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(num_wires), imprimitive=qml.CZ)
         ops = op.decomposition()
 
         gate_names = [gate.name for gate in ops]
-        assert gate_names.count("CZ") == n_wires * n_layers
+        assert gate_names.count("CZ") == num_wires * num_layers
 
     def test_custom_wire_labels(self, tol, batch_dim):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -135,29 +135,29 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires, ranges", [(2, 2, [1, 1]), (1, 3, [2]), (4, 4, [2, 3, 1, 3])]
+        "num_layers, num_wires, ranges", [(2, 2, [1, 1]), (1, 3, [2]), (4, 4, [2, 3, 1, 3])]
     )
-    def test_custom_range_sequence(self, n_layers, n_wires, ranges, batch_dim):
+    def test_custom_range_sequence(self, num_layers, num_wires, ranges, batch_dim):
         """Test that correct sequence of custom ranges are used in the circuit."""
 
-        shape = (n_layers, n_wires, 3)
+        shape = (num_layers, num_wires, 3)
         if batch_dim is not None:
             shape = (batch_dim,) + shape
         weights = np.random.randn(*shape)
 
-        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(n_wires), ranges=ranges)
+        op = qml.StronglyEntanglingLayers(weights=weights, wires=range(num_wires), ranges=ranges)
         ops = op.decomposition()
 
         gate_wires = [gate.wires.labels for gate in ops]
         range_idx = 0
         for idx, i in enumerate(gate_wires):
-            if idx % (n_wires * 2) // n_wires == 1:
+            if idx % (num_wires * 2) // num_wires == 1:
                 expected_wire = (
-                    idx % n_wires,
-                    (ranges[range_idx % len(ranges)] + idx % n_wires) % n_wires,
+                    idx % num_wires,
+                    (ranges[range_idx % len(ranges)] + idx % num_wires) % num_wires,
                 )
                 assert i == expected_wire
-                if idx % n_wires == n_wires - 1:
+                if idx % num_wires == num_wires - 1:
                     range_idx += 1
 
 
@@ -177,14 +177,14 @@ class TestDynamicDecomposition:
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         layers = 5
-        n_wires = 3
+        num_wires = 3
         gate_set = None
         imprimitive = qml.CNOT
         max_expansion = 1
 
-        weight_shape = (layers, n_wires, 3)
+        weight_shape = (layers, num_wires, 3)
         weights = np.random.random(size=weight_shape)
-        wires = list(range(n_wires))
+        wires = list(range(num_wires))
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
         def circuit(weights, wires):
@@ -229,7 +229,7 @@ class TestDynamicDecomposition:
 
     @pytest.mark.parametrize("autograph", [True, False])
     @pytest.mark.parametrize(
-        "n_layers, n_wires, ranges",
+        "num_layers, num_wires, ranges",
         [(2, 2, [1, 1]), (1, 3, [2]), (4, 4, [2, 3, 1, 3]), (4, 4, None)],
     )
     @pytest.mark.parametrize("imprimitive", [qml.CNOT, qml.CZ, None])
@@ -238,7 +238,7 @@ class TestDynamicDecomposition:
         "gate_set", [[qml.RX, qml.RY, qml.RZ, qml.CNOT, qml.GlobalPhase], None]
     )
     def test_strongly_entangling_state(
-        self, n_layers, n_wires, ranges, imprimitive, max_expansion, gate_set, autograph
+        self, num_layers, num_wires, ranges, imprimitive, max_expansion, gate_set, autograph
     ):  # pylint:disable=too-many-arguments
         """Test that the StronglyEntanglingLayer gives correct result after dynamic decomposition."""
 
@@ -248,12 +248,12 @@ class TestDynamicDecomposition:
 
         from pennylane.transforms.decompose import DecomposeInterpreter
 
-        weight_shape = (n_layers, n_wires, 3)
+        weight_shape = (num_layers, num_wires, 3)
         weights = np.random.random(size=weight_shape)
-        wires = list(range(n_wires))
+        wires = list(range(num_wires))
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=autograph)
+        @qml.qnode(device=qml.device("default.qubit", wires=num_wires), autograph=autograph)
         def circuit(weights, wires):
             qml.StronglyEntanglingLayers(
                 weights, wires=wires, ranges=ranges, imprimitive=imprimitive
@@ -266,10 +266,10 @@ class TestDynamicDecomposition:
         with qml.capture.pause():
 
             @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
-            @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
+            @qml.qnode(device=qml.device("default.qubit", wires=num_wires), autograph=False)
             def circuit_comparison():
                 qml.StronglyEntanglingLayers(
-                    weights, wires=range(n_wires), ranges=ranges, imprimitive=imprimitive
+                    weights, wires=range(num_wires), ranges=ranges, imprimitive=imprimitive
                 )
                 return qml.state()
 
@@ -329,17 +329,17 @@ class TestAttributes:
     """Tests additional methods and attributes"""
 
     @pytest.mark.parametrize(
-        "n_layers, n_wires, expected_shape",
+        "num_layers, num_wires, expected_shape",
         [
             (2, 3, (2, 3, 3)),
             (2, 1, (2, 1, 3)),
             (2, 2, (2, 2, 3)),
         ],
     )
-    def test_shape(self, n_layers, n_wires, expected_shape):
+    def test_shape(self, num_layers, num_wires, expected_shape):
         """Test that the shape method returns the correct shape of the weights tensor"""
 
-        shape = qml.StronglyEntanglingLayers.shape(n_layers, n_wires)
+        shape = qml.StronglyEntanglingLayers.shape(num_layers, num_wires)
         assert shape == expected_shape
 
 

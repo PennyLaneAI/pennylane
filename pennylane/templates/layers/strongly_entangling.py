@@ -71,7 +71,7 @@ class StronglyEntanglingLayers(Operation):
                 qml.StronglyEntanglingLayers(weights=parameters, wires=range(4))
                 return qml.expval(qml.Z(0))
 
-            shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+            shape = qml.StronglyEntanglingLayers.shape(num_layers=2, num_wires=4)
             weights = np.random.random(size=shape)
 
         The shape of the ``weights`` argument decides the number of layers.
@@ -109,7 +109,7 @@ class StronglyEntanglingLayers(Operation):
                 qml.StronglyEntanglingLayers(weights=parameters, wires=range(4), ranges=[2, 3], imprimitive=qml.ops.CZ)
                 return qml.expval(qml.Z(0))
 
-            shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
+            shape = qml.StronglyEntanglingLayers.shape(num_layers=2, num_wires=4)
             weights = np.random.random(size=shape)
 
         The resulting circuit is:
@@ -131,14 +131,14 @@ class StronglyEntanglingLayers(Operation):
 
         .. code-block:: python
 
-            shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
+            shape = qml.StronglyEntanglingLayers.shape(num_layers=2, num_wires=2)
             weights = np.random.random(size=shape)
 
     """
 
     grad_method = None
 
-    resource_keys = {"imprimitive", "n_wires", "n_layers"}
+    resource_keys = {"imprimitive", "num_wires", "num_layers"}
 
     def __init__(self, weights, wires, ranges=None, imprimitive=None, id=None):
         shape = math.shape(weights)[-3:]
@@ -155,7 +155,7 @@ class StronglyEntanglingLayers(Operation):
 
         if ranges is None:
             if len(wires) > 1:
-                # tile ranges with iterations of range(1, n_wires)
+                # tile ranges with iterations of range(1, num_wires)
                 ranges = tuple((l % (len(wires) - 1)) + 1 for l in range(shape[0]))
             else:
                 ranges = (0,) * shape[0]
@@ -177,8 +177,8 @@ class StronglyEntanglingLayers(Operation):
     def resource_params(self) -> dict:
         return {
             "imprimitive": self.hyperparameters["imprimitive"],
-            "n_wires": len(self.wires),
-            "n_layers": math.shape(self.data)[-3],
+            "num_wires": len(self.wires),
+            "num_layers": math.shape(self.data)[-3],
         }
 
     @property
@@ -215,11 +215,11 @@ class StronglyEntanglingLayers(Operation):
         CNOT(wires=['a', 'a']),
         CNOT(wires=['b', 'b'])]
         """
-        n_layers = math.shape(weights)[-3]
+        num_layers = math.shape(weights)[-3]
         wires = Wires(wires)
         op_list = []
 
-        for l in range(n_layers):
+        for l in range(num_layers):
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
                 op_list.append(
                     Rot(
@@ -238,18 +238,18 @@ class StronglyEntanglingLayers(Operation):
         return op_list
 
     @staticmethod
-    def shape(n_layers, n_wires):
+    def shape(num_layers, num_wires):
         r"""Returns the expected shape of the weights tensor.
 
         Args:
-            n_layers (int): number of layers
-            n_wires (int): number of wires
+            num_layers (int): number of layers
+            num_wires (int): number of wires
 
         Returns:
             tuple[int]: shape
         """
 
-        return n_layers, n_wires, 3
+        return num_layers, num_wires, 3
 
     # pylint:disable = no-value-for-parameter
     @staticmethod
@@ -259,13 +259,13 @@ class StronglyEntanglingLayers(Operation):
         wires = math.array(wires, like="jax")
         ranges = math.array(ranges, like="jax")
 
-        n_wires = len(wires)
-        n_layers = weights.shape[0]
+        num_wires = len(wires)
+        num_layers = weights.shape[0]
 
-        @for_loop(n_layers)
+        @for_loop(num_layers)
         def layers(l):
 
-            @for_loop(n_wires)
+            @for_loop(num_wires)
             def rot_loop(i):
                 Rot(
                     weights[l, i, 0],
@@ -276,9 +276,9 @@ class StronglyEntanglingLayers(Operation):
 
             def imprim_true():
 
-                @for_loop(n_wires)
+                @for_loop(num_wires)
                 def imprimitive_loop(i):
-                    act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
+                    act_on = math.array([i, i + ranges[l]], like="jax") % num_wires
                     imprimitive(wires=wires[act_on])
 
                 imprimitive_loop()
@@ -287,17 +287,17 @@ class StronglyEntanglingLayers(Operation):
                 pass
 
             rot_loop()
-            cond(n_wires > 1, imprim_true, imprim_false)()
+            cond(num_wires > 1, imprim_true, imprim_false)()
 
         layers()
 
 
-def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
+def _strongly_entangling_resources(imprimitive, num_wires, num_layers):
     resources = {}
 
-    resources[Rot] = n_wires * n_layers
-    if n_wires > 1:
-        resources[imprimitive] = n_wires * n_layers
+    resources[Rot] = num_wires * num_layers
+    if num_wires > 1:
+        resources[imprimitive] = num_wires * num_layers
 
     return resources
 
@@ -305,11 +305,11 @@ def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
 @register_resources(_strongly_entangling_resources)
 def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
 
-    n_wires = len(wires)
-    n_layers = weights.shape[0]
+    num_wires = len(wires)
+    num_layers = weights.shape[0]
 
-    for l in range(n_layers):
-        for j in range(n_wires):
+    for l in range(num_layers):
+        for j in range(num_wires):
             Rot(
                 weights[l, j, 0],
                 weights[l, j, 1],
@@ -317,9 +317,9 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
                 wires=wires[j],
             )
 
-        if n_wires > 1:
-            for i in range(n_wires):
-                act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
+        if num_wires > 1:
+            for i in range(num_wires):
+                act_on = math.array([i, i + ranges[l]], like="jax") % num_wires
                 imprimitive(wires=wires[act_on])
 
 
