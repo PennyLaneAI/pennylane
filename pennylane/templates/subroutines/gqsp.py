@@ -17,6 +17,8 @@ Contains the GQSP template.
 
 import copy
 
+from pennylane.control_flow import for_loop
+
 from pennylane import ops
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.operation import Operation
@@ -208,13 +210,20 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
     ops.X(control)
     ops.Z(control)
 
-    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
+    @for_loop(1, min(len(thetas), len(phis), len(lambds)))
+    def loop_over_angles(i):
+        theta = thetas[i]
+        phi = phis[i]
+        lamb = lambds[i]
+
         ops.Controlled(unitary, control_wires=[control], control_values=[0])
 
         ops.X(control)
         ops.U3(2 * theta, phi, lamb, wires=control)
         ops.X(control)
         ops.Z(control)
+
+    loop_over_angles()
 
 
 add_decomps(GQSP, _GQSP_decomposition)
