@@ -82,7 +82,7 @@ class FTQCQubit(Device):
         # validate that conversion didn't use too many wires
         program.add_transform(
             validate_device_wires,
-            wires=self.backend.max_wires,
+            wires=self.backend.wires,
             name=f"{self.name}.{self.backend.name}",
         )
 
@@ -145,7 +145,7 @@ class LightningQubitBackend:
 
     def __init__(self):
         self.diagonalize_mcms = True
-        self.max_wires = qml.wires.Wires(range(25))
+        self.wires = qml.wires.Wires(range(25))
         self.device = qml.device("lightning.qubit")
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
@@ -163,7 +163,7 @@ class NullQubitBackend:
 
     def __init__(self):
         self.diagonalize_mcms = False
-        self.max_wires = qml.wires.Wires(range(1000))
+        self.wires = qml.wires.Wires(range(1000))
         self.device = qml.device("null.qubit")
 
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
