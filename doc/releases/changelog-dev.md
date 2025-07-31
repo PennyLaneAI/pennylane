@@ -1,4 +1,3 @@
-
 # Release 0.43.0-dev (development release)
 
 <h3>New features since last release</h3>
@@ -32,6 +31,11 @@
   0: ──S─╭●─────────────────┤  State
   1: ────╰X──H──RZ(1.00)──H─┤  State
   ```
+
+* New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
+  :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
+  of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
+  [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
 
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the momentum
   quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.
@@ -344,6 +348,10 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Capture does not block `wires=0` anymore. This allows Catalyst to work with zero-wire devices.
+  Note that `wires=None` is still illegal.
+  [(#7978)](https://github.com/PennyLaneAI/pennylane/pull/7978)
 
 * Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
   [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)

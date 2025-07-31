@@ -51,18 +51,22 @@ A set of transforms to perform basic circuit compilation tasks.
 
     ~compile
     ~transforms.cancel_inverses
+    ~transforms.combine_global_phases
     ~transforms.commute_controlled
-    ~transforms.merge_rotations
-    ~transforms.single_qubit_fusion
-    ~transforms.unitary_to_rot
+    ~transforms.decompose
     ~transforms.merge_amplitude_embedding
-    ~transforms.remove_barrier
-    ~transforms.undo_swaps
+    ~transforms.merge_rotations
     ~transforms.pattern_matching_optimization
+    ~transforms.remove_barrier
+    ~transforms.match_relative_phase_toffoli
+    ~transforms.match_controlled_iX_gate
+    ~transforms.single_qubit_fusion
     ~transforms.transpile
     ~transforms.decompose
     ~transforms.combine_global_phases
     ~transforms.zx_full_reduce
+    ~transforms.undo_swaps
+    ~transforms.unitary_to_rot
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -312,6 +316,8 @@ from .optimization import (
     undo_swaps,
     pattern_matching,
     pattern_matching_optimization,
+    match_controlled_iX_gate,
+    match_relative_phase_toffoli,
 )
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
