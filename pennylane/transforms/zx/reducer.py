@@ -39,11 +39,11 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         - convert the quantum circuit into the corresponding ``pyzx`` graph;
 
         - apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
-        optimization pass to the ``pyzx`` graph;
+          optimization pass to the ``pyzx`` graph;
 
         - use `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__ and
-        apply the `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass
-        to the extracted ``pyzx`` circuit;
+          apply the `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass
+          to the extracted ``pyzx`` circuit;
 
         - build a new simplified ``pyzx`` graph and convert it back to its quantum circuit representation.
 
