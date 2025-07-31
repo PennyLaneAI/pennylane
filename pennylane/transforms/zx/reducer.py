@@ -99,7 +99,8 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
         - Aleks Kissinger, John van de Wetering (2020), "Reducing T-count with the ZX-calculus", <https://arxiv.org/abs/1903.10477>.
 
-    For the list of ZX calculus-based simplification rules implemented in ``pyzx``, see the online documentation: https://pyzx.readthedocs.io/en/latest/api.html#list-of-simplifications
+    For the list of ZX calculus-based simplification rules implemented in ``pyzx``, see the 
+    `online documentation <https://pyzx.readthedocs.io/en/latest/api.html#list-of-simplifications>`__
     """
 
     if not has_pyzx:  # pragma: no cover
