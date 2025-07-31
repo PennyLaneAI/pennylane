@@ -58,6 +58,12 @@ backend = "qasm_simulator"
 """
 
 
+def load_toml_file(file_path: str) -> dict:
+    """Loads a TOML file and returns the parsed dict."""
+    with open(file_path, encoding="utf-8") as file:
+        return toml.load(file)
+
+
 @pytest.fixture(scope="function", name="default_config")
 def default_config_fixture(tmpdir):
     config_path = os.path.join(tmpdir, config_filename)
@@ -75,7 +81,7 @@ def default_config_toml_fixture(tmpdir):
     with open(config_path, "w", encoding="utf-8") as f:
         f.write(test_config)
 
-    return toml.load(config_path), config_path
+    return load_toml_file(config_path), config_path
 
 
 class TestConfigurationFileInteraction:
@@ -134,7 +140,7 @@ class TestConfigurationFileInteraction:
         temp_config_path = tmp_path / "test_config.toml"
         config.save(temp_config_path)
 
-        result = toml.load(temp_config_path)
+        result = load_toml_file(temp_config_path)
         assert config._config == result
 
 
