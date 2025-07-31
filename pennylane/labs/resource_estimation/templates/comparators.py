@@ -28,8 +28,8 @@ from pennylane.labs.resource_estimation.resource_operator import (
 class ResourceSingleQubitComparator(ResourceOperator):
     r"""Resource class for comparing the values encoded in two input qubits.
 
-    Note that the input qubits are modified, and their original values can be restored
-    by applying the adjoint of this operation.
+    Note that this operation modifies the input qubits, and their original values can be restored
+    by applying its adjoint.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
@@ -126,7 +126,7 @@ class ResourceTwoQubitComparator(ResourceOperator):
     r"""Resource class for comparing the integer values encoded in
     two quantum registers of two qubits each.
 
-    The input registers are modified by this operation, and their
+    Note that the input registers are modified by this operation, and their
     original values can be restored by applying its adjoint.
 
     Args:
@@ -463,10 +463,6 @@ class ResourceRegisterComparator(ResourceOperator):
     where :math:`a` and :math:`b` are positive
     integers, a target qubit is flipped if
     :math:`a \geq b`. Alternatively, the flipping condition can be :math:`a \lt b`.
-
-    This operation provides the cost for implementing a comparison between two
-    integer values encoded in quantum registers. The comparison result is stored in
-    an additional qubit and the original registers are returned in the same state.
 
     Args:
         first_register (int): the size of the first register
