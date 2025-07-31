@@ -220,6 +220,7 @@
   ```
 
   [(#7928)](https://github.com/PennyLaneAI/pennylane/pull/7928)
+  [(#)]()
 
 * `qml.operation.Observable` and the corresponding `Observable.compare` have been removed, as
   PennyLane now depends on the more general `Operator` interface instead. The
