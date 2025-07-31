@@ -17,7 +17,7 @@ Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 import os
 
 import pytest
-import toml
+import tomlkit as toml
 
 import pennylane as qml
 from pennylane import Configuration
