@@ -672,10 +672,8 @@ class TestReducerZX:
         assert new_qs.operations[2] == qml.H(0)
 
         new_angle = rot.parameters[0]
-        # if the expected total angle is negative add 2π
-        exp_angle = np.sum(params)
-        if exp_angle < 0:
-            exp_angle += 2 * np.pi
+        exp_angle = np.mod(np.sum(params), 2 * np.pi)
+
         assert np.isclose(new_angle, exp_angle)
 
     @pytest.mark.parametrize(
@@ -702,10 +700,8 @@ class TestReducerZX:
         assert new_qs.operations[4] == qml.adjoint(qml.S(0))
 
         new_angle = rot.parameters[0]
-        # if the expected total angle is negative add 2π
-        exp_angle = np.sum(params)
-        if exp_angle < 0:
-            exp_angle += 2 * np.pi
+        exp_angle = np.mod(np.sum(params), 2 * np.pi)
+
         assert np.isclose(new_angle, 2 * np.pi - exp_angle)
 
     @pytest.mark.parametrize(
@@ -728,10 +724,8 @@ class TestReducerZX:
         assert isinstance(rot, qml.RZ)
 
         new_angle = rot.parameters[0]
-        # if the expected total angle is negative add 2π
-        exp_angle = np.sum(params)
-        if exp_angle < 0:
-            exp_angle += 2 * np.pi
+        exp_angle = np.mod(np.sum(params), 2 * np.pi)
+
         assert np.isclose(new_angle, exp_angle)
 
     def test_transformed_tape(self):
