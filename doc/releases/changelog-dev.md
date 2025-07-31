@@ -401,7 +401,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes an issue with tree-traversal and non-standard wire orders.
+* Fixes an issue with tree-traversal and non-sequential wire orders.
   [(#7991)](https://github.com/PennyLaneAI/pennylane/pull/7991)
 
 * Fixes a bug in :func:`~.matrix` where an operator's
