@@ -389,10 +389,6 @@ def is_abstract(tensor, like=None):
 
     .. code-block:: python
 
-        from pennylane.exceptions import PennyLaneDeprecationWarning, _TF_DEPRECATION_MSG
-        import warnings
-
-        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
 
         def function(x):

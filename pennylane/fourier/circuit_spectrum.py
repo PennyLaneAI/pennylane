@@ -168,10 +168,6 @@ def circuit_spectrum(
 
     .. code-block:: python
 
-        from pennylane.exceptions import PennyLaneDeprecationWarning, _TF_DEPRECATION_MSG
-        import warnings
-
-        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
 
         dev = qml.device("default.qubit", wires=1)
