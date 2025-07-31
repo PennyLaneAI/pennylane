@@ -3,6 +3,10 @@
 TensorFlow interface
 =====================
 
+.. warning::
+    This interface is deprecated and will be removed in a future release.
+    Please use the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` interface instead.
+
 In order to use PennyLane in combination with TensorFlow, we have to generate TensorFlow-compatible
 quantum nodes. Such a QNode can be created explicitly using the ``interface='tf'`` keyword in the
 QNode decorator or QNode class constructor.
