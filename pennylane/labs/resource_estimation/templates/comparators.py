@@ -28,13 +28,12 @@ from pennylane.labs.resource_estimation.resource_operator import (
 class ResourceSingleQubitCompare(ResourceOperator):
     r"""Resource class for comparing two qubits.
 
-    This operation provides the cost for implementing a comparison between two qubits, :math:`x`
-    and :math:`y`. The comparison result is stored on three qubits: the second qubit stores :math:`x=y`,
-    and the two additional qubits initialized to the state :math:`|0\rangle`
-    store :math:`x \lt y` and :math:`x \gt y`, respectively.
-
-    The input registers get modified here, and can be reset to their original values by using the
-    adjoint of this operation.
+    This operation computes a comparison between two input qubits.
+    It utilizes 4 qubits: two inputs and two ancilla qubits initialized to
+    the :math:`|0\rangle` state. The comparison outcome is encoded on the last three
+    qubits, representing equality, 'less than', and 'greater than' relations respectively.
+    Note that the input qubits are modified, and their original values can be restored
+    by applying the adjoint of this operation.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
@@ -44,7 +43,7 @@ class ResourceSingleQubitCompare(ResourceOperator):
         <https://arxiv.org/pdf/1711.10460>`_. Specifically,
         the resources are given as :math:`1` ``TempAND`` gate, :math:`4` ``CNOT`` gates,
         and :math:`3` ``X`` gates.
-        The circuit which applies the comparison operation on wires :math:`(x,y)` is
+        The circuit which applies the comparison operation on qubits :math:`(x,y)` is
         defined as:
 
         .. code-block:: bash
@@ -130,12 +129,10 @@ class ResourceSingleQubitCompare(ResourceOperator):
 class ResourceTwoQubitCompare(ResourceOperator):
     r"""Resource class for comparing two quantum registers of two qubits each.
 
-    This operation provides the cost for implementing a comparison between two quantum registers of
-    two qubits each. This circuit takes a pair of 2-bit integers, and outputs a pair of single bits such
-    that they preserve the inequality of the input integers.
-
-    The input registers get modified here, and can be reset to their original values by using the
-    adjoint of this operation.
+    This operation computes a comparison between two 2-qubit quantum registers,
+    representing a pair of 2-bit integers. It outputs a pair of single bits that
+    preserve the inequality of the input integers. The input registers are modified
+    by this operation, and their original values can be restored by applying its adjoint.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
@@ -200,7 +197,6 @@ class ResourceTwoQubitCompare(ResourceOperator):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
-
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
             <https://arxiv.org/pdf/1711.10460>`_. Specifically,
@@ -238,8 +234,10 @@ class ResourceTwoQubitCompare(ResourceOperator):
 class ResourceIntegerComparator(ResourceOperator):
     r"""Resource class for comparing a state to a positive integer.
 
-    This operation provides the cost for comparing a basis state, :code:`x`, and a fixed positive integer, :code:`val`.
-    It flips a target qubit if :math:`x \geq val` or :math:`x \lt val`, depending on the parameter :code:`geq`.
+    This operation provides the cost for implementing a comparison between
+    an integer value encoded in quantum register with a given positive integer.
+    The comparison result is stored in an additional qubit, and the original
+    register is returned in the same state.
 
     Args:
         val (int): the integer to be compared against
@@ -252,14 +250,14 @@ class ResourceIntegerComparator(ResourceOperator):
         This decomposition uses the minimum number of ``MultiControlledX`` gates.
         The given integer is first converted into its binary representation, and compared to the quantum register
         iteratively, starting with the most significant bit, and progressively including more qubits.
-        For example, when :code:`geq` is `False`, :code:`val` is :math:`22` (Binary :math:`010110`), and
+        For example, when :code:`geq` is ``False``, :code:`val` is :math:`22` (Binary :math:`010110`), and
         :code:`num_wires` is :math:`6`:
 
         - Evaluating most significant bit: For all :math:`6`-bit number where the first two control qubits
-          are in the :math:`00` state, :math:`x \lt 22` condition is always `True`. A ``MultiControlledX`` gate
+          are in the :math:`00` state, :math:`x \lt 22` condition is always ``True``. A ``MultiControlledX`` gate
           can be applied with these two wires as controls and control values corresponding to :math:`00`.
         - Refining with subsequent bits: Considering the next most significant bit, since the target value
-          begins with :math:`0101`. Therefore, all :math:`6`-bit numbers begining with :math:`0100` will
+          begins with :math:`0101`. Therefore, all :math:`6`-bit numbers beginning with :math:`0100` will
           satisfy the condition, so a ``MultiControlledX`` gate can
           be applied with the first four wires as controls and control values corresponding to :math:`0100`.
         - This iterative procedure continues, with ``MultiControlledX`` gates being added for each significant bit of
@@ -347,14 +345,14 @@ class ResourceIntegerComparator(ResourceOperator):
             This decomposition uses the minimum number of ``MultiControlledX`` gates.
             The given integer is first converted into its binary representation, and compared to the quantum register
             iteratively, starting with the most significant bit, and progressively including more qubits.
-            For example, when :code:`geq` is `False`, :code:`val` is :math:`22` (Binary :math:`010110`), and
+            For example, when :code:`geq` is ``False``, :code:`val` is :math:`22` (Binary :math:`010110`), and
             :code:`num_wires` is :math:`6`:
 
             - Evaluating most significant bit: For all :math:`6`-bit number where the first two control qubits
-              are in the :math:`00` state, :math:`x \lt 22` condition is always `True`. A ``MultiControlledX`` gate
+              are in the :math:`00` state, :math:`x \lt 22` condition is always ``True``. A ``MultiControlledX`` gate
               can be applied with these two wires as controls and control values corresponding to :math:`00`.
             - Refining with subsequent bits: Considering the next most significant bit, since the target value
-              begins with :math:`0101`. Therefore, all :math:`6`-bit numbers begining with :math:`0100` will
+              begins with :math:`0101`. Therefore, all :math:`6`-bit numbers beginning with :math:`0100` will
               satisfy the condition, so a ``MultiControlledX`` gate can
               be applied with the first four wires as controls and control values corresponding to :math:`0100`.
             - This iterative procedure continues, with ``MultiControlledX`` gates being added for each significant bit of
