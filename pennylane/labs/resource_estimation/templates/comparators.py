@@ -26,9 +26,8 @@ from pennylane.labs.resource_estimation.resource_operator import (
 
 
 class ResourceSingleQubitComparator(ResourceOperator):
-    r"""Resource class for comparing two qubits.
+    r"""Resource class for comparing the values encoded in two input qubits.
 
-    This operation computes a comparison between the values encoded in two input qubits.
     Note that the input qubits are modified, and their original values can be restored
     by applying the adjoint of this operation.
 
@@ -124,11 +123,11 @@ class ResourceSingleQubitComparator(ResourceOperator):
 
 
 class ResourceTwoQubitComparator(ResourceOperator):
-    r"""Resource class for comparing two quantum registers of two qubits each.
+    r"""Resource class for comparing the integer values encoded in
+    two quantum registers of two qubits each.
 
-    This operation computes a comparison between the integer values encoded in
-    two quantum registers of two qubits each. The input registers are modified
-    by this operation, and their original values can be restored by applying its adjoint.
+    The input registers are modified by this operation, and their
+    original values can be restored by applying its adjoint.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
@@ -228,13 +227,12 @@ class ResourceTwoQubitComparator(ResourceOperator):
 
 
 class ResourceIntegerComparator(ResourceOperator):
-    r"""Resource class for comparing a state to a positive integer.
+    r"""Resource class for comparing the integer value encoded in a quantum register to a positive integer.
 
     This operation applies a controlled Pauli X gate using integer comparison as the condition.
-
     Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive
     integer, and a fixed positive integer :math:`L`, a target qubit is flipped if
-    :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n < L`.
+    :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n \lt L`.
 
     Args:
         value (int): The value :math:`L` that the state’s decimal representation is compared against.
@@ -458,7 +456,13 @@ class ResourceIntegerComparator(ResourceOperator):
 
 
 class ResourceRegisterComparator(ResourceOperator):
-    r"""Resource class for comparing two quantum registers of any size.
+    r"""Resource class for comparing the integer values encoded in two quantum registers of any size.
+
+    This operation applies a controlled Pauli X gate using register comparison as the condition.
+    Given the basis states :math:`\vert a \rangle`, and  :math:`\vert a \rangle`,
+    where :math:`a` and :math:`b` are positive
+    integers, a target qubit is flipped if
+    :math:`a \geq b`. Alternatively, the flipping condition can be :math:`a \lt b`.
 
     This operation provides the cost for implementing a comparison between two
     integer values encoded in quantum registers. The comparison result is stored in
