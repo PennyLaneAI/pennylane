@@ -600,9 +600,10 @@ class Controlled(SymbolicOp):
             )
 
         if work_wire_type in ("clean", "dirty"):
-            raise PennyLaneDeprecationWarning(
+            warnings.warn(
                 "Specifying work_wire_type as 'clean' or 'dirty' is deprecated, "
-                "use 'zeroed' or 'borrowed' instead."
+                "use 'zeroed' or 'borrowed' instead.",
+                PennyLaneDeprecationWarning,
             )
             work_wire_type = "zeroed" if work_wire_type == "clean" else "borrowed"
 
