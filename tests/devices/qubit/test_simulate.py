@@ -1660,3 +1660,11 @@ class TestMidMeasurements:
         tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(2))])
         res = simulate_tree_mcm(tape)
         assert qml.math.allclose(res, 0)
+
+    def test_measurement_on_non_op_wire(self):
+        """Test that we can measure wires not present in the circuit."""
+
+        ops = [qml.measurements.MidMeasureMP(wires=0)]
+        tape = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1, 2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, np.array([1, 0, 0, 0, 0, 0, 0, 0]))
