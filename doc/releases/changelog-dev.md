@@ -3,6 +3,11 @@
 
 <h3>New features since last release</h3>
 
+* New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
+  :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
+  of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
+  [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
+
 * Leveraging quantum just-in-time compilation to optimize parameterized hybrid workflows with the momentum
   quantum natural gradient optimizer is now possible with the new :class:`~.MomentumQNGOptimizerQJIT` optimizer.
   [(#7606)](https://github.com/PennyLaneAI/pennylane/pull/7606)
@@ -52,6 +57,7 @@
   manner.
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
   [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
+  [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   
   The included templates are:
 
@@ -61,6 +67,10 @@
   
   * :class:`~.ModExp`
 
+  * :class:`~.MottonenStatePreparation`
+
+  * :class:`~.MPSPrep`
+
   * :class:`~.Multiplier`
 
   * :class:`~.OutAdder`
@@ -69,11 +79,17 @@
 
   * :class:`~.OutPoly`
 
+  * :class:`~.PrepSelPrep`
+
+  * :class:`~.ops.Prod`
+
   * :class:`~.Reflection`
 
-  * :class:`~.TrotterProduct`
+  * :class:`~.Select`
 
-  * :class:`~.MPSPrep`
+  * :class:`~.StatePrep`
+
+  * :class:`~.TrotterProduct`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
@@ -109,7 +125,6 @@
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
   [(#7678)](https://github.com/PennyLaneAI/pennylane/pull/7678)
-
 
 * The :func:`qml.workflow.set_shots` transform can now be directly applied to a QNode without the need for `functools.partial`, providing a more user-friendly syntax and negating having to import the `functools` package.
   [(#7876)](https://github.com/PennyLaneAI/pennylane/pull/7876)
@@ -177,6 +192,10 @@
 
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
+
+* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
+  instantiation of resource operators which require resource operators as input.
+  [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
 
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
@@ -302,8 +321,15 @@
 <h3>Internal changes ⚙️</h3>
 
 * Equipped `DefaultQubitLegacy` (test suite only) with seeded sampling.
-  This allows for reproducible sampling results across CI.
+  This allows for reproducible sampling results of legacy classical shadow across CI.
   [(#7903)](https://github.com/PennyLaneAI/pennylane/pull/7903)
+
+* Capture does not block `wires=0` anymore. This allows Catalyst to work with zero-wire devices.
+  Note that `wires=None` is still illegal.
+  [(#7978)](https://github.com/PennyLaneAI/pennylane/pull/7978)
+
+* Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
+  [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
 
 * Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
   PennyLane submodules.
@@ -317,6 +343,7 @@
 
 * Refactored the codebase to adopt modern type hint syntax for Python 3.11+ language features.
   [(#7860)](https://github.com/PennyLaneAI/pennylane/pull/7860)
+  [(#7982)](https://github.com/PennyLaneAI/pennylane/pull/7982)
 
 * Improve the pre-commit hook to add gitleaks.
   [(#7922)](https://github.com/PennyLaneAI/pennylane/pull/7922)
@@ -378,6 +405,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes an issue with tree-traversal and non-sequential wire orders.
+  [(#7991)](https://github.com/PennyLaneAI/pennylane/pull/7991)
+
+* Fixes a bug in :func:`~.matrix` where an operator's
+  constituents were incorrectly queued if its decomposition was requested.
+  [(#7975)](https://github.com/PennyLaneAI/pennylane/pull/7975)
+
 * An error is now raised if an `end` statement is found in a measurement conditioned branch in a QASM string being imported into PennyLane.
   [(#7872)](https://github.com/PennyLaneAI/pennylane/pull/7872)
 
@@ -420,4 +454,5 @@ Mudit Pandey,
 Andrija Paurevic,
 Shuli Shu,
 Jay Soni,
+David Wierichs,
 Jake Zaia
