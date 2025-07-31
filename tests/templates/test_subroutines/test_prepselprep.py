@@ -61,35 +61,22 @@ def test_repr():
         )
 
 
-def _get_new_terms(lcu):
-    """Compute a new sum of unitaries with positive coefficients"""
-
-    new_coeffs = []
-    new_ops = []
-
-    for coeff, op in zip(*lcu.terms()):
-
-        angle = qml.math.angle(coeff)
-        new_coeffs.append(qml.math.abs(coeff))
-
-        new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
-        new_ops.append(new_op)
-
-    interface = qml.math.get_interface(lcu.terms()[0])
-    new_coeffs = qml.math.array(new_coeffs, like=interface)
-
-    return new_coeffs, new_ops
-
-
 # Use these circuits in tests
 def manual_circuit(lcu, control):
     """Circuit equivalent to decomposition of PrepSelPrep"""
-    coeffs, ops = _get_new_terms(lcu)
+    coeffs, ops = lcu.terms()
 
-    qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
+    qml.AmplitudeEmbedding(
+        qml.math.exp(1j * qml.math.angle(coeffs)) * qml.math.sqrt(qml.math.abs(coeffs)),
+        normalize=True,
+        pad_with=0,
+        wires=control,
+    )
     qml.Select(ops, control=control)
     qml.adjoint(
-        qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
+        qml.AmplitudeEmbedding(
+            qml.math.sqrt(qml.math.abs(coeffs)), normalize=True, pad_with=0, wires=control
+        )
     )
 
     return qml.state()
@@ -227,14 +214,14 @@ class TestPrepSelPrep:
         prepselprep = qml.QNode(prepselprep_circuit, dev)
         matrix = qml.matrix(lcu)
 
-        coeffs, _ = _get_new_terms(lcu)
-        normalization_factor = qml.math.sum(coeffs)
+        coeffs, _ = lcu.terms()
+        normalization_factor = qml.math.sum(qml.math.abs(coeffs))
         block_encoding = qml.matrix(prepselprep, wire_order=wire_order)(lcu, control=control)
 
         assert qml.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
     lcu1 = qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)])
-    ops1 = [qml.Z(2) @ qml.GlobalPhase(0), (qml.X(1) @ qml.X(2)) @ qml.GlobalPhase(0)]
+    ops1 = [qml.Z(2), (qml.X(1) @ qml.X(2))]
     coeffs1 = lcu1.terms()[0]
 
     @pytest.mark.parametrize(
@@ -245,7 +232,10 @@ class TestPrepSelPrep:
                 [0],
                 [
                     qml.AmplitudeEmbedding(
-                        qml.math.sqrt(coeffs1), normalize=True, pad_with=0, wires=[0]
+                        qml.math.exp(1j * qml.math.angle(coeffs1)) * qml.math.sqrt(coeffs1),
+                        normalize=True,
+                        pad_with=0,
+                        wires=[0],
                     ),
                     qml.Select(ops1, control=[0]),
                     qml.ops.Adjoint(
@@ -360,14 +350,13 @@ class TestPrepSelPrep:
         """Test that the decomposition is registered into the new pipeline."""
 
         ops = [qml.X(0), qml.X(1), qml.X(0) @ qml.Y(1)]
-        grep = qml.resource_rep(qml.GlobalPhase)
         xrep = qml.resource_rep(qml.X)
         yrep = qml.resource_rep(qml.Y)
         prodrep = qml.resource_rep(qml.ops.Prod, resources={xrep: 1, yrep: 1})
         op_reps = (
-            qml.resource_rep(qml.ops.Prod, resources={grep: 1, xrep: 1}),
-            qml.resource_rep(qml.ops.Prod, resources={grep: 1, xrep: 1}),
-            qml.resource_rep(qml.ops.Prod, resources={grep: 1, prodrep: 1}),
+            qml.resource_rep(qml.ops.Prod, resources={xrep: 1}),
+            qml.resource_rep(qml.ops.Prod, resources={xrep: 1}),
+            qml.resource_rep(qml.ops.Prod, resources={prodrep: 1}),
         )
         lcu = qml.dot([1, 4, 9], ops)
         op = qml.PrepSelPrep(lcu, (3, 4))
@@ -393,11 +382,9 @@ class TestPrepSelPrep:
 
         q = q.queue
 
-        phase_ops = [qml.prod(op, qml.GlobalPhase(0, wires=op.wires)) for op in ops]
-
         prep = qml.StatePrep(np.array([1, 2, 3]), normalize=True, pad_with=0, wires=(3, 4))
         qml.assert_equal(q[0], prep)
-        qml.assert_equal(q[1], qml.Select(phase_ops, (3, 4)))
+        qml.assert_equal(q[1], qml.Select(ops, (3, 4)))
         qml.assert_equal(q[2], qml.adjoint(prep))
 
 

@@ -32,17 +32,6 @@ from pennylane.wires import Wires
 from .select import Select
 
 
-def _get_new_terms(lcu):
-    """Compute a new sum of unitaries with positive coefficients"""
-    coeffs, ops = lcu.terms()
-    coeffs = math.stack(coeffs)
-    angles = math.angle(coeffs)
-    # The following will produce a nested `Prod` object for a `Prod` object in`ops`
-    new_ops = [prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops)]
-
-    return math.abs(coeffs), new_ops
-
-
 class PrepSelPrep(Operation):
     """Implements a block-encoding of a linear combination of unitaries.
 
@@ -148,13 +137,20 @@ class PrepSelPrep(Operation):
 
     @staticmethod
     def compute_decomposition(lcu, control):
-        coeffs, ops = _get_new_terms(lcu)
+        coeffs, ops = lcu.terms()
 
         decomp_ops = [
-            AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
+            AmplitudeEmbedding(
+                math.exp(1j * math.angle(coeffs)) * math.sqrt(math.abs(coeffs)),
+                normalize=True,
+                pad_with=0,
+                wires=control,
+            ),
             Select(ops, control),
             adjoint(
-                AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
+                AmplitudeEmbedding(
+                    math.sqrt(math.abs(coeffs)), normalize=True, pad_with=0, wires=control
+                )
             ),
         ]
 
@@ -217,9 +213,7 @@ class PrepSelPrep(Operation):
 
 
 def _prepselprep_resources(op_reps, num_control):
-    prod_reps = tuple(
-        resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
-    )
+    prod_reps = tuple(resource_rep(Prod, resources={rep: 1}) for rep in op_reps)
     return {
         resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control): 1,
         resource_rep(StatePrep, num_wires=num_control): 1,
@@ -230,9 +224,11 @@ def _prepselprep_resources(op_reps, num_control):
 # pylint: disable=unused-argument, too-many-arguments
 @register_resources(_prepselprep_resources)
 def _prepselprep_decomp(*_, wires, lcu, coeffs, ops, control, target_wires):
-    coeffs, ops = _get_new_terms(lcu)
-    sqrt_coeffs = math.sqrt(coeffs)
-    StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control)
+    coeffs, ops = lcu.terms()
+    sqrt_coeffs = math.sqrt(math.abs(coeffs))
+    StatePrep(
+        math.exp(1j * math.angle(coeffs)) * sqrt_coeffs, normalize=True, pad_with=0, wires=control
+    )
     Select(ops, control)
     adjoint(StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control))
 
