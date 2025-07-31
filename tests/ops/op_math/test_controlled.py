@@ -204,9 +204,9 @@ class TestControlledInit:
     @pytest.mark.parametrize("old_name, new_name", [("clean", "zeroed"), ("dirty", "borrowed")])
     def test_old_work_wire_type_deprecated(self, old_name, new_name):
         """Tests that specifying work_wire_type as 'clean' or 'dirty' is deprecated"""
-        with pytest.raises(PennyLaneDeprecationWarning, match="work_wire_type"):
+        with pytest.warns(PennyLaneDeprecationWarning, match="work_wire_type"):
             op = Controlled(self.temp_op, "b", work_wires="c", work_wire_type=old_name)
-            assert op.work_wire_type == new_name
+        assert op.work_wire_type == new_name
 
 
 class TestControlledProperties:
