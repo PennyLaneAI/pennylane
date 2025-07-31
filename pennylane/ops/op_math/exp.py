@@ -59,7 +59,7 @@ def exp(op, coeff=1, num_steps=None, id=None):
 
     .. warning::
 
-        Providing ``num_steps`` to ``qml.exp`` is deprecated and will be removed in a future version.
+        Providing ``num_steps`` to ``qml.exp`` is deprecated and will be removed in a future release.
         Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
         Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
 
@@ -136,7 +136,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
     .. warning::
 
-        Providing ``num_steps`` to ``Exp`` is deprecated and will be removed in a future version.
+        Providing ``num_steps`` to ``Exp`` is deprecated and will be removed in a future release.
         Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
         Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
 

@@ -56,7 +56,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
     .. warning::
 
-        Providing ``num_steps`` to ``qml.evolve`` is deprecated and will be removed in a future version.
+        Providing ``num_steps`` to ``qml.evolve`` is deprecated and will be removed in a future release.
         Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
         Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
 

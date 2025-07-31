@@ -244,7 +244,7 @@
 <h3>Deprecations 👋</h3>
 
 * Providing `num_steps` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
-  and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future version. Instead, use
+  and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
   :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the Suzuki-Trotter
   product approximation of a Hamiltonian with the specified number of Trotter steps.
 
