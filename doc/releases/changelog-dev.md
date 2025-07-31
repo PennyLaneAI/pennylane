@@ -176,6 +176,12 @@
 * `default.qubit` will default to the tree-traversal MCM method when `mcm_method="device"`.
   [(#7885)](https://github.com/PennyLaneAI/pennylane/pull/7885)
 
+* The :func:`~.clifford_t_decomposition` transform can now handle circuits with mid-circuit
+  measurements including Catalyst's measurements operations. It also now handles `RZ` and `PhaseShift`
+  operations where angles are odd multiples of `±pi/4` more efficiently while using `method="gridsynth"`.
+  [(#7793)](https://github.com/PennyLaneAI/pennylane/pull/7793)
+  [(#7942)](https://github.com/PennyLaneAI/pennylane/pull/7942)
+
 * The default implementation of `Device.setup_execution_config` now choses `"device"` as the default mcm method if it is available as specified by the device TOML file.
   [(#7968)](https://github.com/PennyLaneAI/pennylane/pull/7968)
 
