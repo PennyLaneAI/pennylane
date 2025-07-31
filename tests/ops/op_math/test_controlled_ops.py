@@ -40,7 +40,14 @@ ALL_OPERATIONS = NON_PARAMETRIZED_OPERATIONS + PARAMETRIZED_OPERATIONS
 NON_PARAMETRIC_OPS_DECOMPOSITIONS = (
     (qml.CY, [qml.CRY(np.pi, wires=[0, 1]), qml.S(0)]),
     (qml.CZ, [qml.ControlledPhaseShift(np.pi, wires=[0, 1])]),
-    (qml.CSX, [qml.CRZ(np.pi / 2, wires=[0, 1]), qml.CRY(np.pi / 2, wires=[0, 1]), qml.CRZ(-np.pi / 2, wires=[0, 1]), qml.GlobalPhase(-np.pi / 4, wires=[0, 1])]),
+    (
+        qml.CSX,
+        [
+            qml.ControlledPhaseShift(3 * np.pi / 2, wires=[0, 1]),
+            qml.CH(wires=[0, 1]),
+            qml.CRZ(-np.pi / 2, wires=[0, 1]),
+        ],
+    ),
 )
 
 X = np.array([[0, 1], [1, 0]])
