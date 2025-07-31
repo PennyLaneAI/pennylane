@@ -761,7 +761,17 @@ class TestReducerZX:
 
         assert reduced_tape.operations == expected_ops
 
-    def test_equivalent_state(self):
+    @pytest.mark.parametrize(
+        "params",
+        (
+            (0.0, 0.0),
+            (1.7, 0.0),
+            (0.0, -1.7),
+            (-3.2, 2.2),
+            (3.2, -2.2),
+        ),
+    )
+    def test_equivalent_state(self, params):
         num_wires = 3
         device = qml.device("default.qubit", wires=num_wires)
 
@@ -782,8 +792,9 @@ class TestReducerZX:
 
         reduced_circ = qml.transforms.zx_full_reduce(original_circ)
 
-        params = [3.2, -2.2]
         state1 = original_circ(*params)
         state2 = reduced_circ(*params)
 
-        assert np.allclose(state1, state2)
+        # test that the states are equivalent up to a global phase
+        check = np.abs(np.conj(state1) @ state2)
+        assert np.isclose(check, 1)

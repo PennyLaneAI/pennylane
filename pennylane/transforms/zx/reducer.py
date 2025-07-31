@@ -33,8 +33,8 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     """Reduce an arbitrary circuit applying the full ZX-based pipeline for T-gate optimization,
     available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package.
 
-    This transform performs a graph-theoretic circuit simplification based on ZX calculus rules.
-    It works as follows:
+    The transform returns a simplified circuit equivalent to the original input up to a global phase.
+    It performs the following steps:
 
         - convert the quantum circuit into the corresponding ``pyzx`` graph;
 
