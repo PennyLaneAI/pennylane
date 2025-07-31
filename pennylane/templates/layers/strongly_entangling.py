@@ -304,23 +304,38 @@ def _strongly_entangling_resources(imprimitive, num_wires, num_layers):
 
 @register_resources(_strongly_entangling_resources)
 def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
+    wires = math.array(wires, like="jax")
+    ranges = math.array(ranges, like="jax")
 
     num_wires = len(wires)
     num_layers = weights.shape[0]
 
-    for l in range(num_layers):
-        for j in range(num_wires):
+    @for_loop(num_layers)
+    def layers(l):
+        @for_loop(num_wires)
+        def rot_loop(i):
             Rot(
-                weights[l, j, 0],
-                weights[l, j, 1],
-                weights[l, j, 2],
-                wires=wires[j],
+                weights[l, i, 0],
+                weights[l, i, 1],
+                weights[l, i, 2],
+                wires=wires[i],
             )
 
-        if num_wires > 1:
-            for i in range(num_wires):
+        def imprim_true():
+            @for_loop(num_wires)
+            def imprimitive_loop(i):
                 act_on = math.array([i, i + ranges[l]], like="jax") % num_wires
                 imprimitive(wires=wires[act_on])
+
+            imprimitive_loop()
+
+        def imprim_false():
+            pass
+
+        rot_loop()
+        cond(num_wires > 1, imprim_true, imprim_false)()
+
+    layers()
 
 
 add_decomps(StronglyEntanglingLayers, _strongly_entangling_decomposition)
