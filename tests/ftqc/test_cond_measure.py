@@ -206,8 +206,9 @@ class TestWorkflows:
         """Test that we can execute a QNode with a ParametricMidMeasureMP applied in a conditional,
         and produce an accurate result"""
 
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ():
             qml.RX(np.pi, 0)
@@ -234,8 +235,9 @@ class TestWorkflows:
         """Test a workflow that feeds measurement values from conditional measurements forward
         into subsequent measurements and operations applied in `cond_measure` and `cond`"""
 
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ(x_rot, y_rot):
             qml.RX(np.pi, 0)

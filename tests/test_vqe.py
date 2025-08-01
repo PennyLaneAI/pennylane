@@ -264,7 +264,7 @@ class TestVQE:
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the Torch interface."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -312,7 +312,7 @@ class TestVQE:
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the TensorFlow interface."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -358,7 +358,7 @@ class TestVQE:
         """Test that a Hamiltonian cost function is the same with and without
         grouping optimization when using the autograd interface."""
 
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4)
 
         hamiltonian1 = copy.copy(big_hamiltonian)
         hamiltonian2 = copy.copy(big_hamiltonian)
@@ -774,8 +774,9 @@ class TestNewVQE:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(weights, coeffs):
             qml.templates.StronglyEntanglingLayers(weights, wires=[0, 1])

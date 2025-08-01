@@ -1436,9 +1436,10 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             Prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1451,9 +1452,10 @@ class TestIntegration:
 
     def test_measurement_process_counts(self):
         """Test Prod class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             Prod(qml.Hadamard(0), qml.Hadamard(1))

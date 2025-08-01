@@ -595,7 +595,7 @@ class TestCondCircuits:
     def test_mcm_predicate_execution(self, reset, postselect, shots, seed):
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results."""
-        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
+        device = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
 
         def true_fn(arg):
             qml.RX(arg, 0)
@@ -603,6 +603,7 @@ class TestCondCircuits:
         def false_fn(arg):
             qml.RY(3 * arg, 0)
 
+        @qml.set_shots(shots)
         @qml.qnode(device)
         def f(x, y):
             qml.RX(x, 0)
@@ -639,7 +640,7 @@ class TestCondCircuits:
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results when there are also elifs present."""
         # pylint: disable=expression-not-assigned
-        device = qml.device("default.qubit", wires=5, shots=shots, seed=jax.random.PRNGKey(seed))
+        device = qml.device("default.qubit", wires=5, seed=jax.random.PRNGKey(seed))
 
         def true_fn():
             # Adjoint Hadamard diagonalizing gates to get Hadamard basis state
@@ -657,6 +658,7 @@ class TestCondCircuits:
             # Adjoint PauliZ diagonalizing gates to get Z basis state
             return
 
+        @qml.set_shots(shots)
         @qml.qnode(device)
         def f(*x):
             qml.RX(x[0], 0)

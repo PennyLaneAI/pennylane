@@ -1251,9 +1251,10 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test Sum class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         sum_op = Sum(qml.PauliX(0), qml.PauliX(0))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             qml.prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1266,9 +1267,10 @@ class TestIntegration:
 
     def test_measurement_process_count(self):
         """Test Sum class instance in counts measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         sum_op = Sum(qml.PauliX(0), qml.PauliX(0))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             qml.prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1472,8 +1474,9 @@ class TestGrouping:
     @pytest.mark.parametrize("shots", [None, 1000])
     def test_grouping_integration(self, shots):
         """Test that grouping does not impact the results of a circuit."""
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def qnode(grouping_type):
             H = qml.dot(
