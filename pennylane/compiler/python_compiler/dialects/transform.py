@@ -68,12 +68,13 @@ class ApplyRegisteredPassOp(IRDLOperation):
     # TODO: Add test.
     assembly_format = "$pass_name `to` $target attr-dict `:` functional-type(operands, results)"
     irdl_options = [ParsePropInAttrDict()]
+    optionType = Sequence["optionType"] | Attribute | bool | int | str
 
     def __init__(
         self,
         pass_name: str | StringAttr,
         target: SSAValue,
-        options: dict | DictionaryAttr | None = None,
+        options: dict[str | optionType] | None = None,
     ):
         if isinstance(pass_name, str):
             pass_name = StringAttr(pass_name)
