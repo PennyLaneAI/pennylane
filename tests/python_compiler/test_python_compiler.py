@@ -29,10 +29,11 @@ xdsl = pytest.importorskip("xdsl")
 from catalyst import CompileError
 from xdsl import passes
 from xdsl.context import Context
-from xdsl.dialects import builtin, transform
+from xdsl.dialects import builtin
 from xdsl.interpreters import Interpreter
 
 from pennylane.compiler.python_compiler import Compiler
+from pennylane.compiler.python_compiler.dialects import transform
 from pennylane.compiler.python_compiler.jax_utils import (
     jax_from_docstring,
     module,
