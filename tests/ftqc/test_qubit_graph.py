@@ -309,10 +309,10 @@ class TestQubitGraphConnectivityAttributes:
 
         assert set(q.neighbors) == set()
 
-        assert set(q[(0, 0)].neighbors) == set([q[(0, 1)], q[(1, 0)]])
-        assert set(q[(0, 1)].neighbors) == set([q[(0, 0)], q[(1, 1)]])
-        assert set(q[(1, 0)].neighbors) == set([q[(0, 0)], q[(1, 1)]])
-        assert set(q[(1, 1)].neighbors) == set([q[(0, 1)], q[(1, 0)]])
+        assert set(q[(0, 0)].neighbors) == {q[(0, 1)], q[(1, 0)]}
+        assert set(q[(0, 1)].neighbors) == {q[(0, 0)], q[(1, 1)]}
+        assert set(q[(1, 0)].neighbors) == {q[(0, 0)], q[(1, 1)]}
+        assert set(q[(1, 1)].neighbors) == {q[(0, 1)], q[(1, 0)]}
 
 
 class TestQubitGraphOperations:

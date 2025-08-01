@@ -65,7 +65,7 @@ class TestMutualInfoUnitTests:
         assert m1.hash != m2.hash
 
         m3 = MutualInfoMP(wires=[Wires((0, 1)), Wires(2)])
-        m4 = MutualInfoMP(wires=[Wires((0)), Wires((1, 2))])
+        m4 = MutualInfoMP(wires=[Wires(0), Wires((1, 2))])
         assert m3.hash != m4.hash
 
     def test_map_wires(self):
