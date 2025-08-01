@@ -25,7 +25,6 @@ catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
 jaxlib = pytest.importorskip("jaxlib")
 xdsl = pytest.importorskip("xdsl")
-filecheck = pytest.importorskip("filecheck")
 
 from catalyst import CompileError
 from xdsl import passes
