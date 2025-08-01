@@ -226,15 +226,15 @@
       u_tape = qml.tape.QuantumTape([qml.Hadamard(0)])
 
   def v_function(params):
-      qml.RZ(params[0], wires=1)  
+      qml.RZ(params, wires=1)  
 
-  v_params = [0.1]
+  v_params = 0.1
   v_wires = [1]    
   ```
 
   ```pycon
   >>> qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
-  Rimpiazzare qui
+  HilbertSchmidt(0.1, wires=[0, 1])
   ```
 
   Instead, now the templates accept one or more operators as `U` and `V` unitaries. 
