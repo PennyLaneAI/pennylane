@@ -25,16 +25,11 @@ from pennylane.labs.resource_estimation.resource_operator import (
 # pylint: disable=arguments-differ,unused-argument
 
 
-class ResourceSingleQubitCompare(ResourceOperator):
-    r"""Resource class for comparing two qubits.
+class ResourceSingleQubitComparator(ResourceOperator):
+    r"""Resource class for comparing the values encoded in two input qubits.
 
-    This operation provides the cost for implementing a comparison between two qubits, :math:`x`
-    and :math:`y`. The comparison result is stored on three qubits: the second qubit stores :math:`x=y`,
-    and the two additional qubits initialized to the state :math:`|0\rangle`
-    store :math:`x \lt y` and :math:`x \gt y`, respectively.
-
-    The input registers get modified here, and can be reset to their original values by using the
-    adjoint of this operation.
+    This operation modifies the input qubits. The original values can be restored
+    by applying the operation's adjoint.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
@@ -44,7 +39,7 @@ class ResourceSingleQubitCompare(ResourceOperator):
         <https://arxiv.org/pdf/1711.10460>`_. Specifically,
         the resources are given as :math:`1` ``TempAND`` gate, :math:`4` ``CNOT`` gates,
         and :math:`3` ``X`` gates.
-        The circuit which applies the comparison operation on wires :math:`(x,y)` is
+        The circuit which applies the comparison operation on qubits :math:`(x,y)` is
         defined as:
 
         .. code-block:: bash
@@ -58,7 +53,7 @@ class ResourceSingleQubitCompare(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> single_qubit_compare = plre.ResourceSingleQubitCompare()
+    >>> single_qubit_compare = plre.ResourceSingleQubitComparator()
     >>> print(plre.estimate_resources(single_qubit_compare))
     --- Resources: ---
      Total qubits: 4
@@ -126,16 +121,12 @@ class ResourceSingleQubitCompare(ResourceOperator):
 
         return gate_lst
 
+class ResourceTwoQubitComparator(ResourceOperator):
+    r"""Resource class for comparing the integer values encoded in
+    two quantum registers of two qubits each.
 
-class ResourceTwoQubitCompare(ResourceOperator):
-    r"""Resource class for comparing two quantum registers of two qubits each.
-
-    This operation provides the cost for implementing a comparison between two quantum registers of
-    two qubits each. This circuit takes a pair of 2-bit integers, and outputs a pair of single bits such
-    that they preserve the inequality of the input integers.
-
-    The input registers get modified here, and can be reset to their original values by using the
-    adjoint of this operation.
+    This operation modifies the input registers. The original values can be restored
+    by applying the operation's adjoint.
 
     Args:
         wires (Sequence[int], optional): the wires the operation acts on
@@ -161,7 +152,7 @@ class ResourceTwoQubitCompare(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> two_qubit_compare = plre.ResourceTwoQubitCompare()
+    >>> two_qubit_compare = plre.ResourceTwoQubitComparator()
     >>> print(plre.estimate_resources(two_qubit_compare))
     --- Resources: ---
      Total qubits: 5
@@ -200,7 +191,6 @@ class ResourceTwoQubitCompare(ResourceOperator):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
-
         Resources:
             The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
             <https://arxiv.org/pdf/1711.10460>`_. Specifically,
@@ -236,30 +226,31 @@ class ResourceTwoQubitCompare(ResourceOperator):
 
 
 class ResourceIntegerComparator(ResourceOperator):
-    r"""Resource class for comparing a state to a positive integer.
+    r"""This operation applies a controlled `X` gate using integer comparison as the condition.
 
-    This operation provides the cost for comparing a basis state, :code:`x`, and a fixed positive integer, :code:`val`.
-    It flips a target qubit if :math:`x \geq val` or :math:`x \lt val`, depending on the parameter :code:`geq`.
+    Given a basis state :math:`\vert n \rangle`, where :math:`n` is a positive
+    integer, and a fixed positive integer :math:`L`, a target qubit is flipped if
+    :math:`n \geq L`. Alternatively, the flipping condition can be :math:`n \lt L`.
 
     Args:
-        val (int): the integer to be compared against
+        value (int): The value :math:`L` that the state’s decimal representation is compared against.
         register_size (int): size of the register for basis state
-        geq (bool): If set to ``True``, the comparison made will be :math:`x \geq val`. If
-            ``False``, the comparison made will be :math:`x \lt val`.
+        geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
+            ``False``, the comparison made will be :math:`n \lt L`.
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         This decomposition uses the minimum number of ``MultiControlledX`` gates.
         The given integer is first converted into its binary representation, and compared to the quantum register
         iteratively, starting with the most significant bit, and progressively including more qubits.
-        For example, when :code:`geq` is `False`, :code:`val` is :math:`22` (Binary :math:`010110`), and
+        For example, when :code:`geq` is ``False``, :code:`value` is :math:`22` (Binary :math:`010110`), and
         :code:`num_wires` is :math:`6`:
 
-        - Evaluating most significant bit: For all :math:`6`-bit number where the first two control qubits
-          are in the :math:`00` state, :math:`x \lt 22` condition is always `True`. A ``MultiControlledX`` gate
+        - Evaluating most significant bit: For all :math:`6`-bit numbers where the first two control qubits
+          are in the :math:`00` state, :math:`n \lt 22` condition is always ``True``. A ``MultiControlledX`` gate
           can be applied with these two wires as controls and control values corresponding to :math:`00`.
         - Refining with subsequent bits: Considering the next most significant bit, since the target value
-          begins with :math:`0101`. Therefore, all :math:`6`-bit numbers begining with :math:`0100` will
+          begins with :math:`0101`. Therefore, all :math:`6`-bit numbers beginning with :math:`0100` will
           satisfy the condition, so a ``MultiControlledX`` gate can
           be applied with the first four wires as controls and control values corresponding to :math:`0100`.
         - This iterative procedure continues, with ``MultiControlledX`` gates being added for each significant bit of
@@ -282,7 +273,8 @@ class ResourceIntegerComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> integer_compare = plre.ResourceIntegerComparator(val=4, register_size=6)
+
+    >>> integer_compare = plre.ResourceIntegerComparator(value=4, register_size=6)
     >>> print(plre.estimate_resources(integer_compare))
     --- Resources: ---
      Total qubits: 9
@@ -293,10 +285,10 @@ class ResourceIntegerComparator(ResourceOperator):
       {'X': 8, 'Toffoli': 3, 'Hadamard': 6, 'CNOT': 2}
     """
 
-    resource_keys = {"val", "register_size", "geq"}
+    resource_keys = {"value", "register_size", "geq"}
 
-    def __init__(self, val, register_size, geq=False, wires=None):
-        self.val = val
+    def __init__(self, value, register_size, geq=False, wires=None):
+        self.value = value
         self.register_size = register_size
         self.geq = geq
         self.num_wires = register_size + 1
@@ -308,53 +300,56 @@ class ResourceIntegerComparator(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * val (int): the integer to be compared against
+                * value (int): The value :math:`L` that the state’s decimal representation is compared
+                  against.
                 * register_size (int): size of the register for basis state
-                * geq (bool): If set to ``True``, the comparison made will be :math:`x \geq val`. If
-                  ``False``, the comparison made will be :math:`x \lt val`.
+                * geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
+                  ``False``, the comparison made will be :math:`n \lt L`.
 
         """
-        return {"val": self.val, "register_size": self.register_size, "geq": self.geq}
+        return {"value": self.value, "register_size": self.register_size, "geq": self.geq}
 
     @classmethod
-    def resource_rep(cls, val, register_size, geq=False):
+    def resource_rep(cls, value, register_size, geq=False):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
-            val (int): the integer to be compared against
-            register_size (int): size of the register for basis state
-            geq (bool): If set to ``True``, the comparison made will be :math:`x \geq val`. If
-                ``False``, the comparison made will be :math:`x \lt val`.
+            value (int): The value :math:`L` that the state’s decimal representation is compared against.
+                register_size (int): size of the register for basis state
+            geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
+                ``False``, the comparison made will be :math:`n \lt L`.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"val": val, "register_size": register_size, "geq": geq})
+        return CompressedResourceOp(
+            cls, {"value": value, "register_size": register_size, "geq": geq}
+        )
 
     @classmethod
-    def default_resource_decomp(cls, val, register_size, geq=False, **kwargs):
+    def default_resource_decomp(cls, value, register_size, geq=False, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
         Args:
-            val (int): the integer to be compared against
+            value (int): The value :math:`L` that the state’s decimal representation is compared against.
             register_size (int): size of the register for basis state
-            geq (bool): If set to ``True``, the comparison made will be :math:`x \geq val`. If
-                ``False``, the comparison made will be :math:`x \lt val`.
+            geq (bool): If set to ``True``, the comparison made will be :math:`n \geq L`. If
+                ``False``, the comparison made will be :math:`n \lt L`.
 
         Resources:
             This decomposition uses the minimum number of ``MultiControlledX`` gates.
             The given integer is first converted into its binary representation, and compared to the quantum register
             iteratively, starting with the most significant bit, and progressively including more qubits.
-            For example, when :code:`geq` is `False`, :code:`val` is :math:`22` (Binary :math:`010110`), and
+            For example, when :code:`geq` is ``False``, :code:`value` is :math:`22` (Binary :math:`010110`), and
             :code:`num_wires` is :math:`6`:
 
             - Evaluating most significant bit: For all :math:`6`-bit number where the first two control qubits
-              are in the :math:`00` state, :math:`x \lt 22` condition is always `True`. A ``MultiControlledX`` gate
+              are in the :math:`00` state, :math:`n \lt 22` condition is always ``True``. A ``MultiControlledX`` gate
               can be applied with these two wires as controls and control values corresponding to :math:`00`.
             - Refining with subsequent bits: Considering the next most significant bit, since the target value
-              begins with :math:`0101`. Therefore, all :math:`6`-bit numbers begining with :math:`0100` will
+              begins with :math:`0101`. Therefore, all :math:`6`-bit numbers beginning with :math:`0100` will
               satisfy the condition, so a ``MultiControlledX`` gate can
               be applied with the first four wires as controls and control values corresponding to :math:`0100`.
             - This iterative procedure continues, with ``MultiControlledX`` gates being added for each significant bit of
@@ -379,17 +374,17 @@ class ResourceIntegerComparator(ResourceOperator):
         """
         gate_lst = []
 
-        if val == 0:
+        if value == 0:
             if geq:
                 gate_lst.append(GateCount(resource_rep(plre.ResourceX), 1))
             return gate_lst
 
-        if val > 2 ** (register_size) - 1:
+        if value > 2 ** (register_size) - 1:
             if not geq:
                 gate_lst.append(GateCount(resource_rep(plre.ResourceX), 1))
             return gate_lst
 
-        binary_str = format(val, f"0{register_size}b")
+        binary_str = format(value, f"0{register_size}b")
         if geq:
 
             first_zero = binary_str.find("0")
@@ -460,11 +455,12 @@ class ResourceIntegerComparator(ResourceOperator):
 
 
 class ResourceRegisterComparator(ResourceOperator):
-    r"""Resource class for comparing two quantum registers of any size.
+    r"""This operation applies a controlled `X` gate using register comparison as the condition.
 
-    This operation provides the cost for implementing a comparison between two
-    integer values encoded in quantum registers. The comparison result is stored in
-    an additional qubit and the original registers are returned in the same state.
+    Given the basis states :math:`\vert a \rangle`, and  :math:`\vert b \rangle`,
+    where :math:`a` and :math:`b` are positive
+    integers, a target qubit is flipped if
+    :math:`a \geq b`. Alternatively, the flipping condition can be :math:`a \lt b`.
 
     Args:
         first_register (int): the size of the first register
@@ -567,8 +563,9 @@ class ResourceRegisterComparator(ResourceOperator):
         gate_list = []
         compare_register = min(first_register, second_register)
 
-        one_qubit_compare = resource_rep(plre.ResourceSingleQubitCompare)
-        two_qubit_compare = resource_rep(plre.ResourceTwoQubitCompare)
+        one_qubit_compare = resource_rep(plre.ResourceSingleQubitComparator)
+        two_qubit_compare = resource_rep(plre.ResourceTwoQubitComparator)
+
         if first_register == second_register:
 
             gate_list.append(GateCount(two_qubit_compare, first_register - 1))

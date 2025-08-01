@@ -22,18 +22,18 @@ from pennylane.labs.resource_estimation import AllocWires, FreeWires, GateCount,
 # pylint: disable=no-self-use,too-many-arguments,use-implicit-booleaness-not-comparison
 
 
-class TestSingleQubitCompare:
-    """Test the ResourceSingleQubitCompare class."""
+class TestSingleQubitComparator:
+    """Test the ResourceSingleQubitComparator class."""
 
     def test_resource_params(self):
         """Test that the resource params are correct."""
-        op = plre.ResourceSingleQubitCompare()
+        op = plre.ResourceSingleQubitComparator()
         assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(plre.ResourceSingleQubitCompare, {})
-        assert plre.ResourceSingleQubitCompare.resource_rep() == expected
+        expected = plre.CompressedResourceOp(plre.ResourceSingleQubitComparator, {})
+        assert plre.ResourceSingleQubitComparator.resource_rep() == expected
 
     def test_resources(self):
         """Test that the resources are correct."""
@@ -42,21 +42,21 @@ class TestSingleQubitCompare:
             GateCount(resource_rep(plre.ResourceCNOT), 4),
             GateCount(resource_rep(plre.ResourceX), 3),
         ]
-        assert plre.ResourceSingleQubitCompare.resource_decomp() == expected
+        assert plre.ResourceSingleQubitComparator.resource_decomp() == expected
 
 
-class TestTwoQubitCompare:
-    """Test the ResourceTwoQubitCompare class."""
+class TestTwoQubitComparator:
+    """Test the ResourceTwoQubitComparator class."""
 
     def test_resource_params(self):
         """Test that the resource params are correct."""
-        op = plre.ResourceTwoQubitCompare()
+        op = plre.ResourceTwoQubitComparator()
         assert op.resource_params == {}
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(plre.ResourceTwoQubitCompare, {})
-        assert plre.ResourceTwoQubitCompare.resource_rep() == expected
+        expected = plre.CompressedResourceOp(plre.ResourceTwoQubitComparator, {})
+        assert plre.ResourceTwoQubitComparator.resource_rep() == expected
 
     def test_resources(self):
         """Test that the resources are correct."""
@@ -67,42 +67,44 @@ class TestTwoQubitCompare:
             GateCount(resource_rep(plre.ResourceX), 1),
             FreeWires(1),
         ]
-        assert plre.ResourceTwoQubitCompare.resource_decomp() == expected
+        assert plre.ResourceTwoQubitComparator.resource_decomp() == expected
 
 
 class TestIntegerComparator:
     """Test the ResourceIntegerComparator class."""
 
     @pytest.mark.parametrize(
-        "val, register_size, geq",
+        "value, register_size, geq",
         (
             (10, 3, True),
             (6, 4, False),
             (2, 2, False),
         ),
     )
-    def test_resource_params(self, val, register_size, geq):
+    def test_resource_params(self, value, register_size, geq):
         """Test that the resource params are correct."""
-        op = plre.ResourceIntegerComparator(val, register_size, geq)
-        assert op.resource_params == {"val": val, "register_size": register_size, "geq": geq}
+        op = plre.ResourceIntegerComparator(value, register_size, geq)
+        assert op.resource_params == {"value": value, "register_size": register_size, "geq": geq}
 
     @pytest.mark.parametrize(
-        "val, register_size, geq",
+        "value, register_size, geq",
         (
             (10, 3, True),
             (6, 4, False),
             (2, 2, False),
         ),
     )
-    def test_resource_rep(self, val, register_size, geq):
+
+    def test_resource_rep(self, value, register_size, geq):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
-            plre.ResourceIntegerComparator, {"val": val, "register_size": register_size, "geq": geq}
+            plre.ResourceIntegerComparator,
+            {"value": value, "register_size": register_size, "geq": geq},
         )
-        assert plre.ResourceIntegerComparator.resource_rep(val, register_size, geq) == expected
+        assert plre.ResourceIntegerComparator.resource_rep(value, register_size, geq) == expected
 
     @pytest.mark.parametrize(
-        "val, register_size, geq, expected_res",
+        "value, register_size, geq, expected_res",
         (
             (10, 3, True, []),
             (10, 3, False, [GateCount(resource_rep(plre.ResourceX))]),
@@ -175,10 +177,12 @@ class TestIntegerComparator:
             ),
         ),
     )
-    def test_resources(self, val, register_size, geq, expected_res):
+
+    def test_resources(self, value, register_size, geq, expected_res):
         """Test that the resources are correct."""
         assert (
-            plre.ResourceIntegerComparator.resource_decomp(val, register_size, geq) == expected_res
+            plre.ResourceIntegerComparator.resource_decomp(value, register_size, geq)
+            == expected_res
         )
 
 
@@ -229,12 +233,12 @@ class TestRegisterComparator:
                 10,
                 True,
                 [
-                    GateCount(resource_rep(plre.ResourceTwoQubitCompare), 9),
-                    GateCount(resource_rep(plre.ResourceSingleQubitCompare), 1),
+                    GateCount(resource_rep(plre.ResourceTwoQubitComparator), 9),
+                    GateCount(resource_rep(plre.ResourceSingleQubitComparator), 1),
                     GateCount(
                         resource_rep(
                             plre.ResourceAdjoint,
-                            {"base_cmpr_op": resource_rep(plre.ResourceTwoQubitCompare)},
+                            {"base_cmpr_op": resource_rep(plre.ResourceTwoQubitComparator)},
                         ),
                         9,
                     ),
@@ -254,19 +258,19 @@ class TestRegisterComparator:
                 4,
                 False,
                 [
-                    GateCount(resource_rep(plre.ResourceTwoQubitCompare), 3),
-                    GateCount(resource_rep(plre.ResourceSingleQubitCompare), 1),
+                    GateCount(resource_rep(plre.ResourceTwoQubitComparator), 3),
+                    GateCount(resource_rep(plre.ResourceSingleQubitComparator), 1),
                     GateCount(
                         resource_rep(
                             plre.ResourceAdjoint,
-                            {"base_cmpr_op": resource_rep(plre.ResourceTwoQubitCompare)},
+                            {"base_cmpr_op": resource_rep(plre.ResourceTwoQubitComparator)},
                         ),
                         3,
                     ),
                     GateCount(
                         resource_rep(
                             plre.ResourceAdjoint,
-                            {"base_cmpr_op": resource_rep(plre.ResourceSingleQubitCompare)},
+                            {"base_cmpr_op": resource_rep(plre.ResourceSingleQubitComparator)},
                         ),
                         1,
                     ),
@@ -291,19 +295,19 @@ class TestRegisterComparator:
                 6,
                 True,
                 [
-                    GateCount(resource_rep(plre.ResourceTwoQubitCompare), 3),
-                    GateCount(resource_rep(plre.ResourceSingleQubitCompare), 1),
+                    GateCount(resource_rep(plre.ResourceTwoQubitComparator), 3),
+                    GateCount(resource_rep(plre.ResourceSingleQubitComparator), 1),
                     GateCount(
                         resource_rep(
                             plre.ResourceAdjoint,
-                            {"base_cmpr_op": resource_rep(plre.ResourceTwoQubitCompare)},
+                            {"base_cmpr_op": resource_rep(plre.ResourceTwoQubitComparator)},
                         ),
                         3,
                     ),
                     GateCount(
                         resource_rep(
                             plre.ResourceAdjoint,
-                            {"base_cmpr_op": resource_rep(plre.ResourceSingleQubitCompare)},
+                            {"base_cmpr_op": resource_rep(plre.ResourceSingleQubitComparator)},
                         ),
                         1,
                     ),
