@@ -499,8 +499,8 @@ def test_wire_order_dense_vector(method, num_orbitals):
     dev = qml.device("default.tensor", wires=int(2 * num_orbitals + 1), method=method)
     qubits = dev.wires.tolist()
 
-    wave_fun = np.random.random((2 ** (2 * num_orbitals))) + 1j * np.random.random(
-        (2 ** (2 * num_orbitals))
+    wave_fun = np.random.random(2 ** (2 * num_orbitals)) + 1j * np.random.random(
+        2 ** (2 * num_orbitals)
     )
     wave_fun = wave_fun / np.linalg.norm(wave_fun)
 
