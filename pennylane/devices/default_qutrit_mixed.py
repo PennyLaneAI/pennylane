@@ -31,7 +31,7 @@ from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .default_qutrit import DefaultQutrit
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
@@ -334,7 +334,7 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device
         configuration.
@@ -355,6 +355,8 @@ class DefaultQutritMixed(Device):
         * Supports any qutrit channel that provides Kraus matrices
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
@@ -384,8 +386,10 @@ class DefaultQutritMixed(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}

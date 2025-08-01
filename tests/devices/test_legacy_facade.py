@@ -122,22 +122,28 @@ def test_debugger():
     assert qml.math.allclose(res["execution_results"], 0)
 
 
-def test_shot_distribution():
+@pytest.mark.parametrize(
+    "execution_config",
+    (None, ExecutionConfig(gradient_keyword_arguments={"method": "new_gradient"})),
+)
+def test_shot_distribution(execution_config):
     """Test that different numbers of shots in a batch all get executed."""
 
     class DummyJacobianDevice(DummyDevice):
 
         _capabilities = {"provides_jacobian": True}
 
-        def adjoint_jacobian(self, circuit):  # pylint: disable=unused-argument
+        def new_gradient(self, circuit):  # pylint: disable=unused-argument
             return 0
+
+        def jacobian(self, circuit):  # pylint: disable=unused-argument
+            return 1
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())
 
     tape1 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=5)
     tape2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=100)
 
-    execution_config = ExecutionConfig(gradient_keyword_arguments={"method": "adjoint_jacobian"})
     with dev.tracker:
         dev.execute((tape1, tape2))
     assert dev.tracker.history["shots"] == [5, 100]
