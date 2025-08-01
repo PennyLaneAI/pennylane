@@ -479,11 +479,11 @@ def _decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` auxiliary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
-    clean auxiliarye, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using dirty
-    auxiliarye as described in Sec. 5 of [1].
+    clean auxiliary qubits, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using dirty
+    auxiliary qubits as described in Sec. 5 of [1].
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliarye for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
 
     """
@@ -542,7 +542,7 @@ def _decompose_mcx_with_one_worker(wires, work_wires, work_wire_type="clean", **
     Sec. 5.1 of [1].
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliarye for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
 
     """
@@ -909,7 +909,7 @@ def _controlled_x(target_wire, control, work_wires, work_wire_type):
 # pylint: disable=no-value-for-parameter
 def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
     r"""
-    Construct a quantum circuit for creating n-condionally clean auxiliarye using 3n qubits. This
+    Construct a quantum circuit for creating n-condionally clean auxiliary qubits using 3n qubits. This
     implements Fig. 4a of [1]. Each wire is of the same size :math:`n`.
 
     Args:
@@ -918,7 +918,7 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         target_wires: The wires for target register.
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliarye for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
@@ -946,7 +946,7 @@ def _build_linear_depth_ladder(wires) -> int:
         int: the index of the last unmarked wire.
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliarye for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
 
     """
@@ -989,7 +989,7 @@ def _build_log_n_depth_ccx_ladder(control_wires) -> list:
         list: The list of unmarked wires to use as control wires.
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliarye for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 

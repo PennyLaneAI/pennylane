@@ -198,7 +198,7 @@ def _decompose_mcx_with_one_worker_kg24(
         list[Operator]: the synthesized quantum circuit
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliarye for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
@@ -224,8 +224,8 @@ def _decompose_mcx_with_two_workers_old(
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` auxiliary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
-    clean auxiliarye, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using dirty
-    auxiliarye as described in Sec. 5 of [1].
+    clean auxiliary qubits, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using dirty
+    auxiliary qubits as described in Sec. 5 of [1].
 
     Args:
         control_wires (Wires): The control wires.
@@ -237,7 +237,7 @@ def _decompose_mcx_with_two_workers_old(
         list[Operator]: The synthesized quantum circuit.
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliarye for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
