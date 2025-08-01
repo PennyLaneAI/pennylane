@@ -215,6 +215,39 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
+  They now accept an operation or a list of operations as quantum unitaries.
+
+  Before, the signature of these templates required providing the `U` and `V` unitaries as a `qml.tape.QuantumTape` and a quantum function,
+  respectively, along with separate parameters and wires.
+
+  ```python
+  with qml.QueuingManager.stop_recording():
+      u_tape = qml.tape.QuantumTape([qml.Hadamard(0)])
+
+  def v_function(params):
+      qml.RZ(params, wires=1)  
+
+  v_params = 0.1
+  v_wires = [1]    
+  ```
+
+  ```pycon
+  >>> qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
+  HilbertSchmidt(0.1, wires=[0, 1])
+  ```
+
+  Instead, now the templates accept one or more operators as `U` and `V` unitaries. 
+  The wires and parameters of the approximate unitary `V` are inferred from the inputs, according to the order provided.
+
+  ```python
+  >>> U = qml.Hadamard(0)
+  >>> V = qml.RZ(0.1, wires=1)
+  >>> qml.HilbertSchmidt(V, U)
+  HilbertSchmidt(0.1, wires=[0, 1])
+  ```
+  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
+
 * Remove support for Python 3.10 and adds support for 3.13.
   [(#7935)](https://github.com/PennyLaneAI/pennylane/pull/7935)
 
