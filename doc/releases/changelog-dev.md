@@ -52,7 +52,7 @@
 <h3>Improvements 🛠</h3>
 
 * Several templates now have decompositions that can be accessed within the graph-based
-  decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows 
+  decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
   manner.
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
@@ -62,9 +62,9 @@
   The included templates are:
 
   * :class:`~.Adder`
-    
+
   * :class:`~.ControlledSequence`
-  
+
   * :class:`~.ModExp`
 
   * :class:`~.MottonenStatePreparation`
@@ -117,6 +117,9 @@
   [(#7690)](https://github.com/PennyLaneAI/pennylane/pull/7690)
 
 <h4>Other improvements</h4>
+
+* PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
+  [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
 
 * The error message raised when using Python compiler transforms with :func:`pennylane.qjit` has been updated
   with suggested fixes.
@@ -196,6 +199,10 @@
   `ResourceQubitUnitary` templates.
   [(#7786)](https://github.com/PennyLaneAI/pennylane/pull/7786)
 
+* Added state of the art resources for the `ResourceSingleQubitCompare`, `ResourceTwoQubitCompare`,
+  `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
+  [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
+
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
 
@@ -211,9 +218,9 @@
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
-* The boolean functions provided in `qml.operation` are deprecated. See the 
-  :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These 
-  include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`, 
+* The boolean functions provided in `qml.operation` are deprecated. See the
+  :doc:`deprecations page </development/deprecations>` for equivalent code to use instead. These
+  include `not_tape`, `has_gen`, `has_grad_method`, `has_multipar`, `has_nopar`, `has_unitary_gen`,
   `is_measurement`, `defines_diagonalizing_gates`, and `gen_is_multi_term_hamiltonian`.
   [(#7924)](https://github.com/PennyLaneAI/pennylane/pull/7924)
 
@@ -250,9 +257,10 @@
 
 <h3>Deprecations 👋</h3>
 
-* Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
-  Instead, use :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the
-  Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+* Providing `num_steps` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
+  and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
+  :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the Suzuki-Trotter
+  product approximation of a Hamiltonian with the specified number of Trotter steps.
 
   As a concrete example, consider the following case:
 
@@ -283,6 +291,7 @@
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
   [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
+  [(#7977)](https://github.com/PennyLaneAI/pennylane/pull/7977)
 
 * `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
   `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
@@ -313,10 +322,10 @@
   Please use `level='device'` instead to apply the noise model at the device level.
   [(#7886)](https://github.com/PennyLaneAI/pennylane/pull/7886)
 
-* `qml.qnn.cost.SquaredErrorLoss` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
+* `qml.qnn.cost.SquaredErrorLoss` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished
   with a function like `loss = lambda *args: (circuit(*args) - target)**2`.
   [(#7527)](https://github.com/PennyLaneAI/pennylane/pull/7527)
-  
+
 * Access to `add_noise`, `insert` and noise mitigation transforms from the `pennylane.transforms` module is deprecated.
   Instead, these functions should be imported from the `pennylane.noise` module.
   [(#7854)](https://github.com/PennyLaneAI/pennylane/pull/7854)
@@ -326,6 +335,13 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Added a new `all-tests-passed` gatekeeper job to `interface-unit-tests.yml` to ensure all test
+  jobs complete successfully before triggering downstream actions. This reduces the need to
+  maintain a long list of required checks in GitHub settings. Also added the previously missing
+  `capture-jax-tests` job to the list of required test jobs, ensuring this test suite is properly
+  enforced in CI.
+  [(#7996)](https://github.com/PennyLaneAI/pennylane/pull/7996)
 
 * Equipped `DefaultQubitLegacy` (test suite only) with seeded sampling.
   This allows for reproducible sampling results of legacy classical shadow across CI.
@@ -343,7 +359,7 @@
   [(#7959)](https://github.com/PennyLaneAI/pennylane/pull/7959)
 
 * Adds `measurements` as a "core" module in the tach specification.
- [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
+  [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 
 * Improves type hints in the `measurements` module.
   [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
@@ -401,6 +417,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Clarifies the use case for `Operator.pow` and `Operator.adjoint`.
+  [(#7999)](https://github.com/PennyLaneAI/pennylane/pull/7999)
+
 * The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
   [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
 
@@ -451,7 +470,9 @@ Guillermo Alonso,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
+Diksha Dhawan,
 Marcus Edwards,
+Pietropaolo Frisoni,
 Simone Gasperini,
 David Ittah,
 Korbinian Kottmann,
@@ -459,6 +480,7 @@ Mehrdad Malekmohammadi
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
+Alex Preciado,
 Shuli Shu,
 Jay Soni,
 David Wierichs,
