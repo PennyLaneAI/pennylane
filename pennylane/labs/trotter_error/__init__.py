@@ -37,7 +37,6 @@ Classes representing fragments of different types of Hamiltonians.
 .. autosummary::
     :toctree: api
 
-    ~GenericFragment
     ~RealspaceMatrix
     ~RealspaceSum
 
@@ -61,6 +60,7 @@ Functions used to retrieve fragments of various Hamiltonians.
     ~generic_fragments
     ~vibrational_fragments
     ~vibronic_fragments
+    ~sparse_fragments
 
 Harmonic Oscillator Classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -94,7 +94,12 @@ Classes for representing product formulas.
 """
 
 from .abstract import AbstractState, Fragment
-from .fragments import GenericFragment, generic_fragments, vibrational_fragments, vibronic_fragments
+from .fragments import (
+    generic_fragments,
+    vibrational_fragments,
+    vibronic_fragments,
+    sparse_fragments,
+)
 from .product_formulas import (
     ProductFormula,
     bch_expansion,
