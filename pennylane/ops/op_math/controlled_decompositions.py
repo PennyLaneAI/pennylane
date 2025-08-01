@@ -40,7 +40,10 @@ def _is_single_qubit_special_unitary(op):
 
 
 def decompose_mcx(
-    control_wires, target_wire, work_wires, work_wire_type: Literal["clean", "dirty"] = "dirty"
+    control_wires,
+    target_wire,
+    work_wires,
+    work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ):
     """Decomposes the multi-controlled PauliX"""
 
@@ -107,7 +110,7 @@ def _decompose_recursive(op, power, control_wires, target_wire, work_wires):
             control_wires=control_wires[:-1],
             target_wire=control_wires[-1],
             work_wires=work_wires + target_wire,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         )
     with qml.QueuingManager.stop_recording():
         powered_op = qml.pow(op, 0.5 * power, lazy=True)
@@ -180,19 +183,19 @@ def _decompose_mcx_with_one_worker_kg24(
     control_wires: WiresLike,
     target_wire: int,
     work_wire: int,
-    work_wire_type: Literal["clean", "dirty"] = "dirty",
+    work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> list[Operator]:
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit. It
-    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is clean
-    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is dirty as described in
+    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is zeroed
+    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is borrowed as described in
     Sec. 5.1 of [1].
 
     Args:
         control_wires (Wires): the control wires
         target_wire (int): the target wire
         work_wires (Wires): the work wires used to decompose the gate
-        work_wire_type (string): If "dirty", perform un-computation. Default is "dirty".
+        work_wire_type (string): If "borrowed", perform un-computation. Default is "borrowed".
 
     Returns:
         list[Operator]: the synthesized quantum circuit
@@ -219,19 +222,19 @@ def _decompose_mcx_with_two_workers_old(
     control_wires: WiresLike,
     target_wire: int,
     work_wires: WiresLike,
-    work_wire_type: Literal["clean", "dirty"] = "dirty",
+    work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> list[Operator]:
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
-    clean ancillae, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using dirty
+    zeroed ancillae, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using borrowed
     ancillae as described in Sec. 5 of [1].
 
     Args:
         control_wires (Wires): The control wires.
         target_wire (int): The target wire.
         work_wires (Wires): The work wires.
-        work_wire_type (string): If "dirty" perform uncomputation after we're done. Default is "dirty".
+        work_wire_type (string): If "borrowed" perform uncomputation after we're done. Default is "borrowed".
 
     Returns:
         list[Operator]: The synthesized quantum circuit.

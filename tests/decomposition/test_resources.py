@@ -306,7 +306,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "dirty",
+                "work_wire_type": "borrowed",
             },
         )
 
@@ -321,7 +321,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "dirty",
+                "work_wire_type": "borrowed",
             },
             1,
             1,
@@ -335,7 +335,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 4,
                 "num_zero_control_values": 2,
                 "num_work_wires": 2,
-                "work_wire_type": "dirty",
+                "work_wire_type": "borrowed",
             },
         )
 
@@ -356,17 +356,17 @@ class TestControlledResourceRep:
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
-                    "work_wire_type": "clean",
+                    "work_wire_type": "zeroed",
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "clean",
+                "work_wire_type": "zeroed",
             },
             1,
             1,
             1,
-            "clean",
+            "zeroed",
         )
         assert rep == CompressedResourceOp(
             qml.ops.MultiControlledX,
@@ -374,7 +374,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
-                "work_wire_type": "clean",
+                "work_wire_type": "zeroed",
             },
         )
 
@@ -389,12 +389,12 @@ class TestControlledResourceRep:
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "clean",
+                "work_wire_type": "zeroed",
             },
             1,
             1,
             1,
-            "clean",
+            "zeroed",
         )
         assert rep == CompressedResourceOp(
             qml.ops.ControlledQubitUnitary,
@@ -403,7 +403,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 2,
                 "num_zero_control_values": 2,
                 "num_work_wires": 2,
-                "work_wire_type": "clean",
+                "work_wire_type": "zeroed",
             },
         )
 
@@ -419,17 +419,17 @@ class TestControlledResourceRep:
                     "num_control_wires": 2,
                     "num_zero_control_values": 1,
                     "num_work_wires": 1,
-                    "work_wire_type": "dirty",
+                    "work_wire_type": "borrowed",
                 },
                 "num_control_wires": 1,
                 "num_zero_control_values": 1,
                 "num_work_wires": 1,
-                "work_wire_type": "dirty",
+                "work_wire_type": "borrowed",
             },
             1,
             1,
             1,
-            "clean",
+            "zeroed",
         )
         assert rep == CompressedResourceOp(
             qml.ops.ControlledQubitUnitary,
@@ -438,7 +438,7 @@ class TestControlledResourceRep:
                 "num_control_wires": 4,
                 "num_zero_control_values": 3,
                 "num_work_wires": 3,
-                "work_wire_type": "dirty",
+                "work_wire_type": "borrowed",
             },
         )
 

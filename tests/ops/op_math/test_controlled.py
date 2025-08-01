@@ -37,7 +37,7 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError, PennyLaneDeprecationWarning
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.tape import QuantumScript
@@ -201,6 +201,13 @@ class TestControlledInit:
         with pytest.raises(ValueError, match="Work wires must be different."):
             Controlled(self.temp_op, control_wires="b", work_wires="b")
 
+    @pytest.mark.parametrize("old_name, new_name", [("clean", "zeroed"), ("dirty", "borrowed")])
+    def test_old_work_wire_type_deprecated(self, old_name, new_name):
+        """Tests that specifying work_wire_type as 'clean' or 'dirty' is deprecated"""
+        with pytest.warns(PennyLaneDeprecationWarning, match="work_wire_type"):
+            op = Controlled(self.temp_op, "b", work_wires="c", work_wire_type=old_name)
+        assert op.work_wire_type == new_name
+
 
 class TestControlledProperties:
     """Test the properties of the ``Controlled`` symbolic operator."""
@@ -220,7 +227,7 @@ class TestControlledProperties:
             "num_control_wires": 2,
             "num_zero_control_values": 1,
             "num_work_wires": 1,
-            "work_wire_type": "dirty",
+            "work_wire_type": "borrowed",
         }
 
     def test_data(self):
@@ -414,7 +421,7 @@ class TestControlledMiscMethods:
         assert data[0] is target
         assert len(data) == 1
 
-        assert metadata == (control_wires, control_values, work_wires, "dirty")
+        assert metadata == (control_wires, control_values, work_wires, "borrowed")
 
         # make sure metadata is hashable
         assert hash(metadata)

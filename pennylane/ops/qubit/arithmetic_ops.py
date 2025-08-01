@@ -639,7 +639,7 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
             num_control_wires=first_significant + 1,
             num_work_wires=num_work_wires + num_wires - 2 - first_significant,
             num_zero_control_values=0,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         )
     ] = 1
 
@@ -650,7 +650,7 @@ def _integer_comparator_lt_resource(num_wires, value, num_work_wires, **_):
                 num_control_wires=first_significant + 1,
                 num_work_wires=num_work_wires + num_wires - 2 - first_significant,
                 num_zero_control_values=0,
-                work_wire_type="dirty",
+                work_wire_type="borrowed",
             )
         ] = 1
 
@@ -774,7 +774,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
                 num_control_wires=num_controls,
                 num_work_wires=num_work_wires,
                 num_zero_control_values=0,
-                work_wire_type="dirty",
+                work_wire_type="borrowed",
             ): 1
         }
 
@@ -786,7 +786,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
             num_control_wires=first_zero + 1,
             num_work_wires=num_work_wires + num_wires - 2 - first_zero,
             num_zero_control_values=0,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         )
     ] = 1
     gate_set[resource_rep(qml.X)] = 2
@@ -798,7 +798,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
                 num_control_wires=first_zero + 1,
                 num_work_wires=num_work_wires + num_wires - 2 - first_zero,
                 num_zero_control_values=0,
-                work_wire_type="dirty",
+                work_wire_type="borrowed",
             )
         ] = 1
         gate_set[resource_rep(qml.X)] += 2
@@ -809,7 +809,7 @@ def _integer_comparator_ge_resource(num_wires, value, num_work_wires, **_):
             num_control_wires=num_controls,
             num_work_wires=num_work_wires,
             num_zero_control_values=0,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         )
     ] += 1
 
