@@ -254,9 +254,10 @@
 
 <h3>Deprecations 👋</h3>
 
-* Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.
-  Instead, use :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the
-  Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+* Providing `num_steps` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
+  and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
+  :class:`~.TrotterProduct` for approximate methods, providing the `n` parameter to perform the Suzuki-Trotter
+  product approximation of a Hamiltonian with the specified number of Trotter steps.
 
   As a concrete example, consider the following case:
 
@@ -287,6 +288,7 @@
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
   [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
+  [(#7977)](https://github.com/PennyLaneAI/pennylane/pull/7977)
 
 * `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
   `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
