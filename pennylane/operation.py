@@ -1549,6 +1549,18 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         Returns:
             list[:class:`~.operation.Operator`]
 
+        >>> class MyClass(qml.operation.Operator):
+        ...
+        ...     def pow(self, z):
+        ...         return [MyClass(self.data[0]*z, self.wires)]
+        >>> op = MyClass(0.5, 0) ** 2
+        >>> op
+        MyClass(0.5, wires=[0])**2
+        >>> op.decomposition()
+        [MyClass(1.0, wires=[0])]
+        >>> op.simplify()
+        MyClass(1.0, wires=[0])
+
         """
         # Child methods may call super().pow(z%period) where op**period = I
         # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
@@ -1602,6 +1614,20 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
 
         Returns:
             The adjointed operation.
+
+        >>> class MyClass(qml.operation.Operator):
+        ...
+        ...     def adjoint(self):
+        ...         return self
+        >>> op = qml.adjoint(MyClass(wires=0))
+        >>> op
+        Adjoint(MyClass(wires=[0]))
+        >>> op.decomposition()
+        [MyClass(wires=[0])]
+        >>> op.simplify()
+        MyClass(wires=[0])
+
+
         """
         raise AdjointUndefinedError
 
