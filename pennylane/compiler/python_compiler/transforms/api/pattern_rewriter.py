@@ -21,11 +21,65 @@ from xdsl.ir import Operation, SSAValue
 from xdsl.pattern_rewriter import PatternRewriter, PatternRewriterListener, PatternRewriteWalker
 from xdsl.rewriter import InsertPoint
 
-from ...dialects import quantum
+from ...dialects import mbqc, quantum
+
+# Tuple of all operations that return qubits
+_ops_returning_qubits = (
+    quantum.CustomOp,
+    quantum.AllocQubitOp,
+    quantum.ExtractOp,
+    quantum.GlobalPhaseOp,
+    quantum.MeasureOp,
+    quantum.MultiRZOp,
+    quantum.QubitUnitaryOp,
+    quantum.SetBasisStateOp,
+    quantum.SetStateOp,
+    mbqc.MeasureInBasisOp,
+)
+
+# Tuple of all operations that return "out_qubits"
+_out_qubits_ops = (
+    quantum.CustomOp,
+    quantum.MultiRZOp,
+    quantum.QubitUnitaryOp,
+    quantum.SetBasisStateOp,
+    quantum.SetStateOp,
+)
+
+# Tuple of all operations that return "out_ctrl_qubits"
+_out_ctrl_qubits_ops = (
+    quantum.CustomOp,
+    quantum.GlobalPhaseOp,
+    quantum.MultiRZOp,
+    quantum.QubitUnitaryOp,
+)
+
+# Tuple of all operations that return "out_qubit"
+_out_qubit_ops = (quantum.MeasureOp, mbqc.MeasureInBasisOp)
+
+# Tuple of all operations that return "qubit"
+_qubit_ops = (quantum.AllocQubitOp, quantum.ExtractOp)
+
+
+def _get_bfs_out_qubits(op):
+    out_qubits = ()
+    if not isinstance(op, _ops_returning_qubits):
+        return out_qubits
+
+    if isinstance(op, _out_qubits_ops):
+        out_qubits += tuple(op.out_qubits)
+    if isinstance(op, _out_ctrl_qubits_ops):
+        out_qubits += tuple(op.out_ctrl_qubits)
+    if isinstance(op, _out_qubit_ops):
+        out_qubits += (op.out_qubit,)
+    if isinstance(op, _qubit_ops):
+        out_qubits += (op.qubit,)
+
+    return out_qubits
 
 
 class StateManagement:
-    """A container class for managing state."""
+    """A container class for managing wire mapping."""
 
     wire_to_qubit_map: dict[int, SSAValue]
     qubit_to_wire_map: dict[SSAValue, int]
@@ -76,6 +130,9 @@ class StateManagement:
             return wire
 
         return None
+
+
+# TODO: Integration StateManagement with rewriting
 
 
 class PLPatternRewriter(PatternRewriter):
@@ -139,6 +196,27 @@ class PLPatternRewriter(PatternRewriter):
             self.insert_op(extractOp, insert_point)
 
         return extractOp.result
+
+    def qubit_successors(self, op: Operation, traversal_type="bfs"):
+        """Iterator function to do a breadth-first traversal over the output qubits
+        of an operation. First returned value is the original operation."""
+        if traversal_type not in ("bfs", "dfs"):
+            raise ValueError(
+                f"Unrecognized traversal type {traversal_type}. Valid types are 'bfs' and 'dfs'"
+            )
+        pop_idx = 0 if traversal_type == "bfs" else -1
+        op_queue = [op]
+
+        while op_queue:
+            cur_op = op_queue.pop(pop_idx)
+            out_qubits = _get_bfs_out_qubits(op)
+            for q in out_qubits:
+                for use in q.uses:
+                    use_op = use.operation
+                    if use_op not in op_queue:
+                        op_queue.append(use_op)
+
+            yield cur_op
 
 
 class PLPatternRewriteWalker(PatternRewriteWalker):
