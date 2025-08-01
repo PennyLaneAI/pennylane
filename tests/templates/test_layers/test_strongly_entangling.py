@@ -60,7 +60,9 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.parametrize("n_wires, imprimitive", [(2, qml_ops.CNOT), (3, qml_ops.CZ), (4, qml_ops.CY)])
+    @pytest.mark.parametrize(
+        "n_wires, imprimitive", [(2, qml_ops.CNOT), (3, qml_ops.CZ), (4, qml_ops.CY)]
+    )
     @pytest.mark.jax
     def test_decomposition_new(
         self, n_wires, imprimitive, batch_dim

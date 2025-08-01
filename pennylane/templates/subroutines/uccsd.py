@@ -22,6 +22,7 @@ from collections import Counter
 import numpy as np
 
 from pennylane import math
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState
@@ -328,12 +329,22 @@ def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats
     if n_repeats == 1 and len(math.shape(weights)) == 1:
         weights = math.expand_dims(weights, 0)
 
-    for layer in range(n_repeats):
-        for i, (w1, w2) in enumerate(d_wires):
+    @for_loop(n_repeats)
+    def apply_layers(layer):
+        @for_loop(len(d_wires))
+        def double_excitation(i):
+            (w1, w2) = d_wires[i]
             FermionicDoubleExcitation(weights[layer][len(s_wires) + i], wires1=w1, wires2=w2)
 
-        for j, s_wires_ in enumerate(s_wires):
+        @for_loop(len(s_wires))
+        def single_excitation(j):
+            s_wires_ = s_wires[j]
             FermionicSingleExcitation(weights[layer][j], wires=s_wires_)
+
+        double_excitation()  # pylint: disable=no-value-for-parameter
+        single_excitation()  # pylint: disable=no-value-for-parameter
+
+    apply_layers()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(UCCSD, _UCCSD_decomposition)
