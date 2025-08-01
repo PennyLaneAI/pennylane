@@ -18,6 +18,7 @@ from collections import Counter
 from functools import reduce
 
 import pennylane as qml
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
     controlled_resource_rep,
@@ -138,9 +139,13 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
 
     qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis1)
 
-    for i, b in enumerate(basis1):
+    @for_loop(len(basis1))
+    def apply_cnots(i):
+        b = basis1[i]
         if b != basis2[i]:
             qml.CNOT(wires=work_wire + wires[i])
+
+    apply_cnots()  # pylint: disable=no-value-for-parameter
 
     qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis2)
 
@@ -439,9 +444,15 @@ def _superposition_decomposition(coeffs, bases, target_wires, work_wire, wires=N
         pad_with=0,
     )
 
-    for basis2, basis1 in perms.items():
+    bas = [(b2, b1) for b1, b2 in perms.items()]
+
+    @for_loop(len(list(perms.keys())))
+    def apply_permutations(i):
+        basis2, basis1 = bas[i][0], bas[i][1]
         if not qml.math.allclose(basis1, basis2):
             _permutation_operator_qfunc(basis1, basis2, target_wires, work_wire)
+
+    apply_permutations()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(Superposition, _superposition_decomposition)
