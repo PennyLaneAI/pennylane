@@ -327,6 +327,12 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added a new `all-tests-passed` gatekeeper job to ensure all test jobs complete successfully
+  before triggering downstream actions. This reduces the need to maintain a long list of required
+  checks in GitHub settings. Also added the previously missing `capture-jax-tests` job to the list
+  of required test jobs, ensuring this test suite is properly enforced in CI.
+  [(#7996)](https://github.com/PennyLaneAI/pennylane/pull/7996)
+
 * Equipped `DefaultQubitLegacy` (test suite only) with seeded sampling.
   This allows for reproducible sampling results of legacy classical shadow across CI.
   [(#7903)](https://github.com/PennyLaneAI/pennylane/pull/7903)
@@ -343,7 +349,7 @@
   [(#7959)](https://github.com/PennyLaneAI/pennylane/pull/7959)
 
 * Adds `measurements` as a "core" module in the tach specification.
- [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
+  [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 
 * Improves type hints in the `measurements` module.
   [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
