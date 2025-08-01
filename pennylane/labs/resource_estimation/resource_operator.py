@@ -16,8 +16,9 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from collections.abc import Callable, Hashable
+from collections.abc import Callable, Hashable, Iterable
 from inspect import signature
+from typing import Union
 
 import numpy as np
 
@@ -210,6 +211,18 @@ class ResourceOperator(ABC):
         """Append the operator to the Operator queue."""
         context.append(self)
         return self
+
+    @staticmethod
+    def dequeue(
+        op_to_remove: Union["ResourceOperator", Iterable],
+        context: QueuingManager = QueuingManager,
+    ):
+        """Remove the given resource operator(s) from the Operator queue."""
+        if not isinstance(op_to_remove, Iterable):
+            op_to_remove = [op_to_remove]
+
+        for op in op_to_remove:
+            context.remove(op)
 
     @classproperty
     @classmethod

@@ -122,9 +122,15 @@ Templates:
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
     ~ResourceSemiAdder
+    ~ResourceQFT
+    ~ResourceAQFT
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
+    ~ResourceSingleQubitComparator
+    ~ResourceTwoQubitComparator
+    ~ResourceIntegerComparator
+    ~ResourceRegisterComparator
     ~ResourceSelectPauliRot
     ~ResourceQubitUnitary
     ~ResourceTrotterCDF
@@ -211,9 +217,15 @@ from .templates import (
     ResourcePhaseGradient,
     ResourceOutMultiplier,
     ResourceSemiAdder,
+    ResourceQFT,
+    ResourceAQFT,
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceTwoQubitComparator,
+    ResourceIntegerComparator,
+    ResourceSingleQubitComparator,
+    ResourceRegisterComparator,
     ResourceQubitUnitary,
     ResourceSelectPauliRot,
     ResourceTrotterCDF,

@@ -17,6 +17,7 @@ outcomes from quantum observables - expectation values, variances of expectation
 and measurement samples using AnnotatedQueues.
 """
 import copy
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Optional
@@ -27,6 +28,7 @@ from pennylane.capture import enabled as capture_enabled
 from pennylane.exceptions import (
     DecompositionUndefinedError,
     EigvalsUndefinedError,
+    PennyLaneDeprecationWarning,
     QuantumFunctionError,
 )
 from pennylane.math.utils import is_abstract
@@ -367,6 +369,17 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         """Expand the measurement of an observable to a unitary
         rotation and a measurement in the computational basis.
 
+        .. warning::
+
+            This method is deprecated due to circular dependency issues and lack of use.
+
+            The relevant code can be reproduced by:
+
+            .. code-block:: python
+
+                diagonalized_mp = type(mp)(eigvals=mp.eigvals(), wires=mp.wires)
+                qml.tape.QuantumScript(mp.diagonalizing_gates(), [diagonalized_mp])
+
         Returns:
             .QuantumTape: a quantum tape containing the operations
             required to diagonalize the observable
@@ -396,6 +409,10 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         >>> print(tape.measurements[0].obs)
         None
         """
+        warnings.warn(
+            "MeasurementProcess.expand is deprecated. Use diagonalizing_gates and eigvals manually instead.",
+            PennyLaneDeprecationWarning,
+        )
         if self.obs is None:
             raise DecompositionUndefinedError
 

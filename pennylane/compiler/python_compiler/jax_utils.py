@@ -34,7 +34,7 @@ from xdsl.ir import Dialect as xDialect
 from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
-from .dialects import MBQC, Quantum, Transform
+from .dialects import Catalyst, MBQC, Quantum, Transform
 
 JaxJittedFunction: TypeAlias = _jax.PjitFunction  # pylint: disable=c-extension-no-member
 
@@ -61,6 +61,7 @@ class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-
         Transform,
         Quantum,
         MBQC,
+        Catalyst,
     )
 
     def __init__(
