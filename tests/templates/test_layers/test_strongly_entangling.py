@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane import ops
+from pennylane import ops as qml_ops
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
@@ -60,7 +60,7 @@ class TestDecomposition:
         ),
     ]
 
-    @pytest.mark.parametrize("n_wires, imprimitive", [(2, ops.CNOT), (3, ops.CZ), (4, ops.CY)])
+    @pytest.mark.parametrize("n_wires, imprimitive", [(2, qml_ops.CNOT), (3, qml_ops.CZ), (4, qml_ops.CY)])
     @pytest.mark.jax
     def test_decomposition_new(
         self, n_wires, imprimitive, batch_dim
