@@ -245,6 +245,7 @@
   >>> V = qml.RZ(0.1, wires=1)
   >>> qml.HilbertSchmidt(V, U)
   HilbertSchmidt(0.1, wires=[0, 1])
+  ```
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
 
 * Remove support for Python 3.10 and adds support for 3.13.
