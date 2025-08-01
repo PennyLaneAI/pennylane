@@ -14,8 +14,12 @@
 r"""
 Contains the Superposition template.
 """
+from collections import Counter
+from functools import reduce
 
 import pennylane as qml
+from pennylane import controlled_resource_rep
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 
 
@@ -117,6 +121,26 @@ def _permutation_operator(basis1, basis2, wires, work_wire):
     return ops
 
 
+def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
+    r"""
+    Creates operations that map an initial basis state to a target basis state using an auxiliary qubit.
+
+    Args:
+        basis1 (List): The initial basis state, represented as a list of binary digits.
+        basis2 (List): The target basis state, represented as a list of binary digits.
+        wires (Sequence[int]): The list of wires that the operator acts on.
+        work_wire (Union[Wires, int, str]): The auxiliary wire used for the permutation.
+    """
+
+    qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis1)
+
+    for i, b in enumerate(basis1):
+        if b != basis2[i]:
+            qml.CNOT(wires=work_wire + wires[i])
+
+    qml.ctrl(qml.PauliX(work_wire), control=wires, control_values=basis2)
+
+
 class Superposition(Operation):
     r"""
     Prepare a superposition of computational basis states.
@@ -208,6 +232,8 @@ class Superposition(Operation):
     grad_method = None
     ndim_params = (1,)
 
+    resource_keys = {"num_wires", "num_coeffs", "bases"}
+
     def __init__(
         self, coeffs, bases, wires, work_wire, id=None
     ):  # pylint: disable=too-many-positional-arguments, too-many-arguments
@@ -238,6 +264,14 @@ class Superposition(Operation):
         all_wires = self.hyperparameters["target_wires"] + self.hyperparameters["work_wire"]
 
         super().__init__(coeffs, wires=all_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.hyperparameters["target_wires"]),
+            "num_coeffs": len(self.data),
+            "bases": self.hyperparameters["bases"],
+        }
 
     @property
     def num_params(self):
@@ -344,3 +378,64 @@ class Superposition(Operation):
             wires=new_dict["target_wires"],
             work_wire=new_dict["work_wire"],
         )
+
+
+def _suerposition_resources(num_wires, num_coeffs, bases):
+    perms = _assign_states(bases)
+
+    resources = Counter()
+
+    resources[
+        resource_rep(qml.StatePrep, num_wires=int(qml.math.ceil(qml.math.log2(num_coeffs))))
+    ] += 1
+
+    for basis2, basis1 in perms.items():
+        if not qml.math.allclose(basis1, basis2):
+            resources[
+                controlled_resource_rep(
+                    base_class=qml.PauliX,
+                    base_params={},
+                    num_control_wires=num_wires,
+                    num_zero_control_values=reduce(lambda acc, nxt: acc + int(b == 0), basis1, 0),
+                )
+            ] += 1
+
+            resources[qml.CNOT] += reduce(
+                lambda acc, ib: acc + int(ib[1] != basis2[ib[0]]), enumerate(basis1), 0
+            )
+
+            resources[
+                controlled_resource_rep(
+                    base_class=qml.PauliX,
+                    base_params={},
+                    num_control_wires=num_wires,
+                    num_zero_control_values=reduce(lambda acc, nxt: acc + int(b == 0), basis2, 0),
+                )
+            ] += 1
+
+
+@register_resources(_suerposition_resources)
+def _superposition_decomposition(coeffs, bases, wires, work_wire):
+    dic_state = dict(zip(bases, coeffs))
+    perms = _assign_states(bases)
+    new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
+
+    sorted_coefficients = [
+        value
+        for key, value in sorted(
+            new_dic_state.items(), key=lambda item: int("".join(map(str, item[0])), 2)
+        )
+    ]
+
+    qml.StatePrep(
+        qml.math.stack(sorted_coefficients),
+        wires=wires[-int(qml.math.ceil(qml.math.log2(len(coeffs)))) :],
+        pad_with=0,
+    )
+
+    for basis2, basis1 in perms.items():
+        if not qml.math.allclose(basis1, basis2):
+            _permutation_operator_qfunc(basis1, basis2, wires, work_wire)
+
+
+add_decomps(Superposition, _superposition_decomposition)
