@@ -17,9 +17,10 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in v0.44
 
-* Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version.
-  Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
-  Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+* Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
+  and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
+  :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter
+  product approximation of a Hamiltonian with the specified number of Trotter steps.
 
   As a concrete example, consider the following case:
 
@@ -111,11 +112,6 @@ Pending deprecations
 
   - Deprecated in v0.43
   - Will be removed in v0.44
-
-* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
-
- - Deprecated in v0.40
- - Will be removed in v0.41
 
 Completed removal of legacy operator arithmetic
 -----------------------------------------------

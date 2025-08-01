@@ -47,6 +47,8 @@ def _domain_correction(theta: float) -> tuple[float, ZOmega]:
 
     # Check if abs_theta is an odd multiple of PI_8
     if div_ == ivl_ and mod_ == 0.0 and ivl_ % 2 == 1.0:
+        if ivl_ > 8:
+            ivl_, sign = 16 - ivl_, -sign
         scale_vals = (
             [
                 (ZOmega(d=1), ZOmega(d=1)),
