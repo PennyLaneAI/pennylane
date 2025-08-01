@@ -417,7 +417,7 @@
 
 <h3>Documentation 📝</h3>
 
-* Updated the documentation of `qml.specs`.
+* Updated the code examples in the documentation of :func:`~.specs`.
   [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
 
 * Clarifies the use case for `Operator.pow` and `Operator.adjoint`.
