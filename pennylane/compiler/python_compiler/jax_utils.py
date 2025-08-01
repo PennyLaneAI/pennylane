@@ -14,11 +14,12 @@
 
 """Utilities for translating JAX to xDSL"""
 
+from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import Callable, Optional, Sequence, TypeAlias
+from typing import TypeAlias
 
-import jaxlib
 from catalyst import QJIT
+from jax._src.lib import _jax
 from jaxlib.mlir.dialects import stablehlo as jstablehlo  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Context as jContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jModule  # pylint: disable=no-name-in-module
@@ -34,9 +35,9 @@ from xdsl.ir import Dialect as xDialect
 from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
-from .dialects import MBQC, Quantum
+from .dialects import MBQC, Catalyst, Quantum
 
-JaxJittedFunction: TypeAlias = jaxlib.xla_extension.PjitFunction
+JaxJittedFunction: TypeAlias = _jax.PjitFunction  # pylint: disable=c-extension-no-member
 
 
 class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-methods
@@ -61,6 +62,7 @@ class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-
         xtransform.Transform,
         Quantum,
         MBQC,
+        Catalyst,
     )
 
     def __init__(
@@ -68,7 +70,7 @@ class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-
         ctx: xContext,
         input: str,
         name: str = "<unknown>",
-        extra_dialects: Optional[Sequence[xDialect]] = (),
+        extra_dialects: Sequence[xDialect] | None = (),
     ) -> None:
         super().__init__(ctx, input, name)
 
@@ -110,7 +112,7 @@ def generic(func: JaxJittedFunction) -> Callable[..., str]:  # pragma: no cover
 
 
 def parse_generic_to_xdsl_module(
-    program: str, extra_dialects: Optional[Sequence[xDialect]] = None
+    program: str, extra_dialects: Sequence[xDialect] | None = None
 ) -> xbuiltin.ModuleOp:  # pragma: no cover
     """Parses generic MLIR program to xDSL module"""
     ctx = xContext(allow_unregistered=True)

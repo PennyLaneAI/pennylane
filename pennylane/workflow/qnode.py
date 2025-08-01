@@ -22,7 +22,7 @@ import inspect
 import logging
 import warnings
 from collections.abc import Callable, Iterable, Sequence
-from typing import TYPE_CHECKING, Literal, Optional, get_args
+from typing import TYPE_CHECKING, Literal, get_args
 
 from cachetools import Cache, LRUCache
 
@@ -72,8 +72,8 @@ def _convert_to_interface(result, interface: Interface):
 
 
 def _make_execution_config(
-    circuit: Optional[QNode], diff_method=None, mcm_config=None
-) -> "qml.devices.ExecutionConfig":
+    circuit: QNode | None, diff_method=None, mcm_config=None
+) -> qml.devices.ExecutionConfig:
     circuit_interface = getattr(circuit, "interface", Interface.NUMPY.value)
     execute_kwargs = getattr(circuit, "execute_kwargs", {})
     gradient_kwargs = getattr(circuit, "gradient_kwargs", {})
@@ -523,13 +523,13 @@ class QNode:
         cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
         max_diff: int = 1,
-        device_vjp: Optional[bool] = False,
-        postselect_mode: Optional[Literal["hw-like", "fill-shots"]] = None,
-        mcm_method: Optional[Literal["deferred", "one-shot", "tree-traversal"]] = None,
-        gradient_kwargs: Optional[dict] = None,
+        device_vjp: bool | None = False,
+        postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
+        mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+        gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
         autograph: bool = True,
-        executor_backend: Optional[ExecBackends | str] = None,
+        executor_backend: ExecBackends | str | None = None,
     ):
         self._init_args = locals()
         del self._init_args["self"]
@@ -787,14 +787,21 @@ class QNode:
     def construct(self, args, kwargs) -> qml.tape.QuantumScript:
         """Call the quantum function with a tape context, ensuring the operations get queued."""
         kwargs = copy.copy(kwargs)
-        if "shots" in kwargs and self._shots_override_device:
-            _kwargs_shots = kwargs.pop("shots")
+        if "shots" in kwargs:
+            # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
-                "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                f"The transform will take precedence over 'shots={_kwargs_shots}.'",
-                UserWarning,
+                "'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
+                PennyLaneDeprecationWarning,
                 stacklevel=2,
             )
+            if self._shots_override_device:
+                _kwargs_shots = kwargs.pop("shots")
+                warnings.warn(
+                    "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                    f"The transform will take precedence over 'shots={_kwargs_shots}.'",
+                    UserWarning,
+                    stacklevel=2,
+                )
 
         if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode._shots precedency:
             shots = self._shots

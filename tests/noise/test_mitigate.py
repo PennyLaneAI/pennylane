@@ -22,6 +22,7 @@ from packaging import version
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.noise.insert_ops import insert
 from pennylane.noise.mitigate import (
     _polyfit,
@@ -143,7 +144,7 @@ class TestMitigateWithZNE:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = (np.random.random(s) for s in shapes)
 
         @partial(
             mitigate_with_zne,
@@ -310,7 +311,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = (np.random.random(s) for s in shapes)
 
         @partial(
             mitigate_with_zne,
@@ -360,7 +361,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = (np.random.random(s) for s in shapes)
 
         @partial(
             mitigate_with_zne,
@@ -400,7 +401,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = (np.random.random(s) for s in shapes)
 
         @partial(
             mitigate_with_zne,
@@ -420,7 +421,11 @@ class TestMitiqIntegration:
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
             return qml.expval(qml.PauliZ(0))
 
-        res_mitigated = mitigated_circuit(w1, w2)
+        with pytest.warns(
+            PennyLaneDeprecationWarning, match="``QuantumScript.to_openqasm`` is deprecated"
+        ):
+            res_mitigated = mitigated_circuit(w1, w2)
+
         res_ideal = ideal_circuit(w1, w2)
 
         assert res_mitigated.shape == res_ideal.shape
@@ -440,7 +445,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s) for s in shapes]
+        w1, w2 = (np.random.random(s) for s in shapes)
 
         def circuit(w1, w2):
             qml.SimplifiedTwoDesign(w1, w2, wires=range(2))
@@ -498,7 +503,7 @@ class TestMitiqIntegration:
         n_layers = 2
 
         shapes = qml.SimplifiedTwoDesign.shape(n_layers, n_wires)
-        w1, w2 = [np.random.random(s, requires_grad=True) for s in shapes]
+        w1, w2 = (np.random.random(s, requires_grad=True) for s in shapes)
 
         @partial(
             mitigate_with_zne,
@@ -556,7 +561,7 @@ class TestDifferentiableZNE:
         n_wires = 3
         template = qml.SimplifiedTwoDesign
         weights_shape = template.shape(n_layers, n_wires)
-        w1, w2 = [np.arange(np.prod(s)).reshape(s) for s in weights_shape]
+        w1, w2 = (np.arange(np.prod(s)).reshape(s) for s in weights_shape)
 
         dev = qml.device("default.qubit", wires=range(n_wires))
 
