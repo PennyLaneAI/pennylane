@@ -20,11 +20,15 @@ from typing import Any, ParamSpec, overload
 
 import pennylane as qml
 from pennylane import transform
-from pennylane.exceptions import TransformError
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.exceptions import MatrixUndefinedError, TransformError
+from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript
 from pennylane.typing import TensorLike
+
+
+# pylint: disable=too-many-branches
 
 
 def catalyst_qjit(qnode):
@@ -253,7 +257,8 @@ def _matrix_of_op(op: Operator, _, wire_order=None):
     if op.has_sparse_matrix:
         return op.sparse_matrix(wire_order=wire_order).todense()
     if op.has_decomposition:
-        return matrix(QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
+        with QueuingManager.stop_recording():
+            return matrix(QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
     raise MatrixUndefinedError(
         "Operator must define a matrix, sparse matrix, or decomposition for use with qml.matrix."
     )

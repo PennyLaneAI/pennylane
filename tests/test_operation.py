@@ -22,7 +22,6 @@ from gate_data import CNOT, I, Toffoli, X
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import (
     _UNSET_BATCH_SIZE,
     Operation,
@@ -40,19 +39,6 @@ from pennylane.wires import Wires
 Toffoli_broadcasted = np.tensordot([0.1, -4.2j], Toffoli, axes=0)
 CNOT_broadcasted = np.tensordot([1.4], CNOT, axes=0)
 I_broadcasted = I[pnp.newaxis]
-
-
-def test_wires_enum_deprecation():
-    """Test that WiresEnum, AllWires, and AnyWires are deprecated."""
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="is deprecated"):
-        _ = qml.operation.WiresEnum
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="is deprecated"):
-        _ = qml.operation.AllWires
-
-    with pytest.warns(PennyLaneDeprecationWarning, match="is deprecated"):
-        _ = qml.operation.AnyWires
 
 
 class TestOperatorConstruction:
@@ -859,7 +845,7 @@ class TestOperationConstruction:
         x = [0.654, 2.31, 0.1]
         op = DummyOp(*x, wires=0)
         with pytest.raises(
-            qml.operation.OperatorPropertyUndefined, match="DummyOp does not have parameter"
+            qml.exceptions.OperatorPropertyUndefined, match="DummyOp does not have parameter"
         ):
             _ = op.parameter_frequencies
 
@@ -952,41 +938,16 @@ class TestObservableConstruction:
     def test_construction_with_wires_pos_arg(self):
         """Test that the wires can be given as a positional argument"""
 
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+        class DummyObserv(qml.operation.Operator):
+            r"""Dummy custom observable"""
 
-            class DummyObserv(qml.operation.Observable):
-                r"""Dummy custom observable"""
+            _queue_category = None
 
-                num_wires = 1
-                grad_method = None
+            num_wires = 1
+            grad_method = None
 
         ob = DummyObserv([1])
         assert ob.wires == qml.wires.Wires(1)
-
-    def test_observable_is_not_operation_but_operator(self):
-        """Check that the Observable class inherits from an Operator, not from an Operation"""
-
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert issubclass(qml.operation.Observable, qml.operation.Operator)
-
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not issubclass(qml.operation.Observable, qml.operation.Operation)
-
-    def test_observable_is_operation_as_well(self):
-        """Check that the Observable class inherits from an Operator class as well"""
-
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-
-            class DummyObserv(qml.operation.Observable, qml.operation.Operation):
-                r"""Dummy custom observable"""
-
-                num_wires = 1
-                grad_method = None
-
-        assert issubclass(DummyObserv, qml.operation.Operator)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert issubclass(DummyObserv, qml.operation.Observable)
-        assert issubclass(DummyObserv, qml.operation.Operation)
 
     def test_tensor_n_multiple_modes(self):
         """Checks that the TensorN operator was constructed correctly when
@@ -1041,13 +1002,11 @@ class TestObservableConstruction:
     def test_id(self):
         """Test that the id attribute of an observable can be set."""
 
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+        class DummyObserv(qml.operation.Operator):
+            r"""Dummy custom observable"""
 
-            class DummyObserv(qml.operation.Observable):
-                r"""Dummy custom observable"""
-
-                num_wires = 1
-                grad_method = None
+            num_wires = 1
+            grad_method = None
 
         op = DummyObserv(1.0, wires=0, id="test")
         assert op.id == "test"
@@ -1055,10 +1014,8 @@ class TestObservableConstruction:
     def test_raises_if_no_wire_is_given(self):
         """Test that an error is raised if no wire is passed at initialization."""
 
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-
-            class DummyObservable(qml.operation.Observable):
-                num_wires = 1
+        class DummyObservable(qml.operation.Operator):
+            num_wires = 1
 
         with pytest.raises(Exception, match="Must specify the wires *"):
             DummyObservable()
@@ -1066,16 +1023,14 @@ class TestObservableConstruction:
     def test_is_hermitian(self):
         """Test that the id attribute of an observable can be set."""
 
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+        class DummyObserv(qml.operation.Operator):
+            r"""Dummy custom observable"""
 
-            class DummyObserv(qml.operation.Observable):
-                r"""Dummy custom observable"""
-
-                num_wires = 1
-                grad_method = None
+            num_wires = 1
+            grad_method = None
 
         op = DummyObserv(wires=0)
-        assert op.is_hermitian is True
+        assert op.is_hermitian is False
 
 
 class TestOperatorIntegration:
@@ -1623,95 +1578,6 @@ class TestCriteria:
     stiff_rot = qml.Rot(0.1, -0.7, 0.2, wires=0)
     exp = qml.expval(qml.PauliZ(0))
 
-    def test_docstring(self):
-        expected = "Returns ``True`` if an operator has a generator defined."
-        assert expected in qml.operation.has_gen.__doc__
-
-    def test_has_gen(self):
-        """Test has_gen criterion."""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.has_gen(self.rx)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.has_gen(self.cnot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.has_gen(self.rot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.has_gen(self.exp)
-
-    def test_has_grad_method(self):
-        """Test has_grad_method criterion."""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.has_grad_method(self.rx)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.has_grad_method(self.rot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.has_grad_method(self.cnot)
-
-    def test_gen_is_multi_term_hamiltonian(self):
-        """Test gen_is_multi_term_hamiltonian criterion."""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.gen_is_multi_term_hamiltonian(self.doubleExcitation)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.gen_is_multi_term_hamiltonian(self.cnot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.gen_is_multi_term_hamiltonian(self.rot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.gen_is_multi_term_hamiltonian(self.exp)
-
-        class SProdGen(Operator):
-
-            def generator(self):
-                return 2.0 * (qml.X(0) + qml.Y(0))
-
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.gen_is_multi_term_hamiltonian(SProdGen(wires=0))
-
-        class SumGen(Operator):
-
-            def generator(self):
-                return qml.X(0) + qml.Y(1)
-
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.gen_is_multi_term_hamiltonian(SumGen(wires=0))
-
-    def test_has_multipar(self):
-        """Test has_multipar criterion."""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.has_multipar(self.rx)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.has_multipar(self.rot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.has_multipar(self.cnot)
-
-    def test_has_nopar(self):
-        """Test has_nopar criterion."""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.has_nopar(self.rx)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.has_nopar(self.rot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.has_nopar(self.cnot)
-
-    def test_has_unitary_gen(self):
-        """Test has_unitary_gen criterion."""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.has_unitary_gen(self.rx)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.has_unitary_gen(self.rot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.has_unitary_gen(self.cnot)
-
-    def test_is_measurement(self):
-        """Test is_measurement criterion."""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.is_measurement(self.rx)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.is_measurement(self.rot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.is_measurement(self.cnot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.is_measurement(self.exp)
-
     def test_is_trainable(self):
         """Test is_trainable criterion."""
         assert qml.operation.is_trainable(self.rx)
@@ -1719,31 +1585,6 @@ class TestCriteria:
         assert qml.operation.is_trainable(self.rot)
         assert not qml.operation.is_trainable(self.stiff_rot)
         assert not qml.operation.is_trainable(self.cnot)
-
-    def test_composed(self):
-        """Test has_gen criterion."""
-        both = qml.operation.has_gen & qml.operation.is_trainable
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert both(self.rx)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not both(self.cnot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not both(self.rot)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not both(self.exp)
-
-    def test_not_tape(self):
-        """Test the not_tape criterion."""
-
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.not_tape(2)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not qml.operation.not_tape(qml.tape.QuantumScript())
-
-    def test_defines_diagonalizing_gates(self):
-        """Test the defines_diagonalizing_gates criterion."""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert qml.operation.defines_diagonalizing_gates(qml.X(0))
 
 
 pairs_of_ops = [
