@@ -331,6 +331,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Equipped `DefaultQubitLegacy` (test suite only) with seeded sampling.
+  This allows for reproducible sampling results of legacy classical shadow across CI.
+  [(#7903)](https://github.com/PennyLaneAI/pennylane/pull/7903)
+
 * Capture does not block `wires=0` anymore. This allows Catalyst to work with zero-wire devices.
   Note that `wires=None` is still illegal.
   [(#7978)](https://github.com/PennyLaneAI/pennylane/pull/7978)
