@@ -1553,6 +1553,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         ...
         ...     def pow(self, z):
         ...         return [MyClass(self.data[0]*z, self.wires)]
+        ...
         >>> op = MyClass(0.5, 0) ** 2
         >>> op
         MyClass(0.5, wires=[0])**2
