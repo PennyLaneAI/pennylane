@@ -39,5 +39,5 @@ from .comparators import (
     ResourceSingleQubitComparator,
     ResourceTwoQubitComparator,
     ResourceRegisterComparator,
-
+)
 from .stateprep import ResourceUniformStatePrep, ResourceAliasSampling

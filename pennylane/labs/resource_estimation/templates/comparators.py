@@ -121,6 +121,7 @@ class ResourceSingleQubitComparator(ResourceOperator):
 
         return gate_lst
 
+
 class ResourceTwoQubitComparator(ResourceOperator):
     r"""Resource class for comparing the integer values encoded in
     two quantum registers of two qubits each.

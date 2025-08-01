@@ -54,7 +54,7 @@ class TestUniformStatePrep:
                     GateCount(resource_rep(plre.ResourceHadamard), 10),
                     GateCount(
                         resource_rep(
-                            plre.ResourceIntegerComparator, {"val": 5, "register_size": 3}
+                            plre.ResourceIntegerComparator, {"value": 5, "register_size": 3}
                         ),
                         1,
                     ),
@@ -64,7 +64,7 @@ class TestUniformStatePrep:
                             plre.ResourceAdjoint,
                             {
                                 "base_cmpr_op": resource_rep(
-                                    plre.ResourceIntegerComparator, {"val": 5, "register_size": 3}
+                                    plre.ResourceIntegerComparator, {"value": 5, "register_size": 3}
                                 )
                             },
                         ),
@@ -78,7 +78,7 @@ class TestUniformStatePrep:
                     GateCount(resource_rep(plre.ResourceHadamard), 7),
                     GateCount(
                         resource_rep(
-                            plre.ResourceIntegerComparator, {"val": 3, "register_size": 2}
+                            plre.ResourceIntegerComparator, {"value": 3, "register_size": 2}
                         ),
                         1,
                     ),
@@ -88,7 +88,7 @@ class TestUniformStatePrep:
                             plre.ResourceAdjoint,
                             {
                                 "base_cmpr_op": resource_rep(
-                                    plre.ResourceIntegerComparator, {"val": 3, "register_size": 2}
+                                    plre.ResourceIntegerComparator, {"value": 3, "register_size": 2}
                                 )
                             },
                         ),
@@ -160,7 +160,7 @@ class TestAliasSampling:
                     GateCount(
                         resource_rep(
                             plre.ResourceRegisterComparator,
-                            {"a_num_qubits": 30, "b_num_qubits": 30},
+                            {"first_register": 30, "second_register": 30},
                         ),
                         1,
                     ),
@@ -183,7 +183,7 @@ class TestAliasSampling:
                     GateCount(
                         resource_rep(
                             plre.ResourceRegisterComparator,
-                            {"a_num_qubits": 30, "b_num_qubits": 30},
+                            {"first_register": 30, "second_register": 30},
                         ),
                         1,
                     ),
@@ -206,7 +206,7 @@ class TestAliasSampling:
                     GateCount(
                         resource_rep(
                             plre.ResourceRegisterComparator,
-                            {"a_num_qubits": 20, "b_num_qubits": 20},
+                            {"first_register": 20, "second_register": 20},
                         ),
                         1,
                     ),

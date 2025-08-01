@@ -127,7 +127,7 @@ class ResourceUniformStatePrep(ResourceOperator):
         gate_lst.append(GateCount(resource_rep(plre.ResourceHadamard), k + 3 * logl))
         gate_lst.append(
             GateCount(
-                resource_rep(plre.ResourceIntegerComparator, {"val": L, "register_size": logl}), 1
+                resource_rep(plre.ResourceIntegerComparator, {"value": L, "register_size": logl}), 1
             )
         )
         gate_lst.append(GateCount(resource_rep(plre.ResourceRZ), 2))
@@ -137,7 +137,7 @@ class ResourceUniformStatePrep(ResourceOperator):
                     plre.ResourceAdjoint,
                     {
                         "base_cmpr_op": resource_rep(
-                            plre.ResourceIntegerComparator, {"val": L, "register_size": logl}
+                            plre.ResourceIntegerComparator, {"value": L, "register_size": logl}
                         )
                     },
                 ),
@@ -250,7 +250,7 @@ class ResourceAliasSampling(ResourceOperator):
             GateCount(
                 resource_rep(
                     plre.ResourceRegisterComparator,
-                    {"a_num_qubits": num_prec_wires, "b_num_qubits": num_prec_wires},
+                    {"first_register": num_prec_wires, "second_register": num_prec_wires},
                 ),
                 1,
             )

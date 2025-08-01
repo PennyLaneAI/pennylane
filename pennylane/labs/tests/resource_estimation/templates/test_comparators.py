@@ -94,7 +94,6 @@ class TestIntegerComparator:
             (2, 2, False),
         ),
     )
-
     def test_resource_rep(self, value, register_size, geq):
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
@@ -177,7 +176,6 @@ class TestIntegerComparator:
             ),
         ),
     )
-
     def test_resources(self, value, register_size, geq, expected_res):
         """Test that the resources are correct."""
         assert (
@@ -245,7 +243,7 @@ class TestRegisterComparator:
                     GateCount(
                         resource_rep(
                             plre.ResourceAdjoint,
-                            {"base_cmpr_op": resource_rep(plre.ResourceSingleQubitCompare)},
+                            {"base_cmpr_op": resource_rep(plre.ResourceSingleQubitComparator)},
                         ),
                         1,
                     ),
