@@ -263,7 +263,7 @@ def _grover_decomposition(wires, work_wires, n_wires):  # pylint: disable=argume
     def apply_hadamards(i):
         Hadamard(wires[i])
 
-    apply_hadamards()
+    apply_hadamards()  # pylint: disable=no-value-for-parameter
 
     PauliZ(wires[-1])
     MultiControlledX(
@@ -273,7 +273,7 @@ def _grover_decomposition(wires, work_wires, n_wires):  # pylint: disable=argume
     )
     PauliZ(wires[-1])
 
-    apply_hadamards()
+    apply_hadamards()  # pylint: disable=no-value-for-parameter
 
     GlobalPhase(np.pi, wires=wires[0])
 
