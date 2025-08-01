@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane import ops
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
@@ -59,13 +60,16 @@ class TestDecomposition:
         ),
     ]
 
+    @pytest.mark.parametrize("n_wires, imprimitive", [(2, ops.CNOT), (3, ops.CZ), (4, ops.CY)])
     @pytest.mark.jax
-    def test_decomposition_new(self, batch_dim):  # pylint: disable=unused-argument
+    def test_decomposition_new(
+        self, n_wires, imprimitive, batch_dim
+    ):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
         weights = np.random.random(
-            size=(1, 1, 3),
+            size=(1, n_wires, 3),
         )
-        op = qml.StronglyEntanglingLayers(weights, wires=range(1))
+        op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
 
         for rule in qml.list_decomps(qml.StronglyEntanglingLayers):
             _test_decomposition_rule(op, rule)

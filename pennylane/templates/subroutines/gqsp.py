@@ -17,9 +17,8 @@ Contains the GQSP template.
 
 import copy
 
-from pennylane.control_flow import for_loop
-
 from pennylane import ops
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager

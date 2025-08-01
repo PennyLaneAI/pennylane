@@ -18,9 +18,9 @@ Contains the FermionicDoubleExcitation template.
 import copy
 
 import numpy as np
-from pennylane.control_flow import for_loop
 
 from pennylane import math
+from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
@@ -647,6 +647,7 @@ def _layer_qfunc1(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires))
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots()
 
     # Z rotation acting on wire 'p'
@@ -656,6 +657,7 @@ def _layer_qfunc1(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires) - 1, -1, -1)
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots_reversed()
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
@@ -696,6 +698,7 @@ def _layer_qfunc2(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires))
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots()
 
     # Z rotation acting on wire 'p'
@@ -705,6 +708,7 @@ def _layer_qfunc2(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires) - 1, -1, -1)
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots_reversed()
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
@@ -745,6 +749,7 @@ def _layer_qfunc3(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires))
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots()
 
     # Z rotation acting on wire 'p'
@@ -754,6 +759,7 @@ def _layer_qfunc3(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires) - 1, -1, -1)
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots_reversed()
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
@@ -794,6 +800,7 @@ def _layer_qfunc4(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires))
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots()
 
     # Z rotation acting on wire 'p'
@@ -803,6 +810,7 @@ def _layer_qfunc4(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires) - 1, -1, -1)
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots_reversed()
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
@@ -843,6 +851,7 @@ def _layer_qfunc5(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires))
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots()
 
     # Z rotation acting on wire 'p'
@@ -852,6 +861,7 @@ def _layer_qfunc5(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires) - 1, -1, -1)
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots_reversed()
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
@@ -892,6 +902,7 @@ def _layer_qfunc6(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires))
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots()
 
     # Z rotation acting on wire 'p'
@@ -901,6 +912,7 @@ def _layer_qfunc6(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires) - 1, -1, -1)
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots_reversed()
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
@@ -941,6 +953,7 @@ def _layer_qfunc7(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires))
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots()
 
     # Z rotation acting on wire 'p'
@@ -950,6 +963,7 @@ def _layer_qfunc7(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires) - 1, -1, -1)
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots_reversed()
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
@@ -990,6 +1004,7 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires))
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots()
 
     # Z rotation acting on wire 'p'
@@ -999,6 +1014,7 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     @for_loop(len(set_cnot_wires) - 1, -1, -1)
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
+
     apply_cnots_reversed()
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
