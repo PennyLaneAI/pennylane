@@ -94,7 +94,11 @@ Executing this QNode with 10 shots yields
 .. code-block:: pycon
 
     >>> func(np.pi / 2, shots=10)
-    array([1, 1, 1, 1, 1, 1, 1])
+    array([[1],
+       [1],
+       [1],
+       [1],
+       [1]])
 
 Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
 discarded. This behaviour can be customized, see the section

@@ -437,9 +437,7 @@ class TestSample:
             *jaxpr.out_avals, shots=qml.measurements.Shots(50), num_device_wires=4
         )
         assert len(shapes) == 1
-        shape = (
-            (50, dim1_len) if isinstance(wires, (list, jax.numpy.ndarray, np.ndarray)) else (50,)
-        )
+        shape = (50, dim1_len)
         assert shapes[0] == jax.core.ShapedArray(
             shape, jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         )

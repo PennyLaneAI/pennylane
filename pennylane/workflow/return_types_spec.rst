@@ -36,19 +36,25 @@ For example, :class:`~.CountsMP` corresponds to a dictionary. We can also imagin
 a measurement corresponds to some other type of custom data structure.
 
 >>> def example_value(m):
-...     tape = qml.tape.QuantumScript((), (m,), shots=50)
+...     tape = qml.tape.QuantumScript((), (m,), shots=10)
 ...     return qml.device('default.qubit').execute(tape)
 >>> example_value(qml.probs(wires=0))
 array([1., 0.])
 >>> example_value(qml.expval(qml.Z(0)))
 1.0
 >>> example_value(qml.counts(wires=0))
-{'0': 50}
+{'0': 10}
 >>> example_value(qml.sample(wires=0))
-array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-       0, 0, 0, 0, 0, 0])
-
+array([[0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0],
+       [0]])
 
 Empty Wires
 ^^^^^^^^^^^
