@@ -41,6 +41,7 @@ def specs(
         level (None, str, int, slice): An indication of what transforms to apply before computing the resource information.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
+        compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth will not be included in the returned information.    
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function

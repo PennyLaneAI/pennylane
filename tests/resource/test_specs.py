@@ -191,10 +191,7 @@ class TestSpecsTransform:
 
         info = qml.specs(circuit, compute_depth=compute_depth)(x)
 
-        if compute_depth:
-            assert info["resources"].depth == 6
-        else:
-            assert info["resources"].depth is None
+        assert info["resources"].depth == (6 if compute_depth else None)
 
     @pytest.mark.parametrize(
         "diff_method, len_info", [("backprop", 12), ("parameter-shift", 13), ("adjoint", 12)]

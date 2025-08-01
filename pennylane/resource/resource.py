@@ -631,7 +631,7 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resourc
     Args:
         tape (.QuantumScript): The quantum circuit for which we count resources
         compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
-            If False, the depth is set None.
+            If False, the depth is set to None.
 
     Returns:
         (.Resources): The total resources used in the workflow
