@@ -410,6 +410,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Clarifies the use case for `Operator.pow` and `Operator.adjoint`.
+  [(#7999)](https://github.com/PennyLaneAI/pennylane/pull/7999)
+
 * The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
   [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
 
