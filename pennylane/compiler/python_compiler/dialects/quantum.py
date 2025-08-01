@@ -378,8 +378,8 @@ class ComputationalBasisOp(IRDLOperation):
     """Define a pseudo-observable in the computational basis for use in measurements.
 
     Args:
-        qubits (Sequence[QubitSSAValue] | None): Qubits that make up the computational basis.
-        qreg (QuregSSAValue | None): Quantum register that makes up the computational basis.
+        qubits (Sequence[QubitSSAValue] | None): Qubits to be measured in the computational basis.
+        qreg (QuregSSAValue | None): Quantum register to be measured in the computational basis.
 
     Results:
         obs (ObservableSSAValue): The observable value.
@@ -416,7 +416,7 @@ class CountsOp(IRDLOperation):
     eigenvalue.
 
     Args:
-        obs (Observable): The only SSA argument is an observable that must be defined by an
+        obs (ObservableSSAValue): The only SSA argument is an observable that must be defined by an
             operation in the local scope. The number of samples to draw is determined by the
             device shots argument in the device initialization operation in the local scope.
 
@@ -439,13 +439,10 @@ class CountsOp(IRDLOperation):
         func.func @foo(%q0: !quantum.bit, %q1: !quantum.bit, %shots: i64)
         {
             quantum.device shots(%shots) ["rtd_lightning.so", "lightning.qubit", "{my_attr: my_attr_value}"]
-            %obs = quantum.compbasis %q0, %q1 : !quantum.obs
+            %obs = quantum.compbasis qubits %q0, %q1 : !quantum.obs
 
             // Notice two tensors with a single dimension being returned.
-            %counts = quantum.counts %obs : tensor<4xf64>, tensor<4xi64>
-
-            %obs2 = quantum.pauli %q0[3], %q1[1] : !quantum.obs
-            %counts2 = quantum.counts %obs2 : tensor<2xf64>, tensor<2xi64>
+            %eigvals, %counts = quantum.counts %obs : tensor<4xf64>, tensor<4xi64>
 
             func.return
         }
@@ -487,16 +484,20 @@ class CustomOp(IRDLOperation):
 
     Args:
         gate_name (string | StringAttr): The operation's name. E.g., Hadamard.
-        params (Sequence[SSAValue]): The classical parameters.
-        in_qubits (Sequence[SSAValue]): The qubits the operation acts on.
-        adjoint (UnitAttr | bool | None): Denotes whether the operation is an adjoint.
+        params (SSAValue[Float64Type] | Sequence[SSAValue[Float64Type]] | None):
+            The classical parameters.
+        in_qubits (QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation]):
+            The qubits the operation acts on.
+        adjoint (UnitAttr | bool): Denotes whether the operation is an adjoint.
             If a ``UnitAttr`` or ``True`` value is passed, then the operation is an adjoint.
-        in_ctrl_qubits (Sequence[SSAValue]): Control qubits.
-        in_ctrl_values (Sequence[SSAValue | bool]): Control values. Must be ``True`` or ``False``.
+        in_ctrl_qubits (QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None):
+            Control qubits.
+        in_ctrl_values (SSAValue[IntegerType] | Operation | Sequence[SSAValue[IntegerType]] | Sequence[Operation] | None):
+            Control values. Must be ``True`` or ``False``.
 
     Results:
-        out_qubits (Sequence[SSAValue]): The output qubits.
-        out_ctrl_qubits (Sequence[SSAVAlue]): The output control qubits.
+        out_qubits (Sequence[QubitSSAValue]): The output qubits.
+        out_ctrl_qubits (Sequence[QubitSSAValue]): The output control qubits.
 
     .. note::
 
@@ -736,9 +737,9 @@ class ExtractOp(IRDLOperation):
     """Extract a qubit value from a register.
 
     Args:
-        qreg (QregSSAValue): The quantum register containing the qubit to be extracted.
-        idx (SSAValue | None): An index that may correspond to an unknown wire.
-        idx_attr (IntegerAttr | int): An index that is statically known.
+        qreg (QregSSAValue | Operation): The quantum register containing the qubit to be extracted.
+        idx (int | SSAValue[IntegerType] | Operation | IntegerAttr):
+            The wire index, possibly unknown at compile time.
 
     Results:
         qubit: The extracted qubit.
@@ -801,9 +802,11 @@ class GlobalPhaseOp(IRDLOperation):
     Applies global phase to the current system.
 
     Args:
-        params (SSAValue | float): The global phase
-        in_ctrl_qubits (SSAValue): The control qubits.
-        in_ctrl_values (SSAValue): The control values.
+        params (SSAValue[Float64Type] | float): The global phase
+        in_ctrl_qubits (QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None):
+            The control qubits.
+        in_ctrl_values (SSAValue[IntegerType] | Operation | Sequence[SSAValue[IntegerType]] | Sequence[Operation] | None):
+            The control values.
 
     Results:
         out_ctrl_qubits: The control qubits
@@ -960,13 +963,13 @@ class InsertOp(IRDLOperation):
     """Update the qubit value of a register.
 
     Args:
-        in_qreg (SSAValue): Input quantum register that will contain the inserted qubit.
-        idx (SSAValue | Operation | int | IntegerAttr): The index in which to insert the qubit. Possibly
-            unknown at compile time.
-        qubit (SSAValue): The qubit to store at position given by the index.
+        in_qreg (QuregSSAValue | Operation): Input quantum register that will contain the inserted qubit.
+        idx (SSAValue[IntegerType] | Operation | int | IntegerAttr): The index in which to insert the qubit.
+            Possibly unknown at compile time.
+        qubit (QubitSSAValue | Operation): The qubit to store at position given by the index.
 
     Results:
-        out_qreg (SSAValue): The updated quantum register.
+        out_qreg (QuregSSAValue): The updated quantum register.
 
     .. note::
 
@@ -1011,7 +1014,7 @@ class InsertOp(IRDLOperation):
 
 @irdl_op_definition
 class MeasureOp(IRDLOperation):
-    """A single-qubit projective measurement in the computational basis.
+    """A single-qubit projective mid-circuit measurement in the computational basis.
 
     Args:
         in_qubit (SSAValue): The qubit to measure.
@@ -1019,8 +1022,8 @@ class MeasureOp(IRDLOperation):
             ``None`` by default.
 
     Results:
-        mres (SSAValue): The measurement result given as a boolean value.
-        out_qubit (SSAValue): The output qubit in either the :math:`|0\rangle` or :math:`|1\rangle` state.
+        mres (SSAValue[IntegerType]): The result of the projective measurement given as a boolean value.
+        out_qubit (QubitSSAValue): The output qubit in either the :math:`|0\rangle` or :math:`|1\rangle` state.
     """
 
     name = "quantum.measure"
@@ -1077,7 +1080,7 @@ class MultiRZOp(IRDLOperation):
 
     Results:
         out_qubits (Sequence[SSAValue]): The output qubits.
-        out_ctrl_qubits (Sequence[SSAVAlue]): The output control qubits.
+        out_ctrl_qubits (Sequence[SSAValue]): The output control qubits.
 
     .. note::
 
@@ -1161,7 +1164,20 @@ class NamedObsOp(IRDLOperation):
 
     obs = result_def(ObservableType)
 
-    def __init__(self, qubit: QubitSSAValue | Operation, obs_type: NamedObservableAttr):
+    def __init__(
+        self,
+        qubit: QubitSSAValue | Operation,
+        obs_type: str | NamedObservable | NamedObservableAttr,
+    ):
+        if isinstance(obs_type, str):
+            enum = getattr(NamedObservable, obs_type, None)
+            if enum is None:
+                raise ValueError(f"Invalid observable type {obs_type} provided.")
+            obs_type = NamedObservableAttr(enum)
+
+        if isinstance(obs_type, NamedObservable):
+            obs_type = NamedObservableAttr(obs_type)
+
         super().__init__(
             operands=(qubit,), properties={"type": obs_type}, result_types=(ObservableType(),)
         )
@@ -1198,7 +1214,7 @@ class ProbsOp(IRDLOperation):
 
     .. note::
 
-        The optional operand state_in is only used after bufferization.
+        The optional operand ``state_in`` is only used after bufferization.
 
     """
 
@@ -1235,7 +1251,7 @@ class QubitUnitaryOp(IRDLOperation):
 
     Returns:
         out_qubits (Sequence[SSAValue]): The output qubits.
-        out_ctrl_qubits (Sequence[SSAVAlue]): The output control qubits.
+        out_ctrl_qubits (Sequence[SSAValue]): The output control qubits.
     """
 
     name = "quantum.unitary"
@@ -1301,12 +1317,8 @@ class SampleOp(IRDLOperation):
         func.func @foo(%q0: !quantum.bit, %q1: !quantum.bit, %shots: i64)
         {
             quantum.device shots(%shots) ["rtd_lightning.so", "lightning.qubit", "{my_attr: my_attr_value}"]
-            %obs1 = quantum.compbasis %q0, %q1 : !quantum.obs
-            %samples = quantum.sample %obs1 : tensor<?xf64>
-
-            %obs2 = quantum.pauli %q0[3], %q1[1] : !quantum.obs
-            %samples2 = quantum.sample %obs2 : tensor<?x2xf64>
-
+            %obs1 = quantum.compbasis qubits %q0, %q1 : !quantum.obs
+            %samples = quantum.sample %obs1 shape %shots : tensor<?x2xf64>
             func.return
         }
     """
