@@ -1105,7 +1105,7 @@ class QuantumScript:
         """Resource information about a quantum circuit.
 
         Returns:
-            dict[str, Union[defaultdict,int]]: dictionaries that contain quantum script specifications
+            SpecsDict[str, Any]: A dictionary containing the specifications of the quantum script.
 
         **Example**
          >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
@@ -1128,9 +1128,21 @@ class QuantumScript:
         gate_sizes:
         {1: 4, 2: 2}
         """
-        # pylint: disable=protected-access
+        return self.compute_specs()
+
+    def compute_specs(self, compute_depth: bool = True) -> SpecsDict[str, Any]:
+        """
+        Compute the specifications of the quantum script.
+
+        Args:
+            compute_depth (bool): Wether to compute the depth of the quantum script.
+
+        Returns:
+            SpecsDict[str, Any]: A dictionary containing the specifications of the quantum script.
+        """
+
         if self._specs is None:
-            resources = qml.resource.resource._count_resources(self)
+            resources = qml.resource.resource._count_resources(self, compute_depth=compute_depth)
             algo_errors = qml.resource.error._compute_algo_error(self)
 
             self._specs = SpecsDict(

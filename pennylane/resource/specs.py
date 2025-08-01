@@ -25,7 +25,9 @@ def _get_absolute_import_path(fn):
 
 
 def specs(
-    qnode, level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient"
+    qnode,
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
+    compute_depth: bool = True,
 ) -> Callable[..., list[dict[str, Any]] | dict[str, Any]]:
     r"""Resource information about a quantum circuit.
 
@@ -195,7 +197,8 @@ def specs(
 
         for tape in batch:
 
-            info = copy(tape.specs)
+            tape_specs = tape.compute_specs(compute_depth=compute_depth)
+            info = copy(tape_specs)
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires
             info["device_name"] = qnode.device.name

@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
+from pennylane.tape import QuantumScript
 
 
 @dataclass(frozen=True)
@@ -623,19 +624,21 @@ def _scale_dict(dict1: dict, scalar: int):
     return combined_dict
 
 
-def _count_resources(tape) -> Resources:
+def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resources:
     """Given a quantum circuit (tape), this function
      counts the resources used by standard PennyLane operations.
 
     Args:
-        tape (.QuantumTape): The quantum circuit for which we count resources
+        tape (.QuantumScript): The quantum circuit for which we count resources
+        compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
+            If False, the depth is set None.
 
     Returns:
         (.Resources): The total resources used in the workflow
     """
     num_wires = len(tape.wires)
     shots = tape.shots
-    depth = tape.graph.get_depth()
+    depth = tape.graph.get_depth() if compute_depth else None
 
     num_gates = 0
     gate_types = defaultdict(int)
