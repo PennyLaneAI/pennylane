@@ -242,7 +242,7 @@ def concatenate(values, axis=0, like=None):
         import torch
 
         device = (
-            "cuda"
+            "cuda:" + str(values[0].device.index)
             if any(t.device.type == "cuda" for t in values if isinstance(t, torch.Tensor))
             else "cpu"
         )
