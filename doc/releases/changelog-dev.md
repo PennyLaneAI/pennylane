@@ -241,14 +241,10 @@
   The wires and parameters of the approximate unitary `V` are inferred from the inputs, according to the order provided.
 
   ```python
-  U = qml.Hadamard(0)
-  V = qml.RZ(0.1, wires=1)
-  ```
-
-  ```pycon
+  >>> U = qml.Hadamard(0)
+  >>> V = qml.RZ(0.1, wires=1)
   >>> qml.HilbertSchmidt(V, U)
   HilbertSchmidt(0.1, wires=[0, 1])
-  ```
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
 
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
