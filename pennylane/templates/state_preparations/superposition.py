@@ -273,7 +273,7 @@ class Superposition(Operation):
     def resource_params(self) -> dict:
         return {
             "num_wires": len(self.hyperparameters["target_wires"]),
-            "num_coeffs": len(self.data),
+            "num_coeffs": len(self.data[0]),
             "bases": self.hyperparameters["bases"],
         }
 
@@ -400,7 +400,7 @@ def _suerposition_resources(num_wires, num_coeffs, bases):
                     base_class=qml.PauliX,
                     base_params={},
                     num_control_wires=num_wires,
-                    num_zero_control_values=reduce(lambda acc, nxt: acc + int(b == 0), basis1, 0),
+                    num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis1, 0),
                 )
             ] += 1
 
@@ -413,13 +413,15 @@ def _suerposition_resources(num_wires, num_coeffs, bases):
                     base_class=qml.PauliX,
                     base_params={},
                     num_control_wires=num_wires,
-                    num_zero_control_values=reduce(lambda acc, nxt: acc + int(b == 0), basis2, 0),
+                    num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), basis2, 0),
                 )
             ] += 1
 
+    return dict(resources)
+
 
 @register_resources(_suerposition_resources)
-def _superposition_decomposition(coeffs, bases, wires, work_wire):
+def _superposition_decomposition(coeffs, bases, target_wires, work_wire, wires=None):
     dic_state = dict(zip(bases, coeffs))
     perms = _assign_states(bases)
     new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
@@ -439,7 +441,7 @@ def _superposition_decomposition(coeffs, bases, wires, work_wire):
 
     for basis2, basis1 in perms.items():
         if not qml.math.allclose(basis1, basis2):
-            _permutation_operator_qfunc(basis1, basis2, wires, work_wire)
+            _permutation_operator_qfunc(basis1, basis2, target_wires, work_wire)
 
 
 add_decomps(Superposition, _superposition_decomposition)
