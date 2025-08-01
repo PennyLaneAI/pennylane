@@ -4903,7 +4903,6 @@ class TestKaHyPar:
     def test_seed_in_ci(self):
         """Test if seed is properly set in github action CI"""
         if environ.get("CI") == "true":
-            print(f"CI seed set to {self.seed}")
             assert self.seed == 11
 
     def test_import_raise(self, monkeypatch):
