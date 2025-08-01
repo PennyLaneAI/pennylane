@@ -215,6 +215,9 @@
 
 <h3>Breaking changes 💔</h3>
 
+* Remove support for Python 3.10 and adds support for 3.13.
+  [(#7935)](https://github.com/PennyLaneAI/pennylane/pull/7935)
+
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
 
@@ -416,6 +419,9 @@
   [(#7957)](https://github.com/PennyLaneAI/pennylane/pull/7957)
 
 <h3>Documentation 📝</h3>
+
+* Updated the code examples in the documentation of :func:`~.specs`.
+  [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
 
 * Clarifies the use case for `Operator.pow` and `Operator.adjoint`.
   [(#7999)](https://github.com/PennyLaneAI/pennylane/pull/7999)
