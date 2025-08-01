@@ -172,7 +172,7 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
     tapes = []
     for mu, time in zip(mus, times):
         added_operations = []
-        # Put QSP and Hadamard test on the two ancillas Target and Control
+        # Put QSP and Hadamard test on the two auxiliarys Target and Control
         added_operations.append(qml.Hadamard(controls[0]))
         for i, phi in enumerate(phis):
             added_operations.append(qml.CRX(phi, wires=controls))
@@ -265,7 +265,7 @@ def sign_expand(
 
     >>> tapes, fn = qml.transforms.sign_expand(tape)
 
-    We can evaluate these tapes on a device, it needs two additional ancilla gates labeled 'Hadamard' and 'Target' if
+    We can evaluate these tapes on a device, it needs two additional auxiliary gates labeled 'Hadamard' and 'Target' if
     one wants to make the circuit approximation of the decomposition:
 
     >>> dev = qml.device("default.qubit", wires=[0,1,2,'Hadamard','Target'])

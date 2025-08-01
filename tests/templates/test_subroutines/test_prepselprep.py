@@ -148,9 +148,9 @@ class TestPrepSelPrep:
             ),
             (
                 lcu2,
-                "ancilla",
-                qml.matrix(prepselprep, wire_order=["ancilla", 0]),
-                qml.matrix(manual, wire_order=["ancilla", 0]),
+                "auxiliary",
+                qml.matrix(prepselprep, wire_order=["auxiliary", 0]),
+                qml.matrix(manual, wire_order=["auxiliary", 0]),
             ),
             (
                 lcu3,
@@ -205,7 +205,12 @@ class TestPrepSelPrep:
             (qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.3, -0.1], [qml.Z(1), qml.X(1)]), [0], [0, 1], 2),
             (qml.dot([0.5j, -0.5j], [qml.Z(2), qml.X(2)]), [0, 1], [0, 1, 2], 2),
-            (qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]), "ancilla", ["ancilla", 0], 2),
+            (
+                qml.dot([0.5, 0.5], [qml.Identity(0), qml.PauliZ(0)]),
+                "auxiliary",
+                ["auxiliary", 0],
+                2,
+            ),
             (
                 qml.dot([0.5, 0.5, 0.5], [qml.PauliX(2), qml.PauliY(2), qml.PauliZ(2)]),
                 [0, 1],

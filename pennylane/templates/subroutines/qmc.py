@@ -83,7 +83,7 @@ def probs_to_unitary(probs):
 
 
 def func_to_unitary(func, M):
-    r"""Calculates the unitary that encodes a function onto an ancilla qubit register.
+    r"""Calculates the unitary that encodes a function onto an auxiliary qubit register.
 
     Consider a function defined on the set of integers :math:`X = \{0, 1, \ldots, M - 1\}` whose
     output is bounded in the interval :math:`[0, 1]`, i.e., :math:`f: X \rightarrow [0, 1]`.
@@ -97,8 +97,8 @@ def func_to_unitary(func, M):
         \sqrt{f(i)} |1\rangle\right).
 
     In other words, for a given input state :math:`|i\rangle \otimes |0\rangle`, this unitary
-    encodes the amplitude :math:`\sqrt{f(i)}` onto the :math:`|1\rangle` state of the ancilla qubit.
-    Hence, measuring the ancilla qubit will result in the :math:`|1\rangle` state with probability
+    encodes the amplitude :math:`\sqrt{f(i)}` onto the :math:`|1\rangle` state of the auxiliary qubit.
+    Hence, measuring the auxiliary qubit will result in the :math:`|1\rangle` state with probability
     :math:`f(i)`.
 
     Args:
@@ -152,7 +152,7 @@ def func_to_unitary(func, M):
 
 def _make_V(dim):
     r"""Calculates the :math:`\mathcal{V}` unitary which performs a reflection along the
-    :math:`|1\rangle` state of the end ancilla qubit.
+    :math:`|1\rangle` state of the end auxiliary qubit.
 
     Args:
         dim (int): dimension of :math:`\mathcal{V}`
@@ -418,7 +418,7 @@ class QuantumMonteCarlo(Operation):
 
         Args:
             A (array): unitary matrix corresponding to an input probability distribution
-            R (array): unitary that encodes the function applied to the ancilla qubit register
+            R (array): unitary that encodes the function applied to the auxiliary qubit register
             Q (array): matrix that encodes the expectation value according to the probability unitary
                 and the function-encoding unitary
             wires (Any or Iterable[Any]): full set of wires that the operator acts on
