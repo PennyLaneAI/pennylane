@@ -21,7 +21,12 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumTape
-from pennylane.transforms.core import TransformContainer, TransformError, transform
+from pennylane.transforms.core import (
+    TransformContainer,
+    TransformDispatcher,
+    TransformError,
+    transform,
+)
 from pennylane.typing import PostprocessingFn, TensorLike
 
 dev = qml.device("default.qubit", wires=2)
@@ -214,6 +219,72 @@ class TestTransformContainer:
         assert not container.final_transform
 
 
+class TestTransformDispatcherExtension:
+
+    @pytest.mark.parametrize("explicit_type", (True, False))
+    def test_generic_register(self, explicit_type):
+        """Test that generic_register can register behavior for a new object."""
+
+        # pylint: disable=too-few-public-methods
+        class Subroutine:
+
+            def __init__(self, ops):
+                self.ops = ops
+
+        def subroutine_func(self, obj: Subroutine, *targs, **tkwargs):
+            tape = qml.tape.QuantumScript(obj.ops)
+            [new_tape], _ = self(tape, *targs, **tkwargs)
+            return Subroutine(new_tape.operations)
+
+        if explicit_type:
+            TransformDispatcher.generic_register(Subroutine)(subroutine_func)
+        else:
+            TransformDispatcher.generic_register(subroutine_func)
+
+        @qml.transform
+        def dummy_transform(tape, op, n_times):
+            tape = qml.tape.QuantumScript(tape.operations + [op for _ in range(n_times)])
+            return (tape,), lambda res: res[0]
+
+        new_subroutine = dummy_transform(Subroutine([qml.X(0), qml.X(0)]), qml.Y(1), 3)
+        assert isinstance(new_subroutine, Subroutine)
+        assert new_subroutine.ops == [qml.X(0), qml.X(0), qml.Y(1), qml.Y(1), qml.Y(1)]
+
+        new_subroutine = dummy_transform.generic_apply_transform(
+            Subroutine([qml.X(0), qml.X(0)]), qml.Y(1), 3
+        )
+        assert isinstance(new_subroutine, Subroutine)
+        assert new_subroutine.ops == [qml.X(0), qml.X(0), qml.Y(1), qml.Y(1), qml.Y(1)]
+
+    def test_register(self):
+        """Test that transform specific behavior."""
+
+        @qml.transform
+        def dummy_transform(tape):
+            return (tape.copy(ops=tape.operations[:3]),), lambda x: x[0]
+
+        @dummy_transform.register
+        def _(
+            tape: qml.tape.QuantumScript, transform
+        ):  # pylint: disable=redefined-outer-name, unused-argument
+            return (tape.copy(ops=tape.operations[:1]),), lambda x: x[0]
+
+        input = qml.tape.QuantumScript([qml.X(0), qml.X(1), qml.X(2), qml.X(3), qml.X(4), qml.X(5)])
+
+        [overridden], _ = dummy_transform(input)
+        qml.assert_equal(overridden, qml.tape.QuantumScript([qml.X(0)]))
+
+        # propagates to other applications
+        tape2 = qml.tape.QuantumScript([qml.Y(0), qml.Y(1), qml.Y(2), qml.Y(3)])
+        [overridden1, overridden2], _ = dummy_transform((input, tape2))
+        qml.assert_equal(overridden1, qml.tape.QuantumScript([qml.X(0)]))
+        qml.assert_equal(overridden2, qml.tape.QuantumScript([qml.Y(0)]))
+
+        # generic apply transform still works
+        [generic_output], _ = dummy_transform.generic_apply_transform(input)
+        qml.assert_equal(generic_output, qml.tape.QuantumScript([qml.X(0), qml.X(1), qml.X(2)]))
+
+
 class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     """Test the transform function (validate and dispatch)."""
 
@@ -352,7 +423,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         msg = r"Decorating a QNode with @transform_fn\(\*\*transform_kwargs\) has been removed"
         with pytest.raises(TransformError, match=msg):
 
-            @dispatched_transform(targs)
+            @dispatched_transform(*targs)
             @qml.qnode(device=dev)
             def qnode_circuit(a):  # pylint:disable=unused-variable
                 """QNode circuit."""
@@ -419,7 +490,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         assert isinstance(qnode_transformed.transform_program, qml.transforms.core.TransformProgram)
         expand_transform_container = qnode_transformed.transform_program.pop_front()
         assert isinstance(expand_transform_container, qml.transforms.core.TransformContainer)
-        assert expand_transform_container.args == [0]
+        assert expand_transform_container.args == (0,)
         assert expand_transform_container.kwargs == {}
         assert expand_transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
@@ -427,7 +498,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         transform_container = qnode_transformed.transform_program.pop_front()
 
         assert isinstance(transform_container, qml.transforms.core.TransformContainer)
-        assert transform_container.args == [0]
+        assert transform_container.args == (0,)
         assert transform_container.kwargs == {}
         assert transform_container.classical_cotransform is None
         assert not expand_transform_container.is_informative
@@ -597,7 +668,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         )
 
         # check that the custom qnode transform was called
-        assert history == [([], {"index": 0}), ([1], {})]
+        assert history == [((), {"index": 0}), ((1,), {})]
 
     @pytest.mark.parametrize(
         "fn, type_",
