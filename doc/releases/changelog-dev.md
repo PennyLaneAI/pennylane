@@ -228,7 +228,18 @@
 
 <h3>Deprecations 👋</h3>
 
-* Setting shots on device is deprecated. Please use `set_shots` on QNode instead.
+* Setting shots on device, e.g. `qml.device("default.qubit", wires=2, shots=1000)`, is deprecated. Please use `set_shots` on the `QNode` instead.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.set_shots(1000)
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      return qml.expval(qml.Z(0))
+  ```
+
   [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
 
 * Providing `num_steps` to `qml.evolve` and `Evolution` is deprecated and will be removed in a future version.

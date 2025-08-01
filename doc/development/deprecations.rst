@@ -9,7 +9,17 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Setting shots on device is deprecated. Please use `set_shots` on QNode instead.
+* Setting shots on device, e.g. ``qml.device("default.qubit", wires=2, shots=1000)``, is deprecated. Please use ``set_shots`` on the :class:`~.QNode` instead.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.set_shots(1000)
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      return qml.expval(qml.Z(0))
+  ```
 
   - Deprecated in v0.43
   - Will be removed in a future version
