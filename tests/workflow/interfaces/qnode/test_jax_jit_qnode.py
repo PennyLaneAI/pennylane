@@ -15,8 +15,6 @@
 
 
 # pylint: disable=too-many-arguments,too-few-public-methods,protected-access
-from functools import partial
-
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
@@ -830,15 +828,15 @@ class TestShotsIntegration:
             circuit(a, b)
 
         # execute with shots=100
-        res = circuit(a, b, shots=100)  # pylint: disable=unexpected-keyword-arg
+        res = qml.set_shots(shots=100)(circuit)(a, b)  # pylint: disable=unexpected-keyword-arg
         assert res.shape == (100, 2)  # pylint:disable=comparison-with-callable
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
         a, b = jax.numpy.array([0.543, -0.654])
 
+        @qml.set_shots(shots=30000)
         @qnode(DefaultQubit(), diff_method=qml.gradients.param_shift, interface=interface)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
@@ -846,8 +844,8 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        jit_cost_fn = jax.jit(cost_fn, static_argnames=["shots"])
-        res = jax.grad(jit_cost_fn, argnums=[0, 1])(a, b, shots=30000)
+        jit_cost_fn = jax.jit(cost_fn)
+        res = jax.grad(jit_cost_fn, argnums=[0, 1])(a, b)
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)
@@ -867,7 +865,7 @@ class TestShotsIntegration:
             return qml.expval(qml.PauliY(1))
 
         with dev.tracker:
-            jax.grad(cost_fn)(a, b, shots=100)
+            jax.grad(qml.set_shots(cost_fn, shots=100))(a, b)
         # since we are using finite shots, use parameter shift
         assert dev.tracker.totals["executions"] == 3
 
@@ -876,9 +874,9 @@ class TestShotsIntegration:
             jax.grad(cost_fn)(a, b)
         assert dev.tracker.totals["executions"] == 1
 
-    @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
-    def test_shot_vectors_single_measurements(self, interface, shots, seed):
-        """Test jax-jit can work with shot vectors."""
+    @pytest.mark.parametrize("shots", [10000, 10005])
+    def test_finite_shot_single_measurements(self, interface, shots, seed):
+        """Test jax-jit can work with shot vectors and returns correct shapes."""
 
         dev = qml.device("default.qubit", shots=shots, seed=seed)
 
@@ -890,17 +888,15 @@ class TestShotsIntegration:
 
         res = circuit(0.5)
         expected = 1 - np.cos(0.5) ** 2
-        assert qml.math.allclose(res[0], expected, atol=1 / qml.math.sqrt(shots[0]), rtol=0.03)
-        assert qml.math.allclose(res[1], expected, atol=1 / qml.math.sqrt(shots[1]), rtol=0.03)
+        assert qml.math.allclose(res, expected, atol=1 / qml.math.sqrt(shots), rtol=0.03)
 
         g = jax.jacobian(circuit)(0.5)
         expected_g = 2 * np.cos(0.5) * np.sin(0.5)
-        assert qml.math.allclose(g[0], expected_g, atol=1 / qml.math.sqrt(shots[0]), rtol=0.03)
-        assert qml.math.allclose(g[1], expected_g, atol=1 / qml.math.sqrt(shots[1]), rtol=0.03)
+        assert qml.math.allclose(g, expected_g, atol=1 / qml.math.sqrt(shots), rtol=0.03)
 
-    @pytest.mark.parametrize("shots", [(10000, 10000), (10000, 10005)])
-    def test_shot_vectors_multiple_measurements(self, interface, shots, seed):
-        """Test jax-jit can work with shot vectors."""
+    @pytest.mark.parametrize("shots", [10000, 10005])
+    def test_finite_shot_multiple_measurements(self, interface, shots, seed):
+        """Test jax-jit can work with shot vectors and returns correct shapes."""
 
         dev = qml.device("default.qubit", shots=shots, seed=seed)
 
@@ -912,20 +908,74 @@ class TestShotsIntegration:
 
         res = circuit(0.5)
         expected = np.cos(0.5)
-        assert qml.math.allclose(res[0][0], expected, atol=1 / qml.math.sqrt(shots[0]), rtol=0.03)
-        assert qml.math.allclose(res[1][0], expected, atol=1 / qml.math.sqrt(shots[0]), rtol=0.03)
+        assert qml.math.allclose(res[0], expected, atol=1 / qml.math.sqrt(shots), rtol=0.03)
 
         expected_probs = np.array([np.cos(0.25) ** 2, np.sin(0.25) ** 2])
+        assert qml.math.allclose(res[1], expected_probs, atol=1 / qml.math.sqrt(shots), rtol=0.03)
         assert qml.math.allclose(
-            res[0][1], expected_probs, atol=1 / qml.math.sqrt(shots[1]), rtol=0.03
-        )
-        assert qml.math.allclose(
-            res[1][1][0], expected_probs[0], atol=1 / qml.math.sqrt(shots[0]), rtol=0.03
+            res[1][0], expected_probs[0], atol=1 / qml.math.sqrt(shots), rtol=0.03
         )
         # Smaller atol since sin(0.25)**2 is close to zero
-        assert qml.math.allclose(
-            res[1][1][1], expected_probs[1], atol=0.5 * 1 / qml.math.sqrt(shots[1])
-        )
+        assert qml.math.allclose(res[1][1], expected_probs[1], atol=0.5 * 1 / qml.math.sqrt(shots))
+
+    @pytest.mark.parametrize("shots", [(10, 10), (10, 15)])
+    def test_shot_vectors_single_measurements(self, interface, shots, seed):
+        """Test jax-jit can work with shot vectors and returns correct shapes."""
+
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
+
+        @jax.jit
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.var(qml.PauliZ(0))
+
+        res = circuit(0.5)
+
+        # Test return shapes for shot vectors
+        assert isinstance(res, tuple)
+        assert len(res) == 2  # Two different shot counts
+        assert all(isinstance(r, jax.numpy.ndarray) for r in res)
+        assert all(r.shape == () for r in res)  # Scalar outputs
+
+        g = jax.jacobian(circuit)(0.5)
+
+        # Test gradient shapes for shot vectors
+        assert isinstance(g, tuple)
+        assert len(g) == 2  # Two different shot counts
+        assert all(isinstance(gr, jax.numpy.ndarray) for gr in g)
+        assert all(gr.shape == () for gr in g)  # Scalar gradients
+
+    @pytest.mark.parametrize("shots", [(10, 10), (10, 15)])
+    def test_shot_vectors_multiple_measurements(self, interface, shots, seed):
+        """Test jax-jit can work with shot vectors and returns correct shapes for multiple measurements."""
+
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
+
+        @jax.jit
+        @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            return qml.expval(qml.PauliZ(0)), qml.probs(wires=0)
+
+        res = circuit(0.5)
+
+        # Test return shapes for shot vectors with multiple measurements
+        assert isinstance(res, tuple)
+        assert len(res) == 2  # Two different shot counts
+
+        # Each shot count should return a tuple of (expval, probs)
+        for shot_res in res:
+            assert isinstance(shot_res, tuple)
+            assert len(shot_res) == 2  # expval and probs
+
+            # expval should be scalar
+            assert isinstance(shot_res[0], jax.numpy.ndarray)
+            assert shot_res[0].shape == ()
+
+            # probs should be 1D array with 2 elements (for 1 qubit)
+            assert isinstance(shot_res[1], jax.numpy.ndarray)
+            assert shot_res[1].shape == (2,)
 
 
 @pytest.mark.parametrize("interface", ["auto", "jax-jit"])
@@ -936,7 +986,6 @@ class TestShotsIntegration:
 class TestQubitIntegration:
     """Tests that ensure various qubit circuits integrate correctly"""
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_sampling(self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed):
         """Test sampling works as expected"""
 
@@ -946,6 +995,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
 
+        @qml.set_shots(shots=10)
         @qml.qnode(
             get_device(dev_name, wires=2, seed=seed),
             diff_method=diff_method,
@@ -958,7 +1008,7 @@ class TestQubitIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.Z(0)), qml.sample(qml.s_prod(2, qml.X(0) @ qml.Y(1)))
 
-        res = jax.jit(circuit, static_argnames="shots")(shots=10)
+        res = jax.jit(circuit)()
 
         assert isinstance(res, tuple)
 
@@ -967,7 +1017,6 @@ class TestQubitIntegration:
         assert isinstance(res[1], jax.Array)
         assert res[1].shape == (10,)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_counts(self, dev_name, diff_method, grad_on_execution, device_vjp, interface, seed):
         """Test counts works as expected"""
 
@@ -977,6 +1026,7 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
 
+        @qml.set_shots(shots=10)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             diff_method=diff_method,
@@ -993,9 +1043,9 @@ class TestQubitIntegration:
             with pytest.raises(
                 NotImplementedError, match="The JAX-JIT interface doesn't support qml.counts."
             ):
-                jax.jit(circuit, static_argnames="shots")(shots=10)
+                jax.jit(circuit)()
         else:
-            res = jax.jit(circuit, static_argnames="shots")(shots=10)
+            res = jax.jit(circuit)()
 
             assert isinstance(res, tuple)
 
@@ -1664,6 +1714,7 @@ class TestTapeExpansion:
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
+        @qml.set_shots(shots=50000)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1686,12 +1737,12 @@ class TestTapeExpansion:
         c = jax.numpy.array([-0.6543, 0.24, 0.54])
 
         # test output
-        res = circuit(d, w, c, shots=50000)  # pylint:disable=unexpected-keyword-arg
+        res = circuit(d, w, c)
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
         assert np.allclose(res, expected, atol=tol)
 
         # test gradients
-        grad = jax.grad(circuit, argnums=[1, 2])(d, w, c, shots=50000)
+        grad = jax.grad(circuit, argnums=[1, 2])(d, w, c)
         expected_w = [
             -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
             -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
@@ -2101,7 +2152,6 @@ class TestJIT:
 class TestReturn:
     """Class to test the shape of the Grad/Jacobian with different return types."""
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_grad_single_measurement_param(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2119,6 +2169,7 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             interface=interface,
@@ -2133,12 +2184,11 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        grad = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        grad = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == ()
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_grad_single_measurement_multiple_param(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2156,6 +2206,7 @@ class TestReturn:
         if "lightning" in dev_name:
             pytest.xfail("lightning device vjps are not compatible with jax jaocbians")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             interface=interface,
@@ -2171,16 +2222,13 @@ class TestReturn:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        grad = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(
-            a, b, shots=shots
-        )
+        grad = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b)
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
         assert grad[0].shape == ()
         assert grad[1].shape == ()
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_grad_single_measurement_multiple_param_array(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2198,6 +2246,7 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             interface=interface,
@@ -2212,12 +2261,11 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        grad = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        grad = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == (2,)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_single_measurement_param_probs(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2236,6 +2284,7 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2250,12 +2299,11 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4,)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_single_measurement_probs_multiple_param(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2274,6 +2322,7 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2289,7 +2338,7 @@ class TestReturn:
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(a, b, shots=shots)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b)
 
         assert isinstance(jac, tuple)
 
@@ -2299,7 +2348,6 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (4,)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_single_measurement_probs_multiple_param_single_array(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2318,6 +2366,7 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2331,12 +2380,11 @@ class TestReturn:
             return qml.probs(wires=[0, 1])
 
         a = jax.numpy.array([0.1, 0.2])
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4, 2)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_expval_expval_multiple_params(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2357,6 +2405,7 @@ class TestReturn:
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2370,9 +2419,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(
-            par_0, par_1, shots=shots
-        )
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(par_0, par_1)
 
         assert isinstance(jac, tuple)
 
@@ -2390,7 +2437,6 @@ class TestReturn:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == ()
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_expval_expval_multiple_params_array(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2408,6 +2454,7 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2422,7 +2469,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -2433,7 +2480,6 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (2,)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_var_var_multiple_params(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2457,6 +2503,7 @@ class TestReturn:
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2470,9 +2517,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(
-            par_0, par_1, shots=shots
-        )
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(par_0, par_1)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2491,7 +2536,6 @@ class TestReturn:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == ()
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_var_var_multiple_params_array(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2512,6 +2556,7 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("adjoint supports either all expvals or only diagonal measurements")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2526,7 +2571,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -2537,7 +2582,6 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (2,)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_multiple_measurement_single_param(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2555,6 +2599,7 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             interface=interface,
@@ -2569,7 +2614,7 @@ class TestReturn:
 
         a = jax.numpy.array(0.1)
 
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2580,7 +2625,6 @@ class TestReturn:
         assert isinstance(jac[1], jax.numpy.ndarray)
         assert jac[1].shape == (4,)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_multiple_measurement_multiple_param(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2598,6 +2642,7 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             interface=interface,
@@ -2613,7 +2658,7 @@ class TestReturn:
         a = np.array(0.1, requires_grad=True)
         b = np.array(0.2, requires_grad=True)
 
-        jac = jax.jit(jacobian(circuit, argnums=[0, 1]), static_argnames="shots")(a, b, shots=shots)
+        jac = jax.jit(jacobian(circuit, argnums=[0, 1]))(a, b)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2632,7 +2677,6 @@ class TestReturn:
         assert isinstance(jac[1][1], jax.numpy.ndarray)
         assert jac[1][1].shape == (4,)
 
-    @pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
     def test_jacobian_multiple_measurement_multiple_param_array(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, shots, interface, seed
     ):
@@ -2650,6 +2694,7 @@ class TestReturn:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("jacfwd is not compatible with device_vjp=True.")
 
+        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=1, seed=seed),
             interface=interface,
@@ -2664,7 +2709,7 @@ class TestReturn:
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jax.jit(jacobian(circuit), static_argnames="shots")(a, shots=shots)
+        jac = jax.jit(jacobian(circuit))(a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -3003,13 +3048,13 @@ class TestReturnHessian:
         assert hess[1].shape == (2, 2, 2)
 
 
-@pytest.mark.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
 @pytest.mark.parametrize("hessian", hessian_fn)
 @pytest.mark.parametrize("diff_method", ["parameter-shift", "hadamard"])
 def test_jax_device_hessian_shots(hessian, diff_method):
     """The hessian of multiple measurements with a multiple param array return a single array."""
 
-    @partial(jax.jit, static_argnames="shots")
+    @jax.jit
+    @qml.set_shots(shots=10000)
     @qml.qnode(DefaultQubit(), diff_method=diff_method, max_diff=2)
     def circuit(x):
         qml.RY(x[0], wires=0)
@@ -3019,7 +3064,7 @@ def test_jax_device_hessian_shots(hessian, diff_method):
     x = jax.numpy.array([1.0, 2.0])
     a, b = x
 
-    hess = jax.jit(hessian(circuit), static_argnames="shots")(x, shots=10000)
+    hess = jax.jit(hessian(circuit))(x)
 
     expected_hess = [
         [-np.cos(a) * np.cos(b), np.sin(a) * np.sin(b)],

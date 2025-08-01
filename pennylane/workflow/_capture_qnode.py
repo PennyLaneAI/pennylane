@@ -602,7 +602,7 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
 
     """
 
-    if not qnode.device.wires:
+    if qnode.device.wires is None:
         raise NotImplementedError(
             "devices must specify wires for integration with program capture."
         )

@@ -37,7 +37,8 @@ from scipy import sparse
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.operation import DecompositionUndefinedError, Operation, Operator
+from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.controlled import Controlled, ControlledOp, ctrl
 from pennylane.tape import QuantumScript
 from pennylane.tape.tape import expand_tape
@@ -143,7 +144,7 @@ class TestControlledInit:
         assert op.control_values == [True, False]
         assert op.hyperparameters["control_values"] == [True, False]
 
-        assert op.work_wires == Wires(("aux"))
+        assert op.work_wires == Wires("aux")
 
         assert op.name == "C(TempOperator)"
         assert op.id == "something"
@@ -380,7 +381,7 @@ class TestControlledProperties:
 
         assert op.base.wires == Wires(("c", "d"))
         assert op.control_wires == Wires(("a", "b"))
-        assert op.work_wires == Wires(("extra"))
+        assert op.work_wires == Wires("extra")
 
 
 class TestControlledMiscMethods:

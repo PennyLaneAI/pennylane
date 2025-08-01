@@ -37,10 +37,10 @@ class TestIterativeCancelInversesPass:
         """Test that nothing changes when there are no inverses."""
         program = """
             func.func @test_func() {
-                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
-                // CHECK: quantum.custom "PauliY"() [[q1:%.*]] : !quantum.bit
+                // CHECK: [[q1:%.+]] = quantum.custom "PauliX"() [[q0]] : !quantum.bit
+                // CHECK: quantum.custom "PauliY"() [[q1]] : !quantum.bit
                 %1 = quantum.custom "PauliX"() %0 : !quantum.bit
                 %2 = quantum.custom "PauliY"() %1 : !quantum.bit
                 return
@@ -54,14 +54,14 @@ class TestIterativeCancelInversesPass:
         """Test that nothing changes when there are no inverses."""
         program = """
             func.func @test_func() {
-                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q1:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 %1 = "test.op"() : () -> !quantum.bit
-                // CHECK: quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
-                // CHECK: quantum.custom "PauliX"() [[q1:%.*]] : !quantum.bit
+                // CHECK: quantum.custom "PauliX"() [[q0]] : !quantum.bit
+                // CHECK: quantum.custom "PauliX"() [[q1]] : !quantum.bit
                 %2 = quantum.custom "PauliX"() %0 : !quantum.bit
-                %3 = quantum.custom "PauliX"() %0 : !quantum.bit
+                %3 = quantum.custom "PauliX"() %1 : !quantum.bit
                 return
             }
         """
@@ -146,18 +146,18 @@ class TestIterativeCancelInversesPass:
         control values don't cancel."""
         program = """
             func.func @test_func() {
-                // CHECK-DAG: [[cval0:%.*]] = arith.constant false
-                // CHECK-DAG: [[cval1:%.*]] = arith.constant true
+                // CHECK-DAG: [[cval0:%.+]] = arith.constant false
+                // CHECK-DAG: [[cval1:%.+]] = arith.constant true
                 %0 = arith.constant false
                 %1 = arith.constant true
-                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q2:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q1:%.+]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q2:%.+]] = "test.op"() : () -> !quantum.bit
                 %2 = "test.op"() : () -> !quantum.bit
                 %3 = "test.op"() : () -> !quantum.bit
                 %4 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q3:%.*]], [[q4:%.*]], [[q5:%.*]] = quantum.custom "PauliY"() [[q0:%.*]] ctrls([[q1:%.*]], [[q2:%.*]]) ctrlvals([[cval1:%.*]], [[cval0:%.*]]) : !quantum.bit ctrls !quantum.bit, !quantum.bit
-                // CHECK: quantum.custom "PauliY"() [[q3:%.*]] ctrls([[q4:%.*]], [[q5:%.*]]) ctrlvals([[cval0:%.*]], [[cval1:%.*]]) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                // CHECK: [[q3:%.+]], [[q4:%.+]], [[q5:%.+]] = quantum.custom "PauliY"() [[q0]] ctrls([[q1]], [[q2]]) ctrlvals([[cval1]], [[cval0]]) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                // CHECK: quantum.custom "PauliY"() [[q3]] ctrls([[q4]], [[q5]]) ctrlvals([[cval0]], [[cval1]]) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 %5, %6, %7 = quantum.custom "PauliY"() %2 ctrls(%3, %4) ctrlvals(%1, %0) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 %8, %9, %10 = quantum.custom "PauliY"() %5 ctrls(%6, %7) ctrlvals(%0, %1) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 return
@@ -172,11 +172,11 @@ class TestIterativeCancelInversesPass:
         consecutive are not cancelled."""
         program = """
             func.func @test_func() {
-                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
-                // CHECK: [[q2:%.*]] = quantum.custom "PauliY"() [[q1:%.*]] : !quantum.bit
-                // CHECK: quantum.custom "PauliX"() [[q2:%.*]] : !quantum.bit
+                // CHECK: [[q1:%.+]] = quantum.custom "PauliX"() [[q0]] : !quantum.bit
+                // CHECK: [[q2:%.+]] = quantum.custom "PauliY"() [[q1]] : !quantum.bit
+                // CHECK: quantum.custom "PauliX"() [[q2]] : !quantum.bit
                 %1 = quantum.custom "PauliX"() %0 : !quantum.bit
                 %2 = quantum.custom "PauliY"() %1 : !quantum.bit
                 %3 = quantum.custom "PauliX"() %2 : !quantum.bit

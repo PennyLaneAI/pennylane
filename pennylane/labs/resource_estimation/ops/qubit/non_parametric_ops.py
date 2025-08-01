@@ -241,10 +241,11 @@ class ResourceS(ResourceOperator):
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
 
         Resources:
-            The S-gate is equivalent to the PhaseShift gate for some fixed phase. Given a single
-            control wire, the cost is therefore a single instance of
-            :class:`~.ResourceControlledPhaseShift`. Two additional :class:`~.ResourceX` gates are
-            used to flip the control qubit if it is zero-controlled.
+            The controlled-S gate decomposition is presented in (Fig. 5)
+            `arXiv:1803.04933 <https://arxiv.org/pdf/1803.04933>`_. Given a single control wire, the
+            cost is therefore two :class:`~.ResourceCNOT` gates and three :class:`~.ResourceT` gates.
+            Two additional :class:`~.ResourceX` gates are used to flip the control qubit if it is
+            zero-controlled.
 
             In the case where multiple controlled wires are provided, we can collapse the control
             wires by introducing one 'clean' auxilliary qubit (which gets reset at the end).
@@ -257,14 +258,19 @@ class ResourceS(ResourceOperator):
             in the decomposition.
         """
         if ctrl_num_ctrl_wires == 1:
-            gate_lst = [GateCount(resource_rep(plre.ResourceControlledPhaseShift))]
+            gate_lst = [
+                GateCount(resource_rep(plre.ResourceCNOT), 2),
+                GateCount(resource_rep(ResourceT), 2),
+                GateCount(
+                    resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(ResourceT)})
+                ),
+            ]
 
             if ctrl_num_ctrl_values:
                 gate_lst.append(GateCount(resource_rep(plre.ResourceX), 2))
 
             return gate_lst
 
-        cs = resource_rep(plre.ResourceControlledPhaseShift)
         mcx = resource_rep(
             plre.ResourceMultiControlledX,
             {
@@ -272,7 +278,15 @@ class ResourceS(ResourceOperator):
                 "num_ctrl_values": ctrl_num_ctrl_values,
             },
         )
-        return [GateCount(cs, 1), GateCount(mcx, 2)]
+
+        return [
+            GateCount(mcx, 2),
+            GateCount(resource_rep(plre.ResourceCNOT), 2),
+            GateCount(resource_rep(ResourceT), 2),
+            GateCount(
+                resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(ResourceT)})
+            ),
+        ]
 
     @classmethod
     def default_pow_resource_decomp(cls, pow_z) -> list[GateCount]:

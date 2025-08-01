@@ -489,7 +489,7 @@ class TestParamShift:
 
             tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)
             with pytest.raises(
-                qml.operation.OperatorPropertyUndefined, match="does not have a grad_recipe"
+                qml.exceptions.OperatorPropertyUndefined, match="does not have a grad_recipe"
             ):
                 qml.gradients.param_shift(tape)
 
@@ -1187,7 +1187,6 @@ class TestParameterShiftRule:
             assert isinstance(r_to_check, np.ndarray)
             assert r_to_check.shape == (4,)
 
-    @pytest.mark.local_salt(42)
     def test_involutory_variance_single_param(self, broadcast):
         """Tests qubit observables that are involutory with a single trainable param"""
         shot_vec = many_shots_shot_vector
@@ -1226,7 +1225,6 @@ class TestParameterShiftRule:
         for _gA in gradA:
             assert _gA == pytest.approx(expected, abs=shot_vec_tol)
 
-    @pytest.mark.local_salt(42)
     def test_involutory_variance_multi_param(self, broadcast):
         """Tests qubit observables that are involutory with multiple trainable params"""
         shot_vec = many_shots_shot_vector
@@ -1315,7 +1313,6 @@ class TestParameterShiftRule:
             assert gradF.shape == ()
             assert qml.math.allclose(gradF, expected, atol=2 * _herm_shot_vec_tol)
 
-    @pytest.mark.local_salt(42)
     def test_non_involutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory with multiple trainable parameters"""
         shot_vec = many_shots_shot_vector
@@ -1432,7 +1429,6 @@ class TestParameterShiftRule:
             assert qml.math.allclose(shot_vec_result[0], expected[0], atol=0.1)
             assert qml.math.allclose(shot_vec_result[1], expected[1], atol=1.5)
 
-    @pytest.mark.local_salt(42)
     def test_involutory_and_noninvolutory_variance_multi_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable."""
