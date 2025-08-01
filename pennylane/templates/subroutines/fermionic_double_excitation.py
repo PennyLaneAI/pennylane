@@ -648,7 +648,7 @@ def _layer_qfunc1(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots()
+    apply_cnots()  # pylint: disable=no-value-for-parameter
 
     # Z rotation acting on wire 'p'
     RZ(weight / 8, wires=p)
@@ -658,7 +658,7 @@ def _layer_qfunc1(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots_reversed()
+    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
@@ -699,7 +699,7 @@ def _layer_qfunc2(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots()
+    apply_cnots()  # pylint: disable=no-value-for-parameter
 
     # Z rotation acting on wire 'p'
     RZ(weight / 8, wires=p)
@@ -709,7 +709,7 @@ def _layer_qfunc2(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots_reversed()
+    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     RX(np.pi / 2, wires=s)
@@ -750,7 +750,7 @@ def _layer_qfunc3(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots()
+    apply_cnots()  # pylint: disable=no-value-for-parameter
 
     # Z rotation acting on wire 'p'
     RZ(weight / 8, wires=p)
@@ -760,7 +760,7 @@ def _layer_qfunc3(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots_reversed()
+    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
@@ -801,7 +801,7 @@ def _layer_qfunc4(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots()
+    apply_cnots()  # pylint: disable=no-value-for-parameter
 
     # Z rotation acting on wire 'p'
     RZ(weight / 8, wires=p)
@@ -811,7 +811,7 @@ def _layer_qfunc4(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots_reversed()
+    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
@@ -852,7 +852,7 @@ def _layer_qfunc5(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots()
+    apply_cnots()  # pylint: disable=no-value-for-parameter
 
     # Z rotation acting on wire 'p'
     RZ(-weight / 8, wires=p)
@@ -862,7 +862,7 @@ def _layer_qfunc5(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots_reversed()
+    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     RX(np.pi / 2, wires=s)
@@ -903,7 +903,7 @@ def _layer_qfunc6(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots()
+    apply_cnots()  # pylint: disable=no-value-for-parameter
 
     # Z rotation acting on wire 'p'
     RZ(-weight / 8, wires=p)
@@ -913,7 +913,7 @@ def _layer_qfunc6(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots_reversed()
+    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
@@ -954,7 +954,7 @@ def _layer_qfunc7(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots()
+    apply_cnots()  # pylint: disable=no-value-for-parameter
 
     # Z rotation acting on wire 'p'
     RZ(-weight / 8, wires=p)
@@ -964,7 +964,7 @@ def _layer_qfunc7(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots_reversed()
+    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     RX(np.pi / 2, wires=s)
@@ -1005,7 +1005,7 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots()
+    apply_cnots()  # pylint: disable=no-value-for-parameter
 
     # Z rotation acting on wire 'p'
     RZ(-weight / 8, wires=p)
@@ -1015,7 +1015,7 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     def apply_cnots_reversed(i):
         CNOT(wires=set_cnot_wires[i])
 
-    apply_cnots_reversed()
+    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
 
     # U_1^+, U_2^+, U_3^+, U_4^+ acting on wires 's', 'r', 'q' and 'p'
     RX(np.pi / 2, wires=s)

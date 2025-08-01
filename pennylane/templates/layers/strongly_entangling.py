@@ -327,15 +327,15 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
                 act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
                 imprimitive(wires=wires[act_on])
 
-            imprimitive_loop()
+            imprimitive_loop()  # pylint: disable=no-value-for-parameter
 
         def imprim_false():
             pass
 
-        rot_loop()
+        rot_loop()  # pylint: disable=no-value-for-parameter
         cond(n_wires > 1, imprim_true, imprim_false)()
 
-    layers()
+    layers()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(StronglyEntanglingLayers, _strongly_entangling_decomposition)

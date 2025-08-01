@@ -222,7 +222,7 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
         ops.X(control)
         ops.Z(control)
 
-    loop_over_angles()
+    loop_over_angles()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(GQSP, _GQSP_decomposition)
