@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.parametrize(
@@ -112,6 +113,20 @@ def test_decomposition(hamiltonian, expected_decomposition):
     decomposition = qml.Qubitization.compute_decomposition(hamiltonian=hamiltonian, control=[1])
     for i, op in enumerate(decomposition):
         qml.assert_equal(op, expected_decomposition[i])
+
+
+@pytest.mark.parametrize(
+    "hamiltonian, control",
+    [
+        (qml.PauliX("a") @ qml.PauliZ(1), [0]),
+        (qml.PauliX("a") @ qml.PauliZ(1) @ qml.PauliY(2), [0]),
+    ],
+)
+def test_decomposition_new(hamiltonian, control):  # pylint: disable=unused-argument
+    """Tests the decomposition rule implemented with the new system."""
+    op = qml.Qubitization(hamiltonian, control=control)
+    for rule in qml.list_decomps(qml.Qubitization):
+        _test_decomposition_rule(op, rule)
 
 
 def test_lightning_qubit():

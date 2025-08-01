@@ -18,8 +18,12 @@ from collections import Counter
 from functools import reduce
 
 import pennylane as qml
-from pennylane.decomposition import controlled_resource_rep
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 
 

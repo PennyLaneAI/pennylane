@@ -19,7 +19,7 @@ import copy
 
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
-from pennylane.ops import I, prod
+from pennylane.ops import I, Prod, prod
 from pennylane.wires import Wires
 
 from .prepselprep import PrepSelPrep
@@ -178,13 +178,16 @@ class Qubitization(Operation):
 
 def _qubitization_resources(num_control_wires, hamiltonian):
     return {
-        resource_rep(prod, resources={I: num_control_wires}): 1,
         resource_rep(
-            Reflection, base_class=I, base_params={}, num_wires=1, num_reflection_wires=1
+            Reflection,
+            base_class=Prod,
+            base_params={"resources": {resource_rep(I): num_control_wires}},
+            num_wires=None,
+            num_reflection_wires=1,
         ): 1,
         resource_rep(
             PrepSelPrep,
-            op_reps=resource_rep(type(hamiltonian), **hamiltonian.resource_params),
+            op_reps=(resource_rep(type(hamiltonian), **hamiltonian.resource_params),),
             num_control=num_control_wires,
         ): 1,
     }
@@ -195,7 +198,7 @@ def _qubitization_decomposition(*_, **kwargs):
     hamiltonian = kwargs["hamiltonian"]
     control = kwargs["control"]
 
-    Reflection(prod(*[I(wire) for wire in control]))
+    Reflection(Prod(*[I(wire) for wire in control]))
     PrepSelPrep(hamiltonian, control=control)
 
 
