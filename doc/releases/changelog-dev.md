@@ -118,6 +118,9 @@
 
 <h4>Other improvements</h4>
 
+* PennyLane is now compatible with `quimb 1.11.2`.
+  [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
+
 * The error message raised when using Python compiler transforms with :func:`pennylane.qjit` has been updated
   with suggested fixes.
   [(#7916)](https://github.com/PennyLaneAI/pennylane/pull/7916)
