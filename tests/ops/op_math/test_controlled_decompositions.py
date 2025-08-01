@@ -820,6 +820,7 @@ class TestMCXDecomposition:
         with qml.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qml.Projector([0] * len(work_wires), wires=work_wires)
+            # pylint: disable=missing-kwoa
             decompose_mcx_with_many_workers(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
@@ -894,6 +895,7 @@ class TestMCXDecomposition:
         with qml.queuing.AnnotatedQueue() as q:
             if work_wire_type == "zeroed":
                 qml.Projector([0], wires=work_wire)
+            # pylint: disable=missing-kwoa
             decompose_mcx_with_one_worker(wires=mcx.wires, **mcx.hyperparameters)
 
         # Verify that the resource estimate is correct.
