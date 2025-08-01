@@ -327,7 +327,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Added a new `all-tests-passed` gatekeeper job to ensure all test jobs complete successfully
+* Added a new `all-tests-passed` gatekeeper job to `interface-unit-tests.yml` to ensure all test jobs complete successfully
   before triggering downstream actions. This reduces the need to maintain a long list of required
   checks in GitHub settings. Also added the previously missing `capture-jax-tests` job to the list
   of required test jobs, ensuring this test suite is properly enforced in CI.
