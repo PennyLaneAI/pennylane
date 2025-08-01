@@ -205,7 +205,9 @@ class TestQROM:
             (["1", "0", "0", "1"], [0, 1], [2], [3, 4], False),
         ],  # pylint: disable=too-many-arguments
     )
-    def test_decomposition_new(self, bitstrings, control_wires, target_wires, work_wires, clean):
+    def test_decomposition_new(
+        self, bitstrings, control_wires, target_wires, work_wires, clean
+    ):  # pylint: disable=too-many-arguments
         """Tests the decomposition rule implemented with the new system."""
         op = qml.QROM(
             bitstrings,
