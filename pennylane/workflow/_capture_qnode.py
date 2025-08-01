@@ -108,9 +108,9 @@ features is non-exhaustive.
 
 """
 import logging
+from collections.abc import Sequence
 from functools import partial
 from numbers import Number
-from typing import Sequence, Union
 from warnings import warn
 
 import jax
@@ -180,9 +180,8 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
 
     for s in shots:
         for m in measurements:
-            print(s)
+            s = s.val if isinstance(s, jax.extend.core.Literal) else s
             shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
-            print(shape)
             if all(isinstance(si, int) for si in shape):
                 aval_type = jax.core.ShapedArray
             else:
@@ -269,16 +268,11 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
 
 
 def custom_staging_rule(
-    jaxpr_trace: pe.DynamicJaxprTrace, *tracers: pe.DynamicJaxprTracer, **params
-) -> Union[Sequence[pe.DynamicJaxprTracer], pe.DynamicJaxprTracer]:
+    jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
+) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
     """
     Add new jaxpr equation to the jaxpr_trace and return new tracers.
     """
-
-    if not jax.config.jax_dynamic_shapes:
-        # fallback to normal behavior
-        print(tracers)
-        return jaxpr_trace.default_process_primitive(qnode_prim, tracers, params)
 
     shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
     device = params["device"]
@@ -296,6 +290,7 @@ def custom_staging_rule(
         qnode_prim,
         params,
         jax.core.no_effects,
+        source_info=source_info,
     )
 
     jaxpr_trace.frame.add_eqn(eqn)
