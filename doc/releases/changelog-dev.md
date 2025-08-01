@@ -431,7 +431,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Plxpr-capture primitives now only return dynamically shaped arrays if their outputs
+* Plxpr primitives now only return dynamically shaped arrays if their outputs
   actually have dynamic shapes.
   [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
 
