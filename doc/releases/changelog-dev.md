@@ -203,6 +203,10 @@
   `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
   [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
 
+* Added state of the art resources for the `ResourceUniformStatePrep`,
+  and `ResourceAliasSampling` templates.
+  [(#7883)](https://github.com/PennyLaneAI/pennylane/pull/7883)
+
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
 
