@@ -151,7 +151,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
     wrapper_argnum = argnum if argnum is not None else None
 
-    def qnode_wrapper(*args, **kwargs):  # pylint: disable=inconsistent-return-statements
+    def qnode_wrapper(*args, **kwargs):
         old_interface = qnode.interface
 
         if old_interface == "auto":
@@ -174,7 +174,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 if np.isscalar(torch_argnum):
                     jac = jac[torch_argnum]
                 else:
-                    jac = tuple((jac[idx] for idx in torch_argnum))
+                    jac = tuple(jac[idx] for idx in torch_argnum)
                 return jac
 
             jac = _jacobian(*args, **kwargs)
@@ -198,7 +198,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 elif wrapper_argnum is None:
                     sub_args = args
                 else:
-                    sub_args = tuple((args[i] for i in wrapper_argnum))
+                    sub_args = tuple(args[i] for i in wrapper_argnum)
 
                 with tf.GradientTape() as tape:
                     gate_params = classical_preprocessing(*args, **kwargs)

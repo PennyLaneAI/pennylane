@@ -12,21 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the necessary helper functions for setting up the workflow for execution."""
+
+from __future__ import annotations
+
 from collections.abc import Callable
 from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
-from typing import Literal, Optional, Union, get_args
+from typing import TYPE_CHECKING, Literal, get_args
 from warnings import warn
 
 from packaging.version import Version
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name, get_interface
-from pennylane.tape import QuantumScriptBatch
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
+from pennylane.transforms.core import TransformDispatcher
 
 SupportedDiffMethods = Literal[
     None,
@@ -42,6 +45,9 @@ SupportedDiffMethods = Literal[
     "finite-diff",
     "spsa",
 ]
+
+if TYPE_CHECKING:
+    from pennylane.tape import QuantumScriptBatch
 
 
 def _get_jax_interface_name() -> Interface:
@@ -81,7 +87,7 @@ def _use_tensorflow_autograph():
     try:  # pragma: no cover
         import tensorflow as tf
     except ImportError as e:  # pragma: no cover
-        raise qml.QuantumFunctionError(  # pragma: no cover
+        raise QuantumFunctionError(  # pragma: no cover
             "tensorflow not found. Please install the latest "  # pragma: no cover
             "version of tensorflow supported by Pennylane "  # pragma: no cover
             "to enable the 'tensorflow' interface."  # pragma: no cover
@@ -90,7 +96,7 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
+def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) -> Interface:
     """Helper function to resolve an interface based on a set of tapes.
 
     Args:
@@ -123,7 +129,7 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
         try:  # pragma: no cover
             import jax
         except ImportError as e:  # pragma: no cover
-            raise qml.QuantumFunctionError(  # pragma: no cover
+            raise QuantumFunctionError(  # pragma: no cover
                 "jax not found. Please install the latest "  # pragma: no cover
                 "version of jax to enable the 'jax' interface."  # pragma: no cover
             ) from e  # pragma: no cover
@@ -134,8 +140,8 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
 
 
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
-) -> "qml.devices.MCMConfig":
+    mcm_config: qml.devices.MCMConfig, interface: Interface, finite_shots: bool
+) -> qml.devices.MCMConfig:
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
     updated_values = {}
@@ -174,8 +180,8 @@ def _resolve_mcm_config(
 
 
 def _resolve_hadamard(
-    initial_config: "qml.devices.ExecutionConfig", device: "qml.devices.Device"
-) -> "qml.devices.ExecutionConfig":
+    initial_config: qml.devices.ExecutionConfig, device: qml.devices.Device
+) -> qml.devices.ExecutionConfig:
     diff_method = initial_config.gradient_method
     updated_values = {"gradient_method": diff_method}
     if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
@@ -202,10 +208,10 @@ def _resolve_hadamard(
 
 @debug_logger
 def _resolve_diff_method(
-    initial_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
-    tape: "qml.tape.QuantumTape" = None,
-) -> "qml.devices.ExecutionConfig":
+    initial_config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
+    tape: qml.tape.QuantumTape = None,
+) -> qml.devices.ExecutionConfig:
     """
     Resolves the differentiation method and updates the initial execution configuration accordingly.
 
@@ -228,7 +234,7 @@ def _resolve_diff_method(
         return new_config
 
     if diff_method in {"backprop", "adjoint", "device"}:
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"Device {device} does not support {diff_method} with requested circuit."
         )
 
@@ -256,7 +262,7 @@ def _resolve_diff_method(
         elif isinstance(diff_method, TransformDispatcher):
             updated_values["gradient_method"] = diff_method
         else:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 f"Differentiation method {diff_method} not recognized. Allowed "
                 f"options are {tuple(get_args(SupportedDiffMethods))}."
             )
@@ -265,18 +271,16 @@ def _resolve_diff_method(
 
 
 def _resolve_execution_config(
-    execution_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    execution_config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
     tapes: QuantumScriptBatch,
-    transform_program: Optional[TransformProgram] = None,
-) -> "qml.devices.ExecutionConfig":
+) -> qml.devices.ExecutionConfig:
     """Resolves the execution configuration for non-device specific properties.
 
     Args:
         execution_config (qml.devices.ExecutionConfig): an execution config to be executed on the device
         device (qml.devices.Device): a Pennylane device
         tapes (QuantumScriptBatch): a batch of tapes
-        transform_program (TransformProgram): a program of transformations to be applied to the tapes
 
     Returns:
         qml.devices.ExecutionConfig: resolved execution configuration
@@ -287,20 +291,12 @@ def _resolve_execution_config(
         execution_config.gradient_method, Callable
     ):
         updated_values["grad_on_execution"] = False
-
-    if (
-        "lightning" in device.name
-        and transform_program
-        and qml.metric_tensor in transform_program
-        and execution_config.gradient_method == "best"
-    ):
-        execution_config = replace(execution_config, gradient_method=qml.gradients.param_shift)
     execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
 
     if execution_config.use_device_jacobian_product and not device.supports_vjp(
         execution_config, tapes[0]
     ):
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"device_vjp=True is not supported for device {device},"
             f" diff_method {execution_config.gradient_method},"
             " and the provided circuit."

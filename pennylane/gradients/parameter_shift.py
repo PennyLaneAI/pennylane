@@ -22,13 +22,13 @@ import numpy as np
 
 from pennylane import math
 from pennylane.devices.preprocess import decompose
-from pennylane.measurements import ExpectationMP, VarianceMP, expval
-from pennylane.operation import (
+from pennylane.exceptions import (
     DecompositionUndefinedError,
-    Operator,
     OperatorPropertyUndefined,
     ParameterFrequenciesUndefinedError,
 )
+from pennylane.measurements import ExpectationMP, VarianceMP, expval
+from pennylane.operation import Operator
 from pennylane.ops import Prod, prod
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import split_to_single_terms
@@ -56,7 +56,7 @@ from .gradient_transform import (
     reorder_grads,
 )
 
-# pylint: disable=protected-access,too-many-arguments,too-many-statements,unused-argument
+# pylint: disable=too-many-arguments,unused-argument
 
 
 NONINVOLUTORY_OBS = {
@@ -1058,8 +1058,10 @@ def param_shift(
 
         .. code-block:: python
 
+            from functools import partial
             shots = (10, 100, 1000)
-            dev = qml.device("default.qubit", shots=shots)
+            dev = qml.device("default.qubit")
+            @partial(qml.set_shots, shots=shots)
             @qml.qnode(dev)
             def circuit(params):
                 qml.RX(params[0], wires=0)

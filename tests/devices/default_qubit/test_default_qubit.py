@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
+from pennylane.exceptions import DeviceError
 
 set_start_method("spawn")
 
@@ -78,7 +79,7 @@ def test_snapshot_multiprocessing_qnode():
         return qml.expval(qml.PauliX(0) + qml.PauliY(0))
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match="Debugging with ``Snapshots`` is not available with multiprocessing.",
     ):
         qml.snapshots(circuit)()
@@ -1885,6 +1886,7 @@ class TestPostselection:
         dev = qml.device("default.qubit", seed=seed)
         param = qml.math.asarray(param, like=interface)
 
+        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev, interface=interface)
         def circ_postselect(theta):
@@ -1893,6 +1895,7 @@ class TestPostselection:
             qml.measure(0, postselect=1)
             return qml.apply(mp)
 
+        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev, interface=interface)
         def circ_expected():
@@ -1906,8 +1909,8 @@ class TestPostselection:
             pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
             circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
-        res = circ_postselect(param, shots=shots)
-        expected = circ_expected(shots=shots)
+        res = circ_postselect(param)
+        expected = circ_expected()
 
         if not isinstance(shots, tuple):
             assert qml.math.allclose(res, expected, atol=0.1, rtol=0)
@@ -1948,6 +1951,7 @@ class TestPostselection:
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
 
+            @qml.set_shots(shots=shots)
             @qml.defer_measurements
             @qml.qnode(dev, interface=interface)
             def circ_postselect(theta):
@@ -1956,7 +1960,7 @@ class TestPostselection:
                 qml.measure(0, postselect=1)
                 return qml.apply(mp)
 
-            res = circ_postselect(param, shots=shots)
+            res = circ_postselect(param)
 
         if not isinstance(shots, tuple):
             assert qml.math.get_interface(res) == interface if interface != "autograd" else "numpy"
@@ -2080,6 +2084,7 @@ class TestPostselection:
 
         dev = qml.device("default.qubit")
 
+        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev, interface=interface)
         def circ():
@@ -2094,7 +2099,7 @@ class TestPostselection:
             pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
             circ = jax.jit(circ, static_argnames=["shots"])
 
-        res = circ(shots=shots)
+        res = circ()
 
         if not isinstance(shots, tuple):
             assert qml.math.shape(res) == expected_shape

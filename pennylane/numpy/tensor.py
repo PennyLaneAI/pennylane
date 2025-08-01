@@ -22,6 +22,8 @@ from autograd.numpy.numpy_boxes import ArrayBox
 from autograd.numpy.numpy_vspaces import ArrayVSpace, ComplexArrayVSpace
 from autograd.tracer import Box
 
+from pennylane.exceptions import NonDifferentiableError
+
 __doc__ = "NumPy with automatic differentiation support, provided by Autograd and PennyLane."
 
 
@@ -130,7 +132,6 @@ class tensor(_np.ndarray):
         return super().__array_wrap__(out_arr)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
-        # pylint: disable=no-member,attribute-defined-outside-init
 
         # unwrap any outputs the ufunc might have
         outputs = [i.view(onp.ndarray) for i in kwargs.get("out", ())]
@@ -208,7 +209,7 @@ class tensor(_np.ndarray):
     def __setstate__(self, reduced_obj) -> None:
         # Called when unpickling the object.
         # Set self.requires_grad with the last element in the tuple returned by __reduce__:
-        # pylint: disable=attribute-defined-outside-init,no-member
+        # pylint: disable=attribute-defined-outside-init
         self.requires_grad = reduced_obj[-1]
         # And call parent's __setstate__ without this element:
         super().__setstate__(reduced_obj[:-1])
@@ -275,11 +276,6 @@ class tensor(_np.ndarray):
         This method is an alias for :meth:`~.unwrap`. See :meth:`~.unwrap` for more details.
         """
         return self.unwrap()
-
-
-class NonDifferentiableError(Exception):
-    """Exception raised if attempting to differentiate non-trainable
-    :class:`~.tensor` using Autograd."""
 
 
 def tensor_to_arraybox(x, *args):

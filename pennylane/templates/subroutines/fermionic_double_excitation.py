@@ -19,7 +19,7 @@ import copy
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 from pennylane.wires import Wires
@@ -523,12 +523,12 @@ class FermionicDoubleExcitation(Operation):
                 f"got {len(wires2)}"
             )
 
-        shape = qml.math.shape(weight)
+        shape = math.shape(weight)
         if shape != ():
             raise ValueError(f"Weight must be a scalar; got shape {shape}.")
 
-        wires1 = qml.wires.Wires(wires1)
-        wires2 = qml.wires.Wires(wires2)
+        wires1 = Wires(wires1)
+        wires2 = Wires(wires2)
 
         self._hyperparameters = {
             "wires1": wires1,
@@ -551,10 +551,10 @@ class FermionicDoubleExcitation(Operation):
     def num_params(self):
         return 1
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     @staticmethod
-    def compute_decomposition(
-        weight, wires, wires1, wires2
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(weight, wires, wires1, wires2):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.

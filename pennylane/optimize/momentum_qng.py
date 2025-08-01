@@ -13,8 +13,7 @@
 # limitations under the License.
 """Quantum natural gradient optimizer with momentum"""
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
+
 from pennylane import numpy as pnp
 
 from .qng import QNGOptimizer, _flatten_np, _unflatten_np
@@ -43,6 +42,23 @@ class MomentumQNGOptimizer(QNGOptimizer):
     of the Fubini-Study metric tensor and :math:`f(x^{(t)}) = \langle 0 | U(x^{(t)})^\dagger \hat{B} U(x^{(t)}) | 0 \rangle`
     is an expectation value of some observable measured on the variational
     quantum circuit :math:`U(x^{(t)})`.
+
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
+        momentum (float): the user-defined hyperparameter :math:`\rho` (default value: 0.9).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
+
+            - If ``None``, the full metric tensor is computed.
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
+
+        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
+            to be applied at each optimization step (default value: 0).
 
     **Examples:**
 
@@ -82,22 +98,8 @@ class MomentumQNGOptimizer(QNGOptimizer):
         - `QAOA <https://github.com/borbysh/Momentum-QNG/blob/main/QAOA_depth4.ipynb>`__
         - `VQE <https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb>`__
 
-    Keyword Args:
-        stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
-        momentum=0.9 (float): the user-defined hyperparameter :math:`\rho`
-        approx (str): Which approximation of the metric tensor to compute.
+        See :class:`~.MomentumQNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation.
 
-            - If ``None``, the full metric tensor is computed
-
-            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
-              the number of evaluated circuits significantly.
-
-            - If ``"diag"``, only the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources
-              (compared to ``"block-diag"``).
-
-        lam=0 (float): metric tensor regularization :math:`G_{ij}+\lambda I`
-            to be applied at each optimization step
     """
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):

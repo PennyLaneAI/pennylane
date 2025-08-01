@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 
@@ -329,6 +329,35 @@ class TestGrad:
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
 
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    @pytest.mark.parametrize("same_dynamic_shape", (True, False))
+    def test_grad_dynamic_shape_inputs(self, same_dynamic_shape):
+        """Test that qml.grad can handle dynamic shapes"""
+
+        @qml.qnode(qml.device("default.qubit", wires=4))
+        def c(x, y):
+            qml.RX(x, 0)
+            qml.RY(y, 0)
+            return qml.expval(qml.Z(0))
+
+        def w(n):
+            x = jnp.arange(n)
+            if same_dynamic_shape:
+                y = jnp.arange(n)
+            else:
+                y = jnp.arange(n + 1)
+            return qml.grad(c, argnum=(0, 1))(x, y)
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        grad_eqn = jaxpr.eqns[2] if same_dynamic_shape else jaxpr.eqns[3]
+        assert grad_eqn.primitive == grad_prim
+
+        shift = 1 if same_dynamic_shape else 2
+        assert grad_eqn.params["argnum"] == [shift, shift + 1]
+        assert len(grad_eqn.outvars) == 2
+        assert grad_eqn.outvars[0].aval.shape == grad_eqn.invars[shift].aval.shape
+        assert grad_eqn.outvars[1].aval.shape == grad_eqn.invars[shift + 1].aval.shape
+
 
 def _jac_allclose(jac1, jac2, num_axes, atol=1e-8):
     """Test that two Jacobians, given as nested sequences of arrays, are equal."""
@@ -582,3 +611,33 @@ class TestJacobian:
         # Assert that the output from the manual evaluation is flat
         assert manual_out_tree == jax.tree_util.tree_flatten(manual_out_flat)[1]
         assert qml.math.allclose(jax_out_flat, manual_out_flat)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    @pytest.mark.parametrize("same_dynamic_shape", (True, False))
+    def test_jacobian_dynamic_shape_inputs(self, same_dynamic_shape):
+        """Test that qml.jacobian can handle dynamic shapes"""
+
+        @qml.qnode(qml.device("default.qubit", wires=4))
+        def c(x, y):
+            qml.RX(x, 0)
+            qml.RY(y, 0)
+            return qml.probs(wires=(0, 1))
+
+        def w(n):
+            x = jnp.arange(n)
+            if same_dynamic_shape:
+                y = jnp.arange(n)
+            else:
+                y = jnp.arange(n + 1)
+            return qml.jacobian(c, argnum=(0, 1))(x, y)
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        grad_eqn = jaxpr.eqns[2] if same_dynamic_shape else jaxpr.eqns[3]
+        assert grad_eqn.primitive == jacobian_prim
+
+        shift = 1 if same_dynamic_shape else 2
+        assert grad_eqn.params["argnum"] == [shift, shift + 1]
+        assert len(grad_eqn.outvars) == 2
+
+        assert grad_eqn.outvars[0].aval.shape == (4, *grad_eqn.invars[shift].aval.shape)
+        assert grad_eqn.outvars[1].aval.shape == (4, *grad_eqn.invars[shift + 1].aval.shape)

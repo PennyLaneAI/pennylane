@@ -14,7 +14,6 @@
 Batch transformation for multiple (non-trainable) input examples following issue #2037
 """
 from collections.abc import Sequence
-from typing import Union
 
 import numpy as np
 
@@ -28,7 +27,7 @@ from pennylane.typing import PostprocessingFn
 @transform
 def batch_input(
     tape: QuantumScript,
-    argnum: Union[Sequence[int], int],
+    argnum: Sequence[int] | int,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
     Transform a circuit to support an initial batch dimension for gate inputs.
@@ -62,7 +61,7 @@ def batch_input(
     .. code-block:: python
 
         from functools import partial
-        dev = qml.device("default.qubit", wires=2, shots=None)
+        dev = qml.device("default.qubit", wires=2)
 
         @partial(qml.batch_input, argnum=1)
         @qml.qnode(dev, diff_method="parameter-shift", interface="tf")
@@ -79,7 +78,7 @@ def batch_input(
     array([0.46230079, 0.73971315, 0.95666004, 0.5355225 , 0.66180948,
             0.44519553, 0.93874261, 0.9483197 , 0.78737918, 0.90866411])>
     """
-    # pylint: disable=protected-access
+
     argnum = tuple(argnum) if isinstance(argnum, (list, tuple)) else (int(argnum),)
 
     all_parameters = tape.get_parameters(trainable_only=False)

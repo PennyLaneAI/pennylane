@@ -14,13 +14,13 @@
 """Contains a transform that computes the frequency spectrum of a quantum
 circuit including classical preprocessing within the QNode."""
 from collections import OrderedDict
-from functools import wraps
 from inspect import signature
 from itertools import product
 
 import numpy as np
 
 from pennylane import gradients, math, measurements, transforms, workflow
+from pennylane.capture.autograph import wraps
 
 from .utils import get_spectrum, join_spectra
 
@@ -382,7 +382,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         preprocessed non-linearly in the gate ``qml.RX(0.5*x**2, wires=0, id="x")``.
 
     """
-    # pylint: disable=too-many-branches,protected-access
+    # pylint: disable=too-many-branches
     validation_kwargs = validation_kwargs or {}
     encoding_args, argnum = _process_ids(encoding_args, argnum, qnode)
     atol = 10 ** (-decimals) if decimals is not None else 1e-10

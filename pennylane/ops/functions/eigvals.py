@@ -15,16 +15,14 @@
 This module contains the qml.eigvals function.
 """
 import warnings
-
-# pylint: disable=protected-access
 from functools import partial, reduce
 
 import scipy
 
 import pennylane as qml
 from pennylane import transform
+from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
 
 

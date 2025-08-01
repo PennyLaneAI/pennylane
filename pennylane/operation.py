@@ -10,7 +10,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=protected-access, no-member
+# pylint: disable=protected-access
 r"""
 This module contains the abstract base classes for defining PennyLane
 operations and observables.
@@ -110,7 +110,6 @@ Operator Types
 
     ~Operator
     ~Operation
-    ~Observable
     ~CV
     ~CVObservable
     ~CVOperation
@@ -122,28 +121,6 @@ Operator Types
 .. inheritance-diagram:: Operator Operation Channel CV CVObservable CVOperation StatePrepBase
     :parts: 1
 
-Errors
-~~~~~~
-
-When an :class:`~.Operator` method is undefined, it raises a error type that depends
-on the method that is undefined.
-
-.. currentmodule:: pennylane.operation
-
-.. autosummary::
-    :toctree: api
-
-    ~OperatorPropertyUndefined
-    ~AdjointUndefinedError
-    ~DecompositionUndefinedError
-    ~DiagGatesUndefinedError
-    ~EigvalsUndefinedError
-    ~GeneratorUndefinedError
-    ~MatrixUndefinedError
-    ~ParameterFrequenciesUndefinedError
-    ~PowUndefinedError
-    ~SparseMatrixUndefinedError
-    ~TermsUndefinedError
 
 Boolean Functions
 ~~~~~~~~~~~~~~~~~
@@ -151,26 +128,12 @@ Boolean Functions
 :class:`~.BooleanFn`'s are functions of a single object that return ``True`` or ``False``.
 The ``operation`` module provides the following:
 
-.. warning::
-
-    All of the boolean functions in this module are currently deprecated. See the individual functions
-    for alternative code.
-
 .. currentmodule:: pennylane.operation
 
 .. autosummary::
     :toctree: api
 
-    ~defines_diagonalizing_gates
-    ~gen_is_multi_term_hamiltonian
-    ~has_gen
-    ~has_grad_method
-    ~has_multipar
-    ~has_nopar
-    ~has_unitary_gen
-    ~is_measurement
     ~is_trainable
-    ~not_tape
 
 Other
 ~~~~~
@@ -216,118 +179,46 @@ these objects are located in ``pennylane.ops.qubit.attributes``, not ``pennylane
     ~ops.qubit.attributes.symmetric_over_control_wires
 
 """
-# pylint:disable=access-member-before-definition,global-statement
+# pylint: disable=access-member-before-definition
 import abc
 import copy
 import warnings
-from collections.abc import Hashable, Iterable
-from enum import IntEnum
-from typing import Any, Callable, Literal, Optional, Union
+from collections.abc import Callable, Hashable, Iterable
+from functools import lru_cache
+from typing import Any, Literal, Optional, Union
 
 import numpy as np
 from scipy.sparse import spmatrix
 
 import pennylane as qml
-from pennylane.capture import ABCCaptureMeta, create_operator_primitive
-from pennylane.exceptions import PennyLaneDeprecationWarning
-from pennylane.math import expand_matrix
+from pennylane import capture
+from pennylane.exceptions import (
+    AdjointUndefinedError,
+    DecompositionUndefinedError,
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    GeneratorUndefinedError,
+    MatrixUndefinedError,
+    ParameterFrequenciesUndefinedError,
+    PowUndefinedError,
+    SparseMatrixUndefinedError,
+    TermsUndefinedError,
+)
+from pennylane.math import expand_matrix, is_abstract
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
 from .pytrees import register_pytree
 
-# =============================================================================
-# Errors
-# =============================================================================
+has_jax = True
+try:
+    import jax
 
-SUPPORTED_INTERFACES = {"numpy", "scipy", "autograd", "torch", "tensorflow", "jax"}
+except ImportError:
+    has_jax = False
+
 _UNSET_BATCH_SIZE = -1  # indicates that the (lazy) batch size has not yet been accessed/computed
-
-
-class OperatorPropertyUndefined(Exception):
-    """Generic exception to be used for undefined
-    Operator properties or methods."""
-
-
-class DecompositionUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's representation as a decomposition is undefined."""
-
-
-class TermsUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's representation as a linear combination is undefined."""
-
-
-class MatrixUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's matrix representation is undefined."""
-
-
-class SparseMatrixUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's sparse matrix representation is undefined."""
-
-
-class EigvalsUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's eigenvalues are undefined."""
-
-
-class DiagGatesUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's diagonalizing gates are undefined."""
-
-
-class AdjointUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's adjoint version is undefined."""
-
-
-class PowUndefinedError(OperatorPropertyUndefined):
-    """Raised when an Operator's power is undefined."""
-
-
-class GeneratorUndefinedError(OperatorPropertyUndefined):
-    """Exception used to indicate that an operator
-    does not have a generator"""
-
-
-class ParameterFrequenciesUndefinedError(OperatorPropertyUndefined):
-    """Exception used to indicate that an operator
-    does not have parameter_frequencies"""
-
-
-# =============================================================================
-# Wire types
-# =============================================================================
-
-
-class _WiresEnum(IntEnum):
-    """Integer enumeration class
-    to represent the number of wires
-    an operation acts on.
-
-    .. warning::
-
-        This class is deprecated ``Operator.num_wires=None`` should now be used to indicate
-        that an operator can exist on any number of wires.
-
-    """
-
-    AnyWires = -1
-    """A enumeration that represents that an operator can act on any number of wires.
-
-    .. warning::
-
-        ``AnyWires`` is deprecated ``Operator.num_wires=None`` should now be used to indicate
-        that an operator can exist on any number of wires.
-
-    """
-
-    AllWires = -2
-    """A enumeration that represents that an operator acts on all wires in the system.
-
-    .. warning::
-
-        ``AllWires`` is deprecated ``Operator.num_wires=None`` should now be used to indicate
-        that an operator can exist on any number of wires.
-
-    """
 
 
 # =============================================================================
@@ -338,7 +229,6 @@ class _WiresEnum(IntEnum):
 class ClassPropertyDescriptor:  # pragma: no cover
     """Allows a class property to be defined"""
 
-    # pylint: disable=too-few-public-methods,too-many-public-methods
     def __init__(self, fget, fset=None):
         self.fget = fget
         self.fset = fset
@@ -371,6 +261,109 @@ def classproperty(func) -> ClassPropertyDescriptor:
 
 
 # =============================================================================
+# Capture operators infrastructure
+# =============================================================================
+
+
+@lru_cache  # construct the first time lazily
+def _get_abstract_operator() -> type:
+    """Create an AbstractOperator once in a way protected from lack of a jax install."""
+    if not has_jax:  # pragma: no cover
+        raise ImportError("Jax is required for plxpr.")  # pragma: no cover
+
+    class AbstractOperator(jax.core.AbstractValue):
+        """An operator captured into plxpr."""
+
+        # pylint: disable=missing-function-docstring
+        def at_least_vspace(self):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def join(self, other):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        # pylint: disable=missing-function-docstring
+        def update(self, **kwargs):
+            # TODO: investigate the proper definition of this method
+            raise NotImplementedError
+
+        def __eq__(self, other):
+            return isinstance(other, AbstractOperator)
+
+        def __hash__(self):
+            return hash("AbstractOperator")
+
+        @staticmethod
+        def _matmul(*args):
+            return qml.prod(*args)
+
+        @staticmethod
+        def _mul(a, b):
+            return qml.s_prod(b, a)
+
+        @staticmethod
+        def _rmul(a, b):
+            return qml.s_prod(b, a)
+
+        @staticmethod
+        def _add(a, b):
+            return qml.sum(a, b)
+
+        @staticmethod
+        def _pow(a, b):
+            return qml.pow(a, b)
+
+    return AbstractOperator
+
+
+def create_operator_primitive(
+    operator_type: type["qml.operation.Operator"],
+) -> Optional["jax.extend.core.Primitive"]:
+    """Create a primitive corresponding to an operator type.
+
+    Called when defining any :class:`~.Operator` subclass, and is used to set the
+    ``Operator._primitive`` class property.
+
+    Args:
+        operator_type (type): a subclass of qml.operation.Operator
+
+    Returns:
+        Optional[jax.extend.core.Primitive]: A new jax primitive with the same name as the operator subclass.
+        ``None`` is returned if jax is not available.
+
+    """
+    if not has_jax:
+        return None
+
+    primitive = capture.QmlPrimitive(operator_type.__name__)
+    primitive.prim_type = "operator"
+
+    @primitive.def_impl
+    def _(*args, **kwargs):
+        if "n_wires" not in kwargs:
+            return type.__call__(operator_type, *args, **kwargs)
+        n_wires = kwargs.pop("n_wires")
+
+        split = None if n_wires == 0 else -n_wires
+        # need to convert array values into integers
+        # for plxpr, all wires must be integers
+        # could be abstract when using tracing evaluation in interpreter
+        wire_args = args[split:] if split else ()
+        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
+        return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
+
+    abstract_type = _get_abstract_operator()
+
+    @primitive.def_abstract_eval
+    def _(*_, **__):
+        return abstract_type()
+
+    return primitive
+
+
+# =============================================================================
 # Base Operator class
 # =============================================================================
 
@@ -389,13 +382,13 @@ def _process_data(op):
     else:
         mod_val = None
 
-    return str([id(d) if qml.math.is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
+    return str([id(d) if is_abstract(d) else _mod_and_round(d, mod_val) for d in op.data])
 
 
 FlatPytree = tuple[Iterable[Any], Hashable]
 
 
-class Operator(abc.ABC, metaclass=ABCCaptureMeta):
+class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
     r"""Base class representing quantum operators.
 
     Operators are uniquely defined by their name, the wires they act on, their (trainable) parameters,
@@ -703,8 +696,6 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             # guard against this being called when primitive is not defined.
             return type.__call__(cls, *args, **kwargs)
 
-        import jax  # pylint: disable=import-outside-toplevel
-
         array_types = (jax.numpy.ndarray, np.ndarray)
         iterable_wires_types = (
             list,
@@ -788,9 +779,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self.hash
 
     @staticmethod
-    def compute_matrix(
-        *params: TensorLike, **hyperparams: dict[str, Any]
-    ) -> TensorLike:  # pylint:disable=unused-argument
+    def compute_matrix(*params: TensorLike, **hyperparams: dict[str, Any]) -> TensorLike:
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -816,7 +805,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return cls.compute_matrix != Operator.compute_matrix or cls.matrix != Operator.matrix
 
-    def matrix(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
+    def matrix(self, wire_order: WiresLike | None = None) -> TensorLike:
         r"""Representation of the operator as a matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -853,7 +842,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @staticmethod
     def compute_sparse_matrix(
         *params: TensorLike, format: str = "csr", **hyperparams: dict[str, Any]
-    ) -> spmatrix:  # pylint:disable=unused-argument
+    ) -> spmatrix:
         r"""Representation of the operator as a sparse matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -884,7 +873,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             or cls.sparse_matrix != Operator.sparse_matrix
         )
 
-    def sparse_matrix(self, wire_order: Optional[WiresLike] = None, format="csr") -> spmatrix:
+    def sparse_matrix(self, wire_order: WiresLike | None = None, format="csr") -> spmatrix:
         r"""Representation of the operator as a sparse matrix in the computational basis.
 
         If ``wire_order`` is provided, the numerical representation considers the position of the
@@ -954,7 +943,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and cannot be
         inferred from the matrix representation.
 
-        .. seealso:: :meth:`~.Operator.compute_eigvals`
+        .. seealso:: :meth:`~.Operator.compute_eigvals` and :func:`qml.eigvals() <pennylane.eigvals>`
 
         Returns:
             tensor_like: eigenvalues
@@ -981,7 +970,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         raise TermsUndefinedError
 
-    num_wires: Optional[Union[int, _WiresEnum]] = None
+    num_wires: int | None = None
     """Number of wires the operator acts on."""
 
     @property
@@ -1000,9 +989,9 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         r"""A customizable string representation of the operator.
 
@@ -1107,14 +1096,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     def __init__(
         self,
         *params: TensorLike,
-        wires: Optional[WiresLike] = None,
-        id: Optional[str] = None,
+        wires: WiresLike | None = None,
+        id: str | None = None,
     ):
-        # pylint: disable=too-many-branches
 
         self._name: str = self.__class__.__name__  #: str: name of the operator
         self._id: str = id
-        self._pauli_rep: Optional[qml.pauli.PauliSentence] = (
+        self._pauli_rep: qml.pauli.PauliSentence | None = (
             None  # Union[PauliSentence, None]: Representation of the operator as a pauli sentence, if applicable
         )
 
@@ -1145,15 +1133,13 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         self._wires: Wires = Wires(wires)
 
         # check that the number of wires given corresponds to required number
-        if (self.num_wires is not None and not isinstance(self.num_wires, _WiresEnum)) and len(
-            self._wires
-        ) != self.num_wires:
+        if (self.num_wires is not None) and len(self._wires) != self.num_wires:
             raise ValueError(
                 f"{self.name}: wrong number of wires. "
                 f"{len(self._wires)} wires given, {self.num_wires} expected."
             )
 
-        self._batch_size: Optional[int] = _UNSET_BATCH_SIZE
+        self._batch_size: int | None = _UNSET_BATCH_SIZE
         self._ndim_params: tuple[int] = _UNSET_BATCH_SIZE
 
         self.data = tuple(np.array(p) if isinstance(p, (list, tuple)) else p for p in params)
@@ -1182,7 +1168,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             # There might be a way to support batching nonetheless, which remains to be
             # investigated. For now, the batch_size is left to be `None` when instantiating
             # an operation with abstract parameters that make `qml.math.ndim` fail.
-            if any(qml.math.is_abstract(p) for p in params):
+            if any(is_abstract(p) for p in params):
                 self._batch_size = None
                 self._ndim_params = (0,) * len(params)
                 return
@@ -1253,7 +1239,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return self._ndim_params
 
     @property
-    def batch_size(self) -> Optional[int]:
+    def batch_size(self) -> int | None:
         r"""Batch size of the operator if it is used with broadcasted parameters.
 
         The ``batch_size`` is determined based on ``ndim_params`` and the provided parameters
@@ -1298,7 +1284,26 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     @property
     def is_hermitian(self) -> bool:
-        """This property determines if an operator is hermitian."""
+        """This property determines if an operator is likely hermitian.
+
+        .. note:: It is recommended to use the :func:`~.is_hermitian` function.
+            Although this function may be expensive to calculate,
+            the ``op.is_hermitian`` property can lead to technically incorrect results.
+
+        If this property returns ``True``, the operator is guaranteed to
+        be hermitian, but if it returns ``False``, the operator may still be hermitian.
+
+        As an example, consider the following edge case:
+
+        >>> op = (qml.X(0) @ qml.Y(0) - qml.X(0) @ qml.Z(0)) * 1j
+        >>> op.is_hermitian
+        False
+
+        On the contrary, the :func:`~.is_hermitian` function will give the correct answer:
+
+        >>> qml.is_hermitian(op)
+        True
+        """
         return False
 
     # pylint: disable=no-self-argument, comparison-with-callable
@@ -1334,7 +1339,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @staticmethod
     def compute_decomposition(
         *params: TensorLike,
-        wires: Optional[WiresLike] = None,
+        wires: WiresLike | None = None,
         **hyperparameters: dict[str, Any],
     ) -> list["Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
@@ -1391,7 +1396,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise DecompositionUndefinedError
 
     @classproperty
-    def resource_keys(self) -> Union[set, frozenset]:  # pylint: disable=no-self-use
+    def resource_keys(self) -> set | frozenset:  # pylint: disable=no-self-use
         """The set of parameters that affects the resource requirement of the operator.
 
         All decomposition rules for this operator class are expected to have a resource function
@@ -1459,7 +1464,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
     @staticmethod
     def compute_diagonalizing_gates(
         *params: TensorLike, wires: WiresLike, **hyperparams: dict[str, Any]
-    ) -> list["Operator"]:  # pylint: disable=unused-argument
+    ) -> list["Operator"]:
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -1502,7 +1507,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             *self.parameters, wires=self.wires, **self.hyperparameters
         )
 
-    # pylint: disable=no-self-argument, comparison-with-callable
+    # pylint: disable=no-self-argument
     @classproperty
     def has_generator(cls) -> bool:
         r"""Bool: Whether or not the Operator returns a defined generator.
@@ -1523,7 +1528,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         we get the generator
 
         >>> U.generator()
-          0.5 * Y(0) + Z(0) @ X(1)
+        0.5 * Y(0) + Z(0) @ X(1)
 
         The generator may also be provided in the form of a dense or sparse Hamiltonian
         (using :class:`.LinearCombination` and :class:`.SparseHamiltonian` respectively).
@@ -1532,7 +1537,11 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
     def pow(self, z: float) -> list["Operator"]:
-        """A list of new operators equal to this one raised to the given power.
+        """A list of new operators equal to this one raised to the given power. This method is used to simplify
+        :class:`~.Pow` instances created by :func:`~.pow` or ``op ** power``.
+
+        ``Operator.pow`` can be optionally defined by Operator developers, while :func:`~.pow` or ``op ** power``
+        are the entry point for constructing generic powers to exponents.
 
         Args:
             z (float): exponent for the operator
@@ -1540,16 +1549,29 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         Returns:
             list[:class:`~.operation.Operator`]
 
+        >>> class MyClass(qml.operation.Operator):
+        ...
+        ...     def pow(self, z):
+        ...         return [MyClass(self.data[0]*z, self.wires)]
+        ...
+        >>> op = MyClass(0.5, 0) ** 2
+        >>> op
+        MyClass(0.5, wires=[0])**2
+        >>> op.decomposition()
+        [MyClass(1.0, wires=[0])]
+        >>> op.simplify()
+        MyClass(1.0, wires=[0])
+
         """
         # Child methods may call super().pow(z%period) where op**period = I
-        # For example, PauliX**2 = I, SX**4 = I
-        # Hence we define 0 and 1 special cases here.
+        # For example, PauliX**2 = I, SX**4 = I, TShift**3 = I (for qutrit)
+        # Hence we define the non-negative integer cases here as a repeated list
         if z == 0:
             return []
-        if z == 1:
+        if isinstance(z, int) and z > 0:
             if QueuingManager.recording():
-                return [qml.apply(self)]
-            return [copy.copy(self)]
+                return [qml.apply(self) for _ in range(z)]
+            return [copy.copy(self) for _ in range(z)]
         raise PowUndefinedError
 
     def queue(self, context: QueuingManager = QueuingManager):
@@ -1571,7 +1593,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         """
         return "_ops"
 
-    # pylint: disable=no-self-argument, comparison-with-callable
+    # pylint: disable=no-self-argument
     @classproperty
     def has_adjoint(cls) -> bool:
         r"""Bool: Whether or not the Operator can compute its own adjoint.
@@ -1581,14 +1603,33 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
         return cls.adjoint != Operator.adjoint
 
     def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
-        """Create an operation that is the adjoint of this one.
+        """Create an operation that is the adjoint of this one. Used to simplify
+        :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
 
         Adjointed operations are the conjugated and transposed version of the
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
 
+        ``Operator.adjoint`` can be optionally defined by Operator developers, while :func:`~.adjoint`
+        is the entry point for constructing generic adjoint representations.
+
         Returns:
             The adjointed operation.
+
+        >>> class MyClass(qml.operation.Operator):
+        ...
+        ...     def adjoint(self):
+        ...         return self
+        ...
+        >>> op = qml.adjoint(MyClass(wires=0))
+        >>> op
+        Adjoint(MyClass(wires=[0]))
+        >>> op.decomposition()
+        [MyClass(wires=[0])]
+        >>> op.simplify()
+        MyClass(wires=[0])
+
+
         """
         raise AdjointUndefinedError
 
@@ -1613,7 +1654,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
             new_op._pauli_rep = p_rep.map_wires(wire_map)
         return new_op
 
-    def simplify(self) -> "Operator":  # pylint: disable=unused-argument
+    def simplify(self) -> "Operator":
         """Reduce the depth of nested operators to the minimum.
 
         Returns:
@@ -1637,7 +1678,7 @@ class Operator(abc.ABC, metaclass=ABCCaptureMeta):
 
     __radd__ = __add__
 
-    def __mul__(self, other: Union[Callable, TensorLike]) -> "Operator":
+    def __mul__(self, other: Callable | TensorLike) -> "Operator":
         """The scalar multiplication between scalars and Operators."""
         if callable(other):
             return qml.pulse.ParametrizedHamiltonian([other], [self])
@@ -1851,7 +1892,7 @@ class Operation(Operator):
         raise NotImplementedError
 
     @property
-    def parameter_frequencies(self) -> list[tuple[Union[float, int]]]:
+    def parameter_frequencies(self) -> list[tuple[float | int]]:
         r"""Returns the frequencies for each operator parameter with respect
         to an expectation value of the form
         :math:`\langle \psi | U(\mathbf{p})^\dagger \hat{O} U(\mathbf{p})|\psi\rangle`.
@@ -1910,8 +1951,8 @@ class Operation(Operator):
     def __init__(
         self,
         *params: TensorLike,
-        wires: Optional[WiresLike] = None,
-        id: Optional[str] = None,
+        wires: WiresLike | None = None,
+        id: str | None = None,
     ):
         super().__init__(*params, wires=wires, id=id)
 
@@ -1935,13 +1976,9 @@ class Channel(Operation, abc.ABC):
             can be useful for some applications where the instance has to be identified
     """
 
-    # pylint: disable=abstract-method
-
     @staticmethod
     @abc.abstractmethod
-    def compute_kraus_matrices(
-        *params, **hyperparams
-    ) -> list[np.ndarray]:  # pylint:disable=unused-argument
+    def compute_kraus_matrices(*params, **hyperparams) -> list[np.ndarray]:
         """Kraus matrices representing a quantum channel, specified in
         the computational basis.
 
@@ -2123,8 +2160,6 @@ class CVOperation(CV, Operation):
             can be useful for some applications where the instance has to be identified
     """
 
-    # pylint: disable=abstract-method
-
     @classproperty
     def supports_parameter_shift(self):
         """Returns True iff the CV Operation supports the parameter-shift differentiation method.
@@ -2165,7 +2200,7 @@ class CVOperation(CV, Operation):
         for c, _a, s in param_shift:
             # evaluate the transform at the shifted parameter values
             p[idx] = _a * original_p_idx + s
-            U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+            U = self._heisenberg_rep(p)
 
             if pd is None:
                 pd = c * U
@@ -2208,7 +2243,7 @@ class CVOperation(CV, Operation):
                 p[0] = np.linalg.inv(p[0])
             except np.linalg.LinAlgError:
                 p[0] = -p[0]  # negate first parameter
-        U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+        U = self._heisenberg_rep(p)
 
         # not defined?
         if U is None:
@@ -2252,7 +2287,6 @@ class CVObservable(CV, Operator):
         """Avoids queuing the observable."""
         return self
 
-    # pylint: disable=abstract-method
     ev_order = None  #: None, int: Order in `(x, p)` that a CV observable is a polynomial of.
 
     def heisenberg_obs(self, wire_order):
@@ -2273,7 +2307,7 @@ class CVObservable(CV, Operator):
             array[float]: :math:`q`
         """
         p = self.parameters
-        U = self._heisenberg_rep(p)  # pylint: disable=assignment-from-none
+        U = self._heisenberg_rep(p)
         return self.heisenberg_expand(U, wire_order)
 
 
@@ -2282,9 +2316,8 @@ class StatePrepBase(Operation):
 
     grad_method = None
 
-    # pylint:disable=too-few-public-methods
     @abc.abstractmethod
-    def state_vector(self, wire_order: Optional[WiresLike] = None) -> TensorLike:
+    def state_vector(self, wire_order: WiresLike | None = None) -> TensorLike:
         """
         Returns the initial state vector for a circuit given a state preparation.
 
@@ -2298,9 +2331,9 @@ class StatePrepBase(Operation):
 
     def label(
         self,
-        decimals: Optional[int] = None,
-        base_label: Optional[str] = None,
-        cache: Optional[dict] = None,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
     ) -> str:
         return "|Ψ⟩"
 
@@ -2332,140 +2365,11 @@ def operation_derivative(operation: Operation) -> TensorLike:
 
 
 @qml.BooleanFn
-def not_tape(obj):
-    """Returns ``True`` if the object is not a quantum tape.
-
-    .. warning::
-
-        **Deprecated**. Use ``not isinstance(obj, qml.tape.QuantumScript)`` instead.
-    """
-    warnings.warn(
-        "not_tape is deprecated. Use ``not isinstance(obj, qml.tape.QuantumScript)`` instead.",
-        PennyLaneDeprecationWarning,
-    )
-    return not isinstance(obj, qml.tape.QuantumScript)
-
-
-@qml.BooleanFn
-def has_gen(obj):
-    """Returns ``True`` if an operator has a generator defined.
-
-    .. warning::
-
-        **Deprecated**. Use ``obj.has_generator`` instead.
-    """
-    warnings.warn(
-        "has_gen is deprecated. Use Operator.has_generator instead.", PennyLaneDeprecationWarning
-    )
-    if isinstance(obj, Operator):
-        return obj.has_generator
-    try:
-        obj.generator()
-    except (AttributeError, OperatorPropertyUndefined, GeneratorUndefinedError):
-        return False
-    return True
-
-
-@qml.BooleanFn
-def has_grad_method(obj):
-    """Returns ``True`` if an operator has a grad_method defined.
-
-    .. warning::
-
-        **Deprecated**: Use ``obj.grad_method is not None`` instead.
-    """
-    warnings.warn(
-        "has_grad_method is deprecated. Use obj.grad_method is not None instead. ",
-        PennyLaneDeprecationWarning,
-    )
-    return obj.grad_method is not None
-
-
-@qml.BooleanFn
-def has_multipar(obj):
-    """Returns ``True`` if an operator has more than one parameter
-    according to ``num_params``.
-
-    .. warning::
-
-        **Deprecated**: Use ``obj.num_params > 1`` instead.
-    """
-    warnings.warn(
-        "has_multipar is deprecated. Use obj.num_params > 1 instead.", PennyLaneDeprecationWarning
-    )
-    return obj.num_params > 1
-
-
-@qml.BooleanFn
-def has_nopar(obj):
-    """Returns ``True`` if an operator has no parameters
-    according to ``num_params``.
-
-    .. warning::
-
-        **Deprecated**: Use ``obj.num_params == 0`` instead.
-    """
-    warnings.warn(
-        "has_nopar is deprecated. Use obj.num_params == 0 instead.", PennyLaneDeprecationWarning
-    )
-    return obj.num_params == 0
-
-
-@qml.BooleanFn
-def has_unitary_gen(obj):
-    """Returns ``True`` if an operator has a unitary_generator
-    according to the ``has_unitary_generator`` flag.
-
-    .. warning::
-
-        **Deprecated**: Use ``obj in qml.ops.qubit.attributes.has_unitary_gen`` insteaed.
-
-    """
-    warnings.warn(
-        "has_unitary_gen is deprecated. Use `obj in qml.ops.qubit.attributes.has_unitary_generator` instead.",
-        PennyLaneDeprecationWarning,
-    )
-    # Linting check disabled as static analysis can misidentify qml.ops as the set instance qml.ops.qubit.ops
-    return obj in qml.ops.qubit.attributes.has_unitary_generator  # pylint:disable=no-member
-
-
-@qml.BooleanFn
-def is_measurement(obj):
-    """Returns ``True`` if an operator is a ``MeasurementProcess`` instance.
-
-    .. warning::
-
-        **Deprecated**: Use ``isinstance(obj, qml.measurements.MeasurementProcess)`` instead.
-    """
-    warnings.warn(
-        "is_measurement is deprecated. Use isinstance(obj, qml.measurements.MeasurementProcess) instead.",
-        PennyLaneDeprecationWarning,
-    )
-    return isinstance(obj, qml.measurements.MeasurementProcess)
-
-
-@qml.BooleanFn
 def is_trainable(obj):
     """Returns ``True`` if any of the parameters of an operator is trainable
     according to ``qml.math.requires_grad``.
     """
     return any(qml.math.requires_grad(p) for p in obj.parameters)
-
-
-@qml.BooleanFn
-def defines_diagonalizing_gates(obj):
-    """Returns ``True`` if an operator defines the diagonalizing gates.
-
-    .. warning::
-
-        **Deprecated:** Use ``obj.has_diagonalizing_gates`` instead.
-
-    """
-    warnings.warn(
-        "defines_diagonalizing_gates is deprecated. Use obj.has_diagonalizing_gates instead.",
-        PennyLaneDeprecationWarning,
-    )
-    return obj.has_diagonalizing_gates
 
 
 _gen_is_multi_term_hamiltonian_code = """
@@ -2480,77 +2384,8 @@ except TermsUndefinedError:
 """
 
 
-@qml.BooleanFn
-def gen_is_multi_term_hamiltonian(obj):
-    """Returns ``True`` if an operator has a generator defined and it is a Hamiltonian
-    with more than one term.
-
-    .. warning::
-
-        **Deprecated**: Use the following code instead:
-
-        .. code-block:: python
-
-            def gen_is_multi_term_hamiltonian(obj):
-                if not isinstance(obj, Operator) or not obj.has_generator:
-                    return False
-                try:
-                    generator = obj.generator()
-                    _, ops = generator.terms()
-                    return len(ops) > 1
-                except TermsUndefinedError:
-                    return False
-
-
-    """
-    warnings.warn(
-        f"gen_is_multiterm_hamiltonian is deprecated. Use {_gen_is_multi_term_hamiltonian_code}",
-        PennyLaneDeprecationWarning,
-    )
-    if not isinstance(obj, Operator) or not obj.has_generator:
-        return False
-    try:
-        generator = obj.generator()
-        _, ops = generator.terms()  # len(coeffs) can be weird sometimes
-        return len(ops) > 1
-    except TermsUndefinedError:
-        return False
-
-
 def __getattr__(name):
     """To facilitate StatePrep rename"""
-    if name == "Observable":
-        from ._deprecated_observable import Observable  # pylint: disable=import-outside-toplevel
-
-        warnings.warn(
-            "Observable is deprecated and will be removed in v0.43. "
-            "A generic Operator class should be used instead. "
-            "If defining an Operator, set the is_hermitian property to True. "
-            "If checking if an Operator is Hermitian, check the is_hermitian property. ",
-            PennyLaneDeprecationWarning,
-        )
-        return Observable
-    if name == "AnyWires":
-        warnings.warn(
-            "AnyWires is deprecated and will be removed in v0.43. "
-            " If your operation accepts any number of wires, set num_wires=None instead.",
-            PennyLaneDeprecationWarning,
-        )
-        return _WiresEnum.AllWires
-    if name == "AllWires":
-        warnings.warn(
-            "AllWires is deprecated and will be removed in v0.43. "
-            " If your operation accepts any number of wires, set num_wires=None instead.",
-            PennyLaneDeprecationWarning,
-        )
-        return _WiresEnum.AllWires
-    if name == "WiresEnum":
-        warnings.warn(
-            "WiresEnum is deprecated and will be removed in v0.43. "
-            " If your operation accepts any number of wires, set num_wires=None instead.",
-            PennyLaneDeprecationWarning,
-        )
-        return _WiresEnum
     if name == "StatePrep":
         return StatePrepBase
     raise AttributeError(f"module 'pennylane.operation' has no attribute '{name}'")

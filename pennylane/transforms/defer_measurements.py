@@ -13,12 +13,13 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 
+from collections.abc import Callable, Sequence
 from functools import lru_cache, partial
 from numbers import Number
-from typing import Callable, Optional, Sequence, Union
 from warnings import warn
 
 import pennylane as qml
+from pennylane.exceptions import TransformError
 from pennylane.measurements import (
     CountsMP,
     MeasurementValue,
@@ -30,7 +31,7 @@ from pennylane.measurements import (
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError, transform
+from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -129,7 +130,7 @@ def _get_plxpr_defer_measurements():
     class DeferMeasurementsInterpreter(PlxprInterpreter):
         """Interpreter for applying the defer_measurements transform to plxpr."""
 
-        # pylint: disable=unnecessary-lambda-assignment,attribute-defined-outside-init,no-self-use
+        # pylint: disable=attribute-defined-outside-init,no-self-use
 
         def __init__(self, num_wires):
             super().__init__()
@@ -262,7 +263,7 @@ def _get_plxpr_defer_measurements():
             self,
             primitive: "jax.extend.core.Primitive",
             subfuns: Sequence[Callable],
-            invals: Sequence[Union[MeasurementValue, Number]],
+            invals: Sequence[MeasurementValue | Number],
             params: dict,
         ) -> MeasurementValue:
             """Create a ``MeasurementValue`` that captures all classical processing of the
@@ -391,9 +392,7 @@ def _get_plxpr_defer_measurements():
         return MeasurementValue([meas], lambda x: x)
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
-    def _(
-        self, *invals, jaxpr_branches, consts_slices, args_slice
-    ):  # pylint: disable=unused-argument
+    def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
         n_branches = len(jaxpr_branches)
         conditions = invals[:n_branches]
         if not any(isinstance(c, MeasurementValue) for c in conditions):
@@ -474,7 +473,7 @@ def defer_measurements(
     tape: QuantumScript,
     reduce_postselected: bool = True,
     allow_postselect: bool = True,
-    num_wires: Optional[int] = None,
+    num_wires: int | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.

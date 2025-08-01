@@ -15,7 +15,7 @@
 The null.qubit device is a no-op device, useful for resource estimation, and for
 benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
-# pylint:disable=unused-argument
+
 
 import inspect
 import json
@@ -25,7 +25,6 @@ from collections import defaultdict
 from dataclasses import replace
 from functools import lru_cache, singledispatch
 from numbers import Number
-from typing import Optional, Union
 
 import numpy as np
 
@@ -57,14 +56,14 @@ RESOURCES_FNAME_PREFIX = "__pennylane_resources_data_"
 
 @singledispatch
 def zero_measurement(
-    mp: MeasurementProcess, num_device_wires, shots: Optional[int], batch_size: int, interface: str
+    mp: MeasurementProcess, num_device_wires, shots: int | None, batch_size: int, interface: str
 ):
     """Create all-zero results for various measurement processes."""
     return _zero_measurement(mp, num_device_wires, shots, batch_size, interface)
 
 
 def _zero_measurement(
-    mp: MeasurementProcess, num_device_wires: int, shots: Optional[int], batch_size, interface
+    mp: MeasurementProcess, num_device_wires: int, shots: int | None, batch_size, interface
 ):
     shape = mp.shape(shots, num_device_wires)
     if batch_size is not None:
@@ -80,7 +79,7 @@ def _cached_zero_return(shape, interface, dtype):
 
 
 @zero_measurement.register
-def _(mp: ClassicalShadowMP, num_device_wires, shots: Optional[int], batch_size, interface):
+def _(mp: ClassicalShadowMP, num_device_wires, shots: int | None, batch_size, interface):
     if batch_size is not None:
         # shapes = [(batch_size,) + shape for shape in shapes]
         raise ValueError(
@@ -118,9 +117,9 @@ zero_measurement.register(DensityMatrixMP)(_zero_measurement)
 @zero_measurement.register(StateMP)
 @zero_measurement.register(ProbabilityMP)
 def _(
-    mp: Union[StateMP, ProbabilityMP],
+    mp: StateMP | ProbabilityMP,
     num_device_wires: int,
-    shots: Optional[int],
+    shots: int | None,
     batch_size,
     interface,
 ):
@@ -190,7 +189,11 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
-        track_resources (bool): If True, track the number of resources used by the device and save them to a JSON file. This argument is experimental and subject to change.
+        track_resources (bool): If True, track the number of resources used by the device and save them to a JSON file.
+            The filename will match ``__pennylane_resources_data_*.json`` where the wildcard (asterisk) is replaced by
+            the timestamp of when execution began in nanoseconds since Unix EPOCH. This argument is experimental and
+            subject to change.
+
     **Example:**
 
     .. code-block:: python
@@ -345,7 +348,7 @@ class NullQubit(Device):
     def preprocess(
         self, execution_config=DefaultExecutionConfig
     ) -> tuple[TransformProgram, ExecutionConfig]:
-        program, _ = DefaultQubit.preprocess(self, execution_config)
+        program = DefaultQubit.preprocess_transforms(self, execution_config)
         for t in program:
             if t.transform == decompose.transform:
                 original_stopping_condition = t.kwargs["stopping_condition"]
@@ -385,7 +388,7 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+    ) -> Result | ResultBatch:
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",
@@ -471,7 +474,8 @@ class NullQubit(Device):
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
 
-    # pylint: disable= unused-argument
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     def eval_jaxpr(
         self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args, execution_config=None
     ) -> list:

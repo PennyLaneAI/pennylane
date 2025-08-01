@@ -145,6 +145,10 @@ as addition, multiplication and exponentiation.
     :figure: _static/templates/arithmetic/adder.png
 
 .. gallery-item::
+    :description: :doc:`SemiAdder <../code/api/pennylane.SemiAdder>`
+    :figure: _static/templates/arithmetic/semiadder.png
+
+.. gallery-item::
     :description: :doc:`OutAdder <../code/api/pennylane.OutAdder>`
     :figure: _static/templates/arithmetic/outadder.png
 
@@ -342,7 +346,7 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`Select<../code/api/pennylane.Select>`
-    :figure: _static/templates/subroutines/select.png
+    :figure: _static/templates/subroutines/select_cropped.png
 
 .. gallery-item::
     :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
@@ -366,7 +370,11 @@ Other useful templates which do not belong to the previous categories can be fou
 
 .. gallery-item::
     :description: :doc:`SelectPauliRot <../code/api/pennylane.SelectPauliRot>`
-    :figure: _static/templates/select_pauli_rot/select_pauli_rot.png
+    :figure: _static/templates/subroutines/select_pauli_rot_cropped.png
+
+.. gallery-item::
+    :description: :doc:`TemporaryAND <../code/api/pennylane.TemporaryAND>`
+    :figure: _static/templates/subroutines/temporary_and.png
 
 .. raw:: html
 

@@ -15,151 +15,18 @@
 This module contains the qml.counts measurement.
 """
 from collections.abc import Sequence
-from typing import Optional
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+from .measurement_value import MeasurementValue
 from .measurements import SampleMeasurement
-from .mid_measure import MeasurementValue
-
-
-def counts(
-    op=None,
-    wires=None,
-    all_outcomes=False,
-) -> "CountsMP":
-    r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
-    returning the number of counts for each sample. If no observable is provided then basis state
-    samples are returned directly from the device.
-
-    Note that the output shape of this measurement process depends on the shots
-    specified on the device.
-
-    Args:
-        op (Operator or MeasurementValue or None): a quantum observable object. To get counts
-            for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
-        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
-            op is None
-        all_outcomes(bool): determines whether the returned dict will contain only the observed
-            outcomes (default), or whether it will display all possible outcomes for the system
-
-    Returns:
-        CountsMP: Measurement process instance
-
-    Raises:
-        ValueError: Cannot set wires if an observable is provided
-
-    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
-    The probability of drawing eigenvalue :math:`\lambda_i` is given by
-    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
-    is the corresponding basis state from the observable's eigenbasis.
-
-    .. note::
-
-        Differentiation of QNodes that return ``counts`` is currently not supported. Please refer to
-        :func:`~.pennylane.sample` if differentiability is required.
-
-    **Example**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.counts(qml.Y(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    {-1: 2, 1: 2}
-
-    If no observable is provided, then the raw basis state samples obtained
-    from device are returned (e.g., for a qubit device, samples from the
-    computational device are returned). In this case, ``wires`` can be specified
-    so that sample results only include measurement results of the qubits of interest.
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.counts()
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    {'00': 3, '01': 1}
-
-    By default, outcomes that were not observed will not be included in the dictionary.
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=4)
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.X(0)
-            return qml.counts()
-
-    Executing this QNode shows only the observed outcomes:
-
-    >>> circuit()
-    {'10': 4}
-
-    Passing all_outcomes=True will create a dictionary that displays all possible outcomes:
-
-    .. code-block:: python3
-
-        @qml.qnode(dev)
-        def circuit():
-            qml.X(0)
-            return qml.counts(all_outcomes=True)
-
-    Executing this QNode shows counts for all states:
-
-    >>> circuit()
-    {'00': 0, '01': 0, '10': 4, '11': 0}
-
-    """
-    if isinstance(op, MeasurementValue):
-        return CountsMP(obs=op, all_outcomes=all_outcomes)
-
-    if isinstance(op, Sequence):
-        if not all(
-            qml.math.is_abstract(o)
-            or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
-            for o in op
-        ):
-            raise qml.QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
-                "MeasurementValues manipulated using arithmetic operators cannot be used when "
-                "collecting statistics for a sequence of mid-circuit measurements."
-            )
-
-        return CountsMP(obs=op, all_outcomes=all_outcomes)
-
-    if wires is not None:
-        if op is not None:
-            raise ValueError(
-                "Cannot specify the wires to sample if an observable is provided. The wires "
-                "to sample will be determined directly from the observable."
-            )
-        wires = Wires(wires)
-
-    return CountsMP(obs=op, wires=wires, all_outcomes=all_outcomes)
+from .process_samples import process_raw_samples
 
 
 class CountsMP(SampleMeasurement):
@@ -187,10 +54,10 @@ class CountsMP(SampleMeasurement):
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
-        obs: Optional[Operator] = None,
+        obs: Operator | None = None,
         wires=None,
         eigvals=None,
-        id: Optional[str] = None,
+        id: str | None = None,
         all_outcomes: bool = False,
     ):
         self.all_outcomes = all_outcomes
@@ -216,9 +83,9 @@ class CountsMP(SampleMeasurement):
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ) -> tuple:
         raise NotImplementedError(
@@ -240,16 +107,16 @@ class CountsMP(SampleMeasurement):
 
     def process_samples(
         self,
-        samples: Sequence[complex],
+        samples: TensorLike,
         wire_order: Wires,
-        shot_range: Optional[tuple[int, ...]] = None,
-        bin_size: Optional[int] = None,
+        shot_range: tuple[int, ...] | None = None,
+        bin_size: int | None = None,
     ):
-        with qml.queuing.QueuingManager.stop_recording():
-            samples = qml.sample(op=self.obs or self.mv, wires=self._wires).process_samples(
-                samples, wire_order, shot_range, bin_size
-            )
-
+        dummy_mp = CountsMP(obs=self.obs or self.mv, wires=self._wires)
+        # cant use `self` due to eigvals differences
+        samples = process_raw_samples(
+            dummy_mp, samples, wire_order, shot_range=shot_range, bin_size=bin_size
+        )
         if bin_size is None:
             return self._samples_to_counts(samples)
 
@@ -299,8 +166,10 @@ class CountsMP(SampleMeasurement):
 
              .. code-block:: python3
 
-                dev = qml.device("default.qubit", wires=2, shots=4)
+                from functools import partial
+                dev = qml.device("default.qubit", wires=2)
 
+                @partial(qml.set_shots, shots=4)
                 @qml.qnode(dev)
                 def circuit(x):
                     qml.RX(x, wires=0)
@@ -312,16 +181,16 @@ class CountsMP(SampleMeasurement):
 
         # if an observable was provided, batched samples will have shape (batch_size, shots)
         batched_ndims = 2
-        shape = qml.math.shape(samples)
+        shape = math.shape(samples)
 
         if self.obs is None and not isinstance(self.mv, MeasurementValue):
             # convert samples and outcomes (if using) from arrays to str for dict keys
             batched_ndims = 3  # no observable was provided, batched samples will have shape (batch_size, shots, len(wires))
 
             # remove nans
-            mask = qml.math.isnan(samples)
+            mask = math.isnan(samples)
             num_wires = shape[-1]
-            if qml.math.any(mask):
+            if math.any(mask):
                 mask = np.logical_not(np.any(mask, axis=tuple(range(1, samples.ndim))))
                 samples = samples[mask, ...]
 
@@ -354,13 +223,13 @@ class CountsMP(SampleMeasurement):
             samples = samples[None]
 
         # generate empty outcome dict, populate values with state counts
-        base_dict = {k: qml.math.int64(0) for k in outcomes}
+        base_dict = {k: math.int64(0) for k in outcomes}
         outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
-        results = [qml.math.unique(batch, return_counts=True) for batch in samples]
+        results = [math.unique(batch, return_counts=True) for batch in samples]
 
         for result, outcome_dict in zip(results, outcome_dicts):
             states, _counts = result
-            for state, count in zip(qml.math.unwrap(states), _counts):
+            for state, count in zip(math.unwrap(states), _counts):
                 outcome_dict[state] = count
 
         def outcome_to_eigval(outcome: str):
@@ -384,7 +253,7 @@ class CountsMP(SampleMeasurement):
 
         if self.eigvals() is not None:
             eigvals = self.eigvals()
-            eigvals_dict = {k: qml.math.int64(0) for k in eigvals}
+            eigvals_dict = {k: math.int64(0) for k in eigvals}
             for outcome, count in mapped_counts.items():
                 val = eigvals[int(outcome, 2)]
                 eigvals_dict[val] += count
@@ -431,6 +300,146 @@ class CountsMP(SampleMeasurement):
             outcome_binary = binary_pattern.format(outcome)
             if outcome_binary not in outcome_counts:
                 outcome_counts[outcome_binary] = 0
+
+
+def counts(
+    op=None,
+    wires=None,
+    all_outcomes=False,
+) -> CountsMP:
+    r"""Sample from the supplied observable, with the number of shots
+    determined from the ``dev.shots`` attribute of the corresponding device,
+    returning the number of counts for each sample. If no observable is provided then basis state
+    samples are returned directly from the device.
+
+    Note that the output shape of this measurement process depends on the shots
+    specified on the device.
+
+    Args:
+        op (Operator or MeasurementValue or None): a quantum observable object. To get counts
+            for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
+        wires (Sequence[int] or int or None): the wires we wish to sample from, ONLY set wires if
+            op is None
+        all_outcomes(bool): determines whether the returned dict will contain only the observed
+            outcomes (default), or whether it will display all possible outcomes for the system
+
+    Returns:
+        CountsMP: Measurement process instance
+
+    Raises:
+        ValueError: Cannot set wires if an observable is provided
+
+    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
+    The probability of drawing eigenvalue :math:`\lambda_i` is given by
+    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
+    is the corresponding basis state from the observable's eigenbasis.
+
+    .. note::
+
+        Differentiation of QNodes that return ``counts`` is currently not supported. Please refer to
+        :func:`~.pennylane.sample` if differentiability is required.
+
+    **Example**
+
+    .. code-block:: python3
+
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.set_shots, shots=4)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.counts(qml.Y(0))
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    {-1: 2, 1: 2}
+
+    If no observable is provided, then the raw basis state samples obtained
+    from device are returned (e.g., for a qubit device, samples from the
+    computational device are returned). In this case, ``wires`` can be specified
+    so that sample results only include measurement results of the qubits of interest.
+
+    .. code-block:: python3
+
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.set_shots, shots=4)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.counts()
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    {'00': 3, '01': 1}
+
+    By default, outcomes that were not observed will not be included in the dictionary.
+
+    .. code-block:: python3
+
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.set_shots, shots=4)
+        @qml.qnode(dev)
+        def circuit():
+            qml.X(0)
+            return qml.counts()
+
+    Executing this QNode shows only the observed outcomes:
+
+    >>> circuit()
+    {'10': 4}
+
+    Passing all_outcomes=True will create a dictionary that displays all possible outcomes:
+
+    .. code-block:: python3
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.X(0)
+            return qml.counts(all_outcomes=True)
+
+    Executing this QNode shows counts for all states:
+
+    >>> circuit()
+    {'00': 0, '01': 0, '10': 4, '11': 0}
+
+    """
+    if isinstance(op, MeasurementValue):
+        return CountsMP(obs=op, all_outcomes=all_outcomes)
+
+    if isinstance(op, Sequence):
+        if not all(
+            math.is_abstract(o) or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
+            for o in op
+        ):
+            raise QuantumFunctionError(
+                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "MeasurementValues manipulated using arithmetic operators cannot be used when "
+                "collecting statistics for a sequence of mid-circuit measurements."
+            )
+
+        return CountsMP(obs=op, all_outcomes=all_outcomes)
+
+    if wires is not None:
+        if op is not None:
+            raise ValueError(
+                "Cannot specify the wires to sample if an observable is provided. The wires "
+                "to sample will be determined directly from the observable."
+            )
+        wires = Wires(wires)
+
+    return CountsMP(obs=op, wires=wires, all_outcomes=all_outcomes)
 
 
 def _remove_unobserved_outcomes(outcome_counts: dict):

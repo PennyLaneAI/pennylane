@@ -13,7 +13,6 @@
 # limitations under the License.
 """A function to compute the adjoint representation of a Lie algebra"""
 from itertools import combinations, combinations_with_replacement
-from typing import Union
 
 import numpy as np
 
@@ -36,7 +35,7 @@ def _all_commutators(ops):
 
 
 def structure_constants(
-    g: list[Union[Operator, PauliWord, PauliSentence]],
+    g: list[Operator | PauliWord | PauliSentence],
     pauli: bool = False,
     matrix: bool = False,
     is_orthogonal: bool = True,
@@ -350,8 +349,9 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
                 keras.ops.diagonal(prod, axis1=1, axis2=3), axis1=0, axis2=1
             )
         else:
-            # offset, axis1, axis2 arguments are called differently in torch, use positional arguments
-            pre_diag = math.diagonal(math.diagonal(prod, 0, 1, 3), 0, 0, 1)
+            pre_diag = math.diagonal(
+                math.diagonal(prod, offset=0, axis1=1, axis2=3), offset=0, axis1=0, axis2=1
+            )
 
         gram_diag = math.real(math.sum(pre_diag, axis=0))
 

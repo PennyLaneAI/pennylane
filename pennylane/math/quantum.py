@@ -13,8 +13,6 @@
 # limitations under the License.
 """Differentiable quantum functions"""
 import functools
-
-# pylint: disable=import-outside-toplevel
 import itertools
 from string import ascii_letters
 
@@ -1073,7 +1071,7 @@ def _denman_beavers_iterations(mat, max_iter=100, tol=1e-13):
                         break
                 Y_prev = Y.copy()
 
-        numerical_error = spla.norm((Y @ Y - mat))
+        numerical_error = spla.norm(Y @ Y - mat)
         if (norm_diff and norm_diff > tol) or numerical_error > tol:
             raise ValueError(
                 f"Convergence threshold not reached after {max_iter} iterations, "
@@ -1204,7 +1202,7 @@ def relative_entropy(state0, state1, base=None, check_state=False, c_dtype="comp
         state1 = math.cast_like(state1, state0)
 
     if check_state:
-        # pylint: disable=expression-not-assigned
+
         _check_density_matrix(state0)
         _check_density_matrix(state1)
 
@@ -1518,3 +1516,89 @@ def trace_distance(state0, state1, check_state=False, c_dtype="complex128"):
     eigvals = math.abs(math.eigvalsh(state0 - state1))
 
     return math.sum(eigvals, axis=-1) / 2
+
+
+def _check_trace_preserving(Ks):
+    r""" "
+    Check whether a set of Kraus operators ``Ks`` fulfills :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
+    """
+    return np.allclose(np.sum([K.conj().T @ K for K in Ks], axis=0), np.eye(len(Ks[0])))
+
+
+def choi_matrix(Ks, check_Ks=False):
+    r"""
+    Compute the Choi matrix :math:`\Lambda` of a quantum channel :math:`\mathcal{E}`,
+
+    .. math:: \Lambda = (\mathbb{1} \otimes \mathcal{E})(|\phi^+ \rangle \langle \phi^+|) = \frac{1}{2^n} \sum_{ij=0}^{2^n-1} |i \rangle \langle j| \otimes \mathcal{E}(|i \rangle \langle j|),
+
+    where :math:`|\phi^+ \rangle` is the maximally entangled state
+    :math:`|\phi^+\rangle = \frac{1}{\sqrt{2^n}} \sum_{i=0}^{2^n-1} |i\rangle \otimes |i\rangle` between the
+    qubit system the channel :math:`\mathcal{E}` is acting on and additional "artificial" system of the same size.
+
+    We assume the channel :math:`\mathcal{E}(\rho) = \sum_\ell K_\ell^\dagger \rho K_\ell` is provided
+    in terms of its Kraus operators :math:`\{K_j\}` (``Ks``) that are trace-preserving, hence
+    :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`.
+
+    Args:
+        Ks (TensorLike): A list of Kraus operators with size ``(2**n, 2**n)`` that act on ``n`` wires.
+        check_Ks (bool): Whether or not to check if the provided Kraus operators are trace-preserving, i.e. :math:`\sum_j K_j^\dagger K_j = \mathbb{1}`. Default is ``False``.
+
+    Returns:
+        TensorLike: The Choi matrix :math:`\Lambda` of size ``(2**(2n), 2**(2n))``
+
+    **Examples**
+
+    The simplest quantum channel is a single unitary gate. In that case, the Kraus operators reduce to the unitary gate itself.
+
+    >>> import pennylane as qml
+    >>> Ks = [qml.matrix(qml.CNOT((0, 1)))]
+    >>> Lambda = qml.math.choi_matrix(Ks)
+    >>> Lambda.shape
+    (16, 16)
+
+    The resulting Choi matrix is a density matrix, so its trace sums to 1.
+    Because the channel is unitary, the resulting Choi state is pure,
+    which can be seen from :math:`\text{tr}\left( \Lambda^2 \right) = 1`
+
+    >>> np.trace(Lambda), np.trace(Lambda @ Lambda)
+    (np.float64(1.0), np.float64(1.0))
+
+
+    We can construct a non-unitary channel by taking different unitary operators and weighting them
+    such that the trace is preserved (i.e., the squares of the coefficients sum to one).
+
+    >>> Ks = [np.sqrt(0.3) * qml.CNOT((0, 1)), np.sqrt(1-0.3) * qml.X(0)]
+    >>> Ks = [qml.matrix(op, wire_order=range(2)) for op in Ks]
+    >>> Lambda = qml.math.choi_matrix(Ks)
+
+    In this case, the resulting Choi matrix does not correspond to a pure state, as seen by
+    :math:`\text{tr}\left( \Lambda^2 \right) < 1`.
+
+    >>> np.trace(Lambda), np.trace(Lambda @ Lambda)
+    (np.float64(1.0), np.float64(0.58))
+
+    """
+    d = len(Ks[0])
+
+    if check_Ks:
+        if not _check_trace_preserving(Ks):
+            raise ValueError(
+                r"The provided Kraus operators are not trace-preserving ($\sum_j K_j^\dagger K_j = \mathbb{1}$)"
+            )
+
+    choi = math.asarray(
+        math.cast_like(np.zeros((d**2, d**2)), Ks), like=Ks[0]
+    )  # TODO: is there a smarter way to get both dtype and interface right?
+
+    aux_basis = math.cast_like(math.eye(d), Ks)  # same dimension as qubit system
+    q_basis = math.cast_like(math.eye(d), Ks)
+
+    for i in aux_basis:
+        for j in q_basis:
+            ketbraij = math.outer(i, j)
+            for K in Ks:
+                choi += math.kron(ketbraij, K @ ketbraij @ math.transpose(math.conj(K)))
+
+    choi = choi / d
+
+    return choi

@@ -24,6 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.resource import Resources
 from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.trotter import (
@@ -776,6 +777,16 @@ class TestDecomposition:
         for op1, op2 in zip(decomp, true_decomp):
             qml.assert_equal(op1, op2)
 
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    def test_decomposition_new(
+        self, hamiltonian, hamiltonian_index, order
+    ):  # pylint: disable=unused-argument
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.TrotterProduct(hamiltonian, 4.2, order=order)
+        for rule in qml.list_decomps(qml.TrotterProduct):
+            _test_decomposition_rule(op, rule)
+
     @pytest.mark.parametrize("order", (1, 2))
     @pytest.mark.parametrize("num_steps", (1, 2, 3))
     def test_compute_decomposition_n_steps(self, num_steps, order):
@@ -788,13 +799,15 @@ class TestDecomposition:
                 qml.exp(qml.PauliZ(0), 0.5j / num_steps),
                 qml.exp(qml.PauliX(0), 0.5j / num_steps),
             ]
-        if order == 2:
+        elif order == 2:
             base_decomp = [
                 qml.exp(qml.PauliX(0), 0.25j / num_steps),
                 qml.exp(qml.PauliZ(0), 0.25j / num_steps),
                 qml.exp(qml.PauliZ(0), 0.25j / num_steps),
                 qml.exp(qml.PauliX(0), 0.25j / num_steps),
             ]
+        else:
+            assert False, "Order must be 1 or 2"
 
         true_decomp = base_decomp * num_steps
 
@@ -850,13 +863,15 @@ class TestIntegration:
                 qml.exp(qml.PauliZ(0), 0.5j / num_steps),
                 qml.exp(qml.PauliX(0), 0.5j / num_steps),
             ]
-        if order == 2:
+        elif order == 2:
             base_decomp = [
                 qml.exp(qml.PauliX(0), 0.25j / num_steps),
                 qml.exp(qml.PauliZ(0), 0.25j / num_steps),
                 qml.exp(qml.PauliZ(0), 0.25j / num_steps),
                 qml.exp(qml.PauliX(0), 0.25j / num_steps),
             ]
+        else:
+            assert False, "Order must be 1 or 2"
 
         true_decomp = base_decomp * num_steps
 
@@ -1726,8 +1741,6 @@ class TestTrotterizedQfuncIntegration:
                 qml.ControlledPhaseShift(time * arg2, wires=[wires[1], wires[0]]),
                 qml.CNOT([wires[0], wires[1]]),
                 qml.QFT(wires=wires[1:-1]),
-                qml.QFT(wires=wires[1:-1]),
-                qml.QFT(wires=wires[1:-1]),
             ]
 
             if reverse:
@@ -1741,8 +1754,6 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]]),
                 qml.ControlledPhaseShift((time / 2) * arg2, wires=[wires[1], wires[0]]),
                 qml.CNOT([wires[0], wires[1]]),
-                qml.QFT(wires=wires[1:-1]),
-                qml.QFT(wires=wires[1:-1]),
                 qml.QFT(wires=wires[1:-1]),
             ]
 
@@ -1760,8 +1771,6 @@ class TestTrotterizedQfuncIntegration:
                 qml.ControlledPhaseShift((p_4 * time / 2) * arg2, wires=[wires[1], wires[0]]),
                 qml.CNOT([wires[0], wires[1]]),
                 qml.QFT(wires=wires[1:-1]),
-                qml.QFT(wires=wires[1:-1]),
-                qml.QFT(wires=wires[1:-1]),
             ]
 
             expected_decomp1 = (
@@ -1777,8 +1786,6 @@ class TestTrotterizedQfuncIntegration:
                 qml.CNOT([wires[0], wires[1]]),
                 qml.ControlledPhaseShift((p4_comp * time / 2) * arg2, wires=[wires[1], wires[0]]),
                 qml.CNOT([wires[0], wires[1]]),
-                qml.QFT(wires=wires[1:-1]),
-                qml.QFT(wires=wires[1:-1]),
                 qml.QFT(wires=wires[1:-1]),
             ]
 
@@ -1803,7 +1810,7 @@ class TestTrotterizedQfuncIntegration:
         arg1 = 2.34
         arg2 = -6.78
         args = (arg1, arg2)
-        kwargs = {"kwarg1": True, "kwarg2": 3}
+        kwargs = {"kwarg1": True, "kwarg2": 1}
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
             """Arbitrarily complex qfunc"""
@@ -1867,7 +1874,7 @@ class TestTrotterizedQfuncIntegration:
         arg1 = jnp.array(2.34)
         arg2 = jnp.array(-6.78)
         args = (arg1, arg2)
-        kwargs = {"kwarg1": True, "kwarg2": 3}
+        kwargs = {"kwarg1": True, "kwarg2": 1}
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
             """Arbitrarily complex qfunc"""
@@ -1935,7 +1942,7 @@ class TestTrotterizedQfuncIntegration:
         arg1 = jnp.array(2.34)
         arg2 = jnp.array(-6.78)
         args = (arg1, arg2)
-        kwargs = {"kwarg1": True, "kwarg2": 3}
+        kwargs = {"kwarg1": True, "kwarg2": 1}
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
             """Arbitrarily complex qfunc"""
@@ -2000,7 +2007,7 @@ class TestTrotterizedQfuncIntegration:
         wires = ["aux1", "aux2", 0, 1, "target"]
         arg1 = qnp.array(2.34)
         arg2 = qnp.array(-6.78)
-        kwargs = {"kwarg1": True, "kwarg2": 3}
+        kwargs = {"kwarg1": True, "kwarg2": 1}
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
             """Arbitrarily complex qfunc"""
@@ -2070,7 +2077,7 @@ class TestTrotterizedQfuncIntegration:
         arg1 = jnp.array(2.34)
         arg2 = jnp.array(-6.78)
         args = (arg1, arg2)
-        kwargs = {"kwarg1": True, "kwarg2": 3}
+        kwargs = {"kwarg1": True, "kwarg2": 1}
 
         def my_qfunc(time, arg1, arg2, wires, kwarg1=False, kwarg2=None):
             """Arbitrarily complex qfunc"""

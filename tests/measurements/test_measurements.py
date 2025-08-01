@@ -16,6 +16,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import DecompositionUndefinedError, DeviceError, QuantumFunctionError
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -39,7 +40,6 @@ from pennylane.measurements import (
     sample,
     var,
 )
-from pennylane.operation import DecompositionUndefinedError
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
@@ -60,7 +60,7 @@ def test_no_measure():
         qml.RX(x, wires=0)
         return qml.PauliY(0)
 
-    with pytest.raises(qml.QuantumFunctionError, match="must return either a single measurement"):
+    with pytest.raises(QuantumFunctionError, match="must return either a single measurement"):
         _ = circuit(0.65)
 
 
@@ -70,7 +70,7 @@ def test_numeric_type_unrecognized_error():
 
     mp = NotValidMeasurement()
     with pytest.raises(
-        qml.QuantumFunctionError,
+        QuantumFunctionError,
         match="The numeric type of the measurement NotValidMeasurement is not defined",
     ):
         _ = mp.numeric_type
@@ -82,7 +82,7 @@ def test_shape_unrecognized_error():
     dev = qml.device("default.qubit", wires=2)
     mp = NotValidMeasurement()
     with pytest.raises(
-        qml.QuantumFunctionError,
+        QuantumFunctionError,
         match="The shape of the measurement NotValidMeasurement is not defined",
     ):
         mp.shape(dev, Shots(None))
@@ -362,7 +362,8 @@ class TestExpansion:
         """Test the expansion of a Pauli observable"""
         obs = qml.PauliX(0) @ qml.PauliY(1)
         m = qml.expval(op=obs)
-        tape = m.expand()
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            tape = m.expand()
 
         assert len(tape.operations) == 4
 
@@ -387,7 +388,8 @@ class TestExpansion:
         obs = qml.Hermitian(H, wires=["a"])
 
         m = qml.expval(op=obs)
-        tape = m.expand()
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            tape = m.expand()
 
         assert len(tape.operations) == 1
 
@@ -408,8 +410,9 @@ class TestExpansion:
     def test_expand_no_observable(self):
         """Check that an exception is raised if the measurement to
         be expanded has no observable"""
-        with pytest.raises(DecompositionUndefinedError):
-            ProbabilityMP(wires=qml.wires.Wires([0, 1])).expand()
+        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
+            with pytest.raises(DecompositionUndefinedError):
+                ProbabilityMP(wires=qml.wires.Wires([0, 1])).expand()
 
     @pytest.mark.parametrize(
         "m",
@@ -554,7 +557,7 @@ class TestSampleMeasurement:
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="not accepted for analytic simulation on default.qubit",
         ):
             circuit()
@@ -601,9 +604,7 @@ class TestStateMeasurement:
         def circuit():
             return MyMeasurement()
 
-        with pytest.raises(
-            qml.DeviceError, match="not accepted with finite shots on default.qubit"
-        ):
+        with pytest.raises(DeviceError, match="not accepted with finite shots on default.qubit"):
             circuit()
 
     def test_state_measurement_process_density_matrix_not_implemented(self):
@@ -690,5 +691,5 @@ class TestMeasurementProcess:
         measurement = qml.counts(wires=[0, 1])
         msg = "The shape of the measurement CountsMP is not defined"
 
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             measurement.shape(shots=None, num_device_wires=2)

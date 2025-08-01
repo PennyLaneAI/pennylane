@@ -22,10 +22,10 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane._deprecated_observable import Observable
+from pennylane.exceptions import DeviceError
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
-from pennylane.ops.op_math.adjoint import Adjoint, AdjointObs, AdjointOperation, AdjointOpObs
-from pennylane.ops.op_math.pow import PowObs, PowOperation, PowOpObs
+from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
+from pennylane.ops.op_math.pow import PowOperation
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
 
 
@@ -39,10 +39,14 @@ def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
 _INSTANCES_TO_TEST = [
     (qml.sum(qml.PauliX(0), qml.PauliZ(0)), {}),
     (qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)), {}),
-    (qml.BasisState([1], wires=[0]), {"skip_differentiation": True}),
+    (qml.BasisState([1], wires=[0]), {"skip_differentiation": True, "heuristic_resources": True}),
     (
         qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
-        {"skip_differentiation": True},
+        {"skip_differentiation": True, "heuristic_resources": True},
+    ),
+    (
+        qml.ControlledQubitUnitary(np.eye(4), wires=[1, 2, 0], control_values=[0]),
+        {"skip_differentiation": True, "heuristic_resources": True},
     ),
     (
         qml.QubitChannel([np.array([[1, 0], [0, 0.8]]), np.array([[0, 0.6], [0, 0]])], wires=0),
@@ -58,6 +62,10 @@ _INSTANCES_TO_TEST = [
     ),
     (
         qml.QubitUnitary(np.eye(4), wires=[0, 1]),
+        {"skip_differentiation": True, "heuristic_resources": True},
+    ),
+    (
+        qml.QubitUnitary(qml.Rot.compute_matrix(0.1, 0.2, 0.3), wires=[0]),
         {"skip_differentiation": True, "heuristic_resources": True},
     ),
     (qml.SpecialUnitary([1, 1, 1], 0), {"skip_differentiation": True}),
@@ -94,6 +102,26 @@ _INSTANCES_TO_TEST = [
         ),
         {"skip_pickle": True},
     ),
+    (
+        qml.SelectPauliRot(
+            np.array(
+                [
+                    0.69307448,
+                    0.2574346,
+                    0.84850003,
+                    0.06706336,
+                    0.33502536,
+                    0.79254386,
+                    0.76929339,
+                    0.66070049,
+                ]
+            ),
+            control_wires=[0, 1, 2],
+            target_wire=3,
+            rot_axis="Y",
+        ),
+        {},
+    ),
 ]
 """Valid operator instances that could not be auto-generated."""
 
@@ -105,7 +133,7 @@ _INSTANCES_TO_FAIL = [
     ),
     (
         qml.PauliError("X", 0.5, wires=0),
-        AssertionError,  # each data element must be tensorlike
+        DeviceError,  # not supported with default.qubit and does not provide a decomposition
     ),
     (
         qml.THermitian(np.eye(3), wires=0),
@@ -142,12 +170,9 @@ These operators need to break PL conventions, and each one's reason is specified
 
 _ABSTRACT_OR_META_TYPES = {
     Adjoint,
-    AdjointOpObs,
     AdjointOperation,
-    AdjointObs,
     Operator,
     Operation,
-    Observable,
     Channel,
     qml.ops.Projector,
     qml.ops.SymbolicOp,
@@ -161,11 +186,11 @@ _ABSTRACT_OR_META_TYPES = {
     StatePrepBase,
     qml.resource.ResourcesOperation,
     qml.resource.ErrorOperation,
-    PowOpObs,
     PowOperation,
-    PowObs,
     qml.StatePrep,
     qml.FromBloq,
+    qml.allocation.Allocate,  # no integer wires
+    qml.allocation.Deallocate,  # no integer wires
 }
 """Types that should not have actual instances created."""
 

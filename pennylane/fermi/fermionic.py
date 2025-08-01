@@ -72,7 +72,7 @@ class FermiWord(dict):
     @property
     def wires(self):
         r"""Return wires in a FermiWord."""
-        return set(i[1] for i in self.sorted_dic.keys())
+        return {i[1] for i in self.sorted_dic.keys()}
 
     def __missing__(self, key):
         r"""Return empty string for a missing key in FermiWord."""
@@ -735,7 +735,6 @@ def _to_string(fermi_op, of=False):
     return " ".join(op_list).rstrip()
 
 
-# pylint: disable=too-few-public-methods
 class FermiC(FermiWord):
     r"""FermiC(orbital)
     The fermionic creation operator :math:`a^{\dagger}`

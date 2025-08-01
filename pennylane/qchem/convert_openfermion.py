@@ -16,9 +16,7 @@ This module contains the functions for converting between OpenFermion and PennyL
 """
 
 from functools import singledispatch
-from typing import Union
 
-# pylint: disable= import-outside-toplevel,no-member,unused-import
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
@@ -29,7 +27,7 @@ from pennylane.qchem.convert import _openfermion_to_pennylane, _pennylane_to_ope
 def _import_of():
     """Import openfermion."""
     try:
-        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        # pylint: disable=import-outside-toplevel
         import openfermion
     except ImportError as Error:
         raise ImportError(
@@ -106,7 +104,7 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
 
 
 def to_openfermion(
-    pennylane_op: Union[Sum, LinearCombination, FermiWord, FermiSentence], wires=None, tol=1.0e-16
+    pennylane_op: Sum | LinearCombination | FermiWord | FermiSentence, wires=None, tol=1.0e-16
 ):
     r"""Convert a PennyLane operator to OpenFermion
     `QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__ or
@@ -158,9 +156,11 @@ def _(pl_op: Sum, wires=None, tol=1.0e-16):
     return _pennylane_to_openfermion(np.array(coeffs), ops, wires=wires, tol=tol)
 
 
-# pylint: disable=unused-argument, protected-access
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=unused-argument
 @_to_openfermion_dispatch.register
 def _(ops: FermiWord, wires=None, tol=1.0e-16):
+    # pylint: disable=protected-access
     openfermion = _import_of()
 
     if wires:

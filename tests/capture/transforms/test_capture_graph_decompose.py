@@ -16,7 +16,7 @@
 Tests the ``DecomposeInterpreter`` with the new graph-based decomposition system enabled.
 """
 
-# pylint: disable=no-name-in-module, too-few-public-methods, wrong-import-position
+# pylint: disable=no-name-in-module, too-few-public-methods, wrong-import-position, protected-access
 
 import numpy as np
 import pytest
@@ -27,7 +27,7 @@ jax = pytest.importorskip("jax")
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -39,10 +39,10 @@ class TestDecomposeInterpreterGraphEnabled:
         """Tests specifying the target gate set."""
 
         interpreter = DecomposeInterpreter(gate_set={qml.RX, "RZ", "CNOT"})
-        assert interpreter.gate_set_contains(qml.RX(1.5, 0))
-        assert interpreter.gate_set_contains(qml.RZ(1.5, 0))
-        assert interpreter.gate_set_contains(qml.CNOT(wires=[0, 1]))
-        assert not interpreter.gate_set_contains(qml.Hadamard(0))
+        assert interpreter._stopping_condition(qml.RX(1.5, 0))
+        assert interpreter._stopping_condition(qml.RZ(1.5, 0))
+        assert interpreter._stopping_condition(qml.CNOT(wires=[0, 1]))
+        assert not interpreter._stopping_condition(qml.Hadamard(0))
 
     @pytest.mark.unit
     def test_callable_gate_set_not_supported(self):

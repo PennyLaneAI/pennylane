@@ -24,6 +24,7 @@ import numpy as np
 import pennylane.ops as qops
 from pennylane import math
 from pennylane.circuit_graph import LayerData
+from pennylane.exceptions import WireError
 from pennylane.measurements import expval, probs
 from pennylane.ops.functions import generator, matrix
 from pennylane.queuing import WrappedObj
@@ -31,7 +32,7 @@ from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import expand_multipar, expand_nonunitary_gen
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 
 def _mt_cjac_tdot(mt, c):
@@ -79,9 +80,7 @@ def _expand_metric_tensor(
     allow_nonunitary=True,
     aux_wire=None,
     device_wires=None,
-) -> tuple[
-    QuantumScriptBatch, PostprocessingFn
-]:  # pylint: disable=too-many-arguments, too-many-positional-arguments
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Set the metric tensor based on whether non-unitary gates are allowed."""
     # pylint: disable=unused-argument,too-many-arguments
 
@@ -191,6 +190,34 @@ def metric_tensor(  # pylint:disable=too-many-arguments, too-many-positional-arg
         If the given or inferred ``aux_wire`` does not exist on the device,
         a warning is raised and the block-diagonal approximation is computed instead.
         It is significantly cheaper in this case to explicitly set ``approx="block-diag"`` .
+
+    .. note::
+
+        When used with Catalyst, the classical component of the circuit is not included.
+        This matches the results of setting ``hybrid=False``.
+
+        For example,
+
+        >>> from jax import numpy as jnp
+        >>> @qml.qnode(qml.device('lightning.qubit', wires=4))
+        ... def c(x, y):
+        ...     qml.RX(2*x, 0)
+        ...     qml.RY(y, 0)
+        ...     return qml.expval(qml.Z(0))
+        ...
+        >>> qml.qjit(qml.metric_tensor(c))(jnp.array(0.5), jnp.array(0.6))
+        Array([[0.25      , 0.        ],
+                [0.        , 0.07298165]], dtype=float64)
+        >>> qml.metric_tensor(c, argnums=(0,1))(jnp.array(0.5), jnp.array(0.6))
+        (Array(1., dtype=float64), Array(0.07298165, dtype=float64))
+        >>> qml.metric_tensor(c, hybrid=False)(qml.numpy.array(0.5), qml.numpy.array(0.6))
+        array([[0.25      , 0.        ],
+                [0.        , 0.07298165]])
+
+        Here you can see that the ``qjit`` and ``hybrid=False`` options did not postprocess
+        the metric tensor to match the shape of the arguments, and they do not include the factor
+        of ``4`` from the derivative of ``2*x``.
+
 
     The flag ``allow_nonunitary`` should be set to ``True`` whenever the device with
     which the metric tensor is computed supports non-unitary operations.
@@ -529,7 +556,7 @@ def _metric_tensor_cov_matrix(tape, argnum, diag_approx):  # pylint: disable=too
     )
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def _get_gen_op(op, allow_nonunitary, aux_wire):
     r"""Get the controlled-generator operation for a given operation.
 
@@ -739,9 +766,12 @@ def _metric_tensor_hadamard(
         first_term = math.zeros_like(diag_mt)
         if ids:
             off_diag_res = math.stack(off_diag_res, 1)[0]
-            inv_ids = [_id[::-1] for _id in ids]
-            first_term = math.scatter_element_add(first_term, list(zip(*ids)), off_diag_res)
-            first_term = math.scatter_element_add(first_term, list(zip(*inv_ids)), off_diag_res)
+
+            for loc, r in zip(ids, off_diag_res):
+                # not sure if we can promise ordering of locations
+                # so need to loop over indices for compatibility with catalyst
+                first_term = math.scatter_element_add(first_term, loc, r)
+                first_term = math.scatter_element_add(first_term, (loc[1], loc[0]), r)
 
         # Second terms of off block-diagonal metric tensor
         expvals = math.zeros_like(first_term[0])

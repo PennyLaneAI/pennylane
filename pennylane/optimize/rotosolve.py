@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Rotosolve gradient free optimizer"""
-# pylint: disable=too-many-branches,cell-var-from-loop
+
 
 from inspect import signature
 
@@ -115,41 +115,6 @@ class RotosolveOptimizer:
     separately reconstructing the cost function with respect to each circuit parameter,
     while keeping all other parameters fixed.
 
-    Args:
-        substep_optimizer (str or callable): Optimizer to use for the substeps of Rotosolve
-            that carries out a univariate (i.e., single-parameter) global optimization.
-            *Only used if there are more than one frequency for a given parameter.*
-            It must take as inputs:
-
-            - A function ``fn`` that maps scalars to scalars,
-
-            - the (keyword) argument ``bounds``, and
-
-            - optional keyword arguments.
-
-            It must return two scalars:
-
-            - The input value ``x_min`` for which ``fn`` is minimal, and
-
-            - the minimal value ``y_min=fn(x_min)`` or ``None``.
-
-            Alternatively, the following optimizers are built-in and can be chosen by
-            passing their name:
-
-            - ``"brute"``: An iterative version of
-              `SciPy's brute force optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.brute.html>`_.
-              It evaluates the function at ``Ns`` equidistant points across the range
-              :math:`[-\pi, \pi]` and iteratively refines the range around the point
-              with the smallest cost value for ``num_steps`` times.
-
-            - ``"shgo"``: `SciPy's SHGO optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.shgo.html>`_.
-
-        substep_kwargs (dict): Keyword arguments to be passed to the ``substep_optimizer``
-            callable. For ``substep_optimizer="shgo"``, the original keyword arguments of
-            the SciPy implementation are available, for ``substep_optimizer="brute"`` the
-            keyword arguments ``ranges``, ``Ns`` and ``num_steps`` are useful.
-            *Only used if there are more than one frequency for a given parameter.*
-
     For each parameter, a purely classical one-dimensional global optimization over the
     interval :math:`(-\pi,\pi]` is performed, which is replaced automatically by a
     closed-form expression for the optimal value if the :math:`d\text{th}` parametrized
@@ -191,6 +156,41 @@ class RotosolveOptimizer:
         or PyTorch. ``RotosolveOptimizer`` is not yet implemented to work in a stable
         manner with TensorFlow or JAX.
 
+    Args:
+        substep_optimizer (str or callable): optimizer to use for the substeps of Rotosolve
+            that carries out a univariate (i.e., single-parameter) global optimization.
+            *Only used if there are more than one frequency for a given parameter* (default value: "brute").
+            It must take as inputs:
+
+            - A function ``fn`` that maps scalars to scalars,
+
+            - the (keyword) argument ``bounds``, and
+
+            - optional keyword arguments.
+
+            It must return two scalars:
+
+            - The input value ``x_min`` for which ``fn`` is minimal, and
+
+            - the minimal value ``y_min=fn(x_min)`` or ``None``.
+
+            Alternatively, the following optimizers are built-in and can be chosen by
+            passing their name:
+
+            - ``"brute"``: An iterative version of
+              `SciPy's brute force optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.brute.html>`_.
+              It evaluates the function at ``Ns`` equidistant points across the range
+              :math:`[-\pi, \pi]` and iteratively refines the range around the point
+              with the smallest cost value for ``num_steps`` times.
+
+            - ``"shgo"``: `SciPy's SHGO optimizer <https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.shgo.html>`_.
+
+        substep_kwargs (dict): keyword arguments to be passed to the ``substep_optimizer``
+            callable. For ``substep_optimizer="shgo"``, the original keyword arguments of
+            the SciPy implementation are available, for ``substep_optimizer="brute"`` the
+            keyword arguments ``ranges``, ``Ns`` and ``num_steps`` are useful.
+            *Only used if there are more than one frequency for a given parameter.*
+
     **Example:**
 
     Initialize the optimizer and set the number of steps to optimize over.
@@ -210,7 +210,7 @@ class RotosolveOptimizer:
 
     .. code-block :: python
 
-        dev = qml.device('default.qubit', wires=3, shots=None)
+        dev = qml.device('default.qubit', wires=3)
 
         @qml.qnode(dev)
         def cost_function(rot_param, layer_par, crot_param, rot_weights=None, crot_weights=None):
@@ -331,8 +331,6 @@ class RotosolveOptimizer:
     to converge than previously, Rotosolve was able to adapt to the more complicated
     dependence on the input arguments and still found the global minimum successfully.
     """
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, substep_optimizer="brute", substep_kwargs=None):
         self.substep_kwargs = {} if substep_kwargs is None else substep_kwargs

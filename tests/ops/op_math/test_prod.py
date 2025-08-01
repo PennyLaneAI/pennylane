@@ -23,7 +23,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.exceptions import DeviceError, MatrixUndefinedError
+from pennylane.operation import Operator
 from pennylane.ops.op_math.prod import Prod, _swappable_ops, prod
 from pennylane.wires import Wires
 
@@ -1085,11 +1086,11 @@ class TestProperties:
     op_pauli_reps_nested = (
         (
             qml.prod(
-                qml.pow(qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)), z=3),
-                qml.pow(qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)), z=5),
+                qml.prod(qml.PauliX(wires=0), qml.PauliY(wires=1)),
+                qml.prod(qml.PauliY(wires=0), qml.PauliZ(wires=2)),
             ),
             qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "Z", 1: "Y", 2: "Z"}): 1j}),
-        ),  # prod + pow
+        ),
         (
             qml.prod(
                 qml.s_prod(
@@ -1227,8 +1228,8 @@ class TestSimplify:
     def test_simplify_method_removes_grouped_elements_with_zero_coeff(self):
         """Test that the simplify method removes grouped elements with zero coeff."""
         prod_op = qml.prod(
-            qml.U3(1.23, 2.34, 3.45, wires=0),
-            qml.pow(z=-1, base=qml.U3(1.23, 2.34, 3.45, wires=0)),
+            qml.RX(1.23, wires=0),
+            qml.RX(-1.23, wires=0),
         )
         final_op = qml.Identity(0)
         simplified_op = prod_op.simplify()
@@ -1241,6 +1242,33 @@ class TestSimplify:
         )
         final_op = qml.sum(qml.s_prod(1j, qml.PauliX(0)), qml.s_prod(-1, qml.PauliZ(0)))
         simplified_op = prod_op.simplify()
+        qml.assert_equal(simplified_op, final_op)
+
+    def test_grouping_with_equal_paulis_single_wire(self):
+        """Test that equal Pauli operators, creating global phase contributions, are simplified
+        correctly on one wire."""
+        prod_op = qml.prod(qml.X(0) @ qml.Y(0) @ qml.Z(0) @ qml.H(0))
+        final_op = 1j * qml.H(0)
+        simplified_op = prod_op.simplify()
+        assert np.allclose(qml.matrix(prod_op), qml.matrix(final_op))
+        qml.assert_equal(simplified_op, final_op)
+
+    def test_grouping_with_equal_paulis_two_wires(self):
+        """Test that equal Pauli operators, creating global phase contributions, are simplified
+        correctly on two wires."""
+        prod_op = qml.prod(
+            qml.X(0)
+            @ qml.Z("a")
+            @ qml.Y(0)
+            @ qml.Z(0)
+            @ qml.X("a")
+            @ qml.Y("a")
+            @ qml.H(0)
+            @ qml.H("a")
+        )
+        final_op = qml.simplify(-1 * qml.H(0) @ qml.H("a"))
+        simplified_op = prod_op.simplify()
+        assert np.allclose(qml.matrix(prod_op), qml.matrix(final_op))
         qml.assert_equal(simplified_op, final_op)
 
     def test_grouping_with_product_of_sums(self):
@@ -1464,7 +1492,7 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(prod_op)
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             my_circ()
 
     def test_operation_integration(self):
@@ -1658,3 +1686,44 @@ class TestSwappableOps:
     def test_non_swappable_ops(self, op1, op2):
         """Test the check for non-swappable operators."""
         assert not _swappable_ops(op1, op2)
+
+
+class TestDecomposition:
+
+    def test_resource_keys(self):
+        """Test that the resource keys of `Prod` are op_reps."""
+        assert Prod.resource_keys == frozenset({"resources"})
+        product = qml.X(0) @ qml.Y(1) @ qml.X(2)
+        resources = {qml.resource_rep(qml.X): 2, qml.resource_rep(qml.Y): 1}
+        assert product.resource_params == {"resources": resources}
+
+    def test_registered_decomp(self):
+        """Test that the decomposition of prod is registered."""
+
+        decomps = qml.decomposition.list_decomps(Prod)
+
+        default_decomp = decomps[0]
+        _ops = [qml.X(0), qml.X(1), qml.X(2), qml.MultiRZ(0.5, wires=(0, 1))]
+        resources = {qml.resource_rep(qml.X): 3, qml.resource_rep(qml.MultiRZ, num_wires=2): 1}
+
+        resource_obj = default_decomp.compute_resources(resources=resources)
+
+        assert resource_obj.num_gates == 4
+        assert resource_obj.gate_counts == resources
+
+        with qml.queuing.AnnotatedQueue() as q:
+            default_decomp(operands=_ops)
+
+        assert q.queue == _ops[::-1]
+
+    def test_integration(self, enable_graph_decomposition):
+        """Test that prod's can be integrated into the decomposition."""
+
+        op = qml.S(0) @ qml.S(1) @ qml.T(0) @ qml.Y(1)
+
+        graph = qml.decomposition.DecompositionGraph([op], gate_set=set(qml.ops.__all__))
+        graph.solve()
+        with qml.queuing.AnnotatedQueue() as q:
+            graph.decomposition(op)(**op.hyperparameters)
+
+        assert q.queue == list(op[::-1])

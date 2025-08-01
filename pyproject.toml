@@ -3,7 +3,7 @@ requires = ["setuptools>=75.8.1"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "Pennylane"
+name = "pennylane"
 description = "PennyLane is a cross-platform Python library for quantum computing, quantum machine learning, and quantum chemistry. Train a quantum computer the same way as a neural network."
 readme = "README.md"
 license =  "Apache-2.0"
@@ -17,7 +17,7 @@ dependencies = [
     "appdirs",
     "autoray>=0.6.11",
     "cachetools",
-    "pennylane-lightning>=0.41",
+    "pennylane-lightning>=0.42",
     "requests",
     "tomlkit",
     "typing_extensions",
@@ -88,7 +88,17 @@ pennylane = ["devices/tests/pytest.ini", "drawer/plot.mplstyle"]
 
 [tool.black]
 line-length = 100
+target-version = ["py311", "py312", "py313"]
 include = '\.pyi?$'
+
+[tool.isort]
+py_version = 311
+profile = "black"
+line_length = 100
+known_third_party = ["autoray"]
+known_first_party = ["pennylane"]
+skip = ["__init__.py"]
+filter_files = true
 
 [tool.bandit]
 targets = "pennylane"

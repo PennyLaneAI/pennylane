@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script for a qubit mixed state device."""
-from typing import Optional
 
-# pylint: disable=protected-access
 from numpy.random import default_rng
 
 import pennylane as qml
@@ -93,7 +91,6 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     return state, is_state_batched
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments, unused-argument
 def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
     """Perform the measurements specified in the circuit on the provided state.
 
@@ -192,11 +189,10 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
     return results
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 def simulate(
     circuit: qml.tape.QuantumScript,
     debugger=None,
-    state_cache: Optional[dict] = None,
+    state_cache: dict | None = None,
     **execution_kwargs,
 ) -> Result:
     r"""

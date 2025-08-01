@@ -18,21 +18,19 @@ Functions handling quantum tapes for circuit cutting, and their auxillary functi
 import copy
 from collections.abc import Callable, Sequence
 from itertools import product
-from typing import Union
 
 from networkx import MultiDiGraph
 
-import pennylane as qml
-from pennylane import expval
-from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP
+from pennylane import ops
+from pennylane.measurements import ExpectationMP, MeasurementProcess, SampleMP, expval, sample
 from pennylane.operation import Operator
 from pennylane.ops.meta import WireCut
-from pennylane.pauli import string_to_pauli_word
-from pennylane.queuing import WrappedObj
+from pennylane.pauli import partition_pauli_group, string_to_pauli_word
+from pennylane.queuing import QueuingManager, WrappedObj
 from pennylane.tape import QuantumScript
 from pennylane.wires import Wires
 
-from .utils import MeasureNode, PrepareNode
+from .ops import MeasureNode, PrepareNode
 
 
 def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
@@ -81,20 +79,20 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
     order += 1  # pylint: disable=undefined-loop-variable
     for m in tape.measurements:
         obs = getattr(m, "obs", None)
-        if obs is not None and isinstance(obs, qml.ops.Prod):
+        if obs is not None and isinstance(obs, ops.Prod):
             if isinstance(m, SampleMP):
                 raise ValueError(
                     "Sampling from tensor products of observables "
                     "is not supported in circuit cutting"
                 )
 
-            for o in obs.operands if isinstance(obs, qml.ops.op_math.Prod) else obs.obs:
+            for o in obs.operands if isinstance(obs, ops.op_math.Prod) else obs.obs:
                 m_ = m.__class__(obs=o)
                 _add_operator_node(graph, m_, order, wire_latest_node)
 
         elif isinstance(m, SampleMP) and obs is None:
             for w in m.wires:
-                s_ = qml.sample(qml.Projector([1], wires=w))
+                s_ = sample(ops.Projector([1], wires=w))
                 _add_operator_node(graph, s_, order, wire_latest_node)
         else:
             _add_operator_node(graph, m, order, wire_latest_node)
@@ -103,7 +101,6 @@ def tape_to_graph(tape: QuantumScript) -> MultiDiGraph:
     return graph
 
 
-# pylint: disable=protected-access
 def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
     """
     Converts a directed multigraph to the corresponding :class:`~.QuantumTape`.
@@ -167,7 +164,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
     operations_from_graph = []
     measurements_from_graph = []
     for op in copy_ops:
-        op = qml.map_wires(op, wire_map=wire_map, queue=False)
+        op = ops.functions.map_wires(op, wire_map=wire_map, queue=False)
         operations_from_graph.append(op)
         if isinstance(op, MeasureNode):
             assert len(op.wires) == 1
@@ -195,7 +192,7 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
             )
 
         for meas in copy_meas:
-            meas = qml.map_wires(meas, wire_map=wire_map)
+            meas = ops.functions.map_wires(meas, wire_map=wire_map)
             obs = meas.obs
             observables.append(obs)
 
@@ -204,9 +201,9 @@ def graph_to_tape(graph: MultiDiGraph) -> QuantumScript:
 
         if measurement_type is ExpectationMP:
             if len(observables) > 1:
-                measurements_from_graph.append(qml.expval(qml.prod(*observables)))
+                measurements_from_graph.append(expval(ops.op_math.prod(*observables)))
             else:
-                measurements_from_graph.append(qml.expval(obs))
+                measurements_from_graph.append(expval(obs))
 
     return QuantumScript(ops=operations_from_graph, measurements=measurements_from_graph)
 
@@ -239,16 +236,16 @@ def _create_prep_list():
     """
 
     def _prep_zero(wire):
-        return [qml.Identity(wire)]
+        return [ops.Identity(wire)]
 
     def _prep_one(wire):
-        return [qml.X(wire)]
+        return [ops.X(wire)]
 
     def _prep_plus(wire):
-        return [qml.Hadamard(wire)]
+        return [ops.Hadamard(wire)]
 
     def _prep_iplus(wire):
-        return [qml.Hadamard(wire), qml.S(wires=wire)]
+        return [ops.Hadamard(wire), ops.S(wires=wire)]
 
     return [_prep_zero, _prep_one, _prep_plus, _prep_iplus]
 
@@ -316,7 +313,7 @@ def expand_fragment_tape(
 
     n_meas = len(measure_nodes)
     if n_meas >= 1:
-        measure_combinations = qml.pauli.partition_pauli_group(len(measure_nodes))
+        measure_combinations = partition_pauli_group(len(measure_nodes))
     else:
         measure_combinations = [[""]]
 
@@ -337,7 +334,7 @@ def expand_fragment_tape(
 
             ops_list = []
 
-            with qml.QueuingManager.stop_recording():
+            with QueuingManager.stop_recording():
                 for op in tape.operations:
                     if isinstance(op, PrepareNode):
                         w = op.wires[0]
@@ -346,7 +343,7 @@ def expand_fragment_tape(
                         ops_list.append(op)
                 measurements = _get_measurements(group, tape.measurements)
 
-            qs = qml.tape.QuantumScript(ops=ops_list, measurements=measurements)
+            qs = QuantumScript(ops=ops_list, measurements=measurements)
             tapes.append(qs)
 
     return tapes, prepare_nodes, measure_nodes
@@ -399,7 +396,7 @@ def _get_measurements(
 def _qcut_expand_fn(
     tape: QuantumScript,
     max_depth: int = 1,
-    auto_cutter: Union[bool, Callable] = False,
+    auto_cutter: bool | Callable = False,
 ):
     """Expansion function for circuit cutting.
 

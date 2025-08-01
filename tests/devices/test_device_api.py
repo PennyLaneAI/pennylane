@@ -14,7 +14,6 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-from typing import Optional, Union
 
 import pytest
 
@@ -25,6 +24,7 @@ from pennylane.devices.capabilities import (
     ExecutionCondition,
     OperatorProperties,
 )
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
@@ -202,7 +202,7 @@ class TestSetupExecutionConfig:
         initial_config = ExecutionConfig(mcm_config=mcm_config)
 
         if expected_error is not None:
-            with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+            with pytest.raises(QuantumFunctionError, match=expected_error):
                 dev.setup_execution_config(initial_config, tape)
             return
 
@@ -231,7 +231,7 @@ class TestSetupExecutionConfig:
         tape = QuantumScript([qml.measurements.MidMeasureMP(0)], [], shots=shots)
         initial_config = ExecutionConfig(mcm_config=mcm_config)
         if expected_error:
-            with pytest.raises(qml.QuantumFunctionError, match=expected_error):
+            with pytest.raises(QuantumFunctionError, match=expected_error):
                 dev.setup_execution_config(initial_config, tape)
         else:
             final_config = dev.setup_execution_config(initial_config, tape)
@@ -245,7 +245,7 @@ class TestSetupExecutionConfig:
             (EXAMPLE_TOML_FILE, None, "deferred"),
             (EXAMPLE_TOML_FILE_ONE_SHOT, 10, "one-shot"),
             (EXAMPLE_TOML_FILE_ONE_SHOT, None, "deferred"),
-            (EXAMPLE_TOML_FILE_ALL_SUPPORT, 10, "one-shot"),
+            (EXAMPLE_TOML_FILE_ALL_SUPPORT, 10, "device"),
             (EXAMPLE_TOML_FILE_ALL_SUPPORT, None, "device"),
         ],
         indirect=("create_temporary_toml_file",),
@@ -328,7 +328,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -363,7 +363,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -406,7 +406,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -459,7 +459,7 @@ class TestPreprocessTransforms:
                 self,
                 circuits: QuantumScriptOrBatch,
                 execution_config: ExecutionConfig = None,
-            ) -> Union[Result, ResultBatch]:
+            ) -> Result | ResultBatch:
                 return (0,)
 
         dev = CustomDevice()
@@ -469,13 +469,13 @@ class TestPreprocessTransforms:
         _, __ = program((valid_tape,))
 
         invalid_tape = QuantumScript([], [qml.var(qml.PauliZ(0))], shots=shots)
-        with pytest.raises(qml.DeviceError, match=r"Measurement var\(Z\(0\)\) not accepted"):
+        with pytest.raises(DeviceError, match=r"Measurement var\(Z\(0\)\) not accepted"):
             _, __ = program((invalid_tape,))
 
         invalid_tape = QuantumScript(
             [], [qml.expval(qml.Hermitian([[1.0, 0], [0, 1.0]], 0))], shots=shots
         )
-        with pytest.raises(qml.DeviceError, match=r"Observable Hermitian"):
+        with pytest.raises(DeviceError, match=r"Observable Hermitian"):
             _, __ = program((invalid_tape,))
 
         shots_only_meas_tape = QuantumScript([], [qml.counts()], shots=shots)
@@ -488,20 +488,20 @@ class TestPreprocessTransforms:
             _, __ = program((shots_only_meas_tape,))
             _, __ = program((shots_only_obs_tape,))
 
-            with pytest.raises(qml.DeviceError, match=r"Measurement .* not accepted"):
+            with pytest.raises(DeviceError, match=r"Measurement .* not accepted"):
                 _, __ = program((analytic_only_meas_tape,))
 
-            with pytest.raises(qml.DeviceError, match=r"Observable .* not supported"):
+            with pytest.raises(DeviceError, match=r"Observable .* not supported"):
                 _, __ = program((analytic_only_obs_tape,))
 
         else:
             _, __ = program((analytic_only_meas_tape,))
             _, __ = program((analytic_only_obs_tape,))
 
-            with pytest.raises(qml.DeviceError, match=r"Measurement .* not accepted"):
+            with pytest.raises(DeviceError, match=r"Measurement .* not accepted"):
                 _, __ = program((shots_only_meas_tape,))
 
-            with pytest.raises(qml.DeviceError, match=r"Observable .* not supported"):
+            with pytest.raises(DeviceError, match=r"Observable .* not supported"):
                 _, __ = program((shots_only_obs_tape,))
 
     @pytest.mark.usefixtures("create_temporary_toml_file")
@@ -772,13 +772,13 @@ def test_device_with_ambiguous_preprocess():
 
             def setup_execution_config(
                 self,
-                config: Optional[ExecutionConfig] = None,
-                circuit: Optional[QuantumScript] = None,
+                config: ExecutionConfig | None = None,
+                circuit: QuantumScript | None = None,
             ) -> ExecutionConfig:
                 return ExecutionConfig()
 
             def preprocess_transforms(
-                self, execution_config: Optional[ExecutionConfig] = None
+                self, execution_config: ExecutionConfig | None = None
             ) -> TransformProgram:
                 return TransformProgram()
 

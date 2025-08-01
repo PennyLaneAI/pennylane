@@ -14,10 +14,9 @@
 """
 This module contains logic for the text based circuit drawer through the ``tape_text`` function.
 """
-# pylint: disable=too-many-arguments
+
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from ._add_obj import _add_obj
 from .drawable_layers import drawable_layers
@@ -54,10 +53,10 @@ class _Config:
     cwire_layers: list = field(default_factory=list)
     """A list of layers used (mid measure or conditional) for each classical wire."""
 
-    decimals: Optional[int] = None
+    decimals: int | None = None
     """Specifies how to round the parameters of operators"""
 
-    cache: Optional[dict] = None
+    cache: dict | None = None
     """dictionary that carries information between label calls in the same drawing"""
 
     @property
@@ -414,7 +413,7 @@ def tape_text(
     cache.setdefault("matrices", [])
     tape_cache = []
 
-    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
+    _, wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
     bit_map = default_bit_map(tape)
     n_wires = len(wire_map)
     if n_wires == 0:

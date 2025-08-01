@@ -59,7 +59,7 @@ def _assert_has_jax(transform_name):
     if not has_jax:  # pragma: no cover
         raise ImportError(
             f"Module jax is required for the {transform_name} gradient transform. "
-            "You can install jax via: pip install jax jaxlib"
+            "You can install jax via: pip install jax~=0.6.0 jaxlib~=0.6.0."
         )
 
 
@@ -601,7 +601,7 @@ def stoch_pulse_grad(
         classical Jacobian, which is *not* constant over :math:`\tau`.
         Therefore, it is important to implement pulses in the simplest way possible.
     """
-    # pylint:disable=unused-argument
+
     transform_name = "stochastic pulse parameter-shift"
     _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
@@ -778,7 +778,6 @@ def _tapes_data_hardware(tape, operation, key, num_split_times, use_broadcasting
     return tapes, data
 
 
-# pylint: disable=too-many-arguments
 def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.

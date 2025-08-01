@@ -20,7 +20,7 @@ import scipy
 
 import pennylane as qml
 
-# pylint: disable=dangerous-default-value, too-many-statements
+# pylint: disable=dangerous-default-value
 
 
 def _mat_transform(u, qmat):
@@ -174,26 +174,38 @@ def _localize_modes(freqs, vecs):
 
 
 def localize_normal_modes(freqs, vecs, bins=[2600]):
-    """
-    Localizes vibrational normal modes.
+    r"""Computes spatially localized vibrational normal modes.
 
-    The normal modes are localized by separating frequencies into specified ranges following the
-    procedure described in `J. Chem. Phys. 141, 104105 (2014)
+    The vibrational normal modes are localized using a localizing unitary following the procedure
+    described in `J. Chem. Phys. 141, 104105 (2014)
     <https://pubs.aip.org/aip/jcp/article-abstract/141/10/104105/74317/
-    Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_.
+    Efficient-anharmonic-vibrational-spectroscopy-for?redirectedFrom=fulltext>`_. The localizing
+    unitary :math:`U` is defined in terms of the normal and local coordinates, :math:`q` and
+    :math:`\tilde{q}`, respectively as:
+
+    .. math::
+
+        \tilde{q} = \sum_{j=1}^M U_{ij} q_j,
+
+    where :math:`M` is the number of modes. The normal modes
+    can be separately localized, to prevent mixing between specific groups of normal modes, by
+    defining frequency ranges in ``bins``. For instance, ``bins = [2600]`` allows to separately
+    localize modes that have frequencies above and below :math:`2600` reciprocal centimetre (:math:`\text{cm}^{-1}`).
+    Similarly, ``bins = [1300, 2600]`` allows to separately localize modes in three groups that have
+    frequencies below :math:`1300`, between :math:`1300-2600` and above :math:`2600`.
 
     Args:
-        freqs (list[float]): normal mode frequencies in ``cm^-1``
-        vecs (TensorLike[float]): displacement vectors for normal modes
-        bins (list[float]): List of upper bound frequencies in ``cm^-1`` for creating separation bins .
-            Default is ``[2600]`` which means having one bin for all frequencies between ``0`` and  ``2600 cm^-1``.
+        freqs (TensorLike[float]): normal mode frequencies in reciprocal centimetre (:math:`\text{cm}^{-1}`).
+        vecs (TensorLike[float]): displacement vectors of the normal modes
+        bins (List[float]): grid of frequencies for grouping normal modes.
+            Default is ``[2600]``.
 
     Returns:
         tuple: A tuple containing the following:
-         - list[float] : localized frequencies
-         - TensorLike[float] : localized displacement vectors
-         - TensorLike[float] : localization matrix describing the relationship between
-           original and localized modes.
+         - TensorLike[float] : localized frequencies in reciprocal centimetre (:math:`\text{cm}^{-1}`).
+         - List[TensorLike[float]] : localized displacement vectors
+         - TensorLike[float] : localization matrix describing the relationship between the
+           original and the localized modes
 
     **Example**
 
@@ -209,7 +221,7 @@ def localize_normal_modes(freqs, vecs, bins=[2600]):
     ...                      [-5.49709883e-17,  7.49851221e-08, -2.77912798e-02]]])
     >>> freqs_loc, vecs_loc, uloc = qml.qchem.localize_normal_modes(freqs, vectors)
     >>> freqs_loc
-    array([1332.62008773, 2296.73455892, 2296.7346082 ])
+    array([1332.62013257, 2296.73453455, 2296.73460655])
 
     """
     if not bins:

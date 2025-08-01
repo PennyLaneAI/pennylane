@@ -1,5 +1,3 @@
-# pylint: disable=too-many-arguments
-
 # Copyright 2018-2021 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,8 +17,9 @@ Contains the drawing function.
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import TYPE_CHECKING, Callable, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
 from pennylane.tape import make_qscript
@@ -47,7 +46,7 @@ def draw(
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     r"""Create a function that draws the given QNode or quantum function.
 
@@ -237,9 +236,9 @@ def draw(
         1: ─╰RandomLayers(M0)─├Permute─┤
         2: ───────────────────╰Permute─┤
 
-        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level="device"``:
 
-        >>> print(qml.draw(circ, level=None, show_matrices=False)(weights, order))
+        >>> print(qml.draw(circ, level="device", show_matrices=False)(weights, order))
         0: ──RY(1.00)──╭SWAP─┤  <X>
         1: ──RX(20.00)─│─────┤
         2: ────────────╰SWAP─┤
@@ -250,6 +249,42 @@ def draw(
         0: ─╭RandomLayers(M0)─╭Permute──X──X─┤  <X>
         1: ─╰RandomLayers(M0)─├Permute───────┤
         2: ───────────────────╰Permute───────┤
+
+        **Operators without wires:**
+
+        Some operators deviate from the standard :class:`~.operation.Operator` class in their
+        handling of wires. In particular, tools like :class:`~.Snapshot`
+        always occupy all qubits, and are drawn accordingly:
+
+        >>> draw_kwargs = {"wire_order" : [0, 1, 2], "show_all_wires" : True}
+        >>> print(qml.draw(qml.Snapshot, **draw_kwargs)())
+        0: ──|Snap|─┤
+        1: ──|Snap|─┤
+        2: ──|Snap|─┤
+
+        In addition, globally acting operators like :class:`~.GlobalPhase` or
+        :class:`~.Identity` are always represented on all wires:
+
+        >>> print(qml.draw(qml.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[]))
+        0: ─╭GlobalPhase(0.50)─┤
+        1: ─├GlobalPhase(0.50)─┤
+        2: ─╰GlobalPhase(0.50)─┤
+
+        This is the case even if they are provided with a subset of all wires:
+
+        >>> print(qml.draw(qml.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[0]))
+        0: ─╭GlobalPhase(0.50)─┤
+        1: ─├GlobalPhase(0.50)─┤
+        2: ─╰GlobalPhase(0.50)─┤
+
+        For controlled versions of these globally acting operators, the control
+        nodes are exempt from the expansion:
+
+        >>> ctrl_gphase = qml.ctrl(qml.GlobalPhase, control=[2])
+        >>> print(qml.draw(ctrl_gphase, **draw_kwargs)(phi=0.5, wires=[0]))
+        0: ─╭GlobalPhase(0.50)─┤
+        1: ─├GlobalPhase(0.50)─┤
+        2: ─╰●─────────────────┤
 
     """
     if catalyst_qjit(qnode):
@@ -300,14 +335,14 @@ def draw(
 
 def _draw_qnode(
     qnode,
-    wire_order: Optional[Sequence] = None,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
     *,
     decimals=2,
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
@@ -352,15 +387,15 @@ def _draw_qnode(
 
 
 def draw_mpl(
-    qnode: Union[QNode, Callable],
-    wire_order: Optional[Sequence] = None,
+    qnode: QNode | Callable,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
-    decimals: Optional[int] = None,
-    style: Optional[str] = None,
+    decimals: int | None = None,
+    style: str | None = None,
     *,
-    max_length: Optional[int] = None,
+    max_length: int | None = None,
     fig=None,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
     **kwargs,
 ):
     r"""Draw a qnode with matplotlib
@@ -659,11 +694,11 @@ def draw_mpl(
             :width: 60%
             :target: javascript:void(0);
 
-        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level=None``:
+        To apply all of the transforms, including those carried out by the differentiation method and the device, use ``level="device"``:
 
         .. code-block:: python
 
-            fig, ax = qml.draw_mpl(circ, level=None)()
+            fig, ax = qml.draw_mpl(circ, level="device")()
             fig.show()
 
         .. figure:: ../../_static/draw_mpl/level_none.png
@@ -683,6 +718,61 @@ def draw_mpl(
             :width: 60%
             :target: javascript:void(0);
 
+        **Operators without wires:**
+
+        Some operators deviate from the standard :class:`~.operation.Operator` class in their
+        handling of wires. In particular, tools like :class:`~.Snapshot`
+        always occupy all qubits, and are drawn accordingly:
+
+        .. code-block:: python
+
+            draw_kwargs = {"wire_order" : [0, 1, 2], "show_all_wires" : True}
+            fig, ax = qml.draw_mpl(qml.Snapshot, **draw_kwargs)()
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/snapshot.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
+
+        In addition, globally acting operators like :class:`~.GlobalPhase` or
+        :class:`~.Identity` are always represented on all wires:
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(qml.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[])
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/gphase_no_wires.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
+
+        This is the case even if they are provided with a subset of all wires:
+
+        .. code-block:: python
+
+            fig, ax = qml.draw_mpl(qml.GlobalPhase, **draw_kwargs)(phi=0.5, wires=[0])
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/gphase_one_wire.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
+
+        For controlled versions of these globally acting operators, the control
+        nodes are exempt from the expansion:
+
+        .. code-block:: python
+
+            ctrl_gphase = qml.ctrl(qml.GlobalPhase, control=[2])
+            fig, ax = qml.draw_mpl(ctrl_gphase, **draw_kwargs)(phi=0.5, wires=[0])
+            fig.show()
+
+        .. figure:: ../../_static/draw_mpl/ctrl_gphase.png
+            :align: center
+            :width: 40%
+            :target: javascript:void(0);
 
     """
     if catalyst_qjit(qnode):

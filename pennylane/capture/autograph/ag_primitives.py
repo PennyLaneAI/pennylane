@@ -18,7 +18,8 @@ functions. The purpose is to convert imperative style code to functional or grap
 """
 import copy
 import functools
-from typing import Any, Callable, Iterator, SupportsIndex, Tuple, Union
+from collections.abc import Callable, Iterator
+from typing import Any, SupportsIndex
 
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
@@ -27,6 +28,7 @@ from malt.operators import py_builtins as ag_py_builtins
 from malt.operators.variables import Undefined
 
 import pennylane as qml
+from pennylane.exceptions import AutoGraphError
 
 has_jax = True
 try:
@@ -42,14 +44,6 @@ __all__ = [
     "while_stmt",
     "converted_call",
 ]
-
-
-class AutoGraphWarning(Warning):
-    """Warnings related to PennyLane's AutoGraph submodule."""
-
-
-class AutoGraphError(Exception):
-    """Errors related to PennyLane's AutoGraph submodule."""
 
 
 def _assert_results(results, var_names):
@@ -69,9 +63,9 @@ def if_stmt(
     pred: bool,
     true_fn: Callable[[], Any],
     false_fn: Callable[[], Any],
-    get_state: Callable[[], Tuple],
-    set_state: Callable[[Tuple], None],
-    symbol_names: Tuple[str],
+    get_state: Callable[[], tuple],
+    set_state: Callable[[tuple], None],
+    symbol_names: tuple[str],
     _num_results: int,
 ):
     """An implementation of the AutoGraph 'if' statement. The interface is defined by AutoGraph,
@@ -203,14 +197,13 @@ def _call_pennylane_for(
     return final_iter_args
 
 
-# pylint: disable=too-many-statements
 def for_stmt(
     iteration_target: Any,
-    _extra_test: Union[Callable[[], bool], None],
+    _extra_test: Callable[[], bool] | None,
     body_fn: Callable[[int], None],
-    get_state: Callable[[], Tuple],
-    set_state: Callable[[Tuple], None],
-    symbol_names: Tuple[str],
+    get_state: Callable[[], tuple],
+    set_state: Callable[[tuple], None],
+    symbol_names: tuple[str],
     _opts: dict,
 ):
     """An implementation of the AutoGraph 'for .. in ..' statement. The interface is defined by
@@ -245,14 +238,14 @@ def for_stmt(
         enum_start = iteration_target.start_idx
         try:
             iteration_array = jnp.asarray(iteration_target.iteration_target)
-        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
+        except Exception as e:  # pylint: disable=broad-exception-caught,broad-except
             exception_raised = e
     else:
         start, stop, step = 0, len(iteration_target), 1
         enum_start = None
         try:
             iteration_array = jnp.asarray(iteration_target)
-        except Exception as e:  # pylint: disable=bare-except, broad-exception-caught, broad-except
+        except Exception as e:  # pylint: disable=broad-exception-caught,broad-except
             exception_raised = e
 
     if exception_raised:
@@ -275,7 +268,7 @@ def for_stmt(
             enum_start,
             iteration_array,
         )
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception as e:
         # pylint: disable=import-outside-toplevel
         import textwrap
 
@@ -487,22 +480,24 @@ class PRange:
     def __iter__(self) -> Iterator[int]:  # pragma: no cover
         return self.py_range.__iter__()
 
-    def __getitem__(
-        self, __key: Union[SupportsIndex, slice]
-    ) -> Union[int, range]:  # pragma: no cover
+    def __getitem__(self, __key: SupportsIndex | slice) -> int | range:  # pragma: no cover
         return self.py_range.__getitem__(__key)
 
     def __reversed__(self) -> Iterator[int]:  # pragma: no cover
         return self.py_range.__reversed__()
 
 
-# pylint: disable=too-few-public-methods, super-init-not-called
+# pylint: disable=too-few-public-methods
 class PEnumerate(enumerate):
     """PennyLane enumeration object. Inherits from Python ``enumerate``, but adds storing the
     input iteration_target and start_idx, which are used by the for-loop conversion.
     """
 
     def __init__(self, iterable, start=0):
+
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=super-init-not-called
+        # TODO: original enumerate constructor cannot be called as it causes some tests to break
         self.iteration_target = iterable
         self.start_idx = start
 

@@ -156,10 +156,8 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
             if jaxpr.outvars:
                 outvals = [v.aval for v in jaxpr.outvars]
                 raise ValueError(
-                    (
-                        "Conditional branches of mid circuit measurements are not allowed to"
-                        f" return anything with plxpr_to_tape and CollectOpsandMeas. Branch returns {outvals}"
-                    )
+                    "Conditional branches of mid circuit measurements are not allowed to"
+                    f" return anything with plxpr_to_tape and CollectOpsandMeas. Branch returns {outvals}"
                 )
             child = CollectOpsandMeas()
             child.eval(jaxpr, consts, *args)
@@ -177,7 +175,6 @@ def _(self, wires, reset, postselect):
     return m0
 
 
-# pylint: disable=unused-argument
 @CollectOpsandMeas.register_primitive(grad_prim)
 def _(self, *invals, jaxpr, n_consts, **params):
     raise NotImplementedError("CollectOpsandMeas cannot handle the grad primitive")
@@ -192,7 +189,7 @@ def _(self, *invals, jaxpr, n_consts, **params):
 @CollectOpsandMeas.register_primitive(qnode_prim)
 def _(
     self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts
-):  # pylint: disable=too-many-arguments,unused-argument
+):  # pylint: disable=too-many-arguments
     consts = invals[:n_consts]
     args = invals[n_consts:]
 

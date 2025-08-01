@@ -14,16 +14,16 @@
 """
 This module contains a developer focused execution function for internal executions
 """
+from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from functools import partial
-from typing import Callable
+from typing import TYPE_CHECKING
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import Interface
-from pennylane.tape import QuantumScriptBatch
-from pennylane.transforms.core import TransformProgram
-from pennylane.typing import ResultBatch
 from pennylane.workflow import _cache_transform
 
 from .jacobian_products import (
@@ -34,12 +34,17 @@ from .jacobian_products import (
     TransformJacobianProducts,
 )
 
-ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
+if TYPE_CHECKING:
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.transforms.core import TransformProgram
+    from pennylane.typing import ResultBatch
+
+    ExecuteFn = Callable[[QuantumScriptBatch], ResultBatch]
 
 
 def _construct_tf_autograph_pipeline(
-    config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
     inner_transform_program: TransformProgram,
 ):
     """Handles the pipeline construction for the TF_AUTOGRAPH interface.
@@ -102,8 +107,8 @@ def _construct_tf_autograph_pipeline(
 
 
 def _construct_ml_execution_pipeline(
-    config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
     inner_transform_program: TransformProgram,
 ) -> tuple[JacobianProductCalculator, ExecuteFn]:
     """Constructs the ML execution pipeline for all JPC interfaces.
@@ -173,7 +178,7 @@ def _construct_ml_execution_pipeline(
 
 # pylint: disable=import-outside-toplevel
 def _get_ml_boundary_execute(
-    resolved_execution_config: "qml.devices.ExecutionConfig", differentiable=False
+    resolved_execution_config: qml.devices.ExecutionConfig, differentiable=False
 ) -> Callable:
     """Imports and returns the function that handles the interface boundary for a given machine learning framework.
 
@@ -219,7 +224,7 @@ def _get_ml_boundary_execute(
                     from .interfaces.jax import jax_jvp_execute as ml_boundary
 
     except ImportError as e:  # pragma: no cover
-        raise qml.QuantumFunctionError(
+        raise QuantumFunctionError(
             f"{interface} not found. Please install the latest "
             f"version of {interface} to enable the '{interface}' interface."
         ) from e
@@ -260,8 +265,8 @@ def _make_inner_execute(device, inner_transform, execution_config=None) -> Calla
 
 def run(
     tapes: QuantumScriptBatch,
-    device: "qml.devices.Device",
-    config: "qml.devices.ExecutionConfig",
+    device: qml.devices.Device,
+    config: qml.devices.ExecutionConfig,
     inner_transform_program: TransformProgram,
 ) -> ResultBatch:
     """Execute a batch of quantum scripts on a device with optional gradient computation.
@@ -298,8 +303,9 @@ def run(
             config,
             differentiable=config.derivative_order > 1,
         )
-
-        results = ml_execute(  # pylint: disable=too-many-function-args, unexpected-keyword-arg
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=unexpected-keyword-arg, too-many-function-args
+        results = ml_execute(
             tapes,
             device,
             execute_fn,

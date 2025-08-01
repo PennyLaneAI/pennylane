@@ -14,10 +14,10 @@
 """
 Contains the MPSPrep template.
 """
-
 import numpy as np
 
 import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.wires import Wires
 
@@ -346,6 +346,8 @@ class MPSPrep(Operation):
             ]
     """
 
+    resource_keys = {"bond_dimensions", "num_sites", "num_work_wires"}
+
     def __init__(
         self, mps, wires, work_wires=None, right_canonicalize=False, id=None
     ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -382,6 +384,14 @@ class MPSPrep(Operation):
         hyperparams_dict = dict(metadata)
         return cls(data, **hyperparams_dict)
 
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "bond_dimensions": [data.shape[-1] for data in self.data],
+            "num_sites": len(self.data),
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
+        }
+
     def map_wires(self, wire_map):
         new_wires = Wires(
             [wire_map.get(wire, wire) for wire in self.hyperparameters["input_wires"]]
@@ -395,14 +405,16 @@ class MPSPrep(Operation):
         )
 
     @classmethod
-    def _primitive_bind_call(cls, mps, wires, id=None):
+    def _primitive_bind_call(cls, mps, wires, work_wires=None, id=None):
         # pylint: disable=arguments-differ
         if cls._primitive is None:
             # guard against this being called when primitive is not defined.
-            return type.__call__(cls, mps=mps, wires=wires, id=id)  # pragma: no cover
-        return cls._primitive.bind(*mps, wires=wires, id=id)
+            return type.__call__(
+                cls, mps=mps, wires=wires, id=id, work_wires=work_wires
+            )  # pragma: no cover
+        return cls._primitive.bind(*mps, wires=wires, id=id, work_wires=work_wires)
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         filtered_hyperparameters = {
             key: value for key, value in self.hyperparameters.items() if key != "input_wires"
         }
@@ -498,3 +510,74 @@ if MPSPrep._primitive is not None:  # pylint: disable=protected-access
     @MPSPrep._primitive.def_impl  # pylint: disable=protected-access
     def _(*args, **kwargs):
         return type.__call__(MPSPrep, args, **kwargs)
+
+
+def _mps_prep_decomposition_resources(
+    bond_dimensions, num_sites, num_work_wires
+):  # pylint: disable=unused-argument
+    return {resource_rep(qml.QubitUnitary, num_wires=1 + num_work_wires): num_sites}
+
+
+def _work_wires_bond_dimension_condition(
+    bond_dimensions, num_sites, num_work_wires
+):  # pylint: disable=unused-argument
+    max_bond_dimension = max(bond_dimensions[:-1])
+
+    return (
+        num_work_wires is not None
+        and num_work_wires > 0
+        and 2**num_work_wires >= max_bond_dimension
+    )
+
+
+@qml.register_condition(_work_wires_bond_dimension_condition)
+@register_resources(_mps_prep_decomposition_resources)
+def _mps_prep_decomposition(*mps, **kwargs):
+    wires = kwargs["wires"]
+    work_wires = kwargs["work_wires"]
+    right_canonicalize = kwargs["right_canonicalize"]
+    mps = list(mps)
+
+    n_wires = len(work_wires) + 1
+
+    mps = mps.copy()
+
+    # Transform the MPS to ensure that the generated matrix is unitary
+    if right_canonicalize:
+        mps = right_canonicalize_mps(mps)
+
+    #  NOTE: tensor legs assignment convention is (vL, p, vR)
+    mps[0] = mps[0].reshape((1, *mps[0].shape))
+    mps[-1] = mps[-1].reshape((*mps[-1].shape, 1))
+
+    interface, dtype = qml.math.get_interface(mps[0]), mps[0].dtype
+
+    for i, Ai in enumerate(mps):
+
+        vectors = []
+        for column in Ai:
+            vector = qml.math.zeros(2**n_wires, like=interface, dtype=dtype)
+            if interface == "jax":
+                vector = vector.at[: len(column[0])].set(column[0])
+                vector = vector.at[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])].set(
+                    column[1]
+                )
+            else:
+                vector[: len(column[0])] = column[0]
+                vector[2 ** (n_wires - 1) : 2 ** (n_wires - 1) + len(column[1])] = column[1]
+            vectors.append(vector)
+        vectors = qml.math.stack(vectors).T
+        # The unitary is completed using QR decomposition
+        d, k = vectors.shape
+        assert d == 2**n_wires, "The first dimension of the vectors must match 2**n_wires."
+        assert (
+            k <= d
+        ), "The second dimension of the vectors must be less than or equal to 2**(n_wires-1)."
+        new_columns = qml.math.array(np.random.RandomState(42).random((d, d - k)))
+        unitary_matrix, R = qml.math.linalg.qr(qml.math.hstack([vectors, new_columns]))
+        unitary_matrix *= qml.math.sign(qml.math.diag(R))  # Enforce uniqueness for QR decomposition
+
+        qml.QubitUnitary(unitary_matrix, wires=[wires[i]] + work_wires)
+
+
+add_decomps(MPSPrep, _mps_prep_decomposition)

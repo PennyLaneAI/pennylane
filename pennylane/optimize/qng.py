@@ -15,8 +15,6 @@
 import numbers
 from collections.abc import Iterable
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
 from pennylane import math
 from pennylane import numpy as pnp
 from pennylane.gradients.metric_tensor import metric_tensor
@@ -104,6 +102,22 @@ class QNGOptimizer(GradientDescentOptimizer):
         * For multi-QNode models, we don't know what geometry is appropriate
           if a parameter is shared amongst several QNodes.
 
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
+
+            - If ``None``, the full metric tensor is computed.
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
+
+        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
+            to be applied at each optimization step (default value: 0).
+
     **Examples:**
 
     For VQE/VQE-like problems, the objective function for the optimizer can be
@@ -148,21 +162,7 @@ class QNGOptimizer(GradientDescentOptimizer):
         See the `quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`_
         for more details on the Fubini-Study metric tensor and this optimization class.
 
-    Keyword Args:
-        stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
-        approx (str): Which approximation of the metric tensor to compute.
-
-            - If ``None``, the full metric tensor is computed
-
-            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
-              the number of evaluated circuits significantly.
-
-            - If ``"diag"``, only the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources
-              (compared to ``"block-diag"``).
-
-        lam=0 (float): metric tensor regularization :math:`G_{ij}+\lambda I`
-            to be applied at each optimization step
+        See :class:`~.QNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation.
     """
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):

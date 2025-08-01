@@ -14,13 +14,13 @@
 """Contains a function that computes the fourier series of
 a quantum expectation value."""
 import warnings
-from functools import wraps
 from inspect import signature
 
 import numpy as np
 from autoray import numpy as anp
 
 from pennylane import math
+from pennylane.capture.autograph import wraps
 from pennylane.workflow.qnode import QNode
 
 
@@ -120,7 +120,7 @@ def _reconstruct_gen(fun, spectrum, shifts=None, x0=None, f0=None, interface=Non
         callable: Reconstructed Fourier series with :math:`R` frequencies in ``spectrum`` .
         This function is a purely classical function. Furthermore, it is fully differentiable.
     """
-    # pylint: disable=unused-argument, too-many-arguments
+    # pylint: disable=too-many-arguments
 
     have_f0 = f0 is not None
     have_shifts = shifts is not None

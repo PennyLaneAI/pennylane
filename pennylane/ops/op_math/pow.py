@@ -21,14 +21,13 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qml
 from pennylane import math as qmlmath
-from pennylane._deprecated_observable import Observable
-from pennylane.operation import (
+from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
-    Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.operation import Operation
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
 
@@ -140,6 +139,7 @@ class Pow(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return pow(data[0], z=data[1])
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     def __new__(cls, base=None, z=1, id=None):
         """Mixes in parents based on inheritance structure of base.
@@ -162,14 +162,9 @@ class Pow(ScalarSymbolicOp):
         """
 
         if isinstance(base, Operation):
-            if isinstance(base, Observable):
-                return object.__new__(PowOpObs)
 
             # not an observable
             return object.__new__(PowOperation)
-
-        if isinstance(base, Observable):
-            return object.__new__(PowObs)
 
         return object.__new__(Pow)
 
@@ -406,7 +401,6 @@ class Pow(ScalarSymbolicOp):
             return Pow(base=base, z=self.z)
 
 
-# pylint: disable=no-member
 class PowOperation(Pow, Operation):
     """Operation-specific methods and properties for the ``Pow`` class.
 
@@ -430,20 +424,3 @@ class PowOperation(Pow, Operation):
     @property
     def control_wires(self):
         return self.base.control_wires
-
-
-class PowObs(Pow, Observable):
-    """A child class of ``Pow`` that also inherits from ``Observable``."""
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)
-
-
-# pylint: disable=too-many-ancestors
-class PowOpObs(PowOperation, Observable):
-    """A child class of ``Pow`` that inherits from both
-    ``Observable`` and ``Operation``.
-    """
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)

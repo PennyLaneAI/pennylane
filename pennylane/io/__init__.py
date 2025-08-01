@@ -25,5 +25,6 @@ from .io import (
     from_quil,
     from_quil_file,
     plugin_converters,
+    from_qasm3,
 )
-from .qualtran_io import FromBloq, bloq_registers
+from .qualtran_io import FromBloq, bloq_registers, to_bloq, ToBloq

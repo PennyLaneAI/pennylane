@@ -26,6 +26,7 @@ import scipy
 import pennylane as qml
 from pennylane import X, Y, Z
 from pennylane import numpy as pnp
+from pennylane.exceptions import DeviceError
 from pennylane.ops import LinearCombination
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.wires import Wires
@@ -627,7 +628,7 @@ class TestLinearCombination:
     def test_LinearCombination_wires(self, coeffs, ops):
         """Tests that the LinearCombination object has correct wires."""
         H = qml.ops.LinearCombination(coeffs, ops)
-        assert set(H.wires) == set(w for op in H.ops for w in op.wires)
+        assert set(H.wires) == {w for op in H.ops for w in op.wires}
 
     def test_label(self):
         """Tests the label method of LinearCombination when <=3 coefficients."""
@@ -706,54 +707,6 @@ class TestLinearCombination:
         # (qml.ops.LinearCombination([1.0], [qml.Hadamard(0)]), qml.Hadamard(0)), # TODO fix qml.equal check for Observables having to be the same type
         (qml.ops.LinearCombination([1.0], [X(0) @ X(1)]), X(0) @ X(1)),
     )
-
-    @pytest.mark.parametrize("H, op", COMPARE_WITH_OPS)
-    def test_compare_to_simple_ops(self, H, op):
-        with pytest.raises(qml.exceptions.PennyLaneDeprecationWarning):
-            assert H.compare(op)
-
-    def test_compare_raises_error(self):
-        op = qml.ops.LinearCombination([], [])
-        with pytest.raises(qml.exceptions.PennyLaneDeprecationWarning):
-            with pytest.raises(ValueError, match="Can only compare a LinearCombination"):
-                op.compare(0)
-
-    @pytest.mark.xfail
-    def test_compare_gell_mann(self):
-        """Tests that the compare method returns the correct result for LinearCombinations
-        with qml.GellMann present."""
-        H1 = qml.ops.LinearCombination([1], [qml.GellMann(wires=2, index=2)])
-        H2 = qml.ops.LinearCombination(
-            [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2)]
-        )
-        H3 = qml.ops.LinearCombination([1], [qml.GellMann(wires=2, index=1)])
-        H4 = qml.ops.LinearCombination(
-            [1], [qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=3)]
-        )
-
-        assert H1.compare(qml.GellMann(wires=2, index=2))
-        assert H1.compare(qml.GellMann(wires=2, index=1))
-        assert H1.compare(H3)
-        assert H2.compare(qml.GellMann(wires=2, index=1) @ qml.GellMann(wires=1, index=2))
-        assert not H2.compare(qml.GellMann(wires=2, index=2) @ qml.GellMann(wires=1, index=2))
-        assert not H2.compare(H4)
-
-    def test_LinearCombination_equal_error(self):
-        """Tests that the correct error is raised when compare() is called on invalid type"""
-
-        H = qml.ops.LinearCombination([1], [Z(0)])
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            with pytest.raises(
-                ValueError,
-                match=r"Can only compare a LinearCombination and an Operator.",
-            ):
-                _ = H.compare([[1, 0], [0, -1]])
-
-    @pytest.mark.parametrize(("H1", "H2", "res"), equal_LinearCombinations)
-    def test_LinearCombination_equal(self, H1, H2, res):
-        """Tests that equality can be checked between LinearCombinations"""
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert H1.compare(H2) == res
 
     @pytest.mark.parametrize(("H1", "H2", "H"), add_LinearCombinations)
     def test_LinearCombination_add(self, H1, H2, H):
@@ -1523,12 +1476,12 @@ class TestGrouping:
 
         # compute grouping during construction
         H2 = qml.ops.LinearCombination(coeffs, obs, grouping_type="qwc", method="lf")
-        assert set(H2.grouping_indices) == set(((0, 1), (2,)))
+        assert set(H2.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping separately
         H3 = qml.ops.LinearCombination(coeffs, obs, grouping_type=None)
         H3.compute_grouping(method="lf")
-        assert set(H3.grouping_indices) == set(((0, 1), (2,)))
+        assert set(H3.grouping_indices) == {(0, 1), (2,)}
 
     def test_grouping_with_duplicate_terms(self):
         """Test that the grouping indices are correct when the LinearCombination has duplicate
@@ -1995,7 +1948,21 @@ class TestLinearCombinationDifferentiation:
 
         grad_fn = qml.grad(circuit)
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match="not supported on adjoint",
         ):
             grad_fn(coeffs, param)
+
+
+# pylint: disable=protected-access
+@pytest.mark.capture
+def test_create_instance_while_tracing():
+    """Test that a LinearCombination instance can be created while tracing."""
+
+    def f(a, b):
+        op1 = qml.X._primitive.impl(0, n_wires=1)
+        op2 = qml.Y._primitive.impl(0, n_wires=1)
+        op = qml.ops.LinearCombination._primitive.impl(a, b, op1, op2, n_obs=2)
+        assert isinstance(op, qml.ops.LinearCombination)
+
+    jax.make_jaxpr(f)(1, 2)

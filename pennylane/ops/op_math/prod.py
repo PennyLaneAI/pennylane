@@ -16,8 +16,9 @@ This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
 import itertools
+from collections import Counter
 from copy import copy
-from functools import reduce, wraps
+from functools import reduce
 from itertools import combinations
 from typing import Union
 
@@ -25,6 +26,7 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
+from pennylane.capture.autograph import wraps
 from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
@@ -54,7 +56,8 @@ def prod(*ops, id=None, lazy=True):
 
     Keyword Args:
         id (str or None): id for the product operator. Default is None.
-        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
+            of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
@@ -229,6 +232,14 @@ class Prod(CompositeOp):
         ([1j, 1.0], [Z(0), Z(1) @ X(0)])
 
     """
+
+    resource_keys = frozenset({"resources"})
+
+    @property
+    @handle_recursion_error
+    def resource_params(self):
+        resources = dict(Counter(qml.resource_rep(type(op), **op.resource_params) for op in self))
+        return {"resources": resources}
 
     _op_symbol = "@"
     _math_op = math.prod
@@ -467,6 +478,20 @@ class Prod(CompositeOp):
         return coeffs, ops
 
 
+def _prod_resources(resources):
+    return resources
+
+
+# pylint: disable=unused-argument
+@qml.register_resources(_prod_resources)
+def _prod_decomp(*_, wires=None, operands):
+    for op in reversed(operands):
+        op._unflatten(*op._flatten())  # pylint: disable=protected-access
+
+
+qml.add_decomps(Prod, _prod_decomp)
+
+
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
     """Boolean expression that indicates if op1 and op2 don't have intersecting wires and if they
     should be swapped when sorting them by wire values.
@@ -639,7 +664,7 @@ class _ProductFactorsGrouping:
             if pauli_word != "Identity":
                 pauli_op = self._paulis[pauli_word](wire)
                 self._factors += ((pauli_op,),)
-                self.global_phase *= pauli_coeff
+            self.global_phase *= pauli_coeff
 
     def remove_factors(self, wires: list[int]):
         """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``

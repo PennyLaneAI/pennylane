@@ -16,7 +16,6 @@ Unit tests for molecular Hamiltonians.
 """
 # pylint: disable=too-many-arguments, protected-access
 import pytest
-from conftest import xfail_on_numpy2  # pylint: disable=no-name-in-module
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
@@ -65,8 +64,8 @@ test_coordinates = np.array(
     ),
     [
         (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
-        pytest.param(1, 2, "openfermion", 3, 4, "BRAVYI_kitaev", marks=xfail_on_numpy2),
-        pytest.param(-1, 2, "openfermion", 1, 2, "jordan_WIGNER", marks=xfail_on_numpy2),
+        (1, 2, "openfermion", 3, 4, "BRAVYI_kitaev"),
+        (-1, 2, "openfermion", 1, 2, "jordan_WIGNER"),
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
@@ -113,8 +112,8 @@ def test_building_hamiltonian(
     ),
     [
         (0, 1, "pyscf", 2, 2, "jordan_WIGNER"),
-        pytest.param(1, 2, "openfermion", 3, 4, "BRAVYI_kitaev", marks=xfail_on_numpy2),
-        pytest.param(-1, 2, "openfermion", 1, 2, "jordan_WIGNER", marks=xfail_on_numpy2),
+        (1, 2, "openfermion", 3, 4, "BRAVYI_kitaev"),
+        (-1, 2, "openfermion", 1, 2, "jordan_WIGNER"),
         (2, 1, "pyscf", 2, 2, "BRAVYI_kitaev"),
     ],
 )
@@ -969,7 +968,6 @@ def test_error_raised_for_missing_molecule_information():
         qchem.molecular_hamiltonian(charge=0, mult=1, method="dhf")
 
 
-@xfail_on_numpy2
 @pytest.mark.parametrize(
     ("symbols", "geometry", "charge", "mapping", "h_ref_data"),
     [
@@ -1244,7 +1242,7 @@ def test_mapped_hamiltonian_pyscf_openfermion(
     [
         "pyscf",
         "dhf",
-        pytest.param("openfermion", marks=xfail_on_numpy2),
+        "openfermion",
     ],
 )
 def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
@@ -1277,7 +1275,7 @@ def test_coordinate_units_for_molecular_hamiltonian(method, tmpdir):
     [
         "pyscf",
         "dhf",
-        pytest.param("openfermion", marks=xfail_on_numpy2),
+        "openfermion",
     ],
 )
 def test_coordinate_units_for_molecular_hamiltonian_molecule_class(method, tmpdir):

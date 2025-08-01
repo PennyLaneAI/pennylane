@@ -16,8 +16,8 @@ This submodule contains the qutrit quantum observables.
 """
 import numpy as np
 
-import pennylane as qml  # pylint: disable=unused-import
-from pennylane._deprecated_observable import Observable
+import pennylane as qml
+from pennylane.operation import Operator
 from pennylane.ops.qubit import Hermitian
 from pennylane.ops.qutrit import QutritUnitary
 
@@ -119,7 +119,7 @@ class THermitian(Hermitian):
         return THermitian._eigs[Hkey]
 
     @staticmethod
-    def compute_diagonalizing_gates(eigenvectors, wires):  # pylint: disable=arguments-differ
+    def compute_diagonalizing_gates(eigenvectors, wires):
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where
@@ -150,7 +150,7 @@ class THermitian(Hermitian):
         return [QutritUnitary(eigenvectors.conj().T, wires=wires)]
 
 
-class GellMann(Observable):
+class GellMann(Operator):
     r"""
     The Gell-Mann observables for qutrits
 
@@ -319,9 +319,7 @@ class GellMann(Observable):
         return np.array([1, 1, -2]) / np.sqrt(3)
 
     @staticmethod
-    def compute_diagonalizing_gates(
-        wires, index
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_diagonalizing_gates(wires, index):  # pylint: disable=arguments-differ
         r"""Sequence of gates that diagonalize the operator in the computational basis (static method).
 
         Given the eigendecomposition :math:`O = U \Sigma U^{\dagger}` where

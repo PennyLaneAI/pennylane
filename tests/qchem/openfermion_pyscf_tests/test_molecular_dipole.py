@@ -16,7 +16,6 @@ Unit tests for molecular dipole.
 """
 # pylint: disable=too-many-arguments, protected-access
 import pytest
-from conftest import xfail_on_numpy2  # pylint: disable=no-name-in-module
 
 import pennylane as qml
 from pennylane import I, X, Y, Z
@@ -210,7 +209,6 @@ eig_h2o.append([0.0, 0.0])
 eig_h2o.append([-0.67873019, -0.45673019, -0.45673019])
 
 
-@xfail_on_numpy2
 @pytest.mark.parametrize(
     (
         "symbols",
@@ -300,7 +298,6 @@ def test_differentiable_molecular_dipole(
         assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
 
 
-@xfail_on_numpy2
 @pytest.mark.parametrize(
     ("wiremap"),
     [
@@ -356,7 +353,7 @@ def test_molecular_dipole_error():
 @pytest.mark.parametrize(
     ("method", "args"),
     [
-        pytest.param("openfermion", None, marks=xfail_on_numpy2),
+        ("openfermion", None),
         (
             "dhf",
             None,
@@ -388,7 +385,7 @@ def test_real_dipole(method, args, tmpdir):
 @pytest.mark.parametrize(
     ("method"),
     [
-        pytest.param("openfermion", marks=xfail_on_numpy2),
+        "openfermion",
         "dhf",
     ],
 )

@@ -15,9 +15,11 @@
 This module contains the qml.equal function.
 """
 # pylint: disable=too-many-arguments,too-many-return-statements,too-many-branches, too-many-positional-arguments
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=unused-argument
 from collections.abc import Iterable
 from functools import singledispatch
-from typing import Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
@@ -31,7 +33,7 @@ from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Po
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
-from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
+from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep, Select
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -39,8 +41,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
-    op2: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
+    op1: Operator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
+    op2: Operator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -155,8 +157,8 @@ def equal(
 
 
 def assert_equal(
-    op1: Union[Operator, MeasurementProcess, QuantumScript],
-    op2: Union[Operator, MeasurementProcess, QuantumScript],
+    op1: Operator | MeasurementProcess | QuantumScript,
+    op2: Operator | MeasurementProcess | QuantumScript,
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -207,8 +209,6 @@ def assert_equal(
     )
     if isinstance(dispatch_result, str):
         raise AssertionError(dispatch_result)
-    if not dispatch_result:
-        raise AssertionError(f"{op1} and {op2} are not equal for an unspecified reason.")
 
 
 def _equal(
@@ -218,11 +218,11 @@ def _equal(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-) -> Union[bool, str]:  # pylint: disable=unused-argument
+) -> bool | str:
     if not isinstance(op2, type(op1)):
         return f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
 
-    return _equal_dispatch(
+    dispatch_result = _equal_dispatch(
         op1,
         op2,
         check_interface=check_interface,
@@ -230,6 +230,9 @@ def _equal(
         atol=atol,
         rtol=rtol,
     )
+    if not dispatch_result:
+        return f"{op1} and {op2} are not equal for an unspecified reason."
+    return dispatch_result
 
 
 @singledispatch
@@ -240,7 +243,7 @@ def _equal_dispatch(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-) -> Union[bool, str]:  # pylint: disable=unused-argument
+) -> bool | str:
     raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
 
@@ -353,7 +356,6 @@ def _equal_operators(
     return True
 
 
-# pylint: disable=unused-argument
 @_equal_dispatch.register
 def _equal_pauliword(
     op1: PauliWord,
@@ -422,7 +424,7 @@ def _equal_paulisentence(
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument, protected-access
+# pylint: disable=protected-access
 def _equal_prod_and_sum(op1: CompositeOp, op2: CompositeOp, **kwargs):
     """Determine whether two Prod or Sum objects are equal"""
     if op1.pauli_rep is not None and (op1.pauli_rep == op2.pauli_rep):  # shortcut check
@@ -482,7 +484,6 @@ def _equal_controlled_sequence(op1: ControlledSequence, op2: ControlledSequence,
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
 def _equal_pow(op1: Pow, op2: Pow, **kwargs):
     """Determine whether two Pow objects are equal"""
     check_interface, check_trainability = kwargs["check_interface"], kwargs["check_trainability"]
@@ -515,7 +516,6 @@ def _equal_pow(op1: Pow, op2: Pow, **kwargs):
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
 def _equal_adjoint(op1: Adjoint, op2: Adjoint, **kwargs):
     """Determine whether two Adjoint objects are equal"""
     # first line of top-level equal function already confirms both are Adjoint - only need to compare bases
@@ -536,14 +536,12 @@ def _equal_conditional(op1: Conditional, op2: Conditional, **kwargs):
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
 def _equal_measurement_value(op1: MeasurementValue, op2: MeasurementValue, **kwargs):
     """Determine whether two MeasurementValue objects are equal"""
     return op1.measurements == op2.measurements
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
 def _equal_exp(op1: Exp, op2: Exp, **kwargs):
     """Determine whether two Exp objects are equal"""
     check_interface, check_trainability, rtol, atol = (
@@ -584,7 +582,6 @@ def _equal_exp(op1: Exp, op2: Exp, **kwargs):
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
 def _equal_sprod(op1: SProd, op2: SProd, **kwargs):
     """Determine whether two SProd objects are equal"""
     check_interface, check_trainability, rtol, atol = (
@@ -650,7 +647,6 @@ def _equal_parametrized_evolution(op1: ParametrizedEvolution, op2: ParametrizedE
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
 def _equal_measurements(
     op1: MeasurementProcess,
     op2: MeasurementProcess,
@@ -709,7 +705,6 @@ def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
 def _(op1: VnEntropyMP, op2: VnEntropyMP, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
     eq_m = _equal_measurements(op1, op2, **kwargs)
@@ -718,7 +713,6 @@ def _(op1: VnEntropyMP, op2: VnEntropyMP, **kwargs):
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
 def _(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs):
     """Determine whether two MeasurementProcess objects are equal"""
     eq_m = _equal_measurements(op1, op2, **kwargs)
@@ -727,7 +721,6 @@ def _(op1: MutualInfoMP, op2: MutualInfoMP, **kwargs):
 
 
 @_equal_dispatch.register
-# pylint: disable=unused-argument
 def _equal_shadow_measurements(op1: ShadowExpvalMP, op2: ShadowExpvalMP, **_):
     """Determine whether two ShadowExpvalMP objects are equal"""
 
@@ -794,9 +787,7 @@ def _equal_hilbert_schmidt(
 
 
 @_equal_dispatch.register
-def _equal_prep_sel_prep(
-    op1: PrepSelPrep, op2: PrepSelPrep, **kwargs
-):  # pylint: disable=unused-argument
+def _equal_prep_sel_prep(op1: PrepSelPrep, op2: PrepSelPrep, **kwargs):
     """Determine whether two PrepSelPrep are equal"""
     if op1.control != op2.control:
         return f"op1 and op2 have different control wires. Got {op1.control} and {op2.control}."
@@ -804,4 +795,22 @@ def _equal_prep_sel_prep(
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
     if not qml.equal(op1.lcu, op2.lcu):
         return f"op1 and op2 have different lcu. Got {op1.lcu} and {op2.lcu}"
+    return True
+
+
+@_equal_dispatch.register
+def _equal_select(op1: Select, op2: Select, **kwargs):
+    """Determine whether two Select are equal"""
+    if op1.control != op2.control:
+        return f"op1 and op2 have different control wires. Got {op1.control} and {op2.control}."
+    t1 = op1.hyperparameters["ops"]
+    t2 = op2.hyperparameters["ops"]
+    if len(t1) != len(t2):
+        return (
+            f"op1 and op2 have different number of target operators. Got {len(t1)} and {len(t2)}."
+        )
+    for idx, (_t1, _t2) in enumerate(zip(t1, t2)):
+        comparer = _equal(_t1, _t2, **kwargs)
+        if isinstance(comparer, str):
+            return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
     return True

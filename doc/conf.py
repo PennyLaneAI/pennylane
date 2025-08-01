@@ -61,7 +61,6 @@ ogp_social_cards = {
 ogp_image = "_static/opengraph.png"
 numpydoc_show_class_members = False
 
-
 # The base URL with a proper language and version.
 html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "/")
 
@@ -87,7 +86,6 @@ intersphinx_mapping = {
     "demo": ("https://pennylane.ai/qml", None),
     "catalyst": ("https://docs.pennylane.ai/projects/catalyst/en/stable", None),
 }
-
 
 mathjax_path = (
     "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML"
@@ -140,7 +138,7 @@ today_fmt = "%Y-%m-%d"
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", "releases/*.md"]
 
 # If true, sectionauthor and moduleauthor directives will be shown in the
 # output. They are ignored by default.

@@ -15,13 +15,15 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an Operator queue.
 """
+import warnings
 from collections import defaultdict, namedtuple
+from collections.abc import Sequence
 from functools import cached_property
-from typing import List, Optional, Union
 
 import numpy as np
 import rustworkx as rx
 
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.ops.identity import I
@@ -34,13 +36,14 @@ def _get_wires(obj, all_wires):
     return all_wires if len(obj.wires) == 0 else obj.wires
 
 
-Layer = namedtuple("Layer", ["ops", "param_inds"])
+Layer = namedtuple("Layer", ["ops", "param_inds", "ops_inds"])
 """Parametrized layer of the circuit.
 
 Args:
 
     ops (list[Operator]): parametrized operators in the layer
     param_inds (list[int]): corresponding free parameter indices
+    ops_inds (list[int]): the indices into the circuit for ops
 """
 # TODO define what a layer is
 
@@ -84,7 +87,7 @@ class CircuitGraph:
 
     Args:
         ops (Iterable[.Operator]): quantum operators constituting the circuit, in temporal order
-        obs (List[Union[MeasurementProcess, Operator]]): terminal measurements, in temporal order
+        obs (list[Union[MeasurementProcess, Operator]]): terminal measurements, in temporal order
         wires (.Wires): The addressable wire registers of the device that will be executing this graph
         par_info (Optional[list[dict]]): Parameter information. For each index, the entry is a dictionary containing an operation
         and an index into that operation's parameters.
@@ -96,11 +99,11 @@ class CircuitGraph:
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
-        ops: list[Union[Operator, MeasurementProcess]],
-        obs: List[Union[MeasurementProcess, Operator]],
+        ops: list[Operator | MeasurementProcess],
+        obs: list[MeasurementProcess | Operator],
         wires: Wires,
-        par_info: Optional[list[dict]] = None,
-        trainable_params: Optional[set[int]] = None,
+        par_info: list[dict] | None = None,
+        trainable_params: set[int] | None = None,
     ):
         self._operations = ops
         self._observables = obs
@@ -123,18 +126,25 @@ class CircuitGraph:
         # observables per wire
         self._max_simultaneous_measurements = None
 
+    def __str__(self):
+        """The string representation of the class."""
+        string = "Operations\n==========\n"
+        string += "\n".join(repr(op) for op in self.operations)
+
+        string += "\n\nObservables\n===========\n"
+        string += "\n".join(repr(obs) for obs in self.observables)
+        string += "\n"
+
+        return string
+
     def print_contents(self):
         """Prints the contents of the quantum circuit."""
-
-        print("Operations")
-        print("==========")
-        for op in self.operations:
-            print(repr(op))
-
-        print("\nObservables")
-        print("===========")
-        for op in self.observables:
-            print(repr(op))
+        warnings.warn(
+            "``CircuitGraph.print_contents`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``print(circuit_graph_obj)``.",
+            PennyLaneDeprecationWarning,
+        )
+        print(self)
 
     def serialize(self) -> str:
         """Serialize the quantum circuit graph based on the operations and
@@ -149,7 +159,7 @@ class CircuitGraph:
         serialization_string = ""
         delimiter = "!"
 
-        for op in self.operations_in_order:
+        for op in self.operations:
             serialization_string += op.name
 
             for param in op.data:
@@ -163,10 +173,10 @@ class CircuitGraph:
         # name of the operation and wires
         serialization_string += "|||"
 
-        for mp in self.observables_in_order:
+        for mp in self.observables:
             obs = mp.obs or mp
             data, name = ([], "Identity") if obs is mp else (obs.data, str(obs.name))
-            serialization_string += mp.__class__.__name__  # pylint: disable=protected-access
+            serialization_string += mp.__class__.__name__
             serialization_string += delimiter
             serialization_string += name
             for param in data:
@@ -195,8 +205,13 @@ class CircuitGraph:
         Currently the topological order is determined by the queue index.
 
         Returns:
-            List[Union[MeasurementProcess, Operator]]: observables
+            list[Union[MeasurementProcess, Operator]]: observables
         """
+        warnings.warn(
+            "``CircuitGraph.observables_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.observables``",
+            PennyLaneDeprecationWarning,
+        )
         return self._observables
 
     @property
@@ -216,6 +231,11 @@ class CircuitGraph:
         Returns:
             list[Operation]: operations
         """
+        warnings.warn(
+            "``CircuitGraph.operations_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.operations``",
+            PennyLaneDeprecationWarning,
+        )
         return self._operations
 
     @property
@@ -251,6 +271,8 @@ class CircuitGraph:
 
         Args:
             ops (Iterable[Operator]): set of operators in the circuit
+            sort=False (bool): if ``True``, sort the operators according
+            to the topological order determined by the queue index
 
         Returns:
             list[Operator]: ancestors of the given operators
@@ -263,6 +285,7 @@ class CircuitGraph:
         if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
                 "Cannot calculate ancestors for an operator that occurs multiple times."
+                "Please use ancestors_of_indexes instead."
             )
         ancestors = set()
         for op in ops:
@@ -273,11 +296,47 @@ class CircuitGraph:
             ancestors = sorted(ancestors)
         return [self._queue[ind] for ind in ancestors]
 
+    def ancestors_of_indexes(self, indexes: Sequence[int], sort=False):
+        """Ancestors of a given set of operators.
+
+        Args:
+            indexes (Sequence[int]) : the index into the queue for the operator
+            sort=False (bool): if ``True``, sort the operators according
+            to the topological order determined by the queue index
+
+        Returns:
+            list[Operator]: ancestors of the given operators
+        """
+
+        ancestors = {i for ind in indexes for i in rx.ancestors(self._graph, ind)}
+        if sort:
+            ancestors = sorted(ancestors)
+        return [self._queue[ind] for ind in ancestors]
+
+    def descendants_of_indexes(self, indexes: Sequence[int], sort=False):
+        """Descendants of a given set of operators.
+
+        Args:
+            indexes (Sequence[int]) : the index into the queue for the operator
+            sort=False (bool): if ``True``, sort the operators according
+            to the topological order determined by the queue index
+
+        Returns:
+            list[Operator]: descendants of the given operators
+        """
+
+        ancestors = {i for ind in indexes for i in rx.descendants(self._graph, ind)}
+        if sort:
+            ancestors = sorted(ancestors)
+        return [self._queue[ind] for ind in ancestors]
+
     def descendants(self, ops, sort=False):
         """Descendants of a given set of operators.
 
         Args:
             ops (Iterable[Operator]): set of operators in the circuit
+            sort=False (bool): if ``True``, sort the operators according
+            to the topological order determined by the queue index
 
         Returns:
             list[Operator]: descendants of the given operators
@@ -289,7 +348,8 @@ class CircuitGraph:
             )
         if any(len(self._inds_for_objs[WrappedObj(op)]) > 1 for op in ops):
             raise ValueError(
-                "cannot calculate decendents for an operator that occurs multiple times."
+                "cannot calculate decendents for an operator that occurs multiple times. "
+                "Please use descendants_of_indexes instead."
             )
         descendants = set()
         for op in ops:
@@ -311,6 +371,11 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators, topologically ordered
         """
+        warnings.warn(
+            "``CircuitGraph.ancestors_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.ancestors(ops, sort=True)``",
+            PennyLaneDeprecationWarning,
+        )
         return self.ancestors(ops, sort=True)
 
     def descendants_in_order(self, ops):
@@ -324,6 +389,11 @@ class CircuitGraph:
         Returns:
             list[Operator]: descendants of the given operators, topologically ordered
         """
+        warnings.warn(
+            "``CircuitGraph.descendants_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.descendants(ops, sort=True)``",
+            PennyLaneDeprecationWarning,
+        )
         return self.descendants(ops, sort=True)
 
     def nodes_between(self, a, b):
@@ -356,25 +426,26 @@ class CircuitGraph:
         """
         # FIXME maybe layering should be greedier, for example [a0 b0 c1 d1] should layer as [a0
         # c1], [b0, d1] and not [a0], [b0 c1], [d1] keep track of the current layer
-        current = Layer([], [])
+        current = Layer([], [], [])
         layers = [current]
 
         for idx, info in enumerate(self.par_info):
-            if idx in self.trainable_params:
+            if self.trainable_params and idx in self.trainable_params:
                 op = info["op"]
 
                 # get all predecessor ops of the op
-                sub = self.ancestors((op,))
+                sub = self.ancestors_of_indexes((info["op_idx"],))
 
                 # check if any of the dependents are in the
                 # currently assembled layer
                 if any(o1 is o2 for o1 in current.ops for o2 in sub):
                     # operator depends on current layer, start a new layer
-                    current = Layer([], [])
+                    current = Layer([], [], [])
                     layers.append(current)
 
                 # store the parameters and ops indices for the layer
                 current.ops.append(op)
+                current.ops_inds.append(info["op_idx"])
                 current.param_inds.append(idx)
 
         return layers
@@ -386,9 +457,9 @@ class CircuitGraph:
             Iterable[LayerData]: layers with extra metadata
         """
         # iterate through each layer
-        for ops, param_inds in self.parametrized_layers:
-            pre_queue = self.ancestors_in_order(ops)
-            post_queue = self.descendants_in_order(ops)
+        for ops, param_inds, indexes in self.parametrized_layers:
+            pre_queue = self.ancestors_of_indexes(indexes, sort=True)
+            post_queue = self.descendants_of_indexes(indexes, sort=True)
             yield LayerData(pre_queue, ops, tuple(param_inds), post_queue)
 
     def update_node(self, old, new):

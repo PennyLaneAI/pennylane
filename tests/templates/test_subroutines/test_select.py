@@ -19,17 +19,21 @@ import copy
 
 import numpy as np
 import pytest
+from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.templates.subroutines.select import _select_decomp_partial_unary
 
 
-def test_standard_checks():
+@pytest.mark.parametrize("num_ops", [3, 10, 15, 16])
+def test_standard_checks(num_ops):
     """Run standard validity tests."""
-    ops = [qml.PauliX(0), qml.PauliY(0)]
-    control = [1]
+    ops = [qml.PauliX(0) for _ in range(num_ops)]
+    control = [1, 2, 3, 4]
+    work_wires = [5, 6, 7]
 
-    op = qml.Select(ops, control)
+    op = qml.Select(ops, control, work_wires)
     assert op.target_wires == qml.wires.Wires(0)
     qml.ops.functions.assert_valid(op)
 
@@ -215,6 +219,67 @@ class TestSelect:
 
         qml.assert_equal(op, op_copy)
 
+    def test_resources(self):
+        """Test the resources property"""
+
+        assert qml.Select.resource_keys == frozenset(("op_reps", "num_control_wires"))
+
+        ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
+
+        op = qml.Select(ops, control=(0, 1))
+
+        resources = op.resource_params
+        assert resources["num_control_wires"] == 2
+
+        op_reps = (
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.Y),
+        )
+
+        assert resources["op_reps"] == op_reps
+
+    def test_new_decomposition(self):
+        """Test that the decomposition is properly register."""
+
+        decomp = qml.list_decomps(qml.Select)[0]
+
+        ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
+        op_reps = (
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.Y),
+        )
+        control = (0, 1)
+
+        resource_obj = decomp.compute_resources(op_reps, num_control_wires=2)
+
+        assert resource_obj.num_gates == 4
+
+        c_resource = qml.decomposition.resources.controlled_resource_rep
+
+        kwargs = {"base_params": {}, "num_control_wires": 2, "num_work_wires": 0}
+
+        expected_counts = {
+            c_resource(base_class=qml.X, **kwargs, num_zero_control_values=2): 1,
+            c_resource(base_class=qml.X, **kwargs, num_zero_control_values=1): 2,
+            c_resource(base_class=qml.Y, **kwargs, num_zero_control_values=0): 1,
+        }
+        assert resource_obj.gate_counts == expected_counts
+
+        op = qml.Select(ops, control)
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(*op.data, wires=op.wires, **op.hyperparameters)
+
+        decomp_ops = qml.tape.QuantumScript.from_queue(q).operations
+
+        qml.assert_equal(decomp_ops[0], qml.ctrl(qml.X(2), (0, 1), control_values=[0, 0]))
+        qml.assert_equal(decomp_ops[1], qml.ctrl(qml.X(3), (0, 1), control_values=[0, 1]))
+        qml.assert_equal(decomp_ops[2], qml.ctrl(qml.X(4), (0, 1), control_values=[1, 0]))
+        qml.assert_equal(decomp_ops[3], qml.ctrl(qml.Y(2), (0, 1), control_values=[1, 1]))
+
 
 class TestErrorMessages:
     """Test that the correct errors are raised"""
@@ -250,17 +315,17 @@ class TestErrorMessages:
             (
                 [qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires=0)],
                 [1],
-                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required.",
+                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires are required.",
             ),
             (
                 [qml.PauliX(wires=0)] * 10,
                 [1, 2, 3],
-                r"Not enough control wires \(3\) for the desired number of operations \(10\). At least 4 control wires required.",
+                r"Not enough control wires \(3\) for the desired number of operations \(10\). At least 4 control wires are required.",
             ),
             (
                 [qml.PauliX(wires="a"), qml.PauliY(wires="b"), qml.PauliZ(wires="c")],
                 [1],
-                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires required.",
+                r"Not enough control wires \(1\) for the desired number of operations \(3\). At least 2 control wires are required.",
             ),
         ],
     )
@@ -425,3 +490,98 @@ class TestInterfaces:
         jit_circuit = jax.jit(circuit)
 
         assert qml.math.allclose(circuit(), jit_circuit())
+
+
+num_controls_and_num_ops = (
+    [(nc, i) for nc in range(1, 5) for i in range(1, 2**nc + 1)]
+    + [(5, 1), (5, 2), (5, 17), (5, 24), (5, 31)]
+    + [(6, 3), (6, 8), (6, 27)]
+)
+
+
+class TestUnaryIterator:
+    """Tests for the auxiliary qubit-based unary iterator decomposition of Select."""
+
+    @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
+    def test_no_ops(self, num_controls):
+        """Test that the unary iterator does not return any operators for an empty list
+        of target operators."""
+
+        control = list(range(num_controls))
+        work = list(range(num_controls, 2 * num_controls - 1))
+
+        decomp = _select_decomp_partial_unary([], control=control, work_wires=work)
+        assert decomp == []
+
+    @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
+    def test_identity_with_basis_states(self, num_controls, num_ops):
+        """Test that the unary iterator is correct by asserting that the identity
+        matrix is created by preparing the i-th computational basis state conditioned on the
+        i-th basis state in the control qubits."""
+
+        dev = qml.device("default.qubit")
+
+        # Create angle set so that feeding angles[i] into RX on the i-th control wire will
+        # yield broadcasted BasisEmbedding (which does not support broadcasting atm)
+        angles = [list(map(int, np.binary_repr(i, width=num_controls))) for i in range(num_ops)]
+        angles = np.pi * np.array(angles).T
+        control = list(range(num_controls))
+        work = list(range(num_controls, 2 * num_controls - 1))
+        target = list(range(2 * num_controls - 1, 3 * num_controls - 1))
+
+        ops = [qml.BasisEmbedding(i, wires=target) for i in range(num_ops)]
+
+        @qml.qnode(dev)
+        def circuit():
+            for w, angle in zip(control, angles, strict=True):
+                qml.RX(angle, w)
+            _select_decomp_partial_unary(ops, control=control, work_wires=work)
+            return qml.probs(target)
+
+        probs = circuit()
+        assert np.allclose(probs, np.eye(2**num_controls)[:num_ops])
+
+    @pytest.mark.parametrize(
+        ("num_ops", "control", "work", "msg_match"),
+        [(9, 4, 1, "Can't use this decomposition")],
+    )
+    def test_operation_and_test_wires_error(
+        self, num_ops, control, work, msg_match
+    ):  # pylint: disable=too-many-arguments
+        """Test that proper errors are raised"""
+
+        wires = qml.registers({"target": num_ops, "control": control, "work": work})
+        ops = [qml.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
+
+        with pytest.raises(ValueError, match=msg_match):
+            _select_decomp_partial_unary(ops, control=wires["control"], work_wires=wires["work"])
+
+    @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
+    def test_comparison_with_select(self, num_controls, num_ops, seed):
+        """Test that the unary iterator is correct by comparing it to the standard Select
+        decomposition."""
+
+        angles = [list(map(int, np.binary_repr(i, width=num_controls))) for i in range(num_ops)]
+        angles = np.pi * np.array(angles).T
+        control = list(range(num_controls))
+        work = list(range(num_controls, 2 * num_controls - 1))
+        target = [2 * num_controls - 1, 2 * num_controls]
+
+        dev = qml.device("default.qubit", wires=control + work + target)
+        unitaries = unitary_group.rvs(4, size=num_ops, random_state=seed)
+        if num_ops == 1:
+            unitaries = np.array([unitaries])
+        ops = [qml.QubitUnitary(U, wires=target) for U in unitaries]
+        adj_ops = [qml.QubitUnitary(U.conj().T, wires=target) for U in unitaries]
+
+        @qml.qnode(dev)
+        def circuit():
+            for w, angle in zip(control, angles, strict=True):
+                qml.RX(angle, w)
+            _select_decomp_partial_unary(ops, control=control, work_wires=work)
+            qml.Select(adj_ops, control=control, work_wires=None)
+            return qml.probs(target)
+
+        probs = circuit()
+        exp = np.eye(4)[0]
+        assert np.allclose(probs, exp)

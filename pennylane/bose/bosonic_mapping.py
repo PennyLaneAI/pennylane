@@ -15,7 +15,6 @@
 
 from collections import defaultdict
 from functools import singledispatch
-from typing import Union
 
 import numpy as np
 
@@ -25,7 +24,6 @@ from pennylane.pauli import PauliSentence, PauliWord
 from .bosonic import BoseSentence, BoseWord
 
 
-# pylint: disable=too-many-branches
 def _get_pauli_op(i, j, qub_id):
     r"""Returns expression to convert qubit-local term ::math::``\ket{x_i}\bra{x_j}``
     to qubit operators as given in :math:`Eq. (6-9)` in `arXiv.1909.12847 <https://arxiv.org/abs/1909.12847>_`.
@@ -40,7 +38,7 @@ def _get_pauli_op(i, j, qub_id):
 
 
 def binary_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     n_states: int = 2,
     ps: bool = False,
     wire_map: dict = None,
@@ -165,7 +163,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
 
 
 def unary_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     n_states: int = 2,
     ps: bool = False,
     wire_map: dict = None,
@@ -301,7 +299,7 @@ def _(bose_operator: BoseSentence, n_states, tol=None):
 
 
 def christiansen_mapping(
-    bose_operator: Union[BoseWord, BoseSentence],
+    bose_operator: BoseWord | BoseSentence,
     ps: bool = False,
     wire_map: dict = None,
     tol: float = None,

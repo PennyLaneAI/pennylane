@@ -15,7 +15,7 @@
 Code relevant for sampling a qutrit mixed state.
 """
 import functools
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 
@@ -242,7 +242,6 @@ def _sample_state_jax(
     Returns:
         ndarray[int]: Sample values of the shape (shots, num_wires)
     """
-    # pylint: disable=import-outside-toplevel
 
     total_indices = get_num_wires(state, is_state_batched)
     state_wires = qml.wires.Wires(range(total_indices))

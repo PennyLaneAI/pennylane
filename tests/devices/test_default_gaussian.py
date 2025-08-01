@@ -38,6 +38,7 @@ from pennylane.devices.default_gaussian import (
     two_mode_squeezing,
     vacuum_state,
 )
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.wires import Wires
 
 U = np.array(
@@ -112,7 +113,7 @@ def test_analytic_deprecation():
     msg += "Please use shots=None instead of analytic=True."
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match=msg,
     ):
         qml.device("default.gaussian", wires=1, shots=1, analytic=True)
@@ -711,7 +712,7 @@ class TestSample:
 
     @pytest.mark.parametrize(
         "observable",
-        sorted(set(qml.ops.cv.__obs__) - set(["QuadP", "QuadX", "QuadOperator"])),
+        sorted(set(qml.ops.cv.__obs__) - {"QuadP", "QuadX", "QuadOperator"}),
     )
     def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
         """Test that the sample function raises an error if the given observable is not supported"""
@@ -863,7 +864,7 @@ class TestDefaultGaussianIntegration:
             return qml.sample(qml.QuadX(0)), qml.expval(qml.QuadX(1))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Default gaussian only support single measurements.",
         ):
             circuit()

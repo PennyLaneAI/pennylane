@@ -83,17 +83,26 @@ class TestDecompose:
             [qml.CNOT([0, 1]), qml.CNOT([1, 0]), qml.CNOT([0, 1])],
             None,
         ),
-        (
-            [qml.Toffoli([0, 1, 2])],
-            {qml.Toffoli},
-            [qml.Toffoli([0, 1, 2])],
-            None,
-        ),
+        ([qml.Toffoli([0, 1, 2])], {qml.Toffoli}, [qml.Toffoli([0, 1, 2])], None),
         (
             [qml.measurements.MidMeasureMP(0)],
             {},
             [qml.measurements.MidMeasureMP(0)],
-            "MidMeasureMP",
+            {
+                "type": TypeError,
+                "msg": "Specifying the gate_set with a dictionary of operator types and their weights is only supported "
+                "with the new experimental graph-based decomposition system. Enable the new system "
+                "using qml.decomposition.enable_graph()",
+            },
+        ),
+        (
+            [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
+            {qml.Toffoli},
+            [qml.Toffoli([0, 1, 2]), qml.measurements.MidMeasureMP(0)],
+            {
+                "type": UserWarning,
+                "msg": "MidMeasureMP",
+            },
         ),
     ]
 
@@ -145,22 +154,26 @@ class TestDecompose:
         """Test that a recursion error is raised if decomposition enters an infinite loop."""
         tape = qml.tape.QuantumScript([InfiniteOp(1.23, 0)])
         with pytest.raises(RecursionError, match=r"Reached recursion limit trying to decompose"):
-            decompose(tape, lambda obj: obj.has_matrix)
+            decompose(tape, gate_set=lambda obj: obj.has_matrix)
 
-    @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern", iterables_test)
-    def test_iterable_gate_set(self, initial_ops, gate_set, expected_ops, warning_pattern):
+    @pytest.mark.parametrize(
+        "initial_ops, gate_set, expected_ops, warning_or_error_pattern", iterables_test
+    )
+    def test_iterable_gate_set(self, initial_ops, gate_set, expected_ops, warning_or_error_pattern):
         """Tests that gate sets defined with iterables decompose correctly"""
         tape = qml.tape.QuantumScript(initial_ops)
 
-        if warning_pattern is not None:
-            with pytest.warns(UserWarning, match=warning_pattern):
+        if warning_or_error_pattern is not None:
+            with pytest.raises(
+                warning_or_error_pattern["type"], match=warning_or_error_pattern["msg"]
+            ):
                 (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
+                expected_tape = qml.tape.QuantumScript(expected_ops)
+                qml.assert_equal(decomposed_tape, expected_tape)
         else:
             (decomposed_tape,), _ = decompose(tape, gate_set=gate_set)
-
-        expected_tape = qml.tape.QuantumScript(expected_ops)
-
-        qml.assert_equal(decomposed_tape, expected_tape)
+            expected_tape = qml.tape.QuantumScript(expected_ops)
+            qml.assert_equal(decomposed_tape, expected_tape)
 
     @pytest.mark.parametrize("initial_ops, gate_set, expected_ops, warning_pattern", callables_test)
     def test_callable_gate_set(self, initial_ops, gate_set, expected_ops, warning_pattern):
@@ -243,3 +256,27 @@ class TestPrivateHelpers:
         final_decomp = list(_operator_decomposition_gen(op, stopping_condition, max_expansion=5))
 
         qml.assert_equal(op, final_decomp[0])
+
+    @pytest.mark.unit
+    def test_no_both_gate_set_and_stopping_condition_graph_disabled(self):
+        """Tests that with graph disabled, gate_set and stopping_condition cannot both exist."""
+
+        tape = qml.tape.QuantumScript([])
+
+        def stopping_condition(op):  # pylint: disable=unused-argument
+            return True
+
+        with pytest.raises(TypeError, match="Specifying both gate_set and stopping_condition"):
+            qml.transforms.decompose(
+                tape,
+                gate_set={qml.RZ, qml.RY, qml.GlobalPhase, qml.CNOT},
+                stopping_condition=stopping_condition,
+            )
+
+    @pytest.mark.unit
+    def test_invalid_gate_set(self):
+        """Tests that an invalid gate set raises a TypeError."""
+
+        tape = qml.tape.QuantumScript([])
+        with pytest.raises(TypeError, match="Invalid gate_set type."):
+            qml.transforms.decompose(tape, gate_set=123)

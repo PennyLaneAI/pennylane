@@ -114,7 +114,7 @@ def test_resource_tracking_attribute():
 
         assert os.path.exists(resources_fname)
 
-        with open(resources_fname, "r", encoding="utf-8") as f:
+        with open(resources_fname, encoding="utf-8") as f:
             stats = f.read()
 
         os.remove(resources_fname)
@@ -1362,8 +1362,8 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
 
 
 # pylint: disable=unused-argument
-@pytest.mark.jax
-def test_execute_plxpr(enable_disable_plxpr):
+@pytest.mark.capture
+def test_execute_plxpr():
     """Test that null.qubit can execute plxpr."""
 
     import jax
@@ -1383,8 +1383,8 @@ def test_execute_plxpr(enable_disable_plxpr):
     assert qml.math.allclose(res[4], jax.numpy.zeros(2**4, dtype=complex))
 
 
-@pytest.mark.jax
-def test_execute_plxpr_shots(enable_disable_plxpr):
+@pytest.mark.capture
+def test_execute_plxpr_shots():
     import jax
 
     def f(x):

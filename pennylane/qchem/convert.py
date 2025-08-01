@@ -14,12 +14,16 @@
 """
 This module contains the functions for converting an external operator to a Pennylane operator.
 """
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=too-many-function-args
+
 import warnings
 from itertools import product
 
 import numpy as np
 
-# pylint: disable= import-outside-toplevel,no-member,too-many-function-args
+# pylint: disable=import-outside-toplevel
 import pennylane as qml
 from pennylane.wires import Wires
 
@@ -194,7 +198,6 @@ def _ps_to_coeff_term(ps, wire_order):
     return coeffs, ops_str
 
 
-# pylint:disable=too-many-branches
 def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
     r"""Convert a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
@@ -715,9 +718,9 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     size_ab = size_a * size_b
 
     cumul = np.cumsum([0, 1, size_a, size_b, size_ab, size_aa, size_bb])
-    c0, c1a, c1b, c2ab, c2aa, c2bb = [
+    c0, c1a, c1b, c2ab, c2aa, c2bb = (
         cisdvec[cumul[idx] : cumul[idx + 1]] for idx in range(len(cumul) - 1)
-    ]
+    )
     c2ab = (
         c2ab.reshape(nelec_a, nelec_b, nvir_a, nvir_b)
         .transpose(0, 2, 1, 3)
