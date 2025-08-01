@@ -943,7 +943,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         A ``EigvalsUndefinedError`` is raised if the eigenvalues have not been defined and cannot be
         inferred from the matrix representation.
 
-        .. seealso:: :meth:`~.Operator.compute_eigvals`
+        .. seealso:: :meth:`~.Operator.compute_eigvals` and :func:`qml.eigvals() <pennylane.eigvals>`
 
         Returns:
             tensor_like: eigenvalues
@@ -1537,7 +1537,11 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         raise GeneratorUndefinedError(f"Operation {self.name} does not have a generator")
 
     def pow(self, z: float) -> list["Operator"]:
-        """A list of new operators equal to this one raised to the given power.
+        """A list of new operators equal to this one raised to the given power. This method is used to simplify
+        :class:`~.Pow` instances created by :func:`~.pow` or ``op ** power``.
+
+        ``Operator.pow`` can be optionally defined by Operator developers, while :func:`~.pow` or ``op ** power``
+        are the entry point for constructing generic powers to exponents.
 
         Args:
             z (float): exponent for the operator
@@ -1586,11 +1590,15 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         return cls.adjoint != Operator.adjoint
 
     def adjoint(self) -> "Operator":  # pylint:disable=no-self-use
-        """Create an operation that is the adjoint of this one.
+        """Create an operation that is the adjoint of this one. Used to simplify
+        :class:`~.Adjoint` operators constructed by :func:`~.adjoint`.
 
         Adjointed operations are the conjugated and transposed version of the
         original operation. Adjointed ops are equivalent to the inverted operation for unitary
         gates.
+
+        ``Operator.adjoint`` can be optionally defined by Operator developers, while :func:`~.adjoint`
+        is the entry point for constructing generic adjoint representations.
 
         Returns:
             The adjointed operation.
