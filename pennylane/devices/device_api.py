@@ -189,7 +189,7 @@ class Device(abc.ABC):
     def __init__(self, wires=None, shots=None) -> None:
         # each instance should have its own Tracker.
         self.tracker = Tracker()
-        if shots is not None:
+        if shots is not None and shots!= Shots():
             warnings.warn(
                 "Setting shots on device is deprecated. Please use `set_shots` on QNode instead.",
                 PennyLaneDeprecationWarning,
