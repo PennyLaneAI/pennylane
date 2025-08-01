@@ -17,6 +17,8 @@ hardware device (or emulator)
 """
 from dataclasses import replace
 from pathlib import Path
+from functools import cached_property
+import copy
 
 import pennylane as qml
 from pennylane.devices.capabilities import DeviceCapabilities, validate_mcm_method
@@ -28,9 +30,15 @@ from pennylane.devices.preprocess import (
     validate_device_wires,
     validate_observables,
 )
-from pennylane.ftqc import RotXZX, convert_to_mbqc_formalism, convert_to_mbqc_gateset, diagonalize_mcms
+from pennylane.ftqc import (
+    RotXZX,
+    convert_to_mbqc_formalism,
+    convert_to_mbqc_gateset,
+    diagonalize_mcms,
+)
+from pennylane.measurements import MidMeasureMP
 from pennylane.ops import RZ
-from pennylane.tape.qscript import QuantumScript
+from pennylane.tape.qscript import QuantumScript, QuantumScriptOrBatch
 from pennylane.transforms import combine_global_phases, split_non_commuting
 from pennylane.typing import Result
 
@@ -166,31 +174,76 @@ class LightningQubitBackend:
             "kernel_name": self.device._kernel_name,
             "num_burnin": self.device._num_burnin,
         }
+        postselect_mode = execution_config.mcm_config.postselect_mode
 
-        state = self.device._statevector
         results = []
         for circuit in circuits:
-            if self.device._wire_map is not None:
-                [circuit], _ = qml.map_wires(circuit, self.device._wire_map)
+            if isinstance(circuit, QuantumScript):
+                results.append(self._qscript_execute(circuit, mcmc, postselect_mode))
+            elif isinstance(circuit, QuantumScriptSequence):
+                results.append(self._sequence_execute(circuit, mcmc, postselect_mode))
+            else:
+                raise RuntimeError("That's not a QuantumScript or a QuantumScriptSequence")
+        return tuple(results)
 
-            aux_circ = qml.tape.QuantumScript(
-                circuit.operations,
-                circuit.measurements,
-                shots=[1],
-                trainable_params=circuit.trainable_params,
+
+    def _qscript_execute(self, qscript, mcmc, postselect_mode):
+        """Execute a circuit defined by a QuantumScript"""
+
+        if self.device._wire_map is not None:
+            [circuit], _ = qml.map_wires(circuit, self.device._wire_map)
+
+        aux_circ = qml.tape.QuantumScript(
+            qscript.operations,
+            qscript.measurements,
+            shots=[1],
+            trainable_params=qscript.trainable_params,
+        )
+        circ_res = []
+        for _ in range(qscript.shots.total_shots):
+            if self.device._statevector is not None:
+                self.device._statevector.reset_state()
+            circ_res.append(
+                self.simulate(
+                    self.device.dynamic_wires_from_circuit(aux_circ),
+                    self.device._statevector,
+                    mcmc=mcmc,
+                    postselect_mode=postselect_mode,
+                )
             )
-            for shot in range(circuit.shots.total_shots):
-                if state is not None:
-                    state.reset_state()
-                results.append(
+        return tuple(circ_res)
+
+
+    def _sequence_execute(self, sequence, mcmc, postselect_mode):
+
+            # this resets the statevector (and makes it the correct size), actually, so we need to do it once for the full sequence 
+            sequence = self.device.dynamic_wires_from_circuit(sequence)
+
+            circ_res = []
+            for _ in range(sequence.shots.total_shots):
+                if self.device._statevector is not None:
+                    self.device._statevector.reset_state()
+
+                for segment in sequence.intermediate_tapes:
+                    if self.device._wire_map is not None:
+                        [segment], _ = qml.map_wires(segment, self.device._wire_map)
+
+                    _ = self.simulate(
+                            segment,
+                            self.device._statevector,
+                            mcmc=mcmc,
+                            postselect_mode=postselect_mode,
+                        )
+                    
+                circ_res.append(
                     self.simulate(
-                        self.device.dynamic_wires_from_circuit(aux_circ),
+                        sequence.final_tape,
                         self.device._statevector,
                         mcmc=mcmc,
-                        postselect_mode=execution_config.mcm_config.postselect_mode,
+                        postselect_mode=postselect_mode,
                     )
                 )
-        return tuple(results)
+            return tuple(circ_res)
 
     def simulate(
         self,
@@ -252,11 +305,27 @@ class NullQubitBackend:
 
 class QuantumScriptSequence:
     """A sequence of tapes meant to be executed in order without resetting the system state.
-    Intermediate tapes may return mid-circuit measurements, or nothing. The final tape
-    returns terminal measurements."""
+    Intermediate tapes may return mid-circuit measurements, or nothing. This is not currently 
+    validated. The final tape returns terminal measurements."""
 
-    def __init__(self, tapes):
-        self._tapes = tapes
+    def __init__(self, tapes, shots=None):
+        
+        if shots is None:
+            shots = [tape.shots for tape in tapes]
+            if len(set(shots)) != 1:
+                raise RuntimeError("All scripts in a QuantumScriptSequence must have the same shots")
+            shots=shots[0]
+        self._shots = shots
+
+        self._tapes = []
+
+        for tape in tapes:
+            aux_tape = qml.tape.QuantumScript(
+                tape.operations,
+                tape.measurements,
+                shots=[1],
+            )
+            self._tapes.append(aux_tape)
 
     @property
     def tapes(self):
@@ -282,15 +351,103 @@ class QuantumScriptSequence:
     def operations(self):
         return [tape.operations for tape in self.tapes]
 
+    @cached_property
+    def wires(self) -> qml.wires.Wires:
+        """Returns the wires used in the quantum script process
+
+        Returns:
+            ~.Wires: wires in quantum script process
+        """
+        wires = self.tapes[0].wires
+        for tape in self.tapes[1:]:
+            wires += tape.wires
+        return wires
+    
     @property
-    def wires(self):
-        return sum([tape.wires for tape in self.tapes])
+    def num_wires(self) -> int:
+        """Returns the number of wires in the quantum script process
+
+        Returns:
+            int: number of wires in quantum script process
+        """
+        return len(self.wires)
+    
+    @property
+    def shots(self):
+        return self._shots
 
     def __repr__(self):
         return f"<QuantumScriptSequence: wires={list(self.wires)}>"
+    
+    def map_to_standard_wires(self) -> "QuantumScriptSequence":
+        """
+        Wrapper to apply qscript.map_to_standard_wires to each segment contained in the Sequence
+        """
+        wire_map = self._get_standard_wire_map()
+        if wire_map is None:
+            return self
+        new_tapes = []
+        for tape in self.tapes:
+            tapes, fn = qml.map_wires(tape, wire_map)
+            new_tapes.append(fn(tapes))
+
+        return self.copy(tapes=new_tapes)
+
+    def _get_standard_wire_map(self) -> dict:
+        """Helper function to produce the wire map for map_to_standard_wires. Wire map
+        is the same as if the sequence were a flat tape"""
+        flat_ops = []
+        for ops in self.operations:
+            flat_ops.extend(ops)
+
+        as_tape = qml.tape.QuantumScript(flat_ops, self.measurements)
+        return as_tape._get_standard_wire_map()
+    
+    def copy(self, copy_operations: bool = False, **update):
+        """Make it copy-able as if it were a tape where possible. Do not allow 
+        modifications to operations or trainable parameters, because any transform 
+        or function modifying operations on a tape will not work on a sequence of 
+        tapes. Allow updating tapes as a whole as an alternative for 
+        QuantumScriptSquence-specific functions to deal with modifying operations 
+        on tapes.
+        
+        This is not able to support trainable parameters and almost certainly also 
+        has other flaws. It is not a thorough implementation of the desired behaviour."""
+        if copy_operations is True:
+            raise RuntimeError("Can't use copy_operations when copying a QuantumScriptSequence")
+        
+        if update:
+            if "ops" in update:
+                update["operations"] = update["ops"]
+            for k in update:
+                if k not in ["tapes", "measurements", "shots"]:
+                    raise TypeError(
+                        f"{self.__class__}.copy() cannot update '{k}'"
+                    )
+            if "tapes" in update and "measurements" in update:
+                raise RuntimeError("Can't update tapes and measurements at the same time, as tapes include measurements")
+
+        _tapes = update.get("tapes", [copy.copy(tape) for tape in self.tapes])
+        _shots = update.get("shots", self.shots)
+
+        if "measurements" in update:
+            old_final_tape = _tapes.pop()
+            _new_final_tape = old_final_tape.copy(measurements=update["measurements"])
+            _tapes.append(_new_final_tape)
+
+        new_sequence = QuantumScriptSequence(
+            tapes = _tapes,
+            shots=_shots,
+        )
+
+        return new_sequence
 
 
-def split_at_clifford_gates(tape):
+
+def split_at_non_clifford_gates(tape):
+    """The most basic implementation to ensure that we flush the buffer before 
+    each non-Clifford gate. Pays no attention to wires/commutation, and splits 
+    the tapes up more than necessary, but the logic is very simple."""
     all_operations = [[]]
 
     for op in tape.operations:
