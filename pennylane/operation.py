@@ -1620,6 +1620,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         ...
         ...     def adjoint(self):
         ...         return self
+        ...
         >>> op = qml.adjoint(MyClass(wires=0))
         >>> op
         Adjoint(MyClass(wires=[0]))
