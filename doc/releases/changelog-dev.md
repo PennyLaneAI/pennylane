@@ -339,6 +339,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `requirements.txt` to reflect new compatible versions of dependent packages.
+  [(#8007)](https://github.com/PennyLaneAI/pennylane/pull/8007)
+
 * Added a new `all-tests-passed` gatekeeper job to `interface-unit-tests.yml` to ensure all test
   jobs complete successfully before triggering downstream actions. This reduces the need to
   maintain a long list of required checks in GitHub settings. Also added the previously missing
