@@ -188,29 +188,38 @@
 <h3>Breaking changes 💔</h3>
 
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
-  They now accept an operation or a list of operations instead of a `qml.tape.QuantumScript` and quantum functions with separate parameters and wires.
-  Instead, the wires and parameters of the provided unitaries are inferred from the inputs.
+  They now accept an operation or a list of operations as quantum unitaries.
 
-  As a concrete example, this is how the Hilbert-Schmidt Test cost between the unitary `U` and an approximate unitary ``V`` can be evaluated:
+  Before, the signature of this template required providing the `U` and `V` unitaries as a `qml.tape.QuantumScript` and a quantum function,
+  respectively, along with separate parameters and wires.
+
+  ```python
+  with qml.QueuingManager.stop_recording():
+      u_tape = qml.tape.QuantumTape([qml.Hadamard(0)])
+
+  def v_function(params):
+      qml.RZ(params[0], wires=1)  
+
+  v_params = [0.1]
+  v_wires = [1]    
+  ```
+
+  ```pycon
+  >>> qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
+  Rimpiazzare qui
+  ```
+
+  Instead, now the templates accept one or more operators as `U` and `V` unitaries. 
+  The wires and parameters of the approximate unitary `V` are inferred from the inputs, according to the order provided.
 
   ```python
   U = qml.Hadamard(0)
   V = qml.RZ(0, wires=1)
-
-  dev = qml.device("default.qubit", wires=2)
-
-  @qml.qnode(dev)
-  def hilbert_test(V, U):
-      qml.HilbertSchmidt(V, U)
-      return qml.probs()
-
-  def cost_hst(V, U):
-      return 1 - hilbert_test(V, U)[0]
   ```
 
   ```pycon
-  >>> cost_hst(V, U)
-  np.float64(1.0)
+  >>> qml.HilbertSchmidt(V, U)
+  HilbertSchmidt(0.1, wires=[0, 1])
   ```
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
 
