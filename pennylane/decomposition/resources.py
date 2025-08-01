@@ -34,7 +34,7 @@ class Resources:
     """
 
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
-    weighted_cost: float | None = field(default=None)
+    weighted_cost: float = field(default=None)
 
     def __post_init__(self):
         """Verify that all gate counts are non-zero."""
