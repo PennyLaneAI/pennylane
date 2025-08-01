@@ -218,7 +218,7 @@
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
   They now accept an operation or a list of operations as quantum unitaries.
 
-  Before, the signature of this template required providing the `U` and `V` unitaries as a `qml.tape.QuantumScript` and a quantum function,
+  Before, the signature of this template required providing the `U` and `V` unitaries as a `qml.tape.QuantumTape` and a quantum function,
   respectively, along with separate parameters and wires.
 
   ```python
@@ -242,7 +242,7 @@
 
   ```python
   U = qml.Hadamard(0)
-  V = qml.RZ(0, wires=1)
+  V = qml.RZ(0.1, wires=1)
   ```
 
   ```pycon
