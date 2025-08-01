@@ -18,9 +18,16 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ftqc.ftqc_device import FTQCQubit, LightningQubitBackend, NullQubitBackend
-from pennylane.measurements import MidMeasureMP
-from pennylane.ops import CZ, Conditional, H
+from pennylane.ftqc import RotXZX
+from pennylane.ftqc.ftqc_device import (
+    FTQCQubit,
+    LightningQubitBackend,
+    NullQubitBackend,
+    QuantumScriptSequence,
+    split_at_non_clifford_gates,
+)
+from pennylane.measurements import MidMeasureMP, Shots
+from pennylane.ops import CZ, RZ, Conditional, H, S, Y
 
 
 @pytest.mark.parametrize(
@@ -88,3 +95,268 @@ def test_executing_arbitrary_circuit(backend_cls):
     expected_res = (1.0, 1.0, 1.0) if backend_cls is NullQubitBackend else ref_circ()
 
     assert np.allclose(res, expected_res, atol=0.05)
+
+
+class TestQuantumScriptSequence:
+    """Test the behaviour of the class introduced to represent a QuantumScript
+    that is broken into multipe execution steps (potentially with additional runtime
+    behaviour between each segment)"""
+
+    def get_test_sequence(self):
+        operations = [[qml.X(0), qml.Y(1)], [qml.Y(0), qml.Z(0)], [qml.H(1), qml.S(0)]]
+        measurements = [[], [], [qml.expval(qml.X(0))]]
+        tapes = [
+            qml.tape.QuantumScript(ops, measurements=meas, shots=Shots(1000))
+            for ops, meas in zip(operations, measurements)
+        ]
+        sequence = QuantumScriptSequence(tapes)
+        return sequence
+
+    @pytest.mark.parametrize("shots", [None, Shots([10, 10])])
+    def test_quantum_sequence_initializes(self, shots):
+        """Test that a QuantumScriptSequence can be initialized as expected"""
+
+        ops1 = [qml.X(0), qml.Y(1), qml.RX(1.23, 2)]
+        ops2 = [qml.RY(1.2, 0), qml.RZ(0.45, 0), qml.X(1)]
+        ops3 = [qml.S(2), qml.H(1), qml.CNOT([1, 0]), qml.S(0)]
+        final_measurements = [qml.expval(qml.X(0)), qml.sample(wires=[2])]
+
+        operations = [ops1, ops2, ops3]
+        measurements = [[], [], final_measurements]
+
+        tapes = [
+            qml.tape.QuantumScript(ops, measurements=meas, shots=Shots(1000))
+            for ops, meas in zip(operations, measurements)
+        ]
+
+        sequence = QuantumScriptSequence(tapes, shots=shots)
+
+        # wires are as expected
+        assert sequence.num_wires == 3
+        assert sequence.wires == qml.wires.Wires([0, 1, 2])
+
+        # shots are as expected
+        assert sequence.shots == Shots(1000) if shots is None else shots
+        for tape in sequence.tapes:
+            assert tape.shots == Shots(1)
+
+        # stored tapes are as expected
+        assert len(sequence.tapes) == 3
+        assert len(sequence.intermediate_tapes) == 2
+        assert isinstance(sequence.final_tape, qml.tape.QuantumScript)
+
+        # overall measurements and operations are as expected
+        assert sequence.measurements == final_measurements
+        for op_list1, op_list2 in zip(sequence.operations, operations):
+            assert op_list1 == op_list2
+
+        assert repr(sequence) == "<QuantumScriptSequence: wires=[0, 1, 2]>"
+
+    def test_sequence_copy(self):
+        """Test that copying a sequence works as expected with no updates"""
+
+        sequence = self.get_test_sequence()
+        copied_sequence = sequence.copy()
+
+        # tapes are all the same, shots are all the same
+        for tape1, tape2 in zip(copied_sequence.tapes, sequence.tapes):
+            qml.assert_equal(tape1, tape2)
+        assert copied_sequence.shots == sequence.shots
+
+    def test_sequence_copy_updates_measurements(self):
+        """Test that copying a sequence works as expected when updating measurements"""
+
+        sequence = self.get_test_sequence()
+        copied_sequence = sequence.copy(measurements=[qml.var(qml.Y(12))])
+
+        # intermediate tapes and shots are all the same
+        for tape1, tape2 in zip(copied_sequence.intermediate_tapes, sequence.intermediate_tapes):
+            qml.assert_equal(tape1, tape2)
+        assert copied_sequence.shots == sequence.shots
+
+        # final tapes have the same operations, but the copy has updated measurements
+        assert copied_sequence.final_tape.operations == sequence.final_tape.operations
+        assert (
+            copied_sequence.measurements
+            == copied_sequence.final_tape.measurements
+            == [qml.var(qml.Y(12))]
+        )
+
+        # wires are updated accordingly when measurement adds a new wire
+        assert copied_sequence.num_wires == 3
+        assert copied_sequence.wires == qml.wires.Wires([0, 1, 12])
+
+    def test_sequence_copy_updates_tapes(self):
+        """Test that copying a sequence works as expected when updating tapes"""
+
+        sequence = self.get_test_sequence()
+
+        # get some new, modified tapes and make an updated copy
+        qml.decomposition.enable_graph()
+        new_tapes = []
+        for tape in sequence.tapes:
+            new_tape, fn = qml.transforms.decompose(tape, gate_set={qml.Rot, qml.GlobalPhase})
+            new_tapes.append(fn(new_tape))
+
+        copied_sequence = sequence.copy(tapes=new_tapes)
+
+        # none of the copied tapes are the same, and they've all been decomposed
+        for tape1, tape2 in zip(copied_sequence.tapes, sequence.tapes):
+            assert not qml.equal(tape1, tape2)
+            assert isinstance(tape1.operations[0], qml.Rot)
+
+        # shots aren't affected
+        assert copied_sequence.shots == sequence.shots
+
+    def test_sequence_copy_updates_shots(self):
+        """Test that copying a sequence works as expected when updating shots"""
+
+        sequence = self.get_test_sequence()
+        copied_sequence = sequence.copy(shots=Shots(15))
+
+        # tapes still match, but shots are udpated
+        # note that all tapes inside the sequence have shots=1, and
+        # the overall shots for the execution are only stored on the sequence
+        for tape1, tape2 in zip(copied_sequence.tapes, sequence.tapes):
+            qml.assert_equal(tape1, tape2)
+        assert copied_sequence.shots != sequence.shots
+        assert copied_sequence.shots == Shots(15)
+
+    def test_changing_ops_in_copy_raises_error(self):
+        """Test that trying to update operations or set copy_operations to True
+        when copying a QuantumScriptSequence raises an error"""
+
+        operations = [[qml.X(0), qml.Y(1)], [qml.Y(0), qml.Z(0)], [qml.H(1), qml.S(0)]]
+        measurements = [[], [], [qml.expval(qml.X(0))]]
+        tapes = [
+            qml.tape.QuantumScript(ops, measurements=meas, shots=Shots(1000))
+            for ops, meas in zip(operations, measurements)
+        ]
+        sequence = QuantumScriptSequence(tapes)
+
+        with pytest.raises(RuntimeError, match="Can't use copy_operations"):
+            _ = sequence.copy(copy_operations=True)
+
+        with pytest.raises(TypeError, match="cannot update 'operations'"):
+            _ = sequence.copy(operations=[qml.X(1), qml.Y(12)])
+
+    def test_chaning_measurements_and_tapes_in_copy_raises_error(self):
+        """Test that trying to update both measurements and or tapes
+        when copying a QuantumScriptSequence raises an error"""
+
+        operations = [[qml.X(0), qml.Y(1)], [qml.Y(0), qml.Z(0)], [qml.H(1), qml.S(0)]]
+        measurements = [[], [], [qml.expval(qml.X(0))]]
+        tapes = [
+            qml.tape.QuantumScript(ops, measurements=meas, shots=Shots(1000))
+            for ops, meas in zip(operations, measurements)
+        ]
+        sequence = QuantumScriptSequence(tapes)
+
+        with pytest.raises(RuntimeError, match="Can't update tapes and measurements"):
+            _ = sequence.copy(measurements=[qml.expval(qml.X(0))], tapes=tapes)
+
+    def test_get_standard_wire_map(self):
+        """Test that getting the standard wire map works as expected"""
+
+        tape1 = qml.tape.QuantumScript([qml.X(12), qml.Y("a"), qml.Z(0)])
+        tape2 = qml.tape.QuantumScript([qml.H(1)], measurements=[qml.expval(qml.Y(3))])
+
+        sequence = QuantumScriptSequence([tape1, tape2], shots=Shots(100))
+        assert sequence._get_standard_wire_map() == {12: 0, "a": 1, 0: 2, 1: 3, 3: 4}
+
+    def test_map_to_standard_wires(self):
+        """Test that map_to_standard_wires correctly affects both the overall
+        sequence wires and the underlying tape wires"""
+
+        tape1 = qml.tape.QuantumScript([qml.X(12), qml.Y("a"), qml.Z(0), qml.S("b")])
+        tape2 = qml.tape.QuantumScript([qml.H(1)], measurements=[qml.expval(qml.Y("b"))])
+        sequence = QuantumScriptSequence([tape1, tape2], shots=Shots(100))
+
+        new_sequence = sequence.map_to_standard_wires()
+
+        assert new_sequence.tapes[0].operations == [qml.X(0), qml.Y(1), qml.Z(2), qml.S(3)]
+        assert new_sequence.tapes[1].operations == [qml.H(4)]
+        assert (
+            new_sequence.measurements
+            == new_sequence.tapes[1].measurements
+            == [qml.expval(qml.Y(3))]
+        )
+
+    def test_split_at_non_clifford_gates_creates_sequence(self):
+        """Test that split_at_non_clifford_gates splits the tape before
+        each non-Clifford gate and returns a QuantumScriptSequence"""
+
+        dev = qml.device("lightning.qubit", wires=3)
+
+        @qml.set_shots(1000)
+        @qml.qnode(dev)
+        def circ():
+            RotXZX(0.64, 0.33, 1.2, 0)
+            RotXZX(0.16, 0.93, 0.29, 1)
+            H(0)
+            S(1)
+            RZ(0.54, 1)
+            H(0)
+            S(1)
+            H(2)
+            RotXZX(0.82, 0.66, 0.26, 2)
+            H(2)
+            H(0)
+            S(1)
+            return qml.expval(qml.X(0)), qml.expval(qml.Y(2))
+
+        tape = qml.workflow.construct_tape(circ)()
+        sequence = split_at_non_clifford_gates(tape)
+
+        assert isinstance(sequence, QuantumScriptSequence)
+        assert tape.measurements == sequence.measurements
+
+        assert len(sequence.tapes) == 4
+        assert sequence.tapes[0].operations == [RotXZX(0.64, 0.33, 1.2, 0)]
+        assert sequence.tapes[1].operations == [RotXZX(0.16, 0.93, 0.29, 1), H(0), S(1)]
+        assert sequence.tapes[2].operations == [RZ(0.54, 1), H(0), S(1), H(2)]
+        assert sequence.tapes[3].operations == [RotXZX(0.82, 0.66, 0.26, 2), H(2), H(0), S(1)]
+
+    def test_executing_sequence(self):
+        """Test that executing a QuantumScriptSequence with LightningQubitBackend.execute
+        matches the results for executing the standard circuit on lightning.qubit"""
+
+        dev = qml.device("lightning.qubit", wires=3)
+        backend = LightningQubitBackend()
+
+        @qml.qnode(dev)
+        def circ():
+            RotXZX(0.64, 0.33, 1.2, 0)
+            RotXZX(0.16, 0.93, 0.29, 1)
+            H(0)
+            S(1)
+            RZ(0.54, 1)
+            H(0)
+            S(1)
+            H(2)
+            RotXZX(0.82, 0.66, 0.26, 2)
+            H(2)
+            H(0)
+            S(1)
+            return qml.expval(qml.X(0)), qml.expval(qml.Y(2))
+
+        # execute basic circuit on lightning.qubit for expected results
+        expected_result = circ()
+
+        shots_circ = qml.set_shots(circ, 5000)
+        tape = qml.workflow.construct_tape(shots_circ)()
+        sequence = split_at_non_clifford_gates(tape)
+
+        raw_samples = backend.execute(
+            [
+                sequence,
+            ],
+            qml.devices.DefaultExecutionConfig,
+        )
+        sequence_results = np.average(raw_samples[0], axis=0)
+
+        # expected results are approximately -0.24 and -0.59, a tolerance of 0.05 is fine
+        assert np.allclose(expected_result, sequence_results, atol=0.05)
+
+
+# ToDo: as a sanity check, add a couple tests for the main behaviour of the Backend.execute and Backend.simulate functions also
