@@ -1423,21 +1423,21 @@ class TestGrouping:
 
         # compute grouping during construction with qml.dot
         op1 = qml.dot(coeffs, obs, grouping_type="qwc", method="lf")
-        assert set(op1.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op1.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping during construction with qml.sum
         sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
         op2 = qml.sum(*sprods, grouping_type="qwc", method="lf")
-        assert set(op2.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op2.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping during construction with Sum
         op3 = Sum(*sprods, grouping_type="qwc", method="lf")
-        assert set(op3.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op3.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping separately
         op4 = qml.dot(coeffs, obs, grouping_type=None)
         op4.compute_grouping(method="lf")
-        assert set(op4.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op4.grouping_indices) == {(0, 1), (2,)}
 
     @pytest.mark.parametrize(
         "grouping_type, grouping_indices",

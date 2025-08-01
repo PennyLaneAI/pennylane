@@ -115,7 +115,7 @@ def test_resource_tracking_attribute():
 
         assert os.path.exists(resources_fname)
 
-        with open(resources_fname, "r", encoding="utf-8") as f:
+        with open(resources_fname, encoding="utf-8") as f:
             stats = f.read()
 
         os.remove(resources_fname)

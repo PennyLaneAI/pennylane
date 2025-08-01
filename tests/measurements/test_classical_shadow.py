@@ -1035,7 +1035,7 @@ def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recip
     # high number of shots to prevent true negatives
     shots = 1000
 
-    dev = DefaultQubitLegacy(wires=wires, shots=shots)
+    dev = DefaultQubitLegacy(wires=wires, shots=shots, seed=seed)
 
     @qml.qnode(dev, interface=interface)
     def circuit():
