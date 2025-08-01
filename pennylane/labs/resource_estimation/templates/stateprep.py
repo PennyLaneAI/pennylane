@@ -168,11 +168,11 @@ class ResourceAliasSampling(ResourceOperator):
     >>> print(plre.estimate_resources(alias_sampling))
     --- Resources: ---
      Total qubits: 81
-     Total gates : 6.099E+3
+     Total gates : 6.157E+3
      Qubit breakdown:
-      clean qubits: 66, dirty qubits: 8, algorithmic qubits: 7
+      clean qubits: 6, dirty qubits: 68, algorithmic qubits: 7
      Gate breakdown:
-      {'Hadamard': 730, 'X': 421, 'CNOT': 4.530E+3, 'Toffoli': 330, 'T': 88}
+      {'Hadamard': 730, 'X': 479, 'CNOT': 4.530E+3, 'Toffoli': 330, 'T': 88}
     """
 
     resource_keys = {"num_coeffs", "precision"}
