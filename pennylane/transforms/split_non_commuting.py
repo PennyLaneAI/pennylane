@@ -38,7 +38,6 @@ class SingleTermMP:
 
     indices: list[int]
     coeffs: list[complex]
-    obs: Prod | SProd
     group_idx: int
     idx_in_group: int
 
@@ -387,7 +386,6 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript, shots_distribution_fn
                     single_term_mps[mp] = SingleTermMP(
                         indices=[0],
                         coeffs=[coeff],
-                        obs=obs,
                         group_idx=group_idx,
                         idx_in_group=idx_in_group,
                     )
@@ -461,28 +459,30 @@ def _split_using_qwc_grouping(
     for group_idx, obs_indices in enumerate(index_groups):
         group_size = 0
         for obs_idx in obs_indices:
-            new_mp = measurements[obs_idx]
-            mp_groups[group_idx].append(new_mp)
-            single_term_obs_mps_grouped[new_mp] = (
-                *single_term_obs_mps[new_mp],
-                group_idx,
-                group_size,
+            mp = measurements[obs_idx]
+            mp_groups[group_idx].append(mp)
+            single_term_obs_mps_grouped[mp] = SingleTermMP(
+                indices=single_term_obs_mps[mp][0],
+                coeffs=single_term_obs_mps[mp][1],
+                group_idx=group_idx,
+                idx_in_group=group_size,
             )
             group_size += 1
         group_sizes.append(group_size)
 
     for state_mp in state_measurements:
         mp_groups.append([state_mp])
-        single_term_obs_mps_grouped[state_mp] = (
-            *single_term_obs_mps[state_mp],
-            len(mp_groups) - 1,
-            0,
+        single_term_obs_mps_grouped[state_mp] = SingleTermMP(
+            indices=single_term_obs_mps[mp][0],
+            coeffs=single_term_obs_mps[mp][1],
+            group_idx=len(mp_groups) - 1,
+            idx_in_group=0,
         )
         group_sizes.append(1)
     tapes = [tape.copy(measurements=mps) for mps in mp_groups]
     fn = partial(
         _processing_fn_with_grouping,
-        single_term_obs_mps=single_term_obs_mps_grouped,
+        single_term_mps=single_term_obs_mps_grouped,
         offsets=offsets,
         group_sizes=group_sizes,
         batch_size=tape.batch_size,
@@ -522,7 +522,12 @@ def _split_using_wires_grouping(
             mp_groups.append([smp])
             wires_for_each_group.append(tape.wires)
             group_sizes.append(1)
-            single_term_obs_mps_grouped[smp] = (mp_indices, coeffs, num_groups, 0)
+            single_term_obs_mps_grouped[smp] = SingleTermMP(
+                indices=mp_indices,
+                coeffs=coeffs,
+                group_idx=num_groups,
+                idx_in_group=0,
+            )
             num_groups += 1
             continue
 
@@ -533,11 +538,11 @@ def _split_using_wires_grouping(
             if len(wires) != 0 and len(qml.wires.Wires.shared_wires([wires, smp.wires])) == 0:
                 mp_groups[group_idx].append(smp)
                 wires_for_each_group[group_idx] += smp.wires
-                single_term_obs_mps_grouped[smp] = (
-                    mp_indices,
-                    coeffs,
-                    group_idx,
-                    group_sizes[group_idx],
+                single_term_obs_mps_grouped[smp] = SingleTermMP(
+                    indices=mp_indices,
+                    coeffs=coeffs,
+                    group_idx=group_idx,
+                    idx_in_group=group_sizes[group_idx],
                 )
                 group_sizes[group_idx] += 1
                 added_to_existing_group = True
@@ -547,13 +552,18 @@ def _split_using_wires_grouping(
             mp_groups.append([smp])
             wires_for_each_group.append(smp.wires)
             group_sizes.append(1)
-            single_term_obs_mps_grouped[smp] = (mp_indices, coeffs, num_groups, 0)
+            single_term_obs_mps_grouped[smp] = SingleTermMP(
+                indices=mp_indices,
+                coeffs=coeffs,
+                group_idx=num_groups,
+                idx_in_group=0,
+            )
             num_groups += 1
 
     tapes = [tape.copy(measurements=mps) for mps in mp_groups]
     fn = partial(
         _processing_fn_with_grouping,
-        single_term_obs_mps=single_term_obs_mps_grouped,
+        single_term_mps=single_term_obs_mps_grouped,
         offsets=offsets,
         group_sizes=group_sizes,
         batch_size=tape.batch_size,
@@ -664,7 +674,7 @@ def _processing_fn_no_grouping(
 
 def _processing_fn_with_grouping(
     res: ResultBatch,
-    single_term_mps: dict[MeasurementProcess, tuple[list[int], list[TensorLike]]],
+    single_term_mps: dict[MeasurementProcess, SingleTermMP],
     offsets: list[TensorLike],
     group_sizes: list[int],
     batch_size: int,
