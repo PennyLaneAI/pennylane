@@ -18,6 +18,7 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 
 # pylint: disable=too-many-boolean-expressions
 
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import partial, wraps
 
@@ -42,6 +43,41 @@ class SingleTermMP:
     idx_in_group: int
 
 
+ShotDistributionFunction = Callable[[int, list[list[TensorLike]], int], Sequence[int]]
+
+
+def _uniform_deterministic_sampling(total_shots, coeffs_per_group, seed):
+    # pylint: disable=unused-argument
+    num_groups = len(coeffs_per_group)
+    shots = total_shots / num_groups
+    shots_per_group = np.array([shots] * num_groups)
+    return shots_per_group
+
+
+def _weighted_deterministic_sampling(total_shots, coeffs_per_group, seed):
+    # pylint: disable=unused-argument
+    sum_per_group = np.array([np.sum(np.abs(coeffs)) for coeffs in coeffs_per_group])
+    prob_shots = np.abs(sum_per_group) / np.sum(np.abs(sum_per_group))
+    shots_per_group = total_shots * prob_shots
+    return shots_per_group
+
+
+def _weighted_random_sampling(total_shots, coeffs_per_group, seed):
+    np.random.seed(seed)
+    sum_per_group = np.array([np.sum(np.abs(coeffs)) for coeffs in coeffs_per_group])
+    prob_shots = np.abs(sum_per_group) / np.sum(np.abs(sum_per_group))
+    distribution = multinomial(n=total_shots, p=prob_shots)
+    shots_per_group = distribution.rvs()[0]
+    return shots_per_group
+
+
+shot_distribution_str2fn = {
+    "uniform": _uniform_deterministic_sampling,
+    "wds": _weighted_deterministic_sampling,
+    "wrs": _weighted_random_sampling,
+}
+
+
 def null_postprocessing(results):
     """A postprocessing function returned by a transform that only converts the batch of results
     into a result for a single ``QuantumTape``.
@@ -61,7 +97,10 @@ def shot_vector_support(initial_postprocessing: PostprocessingFn) -> Postprocess
 
 @transform
 def split_non_commuting(
-    tape: QuantumScript, grouping_strategy: str | None = "default"
+    tape: QuantumScript,
+    grouping_strategy: str | None = "default",
+    shot_distribution: ShotDistributionFunction | str = None,
+    seed: int = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
@@ -299,7 +338,13 @@ def split_non_commuting(
             or tape.measurements[0].obs.grouping_indices is not None
         )
     ):
-        return _split_ham_with_grouping(tape)
+        if isinstance(shot_distribution, Callable):
+            shot_distribution_fn = shot_distribution
+        elif isinstance(shot_distribution, str):
+            shot_distribution_fn = shot_distribution_str2fn[shot_distribution]
+        else:
+            shot_distribution_fn = None
+        return _split_ham_with_grouping(tape, shot_distribution_fn=shot_distribution_fn, seed=seed)
 
     single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
 
@@ -330,29 +375,9 @@ def split_non_commuting(
     return _split_using_qwc_grouping(tape, single_term_obs_mps, offsets)
 
 
-def _uniform_deterministic_sampling(total_shots, coeffs_per_group):
-    num_groups = len(coeffs_per_group)
-    shots = total_shots / num_groups
-    shots_per_group = np.array([shots] * num_groups)
-    return shots_per_group
-
-
-def _weighted_deterministic_sampling(total_shots, coeffs_per_group):
-    sum_per_group = np.array([np.sum(np.abs(coeffs)) for coeffs in coeffs_per_group])
-    prob_shots = np.abs(sum_per_group) / np.sum(np.abs(sum_per_group))
-    shots_per_group = total_shots * prob_shots
-    return shots_per_group
-
-
-def _weighted_random_sampling(total_shots, coeffs_per_group):
-    sum_per_group = np.array([np.sum(np.abs(coeffs)) for coeffs in coeffs_per_group])
-    prob_shots = np.abs(sum_per_group) / np.sum(np.abs(sum_per_group))
-    distribution = multinomial(n=total_shots, p=prob_shots)
-    shots_per_group = distribution.rvs()[0]
-    return shots_per_group
-
-
-def _split_ham_with_grouping(tape: qml.tape.QuantumScript, shots_distribution_fn=None):
+def _split_ham_with_grouping(
+    tape: qml.tape.QuantumScript, shot_distribution_fn: ShotDistributionFunction, seed: int
+):
     """Splits a tape measuring a single Sum and group commuting observables."""
 
     obs = tape.measurements[0].obs
@@ -397,9 +422,8 @@ def _split_ham_with_grouping(tape: qml.tape.QuantumScript, shots_distribution_fn
             mps_groups.append(mps_group)
             coeffs_per_group.append(coeffs_group)
 
-    total_shots = tape.shots.total_shots
-    if total_shots is not None and shots_distribution_fn is not None:
-        shots_per_group = shots_distribution_fn(total_shots, coeffs_per_group)
+    if tape.shots.total_shots is not None and shot_distribution_fn is not None:
+        shots_per_group = shot_distribution_fn(tape.shots.total_shots, coeffs_per_group, seed)
         tapes = [
             tape.copy(measurements=mps, shots=int(shots))
             for mps, shots in zip(mps_groups, shots_per_group)
