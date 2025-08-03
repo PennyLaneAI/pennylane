@@ -237,7 +237,7 @@ class QROM(Operation):
 
             select_ops = []
             if control_select_wires:
-                select_ops += [Select(new_ops, control=control_select_wires)]
+                select_ops += [Select(new_ops, control=control_select_wires, partial=True)]
             else:
                 select_ops = new_ops
 
