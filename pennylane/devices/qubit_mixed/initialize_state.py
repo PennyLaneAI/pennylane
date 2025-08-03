@@ -14,15 +14,14 @@
 """Functions to prepare a state."""
 
 from collections.abc import Iterable
-from typing import Union
 
 import pennylane as qml
 from pennylane import math
 
 
 def create_initial_state(
-    wires: Union[qml.wires.Wires, Iterable],
-    prep_operation: Union[qml.operation.StatePrepBase, qml.QubitDensityMatrix] = None,
+    wires: qml.wires.Wires | Iterable,
+    prep_operation: qml.operation.StatePrepBase | qml.QubitDensityMatrix | None = None,
     like: str = None,
 ):
     r"""

@@ -2620,7 +2620,7 @@ class TestCutCircuitMCTransform:
         v = 0.319
 
         temp_shots = 333
-        cut_res = cut_circuit(v, shots=temp_shots)  # pylint: disable=unexpected-keyword-arg
+        cut_res = qml.set_shots(shots=temp_shots)(cut_circuit)(v)
 
         assert cut_res.shape == (temp_shots, 2)
 
@@ -4538,8 +4538,9 @@ class TestCutCircuitExpansion:
         spy = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
 
-        kwargs = {"shots": 10} if isinstance(measurement, qml.measurements.SampleMP) else {}
-        cut_transform(circuit, device_wires=[0])(**kwargs)
+        if isinstance(measurement, qml.measurements.SampleMP):
+            circuit = qml.set_shots(circuit, shots=10)
+        cut_transform(circuit, device_wires=[0])()
 
         assert spy.call_count == 1 or spy_mc.call_count == 1
 
@@ -4555,8 +4556,9 @@ class TestCutCircuitExpansion:
             return qml.apply(measurement)
 
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
-            kwargs = {"shots": 10} if isinstance(measurement, qml.measurements.SampleMP) else {}
-            cut_transform(circuit, device_wires=[0])(**kwargs)
+            if isinstance(measurement, qml.measurements.SampleMP):
+                circuit = qml.set_shots(circuit, shots=10)
+            cut_transform(circuit, device_wires=[0])()
 
     def test_expansion_ttn(self, mocker):
         """Test if wire cutting is compatible with the tree tensor network operation"""
@@ -4670,7 +4672,7 @@ class TestCutStrategy:
 
         devices = [devices] if not isinstance(devices, list) else devices
 
-        max_dev_wires = max((len(d.wires) for d in devices))
+        max_dev_wires = max(len(d.wires) for d in devices)
         assert strategy.max_free_wires == max_free_wires or max_dev_wires or min_free_wires
         assert strategy.min_free_wires == min_free_wires or max_free_wires or max_dev_wires
         assert strategy.imbalance_tolerance == imbalance_tolerance
@@ -5413,7 +5415,7 @@ class TestAutoCutCircuit:
         assert all(lower <= f.order() <= upper for f in frags)
 
         # each frag should have the device size constraint satisfied.
-        assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+        assert all(len({e[2] for e in f.edges.data("wire")}) <= device_size for f in frags)
 
 
 class TestCutCircuitWithHamiltonians:
@@ -5590,7 +5592,7 @@ class TestCutCircuitWithHamiltonians:
             assert all(frag_ords[idx][0] <= f.order() <= frag_ords[idx][1] for f in frags)
 
             # each frag should have the device size constraint satisfied.
-            assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
+            assert all(len({e[2] for e in f.edges.data("wire")}) <= device_size for f in frags)
 
     def test_hamiltonian_with_tape(self):
         """Test that an expand function that generates multiple tapes is applied before the transform and the transform

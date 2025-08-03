@@ -2,6 +2,8 @@
 Unit tests for the :mod:`pennylane.io.qasm_interpreter` module.
 """
 
+# pylint: disable=consider-using-with,unspecified-encoding
+
 from re import escape
 from unittest.mock import MagicMock
 
@@ -42,7 +44,7 @@ from pennylane import (
 )
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.ops import Adjoint, Controlled, ControlledPhaseShift, MultiControlledX
-from pennylane.ops.op_math.pow import PowOperation, PowOpObs
+from pennylane.ops.op_math.pow import PowOperation
 from pennylane.wires import Wires
 
 try:
@@ -136,9 +138,7 @@ class TestBuiltIns:  # pylint: disable=too-few-public-methods
         assert _rotate(to_rotate, distance, direction) == expected
 
     def test_functions(self):
-        ast = parse(
-            open("tests/io/qasm_interpreter/functions.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/functions.qasm").read(), permissive=True)
 
         context = QasmInterpreter().interpret(ast, context={"name": "functions", "wire_map": None})
 
@@ -265,7 +265,7 @@ class TestMeasurementReset:
     def test_condition_on_measurement(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/condition_on_measurement.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/condition_on_measurement.qasm").read(),
             permissive=True,
         )
 
@@ -277,7 +277,7 @@ class TestMeasurementReset:
     def test_combine_processing_functions(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/add_multiple_measurements.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/add_multiple_measurements.qasm").read(),
             permissive=True,
         )
 
@@ -307,25 +307,22 @@ class TestMeasurementReset:
 
     def test_resets(self):
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/resets.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/resets.qasm").read(), permissive=True)
 
         with queuing.AnnotatedQueue() as q:
-            context = QasmInterpreter().interpret(
-                ast, context={"name": "post_processing", "wire_map": None}
-            )
+            context = QasmInterpreter().interpret(ast, context={"name": "resets", "wire_map": None})
 
-        assert isinstance(q.queue[0], MidMeasureMP)
-        assert q.queue[0].wires == Wires(["q"])
-        assert q.queue[0].reset
-        assert context.vars["a"].val.wires == Wires(["q"])
+        for i in range(10):
+            assert isinstance(q.queue[i], MidMeasureMP)
+            assert q.queue[i].wires == Wires([f"q[{i}]"])
+            assert q.queue[i].reset
+            assert context.vars["a"].val[i].wires == Wires([f"q[{i}]"])
 
     def test_post_processing_measurement(self, mocker):
         import pennylane
 
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/post_processing.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/post_processing.qasm").read(), permissive=True)
 
         # setup mocks
         eval_binary = mocker.spy(pennylane.io.qasm_interpreter, "_eval_binary_op")
@@ -385,9 +382,7 @@ class TestMeasurementReset:
 
     def test_measurement(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/measurements.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/measurements.qasm").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(
@@ -408,7 +403,7 @@ class TestControlFlow:
     def test_nested_control_flow(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/nested_control_flow.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/nested_control_flow.qasm").read(),
             permissive=True,
         )
 
@@ -442,11 +437,35 @@ class TestControlFlow:
             PauliY("q0"),
         ]
 
-    def test_nested_end(self):
+    def test_end_in_loop(self):
+        # parse the QASM
+        ast = parse(open("tests/io/qasm_interpreter/end_in_loop.qasm").read(), permissive=True)
+
+        # run the program
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"name": "loop-end", "wire_map": None})
+
+        assert q.queue == [RX(1, "q0")]
+
+    def test_end_in_measurement_controlled_branch(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/nested_end.qasm", mode="r").read(), permissive=True
+            open("tests/io/qasm_interpreter/end_in_measure_conditioned_branch.qasm").read(),
+            permissive=True,
         )
+
+        # run the program
+        with pytest.raises(
+            NotImplementedError,
+            match="End statements in measurement conditioned branches are not supported.",
+        ):
+            QasmInterpreter().interpret(
+                ast, context={"name": "meas-ctrl-branch-nested-end", "wire_map": None}
+            )
+
+    def test_nested_end(self):
+        # parse the QASM
+        ast = parse(open("tests/io/qasm_interpreter/nested_end.qasm").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -457,7 +476,7 @@ class TestControlFlow:
     def test_loops(self):
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/loops.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/loops.qasm").read(), permissive=True)
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -482,7 +501,7 @@ class TestControlFlow:
     def test_switch(self):
 
         # parse the QASM
-        ast = parse(open("tests/io/qasm_interpreter/switch.qasm", mode="r").read(), permissive=True)
+        ast = parse(open("tests/io/qasm_interpreter/switch.qasm").read(), permissive=True)
 
         # execute the callable
         with queuing.AnnotatedQueue() as q:
@@ -494,9 +513,7 @@ class TestControlFlow:
         from pennylane import ops
 
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/if_else.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/if_else.qasm").read(), permissive=True)
 
         # setup mocks
         cond = mocker.spy(ops, "cond")
@@ -542,7 +559,7 @@ class TestSubroutine:
     def test_scoping_const(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/scoping_const.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/scoping_const.qasm").read(),
             permissive=True,
         )
 
@@ -557,7 +574,7 @@ class TestSubroutine:
     def test_nested_renaming(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/nested_renaming.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/nested_renaming.qasm").read(),
             permissive=True,
         )
 
@@ -567,12 +584,19 @@ class TestSubroutine:
                 ast, context={"name": "nested-subroutines", "wire_map": None}
             )
 
-        assert q.queue == [PauliY("q0"), PauliX("q0"), Hadamard("q0")]
+        assert q.queue == [
+            PauliY("q[0]"),
+            PauliX("q[0]"),
+            Hadamard("q[0]"),
+            PauliY("p[1]"),
+            PauliX("p[0]"),
+            Hadamard("p[1]"),
+        ]
 
     def test_repeated_calls(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/repeated_calls.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/repeated_calls.qasm").read(),
             permissive=True,
         )
 
@@ -611,7 +635,7 @@ class TestSubroutine:
     def test_stand_alone_call_of_subroutine(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/standalone_subroutines.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/standalone_subroutines.qasm").read(),
             permissive=True,
         )
 
@@ -626,7 +650,7 @@ class TestSubroutine:
     def test_complex_subroutines(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/complex_subroutines.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/complex_subroutines.qasm").read(),
             permissive=True,
         )
 
@@ -636,14 +660,19 @@ class TestSubroutine:
                 ast, context={"name": "complex-subroutines", "wire_map": None}
             )
 
-        assert q.queue == [Hadamard("q0"), PauliY("q0"), Hadamard("q0"), RX(0.1, "q0")]
+        assert q.queue == [
+            Hadamard("q0"),
+            PauliY("q0"),
+            Hadamard("q0"),
+            RX(0.1, "q0"),
+            PauliX("p[0]"),
+            PauliY("p[1]"),
+        ]
         assert context.vars["c"].val == 0
 
     def test_subroutines(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/subroutines.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/subroutines.qasm").read(), permissive=True)
 
         # run the program
         with queuing.AnnotatedQueue() as q:
@@ -659,7 +688,7 @@ class TestExpressions:
     def test_different_unary_exprs(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/unary_expressions.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/unary_expressions.qasm").read(),
             permissive=True,
         )
 
@@ -675,7 +704,7 @@ class TestExpressions:
     def test_different_binary_exprs(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/binary_expressions.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/binary_expressions.qasm").read(),
             permissive=True,
         )
 
@@ -684,6 +713,7 @@ class TestExpressions:
         )
 
         # comparison expressions
+        # pylint: disable=comparison-of-constants
         assert context.vars["a"].val == (0 == 1)
         assert context.vars["b"].val == (0 != 1)
         assert context.vars["c"].val == (0 > 1)
@@ -713,7 +743,7 @@ class TestExpressions:
     def test_different_assignments(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/assignment.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/assignment.qasm").read(),
             permissive=True,
         )
 
@@ -817,6 +847,81 @@ class TestExpressions:
 
 
 @pytest.mark.external
+class TestRegisters:
+
+    def test_index_out_of_bounds(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit[3] q;
+            id q[4];
+            """
+        )
+
+        with pytest.raises(
+            IndexError, match="Index 4 into register q of length 3 out of bounds on line 3"
+        ):
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "out-of-bounds"})
+
+    def test_unsupported_register_index(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            qubit[3] q;
+            id q[1, 2];
+            """
+        )
+
+        with pytest.raises(NotImplementedError, match="Only a single Expression"):
+            QasmInterpreter().interpret(
+                ast, context={"wire_map": None, "name": "qubit-registers-index"}
+            )
+
+    def test_qubit_registers(self):
+        # parse the QASM program
+        ast = parse(
+            """
+            int offset = 1;
+            qubit[3] q;
+            id q[0 + offset];
+            h q[2];
+            x q[1 + offset];
+            y q[2];
+            z q[0];
+            s q[2];
+            sdg q[2];
+            t q[1];
+            tdg q[1];
+            sx q[0];
+            ctrl @ id q[0], q[1];
+            inv @ h q[2 - offset];
+            pow(2) @ t q[1];
+            """,
+            permissive=True,
+        )
+
+        # execute the callable
+        with queuing.AnnotatedQueue() as q:
+            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "qubit-registers"})
+
+        assert q.queue == [
+            Identity("q[1]"),
+            Hadamard("q[2]"),
+            PauliX("q[2]"),
+            PauliY("q[2]"),
+            PauliZ("q[0]"),
+            S("q[2]"),
+            Adjoint(S("q[2]")),
+            T("q[1]"),
+            Adjoint(T("q[1]")),
+            SX("q[0]"),
+            Controlled(Identity("q[1]"), control_wires=["q[0]"]),
+            Adjoint(Hadamard("q[1]")),
+            T("q[1]") ** 2,
+        ]
+
+
+@pytest.mark.external
 class TestVariables:
 
     def test_retrieve_non_existent_attr(self):
@@ -910,9 +1015,7 @@ class TestVariables:
 
     def test_variables(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/variables.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/variables.qasm").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(
@@ -945,22 +1048,6 @@ class TestVariables:
             match="Attempt to mutate a constant i on line 3 that was defined on line 2",
         ):
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "mutate-error"})
-
-    def test_declare_register(self):
-        # parse the QASM
-        ast = parse(
-            """
-            qubit[2] q;
-            """,
-            permissive=True,
-        )
-
-        with pytest.raises(
-            TypeError,
-            match="Qubit registers are not yet supported, "
-            "please declare each qubit individually.",
-        ):
-            QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "qubit-register"})
 
     def test_retrieve_wire(self):
         # parse the QASM
@@ -997,9 +1084,7 @@ class TestVariables:
 
     def test_classical_variables(self):
         # parse the QASM
-        ast = parse(
-            open("tests/io/qasm_interpreter/classical.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/classical.qasm").read(), permissive=True)
 
         # run the program
         context = QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "basic-vars"})
@@ -1016,7 +1101,7 @@ class TestVariables:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/updating_variables.qasm").read(),
             permissive=True,
         )
 
@@ -1140,9 +1225,7 @@ class TestVariables:
 class TestGates:
 
     def test_custom_gates(self):
-        ast = parse(
-            open("tests/io/qasm_interpreter/custom_gates.qasm", mode="r").read(), permissive=True
-        )
+        ast = parse(open("tests/io/qasm_interpreter/custom_gates.qasm").read(), permissive=True)
 
         with queuing.AnnotatedQueue() as q:
             QasmInterpreter().interpret(ast, context={"wire_map": None, "name": "custom-gates"})
@@ -1153,6 +1236,8 @@ class TestGates:
             CNOT(wires=["q0", "q1"]),
             RX(0.7853975, wires=["q1"]),
             PauliX("q0"),
+            PauliX("p[0]"),
+            PauliY("p[1]"),
         ]
 
     def test_nested_modifiers(self):
@@ -1247,7 +1332,7 @@ class TestGates:
     def test_updating_variables(self):
         # parse the QASM
         ast = parse(
-            open("tests/io/qasm_interpreter/updating_variables.qasm", mode="r").read(),
+            open("tests/io/qasm_interpreter/updating_variables.qasm").read(),
             permissive=True,
         )
 
@@ -1401,7 +1486,7 @@ class TestGates:
             RX(0.5, wires=["q0"]),
             RY(0.2, wires=["q0"]),
             Adjoint(RX(0.5, wires=["q0"])),
-            PowOpObs(PauliX(wires=["q0"]), 2),
+            PowOperation(PauliX(wires=["q0"]), 2),
             CNOT(wires=["q1", "q0"]),
         ]
 
@@ -1445,6 +1530,7 @@ class TestGates:
             crx(0.2) q0, q1;
             cry(0.1) q0, q1;
             crz(0.3) q1, q0;
+            cu(0.1, 0.2, 0.3, 0.4) q0, q1;
             """,
             permissive=True,
         )
@@ -1461,6 +1547,8 @@ class TestGates:
             CRX(0.2, wires=["q0", "q1"]),
             CRY(0.1, wires=["q0", "q1"]),
             CRZ(0.3, wires=Wires(["q1", "q0"])),
+            PhaseShift(0.4, wires=["q0"])
+            @ (Controlled(U3(0.1, 0.2, 0.3, wires=["q1"]), control_wires=["q0"])),
         ]
 
     def test_interprets_multi_qubit_gates(self):
@@ -1536,7 +1624,9 @@ class TestGates:
             y q2;
             z q0;
             s q2;
+            sdg q2;
             t q1;
+            tdg q1;
             sx q0;
             ctrl @ id q0, q1;
             inv @ h q2;
@@ -1558,7 +1648,9 @@ class TestGates:
             PauliY("q2"),
             PauliZ("q0"),
             S("q2"),
+            Adjoint(S("q2")),
             T("q1"),
+            Adjoint(T("q1")),
             SX("q0"),
             Controlled(Identity("q1"), control_wires=["q0"]),
             Adjoint(Hadamard("q2")),

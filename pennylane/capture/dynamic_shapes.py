@@ -14,7 +14,7 @@
 """
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
-from typing import Callable, Sequence, Union
+from collections.abc import Callable, Sequence
 
 has_jax = True
 try:
@@ -176,11 +176,11 @@ def register_custom_staging_rule(
         Returned vars are cached in env for use in future shapes
         """
         if not hasattr(outvar.aval, "shape"):
-            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval)
+            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval, None)
             return out_tracer, jaxpr_trace.makevar(out_tracer)
         new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
         new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
-        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
+        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval, None)
         new_var = jaxpr_trace.makevar(out_tracer)
 
         if not isinstance(outvar, jax.extend.core.Literal):
@@ -189,7 +189,7 @@ def register_custom_staging_rule(
 
     def custom_staging_rule(
         jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
-    ) -> Union[Sequence[pe.DynamicJaxprTracer], pe.DynamicJaxprTracer]:
+    ) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
         """
         Add new jaxpr equation to the jaxpr_trace and return new tracers.
         """

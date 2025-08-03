@@ -14,12 +14,15 @@
 """
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
-# pylint: disable=no-self-use
+from collections.abc import Callable, Sequence
 from copy import copy
 from functools import partial, wraps
-from typing import Callable, Optional, Sequence
+
+# pylint: disable=no-self-use, wrong-import-position
+from importlib.metadata import version
 
 import jax
+from packaging.version import Version
 
 import pennylane as qml
 from pennylane import math
@@ -44,7 +47,7 @@ A dictionary containing flattened style cond, while, and for loop higher order p
 """
 
 
-def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[Optional[int]]):
+def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[int | None]):
     """
     A helper for broadcast_in_dim and iota to combine static dimensions and dynamic dimensions.
 
@@ -635,15 +638,22 @@ class FlattenedInterpreter(PlxprInterpreter):
     """
 
 
+jax_version = version("jax")
+if Version(jax_version) > Version("0.6.2"):  # pragma: no cover
+    from jax._src.pjit import jit_p as pjit_p
+else:  # pragma: no cover
+    from jax._src.pjit import pjit_p
+
+
 # pylint: disable=protected-access
-@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
+@FlattenedInterpreter.register_primitive(pjit_p)
 def _(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
-    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
-    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
+    subfuns, params = pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
+    return pjit_p.bind(*subfuns, *invals, **params)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)

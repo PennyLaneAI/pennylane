@@ -14,12 +14,13 @@
 """
 Tests for the MPSPrep template.
 """
-
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.state_preparations.state_prep_mps import (
+    _mps_prep_decomposition,
     _validate_mps_shape,
     right_canonicalize_mps,
 )
@@ -525,6 +526,147 @@ class TestMPSPrep:
         output = dev.execute(qs)[: 2**num_wires]
 
         assert np.allclose(state, output, rtol=0.01)
+
+    @pytest.mark.parametrize(
+        ("mps", "num_wires"),
+        [
+            (
+                [
+                    np.array([[0.70710678, 0.0], [0.0, 0.70710678]]),
+                    np.array(
+                        [
+                            [[0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]],
+                            [[0.0, 0.0, -0.0, 0.0], [-1.0, 0.0, 0.0, 0.0]],
+                        ]
+                    ),
+                    np.array(
+                        [
+                            [[0.00000000e00, 1.74315280e-32], [-7.07106781e-01, -7.07106781e-01]],
+                            [[7.07106781e-01, 7.07106781e-01], [0.00000000e00, 0.00000000e00]],
+                            [[0.00000000e00, 0.00000000e00], [-7.07106781e-01, 7.07106781e-01]],
+                            [[-7.07106781e-01, 7.07106781e-01], [0.00000000e00, 0.00000000e00]],
+                        ]
+                    ),
+                    np.array([[1.0, 0.0], [0.0, 1.0]]),
+                ],
+                4,
+            ),
+            (
+                [
+                    np.array([[0.0, 0.107], [0.994, 0.0]]),
+                    np.array(
+                        [
+                            [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                            [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                        ]
+                    ),
+                    np.array(
+                        [
+                            [[-1.0, 0.0], [0.0, 0.0]],
+                            [[0.0, 0.0], [0.0, 1.0]],
+                            [[0.0, -1.0], [0.0, 0.0]],
+                            [[0.0, 0.0], [1.0, 0.0]],
+                        ]
+                    ),
+                    np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+                ],
+                4,
+            ),
+            (
+                [
+                    np.array([[0.53849604, -0.44389787], [-0.59116842, -0.40434711]]),
+                    np.array(
+                        [
+                            [
+                                [-6.05052107e-01, 1.34284016e-01, -2.84018989e-01, -1.12416345e-01],
+                                [3.60988555e-01, 6.14571922e-01, -1.20681653e-01, -2.89527967e-04],
+                            ],
+                            [
+                                [-1.12393068e-01, 2.11496619e-01, 3.99193070e-01, -3.44891522e-01],
+                                [-5.99232567e-01, 3.76491467e-01, 3.04813277e-01, 2.65697349e-01],
+                            ],
+                        ]
+                    ),
+                    np.array(
+                        [
+                            [
+                                [0.87613189, -0.34254341, -0.12704983, -0.0161698],
+                                [-0.20758717, 0.1329479, -0.18184107, 0.06942658],
+                            ],
+                            [
+                                [-0.16499137, -0.13680142, -0.18432824, 0.12950892],
+                                [-0.68790868, -0.64141472, -0.12485688, -0.0556177],
+                            ],
+                            [
+                                [0.0352582, -0.37993402, 0.26781956, -0.25935129],
+                                [0.04351872, -0.27109361, 0.65111429, 0.4648453],
+                            ],
+                            [
+                                [0.1909576, 0.25461839, -0.07463641, -0.34390477],
+                                [-0.21279487, 0.0305474, 0.53420894, -0.66578494],
+                            ],
+                        ]
+                    ),
+                    np.array(
+                        [
+                            [[-0.26771292, -0.00628612], [-0.96316273, 0.02465422]],
+                            [[0.96011241, 0.07601506], [-0.2663889, 0.03798452]],
+                            [[-0.00727353, 0.4537835], [-0.02374101, -0.89076596]],
+                            [[0.08038064, -0.88784161], [-0.02812246, -0.45220057]],
+                        ]
+                    ),
+                    np.array([[-0.97855153, 0.2060022], [0.2060022, 0.97855153]]),
+                ],
+                5,
+            ),
+        ],
+    )
+    def test_decomposition_new(self, mps, num_wires):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.MPSPrep(
+            mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
+        )
+        for rule in qml.list_decomps(qml.MPSPrep):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decomposition_capture(self):
+        """Tests that the new decomposition works with capture."""
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        mps = [
+            np.array([[0.0, 0.107], [0.994, 0.0]]),
+            np.array(
+                [
+                    [[0.0, 0.0, 0.0, -0.0], [1.0, 0.0, 0.0, -0.0]],
+                    [[0.0, 1.0, 0.0, -0.0], [0.0, 0.0, 0.0, -0.0]],
+                ]
+            ),
+            np.array(
+                [
+                    [[-1.0, 0.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [0.0, 1.0]],
+                    [[0.0, -1.0], [0.0, 0.0]],
+                    [[0.0, 0.0], [1.0, 0.0]],
+                ]
+            ),
+            np.array([[-1.0, -0.0], [-0.0, -1.0]]),
+        ]
+        num_wires = 4
+
+        def circuit(*_mps):
+            _mps_prep_decomposition(
+                *_mps, wires=range(2, num_wires + 2), work_wires=[0, 1], right_canonicalize=True
+            )
+
+        plxpr = qml.capture.make_plxpr(circuit)(*mps)
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, *mps)
+        assert len(collector.state["ops"]) == 4
+        for op in collector.state["ops"]:
+            assert isinstance(op, qml.QubitUnitary)
 
     def test_decomposition(self):
         """Tests that the template defines the correct decomposition."""

@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 from xdsl.context import Context
 from xdsl.dialects import builtin
-from xdsl.passes import ModulePass, PipelinePass
+from xdsl.passes import ModulePass, PassPipeline
 
 from .transform_interpreter import TransformInterpreterPass  # pylint: disable=no-name-in-module
 
@@ -54,7 +54,7 @@ class ApplyTransformSequence(ModulePass):
                     if isinstance(op, builtin.ModuleOp):
                         nested_modules.append(op)
 
-        pipeline = PipelinePass(
+        pipeline = PassPipeline(
             # pylint: disable-next=unexpected-keyword-arg
             (TransformInterpreterPass(passes=available_passes),)
         )

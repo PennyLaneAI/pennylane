@@ -321,8 +321,8 @@ class TestMidMeasureExecute:
     capture enabled."""
 
     # NOTE: this test has an estimated fail rate of around 20%~30%
-    # We have to fix the seed to ensure that the test is deterministic.
-    @pytest.mark.local_salt(9)
+    # FIXME: [sc-95723]
+    @pytest.mark.local_salt(11)
     @pytest.mark.parametrize("reset", [True, False])
     @pytest.mark.parametrize("postselect", [None, 0, 1])
     @pytest.mark.parametrize("phi", jnp.arange(1.0, 3, 1.5))
