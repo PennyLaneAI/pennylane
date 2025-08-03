@@ -7,6 +7,7 @@
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
+  [(#8011)](https://github.com/PennyLaneAI/pennylane/pull/8011)
 
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
