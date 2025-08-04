@@ -19,6 +19,8 @@ from collections.abc import Hashable, Sequence
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
+import numpy as np
+
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator
@@ -28,144 +30,57 @@ from pennylane.labs.trotter_error.product_formulas.product_formula import Produc
 
 @dataclass
 class SamplingConfig:
-    """Configuration for sampling parameters.
+    """Configuration for sampling methods (for future use).
 
-    Args:
-        sample_size (Optional[int]): Number of commutators to sample for fixed-size sampling.
-        sampling_method (str): Sampling strategy ("random", "importance", "top_k").
-        random_seed (Optional[int]): Random seed for reproducibility.
+    This class provides a unified configuration interface for different
+    sampling strategies that will be implemented in future versions.
     """
 
+    method: str = "exact"
     sample_size: Optional[int] = None
-    sampling_method: str = "importance"
     random_seed: Optional[int] = None
 
-
-@dataclass
-class AdaptiveSamplingConfig:
-    """Configuration for adaptive sampling parameters.
-
-    Args:
-        enabled (bool): Whether to use adaptive sampling.
-        confidence_level (float): Confidence level for adaptive sampling.
-        target_relative_error (float): Target relative error for adaptive sampling.
-        min_sample_size (int): Minimum sample size for adaptive sampling.
-        max_sample_size (int): Maximum sample size for adaptive sampling.
-    """
-
-    enabled: bool = False
-    confidence_level: float = 0.95
-    target_relative_error: float = 1.0
-    min_sample_size: int = 10
-    max_sample_size: int = 10000
-
-
-@dataclass
-class ConvergenceSamplingConfig:
-    """Configuration for convergence sampling parameters.
-
-    Args:
-        enabled (bool): Whether to use convergence sampling.
-        convergence_tolerance (float): Relative tolerance for mean convergence.
-        convergence_window (int): Number of samples to look back for convergence check.
-        min_convergence_checks (int): Minimum number of consecutive convergence checks.
-        min_sample_size (int): Minimum sample size for convergence sampling.
-        max_sample_size (int): Maximum sample size for convergence sampling.
-    """
-
-    enabled: bool = False
-    convergence_tolerance: float = 1e-6
-    convergence_window: int = 10
-    min_convergence_checks: int = 3
-    min_sample_size: int = 10
-    max_sample_size: int = 10000
-
-
-@dataclass
-class ParallelConfig:
-    """Configuration for parallel execution parameters.
-
-    Args:
-        num_workers (int): Number of concurrent units for computation.
-        backend (str): Executor backend ("serial", "mpi4py_pool", "mpi4py_comm").
-        parallel_mode (str): Parallelization mode ("state" or "commutator").
-    """
-
-    num_workers: int = 1
-    backend: str = "serial"
-    parallel_mode: str = "state"
-
-
-@dataclass
-class PerturbationErrorConfig:
-    """Main configuration class for perturbation error calculation.
-
-    Args:
-        timestep (float): Time step for simulation.
-        return_convergence_info (bool): Whether to return convergence information.
-        sampling (SamplingConfig): Sampling configuration.
-        adaptive_sampling (AdaptiveSamplingConfig): Adaptive sampling configuration.
-        convergence_sampling (ConvergenceSamplingConfig): Convergence sampling configuration.
-        parallel (ParallelConfig): Parallel execution configuration.
-    """
-
-    timestep: float = 1.0
-    return_convergence_info: bool = False
-    sampling: SamplingConfig = None
-    adaptive_sampling: AdaptiveSamplingConfig = None
-    convergence_sampling: ConvergenceSamplingConfig = None
-    parallel: ParallelConfig = None
-
     def __post_init__(self):
-        if self.sampling is None:
-            self.sampling = SamplingConfig()
-        if self.adaptive_sampling is None:
-            self.adaptive_sampling = AdaptiveSamplingConfig()
-        if self.convergence_sampling is None:
-            self.convergence_sampling = ConvergenceSamplingConfig()
-        if self.parallel is None:
-            self.parallel = ParallelConfig()
+        """Validate configuration parameters."""
+        valid_methods = {"exact", "random", "importance", "top_k"}
+        if self.method not in valid_methods:
+            raise ValueError(f"method must be one of {valid_methods}, got '{self.method}'")
+
+        if self.sample_size is not None and self.sample_size <= 0:
+            raise ValueError(f"sample_size must be positive, got {self.sample_size}")
 
 
 class _CommutatorCache:
     """Cache for storing computed commutator applications to avoid redundant calculations.
 
     This cache stores the results of applying commutators to states to avoid redundant
-    calculations during sampling. The cache uses a robust key generation mechanism
-    and includes memory management to prevent unbounded growth.
+    calculations during sampling. Uses simple key generation and basic eviction.
     """
 
-    def __init__(self, max_size: int = 10000):
+    def __init__(self, max_size: int = 1000):
+        """Initialize the cache with optional size limit.
+
+        Args:
+            max_size: Maximum number of entries to store. When exceeded,
+                     oldest entries are removed (FIFO).
+        """
         self.cache = {}
         self.max_size = max_size
         self.hits = 0
         self.misses = 0
 
-    @staticmethod
-    def get_cache_key(commutator: Tuple[Hashable | Set], state_id: int) -> str:
-        """Generate a robust cache key for commutator and state combination."""
+    def get_cache_key(self, commutator: Tuple[Hashable | Set], state_id: int) -> str:
+        """Generate a simple cache key for a commutator-state pair."""
         try:
-            # Convert commutator to a hashable representation
-            if isinstance(commutator, tuple):
-                key_parts = []
-                for item in commutator:
-                    if isinstance(item, frozenset):
-                        # Sort frozenset items for consistent key generation
-                        sorted_items = tuple(sorted(item, key=str))
-                        key_parts.append(f"frozenset({sorted_items})")
-                    else:
-                        key_parts.append(str(item))
-                commutator_str = f"({','.join(key_parts)})"
-            else:
-                commutator_str = str(commutator)
-
-            return f"comm:{commutator_str}|state:{state_id}"
+            # Simple string representation for key
+            comm_str = str(commutator)
+            return f"s{state_id}_c{comm_str}"
         except (TypeError, ValueError, AttributeError):
-            # Fallback to a simpler key if conversion fails
-            return f"comm:{id(commutator)}|state:{state_id}"
+            # Fallback to id-based key if conversion fails
+            return f"s{state_id}_c{id(commutator)}"
 
     def get(self, commutator: Tuple[Hashable | Set], state_id: int):
-        """Get cached result for commutator applied to state."""
+        """Retrieve cached result if available."""
         key = self.get_cache_key(commutator, state_id)
         if key in self.cache:
             self.hits += 1
@@ -175,9 +90,9 @@ class _CommutatorCache:
         return None
 
     def put(self, commutator: Tuple[Hashable | Set], state_id: int, result):
-        """Store result in cache."""
+        """Store result in cache with simple eviction if needed."""
+        # Simple eviction: remove first item if cache is full
         if len(self.cache) >= self.max_size:
-            # Simple LRU: remove first item
             first_key = next(iter(self.cache))
             del self.cache[first_key]
 
@@ -185,23 +100,26 @@ class _CommutatorCache:
         self.cache[key] = result
 
     def clear(self):
-        """Clear the cache."""
+        """Clear the cache and reset statistics."""
         self.cache.clear()
         self.hits = 0
         self.misses = 0
 
     def get_stats(self):
-        """Get cache statistics."""
-        total_requests = self.hits + self.misses
-        hit_rate = self.hits / total_requests if total_requests > 0 else 0
+        """Get cache hit/miss statistics."""
+        total = self.hits + self.misses
+        hit_rate = self.hits / total if total > 0 else 0.0
         return {
             "hits": self.hits,
             "misses": self.misses,
+            "total": total,
             "hit_rate": hit_rate,
-            "cache_size": len(self.cache),
+            "size": len(self.cache),
+            "max_size": self.max_size,
         }
 
     def __len__(self):
+        """Return current cache size."""
         return len(self.cache)
 
 
@@ -396,20 +314,62 @@ def perturbation_error(
     raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
 
 
-def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
-    """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
+def _get_expval_state(
+    commutators,
+    fragments,
+    state: AbstractState,
+    cache: Optional[_CommutatorCache] = None,
+    state_id: Optional[int] = None,
+) -> float:
+    """Returns the expectation value of a state with respect to the operator obtained
+    by substituting fragments into commutators.
+
+    Args:
+        commutators: List of commutator tuples
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        state: The quantum state to compute expectation value for
+        cache: Optional cache to store/retrieve computed results
+        state_id: Optional state identifier for caching
+
+    Returns:
+        float: The expectation value
+    """
 
     new_state = _AdditiveIdentity()
     for commutator in commutators:
-        new_state += _apply_commutator(commutator, fragments, state)
+        new_state += _apply_commutator(commutator, fragments, state, cache, state_id)
+
+    # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
+    if isinstance(new_state, _AdditiveIdentity):
+        return 0.0
 
     return state.dot(new_state)
 
 
 def _apply_commutator(
-    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
+    commutator: Tuple[Hashable],
+    fragments: Dict[Hashable, Fragment],
+    state: AbstractState,
+    cache: Optional[_CommutatorCache] = None,
+    state_id: Optional[int] = None,
 ) -> AbstractState:
-    """Returns the state obtained from applying ``commutator`` to ``state``."""
+    """Returns the state obtained from applying a commutator to a state.
+
+    Args:
+        commutator: Tuple representing a commutator structure
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        state: The quantum state to apply the commutator to
+        cache: Optional cache to store/retrieve computed results
+        state_id: Optional state identifier for caching (required if cache is provided)
+
+    Returns:
+        AbstractState: The state after applying the commutator
+    """
+    # Try to get from cache first
+    if cache is not None and state_id is not None:
+        cached_result = cache.get(commutator, state_id)
+        if cached_result is not None:
+            return cached_result
 
     new_state = _AdditiveIdentity()
 
@@ -426,6 +386,10 @@ def _apply_commutator(
             tmp_state = frag.apply(tmp_state)
 
         new_state += coeff * tmp_state
+
+    # Store in cache if available
+    if cache is not None and state_id is not None:
+        cache.put(commutator, state_id, new_state)
 
     return new_state
 
@@ -472,51 +436,288 @@ def _group_sums_in_dict(term_dict: dict[tuple[Hashable], complex]) -> list[tuple
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
 
 
-def _handle_return_value(expectations, convergence_info, return_convergence_info):
-    """Helper function to handle return values consistently."""
-    if return_convergence_info:
-        return expectations, convergence_info
-    return expectations
-
-
-def _validate_inputs(
-    product_formula: ProductFormula,
-    fragments: dict[Hashable, Fragment],
-    states: Sequence[AbstractState],
-    order: int,
-):
-    """Validate basic inputs for perturbation error calculation."""
-    if not product_formula.fragments.issubset(fragments.keys()):
-        raise ValueError("Fragments do not match product formula")
-
-    if order <= 0:
-        raise ValueError("Order must be a positive integer")
-
-    # Allow empty states for testing purposes, but only if fragments are None (dummy test case)
-    if not states and not all(v is None for v in fragments.values()):
-        raise ValueError("At least one state is required for perturbation error calculation")
-
-
-def _initialize_convergence_info(
-    commutators: List, config: PerturbationErrorConfig
-) -> Optional[Dict]:
-    """Initialize convergence info dictionary if requested."""
-    if not config.return_convergence_info:
-        return None
-
-    return {
-        "global": {
-            "total_commutators": len(commutators),
-            "sampling_method": config.sampling.sampling_method,
-            "order": None,  # Will be set by caller
-            "timestep": config.timestep,
-        },
-        "states_info": [],
-    }
-
-
 def _get_gridpoints_from_states(states: Sequence[AbstractState]) -> int:
     """Extract gridpoints from states, with fallback to default value."""
     if states and hasattr(states[0], "gridpoints"):
         return states[0].gridpoints
-    return 0
+    return 0  # Default gridpoints for norm calculations
+
+
+def _calculate_commutator_probability(
+    commutator: Tuple[Hashable | Set],
+    fragments: Dict[Hashable, Fragment],
+    timestep: float,
+    gridpoints: int = 0,
+) -> float:
+    r"""Calculate the unnormalized probability for importance sampling a commutator.
+
+    The unnormalized probability for a commutator :math:`C_k` of order :math:`k` is computed as:
+
+    .. math::
+        p_k = 2^{k-1} \cdot \tau^k \cdot \prod_{i=1}^{k} \|\hat{H}_i\|
+
+    where:
+    - :math:`k` is the commutator order (number of operators in the commutator)
+    - :math:`\tau` is the timestep parameter
+    - :math:`\hat{H}_i` are the fragment operators appearing in the commutator
+    - :math:`\|\hat{H}_i\|` is the operator norm of fragment :math:`i`
+
+    Args:
+        commutator: Tuple representing a commutator structure
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        timestep: Time step for the simulation
+        gridpoints: Number of gridpoints for norm calculation
+
+    Returns:
+        float: Unnormalized probability for importance sampling
+    """
+    if len(commutator) == 0:
+        return 0.0
+
+    # Calculate norms for each element in the commutator
+    fragment_norms = [_get_element_norm(element, fragments, gridpoints) for element in commutator]
+
+    if not fragment_norms:
+        return 0.0
+
+    # Calculate probability: p_k = 2^(k-1) * τ^k * ∏||H_i||
+    commutator_order = len(commutator)
+    norm_product = np.prod(fragment_norms)
+    prob = 2 ** (commutator_order - 1) * timestep**commutator_order * norm_product
+
+    return max(prob, 1e-12)  # Avoid zero probabilities
+
+
+def _get_element_norm(element, fragments: Dict[Hashable, Fragment], gridpoints: int) -> float:
+    """Calculate the norm of a single commutator element.
+
+    Args:
+        element: Either a fragment key, frozenset of weighted fragments, or other element
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        gridpoints: Number of gridpoints for norm calculation
+
+    Returns:
+        float: Norm of the element
+    """
+    if isinstance(element, frozenset):
+        return _get_frozenset_norm(element, fragments, gridpoints)
+
+    if element in fragments:
+        return fragments[element].norm({"gridpoints": gridpoints})
+
+    # Default norm for unrecognized elements
+    return 1.0
+
+
+def _get_frozenset_norm(frozenset_element, fragments: Dict[Hashable, Fragment], gridpoints: int) -> float:
+    """Calculate norm for frozenset of weighted fragments.
+
+    Args:
+        frozenset_element: Frozenset containing (fragment_key, coefficient) tuples
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        gridpoints: Number of gridpoints for norm calculation
+
+    Returns:
+        float: Norm of the combined weighted fragments
+    """
+    weighted_fragment = None
+
+    for frag_data in frozenset_element:
+        if not (isinstance(frag_data, tuple) and len(frag_data) == 2):
+            continue
+
+        frag_key, frag_coeff = frag_data
+        if frag_key not in fragments:
+            continue
+
+        scaled_fragment = frag_coeff * fragments[frag_key]
+        weighted_fragment = (
+            scaled_fragment if weighted_fragment is None
+            else weighted_fragment + scaled_fragment
+        )
+
+    return weighted_fragment.norm({"gridpoints": gridpoints}) if weighted_fragment is not None else 0.0
+
+
+def _validate_sampling_inputs(
+    product_formula: ProductFormula,
+    fragments: Dict[Hashable, Fragment],
+    states: Sequence[AbstractState],
+    order: int,
+    config: Optional[SamplingConfig] = None,
+):
+    """Validate basic inputs for perturbation error calculation with sampling.
+
+    Args:
+        product_formula: The product formula to analyze
+        fragments: Fragment dictionary
+        states: States to compute expectation values for
+        order: Order of the BCH expansion
+        config: Optional sampling configuration
+
+    Raises:
+        ValueError: If inputs are invalid
+    """
+    if not product_formula.fragments.issubset(fragments.keys()):
+        raise ValueError("Fragments do not match product formula")
+
+    if order <= 0:
+        raise ValueError(f"order must be positive, got {order}")
+
+    if not states:
+        raise ValueError("states cannot be empty")
+
+    if config is not None:
+        # Additional validation for sampling config can be added here
+        if config.sample_size is not None and config.method == "exact":
+            raise ValueError("sample_size should not be specified when method='exact'")
+
+
+def _setup_probability_distribution(
+    commutators: List[Tuple[Hashable | Set]],
+    fragments: Dict[Hashable, Fragment],
+    timestep: float,
+    gridpoints: int = 10,
+) -> np.ndarray:
+    """Setup normalized probability distribution for importance sampling.
+
+    This function calculates and normalizes probabilities for all commutators,
+    providing a foundation for importance sampling methods in future PRs.
+
+    Args:
+        commutators: List of commutator tuples
+        fragments: Fragment dictionary
+        timestep: Time step for probability calculation
+        gridpoints: Number of gridpoints for norm calculations
+
+    Returns:
+        Normalized probability array
+    """
+    # Calculate raw probabilities
+    probabilities = []
+    for commutator in commutators:
+        prob = _calculate_commutator_probability(commutator, fragments, timestep, gridpoints)
+        probabilities.append(prob)
+
+    probabilities = np.array(probabilities)
+
+    # Normalize probabilities
+    total_prob = np.sum(probabilities)
+    if total_prob == 0:
+        # Uniform distribution fallback
+        return np.ones(len(commutators)) / len(commutators)
+
+    return probabilities / total_prob
+
+
+def _apply_sampling_strategy(
+    commutators: List[Tuple[Hashable | Set]],
+    config: SamplingConfig,
+    probabilities: Optional[np.ndarray] = None,  # pylint: disable=unused-argument
+) -> Tuple[List[Tuple[Hashable | Set]], List[float]]:
+    """Apply sampling strategy to select commutators and compute weights.
+
+    This function provides a unified interface for different sampling methods
+    that will be implemented in future PRs. Currently supports only 'exact' method.
+
+    Args:
+        commutators: List of all available commutators
+        config: Sampling configuration
+        probabilities: Pre-computed probabilities (for importance/top_k methods)
+
+    Returns:
+        Tuple of (selected_commutators, weights)
+
+    Raises:
+        NotImplementedError: For sampling methods not yet implemented
+    """
+    if config.method == "exact":
+        # Return all commutators with uniform weights
+        return commutators, [1.0] * len(commutators)
+
+    # Future PRs will implement these methods
+    if config.method == "random":
+        raise NotImplementedError("Random sampling will be implemented in future PR")
+    if config.method == "importance":
+        raise NotImplementedError("Importance sampling will be implemented in future PR")
+    if config.method == "top_k":
+        raise NotImplementedError("Top-k sampling will be implemented in future PR")
+
+    raise ValueError(f"Unknown sampling method: {config.method}")
+
+
+def _compute_expectation_values_with_cache(
+    commutators: List[Tuple[Hashable | Set]],
+    weights: List[float],
+    fragments: Dict[Hashable, Fragment],
+    states: Sequence[AbstractState],
+    use_cache: bool = True,
+) -> List[float]:
+    """Compute expectation values with optional caching.
+
+    This function provides an optimized path for computing expectation values
+    with caching support, which will be essential for sampling methods.
+
+    Args:
+        commutators: List of commutator tuples
+        weights: Weights for each commutator
+        fragments: Fragment dictionary
+        states: States to compute expectation values for
+        use_cache: Whether to use caching for commutator applications
+
+    Returns:
+        List of expectation values for each state
+    """
+    expectations = []
+
+    for state_idx, state in enumerate(states):
+        if use_cache:
+            cache = _CommutatorCache()
+            state_id = state_idx
+        else:
+            cache = None
+            state_id = None
+
+        # Compute expectation value for this state
+        expectation = _get_expval_state(
+            list(zip(commutators, weights)),
+            fragments,
+            state,
+            cache,
+            state_id,
+        )
+        expectations.append(expectation)
+
+    return expectations
+
+
+# Helper function to unpack weighted commutators
+def _get_expval_state_weighted(
+    weighted_commutators: List[Tuple[Tuple[Hashable | Set], float]],
+    fragments: Dict[Hashable, Fragment],
+    state: AbstractState,
+    cache: Optional[_CommutatorCache] = None,
+    state_id: Optional[int] = None,
+) -> float:
+    """Compute expectation value with weighted commutators.
+
+    Args:
+        weighted_commutators: List of (commutator, weight) tuples
+        fragments: Fragment dictionary
+        state: State to compute expectation value for
+        cache: Optional cache
+        state_id: Optional state ID for caching
+
+    Returns:
+        Expectation value
+    """
+    result_state = _AdditiveIdentity()
+
+    for commutator, weight in weighted_commutators:
+        applied_state = _apply_commutator(commutator, fragments, state, cache, state_id)
+        result_state += weight * applied_state
+
+    if isinstance(result_state, _AdditiveIdentity):
+        return 0.0
+
+    return state.dot(result_state)
