@@ -795,58 +795,91 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     c = len(control)
     K = len(ops)
     min_num_controls = max(_ceil_log(K), 1)
+    if 1 <= K <= 2:
+        print(f"1<= K <=2, (K={K})")
+        # Don't need unary iterator, just control-apply the one/two operator(s) directly.
+        new_ops = [
+            ctrl(op, control=control[-1], control_values=[i], work_wires=work_wires)
+            for i, op in enumerate(ops)
+        ]
+        print(new_ops)
+        return new_ops
     assert 1 < c >= min_num_controls
-    if len(work_wires) < c - 1:
-        raise ValueError(
-            f"Can't use this decomposition with less than {len(control) - 1} work wires for {len(control)} controls."
-        )
     aux_control = [control[0]]
     for ctrl_wire, work_wire in zip(control[1:], work_wires, strict=False):
         aux_control.append(ctrl_wire)
         aux_control.append(work_wire)
+    # Create triples of wires to which elbows are applied
     unary_triples = [aux_control[2 * i : 2 * i + 3] for i in range(c - 1)]
     work_wires = work_wires[c - 1 :]
 
+    # Apply initial ladder of left elbows
     ops_decomp = [
         TemporaryAND(triple, control_values=((0, 0) if i == 0 else (1, 0)))
         for i, triple in enumerate(unary_triples)
     ]
-    num_first_bit_flipped = 0
-    for k, op in enumerate(ops):
-        # Apply target operator, always controlled on last unary iteration wire
+    first_bit_has_flipped = False
+    for k, op in enumerate(ops[:-1]):
+        print(f"{k=}, {op=}")
+        # For all but the last target operator, do the following:
+        # - apply target operator, always controlled on last unary iteration wire
+        # - find the most significant bit that flips when incrementing from k to k+1
+        #   (this can be done by finding the last bit that is 0 in the bitstring for k)
+        # - apply the ladder of right elbows up to the most significant flipped bit (exclusive)
+        # - apply gates that result from merging a right and left elbow (``inter_ops``)
+        # - apply the ladder of elbows starting at the most significant flipped bit (exclusive)
         ops_decomp.append(ctrl(op, control=aux_control[-1]))
-        if k < K - 1:
-            first_flip_bit = list(np.binary_repr(k, width=c)[::-1]).index("0")
+
+        print(np.binary_repr(k, width=c))
+        first_flip_bit = list(np.binary_repr(k, width=c)[::-1]).index("0")
+        # print(f"{k=}, {first_flip_bit=}, {first_bit_has_flipped=}")
+        if not (c == 2 and first_flip_bit == 1 and not first_bit_has_flipped):
             ops_decomp.extend(
                 [
                     adjoint(TemporaryAND(triple))
-                    for triple in unary_triples[c - 2 : c - 2 - first_flip_bit : -1]
+                    for triple in reversed(unary_triples[c - first_flip_bit : c - 1])
                 ]
             )
-            if first_flip_bit == c - 1:  # Most significant bit flips
-                c0, c1, c2 = unary_triples[0]
-                inter_ops = []
-                if num_first_bit_flipped == 0:
-                    inter_ops.append(X(c0))
-                inter_ops.append(CNOT([c0, c2]))
-                if num_first_bit_flipped == 0:
-                    inter_ops.append(X(c0))
-                elif num_first_bit_flipped == 1:
-                    inter_ops.append(CNOT([c1, c2]))
-                num_first_bit_flipped += 1
+        print(f"{first_flip_bit=}")
+        print(f"{c-2=} : {c-2-first_flip_bit=} : -1")
+        print(f"{unary_triples[c - 2 : c - 2 - first_flip_bit : -1]=}")
+        if first_flip_bit == c - 2:
+            c0, c1, c2 = unary_triples[0]
+            if first_bit_has_flipped:
+                inter_ops = [CNOT([c0, c2])]
             else:
-                inter_ops = [CNOT(unary_triples[c - 2 - first_flip_bit])]
-
-            ops_decomp.extend(inter_ops)
-            ops_decomp.extend(
-                [TemporaryAND(triple) for triple in unary_triples[c - 1 - first_flip_bit : c - 1]]
-            )
+                inter_ops = [X(c0), CNOT([c0, c2]), X(c0)]
+        elif first_flip_bit == c - 1:
+            c0, c1, c2 = unary_triples[0]
+            inter_ops = [CNOT([c0, c2]), CNOT([c1, c2])]
+            first_bit_has_flipped = True
         else:
-            ops_decomp.extend(
-                [adjoint(TemporaryAND(triple)) for triple in unary_triples[c - 2 : 0 : -1]]
-            )
-            ops_decomp.append(adjoint(TemporaryAND(unary_triples[0], control_values=(0, 1))))
+            inter_ops = [CNOT(unary_triples[c - 2 - first_flip_bit][::2])]
 
+        ops_decomp.extend(inter_ops)
+        # print(f"{first_flip_bit=}")
+        # print(f"{unary_triples[c-1-first_flip_bit:c-1]=}")
+        # print(f"{c-1-first_flip_bit=} : {c-1=}")
+        # print(f"{unary_triples[c - 1 - first_flip_bit :c - 1]=}")
+        # print(c==2)
+        # print(first_flip_bit==1)
+        # print(first_bit_has_flipped)
+        if not (c == 2 and first_flip_bit == 1 and first_bit_has_flipped):
+            ops_decomp.extend(
+                [
+                    TemporaryAND(triple, control_values=(1, 0))
+                    for triple in unary_triples[c - first_flip_bit : c - 1]
+                ]
+            )
+    # For the last target operator, apply controlled target op and then the "closing"
+    # ladder of right elbows
+    ops_decomp.append(ctrl(ops[-1], control=aux_control[-1]))
+    ops_decomp.extend([adjoint(TemporaryAND(triple)) for triple in unary_triples[c - 2 : 0 : -1]])
+    ops_decomp.append(adjoint(TemporaryAND(unary_triples[0], control_values=(0, 1))))
+
+    print()
+    print(*ops_decomp, sep="\n")
+    print()
     return ops_decomp
 
 
@@ -867,21 +900,32 @@ def _select_decomp_unary(ops, control, work_wires, partial, **_):
         return []
 
     if not partial:
-        return _select_decomp_unary_not_partial(ops, control, work_wires)
+        raise NotImplementedError("This PR is WIP")
+        # cutoff = len(ops)
+        # ops = ops + [qml.I(ops[0].wires[0])] * (2**len(control)-cutoff)
+        # return _select_decomp_unary_not_partial(ops, control, work_wires)
 
     min_num_controls = max(_ceil_log(len(ops)), 1)
     assert len(control) >= min_num_controls
     control = control[-min_num_controls:]
+    if 1 <= K <= 2:
+        if K == 1 and partial:
+            # Can skip control for partial Select and a single op
+            if QueuingManager.recording():
+                apply(ops[0])
+            return ops
+        # Don't need unary iterator, just control-apply the one/two operator(s) directly.
+        new_ops = [
+            ctrl(op, control=control[-1], control_values=[i], work_wires=work_wires)
+            for i, op in enumerate(ops)
+        ]
+        return new_ops
+
     if len(work_wires) < len(control) - 1:
         raise ValueError(
             f"Can't use this decomposition with less than {len(control) - 1} work wires for {len(control)} controls."
         )
-    if 1 <= len(ops) <= 2:
-        # Don't need unary iterator, just control-apply the one/two operator(s) directly.
-        return [
-            ctrl(op, control=control[0], control_values=[i], work_wires=work_wires)
-            for i, op in enumerate(ops)
-        ]
+
     aux_control = [control[0]]
     for i in range(min_num_controls - 1):
         aux_control.append(control[i + 1])

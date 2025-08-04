@@ -105,6 +105,12 @@ class TemporaryAND(Operation):
     def _unflatten(cls, _, metadata):
         return cls(wires=metadata[0], control_values=metadata[1])
 
+    def __repr__(self):
+        cvals = self.hyperparameters["control_values"]
+        if all(cvals):
+            return f"TemporaryAND(wires={self.wires})"
+        return f"TemporaryAND(wires={self.wires}, control_values={cvals})"
+
     @staticmethod
     @lru_cache
     def compute_matrix(**kwargs):  # pylint: disable=arguments-differ
