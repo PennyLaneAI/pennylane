@@ -410,7 +410,8 @@ def _suerposition_resources(num_wires, num_coeffs, bases):
             ] += 1
 
             resources[qml.CNOT] += reduce(
-                lambda acc, ib: acc + int(ib[1] != basis2[ib[0]]),  # pylint: disable=cell-var-from-loop
+                lambda acc, ib: acc
+                + int(ib[1] != basis2[ib[0]]),  # pylint: disable=cell-var-from-loop
                 enumerate(basis1),
                 0,
             )
