@@ -73,8 +73,8 @@ def _weighted_random_sampling(total_shots, coeffs_per_group, seed):
 
 shot_distribution_str2fn = {
     "uniform": _uniform_deterministic_sampling,
-    "wds": _weighted_deterministic_sampling,
-    "wrs": _weighted_random_sampling,
+    "weighted": _weighted_deterministic_sampling,
+    "weighted_random": _weighted_random_sampling,
 }
 
 
