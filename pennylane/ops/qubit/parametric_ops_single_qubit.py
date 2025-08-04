@@ -779,45 +779,6 @@ add_decomps("Adjoint(PhaseShift)", adjoint_rotation)
 add_decomps("Pow(PhaseShift)", pow_rotation)
 
 
-def _controlled_phaseshift_condition(*_, num_control_wires, num_work_wires, work_wire_type, **__):
-    return num_control_wires == 1 or (num_work_wires > 0 and work_wire_type == "clean")
-
-
-def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
-    if num_control_wires == 1:
-        return {qml.ControlledPhaseShift: 1}
-    return {
-        resource_rep(
-            qml.MultiControlledX,
-            num_control_wires=num_control_wires,
-            num_zero_control_values=0,
-            num_work_wires=num_work_wires - 1,
-            work_wire_type=work_wire_type,
-        ): 2,
-        qml.ControlledPhaseShift: 1,
-    }
-
-
-@register_condition(_controlled_phaseshift_condition)
-@register_resources(_controlled_phaseshift_resource)
-def _controlled_phase_shift_decomp(*params, wires, control_wires, work_wires, work_wire_type, **__):
-
-    if len(control_wires) == 1:
-        qml.ControlledPhaseShift(*params, wires=wires)
-        return
-
-    qml.MultiControlledX(
-        wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:], work_wire_type=work_wire_type
-    )
-    qml.ControlledPhaseShift(*params, wires=[work_wires[0], wires[-1]])
-    qml.MultiControlledX(
-        wires=wires[:-1] + work_wires[0], work_wires=work_wires[1:], work_wire_type=work_wire_type
-    )
-
-
-add_decomps("C(PhaseShift)", flip_zero_control(_controlled_phase_shift_decomp))
-
-
 class Rot(Operation):
     r"""
     Arbitrary single qubit rotation
