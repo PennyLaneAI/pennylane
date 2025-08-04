@@ -27,7 +27,7 @@ def generate_cost_fn(ansatz, hamiltonian, device, **kwargs):
     """Generates a QNode and computes the expectation value of a cost Hamiltonian with respect
     to the parameters provided to an ansatz"""
     shots = kwargs.pop("shots", None)
-    
+
     @qml.set_shots(shots)  # Set shots for the QNode
     @qml.qnode(device, **kwargs)
     def res(params):
