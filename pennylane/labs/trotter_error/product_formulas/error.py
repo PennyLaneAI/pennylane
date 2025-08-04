@@ -384,7 +384,7 @@ def _get_expval_state(
         else:
             commutator = item
             weight = weights[i] if weights is not None else 1.0
-        
+
         applied_state = _apply_commutator(commutator, fragments, state, cache, state_id)
         new_state += weight * applied_state
 
@@ -527,7 +527,7 @@ def _get_element_norm(element, fragments: Dict[Hashable, Fragment], gridpoints: 
             _AdditiveIdentity()
         )
         return weighted_fragment.norm({"gridpoints": gridpoints}) if weighted_fragment else 0.0
-    
+
     return fragments[element].norm({"gridpoints": gridpoints}) if element in fragments else 1.0
 
 
@@ -553,7 +553,7 @@ def _setup_probability_distribution(
     """
     # Calculate raw probabilities using vectorized operations
     probabilities = np.array([
-        _calculate_commutator_probability(comm, fragments, timestep, gridpoints) 
+        _calculate_commutator_probability(comm, fragments, timestep, gridpoints)
         for comm in commutators
     ])
 
@@ -622,15 +622,15 @@ def _compute_expectation_values_with_cache(
     """
     commutator_weight_pairs = list(zip(commutators, weights))
     expectations = []
-    
+
     for state_idx, state in enumerate(states):
         cache = _CommutatorCache() if use_cache else None
         state_id = state_idx if use_cache else None
-        
+
         expectation = _get_expval_state(commutator_weight_pairs, fragments, state, cache, state_id)
         expectations.append(expectation)
-        
+
         if cache is not None:
             cache.clear()  # Clean up cache for each state
-    
+
     return expectations

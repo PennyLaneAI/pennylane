@@ -24,9 +24,11 @@ from pennylane.labs.trotter_error import (
 )
 from pennylane.labs.trotter_error.product_formulas.error import (
     SamplingConfig,
+    _apply_sampling_strategy,
     _calculate_commutator_probability,
     _CommutatorCache,
     _group_sums,
+    _setup_probability_distribution,
 )
 
 
@@ -311,11 +313,11 @@ def test_cache_context_manager():
 
 def test_setup_probability_distribution():
     """Test the _setup_probability_distribution function."""
-    from pennylane.labs.trotter_error.product_formulas.error import _setup_probability_distribution
-
     # Mock fragment
-    class MockFragment:
-        def norm(self, params):
+    class MockFragment:  # pylint: disable=too-few-public-methods
+        """Mock fragment for testing probability distribution."""
+        def norm(self, params):  # pylint: disable=unused-argument
+            """Return mock norm value."""
             return 1.0
 
     fragments = {0: MockFragment(), 1: MockFragment()}
@@ -337,8 +339,6 @@ def test_setup_probability_distribution():
 
 def test_apply_sampling_strategy():
     """Test the _apply_sampling_strategy function."""
-    from pennylane.labs.trotter_error.product_formulas.error import _apply_sampling_strategy
-
     commutators = [(0,), (1,), (0, 1)]
 
     # Test exact method
