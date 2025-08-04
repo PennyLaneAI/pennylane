@@ -9,7 +9,7 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Setting shots on device, e.g. ``qml.device("default.qubit", wires=2, shots=1000)``, is deprecated.
+* Setting shots on device level is deprecated.
   Please use :func:`pennylane.set_shots` on the :class:`~.QNode` instead.
 
   ```python
