@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for the perturbation error function."""
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -22,7 +24,13 @@ from pennylane.labs.trotter_error import (
     perturbation_error,
     vibrational_fragments,
 )
-from pennylane.labs.trotter_error.product_formulas.error import _group_sums
+from pennylane.labs.trotter_error.product_formulas.error import (
+    PerturbationErrorConfig,
+    SamplingConfig,
+    _CommutatorCache,
+    _group_sums,
+    _initialize_convergence_info,
+)
 
 
 @pytest.mark.parametrize(
@@ -116,3 +124,95 @@ def test_perturbation_error_invalid_parallel_mode():
 def test_group_sums(term_dict, expected):
     """Test the private _group_sums method"""
     assert _group_sums(term_dict) == expected
+
+
+def test_cache_functionality():
+    """Test basic cache functionality and integration with error calculation."""
+    cache = _CommutatorCache(max_size=5)
+
+    # Test basic operations
+    assert len(cache) == 0
+    assert cache.get((0,), 1) is None  # Cache miss
+
+    cache.put((0,), 1, "test_result")
+    assert cache.get((0,), 1) == "test_result"  # Cache hit
+
+    # Test statistics
+    stats = cache.get_stats()
+    assert stats["hits"] == 1
+    assert stats["misses"] == 1
+    assert stats["cache_size"] == 1
+
+    # Test cache key generation with different types
+    # Test with simple tuple
+    key1 = cache.get_cache_key((0, 1), 1)
+    assert isinstance(key1, str)
+    assert "comm:" in key1
+    assert "state:1" in key1
+
+    # Test with frozenset
+    frozen_set = frozenset([("A", 1), ("B", 2)])
+    key2 = cache.get_cache_key((frozen_set,), 2)
+    assert isinstance(key2, str)
+    assert "state:2" in key2
+
+    # Test cache overflow (max_size=5)
+    for i in range(10):
+        cache.put((i,), i, f"result_{i}")
+
+    # Cache should not exceed max_size
+    assert len(cache) <= 5
+
+    # Test clear functionality
+    cache.clear()
+    assert len(cache) == 0
+    stats_after_clear = cache.get_stats()
+    assert stats_after_clear["hits"] == 0
+    assert stats_after_clear["misses"] == 0
+
+
+def test_initialize_convergence_info():
+    """Test _initialize_convergence_info function."""
+    # Create a mock list of commutators
+    commutators = [(0,), (1,), ((0,), (1,))]
+
+    # Test when return_convergence_info is False
+    sampling_config = SamplingConfig(sampling_method="importance")
+    config_no_info = PerturbationErrorConfig(
+        timestep=0.1, return_convergence_info=False, sampling=sampling_config
+    )
+
+    result = _initialize_convergence_info(commutators, config_no_info)
+    assert result is None
+
+    # Test when return_convergence_info is True
+    config_with_info = PerturbationErrorConfig(
+        timestep=0.5, return_convergence_info=True, sampling=sampling_config
+    )
+
+    result = _initialize_convergence_info(commutators, config_with_info)
+    assert isinstance(result, dict)
+
+    # Check structure
+    assert "global" in result
+    assert "states_info" in result
+
+    # Check global info
+    global_info = result["global"]
+    assert global_info["total_commutators"] == 3
+    assert global_info["sampling_method"] == "importance"
+    assert global_info["order"] is None  # Should be set by caller
+    assert global_info["timestep"] == 0.5
+
+    # Check states_info is empty list initially
+    assert result["states_info"] == []
+
+    # Test with different sampling method
+    sampling_config_random = SamplingConfig(sampling_method="random")
+    config_random = PerturbationErrorConfig(
+        timestep=1.0, return_convergence_info=True, sampling=sampling_config_random
+    )
+
+    result_random = _initialize_convergence_info(commutators, config_random)
+    assert result_random["global"]["sampling_method"] == "random"
+    assert result_random["global"]["timestep"] == 1.0
