@@ -1051,7 +1051,6 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         dev = qml.device("default.qubit", wires=1)
 
         @jax.jit
-        @qml.set_shots(None)
         @qml.qnode(dev)
         def circuit(x):
             diag = jnp.exp(1j * jnp.outer(x, jnp.array([1, -1])) / 2)
@@ -1074,7 +1073,6 @@ class TestDiagonalQubitUnitary:  # pylint: disable=too-many-public-methods
         dev = qml.device("default.qubit", wires=1)
 
         @tf.function
-        @qml.set_shots(None)
         @qml.qnode(dev)
         def circuit(x):
             x = tf.cast(x, tf.complex128)
