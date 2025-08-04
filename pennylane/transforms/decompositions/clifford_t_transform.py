@@ -83,7 +83,7 @@ def _add_catalyst_skip_op_types():
 
         _CATALYST_SKIP_OP_TYPES = (*_CATALYST_SKIP_OP_TYPES, MidCircuitMeasure)
     except (ModuleNotFoundError, ImportError):  # pragma: no cover
-        return
+        pass
 
 
 def _check_clifford_op(op, use_decomposition=False):
