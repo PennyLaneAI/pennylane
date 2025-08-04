@@ -73,6 +73,8 @@ def test_operator_definition_qpe(hamiltonian):
         (qml.X(0) @ qml.Z(1), [2]),
         (qml.X(1) @ qml.Z(2) @ qml.Y(3), [0]),
         (qml.X(0) @ qml.Z(1) @ qml.Y(2), [3]),
+        (qml.PauliX("a") @ qml.PauliZ(1), [0]),
+        (qml.PauliX("a") @ qml.PauliZ(1) @ qml.PauliY(2), [0]),
     ],
 )
 def test_standard_validity(lcu, control):
@@ -120,6 +122,10 @@ def test_decomposition(hamiltonian, expected_decomposition):
 @pytest.mark.parametrize(
     "hamiltonian, control",
     [
+        (qml.X(1) @ qml.Z(2), [0]),
+        (qml.X(0) @ qml.Z(1), [2]),
+        (qml.X(1) @ qml.Z(2) @ qml.Y(3), [0]),
+        (qml.X(0) @ qml.Z(1) @ qml.Y(2), [3]),
         (qml.PauliX("a") @ qml.PauliZ(1), [0]),
         (qml.PauliX("a") @ qml.PauliZ(1) @ qml.PauliY(2), [0]),
     ],
