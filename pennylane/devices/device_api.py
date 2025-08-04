@@ -191,7 +191,7 @@ class Device(abc.ABC):
         self.tracker = Tracker()
         if shots is not None and shots != Shots():
             warnings.warn(
-                "Setting shots on device is deprecated. Please use `set_shots` on QNode instead.",
+                "Setting shots on device is deprecated. Please use the `set_shots` transform on the respective QNode instead.",
                 PennyLaneDeprecationWarning,
             )
         self._shots = Shots(shots)
