@@ -30,6 +30,7 @@ from pennylane.labs.trotter_error.product_formulas.error import (
     _group_sums,
     _setup_probability_distribution,
 )
+from pennylane.labs.trotter_error.realspace import RealspaceSum, RealspaceOperator, RealspaceCoeffs
 
 
 @pytest.mark.parametrize(
@@ -313,14 +314,13 @@ def test_cache_context_manager():
 
 def test_setup_probability_distribution():
     """Test the _setup_probability_distribution function."""
-    # Mock fragment
-    class MockFragment:  # pylint: disable=too-few-public-methods
-        """Mock fragment for testing probability distribution."""
-        def norm(self, params):  # pylint: disable=unused-argument
-            """Return mock norm value."""
-            return 1.0
+    # Create simple RealspaceSum fragments with constant coefficients
+    n_modes = 2
+    coeffs = RealspaceCoeffs(np.array(1.0), label="test")  # Scalar coefficient for identity operator
+    op = RealspaceOperator(n_modes, (), coeffs)
+    fragment = RealspaceSum(n_modes, [op])
 
-    fragments = {0: MockFragment(), 1: MockFragment()}
+    fragments = {0: fragment, 1: fragment}
     commutators = [(0,), (1,), (0, 1)]
     timestep = 0.1
 
