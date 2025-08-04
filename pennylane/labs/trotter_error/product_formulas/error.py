@@ -141,7 +141,8 @@ class _CommutatorCache:
         self.hits = 0
         self.misses = 0
 
-    def get_cache_key(self, commutator: Tuple[Hashable | Set], state_id: int) -> str:
+    @staticmethod
+    def get_cache_key(commutator: Tuple[Hashable | Set], state_id: int) -> str:
         """Generate a robust cache key for commutator and state combination."""
         try:
             # Convert commutator to a hashable representation
