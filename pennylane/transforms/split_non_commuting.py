@@ -497,8 +497,8 @@ def _split_using_qwc_grouping(
     for state_mp in state_measurements:
         mp_groups.append([state_mp])
         single_term_obs_mps_grouped[state_mp] = SingleTermMP(
-            indices=single_term_obs_mps[mp][0],
-            coeffs=single_term_obs_mps[mp][1],
+            indices=single_term_obs_mps[state_mp][0],
+            coeffs=single_term_obs_mps[state_mp][1],
             group_idx=len(mp_groups) - 1,
             idx_in_group=0,
         )
