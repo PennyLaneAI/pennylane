@@ -12,14 +12,13 @@ Pending deprecations
 * Setting shots on device level is deprecated.
   Please use :func:`pennylane.set_shots` on the :class:`~.QNode` instead.
 
-  ```python
-  dev = qml.device("default.qubit", wires=2)
-  @qml.set_shots(1000)
-  @qml.qnode(dev)
-  def circuit(x):
-      qml.RX(x, wires=0)
-      return qml.expval(qml.Z(0))
-  ```
+  .. code-block:: python
+    dev = qml.device("default.qubit", wires=2)
+    @qml.set_shots(1000)
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.Z(0))
 
   - Deprecated in v0.43
   - Will be removed in a future version
