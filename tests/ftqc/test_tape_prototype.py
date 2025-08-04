@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.devices import ExecutionConfig
 from pennylane.ftqc import RotXZX
 from pennylane.ftqc.ftqc_device import (
     FTQCQubit,
@@ -27,7 +28,7 @@ from pennylane.ftqc.ftqc_device import (
     split_at_non_clifford_gates,
 )
 from pennylane.measurements import MidMeasureMP, Shots
-from pennylane.ops import CZ, RZ, Conditional, H, S, Y
+from pennylane.ops import CZ, RZ, Conditional, H, S, X, Y, Z
 
 
 @pytest.mark.parametrize(
@@ -74,7 +75,7 @@ def test_executing_arbitrary_circuit(backend_cls):
         qml.RY(1.2, 0)
         qml.RZ(0.2, 0)
         qml.RX(0.45, 1)
-        return qml.expval(qml.X(0)), qml.expval(qml.Y(0)), qml.expval(qml.Y(1))
+        return qml.expval(X(0)), qml.expval(Y(0)), qml.expval(Y(1))
 
     ftqc_circ = qml.qnode(device=dev)(circ)
     ftqc_circ = qml.set_shots(ftqc_circ, shots=3000)
@@ -103,8 +104,8 @@ class TestQuantumScriptSequence:
     behaviour between each segment)"""
 
     def get_test_sequence(self):
-        operations = [[qml.X(0), qml.Y(1)], [qml.Y(0), qml.Z(0)], [qml.H(1), qml.S(0)]]
-        measurements = [[], [], [qml.expval(qml.X(0))]]
+        operations = [[X(0), Y(1)], [Y(0), Z(0)], [H(1), S(0)]]
+        measurements = [[], [], [qml.expval(X(0))]]
         tapes = [
             qml.tape.QuantumScript(ops, measurements=meas, shots=Shots(1000))
             for ops, meas in zip(operations, measurements)
@@ -116,10 +117,10 @@ class TestQuantumScriptSequence:
     def test_quantum_sequence_initializes(self, shots):
         """Test that a QuantumScriptSequence can be initialized as expected"""
 
-        ops1 = [qml.X(0), qml.Y(1), qml.RX(1.23, 2)]
-        ops2 = [qml.RY(1.2, 0), qml.RZ(0.45, 0), qml.X(1)]
-        ops3 = [qml.S(2), qml.H(1), qml.CNOT([1, 0]), qml.S(0)]
-        final_measurements = [qml.expval(qml.X(0)), qml.sample(wires=[2])]
+        ops1 = [X(0), Y(1), qml.RX(1.23, 2)]
+        ops2 = [qml.RY(1.2, 0), RZ(0.45, 0), X(1)]
+        ops3 = [S(2), H(1), qml.CNOT([1, 0]), S(0)]
+        final_measurements = [qml.expval(X(0)), qml.sample(wires=[2])]
 
         operations = [ops1, ops2, ops3]
         measurements = [[], [], final_measurements]
@@ -167,7 +168,7 @@ class TestQuantumScriptSequence:
         """Test that copying a sequence works as expected when updating measurements"""
 
         sequence = self.get_test_sequence()
-        copied_sequence = sequence.copy(measurements=[qml.var(qml.Y(12))])
+        copied_sequence = sequence.copy(measurements=[qml.var(Y(12))])
 
         # intermediate tapes and shots are all the same
         for tape1, tape2 in zip(copied_sequence.intermediate_tapes, sequence.intermediate_tapes):
@@ -179,7 +180,7 @@ class TestQuantumScriptSequence:
         assert (
             copied_sequence.measurements
             == copied_sequence.final_tape.measurements
-            == [qml.var(qml.Y(12))]
+            == [qml.var(Y(12))]
         )
 
         # wires are updated accordingly when measurement adds a new wire
@@ -226,8 +227,8 @@ class TestQuantumScriptSequence:
         """Test that trying to update operations or set copy_operations to True
         when copying a QuantumScriptSequence raises an error"""
 
-        operations = [[qml.X(0), qml.Y(1)], [qml.Y(0), qml.Z(0)], [qml.H(1), qml.S(0)]]
-        measurements = [[], [], [qml.expval(qml.X(0))]]
+        operations = [[X(0), Y(1)], [Y(0), Z(0)], [H(1), S(0)]]
+        measurements = [[], [], [qml.expval(X(0))]]
         tapes = [
             qml.tape.QuantumScript(ops, measurements=meas, shots=Shots(1000))
             for ops, meas in zip(operations, measurements)
@@ -238,14 +239,14 @@ class TestQuantumScriptSequence:
             _ = sequence.copy(copy_operations=True)
 
         with pytest.raises(TypeError, match="cannot update 'operations'"):
-            _ = sequence.copy(operations=[qml.X(1), qml.Y(12)])
+            _ = sequence.copy(operations=[X(1), Y(12)])
 
     def test_chaning_measurements_and_tapes_in_copy_raises_error(self):
         """Test that trying to update both measurements and or tapes
         when copying a QuantumScriptSequence raises an error"""
 
-        operations = [[qml.X(0), qml.Y(1)], [qml.Y(0), qml.Z(0)], [qml.H(1), qml.S(0)]]
-        measurements = [[], [], [qml.expval(qml.X(0))]]
+        operations = [[X(0), Y(1)], [Y(0), Z(0)], [H(1), S(0)]]
+        measurements = [[], [], [qml.expval(X(0))]]
         tapes = [
             qml.tape.QuantumScript(ops, measurements=meas, shots=Shots(1000))
             for ops, meas in zip(operations, measurements)
@@ -253,34 +254,32 @@ class TestQuantumScriptSequence:
         sequence = QuantumScriptSequence(tapes)
 
         with pytest.raises(RuntimeError, match="Can't update tapes and measurements"):
-            _ = sequence.copy(measurements=[qml.expval(qml.X(0))], tapes=tapes)
+            _ = sequence.copy(measurements=[qml.expval(X(0))], tapes=tapes)
 
     def test_get_standard_wire_map(self):
         """Test that getting the standard wire map works as expected"""
 
-        tape1 = qml.tape.QuantumScript([qml.X(12), qml.Y("a"), qml.Z(0)])
-        tape2 = qml.tape.QuantumScript([qml.H(1)], measurements=[qml.expval(qml.Y(3))])
+        tape1 = qml.tape.QuantumScript([X(12), Y("a"), Z(0)])
+        tape2 = qml.tape.QuantumScript([H(1)], measurements=[qml.expval(Y(3))])
 
         sequence = QuantumScriptSequence([tape1, tape2], shots=Shots(100))
+
+        # pylint: disable=protected-access
         assert sequence._get_standard_wire_map() == {12: 0, "a": 1, 0: 2, 1: 3, 3: 4}
 
     def test_map_to_standard_wires(self):
         """Test that map_to_standard_wires correctly affects both the overall
         sequence wires and the underlying tape wires"""
 
-        tape1 = qml.tape.QuantumScript([qml.X(12), qml.Y("a"), qml.Z(0), qml.S("b")])
-        tape2 = qml.tape.QuantumScript([qml.H(1)], measurements=[qml.expval(qml.Y("b"))])
+        tape1 = qml.tape.QuantumScript([X(12), Y("a"), Z(0), S("b")])
+        tape2 = qml.tape.QuantumScript([H(1)], measurements=[qml.expval(Y("b"))])
         sequence = QuantumScriptSequence([tape1, tape2], shots=Shots(100))
 
         new_sequence = sequence.map_to_standard_wires()
 
-        assert new_sequence.tapes[0].operations == [qml.X(0), qml.Y(1), qml.Z(2), qml.S(3)]
-        assert new_sequence.tapes[1].operations == [qml.H(4)]
-        assert (
-            new_sequence.measurements
-            == new_sequence.tapes[1].measurements
-            == [qml.expval(qml.Y(3))]
-        )
+        assert new_sequence.tapes[0].operations == [X(0), Y(1), Z(2), S(3)]
+        assert new_sequence.tapes[1].operations == [H(4)]
+        assert new_sequence.measurements == new_sequence.tapes[1].measurements == [qml.expval(Y(3))]
 
     def test_split_at_non_clifford_gates_creates_sequence(self):
         """Test that split_at_non_clifford_gates splits the tape before
@@ -303,7 +302,7 @@ class TestQuantumScriptSequence:
             H(2)
             H(0)
             S(1)
-            return qml.expval(qml.X(0)), qml.expval(qml.Y(2))
+            return qml.expval(X(0)), qml.expval(Y(2))
 
         tape = qml.workflow.construct_tape(circ)()
         sequence = split_at_non_clifford_gates(tape)
@@ -338,7 +337,7 @@ class TestQuantumScriptSequence:
             H(2)
             H(0)
             S(1)
-            return qml.expval(qml.X(0)), qml.expval(qml.Y(2))
+            return qml.expval(X(0)), qml.expval(Y(2))
 
         # execute basic circuit on lightning.qubit for expected results
         expected_result = circ()
@@ -351,7 +350,7 @@ class TestQuantumScriptSequence:
             [
                 sequence,
             ],
-            qml.devices.DefaultExecutionConfig,
+            ExecutionConfig(),
         )
         sequence_results = np.average(raw_samples[0], axis=0)
 
@@ -359,4 +358,59 @@ class TestQuantumScriptSequence:
         assert np.allclose(expected_result, sequence_results, atol=0.05)
 
 
-# ToDo: as a sanity check, add a couple tests for the main behaviour of the Backend.execute and Backend.simulate functions also
+class TestBackendExecution:
+
+    def test_lightning_backend_execute_with_tapes(self, mocker):
+
+        tape = qml.tape.QuantumScript(
+            [H(0)], measurements=[qml.expval(X(0)), qml.expval(Y(0))], shots=3000
+        )
+        backend = LightningQubitBackend()
+        spy_qscript_execute = mocker.spy(backend, "_qscript_execute")
+        spy_sequence_execute = mocker.spy(backend, "_sequence_execute")
+        spy_simulate = mocker.spy(backend, "simulate")
+
+        results = backend.execute([tape, tape, tape], ExecutionConfig())
+
+        assert len(results) == 3
+
+        # all results are as expected - backend state is reset between tape executions
+        for res in results:
+            assert len(res) == 3000
+            assert np.allclose(np.average(res, axis=0), [1, 0], atol=0.05)
+
+        # executed 3 tapes of 3000 shots each
+        assert spy_qscript_execute.call_count == 3
+        assert spy_simulate.call_count == 3 * 3000
+
+        spy_sequence_execute.assert_not_called()
+
+    def test_lightning_backend_execution_with_tape_sequences(self, mocker):
+
+        tape1 = qml.tape.QuantumScript([qml.RX(0.21, 0)])
+        tape2 = qml.tape.QuantumScript([qml.RX(0.21, 0)])
+        tape3 = qml.tape.QuantumScript(
+            [qml.RX(0.21, 0)], measurements=[qml.expval(Y(0)), qml.expval(Z(0))]
+        )
+
+        sequence = QuantumScriptSequence([tape1, tape2, tape3], shots=3000)
+
+        backend = LightningQubitBackend()
+        spy_qscript_execute = mocker.spy(backend, "_qscript_execute")
+        spy_sequence_execute = mocker.spy(backend, "_sequence_execute")
+        spy_simulate = mocker.spy(backend, "simulate")
+
+        results = backend.execute([sequence, sequence, sequence], ExecutionConfig())
+
+        assert len(results) == 3
+
+        # all results are as expected - backend state is reset between tape executions
+        for res in results:
+            assert len(res) == 3000
+            assert np.allclose(np.average(res, axis=0), [-np.sin(0.63), np.cos(0.63)], atol=0.05)
+
+        # executed 3 sequences of 3 segments, with 3000 shots each
+        assert spy_sequence_execute.call_count == 3
+        assert spy_simulate.call_count == 3 * 3 * 3000
+
+        spy_qscript_execute.assert_not_called()
