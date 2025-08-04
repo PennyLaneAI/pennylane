@@ -1806,8 +1806,16 @@ def test_projector_dynamic_type(max_workers, n_wires):
         assert np.isclose(res, 1 / 2**n_wires)
 
 
-@pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "jax", "tensorflow"])
+@pytest.mark.parametrize(
+    "interface",
+    [
+        "numpy",
+        pytest.param("autograd", marks=pytest.mark.autograd),
+        pytest.param("torch", marks=pytest.mark.torch),
+        pytest.param("jax", marks=pytest.mark.jax),
+        pytest.param("tensorflow", marks=pytest.mark.tf),
+    ],
+)
 @pytest.mark.parametrize("use_jit", [True, False])
 class TestPostselection:
     """Various integration tests for postselection of mid-circuit measurements."""
@@ -1907,8 +1915,7 @@ class TestPostselection:
         if use_jit:
             import jax
 
-            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
-            circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
+            circ_postselect = jax.jit(circ_postselect)
 
         res = circ_postselect(param)
         expected = circ_expected()
@@ -2095,10 +2102,11 @@ class TestPostselection:
             return qml.apply(mp)
 
         if use_jit:
-            import jax
-
-            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
-            circ = jax.jit(circ, static_argnames=["shots"])
+            pytest.xfail(
+                reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
+            )
+            # import jax
+            # circ = jax.jit(circ)
 
         res = circ()
 

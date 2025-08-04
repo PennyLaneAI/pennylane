@@ -118,6 +118,9 @@
 
 <h4>Other improvements</h4>
 
+* PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
+  [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
+
 * The error message raised when using Python compiler transforms with :func:`pennylane.qjit` has been updated
   with suggested fixes.
   [(#7916)](https://github.com/PennyLaneAI/pennylane/pull/7916)
@@ -200,6 +203,10 @@
   `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
   [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
 
+* Added state of the art resources for the `ResourceUniformStatePrep`,
+  and `ResourceAliasSampling` templates.
+  [(#7883)](https://github.com/PennyLaneAI/pennylane/pull/7883)
+
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
 
@@ -211,6 +218,9 @@
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 
 <h3>Breaking changes 💔</h3>
+
+* Remove support for Python 3.10 and adds support for 3.13.
+  [(#7935)](https://github.com/PennyLaneAI/pennylane/pull/7935)
 
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
@@ -347,6 +357,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Added a new `all-tests-passed` gatekeeper job to `interface-unit-tests.yml` to ensure all test
+  jobs complete successfully before triggering downstream actions. This reduces the need to
+  maintain a long list of required checks in GitHub settings. Also added the previously missing
+  `capture-jax-tests` job to the list of required test jobs, ensuring this test suite is properly
+  enforced in CI.
+  [(#7996)](https://github.com/PennyLaneAI/pennylane/pull/7996)
+
 * Equipped `DefaultQubitLegacy` (test suite only) with seeded sampling.
   This allows for reproducible sampling results of legacy classical shadow across CI.
   [(#7903)](https://github.com/PennyLaneAI/pennylane/pull/7903)
@@ -363,7 +380,7 @@
   [(#7959)](https://github.com/PennyLaneAI/pennylane/pull/7959)
 
 * Adds `measurements` as a "core" module in the tach specification.
- [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
+  [(#7945)](https://github.com/PennyLaneAI/pennylane/pull/7945)
 
 * Improves type hints in the `measurements` module.
   [(#7938)](https://github.com/PennyLaneAI/pennylane/pull/7938)
@@ -421,6 +438,12 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated the code examples in the documentation of :func:`~.specs`.
+  [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
+
+* Clarifies the use case for `Operator.pow` and `Operator.adjoint`.
+  [(#7999)](https://github.com/PennyLaneAI/pennylane/pull/7999)
+
 * The docstring of the `is_hermitian` operator property has been updated to better describe its behaviour.
   [(#7946)](https://github.com/PennyLaneAI/pennylane/pull/7946)
 
@@ -473,6 +496,7 @@ Joey Carter,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Pietropaolo Frisoni,
 Simone Gasperini,
 David Ittah,
 Korbinian Kottmann,
@@ -480,6 +504,7 @@ Mehrdad Malekmohammadi
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
+Alex Preciado,
 Shuli Shu,
 Jay Soni,
 David Wierichs,

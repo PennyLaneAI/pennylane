@@ -996,7 +996,7 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
         wires, basis=circuit_basis, shots=shots, interface=interface, device=device
     )
     bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
-    new_bits, new_recipes = circuit()
+    new_bits, new_recipes = circuit()  # pylint: disable=unpacking-non-sequence
 
     # test that the recipes follow a rough uniform distribution
     ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
