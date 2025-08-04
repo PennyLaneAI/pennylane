@@ -51,6 +51,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Logical operations (`and`, `or` and `not`) are now supported with the `autograph` module.
+  [(#8006)](https://github.com/PennyLaneAI/pennylane/pull/8006)
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
