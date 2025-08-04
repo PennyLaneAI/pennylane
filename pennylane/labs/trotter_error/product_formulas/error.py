@@ -150,7 +150,7 @@ class _CommutatorCache:
                 for item in commutator:
                     if isinstance(item, frozenset):
                         # Sort frozenset items for consistent key generation
-                        sorted_items = tuple(sorted(item, key=lambda x: str(x)))
+                        sorted_items = tuple(sorted(item, key=str))
                         key_parts.append(f"frozenset({sorted_items})")
                     else:
                         key_parts.append(str(item))
@@ -159,7 +159,7 @@ class _CommutatorCache:
                 commutator_str = str(commutator)
 
             return f"comm:{commutator_str}|state:{state_id}"
-        except Exception:
+        except (TypeError, ValueError, AttributeError):
             # Fallback to a simpler key if conversion fails
             return f"comm:{id(commutator)}|state:{state_id}"
 
@@ -169,9 +169,9 @@ class _CommutatorCache:
         if key in self.cache:
             self.hits += 1
             return self.cache[key]
-        else:
-            self.misses += 1
-            return None
+
+        self.misses += 1
+        return None
 
     def put(self, commutator: Tuple[Hashable | Set], state_id: int, result):
         """Store result in cache."""

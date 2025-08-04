@@ -13,8 +13,6 @@
 # limitations under the License.
 """Tests for the perturbation error function."""
 
-import warnings
-
 import numpy as np
 import pytest
 
