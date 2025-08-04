@@ -539,7 +539,8 @@ def simulate_tree_mcm(
             else:
                 initial_state = branch_state(stack.states[depth], mcm_current[depth], mcms[depth])
             circtmp = circuits[depth].copy(shots=qml.measurements.shots.Shots(shots))
-            circtmp = prepend_state_prep(circtmp, initial_state, interface, circuit.wires)
+
+            circtmp = prepend_state_prep(circtmp, initial_state, interface, sorted(circuit.wires))
             state, is_state_batched = get_final_state(
                 circtmp,
                 debugger=debugger,
