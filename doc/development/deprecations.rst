@@ -13,6 +13,7 @@ Pending deprecations
   Please use :func:`pennylane.set_shots` on the :class:`~.QNode` instead.
 
   .. code-block:: python
+  
     dev = qml.device("default.qubit", wires=2)
     @qml.set_shots(1000)
     @qml.qnode(dev)
