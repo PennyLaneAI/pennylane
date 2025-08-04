@@ -1134,8 +1134,12 @@ class QuantumScript:
         """
         Compute the specifications of the quantum script.
 
+        Similar to the :meth:`~.specs` property, but allows for the depth of the quantum script to be
+        optionally computed. If the depth is not computed, it will not be included in the returned
+        specifications.
+
         Args:
-            compute_depth (bool): Wether to compute the depth of the quantum script.
+            compute_depth (bool): Whether to compute the depth of the quantum script.
 
         Returns:
             SpecsDict[str, Any]: A dictionary containing the specifications of the quantum script.
