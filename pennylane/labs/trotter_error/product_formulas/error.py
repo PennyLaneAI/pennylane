@@ -84,7 +84,8 @@ class _CommutatorCache:
         self.clear()
         return False
 
-    def get_cache_key(self, commutator: Tuple[Hashable | Set], state_id: int) -> str:
+    @staticmethod
+    def get_cache_key(commutator: Tuple[Hashable | Set], state_id: int) -> str:
         """Generate a simple cache key for a commutator-state pair."""
         try:
             # Simple string representation for key
