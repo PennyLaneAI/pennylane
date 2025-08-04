@@ -52,7 +52,7 @@ class HilbertSchmidt(Operation):
     It defines our decomposition for the Hilbert-Schmidt Test template.
 
     Args:
-        V (Operator or Iterable[Operator]): The operators that represent the approximate compiled unitary `V`.
+        V (Operator or Iterable[Operator]): The operators that represent the unitary `V`.
         U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
         id (str or None): Identifier for the operation.
 

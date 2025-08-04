@@ -237,7 +237,7 @@
   HilbertSchmidt(0.1, wires=[0, 1])
   ```
 
-  Instead, now the templates accept one or more operators as `U` and `V` unitaries. 
+  The templates have been improved to accept one or more operators as `U` and `V` unitaries. 
   The wires and parameters of the approximate unitary `V` are inferred from the inputs, according to the order provided.
 
   ```python
