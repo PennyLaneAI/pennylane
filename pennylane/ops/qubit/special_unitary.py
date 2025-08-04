@@ -572,11 +572,6 @@ class SpecialUnitary(Operation):
             jac = rjac + 1j * ijac
 
         elif interface in ("tensorflow", "tf"):
-            import warnings
-
-            from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-            warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
             import tensorflow as tf
 
             with tf.GradientTape(persistent=True) as tape:

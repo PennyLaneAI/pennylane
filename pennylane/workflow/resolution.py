@@ -85,11 +85,6 @@ def _validate_jax_version():
 def _use_tensorflow_autograph():
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
-        import warnings
-
-        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
     except ImportError as e:  # pragma: no cover
         raise QuantumFunctionError(  # pragma: no cover

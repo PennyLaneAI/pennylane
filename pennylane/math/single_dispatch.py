@@ -520,11 +520,6 @@ ar.register_function("tensorflow", "block_diag", _block_diag_tf)
 
 
 def _scatter_tf(indices, array, new_dims):
-    import warnings
-
-    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf
 
     indices = np.expand_dims(indices, 1)
@@ -534,11 +529,6 @@ def _scatter_tf(indices, array, new_dims):
 def _scatter_element_add_tf(tensor, index, value, **_):
     """In-place addition of a multidimensional value over various
     indices of a tensor."""
-    import warnings
-
-    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf
 
     if not isinstance(index[0], int):
@@ -553,11 +543,6 @@ ar.register_function("tensorflow", "scatter_element_add", _scatter_element_add_t
 
 
 def _transpose_tf(a, axes=None):
-    import warnings
-
-    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf
 
     return tf.transpose(a, perm=axes)
@@ -584,11 +569,6 @@ ar.register_function(
 
 
 def _kron_tf(a, b):
-    import warnings
-
-    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf
 
     a_shape = a.shape
@@ -608,11 +588,6 @@ ar.register_function("tensorflow", "kron", _kron_tf)
 
 
 def _cond_tf(pred, true_fn, false_fn, args):
-    import warnings
-
-    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf
 
     return tf.cond(pred, lambda: true_fn(*args), lambda: false_fn(*args))
