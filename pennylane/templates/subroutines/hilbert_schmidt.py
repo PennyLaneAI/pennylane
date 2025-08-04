@@ -52,15 +52,15 @@ class HilbertSchmidt(Operation):
     It defines our decomposition for the Hilbert-Schmidt Test template.
 
     Args:
-        V (Operation or Iterable[Operation]): The operations that represent the approximate compiled unitary `V`.
-        U (Operation or Iterable[Operation]): The operations that represent the unitary `U`.
+        V (Operator or Iterable[Operator]): The operators that represent the approximate compiled unitary `V`.
+        U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
         id (str or None): Identifier for the operation.
 
     Raises:
         ValueError: ``V`` is not an Operator or an iterable of Operators.
         ValueError: ``U`` is not an Operator or an iterable of Operators.
         ValueError: ``U`` and ``V`` do not have the same number of wires.
-        ValueError: Operations in ``U`` must act on distinct wires from those in ``v_wires``.
+        ValueError: Operators in ``U`` must act on distinct wires from those in ``v_wires``.
 
     **Reference**
 
@@ -106,10 +106,8 @@ class HilbertSchmidt(Operation):
     @classmethod
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
         # pylint: disable=arguments-differ
-        # AbstractOperator cannot be imported from the capture module
-        # because of a circular import, so we rely on this check instead.
-        U = (U,) if not hasattr(U, "__iter__") or is_abstract(U) else U
-        V = (V,) if not hasattr(V, "__iter__") or is_abstract(V) else V
+        U = (U,) if isinstance(U, (Operator)) or is_abstract(U) else U
+        V = (V,) if isinstance(V, (Operator)) or is_abstract(V) else V
         num_v_ops = len(V)
         return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops, **kwargs)
 
@@ -123,17 +121,17 @@ class HilbertSchmidt(Operation):
 
     def __init__(
         self,
-        V: Operation | Iterable[Operation],
-        U: Operation | Iterable[Operation],
+        V: Operator | Iterable[Operator],
+        U: Operator | Iterable[Operator],
         id: str | None = None,
     ) -> None:
 
-        u_ops = (U,) if isinstance(U, Operation) else tuple(U)
+        u_ops = (U,) if isinstance(U, Operator) else tuple(U)
         if not all(isinstance(op, Operator) for op in u_ops):
             raise ValueError("The argument 'U' must be an Operator or an iterable of Operators.")
         u_wires = Wires.all_wires([op.wires for op in u_ops])
 
-        v_ops = (V,) if isinstance(V, Operation) else tuple(V)
+        v_ops = (V,) if isinstance(V, Operator) else tuple(V)
         if not all(isinstance(op, Operator) for op in v_ops):
             raise ValueError("The argument 'V' must be an Operator or an iterable of Operators.")
         v_wires = Wires.all_wires([op.wires for op in v_ops])
@@ -147,7 +145,7 @@ class HilbertSchmidt(Operation):
             raise ValueError("U and V must have the same number of wires.")
 
         if len(Wires.shared_wires([u_wires, v_wires])) != 0:
-            raise ValueError("Operations in U and V must act on distinct wires.")
+            raise ValueError("Operators in U and V must act on distinct wires.")
 
         total_wires = Wires(u_wires + v_wires)
         super().__init__(wires=total_wires, id=id)
@@ -204,14 +202,14 @@ class HilbertSchmidt(Operation):
     def compute_decomposition(
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
-        U: Operation | Iterable[Operation],
-        V: Operation | Iterable[Operation],
-    ) -> list[Operation]:
+        U: Operator | Iterable[Operator],
+        V: Operator | Iterable[Operator],
+    ) -> list[Operator]:
         # pylint: disable=arguments-differ,unused-argument
         r"""Representation of the operator as a product of other operators."""
 
-        u_ops = (U,) if isinstance(U, Operation) else tuple(U)
-        v_ops = (V,) if isinstance(V, Operation) else tuple(V)
+        u_ops = (U,) if isinstance(U, Operator) else tuple(U)
+        v_ops = (V,) if isinstance(V, Operator) else tuple(V)
         u_wires = Wires.all_wires([op.wires for op in u_ops])
         v_wires = Wires.all_wires([op.wires for op in v_ops])
 
@@ -235,7 +233,7 @@ class HilbertSchmidt(Operation):
 
         # Unitary V conjugate
         # Since we don't currently have an easy way to apply the complex conjugate of a tape, we manually
-        # apply the complex conjugate of each operation in the V tape and append it to the decomposition
+        # apply the complex conjugate of each operator in the V tape and append it to the decomposition
         # using the QubitUnitary operation.
         for op_v in v_ops:
             mat = op_v.matrix().conjugate()
@@ -275,15 +273,15 @@ class LocalHilbertSchmidt(HilbertSchmidt):
         :target: javascript:void(0);
 
     Args:
-        V (Operation or Iterable[Operation]): The operations that represent the approximate compiled unitary `V`.
-        U (Operation or Iterable[Operation]): The operations that represent the unitary `U`.
+        V (Operator or Iterable[Operator]): The operators that represent the approximate compiled unitary `V`.
+        U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
         id (str or None): Identifier for the operation.
 
     Raises:
         ValueError: ``V`` is not an Operator or an iterable of Operators.
         ValueError: ``U`` is not an Operator or an iterable of Operators.
         ValueError: ``U`` and ``V`` do not have the same number of wires.
-        ValueError: Operations in ``U`` must act on distinct wires from those in ``v_wires``.
+        ValueError: Operators in ``U`` must act on distinct wires from those in ``v_wires``.
 
     **Reference**
 
@@ -303,14 +301,17 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         .. code-block:: python
 
-            U = qml.CZ(wires=(0,1))
+            import numpy as np
 
-            def V_function(params):
-                return [qml.RZ(params[0], wires=2),
-                        qml.RZ(params[1], wires=3),
-                        qml.CNOT(wires=[2, 3]),
-                        qml.RZ(params[2], wires=3),
-                        qml.CNOT(wires=[2, 3])]
+            params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
+
+            U = qml.CZ(wires=(0, 1))
+
+            V = [qml.RZ(params[0], wires=2),
+                qml.RZ(params[1], wires=3),
+                qml.CNOT(wires=[2, 3]),
+                qml.RZ(params[2], wires=3),
+                qml.CNOT(wires=[2, 3])]
 
             dev = qml.device("default.qubit", wires=4)
 
@@ -324,8 +325,6 @@ class LocalHilbertSchmidt(HilbertSchmidt):
 
         Now that the cost function has been defined it can be called for specific parameters:
 
-        >>> import numpy as np
-        >>> V = V_function([3*np.pi/2, 3*np.pi/2, np.pi/2])
         >>> cost_lhst(V, U)
         np.float64(0.5)
     """
@@ -334,14 +333,14 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     def compute_decomposition(
         *params: TensorLike,
         wires: int | Iterable[int | str] | Wires,
-        U: Operation | Iterable[Operation],
-        V: Operation | Iterable[Operation],
-    ) -> list[Operation]:
+        U: Operator | Iterable[Operator],
+        V: Operator | Iterable[Operator],
+    ) -> list[Operator]:
         # pylint: disable=too-many-positional-arguments
         r"""Representation of the operator as a product of other operators (static method)."""
 
-        u_ops = (U,) if isinstance(U, Operation) else tuple(U)
-        v_ops = (V,) if isinstance(V, Operation) else tuple(V)
+        u_ops = (U,) if isinstance(U, Operator) else tuple(U)
+        v_ops = (V,) if isinstance(V, Operator) else tuple(V)
         u_wires = Wires.all_wires([op.wires for op in u_ops])
         v_wires = Wires.all_wires([op.wires for op in v_ops])
 

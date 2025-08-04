@@ -403,7 +403,7 @@ class TestHilbertSchmidt:
 
         with pytest.raises(
             ValueError,
-            match="Operations in U and V must act on distinct wires.",
+            match="Operators in U and V must act on distinct wires.",
         ):
             qml.HilbertSchmidt(V, U)
 
@@ -654,7 +654,7 @@ class TestLocalHilbertSchmidt:
 
         with pytest.raises(
             ValueError,
-            match="Operations in U and V must act on distinct wires.",
+            match="Operators in U and V must act on distinct wires.",
         ):
             qml.LocalHilbertSchmidt(V, U)
 
