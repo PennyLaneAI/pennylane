@@ -94,8 +94,8 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
             S_{m}(t) &= S_{m-2}(p_{m}t)^{2} \cdot S_{m-2}((1-4p_{m})t) \cdot S_{m-2}(p_{m}t)^{2},
         \end{align}
 
-    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`th order,
-    :math:`n`-step Suzuki-Trotter approximation is then defined as:
+    where the coefficient is :math:`p_{m} = 1 / (4 - \sqrt[m - 1]{4})`. The :math:`m`\ th order,
+    :math:`n`\ -step Suzuki-Trotter approximation is then defined as:
 
     .. math:: e^{iHt} \approx \left [S_{m}(t / n)  \right ]^{n}.
 
