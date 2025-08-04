@@ -26,7 +26,6 @@ from pennylane.labs.trotter_error.product_formulas.error import (
     SamplingConfig,
     _calculate_commutator_probability,
     _CommutatorCache,
-    _get_gridpoints_from_states,
     _group_sums,
     _validate_sampling_inputs,
 )
@@ -250,30 +249,6 @@ def test_validate_sampling_inputs():
     invalid_config = SamplingConfig(method="exact", sample_size=5)
     with pytest.raises(ValueError, match="sample_size should not be specified when method='exact'"):
         _validate_sampling_inputs(pf, frags, states, order=2, config=invalid_config)
-
-
-def test_get_gridpoints_from_states():
-    """Test _get_gridpoints_from_states function."""
-    # Test with states that have gridpoints
-    n_modes = 2
-    gridpoints = 5
-    state = HOState(n_modes, gridpoints, {(0, 0): 1})
-    states = [state]
-
-    result = _get_gridpoints_from_states(states)
-    assert result == gridpoints
-
-    # Test with empty states
-    result = _get_gridpoints_from_states([])
-    assert result == 10  # Default value
-
-    # Test with states without gridpoints attribute (mock object)
-    class MockState:  # pylint: disable=too-few-public-methods
-        """Mock state for testing purposes without gridpoints attribute."""
-
-    mock_state = MockState()
-    result = _get_gridpoints_from_states([mock_state])
-    assert result == 10  # Default value
 
 
 def test_sampling_config_validation():

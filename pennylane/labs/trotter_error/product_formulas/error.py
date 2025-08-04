@@ -376,41 +376,20 @@ def _get_expval_state(
     Returns:
         float: The expectation value
     """
-    # Convert to standard format: list of (commutator, weight) pairs
-    weighted_commutators = _normalize_commutator_input(commutators, weights)
-
     # Compute weighted sum of applied commutators
     new_state = _AdditiveIdentity()
-    for commutator, weight in weighted_commutators:
+    for i, item in enumerate(commutators):
+        if isinstance(item, tuple) and len(item) == 2 and isinstance(item[1], (int, float)):
+            commutator, weight = item
+        else:
+            commutator = item
+            weight = weights[i] if weights is not None else 1.0
+        
         applied_state = _apply_commutator(commutator, fragments, state, cache, state_id)
         new_state += weight * applied_state
 
     # Return 0 if no commutators were applied, otherwise compute expectation
     return 0.0 if isinstance(new_state, _AdditiveIdentity) else state.dot(new_state)
-
-
-def _normalize_commutator_input(commutators, weights: Optional[List[float]] = None):
-    """Normalize commutator input to standard (commutator, weight) format.
-
-    Args:
-        commutators: List of commutator tuples or list of (commutator, weight) tuples
-        weights: Optional list of weights for commutators
-
-    Returns:
-        List of (commutator, weight) tuples
-    """
-    normalized = []
-
-    for i, item in enumerate(commutators):
-        if isinstance(item, tuple) and len(item) == 2 and isinstance(item[1], (int, float)):
-            # Already in (commutator, weight) format
-            normalized.append(item)
-        else:
-            # Plain commutator, add weight
-            weight = weights[i] if weights is not None else 1.0
-            normalized.append((item, weight))
-
-    return normalized
 
 
 def _apply_commutator(
@@ -503,11 +482,6 @@ def _group_sums_in_dict(term_dict: dict[tuple[Hashable], complex]) -> list[tuple
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
 
 
-def _get_gridpoints_from_states(states: Sequence[AbstractState]) -> int:
-    """Extract gridpoints from states, with fallback to default value."""
-    return getattr(states[0], "gridpoints", DEFAULT_GRIDPOINTS) if states else DEFAULT_GRIDPOINTS
-
-
 def _calculate_commutator_probability(
     commutator: Tuple[Hashable | Set],
     fragments: Dict[Hashable, Fragment],
@@ -539,63 +513,22 @@ def _calculate_commutator_probability(
     if not commutator:
         return 0.0
 
-    # Calculate norms and probability in one pass
     fragment_norms = [_get_element_norm(element, fragments, gridpoints) for element in commutator]
-    commutator_order = len(commutator)
-
-    prob = 2 ** (commutator_order - 1) * timestep**commutator_order * np.prod(fragment_norms)
+    prob = 2 ** (len(commutator) - 1) * timestep ** len(commutator) * np.prod(fragment_norms)
     return max(prob, MIN_PROBABILITY_THRESHOLD)
 
 
 def _get_element_norm(element, fragments: Dict[Hashable, Fragment], gridpoints: int) -> float:
-    """Calculate the norm of a single commutator element.
-
-    Args:
-        element: Either a fragment key, frozenset of weighted fragments, or other element
-        fragments: Dictionary mapping fragment keys to Fragment objects
-        gridpoints: Number of gridpoints for norm calculation
-
-    Returns:
-        float: Norm of the element
-    """
+    """Calculate the norm of a single commutator element."""
     if isinstance(element, frozenset):
-        return _get_frozenset_norm(element, fragments, gridpoints)
-
-    # Regular fragment lookup with fallback to 1.0
-    return fragments[element].norm({"gridpoints": gridpoints}) if element in fragments else 1.0
-
-
-def _get_frozenset_norm(
-    frozenset_element, fragments: Dict[Hashable, Fragment], gridpoints: int
-) -> float:
-    """Calculate norm for frozenset of weighted fragments.
-
-    Args:
-        frozenset_element: Frozenset containing (fragment_key, coefficient) tuples
-        fragments: Dictionary mapping fragment keys to Fragment objects
-        gridpoints: Number of gridpoints for norm calculation
-
-    Returns:
-        float: Norm of the combined weighted fragments
-    """
-    weighted_fragment = None
-
-    for frag_data in frozenset_element:
-        if not (isinstance(frag_data, tuple) and len(frag_data) == 2):
-            continue
-
-        frag_key, frag_coeff = frag_data
-        if frag_key not in fragments:
-            continue
-
-        scaled_fragment = frag_coeff * fragments[frag_key]
-        weighted_fragment = (
-            scaled_fragment if weighted_fragment is None else weighted_fragment + scaled_fragment
+        # Handle frozenset of weighted fragments
+        weighted_fragment = sum(
+            (coeff * fragments[key] for key, coeff in element if key in fragments),
+            _AdditiveIdentity()
         )
-
-    return (
-        weighted_fragment.norm({"gridpoints": gridpoints}) if weighted_fragment is not None else 0.0
-    )
+        return weighted_fragment.norm({"gridpoints": gridpoints}) if weighted_fragment else 0.0
+    
+    return fragments[element].norm({"gridpoints": gridpoints}) if element in fragments else 1.0
 
 
 def _validate_sampling_inputs(
