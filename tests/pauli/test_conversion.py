@@ -136,7 +136,7 @@ class TestDecomposition:
         allowed_obs = (qml.ops.Prod, Identity, PauliX, PauliY, PauliZ)
 
         _, decomposed_obs = qml.pauli_decompose(hamiltonian, hide_identity).terms()
-        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
+        assert all(isinstance(o, allowed_obs) for o in decomposed_obs)
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_result_length(self, hamiltonian):
@@ -271,7 +271,7 @@ class TestPhasedDecomposition:
         _, decomposed_obs = qml.pauli_decompose(
             hamiltonian, hide_identity, check_hermitian=False
         ).terms()
-        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
+        assert all(isinstance(o, allowed_obs) for o in decomposed_obs)
 
     @pytest.mark.parametrize("hamiltonian", test_hamiltonians)
     def test_result_length(self, hamiltonian):
@@ -325,7 +325,7 @@ class TestPhasedDecomposition:
             matrix, hide_identity, check_hermitian=False
         ).terms()
 
-        assert all((isinstance(o, allowed_obs) for o in decomposed_obs))
+        assert all(isinstance(o, allowed_obs) for o in decomposed_obs)
 
         linear_comb = sum(
             [
