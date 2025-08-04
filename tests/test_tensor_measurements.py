@@ -37,7 +37,7 @@ def ansatz(a, b, c):
 
 
 # pylint: disable=too-many-arguments
-@pytest.mark.parametrize("shots", [None, int(1e6)])
+@pytest.mark.parametrize("shots", [None, 1_000_000])
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorExpval:
     """Test tensor expectation values"""
@@ -260,7 +260,7 @@ class TestTensorExpval:
         assert np.allclose(res, expected, **tolerance)
 
 
-@pytest.mark.parametrize("shots", [None, int(1e6)])
+@pytest.mark.parametrize("shots", [None, 1_000_000])
 @pytest.mark.parametrize("theta, phi, varphi", list(zip(THETA, PHI, VARPHI)))
 class TestTensorVar:
     """Tests for variance of tensor observables"""
@@ -381,7 +381,7 @@ class TestTensorSample:
         """Test that a tensor product involving PauliX and PauliZ works correctly"""
         dev = qml.device("default.qubit", wires=2, seed=seed)
 
-        @qml.set_shots(int(1e6))
+        @qml.set_shots(1_000_000)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -396,7 +396,7 @@ class TestTensorSample:
         """Test that a tensor product involving PauliX and PauliY works correctly"""
         dev = qml.device("default.qubit", wires=3, seed=seed)
 
-        @qml.set_shots(int(1e6))
+        @qml.set_shots(1_000_000)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
             ansatz(a, b, c)
@@ -411,7 +411,7 @@ class TestTensorSample:
         """Test that a tensor product involving PauliZ and hadamard works correctly"""
         dev = qml.device("default.qubit", wires=3, seed=seed)
 
-        @qml.set_shots(int(1e6))
+        @qml.set_shots(1_000_000)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(a, b, c):
             ansatz(a, b, c)
@@ -435,7 +435,7 @@ class TestTensorSample:
             ]
         )
 
-        @qml.set_shots(int(1e6))
+        @qml.set_shots(1_000_000)
         @qml.qnode(dev, diff_method=None)
         def circuit(a, b, c):
             ansatz(a, b, c)
