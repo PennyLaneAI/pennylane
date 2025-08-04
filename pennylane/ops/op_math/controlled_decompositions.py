@@ -25,9 +25,9 @@ from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=protected-access
 from .decompositions.controlled_decompositions import (
-    _decompose_mcx_with_many_workers,
-    _decompose_mcx_with_one_worker,
-    _decompose_mcx_with_two_workers,
+    _mcx_many_workers,
+    _mcx_one_worker,
+    _mcx_two_workers,
     ctrl_decomp_bisect,
     ctrl_decomp_zyz,
 )
@@ -143,9 +143,7 @@ def _decompose_mcx_with_many_workers_old(control_wires, target_wire, work_wires,
 
     with qml.queuing.AnnotatedQueue() as q:
         wires = list(control_wires) + [target_wire]
-        _decompose_mcx_with_many_workers(
-            wires=wires, work_wires=work_wires, work_wire_type=work_wire_type
-        )
+        _mcx_many_workers(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
     if qml.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
@@ -204,9 +202,7 @@ def _decompose_mcx_with_one_worker_kg24(
 
     with qml.queuing.AnnotatedQueue() as q:
         wires = list(control_wires) + [target_wire]
-        _decompose_mcx_with_one_worker(
-            wires=wires, work_wires=[work_wire], work_wire_type=work_wire_type
-        )
+        _mcx_one_worker(wires=wires, work_wires=[work_wire], work_wire_type=work_wire_type)
 
     if qml.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
@@ -246,9 +242,7 @@ def _decompose_mcx_with_two_workers_old(
 
     with qml.queuing.AnnotatedQueue() as q:
         wires = list(control_wires) + [target_wire]
-        _decompose_mcx_with_two_workers(
-            wires=wires, work_wires=work_wires, work_wire_type=work_wire_type
-        )
+        _mcx_two_workers(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
     if qml.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
