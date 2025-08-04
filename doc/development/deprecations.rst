@@ -9,11 +9,11 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Setting shots on device, e.g. ``qml.device("default.qubit", wires=2, shots=1000)``, is deprecated. Please use ``set_shots`` on the :class:`~.QNode` instead.
+* Setting shots on device, e.g. ``qml.device("default.qubit", wires=2, shots=1000)``, is deprecated.
+  Please use :func:`pennylane.set_shots` on the :class:`~.QNode` instead.
 
   ```python
   dev = qml.device("default.qubit", wires=2)
-
   @qml.set_shots(1000)
   @qml.qnode(dev)
   def circuit(x):
@@ -57,13 +57,13 @@ Pending deprecations
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
   ```
-  
+
   - Deprecated in v0.43
   - Will be removed in a future version
 
 * `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
   `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
-  
+
   - Deprecated in v0.43
   - Will be removed in v0.44
 
