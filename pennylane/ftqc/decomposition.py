@@ -66,14 +66,12 @@ def convert_to_mbqc_formalism(tape):
     Note that this transform leaves all Paulis and Identities as physical gates, and applies
     all byproduct operations online immediately after their respective measurement procedures."""
 
-    if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
-        raise NotImplementedError(
-            "Transforming to the MBQC formalism is not implemented for circuits where the "
-            "final measurements have not been converted to a single samples measurement"
-        )
-
-    mp = tape.measurements[0]
-    meas_wires = mp.wires if mp.wires else tape.wires
+    if tape.measurements:
+        if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
+            raise NotImplementedError(
+                "Transforming to the MBQC formalism is not implemented for circuits where the "
+                "final measurements have not been converted to a single samples measurement"
+            )
 
     # we include 13 auxillary wires - the largest number needed is 13 (for CNOT)
     num_qubits = len(tape.wires) + 13
@@ -106,9 +104,16 @@ def convert_to_mbqc_formalism(tape):
 
     temp_tape = QuantumScript.from_queue(q)
 
-    new_wires = [wire_map[w] for w in meas_wires]
+    if tape.measurements:
+        mp = tape.measurements[0]
+        meas_wires = mp.wires if mp.wires else tape.wires
+        new_wires = [wire_map[w] for w in meas_wires]
+        new_tape = tape.copy(
+            operations=temp_tape.operations, measurements=[sample(wires=new_wires)]
+        )
 
-    new_tape = tape.copy(operations=temp_tape.operations, measurements=[sample(wires=new_wires)])
+    else:
+        new_tape = tape.copy(operations=temp_tape.operations)
 
     return (new_tape,), null_postprocessing
 

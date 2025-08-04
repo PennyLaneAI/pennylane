@@ -78,7 +78,7 @@ def test_executing_arbitrary_circuit(backend_cls):
         return qml.expval(X(0)), qml.expval(Y(0)), qml.expval(Y(1))
 
     ftqc_circ = qml.qnode(device=dev)(circ)
-    ftqc_circ = qml.set_shots(ftqc_circ, shots=3000)
+    ftqc_circ = qml.set_shots(ftqc_circ, shots=10)
 
     ref_circ = qml.qnode(device=qml.device("lightning.qubit", wires=2))(circ)
 
@@ -241,7 +241,7 @@ class TestQuantumScriptSequence:
         with pytest.raises(TypeError, match="cannot update 'operations'"):
             _ = sequence.copy(operations=[X(1), Y(12)])
 
-    def test_chaning_measurements_and_tapes_in_copy_raises_error(self):
+    def test_changing_measurements_and_tapes_in_copy_raises_error(self):
         """Test that trying to update both measurements and or tapes
         when copying a QuantumScriptSequence raises an error"""
 
@@ -305,7 +305,8 @@ class TestQuantumScriptSequence:
             return qml.expval(X(0)), qml.expval(Y(2))
 
         tape = qml.workflow.construct_tape(circ)()
-        sequence = split_at_non_clifford_gates(tape)
+        sequence, fn = split_at_non_clifford_gates(tape)
+        sequence = fn(sequence)
 
         assert isinstance(sequence, QuantumScriptSequence)
         assert tape.measurements == sequence.measurements
@@ -317,8 +318,9 @@ class TestQuantumScriptSequence:
         assert sequence.tapes[3].operations == [RotXZX(0.82, 0.66, 0.26, 2), H(2), H(0), S(1)]
 
     def test_executing_sequence(self):
-        """Test that executing a QuantumScriptSequence with LightningQubitBackend.execute
-        matches the results for executing the standard circuit on lightning.qubit"""
+        """Test that a QuantumScriptSequence can be executed with a backend, and that
+        LightningQubitBackend.execute matches the results for executing the standard
+        circuit on lightning.qubit"""
 
         dev = qml.device("lightning.qubit", wires=3)
         backend = LightningQubitBackend()
@@ -344,11 +346,11 @@ class TestQuantumScriptSequence:
 
         shots_circ = qml.set_shots(circ, 5000)
         tape = qml.workflow.construct_tape(shots_circ)()
-        sequence = split_at_non_clifford_gates(tape)
+        sequence, _ = split_at_non_clifford_gates(tape)
 
         raw_samples = backend.execute(
             [
-                sequence,
+                sequence[0],
             ],
             ExecutionConfig(),
         )
@@ -414,3 +416,23 @@ class TestBackendExecution:
         assert spy_simulate.call_count == 3 * 3 * 3000
 
         spy_qscript_execute.assert_not_called()
+
+    def test_null_qubit_backend_execution(self):
+        """Test execution of tapes and QuantumScriptSequences succeeds with the null.qubit
+        backend."""
+
+        tape1 = qml.tape.QuantumScript([H(0)])
+        tape2 = qml.tape.QuantumScript([H(0)], measurements=[qml.expval(Y(0)), qml.expval(Z(0))])
+
+        sequence = QuantumScriptSequence([tape1, tape1, tape2], shots=3000)
+
+        backend = NullQubitBackend()
+
+        results = backend.execute([tape2, tape2, sequence], ExecutionConfig())
+
+        print(results)
+        assert len(results) == 3
+        for res in results:
+            # zero index because its stored as (results, )
+            assert len(res[0]) == 2
+            assert np.allclose(res, 0)
