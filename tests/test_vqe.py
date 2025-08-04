@@ -26,7 +26,9 @@ from pennylane import numpy as pnp
 def generate_cost_fn(ansatz, hamiltonian, device, **kwargs):
     """Generates a QNode and computes the expectation value of a cost Hamiltonian with respect
     to the parameters provided to an ansatz"""
-
+    shots = kwargs.pop("shots", None)
+    
+    @qml.set_shots(shots)  # Set shots for the QNode
     @qml.qnode(device, **kwargs)
     def res(params):
         ansatz(params, wires=device.wires)
@@ -370,6 +372,7 @@ class TestVQE:
             dev,
             interface="autograd",
             diff_method="parameter-shift",
+            shots=shots,
         )
         cost2 = generate_cost_fn(
             qml.templates.StronglyEntanglingLayers,
@@ -377,6 +380,7 @@ class TestVQE:
             dev,
             interface="autograd",
             diff_method="parameter-shift",
+            shots=shots,
         )
 
         shape = qml.templates.StronglyEntanglingLayers.shape(n_layers=2, n_wires=4)
