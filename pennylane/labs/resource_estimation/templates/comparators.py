@@ -274,6 +274,7 @@ class ResourceIntegerComparator(ResourceOperator):
 
     The resources for this operation are computed using:
 
+
     >>> integer_compare = plre.ResourceIntegerComparator(value=4, register_size=6)
     >>> print(plre.estimate_resources(integer_compare))
     --- Resources: ---
@@ -565,6 +566,7 @@ class ResourceRegisterComparator(ResourceOperator):
 
         one_qubit_compare = resource_rep(plre.ResourceSingleQubitComparator)
         two_qubit_compare = resource_rep(plre.ResourceTwoQubitComparator)
+
         if first_register == second_register:
 
             gate_list.append(GateCount(two_qubit_compare, first_register - 1))
