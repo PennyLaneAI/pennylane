@@ -27,7 +27,6 @@ from pennylane.labs.trotter_error.product_formulas.error import (
     _calculate_commutator_probability,
     _CommutatorCache,
     _group_sums,
-    _validate_sampling_inputs,
 )
 
 
@@ -205,51 +204,8 @@ def test_calculate_commutator_probability():
     assert prob >= 0
 
 
-def test_validate_sampling_inputs():
-    """Test _validate_sampling_inputs function."""
-    # Create test system
-    frag_labels = [0, 1]
-    frag_coeffs = [1 / 2, 1 / 2]
-    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
-
-    n_modes = 2
-    r_state = np.random.RandomState(42)
-    freqs = r_state.random(n_modes)
-    taylor_coeffs = [
-        np.array(0),
-        r_state.random(size=(n_modes,)),
-        r_state.random(size=(n_modes, n_modes)),
-    ]
-    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
-
-    gridpoints = 5
-    states = [HOState(n_modes, gridpoints, {(0, 0): 1})]
-
-    # Test valid inputs
-    _validate_sampling_inputs(pf, frags, states, order=2)  # Should not raise
-
-    # Test with valid config
-    config = SamplingConfig(method="importance", sample_size=5)
-    _validate_sampling_inputs(pf, frags, states, order=2, config=config)  # Should not raise
-
-    # Test with invalid order
-    with pytest.raises(ValueError, match="order must be positive"):
-        _validate_sampling_inputs(pf, frags, states, order=0)
-
-    # Test with empty states
-    with pytest.raises(ValueError, match="states cannot be empty"):
-        _validate_sampling_inputs(pf, frags, [], order=2)
-
-    # Test with mismatched fragments
-    incomplete_frags = {0: frags[0]}  # Missing fragment 1
-    with pytest.raises(ValueError, match="Fragments do not match product formula"):
-        _validate_sampling_inputs(pf, incomplete_frags, states, order=2)
-
-    # Test with invalid config (sample_size with exact method)
-    invalid_config = SamplingConfig(method="exact", sample_size=5)
-    with pytest.raises(ValueError, match="sample_size should not be specified when method='exact'"):
-        _validate_sampling_inputs(pf, frags, states, order=2, config=invalid_config)
-
+# NOTE: _validate_sampling_inputs was removed as it was not used in production code
+# and provided redundant validations already covered by existing functions
 
 def test_sampling_config_validation():
     """Test SamplingConfig validation."""

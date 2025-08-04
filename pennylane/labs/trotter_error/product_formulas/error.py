@@ -531,39 +531,6 @@ def _get_element_norm(element, fragments: Dict[Hashable, Fragment], gridpoints: 
     return fragments[element].norm({"gridpoints": gridpoints}) if element in fragments else 1.0
 
 
-def _validate_sampling_inputs(
-    product_formula: ProductFormula,
-    fragments: Dict[Hashable, Fragment],
-    states: Sequence[AbstractState],
-    order: int,
-    config: Optional[SamplingConfig] = None,
-):
-    """Validate basic inputs for perturbation error calculation with sampling.
-
-    Args:
-        product_formula: The product formula to analyze
-        fragments: Fragment dictionary
-        states: States to compute expectation values for
-        order: Order of the BCH expansion
-        config: Optional sampling configuration
-
-    Raises:
-        ValueError: If inputs are invalid
-    """
-    _validate_fragments(product_formula, fragments)
-
-    if order <= 0:
-        raise ValueError(f"order must be positive, got {order}")
-
-    if not states:
-        raise ValueError("states cannot be empty")
-
-    if config is not None:
-        # Additional validation for sampling config can be added here
-        if config.sample_size is not None and config.method == "exact":
-            raise ValueError("sample_size should not be specified when method='exact'")
-
-
 def _setup_probability_distribution(
     commutators: List[Tuple[Hashable | Set]],
     fragments: Dict[Hashable, Fragment],
@@ -584,21 +551,15 @@ def _setup_probability_distribution(
     Returns:
         Normalized probability array
     """
-    # Calculate raw probabilities
-    probabilities = []
-    for commutator in commutators:
-        prob = _calculate_commutator_probability(commutator, fragments, timestep, gridpoints)
-        probabilities.append(prob)
+    # Calculate raw probabilities using vectorized operations
+    probabilities = np.array([
+        _calculate_commutator_probability(comm, fragments, timestep, gridpoints) 
+        for comm in commutators
+    ])
 
-    probabilities = np.array(probabilities)
-
-    # Normalize probabilities
+    # Normalize with fallback to uniform distribution
     total_prob = np.sum(probabilities)
-    if total_prob == 0:
-        # Uniform distribution fallback
-        return np.ones(len(commutators)) / len(commutators)
-
-    return probabilities / total_prob
+    return probabilities / total_prob if total_prob > 0 else np.ones(len(commutators)) / len(commutators)
 
 
 def _apply_sampling_strategy(
@@ -659,24 +620,17 @@ def _compute_expectation_values_with_cache(
     Returns:
         List of expectation values for each state
     """
+    commutator_weight_pairs = list(zip(commutators, weights))
     expectations = []
-
+    
     for state_idx, state in enumerate(states):
-        if use_cache:
-            with _CommutatorCache() as cache:
-                expectation = _get_expval_state(
-                    list(zip(commutators, weights)),
-                    fragments,
-                    state,
-                    cache,
-                    state_idx,
-                )
-        else:
-            expectation = _get_expval_state(
-                list(zip(commutators, weights)),
-                fragments,
-                state,
-            )
+        cache = _CommutatorCache() if use_cache else None
+        state_id = state_idx if use_cache else None
+        
+        expectation = _get_expval_state(commutator_weight_pairs, fragments, state, cache, state_id)
         expectations.append(expectation)
-
+        
+        if cache is not None:
+            cache.clear()  # Clean up cache for each state
+    
     return expectations
