@@ -27,6 +27,11 @@ from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
+# Constants
+DEFAULT_CACHE_SIZE = 1000
+DEFAULT_GRIDPOINTS = 10
+MIN_PROBABILITY_THRESHOLD = 1e-12
+
 
 @dataclass
 class SamplingConfig:
@@ -55,9 +60,10 @@ class _CommutatorCache:
 
     This cache stores the results of applying commutators to states to avoid redundant
     calculations during sampling. Uses simple key generation and basic eviction.
+    Can be used as a context manager for automatic resource management.
     """
 
-    def __init__(self, max_size: int = 1000):
+    def __init__(self, max_size: int = DEFAULT_CACHE_SIZE):
         """Initialize the cache with optional size limit.
 
         Args:
@@ -68,6 +74,15 @@ class _CommutatorCache:
         self.max_size = max_size
         self.hits = 0
         self.misses = 0
+
+    def __enter__(self):
+        """Context manager entry."""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit - clear cache."""
+        self.clear()
+        return False
 
     def get_cache_key(self, commutator: Tuple[Hashable | Set], state_id: int) -> str:
         """Generate a simple cache key for a commutator-state pair."""
@@ -173,8 +188,7 @@ def effective_hamiltonian(
     <class 'pennylane.labs.trotter_error.realspace.realspace_operator.RealspaceSum'>
     """
 
-    if not product_formula.fragments.issubset(fragments.keys()):
-        raise ValueError("Fragments do not match product formula")
+    _validate_fragments(product_formula, fragments)
 
     bch = bch_expansion(product_formula(1j * timestep), order)
     eff = _AdditiveIdentity()
@@ -197,6 +211,20 @@ def _insert_fragments(
         _insert_fragments(term, fragments) if isinstance(term, tuple) else fragments[term]
         for term in commutator
     )
+
+
+def _validate_fragments(product_formula: ProductFormula, fragments: dict[Hashable, Fragment]):
+    """Validate that fragments match the product formula.
+
+    Args:
+        product_formula: The product formula to validate against
+        fragments: Dictionary of fragments
+
+    Raises:
+        ValueError: If fragments do not match product formula
+    """
+    if not product_formula.fragments.issubset(fragments.keys()):
+        raise ValueError("Fragments do not match product formula")
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -266,52 +294,62 @@ def perturbation_error(
     [0.9189251160920877j, 4.797716682426847j]
     """
 
-    if not product_formula.fragments.issubset(fragments.keys()):
-        raise ValueError("Fragments do not match product formula")
+    _validate_fragments(product_formula, fragments)
 
     commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order))
 
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
-        expectations = []
-        for state in states:
-            new_state = _AdditiveIdentity()
-            for commutator in commutators:
-                new_state += _apply_commutator(commutator, fragments, state)
-
-            expectations.append(state.dot(new_state))
-
-        return expectations
+        return _compute_serial(commutators, fragments, states)
 
     if parallel_mode == "state":
-        executor = concurrency.backends.get_executor(backend)
-        with executor(max_workers=num_workers) as ex:
-            expectations = ex.starmap(
-                _get_expval_state,
-                [(commutators, fragments, state) for state in states],
-            )
-
-        return expectations
+        return _compute_parallel_by_state(commutators, fragments, states, backend, num_workers)
 
     if parallel_mode == "commutator":
-        executor = concurrency.backends.get_executor(backend)
-        expectations = []
-        for state in states:
-            with executor(max_workers=num_workers) as ex:
-                applied_commutators = ex.starmap(
-                    _apply_commutator,
-                    [(commutator, fragments, state) for commutator in commutators],
-                )
-
-            new_state = _AdditiveIdentity()
-            for applied_state in applied_commutators:
-                new_state += applied_state
-
-            expectations.append(state.dot(new_state))
-
-        return expectations
+        return _compute_parallel_by_commutator(commutators, fragments, states, backend, num_workers)
 
     raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
+
+
+def _compute_serial(commutators, fragments, states):
+    """Compute perturbation error serially."""
+    expectations = []
+    for state in states:
+        new_state = _AdditiveIdentity()
+        for commutator in commutators:
+            new_state += _apply_commutator(commutator, fragments, state)
+        expectations.append(state.dot(new_state))
+    return expectations
+
+
+def _compute_parallel_by_state(commutators, fragments, states, backend, num_workers):
+    """Compute perturbation error with parallelization by state."""
+    executor = concurrency.backends.get_executor(backend)
+    with executor(max_workers=num_workers) as ex:
+        expectations = ex.starmap(
+            _get_expval_state,
+            [(commutators, fragments, state) for state in states],
+        )
+    return expectations
+
+
+def _compute_parallel_by_commutator(commutators, fragments, states, backend, num_workers):
+    """Compute perturbation error with parallelization by commutator."""
+    executor = concurrency.backends.get_executor(backend)
+    expectations = []
+    for state in states:
+        with executor(max_workers=num_workers) as ex:
+            applied_commutators = ex.starmap(
+                _apply_commutator,
+                [(commutator, fragments, state) for commutator in commutators],
+            )
+
+        new_state = _AdditiveIdentity()
+        for applied_state in applied_commutators:
+            new_state += applied_state
+
+        expectations.append(state.dot(new_state))
+    return expectations
 
 
 def _get_expval_state(
@@ -320,30 +358,58 @@ def _get_expval_state(
     state: AbstractState,
     cache: Optional[_CommutatorCache] = None,
     state_id: Optional[int] = None,
+    weights: Optional[List[float]] = None,
 ) -> float:
     """Returns the expectation value of a state with respect to the operator obtained
     by substituting fragments into commutators.
 
     Args:
-        commutators: List of commutator tuples
+        commutators: List of commutator tuples or list of (commutator, weight) tuples
         fragments: Dictionary mapping fragment keys to Fragment objects
         state: The quantum state to compute expectation value for
         cache: Optional cache to store/retrieve computed results
         state_id: Optional state identifier for caching
+        weights: Optional list of weights for commutators. If None, uniform weights of 1.0 are used.
+                If commutators contains tuples, this parameter is ignored.
 
     Returns:
         float: The expectation value
     """
+    # Convert to standard format: list of (commutator, weight) pairs
+    weighted_commutators = _normalize_commutator_input(commutators, weights)
 
+    # Compute weighted sum of applied commutators
     new_state = _AdditiveIdentity()
-    for commutator in commutators:
-        new_state += _apply_commutator(commutator, fragments, state, cache, state_id)
+    for commutator, weight in weighted_commutators:
+        applied_state = _apply_commutator(commutator, fragments, state, cache, state_id)
+        new_state += weight * applied_state
 
-    # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
-    if isinstance(new_state, _AdditiveIdentity):
-        return 0.0
+    # Return 0 if no commutators were applied, otherwise compute expectation
+    return 0.0 if isinstance(new_state, _AdditiveIdentity) else state.dot(new_state)
 
-    return state.dot(new_state)
+
+def _normalize_commutator_input(commutators, weights: Optional[List[float]] = None):
+    """Normalize commutator input to standard (commutator, weight) format.
+
+    Args:
+        commutators: List of commutator tuples or list of (commutator, weight) tuples
+        weights: Optional list of weights for commutators
+
+    Returns:
+        List of (commutator, weight) tuples
+    """
+    normalized = []
+
+    for i, item in enumerate(commutators):
+        if isinstance(item, tuple) and len(item) == 2 and isinstance(item[1], (int, float)):
+            # Already in (commutator, weight) format
+            normalized.append(item)
+        else:
+            # Plain commutator, add weight
+            weight = weights[i] if weights is not None else 1.0
+            normalized.append((item, weight))
+
+    return normalized
 
 
 def _apply_commutator(
@@ -438,16 +504,14 @@ def _group_sums_in_dict(term_dict: dict[tuple[Hashable], complex]) -> list[tuple
 
 def _get_gridpoints_from_states(states: Sequence[AbstractState]) -> int:
     """Extract gridpoints from states, with fallback to default value."""
-    if states and hasattr(states[0], "gridpoints"):
-        return states[0].gridpoints
-    return 0  # Default gridpoints for norm calculations
+    return getattr(states[0], "gridpoints", DEFAULT_GRIDPOINTS) if states else DEFAULT_GRIDPOINTS
 
 
 def _calculate_commutator_probability(
     commutator: Tuple[Hashable | Set],
     fragments: Dict[Hashable, Fragment],
     timestep: float,
-    gridpoints: int = 0,
+    gridpoints: int = DEFAULT_GRIDPOINTS,
 ) -> float:
     r"""Calculate the unnormalized probability for importance sampling a commutator.
 
@@ -471,21 +535,15 @@ def _calculate_commutator_probability(
     Returns:
         float: Unnormalized probability for importance sampling
     """
-    if len(commutator) == 0:
+    if not commutator:
         return 0.0
 
-    # Calculate norms for each element in the commutator
+    # Calculate norms and probability in one pass
     fragment_norms = [_get_element_norm(element, fragments, gridpoints) for element in commutator]
-
-    if not fragment_norms:
-        return 0.0
-
-    # Calculate probability: p_k = 2^(k-1) * τ^k * ∏||H_i||
     commutator_order = len(commutator)
-    norm_product = np.prod(fragment_norms)
-    prob = 2 ** (commutator_order - 1) * timestep**commutator_order * norm_product
 
-    return max(prob, 1e-12)  # Avoid zero probabilities
+    prob = 2 ** (commutator_order - 1) * timestep**commutator_order * np.prod(fragment_norms)
+    return max(prob, MIN_PROBABILITY_THRESHOLD)
 
 
 def _get_element_norm(element, fragments: Dict[Hashable, Fragment], gridpoints: int) -> float:
@@ -502,14 +560,13 @@ def _get_element_norm(element, fragments: Dict[Hashable, Fragment], gridpoints: 
     if isinstance(element, frozenset):
         return _get_frozenset_norm(element, fragments, gridpoints)
 
-    if element in fragments:
-        return fragments[element].norm({"gridpoints": gridpoints})
-
-    # Default norm for unrecognized elements
-    return 1.0
+    # Regular fragment lookup with fallback to 1.0
+    return fragments[element].norm({"gridpoints": gridpoints}) if element in fragments else 1.0
 
 
-def _get_frozenset_norm(frozenset_element, fragments: Dict[Hashable, Fragment], gridpoints: int) -> float:
+def _get_frozenset_norm(
+    frozenset_element, fragments: Dict[Hashable, Fragment], gridpoints: int
+) -> float:
     """Calculate norm for frozenset of weighted fragments.
 
     Args:
@@ -532,11 +589,12 @@ def _get_frozenset_norm(frozenset_element, fragments: Dict[Hashable, Fragment], 
 
         scaled_fragment = frag_coeff * fragments[frag_key]
         weighted_fragment = (
-            scaled_fragment if weighted_fragment is None
-            else weighted_fragment + scaled_fragment
+            scaled_fragment if weighted_fragment is None else weighted_fragment + scaled_fragment
         )
 
-    return weighted_fragment.norm({"gridpoints": gridpoints}) if weighted_fragment is not None else 0.0
+    return (
+        weighted_fragment.norm({"gridpoints": gridpoints}) if weighted_fragment is not None else 0.0
+    )
 
 
 def _validate_sampling_inputs(
@@ -558,8 +616,7 @@ def _validate_sampling_inputs(
     Raises:
         ValueError: If inputs are invalid
     """
-    if not product_formula.fragments.issubset(fragments.keys()):
-        raise ValueError("Fragments do not match product formula")
+    _validate_fragments(product_formula, fragments)
 
     if order <= 0:
         raise ValueError(f"order must be positive, got {order}")
@@ -577,7 +634,7 @@ def _setup_probability_distribution(
     commutators: List[Tuple[Hashable | Set]],
     fragments: Dict[Hashable, Fragment],
     timestep: float,
-    gridpoints: int = 10,
+    gridpoints: int = DEFAULT_GRIDPOINTS,
 ) -> np.ndarray:
     """Setup normalized probability distribution for importance sampling.
 
@@ -672,52 +729,20 @@ def _compute_expectation_values_with_cache(
 
     for state_idx, state in enumerate(states):
         if use_cache:
-            cache = _CommutatorCache()
-            state_id = state_idx
+            with _CommutatorCache() as cache:
+                expectation = _get_expval_state(
+                    list(zip(commutators, weights)),
+                    fragments,
+                    state,
+                    cache,
+                    state_idx,
+                )
         else:
-            cache = None
-            state_id = None
-
-        # Compute expectation value for this state
-        expectation = _get_expval_state(
-            list(zip(commutators, weights)),
-            fragments,
-            state,
-            cache,
-            state_id,
-        )
+            expectation = _get_expval_state(
+                list(zip(commutators, weights)),
+                fragments,
+                state,
+            )
         expectations.append(expectation)
 
     return expectations
-
-
-# Helper function to unpack weighted commutators
-def _get_expval_state_weighted(
-    weighted_commutators: List[Tuple[Tuple[Hashable | Set], float]],
-    fragments: Dict[Hashable, Fragment],
-    state: AbstractState,
-    cache: Optional[_CommutatorCache] = None,
-    state_id: Optional[int] = None,
-) -> float:
-    """Compute expectation value with weighted commutators.
-
-    Args:
-        weighted_commutators: List of (commutator, weight) tuples
-        fragments: Fragment dictionary
-        state: State to compute expectation value for
-        cache: Optional cache
-        state_id: Optional state ID for caching
-
-    Returns:
-        Expectation value
-    """
-    result_state = _AdditiveIdentity()
-
-    for commutator, weight in weighted_commutators:
-        applied_state = _apply_commutator(commutator, fragments, state, cache, state_id)
-        result_state += weight * applied_state
-
-    if isinstance(result_state, _AdditiveIdentity):
-        return 0.0
-
-    return state.dot(result_state)

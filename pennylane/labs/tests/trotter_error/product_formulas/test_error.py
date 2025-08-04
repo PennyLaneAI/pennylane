@@ -265,7 +265,7 @@ def test_get_gridpoints_from_states():
 
     # Test with empty states
     result = _get_gridpoints_from_states([])
-    assert result == 0  # Default value
+    assert result == 10  # Default value
 
     # Test with states without gridpoints attribute (mock object)
     class MockState:  # pylint: disable=too-few-public-methods
@@ -273,7 +273,7 @@ def test_get_gridpoints_from_states():
 
     mock_state = MockState()
     result = _get_gridpoints_from_states([mock_state])
-    assert result == 0  # Default value
+    assert result == 10  # Default value
 
 
 def test_sampling_config_validation():
@@ -360,3 +360,72 @@ def test_cache_error_handling():
     # Test that cache continues to work after errors
     cache.put((0,), 1, "normal_result")
     assert cache.get((0,), 1) == "normal_result"
+
+
+def test_cache_context_manager():
+    """Test that cache works properly as a context manager."""
+    cache_instance = None
+
+    with _CommutatorCache() as cache:
+        cache_instance = cache
+        # Add some data
+        cache.put(("test",), 0, "test_value")
+        assert len(cache) == 1
+        assert cache.get(("test",), 0) == "test_value"
+
+    # After exiting context, cache should be cleared
+    assert len(cache_instance) == 0
+    assert cache_instance.get(("test",), 0) is None
+
+
+def test_setup_probability_distribution():
+    """Test the _setup_probability_distribution function."""
+    from pennylane.labs.trotter_error.product_formulas.error import _setup_probability_distribution
+
+    # Mock fragment
+    class MockFragment:
+        def norm(self, params):
+            return 1.0
+
+    fragments = {0: MockFragment(), 1: MockFragment()}
+    commutators = [(0,), (1,), (0, 1)]
+    timestep = 0.1
+
+    # Test probability distribution
+    probs = _setup_probability_distribution(commutators, fragments, timestep)
+
+    # Should be normalized (sum to 1)
+    assert abs(np.sum(probs) - 1.0) < 1e-10
+
+    # Should have same length as commutators
+    assert len(probs) == len(commutators)
+
+    # All probabilities should be non-negative
+    assert np.all(probs >= 0)
+
+
+def test_apply_sampling_strategy():
+    """Test the _apply_sampling_strategy function."""
+    from pennylane.labs.trotter_error.product_formulas.error import _apply_sampling_strategy
+
+    commutators = [(0,), (1,), (0, 1)]
+
+    # Test exact method
+    config = SamplingConfig(method="exact")
+    selected, weights = _apply_sampling_strategy(commutators, config)
+
+    assert selected == commutators
+    assert weights == [1.0, 1.0, 1.0]
+
+    # Test unimplemented methods
+    config = SamplingConfig(method="random")
+    with pytest.raises(NotImplementedError, match="Random sampling will be implemented"):
+        _apply_sampling_strategy(commutators, config)
+
+    config = SamplingConfig(method="importance")
+    with pytest.raises(NotImplementedError, match="Importance sampling will be implemented"):
+        _apply_sampling_strategy(commutators, config)
+
+    config = SamplingConfig(method="top_k")
+    with pytest.raises(NotImplementedError, match="Top-k sampling will be implemented"):
+        _apply_sampling_strategy(commutators, config)
