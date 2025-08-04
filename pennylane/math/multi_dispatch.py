@@ -846,6 +846,11 @@ def add(*args, like=None, **kwargs):
 def iscomplex(tensor, like=None):
     """Return True if the tensor has a non-zero complex component."""
     if like == "tensorflow":
+        import warnings
+
+        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
 
         imag_tensor = tf.math.imag(tensor)
@@ -877,6 +882,11 @@ def expm(tensor, like=None):
 
         return jax_expm(tensor)
     if like == "tensorflow":
+        import warnings
+
+        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
 
         return tf.linalg.expm(tensor)
@@ -1029,6 +1039,11 @@ def detach(tensor, like=None):
         return tensor.detach()
 
     if like == "tensorflow":
+        import warnings
+
+        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
 
         return tf.stop_gradient(tensor)
@@ -1062,6 +1077,11 @@ def set_index(array, idx, val, like=None):
         return jax_array.at[idx].set(val)
 
     if like == "tensorflow":
+        import warnings
+
+        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
 
         return tf.concat([array[:idx], val[None], array[idx + 1 :]], 0)

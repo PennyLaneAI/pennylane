@@ -190,6 +190,11 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
             jac = _jacobian(*args, **kwargs)
 
         elif qnode.interface == "tf":
+            import warnings
+
+            from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+            warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
             import tensorflow as tf
 
             def _jacobian(*args, **kwargs):

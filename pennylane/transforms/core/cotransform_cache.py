@@ -39,6 +39,11 @@ def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
 def _tf_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
+    import warnings
+
+    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf
 
     with tf.GradientTape() as tape:

@@ -88,6 +88,11 @@ def grad(f: Callable, argnums: Sequence[int] | int = 0) -> Callable:
             return g[0] if argnums_integer else g
 
         if interface == "tensorflow":
+            import warnings
+
+            from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+            warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
             import tensorflow as tf
 
             with tf.GradientTape() as tape:
@@ -130,6 +135,11 @@ def _torch_jac(f, argnums, args, kwargs):
 # pylint: disable=import-outside-toplevel
 def _tensorflow_jac(f, argnums, args, kwargs):
     """Calculate a jacobian via tensorflow"""
+    import warnings
+
+    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf
 
     with tf.GradientTape() as tape:
