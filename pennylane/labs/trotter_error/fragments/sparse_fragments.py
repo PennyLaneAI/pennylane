@@ -104,8 +104,9 @@ class SparseFragment(Fragment):
     def __matmul__(self, other: SparseFragment):
         return SparseFragment(self.fragment.dot(other.fragment))
 
-    def apply(self, state: SparseState) -> SparseFragment:
-        return SparseState(self.fragment.dot(state.csr_matrix.transpose()).transpose())
+    def apply(self, state: SparseState) -> SparseState:
+        result = self.fragment.dot(state.state.transpose()).transpose()
+        return SparseState(csr_matrix(result))
 
     def expectation(self, left: SparseState, right: SparseFragment) -> complex:
         result = left.state.conjugate().dot(self.fragment.dot(right.state.transpose()))

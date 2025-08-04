@@ -158,6 +158,23 @@ def test_expectation(frag, l_state, r_state, expected):
 
 
 @pytest.mark.parametrize(
+    "frag, state, expected",
+    [
+        (identity, state_10, state_10),  # Identity should leave state unchanged
+        (identity, state_01, state_01),  # Identity should leave state unchanged
+        (pauli_x, state_10, state_01),  # Pauli-X flips |0⟩ to |1⟩
+        (pauli_x, state_01, state_10),  # Pauli-X flips |1⟩ to |0⟩
+    ],
+)
+def test_apply(frag, state, expected):
+    """Test apply method of SparseFragment"""
+    result = frag.apply(state)
+
+    assert isinstance(result, SparseState)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
     "state1, state2, expected",
     [
         (state_01, state_10, state_11),
