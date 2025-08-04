@@ -524,7 +524,7 @@ def _get_element_norm(element, fragments: Dict[Hashable, Fragment], gridpoints: 
         # Handle frozenset of weighted fragments
         weighted_fragment = sum(
             (coeff * fragments[key] for key, coeff in element if key in fragments),
-            _AdditiveIdentity()
+            _AdditiveIdentity(),
         )
         return weighted_fragment.norm({"gridpoints": gridpoints}) if weighted_fragment else 0.0
 
@@ -552,14 +552,20 @@ def _setup_probability_distribution(
         Normalized probability array
     """
     # Calculate raw probabilities using vectorized operations
-    probabilities = np.array([
-        _calculate_commutator_probability(comm, fragments, timestep, gridpoints)
-        for comm in commutators
-    ])
+    probabilities = np.array(
+        [
+            _calculate_commutator_probability(comm, fragments, timestep, gridpoints)
+            for comm in commutators
+        ]
+    )
 
     # Normalize with fallback to uniform distribution
     total_prob = np.sum(probabilities)
-    return probabilities / total_prob if total_prob > 0 else np.ones(len(commutators)) / len(commutators)
+    return (
+        probabilities / total_prob
+        if total_prob > 0
+        else np.ones(len(commutators)) / len(commutators)
+    )
 
 
 def _apply_sampling_strategy(

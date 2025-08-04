@@ -30,7 +30,7 @@ from pennylane.labs.trotter_error.product_formulas.error import (
     _group_sums,
     _setup_probability_distribution,
 )
-from pennylane.labs.trotter_error.realspace import RealspaceSum, RealspaceOperator, RealspaceCoeffs
+from pennylane.labs.trotter_error.realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum
 
 
 @pytest.mark.parametrize(
@@ -210,6 +210,7 @@ def test_calculate_commutator_probability():
 # NOTE: _validate_sampling_inputs was removed as it was not used in production code
 # and provided redundant validations already covered by existing functions
 
+
 def test_sampling_config_validation():
     """Test SamplingConfig validation."""
     # Test valid configurations
@@ -316,7 +317,9 @@ def test_setup_probability_distribution():
     """Test the _setup_probability_distribution function."""
     # Create simple RealspaceSum fragments with constant coefficients
     n_modes = 2
-    coeffs = RealspaceCoeffs(np.array(1.0), label="test")  # Scalar coefficient for identity operator
+    coeffs = RealspaceCoeffs(
+        np.array(1.0), label="test"
+    )  # Scalar coefficient for identity operator
     op = RealspaceOperator(n_modes, (), coeffs)
     fragment = RealspaceSum(n_modes, [op])
 
