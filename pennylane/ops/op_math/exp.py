@@ -31,6 +31,7 @@ from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     OperatorPropertyUndefined,
+    PennyLaneDeprecationWarning,
     TermsUndefinedError,
 )
 from pennylane.operation import Operation, Operator
@@ -55,6 +56,12 @@ def exp(op, coeff=1, num_steps=None, id=None):
 
     Returns:
        :class:`Exp`: An :class:`~.operation.Operator` representing an operator exponential.
+
+    .. warning::
+
+        Providing ``num_steps`` to ``qml.exp`` is deprecated and will be removed in a future release.
+        Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
+        Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
 
     .. note::
 
@@ -127,6 +134,12 @@ class Exp(ScalarSymbolicOp, Operation):
             decomposition is needed, an error will be raised.
         id (str): id for the Exp operator. Default is None.
 
+    .. warning::
+
+        Providing ``num_steps`` to ``Exp`` is deprecated and will be removed in a future release.
+        Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
+        Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+
     **Example**
 
     This symbolic operator can be used to make general rotation operators:
@@ -179,6 +192,15 @@ class Exp(ScalarSymbolicOp, Operation):
         return cls(data[0], data[1], num_steps=metadata[0])
 
     def __init__(self, base, coeff=1, num_steps=None, id=None):
+        if num_steps is not None:
+            warn(
+                "Providing 'num_steps' to 'qml.evolve' and 'qml.exp' is deprecated and will be "
+                "removed in a future release. Instead, use 'qml.TrotterProduct' for approximate "
+                "methods, providing the 'n' parameter to perform the Suzuki-Trotter product "
+                "approximation of a Hamiltonian with the specified number of Trotter steps.",
+                PennyLaneDeprecationWarning,
+            )
+
         if not isinstance(base, Operator):
             raise TypeError(f"base is expected to be of type Operator, but received {type(base)}")
         super().__init__(base, scalar=coeff, id=id)
@@ -301,7 +323,7 @@ class Exp(ScalarSymbolicOp, Operation):
         return self._smart_decomposition(coeff, base)
 
     def _smart_decomposition(self, coeff, base):
-        """Decompose to an operator to an operator with a generator or a PauliRot if possible."""
+        """Decompose to an operator with a generator or a PauliRot if possible."""
 
         # Store operator classes with generators
         has_generator_types = []
