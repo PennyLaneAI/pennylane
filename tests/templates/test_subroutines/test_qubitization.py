@@ -67,17 +67,19 @@ def test_operator_definition_qpe(hamiltonian):
 
 
 @pytest.mark.parametrize(
-    ("lcu", "control", "skip_diff"),
+    ("lcu", "control"),
     [
-        (qml.dot([0.1, -0.3], [qml.X(2), qml.Z(3)]), [0], False),
-        (qml.dot([0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]), [3, 4], True),
+        (qml.X(1) @ qml.Z(2), [0]),
+        (qml.X(0) @ qml.Z(1), [2]),
+        (qml.X(1) @ qml.Z(2) @ qml.Y(3), [0]),
+        (qml.X(0) @ qml.Z(1) @ qml.Y(2), [3]),
     ],
 )
-def test_standard_validity(lcu, control, skip_diff):
+def test_standard_validity(lcu, control):
     """Check the operation using the assert_valid function."""
     op = qml.Qubitization(lcu, control)
     # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
-    qml.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
+    qml.ops.functions.assert_valid(op)
 
 
 @pytest.mark.parametrize(
