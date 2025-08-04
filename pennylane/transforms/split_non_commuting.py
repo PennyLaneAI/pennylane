@@ -57,7 +57,7 @@ def _uniform_deterministic_sampling(total_shots, coeffs_per_group, seed):
 def _weighted_deterministic_sampling(total_shots, coeffs_per_group, seed):
     # pylint: disable=unused-argument
     sum_per_group = np.array([np.sum(np.abs(coeffs)) for coeffs in coeffs_per_group])
-    prob_shots = np.abs(sum_per_group) / np.sum(np.abs(sum_per_group))
+    prob_shots = sum_per_group / np.sum(sum_per_group)
     shots_per_group = total_shots * prob_shots
     return shots_per_group
 
@@ -65,7 +65,7 @@ def _weighted_deterministic_sampling(total_shots, coeffs_per_group, seed):
 def _weighted_random_sampling(total_shots, coeffs_per_group, seed):
     np.random.seed(seed)
     sum_per_group = np.array([np.sum(np.abs(coeffs)) for coeffs in coeffs_per_group])
-    prob_shots = np.abs(sum_per_group) / np.sum(np.abs(sum_per_group))
+    prob_shots = sum_per_group / np.sum(sum_per_group)
     distribution = multinomial(n=total_shots, p=prob_shots)
     shots_per_group = distribution.rvs()[0]
     return shots_per_group
