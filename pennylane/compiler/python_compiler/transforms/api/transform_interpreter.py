@@ -58,7 +58,7 @@ class TransformFunctionsExt(TransformFunctions):
         if pass_name in self.passes:
             # pragma: no cover
             pass_class = self.passes[pass_name]()
-            pipeline = PassPipeline((pass_class(),))
+            pipeline = PassPipeline((pass_class(**op.options.data),))
             pipeline.apply(self.ctx, args[0])
             return (args[0],)
 
