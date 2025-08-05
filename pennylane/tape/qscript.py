@@ -1129,18 +1129,7 @@ class QuantumScript:
         {1: 4, 2: 2}
         """
         if self._specs is None:
-            resources = qml.resource.resource._count_resources(self)
-            algo_errors = qml.resource.error._compute_algo_error(self)
-
-            self._specs = SpecsDict(
-                {
-                    "resources": resources,
-                    "errors": algo_errors,
-                    "num_observables": len(self.observables),
-                    "num_trainable_params": self.num_params,
-                }
-            )
-
+            self._specs = qml.resource.resource.specs_from_tape(self)
         return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

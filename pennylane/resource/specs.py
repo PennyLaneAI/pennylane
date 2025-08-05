@@ -14,7 +14,6 @@
 """Code for resource estimation"""
 import inspect
 from collections.abc import Callable
-from copy import copy
 from typing import Any, Literal
 
 import pennylane as qml
@@ -205,7 +204,7 @@ def specs(
 
         for tape in batch:
 
-            info = copy(tape.specs) if compute_depth else specs_from_tape(tape)
+            info = specs_from_tape(tape, compute_depth)
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires
             info["device_name"] = qnode.device.name

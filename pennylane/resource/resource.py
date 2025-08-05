@@ -24,9 +24,10 @@ from typing import Any
 
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
-from .error import _compute_algo_error
 from pennylane.tape import QuantumScript
 from pennylane.tape.qscript import SpecsDict
+
+from .error import _compute_algo_error
 
 
 @dataclass(frozen=True)
@@ -605,22 +606,25 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
 
 # The reason why this function is not a method of the QuantumScript class is
 # because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
-# The `QuantumScript.specs` property will eventually be deprecated in favor of (potentially) this function.
-def specs_from_tape(tape: QuantumScript) -> SpecsDict[str, Any]:
+# The `QuantumScript.specs` property will eventually be deprecated in favor of this function.
+def specs_from_tape(tape: QuantumScript, compute_depth: bool = True) -> SpecsDict[str, Any]:
     """
     Extracts the resource information from a quantum circuit (tape).
 
-    Similar to the :meth:`~.QuantumScript.specs` property, but the depth of the quantum script
-    is not computed. This is useful when the depth is not needed, for example, in some
+    The depth of the circuit is computed by default, but can be set to None
+    by setting the `compute_depth` argument to False.
+    This is useful when the depth is not needed, for example, in some
     resource counting scenarios or heavy circuits where computing depth is expensive.
 
     Args:
         tape (.QuantumScript): The quantum circuit for which we extract resources
+        compute_depth (bool): If True, the depth of the circuit is computed and included in the resources.
+            If False, the depth is set to None.
 
     Returns:
         (.SpecsDict): The specifications extracted from the workflow
     """
-    resources = _count_resources(tape, compute_depth=False)
+    resources = _count_resources(tape, compute_depth=compute_depth)
     algo_errors = _compute_algo_error(tape)
 
     return SpecsDict(

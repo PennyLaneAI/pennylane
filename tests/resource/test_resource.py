@@ -702,7 +702,8 @@ def test_scale_dict(scalar):
     assert result == expected
 
 
-def test_specs_compute_depth():
+@pytest.mark.parametrize("compute_depth", (True, False))
+def test_specs_compute_depth(compute_depth):
     """Test that depth is skipped with `specs_from_tape`."""
 
     ops = [
@@ -714,7 +715,7 @@ def test_specs_compute_depth():
     obs = [qml.expval(qml.PauliX(wires="a")), qml.probs(wires=[0, "a"])]
 
     tape = QuantumScript(ops=ops, measurements=obs)
-    specs = specs_from_tape(tape)
+    specs = specs_from_tape(tape, compute_depth=compute_depth)
 
     assert len(specs) == 4
-    assert specs["resources"].depth is None
+    assert specs["resources"].depth == (3 if compute_depth else None)
