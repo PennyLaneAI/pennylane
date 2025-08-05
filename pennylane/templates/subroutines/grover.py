@@ -16,7 +16,7 @@ Contains the Grover Operation template.
 """
 import numpy as np
 
-from pennylane import math, capture
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
