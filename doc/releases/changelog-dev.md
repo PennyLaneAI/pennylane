@@ -475,7 +475,6 @@
   This allows for types to be inferred correctly when parsing.
   [(#7825)](https://github.com/PennyLaneAI/pennylane/pull/7825)
 
-<<<<<<< HEAD
 * `qml.math.get_interface` now correctly extracts the `"scipy"` interface if provided a list/array
   of sparse matrices.
   [(#7015)](https://github.com/PennyLaneAI/pennylane/pull/7015)
@@ -540,10 +539,8 @@
 
 * Minor docstring upgrades for `qml.labs.trotter_error`.
   [(#7190)](https://github.com/PennyLaneAI/pennylane/pull/7190)
-=======
 * Fixes `SemiAdder` to work when inputs are defined with a single wire.
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
->>>>>>> d3b1721d7038e8584666bc1267e3ffabfddc6a6c
 
 <h3>Contributors ✍️</h3>
 
@@ -559,16 +556,13 @@ Pietropaolo Frisoni,
 Simone Gasperini,
 David Ittah,
 Korbinian Kottmann,
-<<<<<<< HEAD
 Christina Lee,
 Joseph Lee,
 William Maxwell,
 Anton Naim Ibrahim,
 Lee J. O'Riordan,
-=======
 Mehrdad Malekmohammadi
 Erick Ochoa,
->>>>>>> d3b1721d7038e8584666bc1267e3ffabfddc6a6c
 Mudit Pandey,
 Andrija Paurevic,
 Alex Preciado,
