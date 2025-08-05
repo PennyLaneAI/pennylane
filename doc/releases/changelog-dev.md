@@ -447,6 +447,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes the GPU selection issue in `qml.math` with PyTorch when multiple GPUs are present.
+  [(#8008)](https://github.com/PennyLaneAI/pennylane/pull/8008)
+
 * Plxpr primitives now only return dynamically shaped arrays if their outputs
   actually have dynamic shapes.
   [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
@@ -487,6 +490,7 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Ali Asadi,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
