@@ -85,10 +85,15 @@ def test_executing_arbitrary_circuit(backend_cls):
     # the processed circuit is two tapes (split_non_commuting), returning
     # only samples, and expressed in the MBQC formalism
     tapes, _ = qml.workflow.construct_batch(ftqc_circ, level="device")()
+    print(tapes)
     assert len(tapes) == 2
-    for tape in tapes:
-        assert all(isinstance(mp, qml.measurements.SampleMP) for mp in tape.measurements)
-        assert all(isinstance(op, (Conditional, CZ, H, MidMeasureMP)) for op in tape.operations)
+    for sequence in tapes:
+        assert isinstance(sequence, QuantumScriptSequence)
+        assert all(isinstance(mp, qml.measurements.SampleMP) for mp in sequence.measurements)
+        for inner_tape in sequence.tapes:
+            assert all(
+                isinstance(op, (Conditional, CZ, H, MidMeasureMP)) for op in inner_tape.operations
+            )
 
     # circuit executes
     res = ftqc_circ()

@@ -56,7 +56,7 @@ runtime_code_generation = false
 # The methods of handling mid-circuit measurements that the device supports, e.g.,
 # "one-shot", "device", "tree-traversal", etc. An empty list indicates that the device
 # does not support mid-circuit measurements.
-supported_mcm_methods = [ "one-shot" ]
+supported_mcm_methods = ["one-shot", "tree-traversal"]
 
 # Whether the device supports dynamic qubit allocation/deallocation.
 dynamic_qubit_management = false

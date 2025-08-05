@@ -18,6 +18,7 @@ from functools import partial, singledispatch
 
 import networkx as nx
 
+import pennylane.ftqc as ftqc
 from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
@@ -31,6 +32,7 @@ from .conditional_measure import cond_measure
 from .graph_state_preparation import make_graph_state
 from .operations import RotXZX
 from .parametric_midmeasure import measure_arbitrary_basis, measure_x, measure_y
+from .quantum_script_sequence import QuantumScriptSequence
 from .utils import QubitMgr, parity
 
 mbqc_gate_set = frozenset({CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase})
@@ -73,47 +75,60 @@ def convert_to_mbqc_formalism(tape):
                 "final measurements have not been converted to a single samples measurement"
             )
 
+    mp = tape.measurements[0]
+    meas_wires = mp.wires if mp.wires else tape.wires
+
     # we include 13 auxillary wires - the largest number needed is 13 (for CNOT)
     num_qubits = len(tape.wires) + 13
     q_mgr = QubitMgr(num_qubits=num_qubits, start_idx=0)
 
     wire_map = {w: q_mgr.acquire_qubit() for w in tape.wires}
 
-    with AnnotatedQueue() as q:
-        for op in tape.operations:
-            if isinstance(op, GlobalPhase):  # no wires
-                GlobalPhase(*op.data)
-            elif isinstance(op, CNOT):  # two wires
-                ctrl, tgt = op.wires[0], op.wires[1]
-                wire_map[ctrl], wire_map[tgt], measurements = queue_cnot(
-                    q_mgr, wire_map[ctrl], wire_map[tgt]
-                )
-                cnot_corrections(measurements)(wire_map[ctrl], wire_map[tgt])
-            else:  # one wire
-                # pylint: disable=isinstance-second-argument-not-valid-type
-                if isinstance(op, (X, Y, Z, Identity)):
-                    # else branch because Identity may not have wires
-                    wire = wire_map[op.wires[0]] if op.wires else ()
-                    op.__class__(wire)
-                else:
-                    w = op.wires[0]
-                    wire_map[w], measurements = queue_single_qubit_gate(
-                        q_mgr, op, in_wire=wire_map[w]
+    def get_new_ops(tape_in, wire_map_in):
+        with AnnotatedQueue() as q:
+            for op in tape_in.operations:
+                if isinstance(op, GlobalPhase):  # no wires
+                    GlobalPhase(*op.data)
+                elif isinstance(op, CNOT):  # two wires
+                    ctrl, tgt = op.wires[0], op.wires[1]
+                    wire_map_in[ctrl], wire_map_in[tgt], measurements = queue_cnot(
+                        q_mgr, wire_map_in[ctrl], wire_map_in[tgt]
                     )
-                    queue_corrections(op, measurements)(wire_map[w])
+                    cnot_corrections(measurements)(wire_map_in[ctrl], wire_map_in[tgt])
+                else:  # one wire
+                    # pylint: disable=isinstance-second-argument-not-valid-type
+                    if isinstance(op, (X, Y, Z, Identity)):
+                        # else branch because Identity may not have wires
+                        wire = wire_map_in[op.wires[0]] if op.wires else ()
+                        op.__class__(wire)
+                    else:
+                        w = op.wires[0]
+                        wire_map_in[w], measurements = queue_single_qubit_gate(
+                            q_mgr, op, in_wire=wire_map_in[w]
+                        )
+                        queue_corrections(op, measurements)(wire_map_in[w])
 
-    temp_tape = QuantumScript.from_queue(q)
+        return q.queue
 
-    if tape.measurements:
-        mp = tape.measurements[0]
-        meas_wires = mp.wires if mp.wires else tape.wires
+    if isinstance(tape, QuantumScriptSequence):
+        new_inner_tapes = []
+
+        for inner_tape in tape.intermediate_tapes:
+            ops_queue = get_new_ops(inner_tape, wire_map)
+            new_tape = inner_tape.copy(operations=ops_queue)
+            new_inner_tapes.append(new_tape)
+
+        ops_queue = get_new_ops(tape.final_tape, wire_map)
         new_wires = [wire_map[w] for w in meas_wires]
-        new_tape = tape.copy(
-            operations=temp_tape.operations, measurements=[sample(wires=new_wires)]
+        new_inner_tapes.append(
+            tape.final_tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
         )
 
+        return (tape.copy(tapes=new_inner_tapes),), null_postprocessing
     else:
-        new_tape = tape.copy(operations=temp_tape.operations)
+        ops_queue = get_new_ops(tape, wire_map)
+        new_wires = [wire_map[w] for w in meas_wires]
+        new_tape = tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
 
     return (new_tape,), null_postprocessing
 
