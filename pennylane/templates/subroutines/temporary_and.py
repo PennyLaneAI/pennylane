@@ -89,6 +89,12 @@ class TemporaryAND(Operation):
 
     resource_keys = set()
 
+    def __repr__(self):
+        cvals = self.hyperparameters["control_values"]
+        if all(cvals):
+            return f"TemporaryAND(wires={self.wires})"
+        return f"TemporaryAND(wires={self.wires}, control_values={cvals})"
+
     def __init__(self, wires: WiresLike, control_values=(1, 1), id=None):
         wires = Wires(wires)
         self.hyperparameters["control_values"] = tuple(control_values)
