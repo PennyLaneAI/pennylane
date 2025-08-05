@@ -447,6 +447,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Plxpr primitives now only return dynamically shaped arrays if their outputs
+  actually have dynamic shapes.
+  [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
+
 * Fixes an issue with tree-traversal and non-sequential wire orders.
   [(#7991)](https://github.com/PennyLaneAI/pennylane/pull/7991)
 
