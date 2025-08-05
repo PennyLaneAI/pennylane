@@ -52,6 +52,35 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        import pennylane as qml
+        import pennylane.transforms.zx as zx
+
+        dev = qml.device("default.qubit")
+
+        @zx.push_hadamards
+        @qml.qnode(dev)
+        def circuit():
+            qml.T(0)
+            qml.Hadamard(0)
+            qml.Hadamard(0)
+            qml.T(1)
+            qml.Hadamard(1)
+            qml.CNOT([1, 2])
+            qml.Hadamard(1)
+            qml.Hadamard(2)
+            return qml.state()
+
+    ```pycon
+    >>> print(qml.draw(circuit)())
+    0: ──T────┤  State
+    1: ──T─╭X─┤  State
+    2: ──H─╰●─┤  State
+    ```
     """
 
     if not has_pyzx:  # pragma: no cover
