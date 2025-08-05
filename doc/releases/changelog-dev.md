@@ -51,6 +51,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improved the drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint.
+  [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
