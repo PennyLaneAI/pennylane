@@ -41,7 +41,7 @@ PennyLane in combination with JAX, we have to generate JAX-compatible quantum no
     However, when using ``diff_method="backprop"``, all QNode measurement statistics
     are supported.
 
-.. tip::
+.. note::
 
     JAX supports the single-precision numbers by default. To enable
     double-precision, add the following code on startup:
