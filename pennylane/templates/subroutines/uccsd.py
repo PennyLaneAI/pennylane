@@ -21,12 +21,18 @@ from collections import Counter
 
 import numpy as np
 
-from pennylane import math
+from pennylane import math, capture
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import BasisState
 from pennylane.wires import Wires
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 from .fermionic_double_excitation import FermionicDoubleExcitation
 from .fermionic_single_excitation import FermionicSingleExcitation
@@ -328,6 +334,9 @@ def _UCCSD_decomposition(weights, wires, s_wires, d_wires, init_state, n_repeats
 
     if n_repeats == 1 and len(math.shape(weights)) == 1:
         weights = math.expand_dims(weights, 0)
+
+    if has_jax and capture.enabled():
+        weights, d_wires, s_wires = jnp.array(weights), jnp.array(d_wires), jnp.array(s_wires)
 
     @for_loop(n_repeats)
     def apply_layers(layer):
