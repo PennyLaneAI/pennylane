@@ -188,8 +188,7 @@
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 * New caching and auxiliary functions have been created in `error.py` to handle the importance sampling of nested commutators.
   [(#8013)](https://github.com/PennyLaneAI/pennylane/pull/8013)
-* New sampling methods have been added to `error.py` to implement importance sampling.
-  [(#8018)](https://github.com/PennyLaneAI/pennylane/pull/8018)
+
 
 <h3>Breaking changes 💔</h3>
 
