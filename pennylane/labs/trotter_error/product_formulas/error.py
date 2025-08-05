@@ -147,13 +147,19 @@ class _CommutatorCache:
 
 
 class _AdditiveIdentity:
-    """Only used to initialize accumulators for summing Fragments"""
+    r"""Only used to initialize accumulators for summing Fragments"""
 
     def __add__(self, other):
         return other
 
     def __radd__(self, other):
         return other
+
+    def __mul__(self, other):
+        return self
+
+    def __rmul__(self, other):
+        return self
 
 
 def effective_hamiltonian(
@@ -248,7 +254,10 @@ def _get_element_norm(element, fragments: Dict[Hashable, Fragment], gridpoints: 
             (coeff * fragments[key] for key, coeff in element if key in fragments),
             _AdditiveIdentity(),
         )
-        return weighted_fragment.norm({"gridpoints": gridpoints}) if weighted_fragment else 0.0
+        # Check if weighted_fragment is still _AdditiveIdentity (empty sum case)
+        if isinstance(weighted_fragment, _AdditiveIdentity):
+            return 0.0
+        return weighted_fragment.norm({"gridpoints": gridpoints})
 
     return fragments[element].norm({"gridpoints": gridpoints}) if element in fragments else 1.0
 
@@ -636,7 +645,13 @@ def _get_expval_state_with_cache(
             weight = weights[i] if weights is not None else 1.0
 
         applied_state = _apply_commutator_with_cache(commutator, fragments, state, cache, state_id)
-        new_state += weight * applied_state
+        
+        # Skip if applied_state is _AdditiveIdentity (no contribution)
+        if isinstance(applied_state, _AdditiveIdentity):
+            continue
+            
+        weighted_applied_state = weight * applied_state
+        new_state += weighted_applied_state
 
     # Return 0 if no commutators were applied, otherwise compute expectation
     return 0.0 if isinstance(new_state, _AdditiveIdentity) else state.dot(new_state)

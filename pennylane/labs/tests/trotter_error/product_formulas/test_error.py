@@ -25,16 +25,22 @@ from pennylane.labs.trotter_error import (
 from pennylane.labs.trotter_error.realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum
 from pennylane.labs.trotter_error.product_formulas.error import (
     SamplingConfig,
+    _apply_commutator_with_cache,
     _apply_sampling_method,
     _apply_sampling_strategy,
     _calculate_commutator_probability,
     _CommutatorCache,
+    _compute_expectation_values_with_cache,
+    _get_element_norm,
+    _get_expval_state_with_cache,
     _group_sums,
     _importance_sampling,
+    _insert_fragments,
     _random_sampling,
     _setup_importance_probabilities,
     _setup_probability_distribution,
     _top_k_sampling,
+    _validate_fragments,
 )
 
 
@@ -534,3 +540,297 @@ def test_apply_sampling_strategy():
     # Test unknown method
     with pytest.raises(ValueError, match="sampling_method must be one of"):
         SamplingConfig(sampling_method="unknown")
+
+
+def test_get_element_norm():
+    """Test _get_element_norm function with different element types."""
+    # Create test fragments using real vibrational fragments
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    gridpoints = 10
+
+    # Test simple element norm
+    norm = _get_element_norm(0, frags, gridpoints)
+    assert isinstance(norm, float)
+    assert norm > 0
+
+    # Test another element
+    norm = _get_element_norm(1, frags, gridpoints)
+    assert isinstance(norm, float)
+    assert norm > 0
+
+    # Test frozenset element (weighted fragments)
+    frozenset_element = frozenset([(0, 1.0), (1, 0.5)])
+    norm = _get_element_norm(frozenset_element, frags, gridpoints)
+    assert isinstance(norm, float)
+    assert norm >= 0
+
+    # Test frozenset with missing fragments (should handle gracefully)
+    frozenset_with_missing = frozenset([(0, 1.0), (999, 0.5)])  # 999 doesn't exist
+    norm = _get_element_norm(frozenset_with_missing, frags, gridpoints)
+    assert isinstance(norm, float)
+    assert norm >= 0
+
+    # Test empty frozenset
+    empty_frozenset = frozenset()
+    norm = _get_element_norm(empty_frozenset, frags, gridpoints)
+    assert norm == 0.0
+
+    # Test element not in fragments (fallback to 1.0)
+    norm = _get_element_norm(999, frags, gridpoints)
+    assert norm == 1.0
+
+
+def test_validate_fragments():
+    """Test _validate_fragments function."""
+    # Create test product formula and fragments
+    frag_labels = [0, 1, 1, 0]
+    frag_coeffs = [1/2, 1/2, 1/2, 1/2]
+    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
+    # Test valid fragments (should not raise)
+    _validate_fragments(pf, frags)
+
+    # Test missing fragments (should raise ValueError)
+    incomplete_frags = {0: frags[0]}  # Missing fragment 1
+    with pytest.raises(ValueError, match="Fragments do not match product formula"):
+        _validate_fragments(pf, incomplete_frags)
+
+    # Test with extra fragments (should be fine)
+    extra_frags = dict(frags)
+    extra_frags[2] = frags[0]  # Add extra fragment
+    _validate_fragments(pf, extra_frags)  # Should not raise
+
+
+def test_insert_fragments():
+    """Test _insert_fragments function."""
+    # Create test fragments
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
+    # Test simple commutator
+    commutator = (0, 1)
+    result = _insert_fragments(commutator, frags)
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    assert result[0] == frags[0]
+    assert result[1] == frags[1]
+
+    # Test nested commutator
+    nested_commutator = (0, (1, 0))
+    result = _insert_fragments(nested_commutator, frags)
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    assert result[0] == frags[0]
+    assert isinstance(result[1], tuple)
+    assert len(result[1]) == 2
+    assert result[1][0] == frags[1]
+    assert result[1][1] == frags[0]
+
+    # Test single element
+    single_commutator = (0,)
+    result = _insert_fragments(single_commutator, frags)
+    assert isinstance(result, tuple)
+    assert len(result) == 1
+    assert result[0] == frags[0]
+
+
+def test_apply_commutator_with_cache():
+    """Test _apply_commutator_with_cache function."""
+    # Create test fragments and state
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    
+    gridpoints = 5
+    state = HOState(n_modes, gridpoints, {(0, 0): 1})
+    
+    # Test without cache
+    commutator = (0, 1)
+    result1 = _apply_commutator_with_cache(commutator, frags, state)
+    assert result1 is not None
+    
+    # Test with cache
+    cache = _CommutatorCache(max_size=10)
+    result2 = _apply_commutator_with_cache(commutator, frags, state, cache, state_id=0)
+    assert result2 is not None
+    
+    # Cache should now contain the result
+    assert len(cache) == 1
+    stats = cache.get_stats()
+    assert stats["misses"] == 1
+    assert stats["hits"] == 0
+    
+    # Test cache hit
+    result3 = _apply_commutator_with_cache(commutator, frags, state, cache, state_id=0)
+    assert result3 is not None
+    
+    # Should be a cache hit
+    stats = cache.get_stats()
+    assert stats["hits"] == 1
+    assert stats["misses"] == 1
+    
+    # Test different commutator (cache miss)
+    commutator2 = (1, 0)
+    result4 = _apply_commutator_with_cache(commutator2, frags, state, cache, state_id=0)
+    assert result4 is not None
+    
+    stats = cache.get_stats()
+    assert stats["hits"] == 1
+    assert stats["misses"] == 2
+    assert len(cache) == 2
+
+    # Test cache with None state_id (should not use cache)
+    result5 = _apply_commutator_with_cache(commutator, frags, state, cache, state_id=None)
+    assert result5 is not None
+    # Cache stats shouldn't change
+    stats_after = cache.get_stats()
+    assert stats_after["hits"] == stats["hits"]
+    assert stats_after["misses"] == stats["misses"]
+
+
+def test_get_expval_state_with_cache():
+    """Test _get_expval_state_with_cache function."""
+    # Create test fragments and state
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    
+    gridpoints = 5
+    state = HOState(n_modes, gridpoints, {(0, 0): 1})
+    
+    commutators = [(0,), (1,), (0, 1)]
+    
+    # Test without cache
+    result1 = _get_expval_state_with_cache(commutators, frags, state)
+    assert isinstance(result1, (float, complex))
+    
+    # Test with cache
+    cache = _CommutatorCache(max_size=10)
+    result2 = _get_expval_state_with_cache(commutators, frags, state, cache, state_id=0)
+    assert isinstance(result2, (float, complex))
+    
+    # Cache should contain results for each commutator
+    assert len(cache) == 3
+    
+    # Test with weights
+    weights = [1.0, 2.0, 0.5]
+    result3 = _get_expval_state_with_cache(commutators, frags, state, weights=weights)
+    assert isinstance(result3, (float, complex))
+    
+    # Test with (commutator, weight) tuples
+    commutator_weight_pairs = [((0,), 1.0), ((1,), 2.0), ((0, 1), 0.5)]
+    result4 = _get_expval_state_with_cache(commutator_weight_pairs, frags, state)
+    assert isinstance(result4, (float, complex))
+    
+    # Test empty commutators
+    result5 = _get_expval_state_with_cache([], frags, state)
+    assert result5 == 0.0
+    
+    # Test with None cache
+    result6 = _get_expval_state_with_cache(commutators, frags, state, cache=None, state_id=None)
+    assert isinstance(result6, (float, complex))
+
+
+def test_compute_expectation_values_with_cache():
+    """Test _compute_expectation_values_with_cache function."""
+    # Create test fragments and states
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    
+    gridpoints = 5
+    states = [
+        HOState(n_modes, gridpoints, {(0, 0): 1}),
+        HOState(n_modes, gridpoints, {(1, 1): 1})
+    ]
+    
+    commutators = [(0,), (1,), (0, 1)]
+    weights = [1.0, 1.0, 1.0]
+    
+    # Test with caching enabled
+    results_with_cache = _compute_expectation_values_with_cache(
+        commutators, weights, frags, states, use_cache=True
+    )
+    assert isinstance(results_with_cache, list)
+    assert len(results_with_cache) == 2
+    assert all(isinstance(r, (float, complex)) for r in results_with_cache)
+    
+    # Test with caching disabled
+    results_without_cache = _compute_expectation_values_with_cache(
+        commutators, weights, frags, states, use_cache=False
+    )
+    assert isinstance(results_without_cache, list)
+    assert len(results_without_cache) == 2
+    assert all(isinstance(r, (float, complex)) for r in results_without_cache)
+    
+    # Results should be similar (within numerical precision)
+    for r1, r2 in zip(results_with_cache, results_without_cache):
+        assert abs(r1 - r2) < 1e-10
+    
+    # Test with empty states
+    empty_results = _compute_expectation_values_with_cache(
+        commutators, weights, frags, [], use_cache=True
+    )
+    assert empty_results == []
+    
+    # Test with empty commutators
+    empty_comm_results = _compute_expectation_values_with_cache(
+        [], [], frags, states, use_cache=True
+    )
+    assert len(empty_comm_results) == 2
+    assert all(r == 0.0 for r in empty_comm_results)
+    
+    # Test with different weights
+    different_weights = [2.0, 0.5, 1.5]
+    weighted_results = _compute_expectation_values_with_cache(
+        commutators, different_weights, frags, states, use_cache=True
+    )
+    assert isinstance(weighted_results, list)
+    assert len(weighted_results) == 2
+    
+    # Results should be different due to different weights
+    for r1, r2 in zip(results_with_cache, weighted_results):
+        assert abs(r1 - r2) > 1e-10  # Should be significantly different
