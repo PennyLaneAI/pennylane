@@ -15,7 +15,6 @@
 Tests for the for_loop
 """
 import pytest
-from jax import numpy as jnp
 
 import pennylane as qml
 
@@ -24,6 +23,8 @@ import pennylane as qml
 @pytest.mark.jax
 def test_early_exit(mocker):
     """Test we exit early when start==stop."""
+    from jax import numpy as jnp
+
     inner_arr = jnp.array([])
 
     @qml.for_loop(len(inner_arr))
