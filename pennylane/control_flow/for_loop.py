@@ -15,7 +15,7 @@
 import functools
 from typing import Literal
 
-from pennylane import capture
+from pennylane import capture, math
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
@@ -420,7 +420,12 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
     def __call__(self, *init_state):
 
-        if enabled():
-            return self._call_capture_enabled(*init_state)
+        bypass_condition = (
+            not math.is_abstract(self.stop)
+            and not math.is_abstract(self.start)
+            and self.stop == self.start
+        )
 
+        if enabled() and not bypass_condition:
+            return self._call_capture_enabled(*init_state)
         return self._call_capture_disabled(*init_state)
