@@ -22,11 +22,6 @@ from pennylane.exceptions import QuantumFunctionError
 from .conftest import get_legacy_capabilities
 
 try:
-    import warnings
-
-    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf
 
     TF_SUPPORT = True
