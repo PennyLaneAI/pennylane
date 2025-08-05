@@ -165,8 +165,6 @@
   [(#7968)](https://github.com/PennyLaneAI/pennylane/pull/7968)
 * New `SparseFragment` and `SparseState` classes have been created that allow to use sparse matrices for the Hamiltonian Fragments when estimating the Trotter error.
   [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
-* New caching and auxiliary functions have been created in `error.py` to handle the importance sampling of nested commutators.
-  [(#8013)](https://github.com/PennyLaneAI/pennylane/pull/8013)
 
 <h4>Resource-efficient decompositions 🔎</h4>
 
@@ -188,6 +186,8 @@
 
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
+* New caching and auxiliary functions have been created in `error.py` to handle the importance sampling of nested commutators.
+  [(#8013)](https://github.com/PennyLaneAI/pennylane/pull/8013)
 
 <h3>Breaking changes 💔</h3>
 
