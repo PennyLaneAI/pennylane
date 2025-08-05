@@ -18,10 +18,26 @@ import pytest
 import pennylane as qml
 from pennylane import execute
 from pennylane.devices import DefaultQubit
+from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
 from pennylane.gradients import param_shift
 
 pytestmark = pytest.mark.tf
 tf = pytest.importorskip("tensorflow")
+
+
+def test_tensorflow_interface_deprecation():
+    """Test that using the 'tensorflow' interface issues a deprecation warning."""
+
+    dev = qml.device("default.qubit", wires=1)
+    params = tf.Variable(0.1)
+
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    with pytest.warns(PennyLaneDeprecationWarning, match=_TF_DEPRECATION_MSG):
+        circuit(params)
 
 
 # pylint: disable=too-few-public-methods

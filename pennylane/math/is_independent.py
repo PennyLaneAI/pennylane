@@ -147,10 +147,6 @@ def _tf_is_indep_analytic(func, *args, **kwargs):
         Of all interfaces, this is currently the most robust for the
         ``is_independent`` functionality.
     """
-
-    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
     with tf.GradientTape(persistent=True) as tape:
@@ -183,10 +179,6 @@ def _get_random_args(args, interface, num, seed, bounds):
     """
     width = bounds[1] - bounds[0]
     if interface == "tf":
-
-        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         tf.random.set_seed(seed)

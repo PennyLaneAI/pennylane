@@ -212,6 +212,14 @@ def execute(
 
     interface = _resolve_interface(interface, tapes)
 
+    if interface in {Interface.TF, Interface.TF_AUTOGRAPH}:
+        # pylint: disable=import-outside-toplevel
+        import warnings
+
+        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning)
+
     config = qml.devices.ExecutionConfig(
         interface=interface,
         gradient_method=diff_method,

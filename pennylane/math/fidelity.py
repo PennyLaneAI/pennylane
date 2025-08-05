@@ -356,11 +356,6 @@ def _register_tf_vjp():
     Register the custom VJP for tensorflow
     """
     # pylint: disable=import-outside-toplevel
-    import warnings
-
-    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf
 
     @tf.custom_gradient
