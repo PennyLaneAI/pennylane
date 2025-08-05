@@ -20,6 +20,7 @@ import pytest
 from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -31,11 +32,19 @@ from pennylane.measurements import (
 from pennylane.transforms.dynamic_one_shot import (
     _supports_one_shot,
     fill_in_value,
+    gather_non_mcm,
     get_legacy_capabilities,
     parse_native_mid_circuit_measurements,
 )
 
 # pylint: disable=too-few-public-methods, too-many-arguments
+
+
+def test_gather_non_mcm_unsupported_measurement():
+    """Test that gather_non_mcm raises an error on supported measurements."""
+
+    with pytest.raises(TypeError, match="does not support"):
+        gather_non_mcm(qml.state(), np.array([0, 0]), np.array([True, True]))
 
 
 def test_get_legacy_capability():
@@ -168,7 +177,7 @@ def test_unsupported_shots():
     tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.probs(wires=0)], shots=None)
 
     with pytest.raises(
-        qml.QuantumFunctionError,
+        QuantumFunctionError,
         match="dynamic_one_shot is only supported with finite shots.",
     ):
         _, _ = qml.dynamic_one_shot(tape)

@@ -43,7 +43,7 @@ class ParamArg(enum.Enum):
         of its values."""
         return isinstance(val, ParamArg) or (isinstance(val, str) and val in cls.values())
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         return self.value
 
 
@@ -87,7 +87,7 @@ class Description(Mapping[ParamName, ParamVal]):
 
 
 # pylint:disable=too-many-branches
-def format_param_args(param: ParamName, details: Any) -> Union[ParamArg, list[ParamVal]]:
+def format_param_args(param: ParamName, details: Any) -> ParamArg | list[ParamVal]:
     """Ensures each user-inputted parameter is a properly typed list.
     Also provides custom support for certain parameters."""
     if not isinstance(details, list):
@@ -126,7 +126,7 @@ def format_param_args(param: ParamName, details: Any) -> Union[ParamArg, list[Pa
     return details
 
 
-def format_params(**params: Any) -> list[dict[str:ParamName, str : Union[ParamArg, ParamVal]]]:
+def format_params(**params: Any) -> list[dict[str:ParamName, str : ParamArg | ParamVal]]:
     """Converts params to a list of dictionaries whose values are parameter names and
     single ``ParamaterArg`` objects or lists of parameter values."""
 
@@ -137,8 +137,8 @@ def format_params(**params: Any) -> list[dict[str:ParamName, str : Union[ParamAr
 
 
 def provide_defaults(
-    data_name: str, params: list[dict[str:ParamName, str : Union[ParamArg, ParamVal]]]
-) -> list[dict[str:ParamName, str : Union[ParamArg, ParamVal]]]:
+    data_name: str, params: list[dict[str:ParamName, str : ParamArg | ParamVal]]
+) -> list[dict[str:ParamName, str : ParamArg | ParamVal]]:
     """
     Provides default parameters to the qchem and qspin query parameters if the parameter
     names are missing from the provided ``params``.

@@ -67,7 +67,7 @@ For more details and additional features, please see the [PennyLane website](htt
 
 ## Installation
 
-PennyLane requires Python version 3.10 and above. Installation of PennyLane, as well as all
+PennyLane requires Python version 3.11 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
 ```console
@@ -84,7 +84,7 @@ Get up and running quickly with PennyLane by following our [quickstart guide](ht
 
 Whether you're exploring quantum machine learning (QML), quantum computing, or quantum chemistry, PennyLane offers a wide range of tools and resources to support your research:
 
-<img src="./doc/_static/readme/research.png" align="right" width="350px">
+<img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/research.png" align="right" width="350px">
 
 ### Key Resources:
 
@@ -106,7 +106,7 @@ quantum device.
 Take a deeper dive into quantum computing by exploring cutting-edge algorithms using PennyLane and quantum hardware. [Explore PennyLane demos](https://pennylane.ai/qml/demonstrations.html).
 
 <a href="https://pennylane.ai/qml/demonstrations">
-  <img src="./doc/_static/readme/demos.png" width="900px">
+  <img src="https://raw.githubusercontent.com/PennyLaneAI/pennylane/master/doc/_static/readme/demos.png" width="900px">
 </a>
 
 If you would like to contribute your own demo, see our [demo submission

@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utility tools for dense Lie algebra representations"""
-# pylint: disable=too-many-return-statements, missing-function-docstring, possibly-used-before-assignment
+
+from collections.abc import Iterable
 from functools import reduce
 from itertools import combinations
-from typing import Iterable, Optional, Union
 
 import numpy as np
 from scipy.linalg import sqrtm
@@ -162,7 +162,7 @@ def _idx_to_pw(idx, n):
     return PauliWord(pw)
 
 
-def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: bool = False):
+def batched_pauli_decompose(H: TensorLike, tol: float | None = None, pauli: bool = False):
     r"""Decomposes a Hermitian matrix or a batch of matrices into a linear combination
     of Pauli operators.
 
@@ -235,7 +235,7 @@ def batched_pauli_decompose(H: TensorLike, tol: Optional[float] = None, pauli: b
     return H_ops
 
 
-def orthonormalize(basis: Iterable[Union[PauliSentence, Operator, np.ndarray]]) -> np.ndarray:
+def orthonormalize(basis: Iterable[PauliSentence | Operator | np.ndarray]) -> np.ndarray:
     r"""Orthonormalize a list of basis vectors.
 
     Args:
@@ -283,7 +283,7 @@ def _orthonormalize_np(basis: Iterable[np.ndarray]):
     return np.tensordot(gram_inv, basis, axes=1)
 
 
-def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, Operator]]]):
+def _orthonormalize_ps(basis: PauliVSpace | Iterable[PauliSentence | Operator]):
     # We are generating a sparse pauli representation of the basis, where each entry of a basis vector corresponds to one of the Pauli words
     if isinstance(basis, PauliVSpace):
         basis = basis.basis
@@ -331,7 +331,7 @@ def _orthonormalize_ps(basis: Union[PauliVSpace, Iterable[Union[PauliSentence, O
     return generators_orthogonal
 
 
-def check_orthonormal(g: Iterable[Union[PauliSentence, Operator]], inner_product: callable) -> bool:
+def check_orthonormal(g: Iterable[PauliSentence | Operator], inner_product: callable) -> bool:
     r"""
     Utility function to check if operators in ``g`` are orthonormal with respect to the provided ``inner_product``.
 

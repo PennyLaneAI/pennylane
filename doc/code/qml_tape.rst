@@ -1,6 +1,8 @@
 qml.tape
 ========
 
+.. currentmodule:: pennylane.tape
+
 Quantum tapes are a datastructure that can represent quantum circuits and measurement statistics in PennyLane. They are queuing contexts that can record and process quantum operations and measurements.
 
 In addition to being created internally by QNodes, quantum tapes can also be created,

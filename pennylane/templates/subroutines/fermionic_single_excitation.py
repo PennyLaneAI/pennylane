@@ -17,8 +17,8 @@ Contains the FermionicSingleExcitation template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
 
 
@@ -113,7 +113,6 @@ class FermionicSingleExcitation(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
@@ -121,7 +120,7 @@ class FermionicSingleExcitation(Operation):
         if len(wires) < 2:
             raise ValueError(f"expected at least two wires; got {len(wires)}")
 
-        shape = qml.math.shape(weight)
+        shape = math.shape(weight)
         if shape != ():
             raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 

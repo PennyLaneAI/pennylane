@@ -19,15 +19,12 @@ import sys
 from collections import defaultdict
 from importlib import metadata, reload
 from sys import version_info
-from typing import List, Optional
 
 from packaging.version import Version
 
-PL_CATALYST_MIN_VERSION = Version("0.10.0")
+from pennylane.exceptions import CompileError
 
-
-class CompileError(Exception):
-    """Error encountered in the compilation phase."""
+PL_CATALYST_MIN_VERSION = Version("0.12.0")
 
 
 @dataclasses.dataclass
@@ -74,7 +71,6 @@ def _refresh_compilers():
     entries = (
         defaultdict(dict, metadata.entry_points())["pennylane.compilers"]
         if version_info[:2] == (3, 9)
-        # pylint:disable=unexpected-keyword-arg
         else metadata.entry_points(group="pennylane.compilers")
     )
 
@@ -115,7 +111,7 @@ def _reload_compilers():
     _refresh_compilers()
 
 
-def available_compilers() -> List[str]:
+def available_compilers() -> list[str]:
     """Load and return a list of available compilers that are
     installed and compatible with the :func:`~.qjit` decorator.
 
@@ -170,7 +166,7 @@ def available(compiler="catalyst") -> bool:
     return compiler in AvailableCompilers.names_entrypoints
 
 
-def active_compiler() -> Optional[str]:
+def active_compiler() -> str | None:
     """Check which compiler is activated inside a :func:`~.qjit` evaluation context.
 
     This helper function may be used during implementation

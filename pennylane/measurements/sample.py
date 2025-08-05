@@ -15,126 +15,19 @@
 This module contains the qml.sample measurement.
 """
 from collections.abc import Sequence
-from typing import Optional, Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.exceptions import MeasurementShapeError, QuantumFunctionError
 from pennylane.operation import Operator
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-from .measurements import MeasurementShapeError, Sample, SampleMeasurement
+from .counts import CountsMP
+from .measurements import SampleMeasurement
 from .mid_measure import MeasurementValue
-
-
-def sample(
-    op: Optional[Union[Operator, MeasurementValue, Sequence[MeasurementValue]]] = None,
-    wires=None,
-) -> "SampleMP":
-    r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
-    returning raw samples. If no observable is provided then basis state samples are returned
-    directly from the device.
-
-    Note that the output shape of this measurement process depends on the shots
-    specified on the device.
-
-    Args:
-        op (Observable or MeasurementValue): a quantum observable object. To get samples
-            for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
-        wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
-            op is ``None``.
-
-    Returns:
-        SampleMP: Measurement process instance
-
-    Raises:
-        ValueError: Cannot set wires if an observable is provided
-
-    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
-    The probability of drawing eigenvalue :math:`\lambda_i` is given by
-    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
-    is the corresponding basis state from the observable's eigenbasis.
-
-    .. note::
-
-        QNodes that return samples cannot, in general, be differentiated, since the derivative
-        with respect to a sample --- a stochastic process --- is ill-defined. An alternative
-        approach would be to use single-shot expectation values. For example, instead of this:
-
-        .. code-block:: python
-
-            dev = qml.device("default.qubit", shots=10)
-
-            @qml.qnode(dev, diff_method="parameter-shift")
-            def circuit(angle):
-                qml.RX(angle, wires=0)
-                return qml.sample(qml.PauliX(0))
-
-            angle = qml.numpy.array(0.1)
-            res = qml.jacobian(circuit)(angle)
-
-        Consider using :func:`~pennylane.expval` and a sequence of single shots, like this:
-
-        .. code-block:: python
-
-            dev = qml.device("default.qubit", shots=[(1, 10)])
-
-            @qml.qnode(dev, diff_method="parameter-shift")
-            def circuit(angle):
-                qml.RX(angle, wires=0)
-                return qml.expval(qml.PauliX(0))
-
-            def cost(angle):
-                return qml.math.hstack(circuit(angle))
-
-            angle = qml.numpy.array(0.1)
-            res = qml.jacobian(cost)(angle)
-
-    **Example**
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample(qml.Y(0))
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    array([ 1.,  1.,  1., -1.])
-
-    If no observable is provided, then the raw basis state samples obtained
-    from device are returned (e.g., for a qubit device, samples from the
-    computational device are returned). In this case, ``wires`` can be specified
-    so that sample results only include measurement results of the qubits of interest.
-
-    .. code-block:: python3
-
-        dev = qml.device("default.qubit", wires=2, shots=4)
-
-        @qml.qnode(dev)
-        def circuit(x):
-            qml.RX(x, wires=0)
-            qml.Hadamard(wires=1)
-            qml.CNOT(wires=[0, 1])
-            return qml.sample()
-
-    Executing this QNode:
-
-    >>> circuit(0.5)
-    array([[0, 1],
-           [0, 0],
-           [1, 1],
-           [0, 0]])
-
-    """
-    return SampleMP(obs=op, wires=None if wires is None else qml.wires.Wires(wires))
+from .process_samples import process_raw_samples
 
 
 class SampleMP(SampleMeasurement):
@@ -155,7 +48,7 @@ class SampleMP(SampleMeasurement):
             where the instance has to be identified
     """
 
-    _shortname = Sample  #! Note: deprecated. Change the value to "sample" in v0.42
+    _shortname = "sample"
 
     def __init__(self, obs=None, wires=None, eigvals=None, id=None):
 
@@ -166,8 +59,8 @@ class SampleMP(SampleMeasurement):
         if isinstance(obs, Sequence):
             if not all(
                 isinstance(o, MeasurementValue) and len(o.measurements) == 1 for o in obs
-            ) and not all(qml.math.is_abstract(o) for o in obs):
-                raise qml.QuantumFunctionError(
+            ) and not all(math.is_abstract(o) for o in obs):
+                raise QuantumFunctionError(
                     "Only sequences of single MeasurementValues can be passed with the op "
                     "argument. MeasurementValues manipulated using arithmetic operators cannot be "
                     "used when collecting statistics for a sequence of mid-circuit measurements."
@@ -189,9 +82,9 @@ class SampleMP(SampleMeasurement):
     @classmethod
     def _abstract_eval(
         cls,
-        n_wires: Optional[int] = None,
+        n_wires: int | None = None,
         has_eigvals=False,
-        shots: Optional[int] = None,
+        shots: int | None = None,
         num_device_wires: int = 0,
     ):
         if shots is None:
@@ -220,7 +113,7 @@ class SampleMP(SampleMeasurement):
             return int
         return float
 
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
         if not shots:
             raise MeasurementShapeError(
                 "Shots are required to obtain the shape of the measurement "
@@ -245,65 +138,20 @@ class SampleMP(SampleMeasurement):
         self,
         samples: Sequence[complex],
         wire_order: Wires,
-        shot_range: tuple[int, ...] = None,
-        bin_size: int = None,
+        shot_range: None | tuple[int, ...] = None,
+        bin_size: None | int = None,
     ):
-        wire_map = dict(zip(wire_order, range(len(wire_order))))
-        mapped_wires = [wire_map[w] for w in self.wires]
-        # Select the samples from samples that correspond to ``shot_range`` if provided
-        if shot_range is not None:
-            # Indexing corresponds to: (potential broadcasting, shots, wires). Note that the last
-            # colon (:) is required because shots is the second-to-last axis and the
-            # Ellipsis (...) otherwise would take up broadcasting and shots axes.
-            samples = samples[..., slice(*shot_range), :]
-
-        if mapped_wires:
-            # if wires are provided, then we only return samples from those wires
-            samples = samples[..., mapped_wires]
-
-        num_wires = samples.shape[-1]  # wires is the last dimension
-
-        # If we're sampling wires or a list of mid-circuit measurements
-        if self.obs is None and not isinstance(self.mv, MeasurementValue) and self._eigvals is None:
-            # if no observable was provided then return the raw samples
-            return samples if bin_size is None else samples.T.reshape(num_wires, bin_size, -1)
-
-        # If we're sampling observables
-        try:
-            eigvals = self.eigvals()
-        except qml.operation.EigvalsUndefinedError as e:
-            # if observable has no info on eigenvalues, we cannot return this measurement
-            raise qml.operation.EigvalsUndefinedError(
-                f"Cannot compute samples of {self.obs.name}."
-            ) from e
-
-        if np.array_equal(eigvals, [1.0, -1.0]):
-            # special handling for observables with eigvals +1/-1
-            # (this is JIT-compatible, the next block is not)
-            # type should be float
-            samples = 1.0 - 2 * qml.math.squeeze(samples, axis=-1)
-        else:
-            # Replace the basis state in the computational basis with the correct eigenvalue.
-            # Extract only the columns of the basis samples required based on ``wires``.
-            powers_of_two = 2 ** qml.math.arange(num_wires)[::-1]
-            indices = samples @ powers_of_two
-            indices = qml.math.array(indices)  # Add np.array here for Jax support.
-            # This also covers statistics for mid-circuit measurements manipulated using
-            # arithmetic operators
-            if qml.math.is_abstract(indices):
-                samples = qml.math.take(eigvals, indices, like=indices)
-            else:
-                samples = eigvals[indices]
-
-        return samples if bin_size is None else samples.reshape((bin_size, -1))
+        return process_raw_samples(
+            self, samples, wire_order, shot_range=shot_range, bin_size=bin_size
+        )
 
     def process_counts(self, counts: dict, wire_order: Wires):
         samples = []
         mapped_counts = self._map_counts(counts, wire_order)
         for outcome, count in mapped_counts.items():
             outcome_sample = self._compute_outcome_sample(outcome)
-            if len(self.wires) == 1:
-                # If only one wire is sampled, flatten the list
+            if len(self.wires) == 1 and self.eigvals() is None:
+                # For sampling wires, if only one wire is sampled, flatten the list
                 outcome_sample = outcome_sample[0]
             samples.extend([outcome_sample] * count)
 
@@ -318,8 +166,8 @@ class SampleMP(SampleMeasurement):
         Returns:
             Dictionary where counts_to_map has been reordered according to wire_order
         """
-        with qml.QueuingManager.stop_recording():
-            helper_counts = qml.counts(wires=self.wires, all_outcomes=False)
+        with QueuingManager.stop_recording():
+            helper_counts = CountsMP(wires=self.wires, all_outcomes=False)
         return helper_counts.process_counts(counts_to_map, wire_order)
 
     def _compute_outcome_sample(self, outcome) -> list:
@@ -331,10 +179,126 @@ class SampleMP(SampleMeasurement):
             list: A list of outcome samples for given binary string.
                 If eigenvalues exist, the binary outcomes are mapped to their corresponding eigenvalues.
         """
-        outcome_samples = [int(bit) for bit in outcome]
-
         if self.eigvals() is not None:
             eigvals = self.eigvals()
-            outcome_samples = [eigvals[outcome] for outcome in outcome_samples]
+            return eigvals[int(outcome, 2)]
 
-        return outcome_samples
+        return [int(bit) for bit in outcome]
+
+
+def sample(
+    op: Operator | MeasurementValue | Sequence[MeasurementValue] | None = None,
+    wires=None,
+) -> SampleMP:
+    r"""Sample from the supplied observable, with the number of shots
+    determined from the ``dev.shots`` attribute of the corresponding device,
+    returning raw samples. If no observable is provided then basis state samples are returned
+    directly from the device.
+
+    Note that the output shape of this measurement process depends on the shots
+    specified on the device.
+
+    Args:
+        op (Operator or MeasurementValue): a quantum observable object. To get samples
+            for mid-circuit measurements, ``op`` should be a ``MeasurementValue``.
+        wires (Sequence[int] or int or None): the wires we wish to sample from; ONLY set wires if
+            op is ``None``.
+
+    Returns:
+        SampleMP: Measurement process instance
+
+    Raises:
+        ValueError: Cannot set wires if an observable is provided
+
+    The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
+    The probability of drawing eigenvalue :math:`\lambda_i` is given by
+    :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
+    is the corresponding basis state from the observable's eigenbasis.
+
+    .. note::
+
+        QNodes that return samples cannot, in general, be differentiated, since the derivative
+        with respect to a sample --- a stochastic process --- is ill-defined. An alternative
+        approach would be to use single-shot expectation values. For example, instead of this:
+
+        .. code-block:: python
+
+            from functools import partial
+            dev = qml.device("default.qubit")
+
+            @partial(qml.set_shots, shots=10)
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(angle):
+                qml.RX(angle, wires=0)
+                return qml.sample(qml.PauliX(0))
+
+            angle = qml.numpy.array(0.1)
+            res = qml.jacobian(circuit)(angle)
+
+        Consider using :func:`~pennylane.expval` and a sequence of single shots, like this:
+
+        .. code-block:: python
+
+            from functools import partial
+            dev = qml.device("default.qubit")
+
+            @partial(qml.set_shots, shots=[(1, 10)])
+            @qml.qnode(dev, diff_method="parameter-shift")
+            def circuit(angle):
+                qml.RX(angle, wires=0)
+                return qml.expval(qml.PauliX(0))
+
+            def cost(angle):
+                return qml.math.hstack(circuit(angle))
+
+            angle = qml.numpy.array(0.1)
+            res = qml.jacobian(cost)(angle)
+
+    **Example**
+
+    .. code-block:: python3
+
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.set_shots, shots=4)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample(qml.Y(0))
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    array([ 1.,  1.,  1., -1.])
+
+    If no observable is provided, then the raw basis state samples obtained
+    from device are returned (e.g., for a qubit device, samples from the
+    computational device are returned). In this case, ``wires`` can be specified
+    so that sample results only include measurement results of the qubits of interest.
+
+    .. code-block:: python3
+
+        from functools import partial
+        dev = qml.device("default.qubit", wires=2)
+
+        @partial(qml.set_shots, shots=4)
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.Hadamard(wires=1)
+            qml.CNOT(wires=[0, 1])
+            return qml.sample()
+
+    Executing this QNode:
+
+    >>> circuit(0.5)
+    array([[0, 1],
+           [0, 0],
+           [1, 1],
+           [0, 0]])
+
+    """
+    return SampleMP(obs=op, wires=None if wires is None else Wires(wires))

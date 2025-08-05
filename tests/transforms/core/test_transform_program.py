@@ -18,6 +18,7 @@ import pytest
 import rustworkx as rx
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import (
     TransformContainer,
@@ -607,13 +608,12 @@ class TestClassicalCotransfroms:
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
 
-        program = TransformProgram()
-        program.add_transform(qml.gradients.param_shift, hybrid=True)
-        program.set_classical_component(circuit, (arg,), {})
+        circuit = qml.gradients.param_shift(circuit, hybrid=True)
+        circuit.transform_program.set_classical_component(circuit, (arg,), {})
 
         tape = qml.tape.QuantumScript([], [])
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters"):
-            program((tape,))
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters"):
+            circuit.transform_program((tape,))
 
 
 class TestTransformProgramCall:
@@ -810,8 +810,7 @@ class TestTransformProgramCall:
         dummy_results = (1, 2, 3, 4, 5, 1, 1, 1, 1, 1)
         assert fn(dummy_results) == (3, 12, 5)
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     def test_call_jaxpr_empty(self):
         """Test that calling an empty TransformProgram with jaxpr returns untransformed ClosedJaxpr."""
         # pylint: disable=import-outside-toplevel
@@ -833,7 +832,7 @@ class TestTransformProgramCall:
 
         jaxpr = jax.make_jaxpr(f)(1.5, 5)
         transformed_jaxpr = program(jaxpr.jaxpr, jaxpr.consts, 1.5, 5)
-        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
         assert transformed_jaxpr.consts == jaxpr.consts
 
         for eqn1, eqn2 in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True):
@@ -842,8 +841,7 @@ class TestTransformProgramCall:
             # seperately, they will not be equal (hence the string check)
             assert str(eqn1.params) == str(eqn2.params)
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     def test_call_jaxpr_single_transform(self):
         """Test that calling a TransformProgram with a single transform with jaxpr works correctly."""
         # pylint: disable=import-outside-toplevel
@@ -861,7 +859,7 @@ class TestTransformProgramCall:
 
         jaxpr = jax.make_jaxpr(f)()
         transformed_jaxpr = program(jaxpr.jaxpr, jaxpr.consts)
-        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
         assert transformed_jaxpr.consts == jaxpr.consts
 
         assert len(transformed_jaxpr.eqns) == 2
@@ -869,8 +867,7 @@ class TestTransformProgramCall:
         assert transformed_jaxpr.eqns[0].primitive == qml.PauliZ._primitive
         assert transformed_jaxpr.eqns[1].primitive == qml.measurements.ExpectationMP._obs_primitive
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     def test_call_jaxpr_multiple_transforms(self):
         """Test that calling a TransformProgram with multiple transforms with jaxpr works correctly."""
         # pylint: disable=import-outside-toplevel
@@ -893,7 +890,7 @@ class TestTransformProgramCall:
 
         jaxpr = jax.make_jaxpr(f)()
         transformed_jaxpr = program(jaxpr.jaxpr, jaxpr.consts)
-        assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
 
         # pylint: disable=protected-access
         isingxx_decomp = [qml.CNOT(wires=[0, 1]), qml.RX(0.5, wires=[0]), qml.CNOT(wires=[0, 1])]

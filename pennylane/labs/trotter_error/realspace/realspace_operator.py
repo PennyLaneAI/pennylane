@@ -16,9 +16,8 @@
 from __future__ import annotations
 
 import math
-from collections import defaultdict
+from collections.abc import Sequence
 from itertools import product
-from typing import Dict, Sequence, Tuple, Union
 
 import numpy as np
 import scipy as sp
@@ -65,7 +64,7 @@ class RealspaceOperator:
     """
 
     def __init__(
-        self, modes: int, ops: Sequence[str], coeffs: Union[RealspaceCoeffs, np.ndarray, float]
+        self, modes: int, ops: Sequence[str], coeffs: RealspaceCoeffs | np.ndarray | float
     ) -> RealspaceOperator:
 
         if coeffs.shape != (modes,) * len(ops):
@@ -79,7 +78,7 @@ class RealspaceOperator:
 
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
-    ) -> Union[np.ndarray, sp.sparse.csr_array]:
+    ) -> np.ndarray | sp.sparse.csr_array:
         """Return a matrix representation of the operator.
 
         Args:
@@ -210,7 +209,7 @@ class RealspaceOperator:
         """
         return RealspaceOperator(modes, tuple(), RealspaceCoeffs(np.array(0)))
 
-    def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int], float]:
+    def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[int], float]:
         """Return the non-zero coefficients in a dictionary.
 
         Args:
@@ -266,7 +265,7 @@ class RealspaceSum(Fragment):
     """
 
     def __init__(self, modes: int, ops: Sequence[RealspaceOperator]):
-        # pylint: disable=unnecessary-lambda, protected-access
+        # pylint: disable=protected-access
         for op in ops:
             if op.modes != modes:
                 raise ValueError(
@@ -280,15 +279,35 @@ class RealspaceSum(Fragment):
         self._is_zero = len(ops) == 0
 
         self.modes = modes
-        self._lookup = defaultdict(lambda: RealspaceOperator.zero(self.modes))
+
+        # Note defaultdict with custom types cannot be used with mp_pool or cf_procpool
+        # https://stackoverflow.com/questions/9256687/using-defaultdict-with-multiprocessing
+        self._lookup = {}
 
         for op in ops:
-            self._lookup[op.ops] += op
+            if op.ops in self._lookup:
+                self._lookup[op.ops] += op
+            else:
+                self._lookup[op.ops] = op
 
         for op in ops:
-            assert self._lookup[op.ops].coeffs is not None
+            assert self._get_op_lookup(op.ops).coeffs is not None
 
-        self.ops = tuple(self._lookup.values())
+        self.ops = tuple(self._lookup.values()) if self._lookup else tuple()
+
+    def _get_op_lookup(self, op):
+        """Returns the operator lookup for a given operator.
+
+        Args:
+            op (str): the operator string to look up
+
+        Returns:
+            RealspaceOperator: the corresponding RealspaceOperator object
+        """
+        if op not in self._lookup:
+            return RealspaceOperator.zero(self.modes)
+
+        return self._lookup[op]
 
     def __add__(self, other: RealspaceSum) -> RealspaceSum:
         if self.modes != other.modes:
@@ -302,7 +321,7 @@ class RealspaceSum(Fragment):
         new_ops = []
 
         for op in l_ops.union(r_ops):
-            new_ops.append(self._lookup[op] + other._lookup[op])
+            new_ops.append(self._get_op_lookup(op) + other._get_op_lookup(op))
 
         return RealspaceSum(self.modes, new_ops)
 
@@ -318,7 +337,7 @@ class RealspaceSum(Fragment):
         new_terms = []
 
         for op in l_ops.union(r_ops):
-            new_terms.append(self._lookup[op] - other._lookup[op])
+            new_terms.append(self._get_op_lookup(op) - other._get_op_lookup(op))
 
         return RealspaceSum(self.modes, new_terms)
 
@@ -365,7 +384,7 @@ class RealspaceSum(Fragment):
 
     def matrix(
         self, gridpoints: int, basis: str = "realspace", sparse: bool = False
-    ) -> Union[np.ndarray, sp.sparse.cs_array]:
+    ) -> np.ndarray | sp.sparse.cs_array:
         """Return a matrix representation of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:
@@ -402,7 +421,7 @@ class RealspaceSum(Fragment):
 
         return final_matrix
 
-    def norm(self, params: Dict) -> float:
+    def norm(self, params: dict) -> float:
         """Returns an upper bound on the spectral norm of the operator.
 
         Args:
@@ -462,7 +481,7 @@ class RealspaceSum(Fragment):
             mat @ state.vector,
         )
 
-    def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[str], Dict]:
+    def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[str], dict]:
         """Return a dictionary containing the non-zero coefficients of the :class:`~pennylane.labs.trotter_error.RealspaceSum`.
 
         Args:

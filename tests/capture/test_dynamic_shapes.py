@@ -20,7 +20,7 @@ import pytest
 
 from pennylane.capture import determine_abstracted_axes, register_custom_staging_rule
 
-pytestmark = pytest.mark.jax
+pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -151,7 +151,7 @@ class TestDyanmicShapes:
 
 def test_custom_staging_rule(enable_disable_dynamic_shapes):
     """Test regsitering a custom staging rule for a new primitive."""
-    my_prim = jax.core.Primitive("my_prim")
+    my_prim = jax.extend.core.Primitive("my_prim")
     register_custom_staging_rule(my_prim, lambda params: params["jaxpr"].outvars)
 
     def f(i):

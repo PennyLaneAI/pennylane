@@ -24,9 +24,9 @@ from scipy.linalg import expm
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.qchem import givens_decomposition
+from pennylane.exceptions import DeviceError, WireError
+from pennylane.math.decomposition import givens_decomposition
 from pennylane.typing import TensorLike
-from pennylane.wires import WireError
 
 quimb = pytest.importorskip("quimb")
 
@@ -283,7 +283,7 @@ def test_passing_shots_None():
 def test_passing_finite_shots_error():
     """Test that an error is raised if finite shots are passed on initialization."""
 
-    with pytest.raises(qml.DeviceError, match=r"only supports analytic simulations"):
+    with pytest.raises(DeviceError, match=r"only supports analytic simulations"):
         qml.device("default.tensor", shots=10)
 
 
@@ -499,8 +499,8 @@ def test_wire_order_dense_vector(method, num_orbitals):
     dev = qml.device("default.tensor", wires=int(2 * num_orbitals + 1), method=method)
     qubits = dev.wires.tolist()
 
-    wave_fun = np.random.random((2 ** (2 * num_orbitals))) + 1j * np.random.random(
-        (2 ** (2 * num_orbitals))
+    wave_fun = np.random.random(2 ** (2 * num_orbitals)) + 1j * np.random.random(
+        2 ** (2 * num_orbitals)
     )
     wave_fun = wave_fun / np.linalg.norm(wave_fun)
 
@@ -537,9 +537,7 @@ class TestMCMs:
 
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method)
         config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
-        with pytest.raises(
-            qml.DeviceError, match=r"only supports the deferred measurement principle."
-        ):
+        with pytest.raises(DeviceError, match=r"only supports the deferred measurement principle."):
             qml.device("default.tensor").preprocess(config)
 
     def test_simple_mcm_present(self):

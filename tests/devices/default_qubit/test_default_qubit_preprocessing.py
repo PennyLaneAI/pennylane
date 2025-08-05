@@ -21,6 +21,8 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.default_qubit import stopping_condition
+from pennylane.devices.execution_config import MCMConfig
+from pennylane.exceptions import DeviceError
 from pennylane.operation import classproperty
 
 
@@ -64,11 +66,12 @@ class CustomizedSparseOp(qml.operation.Operator):
         U = sp.sparse.eye(2 ** len(wires))
         super().__init__(U, wires)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self) -> bool:
         return False
 
-    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument
+    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument, arguments-differ
         return sp.sparse.eye(2 ** len(self.wires))
 
 
@@ -97,7 +100,7 @@ class TestConfigSetup:
     def test_error_if_device_option_not_available(self):
         """Test that an error is raised if a device option is requested but not a valid option."""
         config = qml.devices.ExecutionConfig(device_options={"bla": "val"})
-        with pytest.raises(qml.DeviceError, match="device option bla"):
+        with pytest.raises(DeviceError, match="device option bla"):
             qml.device("default.qubit").preprocess(config)
 
     def test_choose_best_gradient_method(self):
@@ -190,6 +193,13 @@ class TestConfigSetup:
         dev = qml.device("default.qubit")
         processed = dev.setup_execution_config(config)
         assert processed.convert_to_numpy
+
+    def test_resolve_native_mcm_method(self):
+        """Tests that mcm_method="device" resolves to tree-traversal"""
+        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="device"))
+        dev = qml.device("default.qubit")
+        processed = dev.setup_execution_config(config)
+        assert processed.mcm_config.mcm_method == "tree-traversal"
 
 
 # pylint: disable=too-few-public-methods
@@ -399,7 +409,7 @@ class TestPreprocessing:
         program = device.preprocess_transforms()
 
         if not supported:
-            with pytest.raises(qml.DeviceError):
+            with pytest.raises(DeviceError):
                 program([tape])
         else:
             program([tape])
@@ -630,7 +640,7 @@ class TestPreprocessingIntegration:
         ]
 
         program = qml.device("default.qubit").preprocess_transforms()
-        with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
     @pytest.mark.parametrize(
@@ -651,7 +661,7 @@ class TestPreprocessingIntegration:
         execution_config = qml.devices.ExecutionConfig(gradient_method="adjoint")
 
         program = qml.device("default.qubit").preprocess_transforms(execution_config)
-        with pytest.raises(qml.DeviceError, match=message):
+        with pytest.raises(DeviceError, match=message):
             program([qs])
 
     def test_preprocess_tape_for_adjoint(self):
@@ -805,7 +815,7 @@ class TestAdjointDiffTapeValidation:
         program = qml.device("default.qubit").preprocess_transforms(execution_config)
 
         msg = "Finite shots are not supported with"
-        with pytest.raises(qml.DeviceError, match=msg):
+        with pytest.raises(DeviceError, match=msg):
             program((tape,))
 
     def test_non_diagonal_non_expval(self):
@@ -820,7 +830,7 @@ class TestAdjointDiffTapeValidation:
         )
 
         with pytest.raises(
-            qml.DeviceError,
+            DeviceError,
             match=r"adjoint diff supports either all expectation values or only measurements without observables",
         ):
             program((qs,))

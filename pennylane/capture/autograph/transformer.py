@@ -28,9 +28,9 @@ from malt.core import converter
 from malt.impl.api import PyToPy
 
 import pennylane as qml
+from pennylane.exceptions import AutoGraphError, AutoGraphWarning
 
 from . import ag_primitives
-from .ag_primitives import AutoGraphError, AutoGraphWarning
 
 
 class PennyLaneTransformer(PyToPy):
@@ -73,7 +73,14 @@ class PennyLaneTransformer(PyToPy):
                 getattr(fn, "ag_source_map", None),
             )
         else:
-            new_fn, module, source_map = self.transform_function(fn, user_context)
+            try:
+                new_fn, module, source_map = self.transform_function(fn, user_context)
+            except KeyError as e:
+                if "Lambda object" in str(e) and "while_loop" in inspect.getsource(fn):
+                    raise AutoGraphError(
+                        "AutoGraph currently does not support lambda functions as a loop condition for `qml.while_loop`."
+                        " Please define the condition using a named function rather than a lambda function."
+                    ) from e
 
         new_obj = new_fn
 

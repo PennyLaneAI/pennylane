@@ -16,21 +16,25 @@ This module contains functions for computing the finite-difference gradient
 of a quantum tape.
 """
 import functools
+from collections.abc import Callable
 from functools import partial
-from typing import Callable, Literal
+from typing import Literal
 
-# pylint: disable=protected-access,too-many-arguments,too-many-branches,too-many-statements,unused-argument
+# pylint: disable=too-many-arguments,too-many-branches,too-many-statements,unused-argument
 from warnings import warn
 
 import numpy as np
 from scipy.linalg import solve as linalg_solve
 from scipy.special import factorial
 
-import pennylane as qml
-from pennylane import transform
-from pennylane.gradients.gradient_transform import _contract_qjac_with_cjac
+from pennylane import math, pytrees
+from pennylane.devices.preprocess import decompose
+from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.gradients.gradient_transform import contract_qjac_with_cjac
 from pennylane.measurements import ProbabilityMP
+from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import generate_shifted_tapes
@@ -43,7 +47,7 @@ from .gradient_transform import (
 )
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def finite_diff_coeffs(n, approx_order, strategy):
     r"""Generate the finite difference shift values and corresponding
     term coefficients for a given derivative order, approximation accuracy,
@@ -217,7 +221,7 @@ def finite_diff_jvp(
     coeffs, shifts = finite_diff_coeffs(n=1, approx_order=approx_order, strategy=strategy)
 
     initial_res = f(*args)
-    flat_initial_res, pytree_structure = qml.pytrees.flatten(initial_res)
+    flat_initial_res, pytree_structure = pytrees.flatten(initial_res)
 
     jvps = [0 for _ in flat_initial_res]
     for i, t in enumerate(tangents):
@@ -225,7 +229,7 @@ def finite_diff_jvp(
             continue
         t = np.array(t) if isinstance(t, (int, float, complex)) else t
 
-        if qml.math.get_dtype_name(args[i]) in ("float32", "complex64"):
+        if math.get_dtype_name(args[i]) in ("float32", "complex64"):
 
             warn(
                 "Detected 32 bits precision parameter with finite differences. It is recommended to use 64 bit precision when computing finite differences.",
@@ -233,10 +237,10 @@ def finite_diff_jvp(
             )
 
         shifted_args = list(args)
-        for index in np.ndindex(qml.math.shape(args[i])):
+        for index in np.ndindex(math.shape(args[i])):
             ti = t[index]
 
-            if not qml.math.is_abstract(ti) and qml.math.allclose(ti, 0):
+            if not math.is_abstract(ti) and math.allclose(ti, 0):
                 continue
 
             ti_over_h = ti / h
@@ -244,13 +248,13 @@ def finite_diff_jvp(
                 if shift == 0:
                     res = flat_initial_res
                 else:
-                    shifted_args[i] = qml.math.scatter_element_add(args[i], index, h * shift)
-                    res, _ = qml.pytrees.flatten(f(*shifted_args))
+                    shifted_args[i] = math.scatter_element_add(args[i], index, h * shift)
+                    res, _ = pytrees.flatten(f(*shifted_args))
 
                 for result_idx, r in enumerate(res):
                     jvps[result_idx] += ti_over_h * coeff * r
 
-    return initial_res, qml.pytrees.unflatten(jvps, pytree_structure)
+    return initial_res, pytrees.unflatten(jvps, pytree_structure)
 
 
 def _processing_fn(results, shots, single_shot_batch_fn):
@@ -270,7 +274,7 @@ def _finite_diff_stopping_condition(op) -> bool:
         # error will happen when calculating shifted tapes for finite diff
 
         return True
-    if isinstance(op, qml.operation.Operator) and any(qml.math.requires_grad(p) for p in op.data):
+    if isinstance(op, Operator) and any(math.requires_grad(p) for p in op.data):
         return op.grad_method is not None
     return True
 
@@ -287,17 +291,17 @@ def _expand_transform_finite_diff(
     validate_params: bool = True,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Expand function to be applied before finite difference."""
-    [new_tape], postprocessing = qml.devices.preprocess.decompose(
+    [new_tape], postprocessing = decompose(
         tape,
         stopping_condition=_finite_diff_stopping_condition,
         skip_initial_state_prep=False,
         name="finite_diff",
-        error=qml.operation.DecompositionUndefinedError,
+        error=DecompositionUndefinedError,
     )
     if new_tape is tape:
         return [tape], postprocessing
     params = new_tape.get_parameters(trainable_only=False)
-    new_tape.trainable_params = qml.math.get_trainable_indices(params)
+    new_tape.trainable_params = math.get_trainable_indices(params)
     return [new_tape], postprocessing
 
 
@@ -305,7 +309,7 @@ def _expand_transform_finite_diff(
 @partial(
     transform,
     expand_transform=_expand_transform_finite_diff,
-    classical_cotransform=_contract_qjac_with_cjac,
+    classical_cotransform=contract_qjac_with_cjac,
     final_transform=True,
 )
 def finite_diff(
@@ -449,9 +453,11 @@ def finite_diff(
 
         This gradient transform is compatible with devices that use shot vectors for execution.
 
+        >>> from functools import partial
         >>> shots = (10, 100, 1000)
-        >>> dev = qml.device("default.qubit", shots=shots)
-        >>> @qml.qnode(dev)
+        >>> dev = qml.device("default.qubit")
+        >>> @partial(qml.set_shots, shots=shots)
+        ... @qml.qnode(dev)
         ... def circuit(params):
         ...     qml.RX(params[0], wires=0)
         ...     qml.RY(params[1], wires=0)
@@ -469,7 +475,7 @@ def finite_diff(
     transform_name = "finite difference"
     assert_no_trainable_tape_batching(tape, transform_name)
 
-    if any(qml.math.get_dtype_name(p) == "float32" for p in tape.get_parameters()):
+    if any(math.get_dtype_name(p) == "float32" for p in tape.get_parameters()):
         warn(
             "Finite differences with float32 detected. Answers may be inaccurate. float64 is recommended.",
             UserWarning,
@@ -538,11 +544,11 @@ def finite_diff(
             if s == 0:
                 # parameter has zero gradient
                 if not isinstance(results[0], tuple):
-                    g = qml.math.zeros_like(results[0])
+                    g = math.zeros_like(results[0])
                 else:
                     g = []
                     for i in output_dims:
-                        zero = qml.math.squeeze(qml.math.zeros(i))
+                        zero = math.squeeze(math.zeros(i))
                         g.append(zero)
 
                 grads.append(g)
@@ -557,38 +563,34 @@ def finite_diff(
             pre_grads = []
 
             if number_measurements == 1:
-                res = qml.math.stack(res)
-                c = qml.math.convert_like(coeffs, res)
-                lin_comb = qml.math.tensordot(res, c, [[0], [0]])
+                res = math.stack(res)
+                c = math.convert_like(coeffs, res)
+                lin_comb = math.tensordot(res, c, [[0], [0]])
                 pre_grads.append(lin_comb)
             else:
                 for i in range(number_measurements):
-                    r = qml.math.stack([r[i] for r in res])
-                    c = qml.math.convert_like(coeffs, r)
-                    lin_comb = qml.math.tensordot(r, c, [[0], [0]])
+                    r = math.stack([r[i] for r in res])
+                    c = math.convert_like(coeffs, r)
+                    lin_comb = math.tensordot(r, c, [[0], [0]])
                     pre_grads.append(lin_comb)
 
             # Add on the unshifted term
             if c0 is not None:
                 if number_measurements == 1:
-                    c = qml.math.convert_like(c0, r0)
+                    c = math.convert_like(c0, r0)
                     pre_grads = [pre_grads[0] + r0 * c]
                 else:
                     for i in range(number_measurements):
                         r_i = r0[i]
-                        c = qml.math.convert_like(c0, r_i)
+                        c = math.convert_like(c0, r_i)
                         pre_grads[i] = pre_grads[i] + r_i * c
 
-            coeff_div = qml.math.cast_like(
-                qml.math.convert_like(1 / h**n, pre_grads[0]), pre_grads[0]
-            )
+            coeff_div = math.cast_like(math.convert_like(1 / h**n, pre_grads[0]), pre_grads[0])
 
             if len(tape.measurements) > 1:
-                pre_grads = tuple(
-                    qml.math.convert_like(i * coeff_div, coeff_div) for i in pre_grads
-                )
+                pre_grads = tuple(math.convert_like(i * coeff_div, coeff_div) for i in pre_grads)
             else:
-                pre_grads = qml.math.convert_like(pre_grads[0] * coeff_div, coeff_div)
+                pre_grads = math.convert_like(pre_grads[0] * coeff_div, coeff_div)
 
             grads.append(pre_grads)
         # Single measurement

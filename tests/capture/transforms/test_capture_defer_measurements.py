@@ -29,8 +29,7 @@ from pennylane.transforms.defer_measurements import (
 from pennylane.wires import Wires
 
 pytestmark = [
-    pytest.mark.jax,
-    pytest.mark.usefixtures("enable_disable_plxpr"),
+    pytest.mark.capture,
     pytest.mark.integration,
 ]
 

@@ -14,7 +14,6 @@
 """Functions to prepare a state."""
 
 from collections.abc import Iterable
-from typing import Union
 
 import numpy as np
 import scipy as sp
@@ -23,7 +22,7 @@ import pennylane as qml
 
 
 def create_initial_state(
-    wires: Union[qml.wires.Wires, Iterable],
+    wires: qml.wires.Wires | Iterable,
     prep_operation: qml.operation.StatePrepBase = None,
     like: str = None,
 ):
@@ -52,5 +51,9 @@ def create_initial_state(
     dtype = "complex128" if like == "tensorflow" else dtype
     # sparse matrix VIP tunnel
     if sp.sparse.issparse(state_vector):
+        # currently, state_vector returns a flattened target shape.
+        target_shape = [prep_operation.batch_size] if prep_operation.batch_size else []
+        target_shape += [2] * len(wires)
         state_vector = state_vector.toarray()
+        state_vector = qml.math.reshape(state_vector, target_shape)
     return qml.math.cast(qml.math.asarray(state_vector, like=like), dtype)

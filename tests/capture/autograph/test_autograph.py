@@ -21,14 +21,6 @@ from malt.core import converter
 
 import pennylane as qml
 from pennylane import grad, jacobian, measure
-
-pytestmark = pytest.mark.jax
-
-jax = pytest.importorskip("jax")
-
-# must be below jax importorskip
-# pylint: disable=wrong-import-position
-from pennylane.capture.autograph.ag_primitives import AutoGraphError
 from pennylane.capture.autograph.transformer import (
     NESTED_OPTIONS,
     STANDARD_OPTIONS,
@@ -39,20 +31,56 @@ from pennylane.capture.autograph.transformer import (
     run_autograph,
 )
 
+pytestmark = pytest.mark.capture
+
+jax = pytest.importorskip("jax")
+
+
+# must be below jax importorskip
+# pylint: disable=wrong-import-position
+from pennylane.exceptions import AutoGraphError
+
 check_cache = TRANSFORMER.has_cache
 
 # pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
 
 
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
-
-
 class TestPennyLaneTransformer:
     """Tests for the PennyLane child class of the diastatic-malt PytoPy transformer"""
+
+    def test_lambda_function_error(self):
+        """Test that a lambda function raises an error when passed to the transformer"""
+
+        transformer = PennyLaneTransformer()
+        user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
+
+        def bad_circuit():
+
+            @qml.while_loop(lambda x: x < 10)
+            def loop(i):
+                return i + 1
+
+            return loop(0)
+
+        def good_circuit():
+
+            condition = lambda x: x < 10
+
+            @qml.while_loop(condition)
+            def loop(i):
+                return i + 1
+
+            return loop(0)
+
+        with pytest.raises(
+            AutoGraphError,
+            match="AutoGraph currently does not support lambda functions as a loop condition for `qml.while_loop`.",
+        ):
+            transformer.transform(bad_circuit, user_context)
+
+        # Check that the good circuit does not raise an error
+        new_fn, _, _ = transformer.transform(good_circuit, user_context)
+        assert new_fn() == 10
 
     def test_transform_on_function(self):
         """Test the transform method on a function works as expected"""

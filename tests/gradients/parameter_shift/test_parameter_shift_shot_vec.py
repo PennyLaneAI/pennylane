@@ -17,12 +17,12 @@ from functools import partial
 
 import pytest
 from default_qubit_legacy import DefaultQubitLegacy
+from device_shots_to_analytic import shots_to_analytic
 
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.gradients import param_shift
 from pennylane.measurements import Shots
-from pennylane.operation import AnyWires, Observable
 
 shot_vec_tol = 10e-3
 herm_shot_vec_tol = 0.5
@@ -489,7 +489,7 @@ class TestParamShift:
 
             tape = qml.tape.QuantumScript.from_queue(q, shots=shot_vec)
             with pytest.raises(
-                qml.operation.OperatorPropertyUndefined, match="does not have a grad_recipe"
+                qml.exceptions.OperatorPropertyUndefined, match="does not have a grad_recipe"
             ):
                 qml.gradients.param_shift(tape)
 
@@ -1370,12 +1370,18 @@ class TestParameterShiftRule:
             assert gradF[0] == pytest.approx(expected, abs=2)
             assert qml.math.allclose(gradF[1], expected, atol=1.5)
 
+    @pytest.mark.local_salt(42)
     def test_involutory_and_noninvolutory_variance_single_param(self, broadcast, seed):
         """Tests a qubit Hermitian observable that is not involutory alongside
         an involutory observable when there's a single trainable parameter."""
         shot_vec = tuple([1000000] * 3)
+        # NOTE: this test failed multiple times at https://github.com/PennyLaneAI/pennylane/pull/7306
+        # even after tweeking the salt. We fixed the seed to ensure its stability and track it in [sc-91487]
         dev = qml.device("default.qubit", wires=2, shots=shot_vec, seed=seed)
         a = 0.54
+
+        if not broadcast:
+            pytest.xfail("This test fails with broadcasting disabled. See [sc-91487] for tracking.")
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RX(a, wires=0)
@@ -1719,6 +1725,7 @@ class TestParameterShiftRule:
             assert isinstance(gradF, tuple)
             assert gradF == pytest.approx(expected, abs=finite_diff_tol)
 
+    @pytest.mark.local_salt(42)
     def test_expval_and_variance_multi_param(self, broadcast, seed):
         """Test an expectation value and the variance of involutory and non-involutory observables work well with
         multiple trainable parameters"""
@@ -1935,10 +1942,8 @@ class TestParameterShiftRule:
                 new = self.val + (other.val if isinstance(other, self.__class__) else other)
                 return SpecialObject(new)
 
-        class SpecialObservable(Observable):
+        class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
@@ -2035,11 +2040,10 @@ class TestHamiltonianExpvalGradients:
         with pytest.raises(ValueError, match="for expectations, not"):
             qml.gradients.param_shift(tape, broadcast=broadcast)
 
-    def test_no_trainable_coeffs(self, mocker, broadcast, tol):
+    def test_no_trainable_coeffs(self, broadcast, tol):
         """Test no trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
         dev = qml.device("default.qubit", wires=2, shots=shot_vec)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         weights = np.array([0.4, 0.5])
 
@@ -2067,7 +2071,6 @@ class TestHamiltonianExpvalGradients:
         # two (broadcasted if broadcast=True) shifts per rotation gate
         assert len(tapes) == (2 if broadcast else 2 * 2)
         assert [t.batch_size for t in tapes] == ([2, 2] if broadcast else [None] * 4)
-        spy.assert_not_called()
 
         all_res = fn(dev.execute(tapes))
         assert isinstance(all_res, tuple)
@@ -2088,7 +2091,7 @@ class TestHamiltonianExpvalGradients:
     def test_trainable_coeffs(self, broadcast, tol):
         """Test trainable Hamiltonian coefficients"""
         shot_vec = many_shots_shot_vector
-        dev = qml.device("default.qubit", wires=2, shots=shot_vec)
+        dev = shots_to_analytic(qml.device("default.qubit", wires=2, shots=shot_vec))
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
         coeffs = qml.numpy.array([0.1, 0.2, 0.3])

@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for merging adjacent rotations of the same type in a quantum circuit."""
-# pylint: disable=too-many-branches
+
 
 from functools import lru_cache, partial
-from typing import Optional
 
 import pennylane as qml
 from pennylane.ops.op_math import Adjoint
@@ -34,7 +33,7 @@ def _get_plxpr_merge_rotations():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
-        from jax.core import Jaxpr
+        from jax.extend.core import Jaxpr
 
         from pennylane.capture import PlxprInterpreter
         from pennylane.capture.primitives import measure_prim
@@ -42,12 +41,12 @@ def _get_plxpr_merge_rotations():
     except ImportError:  # pragma: no cover
         return None, None
 
-    # pylint: disable=redefined-outer-name, too-few-public-methods
+    # pylint: disable=redefined-outer-name
     class MergeRotationsInterpreter(PlxprInterpreter):
         """Plxpr Interpreter for applying the ``merge_rotations``
         transform when program capture is enabled."""
 
-        def __init__(self, atol: Optional[float] = 1e-8, include_gates: Optional[list[str]] = None):
+        def __init__(self, atol: float | None = 1e-8, include_gates: list[str] | None = None):
             super().__init__()
             self.atol = atol
             self.include_gates = include_gates
@@ -78,7 +77,7 @@ def _get_plxpr_merge_rotations():
             for prev_op in previous_ops_on_wires:
                 super().interpret_operation(prev_op)
 
-        # pylint: disable=inconsistent-return-statements
+        # pylint: disable=inconsistent-return-statements,too-many-branches
         def interpret_operation(self, op: Operator):
             """Interpret a PennyLane operation instance.
 
@@ -101,14 +100,23 @@ def _get_plxpr_merge_rotations():
                 return self._update_previous_ops(op)
 
             previous_op = self.previous_ops.get(op.wires[0])
-            if previous_op is None:
+            dyn_wires = {w for w in op.wires if qml.math.is_abstract(w)}
+            other_saved_wires = set(self.previous_ops.keys()) - dyn_wires
+            if previous_op is None or (dyn_wires and other_saved_wires):
+                # If there are dynamic wires, we need to make sure that there are no
+                # other wires in `self.previous_ops`, otherwise we can't merge. If
+                # there are other wires but no other op on the same dynamic wire(s),
+                # there isn't anything to merge, so we just add the current op to
+                # `self.previous_ops` and return.
+                if dyn_wires and (previous_op is None or other_saved_wires):
+                    self._interpret_remaining_ops()
                 for w in op.wires:
                     self.previous_ops[w] = op
                 return
 
             # pylint: disable = unidiomatic-typecheck
             # Can't use `isinstance` since op could be a subclass of type(previous_op)
-            can_merge = (op.wires == previous_op.wires) and (type(op) == type(previous_op))
+            can_merge = op.wires == previous_op.wires and type(op) == type(previous_op)
             if not can_merge:
                 self._interpret_previous_ops_on_wires(op.wires)
                 return self._update_previous_ops(op)
@@ -136,6 +144,12 @@ def _get_plxpr_merge_rotations():
                 or qml.math.requires_grad(cumulative_angles)
                 or not angles_cancel
             )
+
+            if any(qml.math.is_abstract(w) for w in op.wires):
+                for w in op.wires:
+                    del self.previous_ops[w]
+                self._interpret_remaining_ops()
+
             if keep_merged_op:
                 # pylint: disable = protected-access
                 new_op = op._primitive.impl(*cumulative_angles, wires=op.wires)
@@ -149,7 +163,7 @@ def _get_plxpr_merge_rotations():
             """Interpret all the previously seen operations and then clear."""
 
             # Use list(dict(...)) as opposed to a set to maintain deterministic order
-            ops_remaining = list(dict.fromkeys((self.previous_ops.values())))
+            ops_remaining = list(dict.fromkeys(self.previous_ops.values()))
             for op in ops_remaining:
                 super().interpret_operation(op)
 
@@ -159,7 +173,7 @@ def _get_plxpr_merge_rotations():
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -167,7 +181,7 @@ def _get_plxpr_merge_rotations():
                 list[TensorLike]: the results of the execution.
 
             """
-            # pylint: disable=too-many-branches,attribute-defined-outside-init
+            # pylint: disable=attribute-defined-outside-init
             self._env = {}
             self.setup()
 

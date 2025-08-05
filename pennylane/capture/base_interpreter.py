@@ -14,14 +14,18 @@
 """
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
-# pylint: disable=no-self-use
+from collections.abc import Callable, Sequence
 from copy import copy
 from functools import partial, wraps
-from typing import Callable, Optional, Sequence
+
+# pylint: disable=no-self-use, wrong-import-position
+from importlib.metadata import version
 
 import jax
+from packaging.version import Version
 
 import pennylane as qml
+from pennylane import math
 
 from .flatfn import FlatFn
 from .primitives import (
@@ -35,7 +39,7 @@ from .primitives import (
     while_loop_prim,
 )
 
-FlattenedHigherOrderPrimitives: dict["jax.core.Primitive", Callable] = {}
+FlattenedHigherOrderPrimitives: dict["jax.extend.core.Primitive", Callable] = {}
 """
 A dictionary containing flattened style cond, while, and for loop higher order primitives.
 .. code-block::
@@ -43,7 +47,7 @@ A dictionary containing flattened style cond, while, and for loop higher order p
 """
 
 
-def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[Optional[int]]):
+def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[int | None]):
     """
     A helper for broadcast_in_dim and iota to combine static dimensions and dynamic dimensions.
 
@@ -91,8 +95,8 @@ def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tu
 
 
 def jaxpr_to_jaxpr(
-    interpreter: "PlxprInterpreter", jaxpr: "jax.core.Jaxpr", consts, *args
-) -> "jax.core.Jaxpr":
+    interpreter: "PlxprInterpreter", jaxpr: "jax.extend.core.Jaxpr", consts, *args
+) -> "jax.extend.core.ClosedJaxpr":
     """A convenience utility for converting jaxpr to a new jaxpr via an interpreter."""
 
     f = partial(interpreter.eval, jaxpr, consts)
@@ -217,7 +221,7 @@ class PlxprInterpreter:
     """
 
     _env: dict
-    _primitive_registrations: dict["jax.core.Primitive", Callable] = {}
+    _primitive_registrations: dict["jax.extend.core.Primitive", Callable] = {}
 
     def __init_subclass__(cls) -> None:
         cls._primitive_registrations = copy(cls._primitive_registrations)
@@ -226,11 +230,13 @@ class PlxprInterpreter:
         self._env = {}
 
     @classmethod
-    def register_primitive(cls, primitive: "jax.core.Primitive") -> Callable[[Callable], Callable]:
+    def register_primitive(
+        cls, primitive: "jax.extend.core.Primitive"
+    ) -> Callable[[Callable], Callable]:
         """Registers a custom method for handling a primitive
 
         Args:
-            primitive (jax.core.Primitive): the primitive we want custom behavior for
+            primitive (jax.extend.core.Primitive): the primitive we want custom behavior for
 
         Returns:
             Callable: a decorator for adding a function to the custom registrations map
@@ -241,7 +247,7 @@ class PlxprInterpreter:
 
         .. code-block:: python
 
-            my_primitive = jax.core.Primitive("my_primitve")
+            my_primitive = jax.extend.core.Primitive("my_primitve")
 
             @Interpreter_Type.register(my_primitive)
             def handle_my_primitive(self: Interpreter_Type, *invals, **params)
@@ -257,7 +263,7 @@ class PlxprInterpreter:
 
     def read(self, var):
         """Extract the value corresponding to a variable."""
-        return var.val if isinstance(var, jax.core.Literal) else self._env[var]
+        return var.val if isinstance(var, jax.extend.core.Literal) else self._env[var]
 
     def setup(self) -> None:
         """Initialize the instance before interpreting equations.
@@ -293,11 +299,11 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(op)
         return jax.tree_util.tree_unflatten(struct, data)
 
-    def interpret_operation_eqn(self, eqn: "jax.core.JaxprEqn"):
+    def interpret_operation_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to an operator.
 
         Args:
-            eqn (jax.core.JaxprEqn): a jax equation for an operator.
+            eqn (jax.extend.core.JaxprEqn): a jax equation for an operator.
 
         See also: :meth:`~.interpret_operation`.
 
@@ -309,11 +315,11 @@ class PlxprInterpreter:
             return self.interpret_operation(op)
         return op
 
-    def interpret_measurement_eqn(self, eqn: "jax.core.JaxprEqn"):
+    def interpret_measurement_eqn(self, eqn: "jax.extend.core.JaxprEqn"):
         """Interpret an equation corresponding to a measurement process.
 
         Args:
-            eqn (jax.core.JaxprEqn)
+            eqn (jax.extend.core.JaxprEqn)
 
         See also :meth:`~.interpret_measurement`.
 
@@ -335,11 +341,11 @@ class PlxprInterpreter:
         data, struct = jax.tree_util.tree_flatten(measurement)
         return jax.tree_util.tree_unflatten(struct, data)
 
-    def eval(self, jaxpr: "jax.core.Jaxpr", consts: Sequence, *args) -> list:
+    def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: Sequence, *args) -> list:
         """Evaluate a jaxpr.
 
         Args:
-            jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+            jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
             consts (list[TensorLike]): the constant variables for the jaxpr
             *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -409,7 +415,7 @@ class PlxprInterpreter:
 
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.broadcast_in_dim_p)
-def _(self, x, *dyn_shape, shape, broadcast_dimensions):
+def _(self, x, *dyn_shape, shape, broadcast_dimensions, sharding):
     """Handle the broadcast_in_dim primitive created by jnp.ones, jnp.zeros, jnp.full
 
     >>> import jax
@@ -429,12 +435,14 @@ def _(self, x, *dyn_shape, shape, broadcast_dimensions):
     # needs custom primitive as jax.core.eval_jaxpr will error out with this
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
 
-    return jax.lax.broadcast_in_dim(x, new_shape, broadcast_dimensions=broadcast_dimensions)
+    return jax.lax.broadcast_in_dim(
+        x, new_shape, broadcast_dimensions=broadcast_dimensions, out_sharding=sharding
+    )
 
 
 # pylint: disable=unused-argument
 @PlxprInterpreter.register_primitive(jax.lax.iota_p)
-def _(self, *dyn_shape, dimension, dtype, shape):
+def _(self, *dyn_shape, dimension, dtype, shape, sharding):
     """Handle the iota primitive created by jnp.arange
 
     >>> import jax
@@ -449,7 +457,7 @@ def _(self, *dyn_shape, dimension, dtype, shape):
     """
     # iota is primitive created by jnp.arange
     new_shape = _fill_in_shape_with_dyn_shape(dyn_shape, shape)
-    return jax.lax.broadcasted_iota(dtype, new_shape, dimension)
+    return jax.lax.broadcasted_iota(dtype, new_shape, dimension, out_sharding=sharding)
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
@@ -580,7 +588,7 @@ def handle_while_loop(
     )
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
 def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
@@ -630,15 +638,22 @@ class FlattenedInterpreter(PlxprInterpreter):
     """
 
 
+jax_version = version("jax")
+if Version(jax_version) > Version("0.6.2"):  # pragma: no cover
+    from jax._src.pjit import jit_p as pjit_p
+else:  # pragma: no cover
+    from jax._src.pjit import pjit_p
+
+
 # pylint: disable=protected-access
-@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
+@FlattenedInterpreter.register_primitive(pjit_p)
 def _(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
-    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
-    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
+    subfuns, params = pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
+    return pjit_p.bind(*subfuns, *invals, **params)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)
@@ -675,6 +690,10 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = invals[const_slice]
+        if math.is_abstract(pred):
+            raise NotImplementedError(
+                f"{self} does not yet support jitting cond with abstract conditions."
+            )
         if pred and jaxpr is not None:
             return copy(self).eval(jaxpr, consts, *args)
     return ()
@@ -705,11 +724,11 @@ def flattened_for(
 FlattenedHigherOrderPrimitives[for_loop_prim] = flattened_for
 
 
-def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+def eval_jaxpr(jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
     """A version of ``jax.core.eval_jaxpr`` that can handle creating arrays with dynamic shapes.
 
     Args:
-        jaxpr (jax.core.Jaxpr): a jaxpr
+        jaxpr (jax.extend.core.Jaxpr): a jaxpr
         consts (list[TensorLike]): the constants for the jaxpr
         *args (TensorLike): the arguments for the jaxpr
 
@@ -726,7 +745,7 @@ def eval_jaxpr(jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
     >>> jaxpr = jax.make_jaxpr(f)(3)
     >>> qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
     [Array([0, 1], dtype=int32)]
-    >>>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+    >>> jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
     XlaRuntimeError: error: 'mhlo.dynamic_iota' op can't be translated to XLA HLO
 
     """

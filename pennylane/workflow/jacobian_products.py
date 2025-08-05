@@ -14,21 +14,26 @@
 """
 Defines classes that take the vjps, jvps, and jacobians of circuits.
 """
+from __future__ import annotations
+
 import abc
 import inspect
 import logging
 from collections.abc import Callable, Sequence
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 from cachetools import LRUCache
 
 import pennylane as qml
-from pennylane.tape import QuantumScriptBatch
-from pennylane.typing import ResultBatch, TensorLike
+from pennylane.exceptions import QuantumFunctionError
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+if TYPE_CHECKING:
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.typing import ResultBatch, TensorLike
 
 
 def _compute_vjps(jacs, dys, tapes):
@@ -216,18 +221,18 @@ class NoGradients(JacobianProductCalculator):
     error_msg = "Derivatives cannot be calculated with diff_method=None"
 
     def compute_jacobian(self, tapes: QuantumScriptBatch) -> tuple:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
     def compute_vjp(self, tapes: QuantumScriptBatch, dy: Sequence[Sequence[TensorLike]]) -> tuple:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
     def execute_and_compute_jvp(
         self, tapes: QuantumScriptBatch, tangents: Sequence[Sequence[TensorLike]]
     ) -> tuple[ResultBatch, tuple]:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
     def execute_and_compute_jacobian(self, tapes: QuantumScriptBatch) -> tuple[ResultBatch, tuple]:
-        raise qml.QuantumFunctionError(NoGradients.error_msg)
+        raise QuantumFunctionError(NoGradients.error_msg)
 
 
 class TransformJacobianProducts(JacobianProductCalculator):
@@ -262,8 +267,8 @@ class TransformJacobianProducts(JacobianProductCalculator):
     def __init__(
         self,
         inner_execute: Callable,
-        gradient_transform: "qml.transforms.core.TransformDispatcher",
-        gradient_kwargs: Optional[dict] = None,
+        gradient_transform: qml.transforms.core.TransformDispatcher,
+        gradient_kwargs: dict | None = None,
         cache_full_jacobian: bool = False,
     ):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
@@ -417,8 +422,8 @@ class DeviceDerivatives(JacobianProductCalculator):
 
     def __init__(
         self,
-        device: "qml.devices.Device",
-        execution_config: Optional["qml.devices.ExecutionConfig"] = None,
+        device: qml.devices.Device,
+        execution_config: qml.devices.ExecutionConfig | None = None,
     ):
         if execution_config is None:
             execution_config = qml.devices.DefaultExecutionConfig
@@ -667,9 +672,7 @@ class DeviceJacobianProducts(JacobianProductCalculator):
     def __repr__(self):
         return f"<DeviceJacobianProducts: {self._device.name}, {self._execution_config}>"
 
-    def __init__(
-        self, device: "qml.devices.Device", execution_config: "qml.devices.ExecutionConfig"
-    ):
+    def __init__(self, device: qml.devices.Device, execution_config: qml.devices.ExecutionConfig):
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug("DeviceJacobianProducts created with (%s, %s)", device, execution_config)
         self._device = device

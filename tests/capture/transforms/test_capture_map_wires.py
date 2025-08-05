@@ -23,7 +23,7 @@ import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 from pennylane.ops.functions.map_wires import MapWiresInterpreter, map_wires_plxpr_to_plxpr
 
@@ -367,7 +367,7 @@ def test_map_wires_plxpr_to_plxpr():
     tkwargs = {}
     jaxpr = jax.make_jaxpr(circuit)()
     transformed_jaxpr = map_wires_plxpr_to_plxpr(jaxpr.jaxpr, jaxpr.consts, targs, tkwargs)
-    assert isinstance(transformed_jaxpr, jax.core.ClosedJaxpr)
+    assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
     assert len(transformed_jaxpr.eqns) == 5
 
     def assert_wires(orig_eqn, transformed_eqn):

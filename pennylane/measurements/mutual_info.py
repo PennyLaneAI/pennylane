@@ -17,15 +17,113 @@ This module contains the qml.mutual_info measurement.
 """
 from collections.abc import Sequence
 from copy import copy
-from typing import Optional
 
-import pennylane as qml
+from pennylane import math
+from pennylane.exceptions import QuantumFunctionError
+from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
-from .measurements import MutualInfo, StateMeasurement
+from .measurements import StateMeasurement
 
 
-def mutual_info(wires0, wires1, log_base=None):
+class MutualInfoMP(StateMeasurement):
+    """Measurement process that computes the mutual information between the provided wires.
+
+    Please refer to :func:`pennylane.mutual_info` for detailed documentation.
+
+    Args:
+        wires (Sequence[.Wires]): The wires the measurement process applies to.
+        id (str): custom label given to a measurement instance, can be useful for some applications
+            where the instance has to be identified
+        log_base (float): base for the logarithm
+
+    """
+
+    def __str__(self):
+        return "mutualinfo"
+
+    _shortname = "mutualinfo"
+
+    def _flatten(self):
+        metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
+        return (None, None), metadata
+
+    def __init__(
+        self,
+        wires: Sequence[Wires] | None = None,
+        id: str | None = None,
+        log_base: float | None = None,
+    ):
+        self.log_base = log_base
+        super().__init__(wires=wires, id=id)
+
+    # pylint: disable=arguments-differ
+    @classmethod
+    def _primitive_bind_call(cls, wires: Sequence, **kwargs):
+        if cls._wires_primitive is None:  # pragma: no cover
+            # just a safety check
+            return type.__call__(cls, wires=wires, **kwargs)  # pragma: no cover
+        return cls._wires_primitive.bind(*wires[0], *wires[1], n_wires0=len(wires[0]), **kwargs)
+
+    def __repr__(self):
+        return f"MutualInfo(wires0={self.raw_wires[0].tolist()}, wires1={self.raw_wires[1].tolist()}, log_base={self.log_base})"
+
+    @property
+    def hash(self):
+        """int: returns an integer hash uniquely representing the measurement process"""
+        fingerprint = (
+            self.__class__.__name__,
+            tuple(self.raw_wires[0].tolist()),
+            tuple(self.raw_wires[1].tolist()),
+            self.log_base,
+        )
+
+        return hash(fingerprint)
+
+    @property
+    def numeric_type(self):
+        return float
+
+    def map_wires(self, wire_map: dict):
+        new_measurement = copy(self)
+        new_measurement._wires = [
+            Wires([wire_map.get(wire, wire) for wire in wires]) for wires in self.raw_wires
+        ]
+        return new_measurement
+
+    def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple:
+        return ()
+
+    def process_state(self, state: TensorLike, wire_order: Wires):
+        state = math.dm_from_state_vector(state)
+        return math.mutual_info(
+            state,
+            indices0=list(self._wires[0]),
+            indices1=list(self._wires[1]),
+            c_dtype=state.dtype,
+            base=self.log_base,
+        )
+
+    def process_density_matrix(self, density_matrix: TensorLike, wire_order: Wires):
+        return math.mutual_info(
+            density_matrix,
+            indices0=list(self._wires[0]),
+            indices1=list(self._wires[1]),
+            c_dtype=density_matrix.dtype,
+            base=self.log_base,
+        )
+
+
+if MutualInfoMP._wires_primitive is not None:
+
+    @MutualInfoMP._wires_primitive.def_impl
+    def _(*all_wires, n_wires0, **kwargs):
+        wires0 = all_wires[:n_wires0]
+        wires1 = all_wires[n_wires0:]
+        return type.__call__(MutualInfoMP, wires=(wires0, wires1), **kwargs)
+
+
+def mutual_info(wires0, wires1, log_base=None) -> MutualInfoMP:
     r"""Mutual information between the subsystems prior to measurement:
 
     .. math::
@@ -76,112 +174,12 @@ def mutual_info(wires0, wires1, log_base=None):
 
     .. seealso:: :func:`~pennylane.vn_entropy`, :func:`pennylane.math.mutual_info`
     """
-    wires0 = qml.wires.Wires(wires0)
-    wires1 = qml.wires.Wires(wires1)
+    wires0 = Wires(wires0)
+    wires1 = Wires(wires1)
 
     # the subsystems cannot overlap
-    if not any(qml.math.is_abstract(w) for w in wires0 + wires1) and [
+    if not any(math.is_abstract(w) for w in wires0 + wires1) and [
         wire for wire in wires0 if wire in wires1
     ]:
-        raise qml.QuantumFunctionError(
-            "Subsystems for computing mutual information must not overlap."
-        )
+        raise QuantumFunctionError("Subsystems for computing mutual information must not overlap.")
     return MutualInfoMP(wires=(wires0, wires1), log_base=log_base)
-
-
-class MutualInfoMP(StateMeasurement):
-    """Measurement process that computes the mutual information between the provided wires.
-
-    Please refer to :func:`pennylane.mutual_info` for detailed documentation.
-
-    Args:
-        wires (Sequence[.Wires]): The wires the measurement process applies to.
-        id (str): custom label given to a measurement instance, can be useful for some applications
-            where the instance has to be identified
-        log_base (float): base for the logarithm
-
-    """
-
-    def __str__(self):
-        return "mutualinfo"
-
-    _shortname = MutualInfo  #! Note: deprecated. Change the value to "mutualinfo" in v0.42
-
-    def _flatten(self):
-        metadata = (("wires", tuple(self.raw_wires)), ("log_base", self.log_base))
-        return (None, None), metadata
-
-    # pylint: disable=too-many-arguments
-    def __init__(
-        self,
-        wires: Optional[Sequence[Wires]] = None,
-        id: Optional[str] = None,
-        log_base: Optional[float] = None,
-    ):
-        self.log_base = log_base
-        super().__init__(wires=wires, id=id)
-
-    # pylint: disable=arguments-differ
-    @classmethod
-    def _primitive_bind_call(cls, wires: Sequence, **kwargs):
-        if cls._wires_primitive is None:  # pragma: no cover
-            # just a safety check
-            return type.__call__(cls, wires=wires, **kwargs)  # pragma: no cover
-        return cls._wires_primitive.bind(*wires[0], *wires[1], n_wires0=len(wires[0]), **kwargs)
-
-    def __repr__(self):
-        return f"MutualInfo(wires0={self.raw_wires[0].tolist()}, wires1={self.raw_wires[1].tolist()}, log_base={self.log_base})"
-
-    @property
-    def hash(self):
-        """int: returns an integer hash uniquely representing the measurement process"""
-        fingerprint = (
-            self.__class__.__name__,
-            tuple(self.raw_wires[0].tolist()),
-            tuple(self.raw_wires[1].tolist()),
-            self.log_base,
-        )
-
-        return hash(fingerprint)
-
-    @property
-    def numeric_type(self):
-        return float
-
-    def map_wires(self, wire_map: dict):
-        new_measurement = copy(self)
-        new_measurement._wires = [
-            Wires([wire_map.get(wire, wire) for wire in wires]) for wires in self.raw_wires
-        ]
-        return new_measurement
-
-    def shape(self, shots: Optional[int] = None, num_device_wires: int = 0) -> tuple:
-        return ()
-
-    def process_state(self, state: Sequence[complex], wire_order: Wires):
-        state = qml.math.dm_from_state_vector(state)
-        return qml.math.mutual_info(
-            state,
-            indices0=list(self._wires[0]),
-            indices1=list(self._wires[1]),
-            c_dtype=state.dtype,
-            base=self.log_base,
-        )
-
-    def process_density_matrix(self, density_matrix: Sequence[complex], wire_order: Wires):
-        return qml.math.mutual_info(
-            density_matrix,
-            indices0=list(self._wires[0]),
-            indices1=list(self._wires[1]),
-            c_dtype=density_matrix.dtype,
-            base=self.log_base,
-        )
-
-
-if MutualInfoMP._wires_primitive is not None:
-
-    @MutualInfoMP._wires_primitive.def_impl
-    def _(*all_wires, n_wires0, **kwargs):
-        wires0 = all_wires[:n_wires0]
-        wires1 = all_wires[n_wires0:]
-        return type.__call__(MutualInfoMP, wires=(wires0, wires1), **kwargs)

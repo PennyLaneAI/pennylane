@@ -770,6 +770,17 @@ class TestSnapshot:
         assert debugger.snapshots[0].shape == ()
         assert debugger.snapshots[0] == qml.devices.qubit.measure(measurement, initial_state)
 
+    def test_override_shots(self, ml_framework):
+        """Test that shots can be overridden for one measurement."""
+
+        initial_state = qml.math.asarray(np.array([1.0, 0.0]), like=ml_framework)
+
+        debugger = Debugger()
+        op = qml.Snapshot("tag", qml.sample(wires=0), shots=50)
+        _ = apply_operation(op, initial_state, debugger=debugger)
+
+        assert debugger.snapshots["tag"].shape == (50,)
+
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
         initial_state = qml.math.asarray([[1.0, 0.0], [0.0, 0.1]], like=ml_framework)
@@ -905,10 +916,18 @@ class TestRXCalcGrad:
 class TestBroadcasting:  # pylint: disable=too-few-public-methods
     """Tests that broadcasted operations are applied correctly."""
 
+    # include operations both with batch_size==1 and batch_size>1
     broadcasted_ops = [
+        qml.RX(np.array([np.pi]), wires=2),
         qml.RX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.PhaseShift(np.array([np.pi]), wires=2),
         qml.PhaseShift(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=2),
+        qml.IsingXX(np.array([np.pi]), wires=[1, 2]),
         qml.IsingXX(np.array([np.pi, np.pi / 2, np.pi / 4]), wires=[1, 2]),
+        qml.QubitUnitary(
+            np.array([unitary_group.rvs(8)]),
+            wires=[0, 1, 2],
+        ),
         qml.QubitUnitary(
             np.array([unitary_group.rvs(8), unitary_group.rvs(8), unitary_group.rvs(8)]),
             wires=[0, 1, 2],
@@ -934,11 +953,13 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
         expanded_mat = (
-            [np.kron(np.eye(2**missing_wires), mat[i]) for i in range(3)]
+            [np.kron(np.eye(2**missing_wires), mat[i]) for i in range(op.batch_size)]
             if missing_wires
-            else [mat[i] for i in range(3)]
+            else [mat[i] for i in range(op.batch_size)]
         )
-        expected = [(expanded_mat[i] @ state.flatten()).reshape((2, 2, 2)) for i in range(3)]
+        expected = [
+            (expanded_mat[i] @ state.flatten()).reshape((2, 2, 2)) for i in range(op.batch_size)
+        ]
 
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
@@ -969,11 +990,13 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         missing_wires = 3 - len(op.wires)
         mat = op.matrix()
         expanded_mat = (
-            [np.kron(np.eye(2**missing_wires), mat[i]) for i in range(3)]
+            [np.kron(np.eye(2**missing_wires), mat[i]) for i in range(op.batch_size)]
             if missing_wires
-            else [mat[i] for i in range(3)]
+            else [mat[i] for i in range(op.batch_size)]
         )
-        expected = [(expanded_mat[i] @ state[i].flatten()).reshape((2, 2, 2)) for i in range(3)]
+        expected = [
+            (expanded_mat[i] @ state[i].flatten()).reshape((2, 2, 2)) for i in range(op.batch_size)
+        ]
 
         assert qml.math.get_interface(res) == ml_framework
         assert qml.math.allclose(res, expected)
@@ -987,7 +1010,6 @@ class TestBroadcasting:  # pylint: disable=too-few-public-methods
         assert op._batch_size is _UNSET_BATCH_SIZE  # pylint:disable=protected-access
         state = method(op, state)
         assert state.shape == (3, 2, 2)
-        assert op.batch_size == 3
 
 
 @pytest.mark.parametrize("method", methods)

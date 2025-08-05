@@ -14,9 +14,11 @@
 """
 This module contains the qml.simplify function.
 """
+from __future__ import annotations
+
 from collections.abc import Callable
 from copy import copy
-from typing import Union
+from typing import TYPE_CHECKING
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
@@ -24,10 +26,12 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
-from pennylane.workflow import QNode
+
+if TYPE_CHECKING:
+    from pennylane.workflow import QNode
 
 
-def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable]):
+def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Callable):
     """Simplifies an operator, tape, qnode or quantum function by reducing its arithmetic depth
     or number of rotation parameters.
 

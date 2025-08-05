@@ -18,11 +18,14 @@ Developer note: when making changes to this file, you can run
 `pennylane/doc/_static/tape_mpl/tape_mpl_examples.py` to generate docstring
 images.  If you change the docstring examples, please update this file.
 """
-# pylint: disable=no-member
-from collections import namedtuple
-from functools import singledispatch
 
-import pennylane as qml
+from __future__ import annotations
+
+from collections import namedtuple
+from collections.abc import Sequence
+from functools import singledispatch
+from typing import TYPE_CHECKING
+
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP
 
@@ -37,20 +40,26 @@ from .utils import (
     unwrap_controls,
 )
 
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=ungrouped-imports
+if TYPE_CHECKING:
+    from pennylane.operation import Operator
+    from pennylane.tape import QuantumScript
+
+
 has_mpl = True
 try:
     import matplotlib as mpl
 except (ModuleNotFoundError, ImportError):  # pragma: no cover
     has_mpl = False
 
-
-_Config = namedtuple("_Config", ("decimals", "active_wire_notches", "bit_map", "terminal_layers"))
+_Config = namedtuple(
+    "_Config", ("decimals", "active_wire_notches", "bit_map", "cwire_layers", "cwire_wires")
+)
 
 
 @singledispatch
-def _add_operation_to_drawer(
-    op: qml.operation.Operator, drawer: MPLDrawer, layer: int, config: _Config
-) -> None:
+def _add_operation_to_drawer(op: Operator, drawer: MPLDrawer, layer: int, config: _Config) -> None:
     """Adds the ``op`` to an ``MPLDrawer`` at the designated location.
 
     Args:
@@ -63,13 +72,15 @@ def _add_operation_to_drawer(
         Adds a depiction of ``op`` to ``drawer``
 
     """
-    op_control_wires, control_values = unwrap_controls(op)
-
-    target_wires = (
-        [w for w in op.wires if w not in op_control_wires]
-        if len(op.wires) != 0
-        else list(range(drawer.n_wires))
-    )
+    op_control_wires, control_values, base = unwrap_controls(op)
+    is_global_op = isinstance(base, (ops.GlobalPhase, ops.Identity))
+    if len(op.wires) == 0 or is_global_op:
+        op_wires = list(range(drawer.n_wires))
+    else:
+        op_wires = op.wires
+    target_wires = [w for w in op_wires if w not in op_control_wires]
+    if is_global_op and len(target_wires) == 0:
+        raise ValueError("Can't draw controlled global gate with unknown non-control wires.")
 
     if control_values is None:
         control_values = [True for _ in op_control_wires]
@@ -163,7 +174,7 @@ def _(op: MidMeasureMP, drawer, layer, _):
 
 
 @_add_operation_to_drawer.register
-def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
+def _(op: ops.Conditional, drawer, layer, config) -> None:
     drawer.box_gate(
         layer,
         list(op.wires),
@@ -173,7 +184,7 @@ def _(op: qml.ops.op_math.Conditional, drawer, layer, config) -> None:
     )
     sorted_bits = sorted([config.bit_map[m] for m in op.meas_val.measurements])
     for b in sorted_bits[:-1]:
-        erase_right = layer < config.terminal_layers[b]
+        erase_right = layer < config.cwire_layers[b][-1][-1]
         drawer.cwire_join(layer, b + drawer.n_wires, erase_right=erase_right)
 
 
@@ -217,77 +228,123 @@ def _get_measured_bits(measurements, bit_map, offset):
     return measured_bits
 
 
-def _tape_mpl(tape, wire_order=None, show_all_wires=False, decimals=None, *, fig=None, **kwargs):
-    """Private function wrapped with styling."""
-    wire_options = kwargs.get("wire_options", None)
-    label_options = kwargs.get("label_options", None)
-    show_wire_labels = kwargs.get("show_wire_labels", True)
-    active_wire_notches = kwargs.get("active_wire_notches", True)
-    fontsize = kwargs.get("fontsize", None)
-
-    wire_map = convert_wire_order(tape, wire_order=wire_order, show_all_wires=show_all_wires)
-    tape = transform_deferred_measurements_tape(tape)
-    tape = qml.map_wires(tape, wire_map=wire_map)[0][0]
-    bit_map = default_bit_map(tape)
-
-    layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
-
-    for i, layer in enumerate(layers):
-        if any(isinstance(o, qml.measurements.MidMeasureMP) and o.reset for o in layer):
-            layers.insert(i + 1, [])
-
+def _draw_layers(layers, measurements, wire_map, config, starting_dots=False, **kwargs):
+    """Private function drawing the given layers."""
     n_layers = len(layers)
     n_wires = len(wire_map)
-
-    bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
 
     drawer = MPLDrawer(
         n_layers=n_layers,
         wire_map=wire_map,
-        c_wires=len(bit_map),
-        wire_options=wire_options,
-        fig=fig,
-    )
-
-    config = _Config(
-        decimals=decimals,
-        active_wire_notches=active_wire_notches,
-        bit_map=bit_map,
-        terminal_layers=[cl[-1][-1] for cl in cwire_layers.values()],
+        c_wires=len(config.bit_map),
+        wire_options=kwargs.get("wire_options", None),
+        fig=kwargs.get("fig", None),
+        starting_dots=starting_dots,
     )
 
     if n_wires == 0:
         return drawer.fig, drawer.ax
 
+    fontsize = kwargs.get("fontsize", None)
     if fontsize is not None:
         drawer.fontsize = fontsize
 
-    if show_wire_labels:
-        drawer.label(list(wire_map), text_options=label_options)
+    if kwargs.get("show_wire_labels", True):
+        drawer.label(list(wire_map), text_options=kwargs.get("label_options", None))
     else:
         drawer.crop_wire_labels()
 
-    _add_classical_wires(drawer, cwire_layers, cwire_wires)
+    _add_classical_wires(drawer, config.cwire_layers, config.cwire_wires)
 
     for layer, layer_ops in enumerate(layers):
         for op in layer_ops:
             _add_operation_to_drawer(op, drawer, layer, config)
 
-    for wire in _get_measured_wires(tape.measurements, list(range(n_wires))):
-        drawer.measure(n_layers, wire)
+    if measurements == "dots":
+        for wire in wire_map.values():
+            drawer.ax.text(
+                n_layers + 0.25,
+                wire,
+                s="···",
+                ha="center",
+                va="center_baseline",
+                fontsize=21,
+            )
+    else:
+        for wire in _get_measured_wires(measurements, list(range(n_wires))):
+            drawer.measure(n_layers, wire)
 
-    measured_bits = _get_measured_bits(tape.measurements, bit_map, drawer.n_wires)
-    if measured_bits:
-        drawer.measure(n_layers, measured_bits)
+        measured_bits = _get_measured_bits(measurements, config.bit_map, drawer.n_wires)
+        if measured_bits:
+            drawer.measure(n_layers, measured_bits)
 
     return drawer.fig, drawer.ax
 
 
+def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kwargs):
+    """Internal implementation for matplotlib circuit visualization.
+
+    Handles the core drawing logic while the public tape_mpl wrapper manages styling.
+
+    Returns:
+        When max_length is None: tuple(Figure, Axes) for the complete circuit
+        Otherwise: list[tuple(Figure, Axes)] with one pair per circuit segment
+    """
+    full_wire_map, used_wire_map = convert_wire_order(
+        tape, wire_order=wire_order, show_all_wires=show_all_wires
+    )
+    tape = transform_deferred_measurements_tape(tape)
+    tape = ops.functions.map_wires(tape, wire_map=full_wire_map)[0][0]
+    bit_map = default_bit_map(tape)
+
+    layers = drawable_layers(tape.operations, wire_map={i: i for i in tape.wires}, bit_map=bit_map)
+
+    for i, layer in enumerate(layers):
+        if any(isinstance(o, MidMeasureMP) and o.reset for o in layer):
+            layers.insert(i + 1, [])
+
+    bit_map, cwire_layers, cwire_wires = cwire_connections(layers + [tape.measurements], bit_map)
+
+    config = _Config(
+        decimals=kwargs.get("decimals", None),
+        active_wire_notches=kwargs.get("active_wire_notches", True),
+        bit_map=bit_map,
+        cwire_layers=cwire_layers,
+        cwire_wires=cwire_wires,
+    )
+
+    if max_length is None:
+        return _draw_layers(
+            layers, tape.measurements, config=config, wire_map=used_wire_map, **kwargs
+        )
+
+    layer_count = len(layers)
+    return [
+        _draw_layers(
+            layers=layers[i : i + max_length],
+            measurements=tape.measurements if i + max_length >= layer_count else "dots",
+            config=config,
+            wire_map=used_wire_map,
+            starting_dots=i > 0,
+            **kwargs,
+        )
+        for i in range(0, layer_count, max_length)
+    ]
+
+
 # pylint: disable=too-many-arguments
 def tape_mpl(
-    tape, wire_order=None, show_all_wires=False, decimals=None, style=None, *, fig=None, **kwargs
+    tape: QuantumScript,
+    wire_order: Sequence | None = None,
+    show_all_wires: bool = False,
+    decimals: int | None = None,
+    style: str | None = None,
+    *,
+    fig: mpl.figure.Figure | None = None,
+    max_length: int | None = None,
+    **kwargs,
 ):
-    """Produces a matplotlib graphic from a tape.
+    """Produces matplotlib graphic objects (``fig`` and ``ax``) from a tape.
 
     Args:
         tape (QuantumTape): the operations and measurements to draw
@@ -313,9 +370,13 @@ def tape_mpl(
         active_wire_notches (bool): whether or not to add notches indicating active wires.
             Defaults to ``True``.
         fig (None or matplotlib Figure): Matplotlib figure to plot onto. If None, then create a new figure.
+        max_length (Optional[int]): When there is more than ``max_length`` layers, additional plots
+            will be produced with at most ``max_length`` individual layers.
 
     Returns:
         matplotlib.figure.Figure, matplotlib.axes._axes.Axes: The key elements for matplotlib's object oriented interface.
+        If ``max_length`` is less than the required number of layers, a list of tuples containing the figures
+        and axes will be returned instead.
 
     **Example:**
 
@@ -492,6 +553,7 @@ def tape_mpl(
             show_all_wires=show_all_wires,
             decimals=decimals,
             fig=fig,
+            max_length=max_length,
             **kwargs,
         )
     finally:

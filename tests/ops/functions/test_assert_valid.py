@@ -343,9 +343,7 @@ def test_data_is_tuple():
 def create_op_instance(c, str_wires=False):
     """Given an Operator class, create an instance of it."""
     n_wires = c.num_wires
-    if n_wires == qml.operation.AllWires:
-        n_wires = 0
-    elif n_wires == qml.operation.AnyWires:
+    if n_wires is None:
         n_wires = 1
 
     wires = qml.wires.Wires(range(n_wires))

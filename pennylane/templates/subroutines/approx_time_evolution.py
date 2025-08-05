@@ -17,9 +17,9 @@ Contains the ApproxTimeEvolution template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import copy
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
 from pennylane.ops import PauliRot
+from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
 
@@ -116,7 +116,6 @@ class ApproxTimeEvolution(Operation):
         tensor([-0.41614684 -0.41614684], requires_grad=True)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):
@@ -149,12 +148,12 @@ class ApproxTimeEvolution(Operation):
     def map_wires(self, wire_map: dict):
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["hamiltonian"] = qml.map_wires(
-            new_op._hyperparameters["hamiltonian"], wire_map
+        new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
+            wire_map
         )
         return new_op
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=QueuingManager):
         context.remove(self.hyperparameters["hamiltonian"])
         context.append(self)
         return self
@@ -162,7 +161,7 @@ class ApproxTimeEvolution(Operation):
     @staticmethod
     def compute_decomposition(
         *coeffs_and_time, wires, hamiltonian, n
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -209,17 +208,17 @@ class ApproxTimeEvolution(Operation):
         time = coeffs_and_time[-1]
 
         single_round = []
-        with qml.QueuingManager.stop_recording():
+        with QueuingManager.stop_recording():
             for pw, coeff in hamiltonian.pauli_rep.items():
                 if len(pw) == 0:
                     continue
                 theta = 2 * time * coeff / n
                 term_str = "".join(pw.values())
-                wires = qml.wires.Wires(pw.keys())
+                wires = Wires(pw.keys())
                 single_round.append(PauliRot(theta, term_str, wires=wires))
 
         full_decomp = single_round * n
-        if qml.QueuingManager.recording():
-            _ = [qml.apply(op) for op in full_decomp]
+        if QueuingManager.recording():
+            _ = [apply(op) for op in full_decomp]
 
         return full_decomp

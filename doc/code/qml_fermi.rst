@@ -6,12 +6,29 @@ Overview
 
 This module contains functions and classes for creating and manipulating fermionic operators.
 
-.. currentmodule:: pennylane.fermi
+.. currentmodule:: pennylane
 
-.. automodapi:: pennylane.fermi
-    :no-heading:
-    :no-main-docstr:
-    :no-inherited-members:
+Functions
+^^^^^^^^^
+
+.. autosummary::
+    :toctree: api
+
+    ~bravyi_kitaev
+    ~fermi.from_string
+    ~jordan_wigner
+    ~parity_transform
+
+Classes
+^^^^^^^
+
+.. autosummary::
+    :toctree: api
+
+    ~FermiA
+    ~FermiC
+    ~FermiSentence
+    ~FermiWord
 
 FermiC and FermiA
 -----------------

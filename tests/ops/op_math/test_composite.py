@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import DecompositionUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.ops.op_math import CompositeOp
 from pennylane.wires import Wires
 
@@ -278,6 +278,11 @@ def _is_method_with_no_argument(method):
 
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
+
+    def test_empty_repr(self):
+        """Test __repr__ on an empty composite op."""
+        op = ValidOp()
+        assert repr(op) == "ValidOp()"
 
     @pytest.mark.parametrize("ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, op_rep):

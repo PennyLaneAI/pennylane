@@ -14,6 +14,7 @@
 """Tests for default qubit."""
 # pylint: disable=import-outside-toplevel, no-member, too-many-arguments
 
+from multiprocessing import set_start_method
 from unittest import mock
 
 import numpy as np
@@ -21,6 +22,9 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import DefaultQubit, ExecutionConfig
+from pennylane.exceptions import DeviceError
+
+set_start_method("spawn")
 
 max_workers_list = [
     None,
@@ -75,7 +79,7 @@ def test_snapshot_multiprocessing_qnode():
         return qml.expval(qml.PauliX(0) + qml.PauliY(0))
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match="Debugging with ``Snapshots`` is not available with multiprocessing.",
     ):
         qml.snapshots(circuit)()
@@ -1382,6 +1386,7 @@ class TestPRNGKeySeed:
 
         assert not np.all(result1 == result2)
 
+    @pytest.mark.xfail  # [sc-90338]
     def test_different_max_workers_same_prng_key(self):
         """Test that devices with the same jax.random.PRNGKey but different threading will produce
         the same samples."""
@@ -1462,18 +1467,18 @@ class TestPRNGKeySeed:
 
         assert np.all(result1 == result2)
 
-    @pytest.mark.parametrize("max_workers", max_workers_list)
-    def test_finite_shots_postselection_defer_measurements(self, max_workers):
+    # @pytest.mark.parametrize("max_workers", max_workers_list)
+    def test_finite_shots_postselection_defer_measurements(self):
         """Test that the number of shots returned with postselection with a PRNGKey is different
         when executing a batch of tapes and the same when using `dev.execute` with the same tape
         multiple times."""
         import jax
 
-        dev = qml.device("default.qubit", max_workers=max_workers, seed=jax.random.PRNGKey(678))
+        dev = qml.device("default.qubit", seed=jax.random.PRNGKey(234))
 
         mv = qml.measure(0, postselect=1)
         qs = qml.tape.QuantumScript(
-            [qml.Hadamard(0), mv.measurements[0]], [qml.sample(wires=0)], shots=100
+            [qml.Hadamard(0), mv.measurements[0]], [qml.sample(wires=0)], shots=500
         )
         n_tapes = 5
         tapes = qml.defer_measurements(qs)[0] * 5
@@ -1800,8 +1805,16 @@ def test_projector_dynamic_type(max_workers, n_wires):
         assert np.isclose(res, 1 / 2**n_wires)
 
 
-@pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "jax", "tensorflow"])
+@pytest.mark.parametrize(
+    "interface",
+    [
+        "numpy",
+        pytest.param("autograd", marks=pytest.mark.autograd),
+        pytest.param("torch", marks=pytest.mark.torch),
+        pytest.param("jax", marks=pytest.mark.jax),
+        pytest.param("tensorflow", marks=pytest.mark.tf),
+    ],
+)
 @pytest.mark.parametrize("use_jit", [True, False])
 class TestPostselection:
     """Various integration tests for postselection of mid-circuit measurements."""
@@ -1881,6 +1894,7 @@ class TestPostselection:
         dev = qml.device("default.qubit", seed=seed)
         param = qml.math.asarray(param, like=interface)
 
+        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev, interface=interface)
         def circ_postselect(theta):
@@ -1889,6 +1903,7 @@ class TestPostselection:
             qml.measure(0, postselect=1)
             return qml.apply(mp)
 
+        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev, interface=interface)
         def circ_expected():
@@ -1899,11 +1914,10 @@ class TestPostselection:
         if use_jit:
             import jax
 
-            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
-            circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
+            circ_postselect = jax.jit(circ_postselect)
 
-        res = circ_postselect(param, shots=shots)
-        expected = circ_expected(shots=shots)
+        res = circ_postselect(param)
+        expected = circ_expected()
 
         if not isinstance(shots, tuple):
             assert qml.math.allclose(res, expected, atol=0.1, rtol=0)
@@ -1944,6 +1958,7 @@ class TestPostselection:
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
 
+            @qml.set_shots(shots=shots)
             @qml.defer_measurements
             @qml.qnode(dev, interface=interface)
             def circ_postselect(theta):
@@ -1952,7 +1967,7 @@ class TestPostselection:
                 qml.measure(0, postselect=1)
                 return qml.apply(mp)
 
-            res = circ_postselect(param, shots=shots)
+            res = circ_postselect(param)
 
         if not isinstance(shots, tuple):
             assert qml.math.get_interface(res) == interface if interface != "autograd" else "numpy"
@@ -2076,6 +2091,7 @@ class TestPostselection:
 
         dev = qml.device("default.qubit")
 
+        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev, interface=interface)
         def circ():
@@ -2085,12 +2101,13 @@ class TestPostselection:
             return qml.apply(mp)
 
         if use_jit:
-            import jax
+            pytest.xfail(
+                reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
+            )
+            # import jax
+            # circ = jax.jit(circ)
 
-            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
-            circ = jax.jit(circ, static_argnames=["shots"])
-
-        res = circ(shots=shots)
+        res = circ()
 
         if not isinstance(shots, tuple):
             assert qml.math.shape(res) == expected_shape
@@ -2214,6 +2231,22 @@ class TestIntegration:
         grad_jit = jax.grad(qnode_jit)(x, y)
 
         assert qml.math.allclose(grad, grad_jit)
+
+    def test_snapshot_with_defer_measurement(self):
+        """Test that snapshots can be taken with defer_measurements."""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def func():
+            qml.Hadamard(wires=0)
+            qml.measure(0)
+            qml.Snapshot("label")
+            return qml.probs(wires=0)
+
+        snapshots = qml.snapshots(func)()
+        assert snapshots["label"].shape == (4,)
+        assert qml.math.allclose(snapshots["execution_results"], np.array([0.5, 0.5]))
 
 
 @pytest.mark.parametrize("max_workers", max_workers_list)

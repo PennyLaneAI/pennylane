@@ -15,15 +15,16 @@
 Contains the condition transform.
 """
 import functools
-from functools import wraps
-from typing import Callable, Optional, Sequence, Type, Union
+from collections.abc import Callable, Sequence
+from typing import Union
 
 import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.capture import FlatFn
+from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
-from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates
-from pennylane.operation import AnyWires, Operation, Operator
+from pennylane.exceptions import ConditionalTransformError
+from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
 
@@ -64,10 +65,6 @@ def _add_abstract_shapes(f):
     return new_f
 
 
-class ConditionalTransformError(ValueError):
-    """Error for using qml.cond incorrectly"""
-
-
 class Conditional(SymbolicOp, Operation):
     """A Conditional Operation.
 
@@ -82,15 +79,13 @@ class Conditional(SymbolicOp, Operation):
     will apply the :func:`defer_measurements` transform.
 
     Args:
-        expr (MeasurementValue): the measurement outcome value to consider
+        expr (qml.measurements.MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
 
-    num_wires = AnyWires
-
-    def __init__(self, expr, then_op: Type[Operation], id=None):
+    def __init__(self, expr, then_op: type[Operation], id=None):
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         super().__init__(then_op, id=id)
@@ -140,7 +135,7 @@ class Conditional(SymbolicOp, Operation):
         return Conditional(self.meas_val, self.base.adjoint())
 
 
-class CondCallable:  # pylint:disable=too-few-public-methods
+class CondCallable:
     """Base class to represent a conditional function with boolean predicates.
 
     Args:
@@ -248,8 +243,9 @@ class CondCallable:  # pylint:disable=too-few-public-methods
         for pred, branch_fn in zip(self.preds, self.branch_fns):
             if pred:
                 return branch_fn(*args, **kwargs)
-
-        return self.false_fn(*args, **kwargs)  # pylint: disable=not-callable
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=not-callable
+        return self.false_fn(*args, **kwargs)
 
     def __call_capture_enabled(self, *args, **kwargs):
         import jax  # pylint: disable=import-outside-toplevel
@@ -313,9 +309,9 @@ class CondCallable:  # pylint:disable=too-few-public-methods
 
 
 def cond(
-    condition: Union[MeasurementValue, bool],
-    true_fn: Optional[Callable] = None,
-    false_fn: Optional[Callable] = None,
+    condition: Union["qml.measurements.MeasurementValue", bool],
+    true_fn: Callable | None = None,
+    false_fn: Callable | None = None,
     elifs: Sequence = (),
 ):
     """Quantum-compatible if-else conditionals --- condition quantum operations
@@ -354,7 +350,7 @@ def cond(
         If a branch returns one or more variables, every other branch must return the same abstract values.
 
     Args:
-        condition (Union[.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
+        condition (Union[qml.measurements.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
            measurement value (see :func:`.pennylane.measure`).
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
@@ -617,7 +613,7 @@ def cond(
 
         return cond_func
 
-    if not isinstance(condition, MeasurementValue):
+    if not isinstance(condition, qml.measurements.MeasurementValue):
         # The condition is not a mid-circuit measurement. This will also work
         # when the condition is a mid-circuit measurement but qml.capture.enabled()
         if true_fn is None:
@@ -667,7 +663,7 @@ def cond(
                 raise ConditionalTransformError(with_meas_err)
 
             for op in qscript.operations:
-                if isinstance(op, MidMeasureMP):
+                if isinstance(op, qml.measurements.MidMeasureMP):
                     raise ConditionalTransformError(with_meas_err)
                 Conditional(condition, op)
 
@@ -681,7 +677,7 @@ def cond(
                 inverted_condition = ~condition
 
                 for op in else_qscript.operations:
-                    if isinstance(op, MidMeasureMP):
+                    if isinstance(op, qml.measurements.MidMeasureMP):
                         raise ConditionalTransformError(with_meas_err)
                     Conditional(inverted_condition, op)
 
@@ -728,7 +724,7 @@ def _validate_abstract_values(
             shape1 = getattr(outval, "shape", ())
             shape2 = getattr(expected_outval, "shape", ())
             for s1, s2 in zip(shape1, shape2, strict=True):
-                if isinstance(s1, jax.core.Var) != isinstance(s2, jax.core.Var):
+                if isinstance(s1, jax.extend.core.Var) != isinstance(s2, jax.extend.core.Var):
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
                 elif isinstance(s1, int) and s1 != s2:
                     _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
@@ -762,9 +758,9 @@ def _get_cond_qfunc_prim():
     """Get the cond primitive for quantum functions."""
 
     # pylint: disable=import-outside-toplevel
-    from pennylane.capture.custom_primitives import NonInterpPrimitive
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    cond_prim = NonInterpPrimitive("cond")
+    cond_prim = QmlPrimitive("cond")
     cond_prim.multiple_results = True
     cond_prim.prim_type = "higher_order"
     qml.capture.register_custom_staging_rule(
@@ -784,7 +780,7 @@ def _get_cond_qfunc_prim():
         # Find predicates that use mid-circuit measurements. We don't check the last
         # condition as that is always `True`.
         mcm_conditions = tuple(
-            pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue)
+            pred for pred in conditions[:-1] if isinstance(pred, qml.measurements.MeasurementValue)
         )
         if len(mcm_conditions) != 0:
             if len(mcm_conditions) != len(conditions) - 1:
@@ -792,7 +788,7 @@ def _get_cond_qfunc_prim():
                     "Cannot use qml.cond with a combination of mid-circuit measurements "
                     "and other classical conditions as predicates."
                 )
-            conditions = get_mcm_predicates(mcm_conditions)
+            conditions = qml.measurements.get_mcm_predicates(mcm_conditions)
 
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
             consts = all_args[const_slice]

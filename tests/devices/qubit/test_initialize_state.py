@@ -29,8 +29,6 @@ class TestInitializeState:
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
-        num_wires = qml.operation.AllWires
-
         def __init__(self, *args, **kwargs):
             self.dtype = kwargs.pop("dtype", None)
             super().__init__(*args, **kwargs)
@@ -116,12 +114,15 @@ class TestInitializeState:
         assert qml.math.get_interface(state) == "numpy"
         assert state.dtype == np.complex128
 
-    def test_create_initial_state_with_sparse(self):
+    @pytest.mark.parametrize("mat_type", (sp.sparse.csr_matrix, sp.sparse.csr_array))
+    def test_create_initial_state_with_sparse(self, mat_type):
         """Test create_initial_state with a sparse state input."""
-        sparse_vec = sp.sparse.csr_matrix([0, 1, 0, 0])
+        sparse_vec = mat_type([0, 1, 0, 0])
         prep_op = qml.StatePrep(sparse_vec, wires=[0, 1])
         state = create_initial_state([0, 1], prep_operation=prep_op)
         # Should directly return the sparse vector cast to an appropriate dtype
         assert not sp.sparse.issparse(state), "State should be converted to dense."
         # The single 1 should be at index 1
         assert state[0, 1] == 1.0
+        assert qml.math.get_interface(state) == "numpy"
+        assert state.shape == (2, 2)

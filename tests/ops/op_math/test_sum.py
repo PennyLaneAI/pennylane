@@ -24,7 +24,8 @@ import pytest
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import X, Y, Z, math
-from pennylane.operation import AnyWires, MatrixUndefinedError, Operator
+from pennylane.exceptions import MatrixUndefinedError
+from pennylane.operation import Operator
 from pennylane.ops.op_math import Prod, Sum
 from pennylane.wires import Wires
 
@@ -110,20 +111,6 @@ def compare_and_expand_mat(mat1, mat2):
         return larger_mat, smaller_mat
 
     return smaller_mat, larger_mat
-
-
-def test_legacy_ops():
-    """Test that PennyLaneDepcreationWarning is raised when Sum.ops is called"""
-    H = qml.sum(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Sum.ops is deprecated and"):
-        _ = H.ops
-
-
-def test_legacy_coeffs():
-    """Test that PennyLaneDepcreationWarning is raised when Sum.ops is called"""
-    H = qml.sum(X(0), X(1))
-    with pytest.warns(qml.PennyLaneDeprecationWarning, match="Sum.coeffs is deprecated and"):
-        _ = H.coeffs
 
 
 class TestInitialization:
@@ -316,6 +303,7 @@ class TestInitialization:
         assert np.allclose(eig_vecs, cached_vecs)
 
     SUM_REPR = (
+        (qml.sum(), "Sum()"),
         (qml.sum(X(0), Y(1), Z(2)), "X(0) + Y(1) + Z(2)"),
         (X(0) + X(1) + X(2), "X(0) + X(1) + X(2)"),
         (0.5 * X(0) + 0.7 * X(1), "0.5 * X(0) + 0.7 * X(1)"),
@@ -368,8 +356,8 @@ class TestMatrix:
         true_mat = mat1 + mat2
 
         sum_op = Sum(
-            op1(wires=0 if op1.num_wires is AnyWires else range(op1.num_wires)),
-            op2(wires=0 if op2.num_wires is AnyWires else range(op2.num_wires)),
+            op1(wires=0 if op1.num_wires is None else range(op1.num_wires)),
+            op2(wires=0 if op2.num_wires is None else range(op2.num_wires)),
         )
         sum_mat = sum_op.matrix()
 
@@ -1433,21 +1421,21 @@ class TestGrouping:
 
         # compute grouping during construction with qml.dot
         op1 = qml.dot(coeffs, obs, grouping_type="qwc", method="lf")
-        assert set(op1.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op1.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping during construction with qml.sum
         sprods = [qml.s_prod(c, o) for c, o in zip(coeffs, obs)]
         op2 = qml.sum(*sprods, grouping_type="qwc", method="lf")
-        assert set(op2.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op2.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping during construction with Sum
         op3 = Sum(*sprods, grouping_type="qwc", method="lf")
-        assert set(op3.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op3.grouping_indices) == {(0, 1), (2,)}
 
         # compute grouping separately
         op4 = qml.dot(coeffs, obs, grouping_type=None)
         op4.compute_grouping(method="lf")
-        assert set(op4.grouping_indices) == set(((0, 1), (2,)))
+        assert set(op4.grouping_indices) == {(0, 1), (2,)}
 
     @pytest.mark.parametrize(
         "grouping_type, grouping_indices",

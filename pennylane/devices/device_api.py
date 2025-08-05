@@ -14,15 +14,14 @@
 """
 This module contains the Abstract Base Class for the next generation of devices.
 """
-# pylint: disable=comparison-with-callable
+
 import abc
 from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
-from typing import Optional, Union, overload
+from typing import overload
 
 import pennylane as qml
-from pennylane import Tracker
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
@@ -42,6 +41,7 @@ from .preprocess import (
     validate_measurements,
     validate_observables,
 )
+from .tracker import Tracker
 
 
 # pylint: disable=unused-argument, no-self-use
@@ -135,12 +135,12 @@ class Device(abc.ABC):
 
     """
 
-    config_filepath: Optional[str] = None
+    config_filepath: str | None = None
     """A device can use a `toml` file to specify the capabilities of the backend device. If this
     is provided, the file will be loaded into a :class:`~.DeviceCapabilities` object assigned to
     the :attr:`capabilities` attribute."""
 
-    capabilities: Optional[DeviceCapabilities] = None
+    capabilities: DeviceCapabilities | None = None
     """A :class:`~.DeviceCapabilities` object describing the capabilities of the backend device."""
 
     def __init_subclass__(cls, **kwargs):
@@ -167,7 +167,7 @@ class Device(abc.ABC):
         return type(self).__name__
 
     tracker: Tracker = Tracker()
-    """A :class:`~.Tracker` that can store information about device executions, shots, batches,
+    """A :class:`~pennylane.Tracker` that can store information about device executions, shots, batches,
     intermediate results, or any additional device dependent information.
 
     A plugin developer can store information in the tracker by:
@@ -228,11 +228,9 @@ class Device(abc.ABC):
     @shots.setter
     def shots(self, _):
         raise AttributeError(
-            (
-                "Shots can no longer be set on a device instance. "
-                "You can set shots on a call to a QNode, on individual tapes, or "
-                "create a new device instance instead."
-            )
+            "Shots can no longer be set on a device instance. "
+            "You can set shots on a call to a QNode, on individual tapes, or "
+            "create a new device instance instead."
         )
 
     @property
@@ -250,7 +248,7 @@ class Device(abc.ABC):
 
     def preprocess(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """Device preprocessing function.
 
@@ -349,7 +347,7 @@ class Device(abc.ABC):
         return transform_program, execution_config
 
     def setup_execution_config(
-        self, config: Optional[ExecutionConfig] = None, circuit: Optional[QuantumScript] = None
+        self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
     ) -> ExecutionConfig:
         """Sets up an ``ExecutionConfig`` that configures the execution behaviour.
 
@@ -395,7 +393,7 @@ class Device(abc.ABC):
         return config
 
     def preprocess_transforms(
-        self, execution_config: Optional[ExecutionConfig] = None
+        self, execution_config: ExecutionConfig | None = None
     ) -> TransformProgram:
         """Returns the transform program to preprocess a circuit for execution.
 
@@ -595,7 +593,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumScriptOrBatch,
         execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+    ) -> Result | ResultBatch:
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:
@@ -668,8 +666,8 @@ class Device(abc.ABC):
 
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
 
@@ -876,8 +874,8 @@ class Device(abc.ABC):
 
     def supports_jvp(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Whether or not a given device defines a custom jacobian vector product.
 
@@ -956,8 +954,8 @@ class Device(abc.ABC):
 
     def supports_vjp(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Whether or not a given device defines a custom vector jacobian product.
 
@@ -971,15 +969,15 @@ class Device(abc.ABC):
 
     def eval_jaxpr(
         self,
-        jaxpr: "jax.core.Jaxpr",
+        jaxpr: "jax.extend.core.Jaxpr",
         consts: list[TensorLike],
         *args,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ) -> list[TensorLike]:
         """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
 
         Args:
-            jaxpr (jax.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
+            jaxpr (jax.extend.core.Jaxpr): Pennylane variant jaxpr containing quantum operations and measurements
             consts (list[TensorLike]): the closure variables ``consts`` corresponding to the jaxpr
             *args (TensorLike): the variables to use with the jaxpr.
 
@@ -994,16 +992,16 @@ class Device(abc.ABC):
 
     def jaxpr_jvp(
         self,
-        jaxpr: "jax.core.Jaxpr",
+        jaxpr: "jax.extend.core.Jaxpr",
         args,
         tangents,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         """An **experimental** method for computing the results and jvp for PLXPR.
         See the ``capture`` module for more details.
 
         Args:
-            jaxpr (jax.core.Jaxpr): Pennylane variant jaxpr containing quantum operations
+            jaxpr (jax.extend.core.Jaxpr): Pennylane variant jaxpr containing quantum operations
                 and measurements
             args (Sequence[TensorLike]): the ``consts`` followed by the normal   arguments
             tangents (Sequence[TensorLike]): the tangents corresponding to ``args``.
@@ -1044,12 +1042,10 @@ def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -
     supports_one_shot = "one-shot" in capabilities.supported_mcm_methods
     has_device_support = "device" in capabilities.supported_mcm_methods
 
-    # In finite shots mode, the one-shot method is the default even if there is device support.
-    # This is to ensure consistency with old behaviour. Although I'm not too sure about this.
-    if supports_one_shot and shots_present:
-        return "one-shot"
-
     if has_device_support:
         return "device"
+
+    if supports_one_shot and shots_present:
+        return "one-shot"
 
     return "deferred"

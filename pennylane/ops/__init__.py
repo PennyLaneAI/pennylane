@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-few-public-methods,function-redefined
 
 """
 This module contains core quantum operations supported by PennyLane -
@@ -27,6 +26,7 @@ from .cv import __obs__ as _cv__obs__
 from .cv import __ops__ as _cv__ops__
 
 # we would like these to just live in .qubit, but can't because of circular imports
+from .identity import *
 from .op_math import *
 from .op_math import controlled_qubit_ops as _controlled_qubit__ops__
 from .qubit import *

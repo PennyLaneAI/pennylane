@@ -14,12 +14,16 @@
 """Adaptive optimizer"""
 import copy
 
-# pylint: disable= no-value-for-parameter, protected-access, not-callable
-import pennylane as qml
+# pylint: disable=not-callable
+from pennylane import math
 from pennylane import numpy as pnp
-from pennylane import transform
+from pennylane._grad import grad
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
+from pennylane.workflow import construct_tape
+
+from .gradient_descent import GradientDescentOptimizer
 
 
 @transform
@@ -69,8 +73,8 @@ class AdaptiveOptimizer:
     algorithms such as `ADAPT-VQE <https://www.nature.com/articles/s41467-019-10988-2>`_.
 
     Args:
-        param_steps (int): number of steps for optimizing the parameter of a selected gate
-        stepsize (float): step size for optimizing the parameter of a selected gate
+        param_steps (int): number of steps for optimizing the parameter of a selected gate (default value: 10).
+        stepsize (float): step size for optimizing the parameter of a selected gate (default value: 0.5).
 
     **Example**
 
@@ -199,7 +203,7 @@ class AdaptiveOptimizer:
         """
         cost = circuit()
         qnode = copy.copy(circuit)
-        tape = qml.workflow.construct_tape(qnode)()
+        tape = construct_tape(qnode)()
 
         if drain_pool:
             operator_pool = [
@@ -213,10 +217,10 @@ class AdaptiveOptimizer:
 
         params = pnp.array([gate.parameters[0] for gate in operator_pool], requires_grad=True)
         qnode.func = self._circuit
-        grads = qml.grad(qnode)(params, gates=operator_pool, initial_circuit=circuit.func)
+        grads = grad(qnode)(params, gates=operator_pool, initial_circuit=circuit.func)
 
         selected_gates = [operator_pool[pnp.argmax(abs(grads))]]
-        optimizer = qml.GradientDescentOptimizer(stepsize=self.stepsize)
+        optimizer = GradientDescentOptimizer(stepsize=self.stepsize)
 
         if params_zero:
             params = pnp.zeros(len(selected_gates))
@@ -230,4 +234,4 @@ class AdaptiveOptimizer:
 
         qnode.func = append_gate(circuit.func, params, selected_gates)
 
-        return qnode, cost, max(abs(qml.math.toarray(grads)))
+        return qnode, cost, max(abs(math.toarray(grads)))

@@ -240,7 +240,7 @@ class TestIQPE:
 
 
 @pytest.mark.slow
-@pytest.mark.jax
+@pytest.mark.capture
 def test_capture_execution(seed):
     """Test that iterative qpe can be captured and executed.
 
@@ -255,8 +255,6 @@ def test_capture_execution(seed):
 
 
     """
-
-    qml.capture.enable()
     import jax
 
     def f(x):
@@ -267,7 +265,7 @@ def test_capture_execution(seed):
 
     jaxpr = jax.make_jaxpr(f)(1.5)
 
-    dev = qml.device("default.qubit", wires=3, seed=seed)
+    dev = qml.device("default.qubit", wires=5, seed=seed)
 
     # hack for single-branch statistics
     samples = qml.math.vstack([dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x) for _ in range(5000)])

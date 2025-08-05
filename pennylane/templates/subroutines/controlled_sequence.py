@@ -16,9 +16,16 @@ Contains the ControlledSequence template.
 """
 from copy import copy
 
-import pennylane as qml
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    pow_resource_rep,
+    register_resources,
+)
 from pennylane.operation import Operation
-from pennylane.ops.op_math.symbolicop import SymbolicOp
+from pennylane.ops.op_math import SymbolicOp, ctrl
+from pennylane.ops.op_math import pow as qml_pow
 from pennylane.wires import Wires
 
 
@@ -71,6 +78,8 @@ class ControlledSequence(SymbolicOp, Operation):
 
     grad_method = None
 
+    resource_keys = {"base_class", "base_params", "num_control_wires"}
+
     def _flatten(self):
         return (self.base,), (self.control,)
 
@@ -90,6 +99,15 @@ class ControlledSequence(SymbolicOp, Operation):
         self._name = "ControlledSequence"
 
         super().__init__(base, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        params = {
+            "base_class": self.hyperparameters["base"].__class__,
+            "base_params": self.hyperparameters["base"].resource_params,
+            "num_control_wires": len(self.hyperparameters["control_wires"]),
+        }
+        return params
 
     @property
     def hash(self):
@@ -123,7 +141,7 @@ class ControlledSequence(SymbolicOp, Operation):
         return f"ControlledSequence({self.base}, control={list(self.control)})"
 
     def map_wires(self, wire_map: dict):
-        # pylint:disable=protected-access
+
         new_op = copy(self)
         new_op.hyperparameters["base"] = self.base.map_wires(wire_map=wire_map)
         new_op.hyperparameters["control_wires"] = Wires(
@@ -131,7 +149,8 @@ class ControlledSequence(SymbolicOp, Operation):
         )
         return new_op
 
-    # pylint:disable=arguments-differ
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=arguments-differ
     @staticmethod
     def compute_decomposition(*_, base=None, control_wires=None, lazy=False, **__):
         r"""Representation of the operator as a product of other operators.
@@ -190,6 +209,41 @@ class ControlledSequence(SymbolicOp, Operation):
         ops = []
 
         for z, ctrl_wire in zip(powers_of_two[::-1], control_wires):
-            ops.append(qml.pow(qml.ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
+            ops.append(qml_pow(ctrl(base, control=ctrl_wire), z=z, lazy=lazy))
 
         return ops
+
+
+def _ctrl_seq_decomposition_resources(base_class, base_params, num_control_wires) -> dict:
+
+    resources = {}
+
+    powers_of_two = [2**i for i in range(num_control_wires)]
+
+    for z in powers_of_two[::-1]:
+        controlled_rep = controlled_resource_rep(base_class, base_params, 1)
+        rep = pow_resource_rep(
+            base_class=controlled_rep.op_type,
+            base_params=controlled_rep.params,
+            z=z,
+        )
+        resources[rep] = 1
+    return resources
+
+
+# pylint: disable=no-value-for-parameter
+@register_resources(_ctrl_seq_decomposition_resources)
+def _ctrl_seq_decomposition(*_, base=None, control_wires=None, **__):
+    powers_of_two = [2**i for i in range(len(control_wires))]
+
+    @for_loop(len(powers_of_two) - 1, -1, -1)
+    def _powers_loop(i):
+        j = len(powers_of_two) - 1 - i
+        ctrl_wire = control_wires[j]
+        z = powers_of_two[i]
+        qml_pow(ctrl(base, control=ctrl_wire), z=z)
+
+    _powers_loop()
+
+
+add_decomps(ControlledSequence, _ctrl_seq_decomposition)

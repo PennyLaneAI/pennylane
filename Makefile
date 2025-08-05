@@ -25,15 +25,15 @@ install:
 ifndef PYTHON3
 	@echo "To install PennyLane you need to have Python 3 installed"
 endif
-	$(PYTHON) setup.py install
+	$(PYTHON) -m pip install .
 
 .PHONY: wheel
 wheel:
-	$(PYTHON) setup.py bdist_wheel
+	$(PYTHON) -m build --wheel
 
 .PHONY: dist
 dist:
-	$(PYTHON) setup.py sdist
+	$(PYTHON) -m build --sdist 
 
 .PHONY : clean
 clean:
@@ -69,10 +69,10 @@ coverage:
 format:
 ifdef check
 	$(PYTHON) -m isort --py 311 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests --check
-	$(PYTHON) -m black -t py39 -t py310 -t py311 -l 100 ./pennylane ./tests --check
+	$(PYTHON) -m black -t py311 -t py312 -t py313 -l 100 ./pennylane ./tests --check
 else
 	$(PYTHON) -m isort --py 311 --profile black -l 100 -o autoray -p ./pennylane --skip __init__.py --filter-files ./pennylane ./tests
-	$(PYTHON) -m black -t py39 -t py310 -t py311 -l 100 ./pennylane ./tests
+	$(PYTHON) -m black -t py311 -t py312 -t py313 -l 100 ./pennylane ./tests
 endif
 
 .PHONY: lint

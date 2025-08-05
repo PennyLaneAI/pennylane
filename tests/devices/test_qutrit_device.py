@@ -24,19 +24,14 @@ from scipy.stats import unitary_group
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import QubitDevice, QutritDevice
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.measurements import (
-    Counts,
     CountsMP,
-    Expectation,
     ExpectationMP,
     MeasurementProcess,
-    Probability,
     ProbabilityMP,
-    Sample,
     SampleMP,
-    State,
     StateMP,
-    Variance,
     VarianceMP,
 )
 from pennylane.tape import QuantumScript
@@ -198,7 +193,7 @@ class TestOperations:
 
         tape = QuantumScript(queue, observables)
         dev = mock_qutrit_device()
-        with pytest.raises(qml.DeviceError, match="Gate Hadamard not supported on device"):
+        with pytest.raises(DeviceError, match="Gate Hadamard not supported on device"):
             dev.execute(tape)
 
     unitaries = [unitary_group.rvs(3, random_state=1967) for _ in range(3)]
@@ -260,7 +255,7 @@ class TestObservables:
 
         tape = QuantumScript(queue, observables)
         dev = mock_qutrit_device()
-        with pytest.raises(qml.DeviceError, match="Observable Hadamard not supported on device"):
+        with pytest.raises(DeviceError, match="Observable Hadamard not supported on device"):
             dev.execute(tape)
 
     def test_unsupported_observable_return_type_raise_error(self, mock_qutrit_device, monkeypatch):
@@ -280,7 +275,8 @@ class TestObservables:
             m.setattr(QutritDevice, "apply", lambda self, x, **kwargs: None)
             dev = mock_qutrit_device()
             with pytest.raises(
-                qml.QuantumFunctionError, match="Unsupported return type specified for observable"
+                QuantumFunctionError,
+                match="Unsupported return type specified for observable",
             ):
                 dev.execute(tape)
 
@@ -333,7 +329,8 @@ class TestExtractStatistics:
             dev = mock_qutrit_device()
             m.delattr(QubitDevice, "state")
             with pytest.raises(
-                qml.QuantumFunctionError, match="The state is not available in the current"
+                QuantumFunctionError,
+                match="The state is not available in the current",
             ):
                 dev.statistics(qscript)
 
@@ -346,7 +343,7 @@ class TestExtractStatistics:
 
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
-        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+        with pytest.raises(QuantumFunctionError, match="Unsupported return type"):
             with monkeypatch.context() as m:
                 dev = mock_qutrit_device_extract_stats()
                 results = dev.statistics(qscript)
@@ -357,7 +354,15 @@ class TestExtractStatistics:
     ):
         """Tests that the statistics method raises an error if the return type is not well-defined and is not None"""
 
-        assert returntype not in [Expectation, Variance, Sample, Probability, State, Counts, None]
+        assert returntype not in [
+            "Expectation",
+            "Variance",
+            "Sample",
+            "Probability",
+            "State",
+            "Counts",
+            None,
+        ]
 
         class UnsupportedMeasurement(MeasurementProcess):
             _shortname = returntype
@@ -365,7 +370,7 @@ class TestExtractStatistics:
         qscript = QuantumScript(measurements=[UnsupportedMeasurement()])
 
         dev = mock_qutrit_device_extract_stats()
-        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+        with pytest.raises(QuantumFunctionError, match="Unsupported return type"):
             dev.statistics(qscript)
 
     def test_return_state_with_multiple_observables(self, mock_qutrit_device_extract_stats):
@@ -383,7 +388,7 @@ class TestExtractStatistics:
         dev = mock_qutrit_device_extract_stats()
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="The state or density matrix cannot be returned in combination",
         ):
             dev.execute(tape)
@@ -430,9 +435,8 @@ class TestSample:
         dev = mock_qutrit_device_with_original_statistics(wires=2)
         dev._samples = np.array([[1, 0], [0, 2]])
 
-        class SomeObservable(qml.operation.Observable):
+        class SomeObservable(qml.operation.Operator):
             num_wires = 1
-            return_type = Sample
 
         obs = SomeObservable(wires=0)
         with pytest.raises(qml.operation.EigvalsUndefinedError, match="Cannot compute samples"):
@@ -562,7 +566,7 @@ class TestSampleBasisStates:
         state_probs[0] = 0.2
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="The number of shots has to be explicitly set on the device",
         ):
             dev.sample_basis_states(number_of_states, state_probs)
@@ -701,7 +705,7 @@ class TestExpval:
         dev = mock_qutrit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             num_wires = 1
 
             def eigvals(self):
@@ -762,7 +766,7 @@ class TestVar:
         dev = mock_qutrit_device_with_original_statistics()
 
         # observable with no eigenvalue representation defined
-        class MyObs(qml.operation.Observable):
+        class MyObs(qml.operation.Operator):
             num_wires = 1
 
             def eigvals(self):
@@ -1036,7 +1040,7 @@ class TestShotList:
 
     def test_invalid_shot_list(self, mock_qutrit_device_shots):
         """Test exception raised if the shot list is the wrong type"""
-        with pytest.raises(qml.DeviceError, match="Shots must be"):
+        with pytest.raises(DeviceError, match="Shots must be"):
             mock_qutrit_device_shots(wires=2, shots=0.5)
 
         with pytest.raises(ValueError, match="Shots must be"):
@@ -1207,21 +1211,21 @@ class TestUnimplemented:
         """Test that density_matrix is unimplemented"""
         dev = mock_qutrit_device()
 
-        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+        with pytest.raises(QuantumFunctionError, match="Unsupported return type"):
             dev.density_matrix(wires=0)
 
     def test_vn_entropy(self, mock_qutrit_device):
         """Test that vn_entropy is unimplemented"""
         dev = mock_qutrit_device()
 
-        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+        with pytest.raises(QuantumFunctionError, match="Unsupported return type"):
             dev.vn_entropy(wires=0, log_base=3)
 
     def test_mutual_info(self, mock_qutrit_device):
         """Test that mutual_info is unimplemented"""
         dev = mock_qutrit_device()
 
-        with pytest.raises(qml.QuantumFunctionError, match="Unsupported return type"):
+        with pytest.raises(QuantumFunctionError, match="Unsupported return type"):
             dev.mutual_info(0, 1, log_base=3)
 
     def test_classical_shadow(self, mock_qutrit_device):
@@ -1230,7 +1234,7 @@ class TestUnimplemented:
         qs = qml.tape.QuantumScript()
         obs = qml.GellMann(1, 1)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Qutrit devices don't support"):
+        with pytest.raises(QuantumFunctionError, match="Qutrit devices don't support"):
             dev.classical_shadow(obs, qs)
 
     def test_shadow_expval(self, mock_qutrit_device):
@@ -1239,5 +1243,5 @@ class TestUnimplemented:
         qs = qml.tape.QuantumScript()
         obs = qml.GellMann(1, 1)
 
-        with pytest.raises(qml.QuantumFunctionError, match="Qutrit devices don't support"):
+        with pytest.raises(QuantumFunctionError, match="Qutrit devices don't support"):
             dev.shadow_expval(obs, qs)

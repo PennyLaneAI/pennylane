@@ -156,7 +156,7 @@ class TestTransformProgram:
         )
         with dev.tracker:
             results = qml.execute(
-                (tape1, tape2, tape3), dev, interface=interface, transform_program=prog
+                (tape1, tape2, tape3), dev, interface=interface, transform_program=prog, cache=True
             )
 
         assert qml.math.allclose(results[0], np.cos(1.2))

@@ -76,6 +76,21 @@ class SPSAOptimizer:
           Therefore, in case of using ``step_and_cost`` method instead of ``step``, the number
           of executions will include the cost function evaluations.
 
+    Args:
+        maxiter (int): the maximum number of iterations expected to be performed.
+            Used to determine :math:`A`, if :math:`A` is not supplied, otherwise ignored.
+        alpha (float): a hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}`
+            for each iteration. Its asymptotically optimal value is 1.0 (default value: 0.602).
+        gamma (float): a hyperparameter to calculate :math:`c_k=\frac{c}{(k+1)^\gamma}`
+            for each iteration. Its asymptotically optimal value is 1/6 (default value: 0.101).
+        c (float): a hyperparameter related to the expected noise. It should be
+            approximately the standard deviation of the expected noise of the cost function (default value: 0.2).
+        A (float): stability constant. If not provided, it is set to be 10% of the maximum number
+            of expected iterations.
+        a (float): a hyperparameter expected to be small in noisy situations,
+            its value could be picked using `A`, :math:`\alpha` and :math:`\hat{g_0} (\hat{\theta_0})`.
+            For more details, see `Spall (1998b)
+            <https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_Implementation_of_the_Simultaneous.PDF>`_.
 
     **Examples:**
 
@@ -145,24 +160,6 @@ class SPSAOptimizer:
     >>> loss = fn(params, tensor_in, tensor_out)
     >>> print(loss)
     tf.Tensor(-0.9995854230771829, shape=(), dtype=float64)
-
-
-
-    Keyword Args:
-        maxiter (int): the maximum number of iterations expected to be performed.
-            Used to determine :math:`A`, if :math:`A` is not supplied, otherwise ignored.
-        alpha (float): A hyperparameter to calculate :math:`a_k=\frac{a}{(A+k+1)^\alpha}`
-            for each iteration. Its asymptotically optimal value is 1.0.
-        gamma (float): An hyperparameter to calculate :math:`c_k=\frac{c}{(k+1)^\gamma}`
-            for each iteration. Its asymptotically optimal value is 1/6.
-        c (float): A hyperparameter related to the expected noise. It should be
-            approximately the standard deviation of the expected noise of the cost function.
-        A (float): The stability constant; if not provided, set to be 10% of the maximum number
-            of expected iterations.
-        a (float): A hyperparameter expected to be small in noisy situations,
-            its value could be picked using `A`, :math:`\alpha` and :math:`\hat{g_0} (\hat{\theta_0})`.
-            For more details, see `Spall (1998b)
-            <https://www.jhuapl.edu/spsa/PDF-SPSA/Spall_Implementation_of_the_Simultaneous.PDF>`_.
     """
 
     # pylint: disable-msg=too-many-arguments
@@ -265,7 +262,7 @@ class SPSAOptimizer:
         yplus = objective_fn(*thetaplus, **kwargs)
         yminus = objective_fn(*thetaminus, **kwargs)
         try:
-            # pylint: disable=protected-access
+
             dev_shots = objective_fn.device.shots
 
             shots = dev_shots if dev_shots.has_partitioned_shots else Shots(None)

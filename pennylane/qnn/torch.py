@@ -13,15 +13,17 @@
 # limitations under the License.
 """This module contains the classes and functions for integrating QNodes with the Torch Module
 API."""
+from __future__ import annotations
 
 import contextlib
 import functools
 import inspect
 import math
 from collections.abc import Callable, Iterable
-from typing import Any, Union
+from typing import TYPE_CHECKING, Any
 
-from pennylane import QNode
+if TYPE_CHECKING:
+    from pennylane.workflow.qnode import QNode
 
 try:
     import torch
@@ -112,10 +114,12 @@ class TorchLayer(Module):
 
         .. code-block::
 
+            from functools import partial
             def print_output_shape(measurements):
                 n_qubits = 2
-                dev = qml.device("default.qubit", wires=n_qubits, shots=100)
+                dev = qml.device("default.qubit", wires=n_qubits)
 
+                @partial(qml.set_shots, shots=100)
                 @qml.qnode(dev)
                 def qnode(inputs, weights):
                     qml.templates.AngleEmbedding(inputs, wires=range(n_qubits))
@@ -328,7 +332,7 @@ class TorchLayer(Module):
         self,
         qnode: QNode,
         weight_shapes: dict,
-        init_method: Union[Callable, dict[str, Union[Callable, Any]]] = None,
+        init_method: Callable | dict[str, Callable | Any] = None,
         # FIXME: Cannot change type `Any` to `torch.Tensor` in init_method because it crashes the
         # tests that don't use torch module.
     ):
@@ -383,7 +387,7 @@ class TorchLayer(Module):
         } != set(sig.keys()):
             raise ValueError("Must specify a shape for every non-input parameter in the QNode")
 
-    def forward(self, inputs):  # pylint: disable=arguments-differ
+    def forward(self, inputs):
         """Evaluates a forward pass through the QNode based upon input data and the initialized
         weights.
 
@@ -481,7 +485,7 @@ class TorchLayer(Module):
     def _init_weights(
         self,
         weight_shapes: dict[str, tuple],
-        init_method: Union[Callable, dict[str, Union[Callable, Any]], None],
+        init_method: Callable | dict[str, Callable | Any] | None,
     ):
         r"""Initialize and register the weights with the given init_method. If init_method is not
         specified, weights are randomly initialized from the uniform distribution on the interval

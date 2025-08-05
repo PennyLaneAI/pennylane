@@ -13,10 +13,7 @@
 # limitations under the License.
 """Code for the high-level quantum function transform that executes compilation."""
 from collections.abc import Sequence
-
-# pylint: disable=too-many-branches
 from functools import partial
-from warnings import warn
 
 import pennylane as qml
 from pennylane.ops import __all__ as all_ops
@@ -170,18 +167,10 @@ def compile(
 
     """
 
-    # Ensure that everything in the pipeline is a valid qfunc or tape transform
-    if pipeline is None:
-        warn(
-            "Specifying pipeline=None is now deprecated. Please specify a sequence of transforms",
-            qml.PennyLaneDeprecationWarning,
-        )
-        pipeline = default_pipeline
-    else:
-        for p in pipeline:
-            p_func = p.func if isinstance(p, partial) else p
-            if not isinstance(p_func, TransformDispatcher):
-                raise ValueError("Invalid transform function {p} passed to compile.")
+    for p in pipeline:
+        p_func = p.func if isinstance(p, partial) else p
+        if not isinstance(p_func, TransformDispatcher):
+            raise ValueError("Invalid transform function {p} passed to compile.")
 
     if num_passes < 1 or not isinstance(num_passes, int):
         raise ValueError("Number of passes must be an integer with value at least 1.")

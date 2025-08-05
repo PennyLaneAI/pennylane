@@ -16,7 +16,6 @@ Support functions for cut_circuit and cut_circuit_mc.
 """
 
 
-import uuid
 import warnings
 from collections.abc import Callable, Sequence
 from typing import Any
@@ -24,72 +23,40 @@ from typing import Any
 import numpy as np
 from networkx import MultiDiGraph, has_path, weakly_connected_components
 
-import pennylane as qml
+from pennylane import ops
 from pennylane.measurements import MeasurementProcess
-from pennylane.operation import Operation
+from pennylane.ops import Operation
 from pennylane.ops.meta import WireCut
 from pennylane.queuing import WrappedObj
 
 from .cutstrategy import CutStrategy
 from .kahypar import kahypar_cut
-
-
-class MeasureNode(Operation):
-    """Placeholder node for measurement operations"""
-
-    num_wires = 1
-    grad_method = None
-    num_params = 0
-
-    def __init__(self, wires=None, id=None):
-        id = id or str(uuid.uuid4())
-
-        super().__init__(wires=wires, id=id)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        op_label = base_label or self.__class__.__name__
-        return op_label
-
-
-class PrepareNode(Operation):
-    """Placeholder node for state preparations"""
-
-    num_wires = 1
-    grad_method = None
-    num_params = 0
-
-    def __init__(self, wires=None, id=None):
-        id = id or str(uuid.uuid4())
-
-        super().__init__(wires=wires, id=id)
-
-    def label(self, decimals=None, base_label=None, cache=None):
-        op_label = base_label or self.__class__.__name__
-        return op_label
+from .ops import MeasureNode, PrepareNode
+from .tapes import graph_to_tape
 
 
 def _prep_zero_state(wire):
-    return [qml.Identity(wire)]
+    return [ops.Identity(wire)]
 
 
 def _prep_one_state(wire):
-    return [qml.X(wire)]
+    return [ops.X(wire)]
 
 
 def _prep_plus_state(wire):
-    return [qml.Hadamard(wire)]
+    return [ops.Hadamard(wire)]
 
 
 def _prep_minus_state(wire):
-    return [qml.X(wire), qml.Hadamard(wire)]
+    return [ops.X(wire), ops.Hadamard(wire)]
 
 
 def _prep_iplus_state(wire):
-    return [qml.Hadamard(wire), qml.S(wires=wire)]
+    return [ops.Hadamard(wire), ops.S(wires=wire)]
 
 
 def _prep_iminus_state(wire):
-    return [qml.X(wire), qml.Hadamard(wire), qml.S(wires=wire)]
+    return [ops.X(wire), ops.Hadamard(wire), ops.S(wires=wire)]
 
 
 def find_and_place_cuts(
@@ -694,6 +661,7 @@ def fragment_graph(graph: MultiDiGraph) -> tuple[tuple[MultiDiGraph], MultiDiGra
     return subgraphs_connected_to_measurements, communication_graph
 
 
+# pylint: disable=too-many-positional-arguments
 def _is_valid_cut(
     fragments,
     num_cuts,
@@ -710,9 +678,9 @@ def _is_valid_cut(
 
     correct_num_fragments = k <= num_fragments_requested
     best_candidate_yet = (key not in cut_candidates) or (len(cut_candidates[key]) > num_cuts)
-    # pylint: disable=no-member
+
     all_fragments_fit = all(
-        len(qml.qcut.graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
+        len(graph_to_tape(f).wires) <= max_free_wires for j, f in enumerate(fragments)
     )
 
     return correct_num_fragments and best_candidate_yet and all_fragments_fit

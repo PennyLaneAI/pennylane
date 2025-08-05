@@ -2597,25 +2597,6 @@ class TestCoercion:
         dtypes = [r.dtype for r in res]
         assert all(d is torch.complex64 for d in dtypes)
 
-    @pytest.mark.gpu
-    def test_torch_coercion_error(self):
-        """Test Torch coercion error if multiple devices were specified."""
-
-        if not torch.cuda.is_available():
-            pytest.skip("A GPU would be required to run this test, but CUDA is not available.")
-
-        tensors = [
-            torch.tensor([0.2], device="cpu"),
-            np.array([1, 2, 3]),
-            torch.tensor(1 + 3j, dtype=torch.complex64, device="cuda"),
-        ]
-
-        with pytest.raises(
-            RuntimeError,
-            match="Expected all tensors to be on the same device, but found at least two devices",
-        ):
-            _ = qml.math.coerce(tensors, like="torch")
-
 
 class TestUnwrap:
     """Test tensor unwrapping"""
@@ -3123,7 +3104,7 @@ class TestSetIndex:
         # since idx and val have no interface, we expect the returned array type to match initial type
         assert isinstance(array2, type(array))
 
-    @pytest.mark.parametrize("array", [qml.numpy.zeros((4)), torch.zeros((4)), jnp.zeros((4))])
+    @pytest.mark.parametrize("array", [qml.numpy.zeros(4), torch.zeros(4), jnp.zeros(4)])
     def test_set_index_jax_1d_array(self, array):
         """Test that an array can be created that is a copy of the
         original array, with the value at the specified index updated"""

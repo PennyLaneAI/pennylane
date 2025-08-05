@@ -21,9 +21,8 @@ as they are specific to just ``for_loop`` and ``while_loop``.
 """
 
 from collections import namedtuple
-from typing import Any, Callable, Optional
-
-import numpy as np
+from collections.abc import Callable
+from typing import Any
 
 from pennylane.typing import TensorLike
 
@@ -67,7 +66,7 @@ def add_abstract_shapes(f, shape_locations: list[list[AbstractShapeLocation]]):
 
 
 def get_dummy_arg(arg):
-    """If any axes are abstract, replace with an empty numpy array.
+    """If any axes are abstract, replace them with an empty numpy array.
 
     Even if abstracted_axes specifies two dimensions as having different dynamic shapes,
     if the dimension is the same tracer, jax will still treat them as the same shape.
@@ -97,14 +96,16 @@ def get_dummy_arg(arg):
         return arg
     # add small, non-trivial size 2 as a concrete stand-in for dynamic axes
     shape = tuple(s if isinstance(s, int) else 2 for s in arg.shape)
-    return np.empty(shape=shape, dtype=arg.dtype)
+    from jax.numpy import empty  # pylint: disable=import-outside-toplevel
+
+    return empty(shape=shape, dtype=arg.dtype)
 
 
 def validate_no_resizing_returns(
-    jaxpr: "jax.core.Jaxpr",
+    jaxpr: "jax.extend.core.Jaxpr",
     locations: list[list[AbstractShapeLocation]],
     name: str = "while_loop",
-) -> Optional[str]:
+) -> str | None:
     """Validate that all jaxpr outputs that should have the same shape as specified in ``locations``
     continue to have the same shape.  Returns a string with an error message so we can
     either decide to raise the error, or try again with different settings.
@@ -246,7 +247,7 @@ def loop_determine_abstracted_axes(
         [[AbstractShapeLocation(arg_idx=1, shape_idx=0)], [AbstractShapeLocation(arg_idx=2, shape_idx=1)]]
 
     Now the abstracted axes treat the two abstracted axes as different, even though they are the same tracer in the input
-    arguments. The abstract shapes has two elements. By looking at the locations, we can see that we can find
+    arguments. The abstract shapes have two elements. By looking at the locations, we can see that we can find
     the first abstract shape in argument ``1`` at shape position ``0``, and we can find the second abstract shape in
     argument ``2`` at shape position ``1``.
 

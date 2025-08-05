@@ -19,6 +19,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import param_shift
 from pennylane.gradients.parameter_shift import (
     _evaluate_gradient,
@@ -27,7 +28,6 @@ from pennylane.gradients.parameter_shift import (
     _put_zeros_in_pdA2_involutory,
 )
 from pennylane.measurements.shots import Shots
-from pennylane.operation import AnyWires, Observable
 
 # Constants for TestEvaluateGradient
 # Coefficients and expectation values
@@ -1066,7 +1066,7 @@ class TestParamShift:
 
             tape = qml.tape.QuantumScript.from_queue(q)
             with pytest.raises(
-                qml.operation.OperatorPropertyUndefined, match="does not have a grad_recipe"
+                qml.exceptions.OperatorPropertyUndefined, match="does not have a grad_recipe"
             ):
                 qml.gradients.param_shift(tape)
 
@@ -2596,10 +2596,8 @@ class TestParameterShiftRule:
                 return SpecialObject(new)
 
         # pylint: disable=too-few-public-methods
-        class SpecialObservable(Observable):
+        class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
-
-            num_wires = AnyWires
 
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
@@ -3387,10 +3385,9 @@ class TestHamiltonianExpvalGradients:
         tapes, _ = qml.gradients.param_shift(tape, broadcast=broadcast)
         assert len(tapes) == (3 if broadcast else 5)
 
-    def test_no_trainable_coeffs(self, mocker, tol, broadcast):
+    def test_no_trainable_coeffs(self, tol, broadcast):
         """Test no trainable Hamiltonian coefficients"""
         dev = qml.device("default.qubit", wires=2)
-        spy = mocker.spy(qml.gradients, "hamiltonian_grad")
 
         obs = [qml.PauliZ(0), qml.PauliZ(0) @ qml.PauliX(1), qml.PauliY(0)]
         coeffs = np.array([0.1, 0.2, 0.3], requires_grad=False)
@@ -3417,7 +3414,6 @@ class TestHamiltonianExpvalGradients:
         # two (broadcasted if broadcast=True) shifts per rotation gate
         assert len(tapes) == (2 if broadcast else 2 * 2)
         assert [t.batch_size for t in tapes] == ([2, 2] if broadcast else [None] * 4)
-        spy.assert_not_called()
 
         res = fn(dev.execute(tapes))
         assert isinstance(res, tuple)
@@ -3494,25 +3490,6 @@ class TestHamiltonianExpvalGradients:
         tapes, fn = qml.gradients.param_shift(tape, broadcast=broadcast)
         jac = fn(dev.execute(tapes))
         return jac
-
-    @pytest.mark.jax
-    def test_jax(self, broadcast):
-        """Test gradient of multiple trainable Hamiltonian coefficients
-        using JAX"""
-        import jax
-
-        jnp = jax.numpy
-
-        coeffs1 = jnp.array([0.1, 0.2, 0.3])
-        coeffs2 = jnp.array([0.7])
-        weights = jnp.array([0.4, 0.5])
-        dev = qml.device("default.qubit", wires=2)
-
-        with pytest.warns(
-            qml.PennyLaneDeprecationWarning, match="The 'hamiltonian_grad' function is deprecated"
-        ):
-            with pytest.warns(UserWarning, match="Please use qml.gradients.split_to_single_terms"):
-                self.cost_fn(weights, coeffs1, coeffs2, dev, broadcast)
 
 
 @pytest.mark.autograd
@@ -4587,7 +4564,7 @@ class TestJaxArgnums:
         y = jax.numpy.array(-0.654)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="argnum does not work with the Jax interface. You should use argnums instead.",
         ):
             qml.gradients.param_shift(circuit, argnum=argnums)(x, y)
@@ -4612,6 +4589,41 @@ class TestJaxArgnums:
 
         expected_0 = np.array([-np.sin(y) * np.sin(x[0]), 0])
         expected_1 = np.array(np.cos(y) * np.cos(x[0]))
+
+        if argnums == [0]:
+            assert np.allclose(res, expected_0)
+        if argnums == [1]:
+            assert np.allclose(res, expected_1)
+        if argnums == [0, 1]:
+            assert np.allclose(res[0], expected_0)
+            assert np.allclose(res[1], expected_1)
+
+    def test_single_probs(self, argnums, interface):
+        """Test for single probs."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, interface=interface)
+        def circuit(x, y):
+            qml.RX(x[0], wires=[0])
+            qml.RY(y, wires=[1])
+            qml.CNOT(wires=[0, 1])
+            return qml.probs()
+
+        x = jax.numpy.array([0.543, 0.2])
+        y = jax.numpy.array(-0.654)
+
+        res = qml.gradients.param_shift(circuit, argnums=argnums)(x, y)
+
+        c_x, s_x = np.cos(x / 2), np.sin(x / 2)
+        c_y, s_y = np.cos(y / 2), np.sin(y / 2)
+        sqrt_probs = np.array([c_x * c_y, c_x * s_y, s_x * s_y, s_x * c_y])
+        dsqrt_probs_0 = 0.5 * np.array([-s_x * c_y, -s_x * s_y, c_x * s_y, c_x * c_y])
+        dsqrt_probs_0[:, 1] = 0.0  # Second parameter in x is not being used
+        dsqrt_probs_1 = 0.5 * np.array([-c_x * s_y, c_x * c_y, s_x * c_y, -s_x * s_y])[:, 0]
+        expected_0 = 2 * sqrt_probs * dsqrt_probs_0
+        expected_1 = 2 * sqrt_probs[:, 0] * dsqrt_probs_1
 
         if argnums == [0]:
             assert np.allclose(res, expected_0)
@@ -4646,7 +4658,8 @@ class TestJaxArgnums:
             assert np.allclose(res[0], expected_0[0])
             assert np.allclose(res[1], expected_0[1])
         if argnums == [1]:
-            assert np.allclose(res, expected_1)
+            assert np.allclose(res[0][0], expected_1[0])
+            assert np.allclose(res[1][0], expected_1[1])
         if argnums == [0, 1]:
             assert np.allclose(res[0][0], expected_0[0])
             assert np.allclose(res[0][1], expected_0[1])

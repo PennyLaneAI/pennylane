@@ -14,13 +14,13 @@
 """Contains a transform that computes the frequency spectrum of a quantum
 circuit including classical preprocessing within the QNode."""
 from collections import OrderedDict
-from functools import wraps
 from inspect import signature
 from itertools import product
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import gradients, math, measurements, transforms, workflow
+from pennylane.capture.autograph import wraps
 
 from .utils import get_spectrum, join_spectra
 
@@ -382,7 +382,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         preprocessed non-linearly in the gate ``qml.RX(0.5*x**2, wires=0, id="x")``.
 
     """
-    # pylint: disable=too-many-branches,protected-access
+    # pylint: disable=too-many-branches
     validation_kwargs = validation_kwargs or {}
     encoding_args, argnum = _process_ids(encoding_args, argnum, qnode)
     atol = 10 ** (-decimals) if decimals is not None else 1e-10
@@ -394,8 +394,8 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
         old_interface = qnode.interface
 
         if old_interface == "auto":
-            new_interface = qml.math.get_interface(*args, *list(kwargs.values()))
-            interfaces = [qml.math.get_interface(arg) for arg in args]
+            new_interface = math.get_interface(*args, *list(kwargs.values()))
+            interfaces = [math.get_interface(arg) for arg in args]
             if any(interface == "numpy" for interface in interfaces):
                 raise ValueError(
                     "qnode_spectrum requires an automatic differentiation library to validate "
@@ -404,27 +404,27 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 )
             qnode.interface = new_interface
 
-        jac_fn = qml.gradients.classical_jacobian(
-            qnode, argnum=argnum, expand_fn=qml.transforms.expand_multipar
+        jac_fn = gradients.classical_jacobian(
+            qnode, argnum=argnum, expand_fn=transforms.expand_multipar
         )
         # Compute classical Jacobian and assert preprocessing is linear
-        if not qml.math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
+        if not math.is_independent(jac_fn, qnode.interface, args, kwargs, **validation_kwargs):
             raise ValueError(
                 "The Jacobian of the classical preprocessing in the provided QNode "
                 "is not constant; only linear classical preprocessing is supported."
             )
         # After construction, check whether invalid operations (for a spectrum)
         # are present in the QNode
-        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
+        tape = workflow.construct_tape(qnode)(*args, **kwargs)
         for m in tape.measurements:
-            if not isinstance(m, (qml.measurements.ExpectationMP, qml.measurements.ProbabilityMP)):
+            if not isinstance(m, (measurements.ExpectationMP, measurements.ProbabilityMP)):
                 raise ValueError(
                     f"The measurement {m.__class__.__name__} is not supported as it likely does "
                     "not admit a Fourier spectrum."
                 )
         cjacs = jac_fn(*args, **kwargs)
         spectra = {}
-        tape = qml.transforms.expand_multipar(tape)
+        tape = transforms.expand_multipar(tape)
         par_info = tape.par_info
 
         # Iterate over jacobians per argument
@@ -471,7 +471,7 @@ def qnode_spectrum(qnode, encoding_args=None, argnum=None, decimals=8, validatio
                 # For each contributing parameter, rescale the operation's spectrum
                 # and add it to the spectrum for that parameter
                 for par_idx in par_ids:
-                    scale = float(qml.math.abs(jac_of_op[par_idx]))
+                    scale = float(math.abs(jac_of_op[par_idx]))
                     scaled_spec = [scale * f for f in spec]
                     _spectra[par_idx] = join_spectra(_spectra[par_idx], scaled_spec)
 

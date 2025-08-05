@@ -17,7 +17,6 @@ import warnings
 from datetime import datetime
 from functools import partial
 
-import matplotlib.pyplot as plt
 import numpy as np
 
 import pennylane as qml
@@ -25,15 +24,22 @@ from pennylane.liealg import adjvec_to_op, op_to_adjvec
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence
 
-has_jax = True
 try:
     import jax
     import jax.numpy as jnp
     import optax
 
     jax.config.update("jax_enable_x64", True)
+    has_jax = True
 except ImportError:
     has_jax = False
+
+try:
+    import matplotlib.pyplot as plt
+
+    has_plt = True
+except ImportError:
+    has_plt = False
 
 
 def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_min=False):
@@ -77,11 +83,11 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     .. math:: f(\theta) = \langle H, K(\theta) e^{-i \sum_{j=1}^{|\mathfrak{a}|} \pi^j a_j} K(\theta)^\dagger \rangle,
 
-    see eq. (6) therein and our :doc:`demo <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>` for more details.
+    see eq. (6) therein and our `demo <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__ for more details.
     Instead of relying on having Pauli words, we use the adjoint representation
     for a more general evaluation of the cost function. The rest is the same.
 
-    .. seealso:: :doc:`The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`, :doc:`The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`.
+    .. seealso:: `The KAK decomposition in theory (demo) <demos/tutorial_kak_decomposition>`__, `The KAK decomposition in practice (demo) <demos/tutorial_fixed_depth_hamiltonian_simulation_via_cartan_decomposition>`__.
 
     Args:
         H (Union[Operator, PauliSentence, np.ndarray]): Hamiltonian to decompose
@@ -90,7 +96,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
             Cartan decomposition :math:`\mathfrak{g} = \mathfrak{k} \oplus (\tilde{\mathfrak{m}} \oplus \mathfrak{a})`
         adj (np.ndarray): Adjoint representation of dimension ``(dim_g, dim_g, dim_g)``,
             with the implicit ordering ``(k, mtilde, a)``.
-        verbose (bool): Plot the optimization
+        verbose (bool): Plot the optimization. Requires matplotlib to be installed (``pip install matplotlib``)
         opt_kwargs (dict): Keyword arguments for the optimization like initial starting values
             for :math:`\theta` of dimension ``(dim_k,)``, given as ``theta0``.
             Also includes ``n_epochs``, ``lr``, ``b1``, ``b2``, ``verbose``, ``interrupt_tol``, see :func:`~run_opt`
@@ -216,8 +222,13 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     if not has_jax:  # pragma: no cover
         raise ImportError(
-            "jax and optax are required for variational_kak_adj. You can install them with pip install jax jaxlib optax."
+            "jax and optax are required for variational_kak_adj. You can install them with pip install jax~=0.6.0 jaxlib~=0.6.0 optax."
         )  # pragma: no cover
+    if verbose >= 1 and not has_plt:  # pragma: no cover
+        print(
+            "variational_kak_adj requires matplotlib to display a figure with the optimization "
+            "progress (for verbose>=1). You can install it with pip install matplotlib"
+        )
 
     if opt_kwargs is None:
         opt_kwargs = {}
@@ -246,9 +257,9 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
         return (gammavec @ vec_H).real
 
-    value_and_grad = jax.jit(jax.value_and_grad(loss))
+    if verbose >= 1:
+        print([H], g[-dim_m:])
 
-    print([H], g[-dim_m:])
     [vec_H] = op_to_adjvec([H], g[-dim_m:], is_orthogonal=False)
 
     theta0 = opt_kwargs.pop("theta0", None)
@@ -257,9 +268,7 @@ def variational_kak_adj(H, g, dims, adj, verbose=False, opt_kwargs=None, pick_mi
 
     opt_kwargs["verbose"] = verbose
 
-    thetas, energy, _ = run_opt(
-        partial(value_and_grad, vec_H=vec_H, adj=adj_cropped), theta0, **opt_kwargs
-    )
+    thetas, energy, _ = run_opt(partial(loss, vec_H=vec_H, adj=adj_cropped), theta0, **opt_kwargs)
 
     if verbose >= 1:
         plt.plot(energy - np.min(energy))
@@ -339,23 +348,59 @@ def validate_kak(H, g, k, kak_res, n, error_tol, verbose=False):
 
 
 def run_opt(
-    value_and_grad,
+    cost,
     theta,
     n_epochs=500,
-    lr=0.1,
-    b1=0.99,
-    b2=0.999,
+    optimizer=None,
     verbose=False,
     interrupt_tol=None,
 ):
-    """Boilerplate jax optimization"""
+    r"""Boilerplate jax optimization
+
+    Args:
+        cost (callable): Cost function with scalar valued real output
+        theta (Iterable): Initial values for argument of ``cost``
+        n_epochs (int): Number of optimization iterations
+        optimizer (optax.GradientTransformation): ``optax`` optimizer. Default is ``optax.adam(learning_rate=0.1)``.
+        verbose (bool): Whether progress is output during optimization
+        interrupt_tol (float): If not None, interrupt the optimization if the norm of the gradient is smaller than ``interrupt_tol``.
+
+    **Example**
+
+    .. code-block:: python
+
+        from pennylane.labs.dla import run_opt
+        import jax
+        import jax.numpy as jnp
+        import optax
+        jax.config.update("jax_enable_x64", True)
+
+        def cost(x):
+            return x**2
+
+        x0 = jnp.array(0.4)
+
+        thetas, energy, gradients = run_opt(cost, x0)
+
+    When no ``optimizer`` is passed, we use ``optax.adam(learning_rate=0.1)``.
+    We can also use other optimizers, like ``optax.lbfgs``.
+
+    >>> optimizer = optax.lbfgs(learning_rate=0.1, memory_size=1000)
+    >>> thetas, energy, gradients = run_opt(cost, x0, optimizer=optimizer)
+
+    """
 
     if not has_jax:  # pragma: no cover
         raise ImportError(
-            "jax and optax are required for run_opt. You can install them with pip install jax jaxlib optax."
+            "jax and optax are required for run_opt. You can install them with pip install jax~=0.6.0 jaxlib~=0.6.0 optax."
         )  # pragma: no cover
 
-    optimizer = optax.adam(learning_rate=lr, b1=b1, b2=b2)
+    if optimizer is None:
+        optimizer = optax.adam(learning_rate=0.1)
+
+    value_and_grad = jax.jit(jax.value_and_grad(cost))
+    compiled_cost = jax.jit(cost)
+
     opt_state = optimizer.init(theta)
 
     energy, gradients, thetas = [], [], []
@@ -363,7 +408,9 @@ def run_opt(
     @jax.jit
     def step(opt_state, theta):
         val, grad_circuit = value_and_grad(theta)
-        updates, opt_state = optimizer.update(grad_circuit, opt_state)
+        updates, opt_state = optimizer.update(
+            grad_circuit, opt_state, theta, value=val, grad=grad_circuit, value_fn=compiled_cost
+        )
         theta = optax.apply_updates(theta, updates)
 
         return opt_state, theta, val, grad_circuit

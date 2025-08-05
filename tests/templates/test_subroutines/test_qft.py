@@ -143,7 +143,7 @@ class TestQFT:
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 # pylint:disable=protected-access
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
@@ -169,7 +169,7 @@ class TestDynamicDecomposition:
 
         # Validate Jaxpr
         jaxpr_eqns = jaxpr.eqns
-        outer_loop, swap_loop = [eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim]
+        outer_loop, swap_loop = (eqn for eqn in jaxpr_eqns if eqn.primitive == for_loop_prim)
         assert outer_loop.primitive == for_loop_prim
         assert swap_loop.primitive == for_loop_prim
         outer_loop_eqn = outer_loop.params["jaxpr_body_fn"].eqns
@@ -253,7 +253,7 @@ class TestDynamicDecomposition:
 
         graph = qml.decomposition.DecompositionGraph(
             operations=[qml.QFT(wires=wires)],
-            target_gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
+            gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
         )
         graph.solve()
         expected_resources = graph.resource_estimate(qml.QFT(wires=wires))

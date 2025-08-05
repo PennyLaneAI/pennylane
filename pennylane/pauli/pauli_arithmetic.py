@@ -539,6 +539,7 @@ class PauliSentence(dict):
 
     **Examples**
 
+    >>> from pennylane import PauliSentence, PauliWord
     >>> ps = PauliSentence({
     ...     PauliWord({0:'X', 1:'Y'}): 1.23,
     ...     PauliWord({2:'Z', 0:'Y'}): -0.45j
@@ -812,7 +813,7 @@ class PauliSentence(dict):
     @property
     def wires(self):
         """Track wires of the PauliSentence."""
-        return Wires.all_wires((pw.wires for pw in self.keys()))
+        return Wires.all_wires(pw.wires for pw in self.keys())
 
     def to_mat(self, wire_order=None, format="dense", buffer_size=None):
         """Returns the matrix representation.

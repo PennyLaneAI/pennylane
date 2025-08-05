@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-few-public-methods,function-redefined
 
 """
 This file contains the ``ParametrizedEvolution`` operator.
@@ -20,11 +19,11 @@ This file contains the ``ParametrizedEvolution`` operator.
 
 import warnings
 from collections.abc import Sequence
-from typing import Union
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
 from pennylane.ops import functions
+from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 
 from .hardware_hamiltonian import HardwareHamiltonian
@@ -365,7 +364,6 @@ class ParametrizedEvolution(Operation):
     """
 
     _name = "ParametrizedEvolution"
-    num_wires = AnyWires
     grad_method = "A"
 
     # pylint: disable=too-many-arguments
@@ -374,7 +372,7 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t: Union[float, list[float]] = None,
+        t: float | list[float] = None,
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
@@ -392,8 +390,8 @@ class ParametrizedEvolution(Operation):
             self.t = None
         else:
             if isinstance(t, (list, tuple)):
-                t = qml.math.stack(t)
-            self.t = qml.math.cast(qml.math.stack([0.0, t]) if qml.math.ndim(t) == 0 else t, float)
+                t = math.stack(t)
+            self.t = math.cast(math.stack([0.0, t]) if math.ndim(t) == 0 else t, float)
         if complementary and not return_intermediate:
             warnings.warn(
                 "The keyword argument complementary does not have any effect if "
@@ -420,7 +418,7 @@ class ParametrizedEvolution(Operation):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
+                "You can install jax via: pip install jax~=0.6.0"
             )
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
@@ -433,8 +431,8 @@ class ParametrizedEvolution(Operation):
         if dense is None:
             dense = self.dense
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
-        if qml.QueuingManager.recording():
-            qml.QueuingManager.remove(self)
+        if QueuingManager.recording():
+            QueuingManager.remove(self)
 
         return ParametrizedEvolution(
             H=self.H,
@@ -509,12 +507,11 @@ class ParametrizedEvolution(Operation):
     def has_matrix(self):
         return self._has_matrix
 
-    # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
+                "You can install jax via: pip install jax~=0.6.0"
             )
         if not self.has_matrix:
             raise ValueError(
@@ -535,12 +532,12 @@ class ParametrizedEvolution(Operation):
         mat = odeint(fun, y0, self.t, **self.odeint_kwargs)
         if self.hyperparameters["return_intermediate"] and self.hyperparameters["complementary"]:
             # Compute U(t_0, t_f)@U(t_0, t_i)^\dagger, where i indexes the first axis of mat
-            mat = qml.math.tensordot(mat[-1], qml.math.conj(mat), axes=[[1], [-1]])
+            mat = math.tensordot(mat[-1], math.conj(mat), axes=[[1], [-1]])
             # The previous line leaves the axis indexing the t_i as second, so we move it up
-            mat = qml.math.moveaxis(mat, 1, 0)
+            mat = math.moveaxis(mat, 1, 0)
         elif not self.hyperparameters["return_intermediate"]:
             mat = mat[-1]
-        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+        return math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -584,15 +581,15 @@ class ParametrizedEvolution(Operation):
         params = self.parameters
         has_cache = cache and isinstance(cache.get("matrices", None), list)
 
-        if any(qml.math.ndim(p) for p in params) and not has_cache:
+        if any(math.ndim(p) for p in params) and not has_cache:
             return op_label
 
         def _format_number(x):
-            return format(qml.math.toarray(x), f".{decimals}f")
+            return format(math.toarray(x), f".{decimals}f")
 
         def _format_arraylike(x):
             for i, mat in enumerate(cache["matrices"]):
-                if qml.math.shape(x) == qml.math.shape(mat) and qml.math.allclose(x, mat):
+                if math.shape(x) == math.shape(mat) and math.allclose(x, mat):
                     return f"M{i}"
             mat_num = len(cache["matrices"])
             cache["matrices"].append(x)

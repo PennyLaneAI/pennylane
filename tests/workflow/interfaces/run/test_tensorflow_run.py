@@ -24,7 +24,6 @@ from conftest import atol_for_shots, get_device, test_matrix
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
-from pennylane.transforms.core import TransformProgram
 from pennylane.workflow import _resolve_execution_config, _setup_transform_program, run
 
 tf = pytest.importorskip("tensorflow")
@@ -39,9 +38,7 @@ class TestTensorFlowRun:
         """Test execution of tapes on 'tensorflow' interface."""
         device = get_device(device, seed=seed)
         config = replace(config, interface="tensorflow")
-        resolved_config = _resolve_execution_config(
-            config, device, [QuantumScript()], TransformProgram()
-        )
+        resolved_config = _resolve_execution_config(config, device, [QuantumScript()])
 
         def cost(a, b):
             ops1 = [qml.RY(a, wires=0), qml.RX(b, wires=0)]
@@ -50,11 +47,8 @@ class TestTensorFlowRun:
             ops2 = [qml.RY(a, wires="a"), qml.RX(b, wires="a")]
             tape2 = qml.tape.QuantumScript(ops2, [qml.expval(qml.PauliZ("a"))], shots=shots)
 
-            resolved_config = _resolve_execution_config(
-                config, device, [tape1, tape2], TransformProgram()
-            )
-            print(resolved_config.use_device_jacobian_product)
-            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            resolved_config = _resolve_execution_config(config, device, [tape1, tape2])
+            inner_tp = _setup_transform_program(device, resolved_config)[1]
             return run([tape1, tape2], device, resolved_config, inner_tp)
 
         a = tf.Variable(0.1, dtype="float64")
@@ -87,15 +81,13 @@ class TestTensorFlowRun:
             pytest.xfail(reason="Partitioned shots are not supported yet.")
         device = get_device(device, seed=seed)
         config = replace(config, interface="tensorflow")
-        resolved_config = _resolve_execution_config(
-            config, device, [QuantumScript()], TransformProgram()
-        )
+        resolved_config = _resolve_execution_config(config, device, [QuantumScript()])
         device_vjp = resolved_config.use_device_jacobian_product
 
         def cost(a):
             tape = qml.tape.QuantumScript([qml.RY(a, 0)], [qml.expval(qml.PauliZ(0))], shots=shots)
-            resolved_config = _resolve_execution_config(config, device, [tape], TransformProgram())
-            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            resolved_config = _resolve_execution_config(config, device, [tape])
+            inner_tp = _setup_transform_program(device, resolved_config)[1]
             return run([tape], device, resolved_config, inner_tp)[0]
 
         a = tf.Variable(0.1, dtype=tf.float64)
@@ -117,17 +109,15 @@ class TestTensorFlowRun:
 
         device = get_device(device, seed=seed)
         config = replace(config, interface="tensorflow")
-        resolved_config = _resolve_execution_config(
-            config, device, [QuantumScript()], TransformProgram()
-        )
+        resolved_config = _resolve_execution_config(config, device, [QuantumScript()])
         device_vjp = resolved_config.use_device_jacobian_product
 
         def cost(a, b):
             ops = [qml.RY(a, wires=0), qml.RX(b, wires=1), qml.CNOT(wires=[0, 1])]
             m = [qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliY(1))]
             tape = qml.tape.QuantumScript(ops, m, shots=shots)
-            resolved_config = _resolve_execution_config(config, device, [tape], TransformProgram())
-            inner_tp = _setup_transform_program(TransformProgram(), device, resolved_config)[1]
+            resolved_config = _resolve_execution_config(config, device, [tape])
+            inner_tp = _setup_transform_program(device, resolved_config)[1]
             return qml.math.hstack(
                 run([tape], device, resolved_config, inner_tp)[0], like="tensorflow"
             )

@@ -36,7 +36,7 @@ def test_supported_gradient_kwargs():
     methods_to_skip = ("metric_tensor", "classical_fisher", "quantum_fisher")
 
     grad_transforms = []
-    for attr in qml.gradients.__dir__():
+    for attr in dir(qml.gradients):
         if attr in methods_to_skip:
             continue
         obj = getattr(qml.gradients, attr)
@@ -455,7 +455,8 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(x, y)
         res = qml.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
-        assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
+        for _r, _e in zip(res, expected):
+            assert qml.math.allclose(_r, _e, atol=tol, rtol=0)
 
     def test_high_dimensional_single_parameter_arg(self, tol):
         """Test that a gradient transform acts on QNodes correctly
@@ -636,8 +637,9 @@ class TestGradientTransformIntegration:
         """Test that setting the number of shots works correctly for
         a gradient transform"""
 
-        dev = qml.device("default.qubit", wires=1, shots=1000)
+        dev = qml.device("default.qubit", wires=1)
 
+        @qml.set_shots(shots=1000)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, wires=0)
@@ -648,11 +650,48 @@ class TestGradientTransformIntegration:
         # the gradient function can be called with different shot values
         grad_fn = qml.gradients.param_shift(circuit)
         assert grad_fn(x).shape == ()
-        assert len(grad_fn(x, shots=[(1, 1000)])) == 1000
+
+        assert len(qml.set_shots(shots=[(1, 1000)])(grad_fn)(x)) == 1000
 
         # the original QNode is unaffected
         assert circuit(x).shape == tuple()
-        assert circuit(x, shots=1000).shape == tuple()
+        assert qml.set_shots(shots=1000)(circuit)(x).shape == tuple()
+
+    @pytest.mark.parametrize(
+        "interface",
+        (
+            pytest.param("autograd", marks=pytest.mark.autograd),
+            pytest.param("jax", marks=pytest.mark.jax),
+            pytest.param("torch", marks=pytest.mark.torch),
+            pytest.param("tensorflow", marks=pytest.mark.tf),
+        ),
+    )
+    def test_use_with_batch_transform(self, interface):
+        """Test that a gradient transform can be chained with a batch transform."""
+
+        dev = qml.device("default.qubit")
+
+        # @qml.transforms.split_non_commuting
+        @qml.qnode(dev)
+        def c(x):
+            qml.RX(x**2, 0)
+            return qml.expval(qml.Z(0)), qml.expval(qml.Y(0)), qml.expval(qml.X(0))
+
+        x = qml.math.asarray(0.5, like=interface, requires_grad=True)
+
+        if interface == "tensorflow":
+            import tensorflow as tf
+
+            with tf.GradientTape():  # need to make x trainable
+                grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
+        else:
+            grad_z, grad_y, grad_x = qml.gradients.param_shift(c)(x)
+
+        expected_z = -2 * x * qml.math.sin(x**2)
+        expected_y = -2 * x * qml.math.cos(x**2)
+        assert qml.math.allclose(expected_z, grad_z)
+        assert qml.math.allclose(grad_y, expected_y)
+        assert qml.math.allclose(grad_x, 0)
 
 
 class TestInterfaceIntegration:

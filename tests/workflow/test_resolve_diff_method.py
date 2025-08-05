@@ -18,6 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.workflow import _resolve_diff_method
 
 
@@ -83,7 +84,8 @@ class TestCustomDeviceIntegration:
         """Test that an error is raised if adjoint is requested for a device that does not support it."""
         config = ExecutionConfig(gradient_method="adjoint")
         with pytest.raises(
-            qml.QuantumFunctionError, match=r"does not support adjoint with requested circuit"
+            QuantumFunctionError,
+            match=r"does not support adjoint with requested circuit",
         ):
             _resolve_diff_method(config, self.dev)
 
@@ -91,7 +93,8 @@ class TestCustomDeviceIntegration:
         """Test that an error is raised when backprop is requested for a device that does not support it."""
         config = ExecutionConfig(gradient_method="backprop")
         with pytest.raises(
-            qml.QuantumFunctionError, match=r"does not support backprop with requested circuit"
+            QuantumFunctionError,
+            match=r"does not support backprop with requested circuit",
         ):
             _resolve_diff_method(config, self.dev)
 
@@ -181,6 +184,59 @@ class TestResolveDiffMethod:
         dev = qml.device("default.qubit", wires=1)
         initial_config = ExecutionConfig(gradient_method="invalid-method")
         with pytest.raises(
-            qml.QuantumFunctionError, match="Differentiation method invalid-method not recognized"
+            QuantumFunctionError,
+            match="Differentiation method invalid-method not recognized",
         ):
             _resolve_diff_method(initial_config, dev)
+
+    @pytest.mark.parametrize(
+        "diff_method, mode",
+        [
+            ("hadamard", "standard"),
+            ("reversed-hadamard", "reversed"),
+            ("direct-hadamard", "direct"),
+            ("reversed-direct-hadamard", "reversed-direct"),
+        ],
+    )
+    def test_hadamard_methods(self, diff_method, mode):
+        """Test that we can resolve the hadamard methods correctly."""
+
+        dev = qml.device("default.qubit")
+        initial_config = ExecutionConfig(gradient_method=diff_method)
+        processed = _resolve_diff_method(initial_config, dev)
+        assert processed.gradient_method == qml.gradients.hadamard_grad
+        assert processed.gradient_keyword_arguments == {"mode": mode, "device_wires": None}
+
+    def test_hadamard_device_wires(self):
+        """Test that device wires are added to the gradient keyword args."""
+
+        dev = qml.device("default.qubit", wires=("a", "b"))
+        initial_config = ExecutionConfig(gradient_method="hadamard")
+        processed = _resolve_diff_method(initial_config, dev)
+        assert processed.gradient_method == qml.gradients.hadamard_grad
+        assert processed.gradient_keyword_arguments == {
+            "mode": "standard",
+            "device_wires": dev.wires,
+        }
+
+    @pytest.mark.parametrize(
+        "diff_method", ("reversed-hadamard", "direct-hadamard", "reversed-direct-hadamard")
+    )
+    def test_error_if_specific_hadamard_variant_and_mode(self, diff_method):
+
+        dev = qml.device("default.qubit")
+
+        initial_config = ExecutionConfig(
+            gradient_method=diff_method, gradient_keyword_arguments={"mode": "reversed"}
+        )
+        with pytest.raises(ValueError, match="cannot be provided with a 'mode'"):
+            _resolve_diff_method(initial_config, dev)
+
+    def test_specify_hadamard_and_mode(self):
+        dev = qml.device("default.qubit")
+        initial_config = ExecutionConfig(
+            gradient_method="hadamard", gradient_keyword_arguments={"mode": "reversed"}
+        )
+        processed = _resolve_diff_method(initial_config, dev)
+        assert processed.gradient_method == qml.gradients.hadamard_grad
+        assert processed.gradient_keyword_arguments == {"mode": "reversed", "device_wires": None}

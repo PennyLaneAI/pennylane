@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import CountsMP
 from pennylane.wires import Wires
 
@@ -253,7 +254,7 @@ class TestProcessSamples:
         m0 = qml.measure(0)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.counts(op=[m0, qml.PauliZ(0)])
@@ -266,7 +267,7 @@ class TestProcessSamples:
         m2 = qml.measure(2)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.counts(op=[m0 + m1, m2])
@@ -1002,3 +1003,48 @@ class TestProcessCounts:
         actual = qml.counts(wires=wires, all_outcomes=all_outcomes).process_counts(expected, wires)
 
         assert actual == expected
+
+    @pytest.mark.parametrize(
+        "wire_order, expected_result", [((0, 1), {-1.0: 3, 1.0: 2}), ((1, 0), {1.0: 5})]
+    )
+    def test_with_observable(self, wire_order, expected_result):
+        """Test that processing counts to get the counts for an eigenvalue of an observable
+        works as expected for an observable with a single wire."""
+
+        counts_mp = qml.counts(qml.Z(0))
+
+        result = counts_mp.process_counts({"00": 2, "10": 3}, wire_order)
+
+        assert result == expected_result
+
+    @pytest.mark.parametrize(
+        "wire_order, expected_result",
+        [
+            ((0, 1, 2), {-1.0: 4, 1.0: 6}),
+            ((0, 2, 1), {-1.0: 3, 1.0: 7}),
+            ((2, 1, 0), {-1.0: 4, 1.0: 6}),
+        ],
+    )
+    def test_with_observable_multi_wire(self, wire_order, expected_result):
+        """Test that processing counts to get the counts for an eigenvalue of an observable
+        works as expected for an observable with a single wire."""
+
+        counts_mp = qml.counts(qml.Z(0) @ qml.Z(2))
+        counts = {"000": 2, "001": 1, "101": 2, "010": 1, "110": 3, "111": 1}
+
+        result = counts_mp.process_counts(counts, wire_order)
+
+        assert result == expected_result
+
+    @pytest.mark.parametrize(
+        "all_outcomes, expected_result", [(True, {-1.0: 0, 1.0: 5}), (False, {1.0: 5})]
+    )
+    def test_process_counts_with_observable_all_outcomes(self, all_outcomes, expected_result):
+        """Test that all-outcomes works as expected when returning observable/eigenvalue outcomes
+        instead of counts in the computational basis"""
+
+        counts_mp = qml.counts(qml.Z(0), all_outcomes=all_outcomes)
+
+        result = counts_mp.process_counts({"00": 2, "10": 3}, [1, 0])
+
+        assert result == expected_result

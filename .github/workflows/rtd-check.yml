@@ -15,9 +15,9 @@ on:
 
 jobs:
   rtd_check:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     env:
-      PYTHON_VERSION: "3.10"
+      PYTHON_VERSION: "3.11"
       # Space separated list of packages to install for each package manager
       PIP_PACKAGES_TO_INSTALL: "sphinx"
       APT_PACKAGES_TO_INSTALL: "graphviz"

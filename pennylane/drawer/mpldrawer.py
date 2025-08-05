@@ -59,7 +59,7 @@ def _open_circ_options_process(options):
     return new_options
 
 
-# pylint: disable=too-many-instance-attributes, too-many-arguments
+# pylint: disable=too-many-arguments, too-many-instance-attributes
 class MPLDrawer:
     r"""Allows easy creation of graphics representing circuits with matplotlib
 
@@ -73,6 +73,8 @@ class MPLDrawer:
         figsize=None (Iterable): Allows users to specify the size of the figure manually. Defaults
             to scale with the size of the circuit via ``n_layers`` and ``len(wire_map)``.
         fig=None (matplotlib Figure): Allows users to specify the figure window to plot to.
+        starting_dots=False (bool): Adds dots after the wire labels. Can be used to denote this plot
+            follows after another one.
 
     **Example**
 
@@ -257,7 +259,17 @@ class MPLDrawer:
     _cwire_scaling = 0.25
     """The distance between successive control wires."""
 
-    def __init__(self, n_layers, wire_map, c_wires=0, wire_options=None, figsize=None, fig=None):
+    def __init__(
+        self,
+        n_layers,
+        wire_map,
+        c_wires=0,
+        *,
+        wire_options=None,
+        figsize=None,
+        fig=None,
+        starting_dots: bool = False,
+    ):
         if not has_mpl:  # pragma: no cover
             raise ImportError(
                 "Module matplotlib is required for ``MPLDrawer`` class. "
@@ -266,6 +278,7 @@ class MPLDrawer:
 
         self.n_layers = n_layers
         self.n_wires = len(wire_map)
+        self._starting_dots = starting_dots
 
         ## Creating figure and ax
 
@@ -283,7 +296,7 @@ class MPLDrawer:
 
         self._ax = self._fig.add_axes(
             [0, 0, 1, 1],
-            xlim=(-2, self.n_layers + 1),
+            xlim=(-2.5 if starting_dots else -2, self.n_layers + 1),
             ylim=(-1, self.n_wires + self._cwire_scaling * c_wires + 0.5 * (c_wires > 0)),
             xticks=[],
             yticks=[],
@@ -378,7 +391,18 @@ class MPLDrawer:
             text_options = {"ha": "center", "va": "center", "fontsize": self.fontsize}
 
         for wire, ii_label in enumerate(labels):
-            self._ax.text(-1.5, wire, ii_label, **text_options)
+            self._ax.text(-1.5 - 0.5 * self._starting_dots, wire, ii_label, **text_options)
+
+        if self._starting_dots:
+            for wire in range(self.n_wires):
+                self.ax.text(
+                    -1.5,
+                    wire,
+                    s="···",
+                    ha="center",
+                    va="center_baseline",
+                    fontsize=21,
+                )
 
     def erase_wire(self, layer: int, wire: int, length: int) -> None:
         """Erases a portion of a wire by adding a rectangle that matches the background.

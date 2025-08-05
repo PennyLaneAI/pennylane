@@ -15,7 +15,7 @@
 
 import numpy as np
 
-import pennylane as qml
+from pennylane.ops import RX, RY, RZ
 
 from .qng import _flatten_np, _unflatten_np
 
@@ -49,7 +49,7 @@ class RotoselectOptimizer:
     `Ostaszewski et al. (2021) <https://doi.org/10.22331/q-2021-01-28-391>`_.
 
     Args:
-        possible_generators (list[~.Operation]): List containing the possible
+        possible_generators (list[~.Operation]): list containing the possible
             ``pennylane.ops.qubit`` operators that are allowed in the circuit.
             Default is the set of Pauli rotations :math:`\{R_x, R_y, R_z\}`.
 
@@ -65,7 +65,7 @@ class RotoselectOptimizer:
 
     Set up the PennyLane circuit using the ``default.qubit`` simulator device.
 
-    >>> dev = qml.device("default.qubit", shots=None, wires=2)
+    >>> dev = qml.device("default.qubit", wires=2)
     >>> @qml.qnode(dev)
     ... def circuit(params, generators=None):  # generators will be passed as a keyword arg
     ...     generators[0](params[0], wires=0)
@@ -90,10 +90,8 @@ class RotoselectOptimizer:
     the circuit, while steps-vs-cost can be seen by plotting ``cost_rotosel``.
     """
 
-    # pylint: disable=too-few-public-methods
-
     def __init__(self, possible_generators=None):
-        self.possible_generators = possible_generators or [qml.RX, qml.RY, qml.RZ]
+        self.possible_generators = possible_generators or [RX, RY, RZ]
 
     def step_and_cost(self, objective_fn, x, generators, **kwargs):
         """Update trainable arguments with one step of the optimizer and return the corresponding

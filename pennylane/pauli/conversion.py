@@ -17,7 +17,6 @@ Utility functions to convert between ``~.PauliSentence`` and other PennyLane ope
 from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
-from typing import Union
 
 import pennylane as qml
 from pennylane.math.utils import is_abstract
@@ -28,7 +27,6 @@ from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
 
-# pylint: disable=too-many-branches
 def _generalized_pauli_decompose(
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
 ) -> tuple[qml.typing.TensorLike, list]:
@@ -219,7 +217,7 @@ def _generalized_pauli_decompose(
 
 def pauli_decompose(
     H, hide_identity=False, wire_order=None, pauli=False, check_hermitian=True
-) -> Union[LinearCombination, PauliSentence]:
+) -> LinearCombination | PauliSentence:
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
@@ -385,8 +383,10 @@ def _(op: PauliZ):
     return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0})
 
 
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=unused-argument
 @_pauli_sentence.register
-def _(op: Identity):  # pylint:disable=unused-argument
+def _(op: Identity):
     return PauliSentence({PauliWord({}): 1.0})
 
 

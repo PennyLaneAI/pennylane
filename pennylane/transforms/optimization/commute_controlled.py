@@ -14,9 +14,9 @@
 """Transforms for pushing commuting gates through targets/control qubits."""
 
 from collections import deque
+from collections.abc import Sequence
 from functools import lru_cache, partial
 from itertools import islice
-from typing import Optional, Sequence
 
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -28,7 +28,7 @@ from .optimization_utils import find_next_gate
 
 
 @lru_cache
-def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstring,too-many-statements
+def _get_plxpr_commute_controlled():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr
@@ -160,6 +160,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 for op in self.op_deque:
                     super().interpret_operation(op)
                 self.op_deque.clear()
+                self.current_index = 0
                 return
 
             # If the direction is right, push the gates in each sub-list
@@ -170,11 +171,11 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
                 super().interpret_operation(op)
             self.op_deque.clear()
 
-        def eval(self, jaxpr: "jax.core.Jaxpr", consts: list, *args) -> list:
+        def eval(self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args) -> list:
             """Evaluate a jaxpr.
 
             Args:
-                jaxpr (jax.core.Jaxpr): the jaxpr to evaluate
+                jaxpr (jax.extend.core.Jaxpr): the jaxpr to evaluate
                 consts (list[TensorLike]): the constant variables for the jaxpr
                 *args (tuple[TensorLike]): The arguments for the jaxpr.
 
@@ -249,7 +250,7 @@ def _get_plxpr_commute_controlled():  # pylint: disable=missing-function-docstri
 CommuteControlledInterpreter, commute_controlled_plxpr_to_plxpr = _get_plxpr_commute_controlled()
 
 
-def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> Optional[int]:
+def _find_previous_gate_on_wires(wires: Wires, prevs_ops: Sequence) -> int | None:
     """Finds the previous gate index that shares wires."""
 
     return find_next_gate(wires, reversed(prevs_ops))

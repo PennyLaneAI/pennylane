@@ -15,7 +15,7 @@ r"""
 Overview
 --------
 
-This module contains functionality for performing :doc:`classical shadows <demos/tutorial_diffable_shadows>` measurements.
+This module contains functionality for performing `classical shadows <demos/tutorial_diffable_shadows>`__ measurements.
 
 .. currentmodule:: pennylane
 
@@ -49,7 +49,7 @@ Classical Shadows formalism
 
 .. note:: As per `arXiv:2103.07510 <https://arxiv.org/abs/2103.07510>`_, when computing multiple expectation values it is advisable to directly estimate the desired observables by simultaneously measuring
     qubit-wise-commuting terms. One way of doing this in PennyLane is via :class:`~pennylane.Hamiltonian` and setting ``grouping_type="qwc"``. For more details on this topic, see the PennyLane demo
-    on :doc:`estimating expectation values with classical shadows <demos/tutorial_diffable_shadows>`.
+    on `estimating expectation values with classical shadows <demos/tutorial_diffable_shadows>`__.
 
 A :class:`ClassicalShadow` is a classical description of a quantum state that is capable of reproducing expectation values of local Pauli observables, see `arXiv:2002.08953 <https://arxiv.org/abs/2002.08953>`_.
 
@@ -80,10 +80,11 @@ The easiest way of computing expectation values with classical shadows in PennyL
 
     H = qml.Hamiltonian([1., 1.], [qml.Z(0) @ qml.Z(1), qml.X(0) @ qml.Z(1)])
 
-    dev = qml.device("default.qubit", shots=10000)
+    dev = qml.device("default.qubit")
 
     # shadow_expval + mid-circuit measurements require to defer measurements
     @qml.defer_measurements
+    @partial(qml.set_shots, shots=10000)
     @qml.qnode(dev)
     def qnode(x):
         qml.Hadamard(0)

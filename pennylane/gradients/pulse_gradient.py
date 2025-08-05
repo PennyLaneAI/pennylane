@@ -20,10 +20,13 @@ from functools import partial
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import transform
+from pennylane import math
+from pennylane.ops import PauliRot, exp
+from pennylane.ops.functions import dot, eigvals
+from pennylane.pauli import is_pauli_word, pauli_word_prefactor, pauli_word_to_string
 from pennylane.pulse import HardwareHamiltonian, ParametrizedEvolution
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
 
 from .general_shift_rules import eigvals_to_frequencies, generate_shift_rule
@@ -56,7 +59,7 @@ def _assert_has_jax(transform_name):
     if not has_jax:  # pragma: no cover
         raise ImportError(
             f"Module jax is required for the {transform_name} gradient transform. "
-            "You can install jax via: pip install jax jaxlib"
+            "You can install jax via: pip install jax~=0.6.0 jaxlib~=0.6.0."
         )
 
 
@@ -94,7 +97,7 @@ def _split_evol_ops(op, ob, tau):
     """
     t0, *_, t1 = op.t
     # If there are multiple values for tau, use broadcasting
-    if bcast := qml.math.ndim(tau) > 0:
+    if bcast := math.ndim(tau) > 0:
         # With broadcasting, create a sorted array of [t_0, *sorted(taus), t_1]
         # Use this array for both, the pulse before and after the inserted operation.
         # The way we slice the resulting tape results later on accomodates for the additional
@@ -107,10 +110,10 @@ def _split_evol_ops(op, ob, tau):
         before_t = jax.numpy.array([t0, tau])
         after_t = jax.numpy.array([tau, t1])
 
-    if qml.pauli.is_pauli_word(ob):
-        prefactor = qml.pauli.pauli_word_prefactor(ob)
-        word = qml.pauli.pauli_word_to_string(ob)
-        insert_ops = [qml.PauliRot(shift, word, ob.wires) for shift in [np.pi / 2, -np.pi / 2]]
+    if is_pauli_word(ob):
+        prefactor = pauli_word_prefactor(ob)
+        word = pauli_word_to_string(ob)
+        insert_ops = [PauliRot(shift, word, ob.wires) for shift in [np.pi / 2, -np.pi / 2]]
         coeffs = [prefactor, -prefactor]
     else:
         with warnings.catch_warnings():
@@ -118,9 +121,9 @@ def _split_evol_ops(op, ob, tau):
                 warnings.filterwarnings(
                     "ignore", ".*the eigenvalues will be computed numerically.*"
                 )
-            eigvals = qml.eigvals(ob)
-        coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigvals))))
-        insert_ops = [qml.exp(qml.dot([-1j * shift], [ob])) for shift in shifts]
+            eigenvalues = eigvals(ob)
+        coeffs, shifts = zip(*generate_shift_rule(eigvals_to_frequencies(tuple(eigenvalues))))
+        insert_ops = [exp(dot([-1j * shift], [ob])) for shift in shifts]
 
     # Create Pauli rotations to be inserted at tau
     ode_kwargs = op.odeint_kwargs
@@ -154,12 +157,12 @@ def _split_evol_tape(tape, split_evolve_ops, op_idx):
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx + 1 :]
     return [
-        qml.tape.QuantumScript(ops_pre + split + ops_post, tape.measurements, shots=tape.shots)
+        QuantumScript(ops_pre + split + ops_post, tape.measurements, shots=tape.shots)
         for split in split_evolve_ops
     ]
 
 
-# pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments, too-many-positional-arguments
 def _parshift_and_integrate(
     results,
     cjacs,
@@ -236,7 +239,7 @@ def _parshift_and_integrate(
             diff_per_term = jnp.array(
                 [_contract(c, r, cjac) for c, r, cjac in zip(psr_coeffs, res, cjacs)]
             )
-            return qml.math.sum(diff_per_term, axis=0) * int_prefactor
+            return math.sum(diff_per_term, axis=0) * int_prefactor
 
     else:
         num_shifts = len(psr_coeffs)
@@ -598,7 +601,7 @@ def stoch_pulse_grad(
         classical Jacobian, which is *not* constant over :math:`\tau`.
         Therefore, it is important to implement pulses in the simplest way possible.
     """
-    # pylint:disable=unused-argument
+
     transform_name = "stochastic pulse parameter-shift"
     _assert_has_jax(transform_name)
     assert_no_state_returns(tape.measurements, transform_name)
@@ -631,6 +634,7 @@ def stoch_pulse_grad(
     return _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting)
 
 
+# pylint: disable=too-many-positional-arguments
 def _generate_tapes_and_cjacs(
     tape, operation, key, num_split_times, use_broadcasting, par_idx=None
 ):
@@ -764,7 +768,7 @@ def _tapes_data_hardware(tape, operation, key, num_split_times, use_broadcasting
         _tapes, _cjacs, int_prefactor, _psr_coeffs = _generate_tapes_and_cjacs(
             tape, _operation, key, num_split_times, use_broadcasting, cjac_idx
         )
-        cjacs.append(qml.math.stack(_cjacs))
+        cjacs.append(math.stack(_cjacs))
         tapes.extend(_tapes)
         psr_coeffs.append(_psr_coeffs)
 
@@ -774,7 +778,6 @@ def _tapes_data_hardware(tape, operation, key, num_split_times, use_broadcasting
     return tapes, data
 
 
-# pylint: disable=too-many-arguments
 def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcasting):
     r"""Compute the gradient of a quantum circuit composed of pulse sequences that measures
     an expectation value or probabilities, by applying the stochastic parameter shift rule.
@@ -805,7 +808,7 @@ def _expval_stoch_pulse_grad(tape, argnum, num_split_times, key, use_broadcastin
             _tapes, cjacs, int_prefactor, psr_coeffs = _generate_tapes_and_cjacs(
                 tape, operation, _key, num_split_times, use_broadcasting
             )
-            data = (len(_tapes), qml.math.stack(cjacs), int_prefactor, psr_coeffs)
+            data = (len(_tapes), math.stack(cjacs), int_prefactor, psr_coeffs)
 
         tapes.extend(_tapes)
         gradient_data.append(data)

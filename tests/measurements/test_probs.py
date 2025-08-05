@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import MeasurementProcess, ProbabilityMP
 from pennylane.queuing import AnnotatedQueue
 
@@ -335,6 +336,7 @@ class TestProbs:
         expected = np.array([0.5, 0.5, 0, 0])
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
+    @pytest.mark.local_salt(2)  # [sc-96120]
     @pytest.mark.jax
     @pytest.mark.parametrize("shots", (None, 500))
     @pytest.mark.parametrize("obs", ([0, 1], qml.PauliZ(0) @ qml.PauliZ(1)))
@@ -416,6 +418,7 @@ class TestProbs:
 
         dev = qml.device("default.qubit", seed=seed)
 
+        @qml.set_shots(shots=shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -426,7 +429,7 @@ class TestProbs:
             m2 = qml.measure(2)
             return qml.probs(op=[m0, m1, m2])
 
-        res = circuit(phi, shots=shots)
+        res = circuit(phi)
 
         @qml.qnode(dev)
         def expected_circuit(phi):
@@ -459,7 +462,7 @@ class TestProbs:
         m0 = qml.measure(0)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.probs(op=[m0, qml.PauliZ(0)])
@@ -472,7 +475,7 @@ class TestProbs:
         m2 = qml.measure(2)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Only sequences of single MeasurementValues can be passed with the op argument",
         ):
             _ = qml.probs(op=[m0 + m1, m2])
@@ -777,7 +780,7 @@ class TestProbs:
             return qml.probs(op=H)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Hamiltonians are not supported for rotating probabilities.",
         ):
             circuit()
@@ -798,7 +801,7 @@ class TestProbs:
             return qml.probs(op=operation(0.56, wires=[0, 1]))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="does not define diagonalizing gates : cannot be used to rotate the probability",
         ):
             circuit()
@@ -815,7 +818,7 @@ class TestProbs:
             return qml.probs(op=qml.Hermitian(hermitian, wires=0), wires=1)
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Cannot specify the wires to probs if an observable is "
             "provided. The wires for probs will be determined directly from the observable.",
         ):
