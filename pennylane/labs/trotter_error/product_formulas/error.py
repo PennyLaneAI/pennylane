@@ -105,7 +105,7 @@ def perturbation_error(
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],
     states: Sequence[AbstractState],
-    order: int,
+    max_order: int,
     timestep: float = 1.0,
     num_workers: int = 1,
     backend: str = "serial",
@@ -121,7 +121,8 @@ def perturbation_error(
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute the perturbation error from
         states (Sequence[AbstractState]): the states to compute expectation values from
-        delta (float): time step for the trotter error operator.
+        max_order (float): the maximum commutator order to compute in BCH
+        timestep (float): time step for the trotter error operator.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
@@ -170,17 +171,24 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order))
+    commutator_lists = [
+        _group_sums(commutators) for commutators in bch_expansion(product_formula, max_order)[1:]
+    ]
 
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
         for state in states:
             new_state = _AdditiveIdentity()
-            for commutator in commutators:
-                new_state += _apply_commutator(commutator, fragments, state)
+            for commutators in commutator_lists:
+                if len(commutators) == 0:
+                    continue
 
-            expectations.append(state.dot(new_state))
+                order = len(commutators[0])
+                for commutator in commutators:
+                    new_state += _apply_commutator(commutator, fragments, state)
+
+                expectations.append({order: (1j * timestep) ** order * state.dot(new_state)})
 
         return expectations
 
@@ -189,7 +197,7 @@ def perturbation_error(
         with executor(max_workers=num_workers) as ex:
             expectations = ex.starmap(
                 _get_expval_state,
-                [(commutators, fragments, state) for state in states],
+                [(commutator_lists, fragments, state, timestep) for state in states],
             )
 
         return expectations
@@ -197,32 +205,48 @@ def perturbation_error(
     if parallel_mode == "commutator":
         executor = concurrency.backends.get_executor(backend)
         expectations = []
+        commutators = [x for xs in commutator_lists for x in xs]
         for state in states:
             with executor(max_workers=num_workers) as ex:
                 applied_commutators = ex.starmap(
-                    _apply_commutator,
+                    _apply_commutator_track_order,
                     [(commutator, fragments, state) for commutator in commutators],
                 )
 
-            new_state = _AdditiveIdentity()
-            for applied_state in applied_commutators:
-                new_state += applied_state
+            new_states = defaultdict(
+                lambda: _AdditiveIdentity()
+            )  # pylint: disable=unnecessary-lambda
+            for applied_state, order in applied_commutators:
+                new_states[order] += applied_state
 
-            expectations.append(state.dot(new_state))
+            expectations.append(
+                {
+                    order: (1j * timestep) ** order * state.dot(new_state)
+                    for order, new_state in new_states.items()
+                }
+            )
 
         return expectations
 
     raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
 
 
-def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
+def _get_expval_state(commutator_lists, fragments, state: AbstractState, timestep: float) -> float:
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
+    expectations = {}
     new_state = _AdditiveIdentity()
-    for commutator in commutators:
-        new_state += _apply_commutator(commutator, fragments, state)
+    for commutators in commutator_lists:
+        if len(commutators) == 0:
+            continue
 
-    return state.dot(new_state)
+        order = len(commutators[0])
+        for commutator in commutators:
+            new_state += _apply_commutator(commutator, fragments, state)
+
+        expectations[order] = (1j * timestep) ** order * state.dot(new_state)
+
+    return expectations
 
 
 def _apply_commutator(
@@ -249,6 +273,30 @@ def _apply_commutator(
     return new_state
 
 
+def _apply_commutator_track_order(
+    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
+) -> tuple[AbstractState, int]:
+    """Returns the state obtained from applying ``commutator`` to ``state``."""
+
+    new_state = _AdditiveIdentity()
+
+    for term, coeff in _op_list(commutator).items():
+        tmp_state = copy.copy(state)
+        for frag in reversed(term):
+            if isinstance(frag, frozenset):
+                frag = sum(
+                    (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
+                )
+            else:
+                frag = fragments[frag]
+
+            tmp_state = frag.apply(tmp_state)
+
+        new_state += coeff * tmp_state
+
+    return new_state, len(commutator)
+
+
 def _op_list(commutator) -> dict[tuple[Hashable], complex]:
     """Returns the operations needed to apply the commutator to a state."""
 
@@ -270,18 +318,10 @@ def _op_list(commutator) -> dict[tuple[Hashable], complex]:
     return ops1
 
 
-def _group_sums(
-    term_dicts: list[dict[tuple[Hashable], complex]],
-) -> list[tuple[Hashable | set]]:
+def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashable | set]]:
     """Reduce the number of commutators by grouping them using linearity in the first argument. For example,
     two commutators a*[X, A, B] and b*Y[A, B] will be merged into one commutator [a*X + b*Y, A, B].
     """
-    return [
-        x for xs in [_group_sums_in_dict(term_dict) for term_dict in term_dicts[1:]] for x in xs
-    ]
-
-
-def _group_sums_in_dict(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashable | set]]:
     grouped_comms = defaultdict(set)
     for commutator, coeff in term_dict.items():
         head, *tail = commutator
