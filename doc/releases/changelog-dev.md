@@ -3,6 +3,14 @@
 
 <h3>New features since last release</h3>
 
+* Added a new controlled square root gate called `CSX` to the `qml.ops` module. 
+  This gate is a controlled version of the square root of the X gate, which is useful in quantum algorithms.
+  [(#7422)](https://github.com/PennyLaneAI/pennylane/pull/7422)
+
+* Added a new square root swap gate called `SQSWAP` to the `qml.ops` module. 
+  This gate is a controlled version of the square root of the swap gate, which is useful in quantum algorithms.
+  [(#7422)](https://github.com/PennyLaneAI/pennylane/pull/7422)
+
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
@@ -494,6 +502,7 @@ Diksha Dhawan,
 Marcus Edwards,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Addison Hanrattie,
 David Ittah,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi

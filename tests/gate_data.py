@@ -26,9 +26,20 @@ StateZeroProjector = math.array([[1, 0], [0, 0]])
 StateOneProjector = math.array([[0, 0], [0, 1]])
 
 # Two qubit gates
+CSX = math.array(
+    [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0.5 + 0.5j, 0.5 - 0.5j], [0, 0, 0.5 - 0.5j, 0.5 + 0.5j]]
+)  #: CSX gate
 CNOT = math.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])  #: CNOT gate
 SWAP = math.array([[1, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 0], [0, 0, 0, 1]])  #: SWAP gate
 ISWAP = math.array([[1, 0, 0, 0], [0, 0, 1j, 0], [0, 1j, 0, 0], [0, 0, 0, 1]])  #: ISWAP gate
+SQSWAP = math.array(
+    [
+        [1, 0, 0, 0],
+        [0, 0.5 + 0.5j, 0.5 - 0.5j, 0],
+        [0, 0.5 - 0.5j, 0.5 + 0.5j, 0],
+        [0, 0, 0, 1],
+    ],
+)
 SISWAP = math.array(
     [
         [1, 0, 0, 0],
