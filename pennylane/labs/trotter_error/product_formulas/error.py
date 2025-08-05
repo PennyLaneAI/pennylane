@@ -375,7 +375,7 @@ def _top_k_sampling(commutators, probabilities, sample_size):
     return sampled_commutators, weights
 
 
-def _apply_sampling_method(commutators, fragments, config, timestep, gridpoints):
+def _apply_sampling(commutators, fragments, config, timestep, gridpoints):
     """Dispatch to specific sampling method based on configuration."""
     method = config.sampling_method
     sample_size = config.sample_size or len(commutators)

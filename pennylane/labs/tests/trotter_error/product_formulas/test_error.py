@@ -25,7 +25,7 @@ from pennylane.labs.trotter_error import (
 from pennylane.labs.trotter_error.product_formulas.error import (
     SamplingConfig,
     _apply_commutator_with_cache,
-    _apply_sampling_method,
+    _apply_sampling,
     _apply_sampling_strategy,
     _calculate_commutator_probability,
     _CommutatorCache,
@@ -297,8 +297,8 @@ def test_top_k_sampling():
     assert set(sampled_comms) == set(expected_comms)
 
 
-def test_apply_sampling_method():
-    """Test _apply_sampling_method dispatcher."""
+def test_apply_sampling():
+    """Test _apply_sampling dispatcher."""
     # Create test fragments using real vibrational fragments
     n_modes = 2
     r_state = np.random.RandomState(42)
@@ -314,26 +314,26 @@ def test_apply_sampling_method():
     # Test random sampling
     config_random = SamplingConfig(sampling_method="random", sample_size=2, random_seed=42)
 
-    sampled_comms, weights = _apply_sampling_method(commutators, frags, config_random, 0.1, 10)
+    sampled_comms, weights = _apply_sampling(commutators, frags, config_random, 0.1, 10)
     assert len(sampled_comms) == 2
     assert len(weights) == 2
 
     # Test importance sampling
     config_importance = SamplingConfig(sampling_method="importance", sample_size=2, random_seed=42)
 
-    sampled_comms, weights = _apply_sampling_method(commutators, frags, config_importance, 0.1, 10)
+    sampled_comms, weights = _apply_sampling(commutators, frags, config_importance, 0.1, 10)
     assert len(sampled_comms) == 2
     assert len(weights) == 2
 
     # Test top_k sampling
     config_top_k = SamplingConfig(sampling_method="top_k", sample_size=2)
 
-    sampled_comms, weights = _apply_sampling_method(commutators, frags, config_top_k, 0.1, 10)
+    sampled_comms, weights = _apply_sampling(commutators, frags, config_top_k, 0.1, 10)
     assert len(sampled_comms) == 2
     assert len(weights) == 2
 
     # Test with different gridpoints parameter
-    sampled_comms, weights = _apply_sampling_method(commutators, frags, config_top_k, 0.1, 20)
+    sampled_comms, weights = _apply_sampling(commutators, frags, config_top_k, 0.1, 20)
     assert len(sampled_comms) == 2
     assert len(weights) == 2
 
@@ -344,7 +344,7 @@ def test_apply_sampling_method():
     # Test default sample_size (should use all commutators)
     config_default = SamplingConfig(sampling_method="random", sample_size=None, random_seed=42)
 
-    sampled_comms, weights = _apply_sampling_method(commutators, frags, config_default, 0.1, 10)
+    sampled_comms, weights = _apply_sampling(commutators, frags, config_default, 0.1, 10)
     assert len(sampled_comms) == len(commutators)
 
 
