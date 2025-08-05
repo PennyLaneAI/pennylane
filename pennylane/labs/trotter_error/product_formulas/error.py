@@ -43,90 +43,7 @@ class SamplingConfig:
     random_seed: Optional[int] = None
 
 
-@dataclass
-class AdaptiveSamplingConfig:
-    """Configuration for adaptive sampling parameters.
 
-    Args:
-        enabled (bool): Whether to use adaptive sampling.
-        confidence_level (float): Confidence level for adaptive sampling.
-        target_relative_error (float): Target relative error for adaptive sampling.
-        min_sample_size (int): Minimum sample size for adaptive sampling.
-        max_sample_size (int): Maximum sample size for adaptive sampling.
-    """
-
-    enabled: bool = False
-    confidence_level: float = 0.95
-    target_relative_error: float = 1.0
-    min_sample_size: int = 10
-    max_sample_size: int = 10000
-
-
-@dataclass
-class ConvergenceSamplingConfig:
-    """Configuration for convergence sampling parameters.
-
-    Args:
-        enabled (bool): Whether to use convergence sampling.
-        convergence_tolerance (float): Relative tolerance for mean convergence.
-        convergence_window (int): Number of samples to look back for convergence check.
-        min_convergence_checks (int): Minimum number of consecutive convergence checks.
-        min_sample_size (int): Minimum sample size for convergence sampling.
-        max_sample_size (int): Maximum sample size for convergence sampling.
-    """
-
-    enabled: bool = False
-    convergence_tolerance: float = 1e-6
-    convergence_window: int = 10
-    min_convergence_checks: int = 3
-    min_sample_size: int = 10
-    max_sample_size: int = 10000
-
-
-@dataclass
-class ParallelConfig:
-    """Configuration for parallel execution parameters.
-
-    Args:
-        num_workers (int): Number of concurrent units for computation.
-        backend (str): Executor backend ("serial", "mpi4py_pool", "mpi4py_comm").
-        parallel_mode (str): Parallelization mode ("state" or "commutator").
-    """
-
-    num_workers: int = 1
-    backend: str = "serial"
-    parallel_mode: str = "state"
-
-
-@dataclass
-class PerturbationErrorConfig:
-    """Main configuration class for perturbation error calculation.
-
-    Args:
-        timestep (float): Time step for simulation.
-        return_convergence_info (bool): Whether to return convergence information.
-        sampling (SamplingConfig): Sampling configuration.
-        adaptive_sampling (AdaptiveSamplingConfig): Adaptive sampling configuration.
-        convergence_sampling (ConvergenceSamplingConfig): Convergence sampling configuration.
-        parallel (ParallelConfig): Parallel execution configuration.
-    """
-
-    timestep: float = 1.0
-    return_convergence_info: bool = False
-    sampling: SamplingConfig = None
-    adaptive_sampling: AdaptiveSamplingConfig = None
-    convergence_sampling: ConvergenceSamplingConfig = None
-    parallel: ParallelConfig = None
-
-    def __post_init__(self):
-        if self.sampling is None:
-            self.sampling = SamplingConfig()
-        if self.adaptive_sampling is None:
-            self.adaptive_sampling = AdaptiveSamplingConfig()
-        if self.convergence_sampling is None:
-            self.convergence_sampling = ConvergenceSamplingConfig()
-        if self.parallel is None:
-            self.parallel = ParallelConfig()
 
 
 class _CommutatorCache:
@@ -299,6 +216,9 @@ def _calculate_commutator_probability(commutator, fragments, timestep, gridpoint
     if not commutator:
         return 0.0
 
+    # Prepare parameters for norm calculation
+    norm_params = {"gridpoints": gridpoints}
+
     # Get norms for each fragment in commutator
     norms = []
     for element in commutator:
@@ -307,9 +227,9 @@ def _calculate_commutator_probability(commutator, fragments, timestep, gridpoint
             combined = sum(
                 (coeff * fragments[label] for label, coeff in element), _AdditiveIdentity()
             )
-            norms.append(combined.norm(gridpoints))
+            norms.append(combined.norm(norm_params))
         else:
-            norms.append(fragments[element].norm(gridpoints))
+            norms.append(fragments[element].norm(norm_params))
 
     # Apply formula: 2^(k-1) * timestep^k * ∏norms
     k = len(commutator)
@@ -374,19 +294,19 @@ def _top_k_sampling(commutators, probabilities, sample_size):
 
 def _apply_sampling_method(commutators, fragments, config, timestep, gridpoints):
     """Dispatch to specific sampling method based on configuration."""
-    method = config.sampling.sampling_method
-    sample_size = config.sampling.sample_size or len(commutators)
+    method = config.sampling_method
+    sample_size = config.sample_size or len(commutators)
 
     # For random sampling, no probabilities needed
     if method == "random":
-        return _random_sampling(commutators, sample_size, config.sampling.random_seed)
+        return _random_sampling(commutators, sample_size, config.random_seed)
 
     # For importance and top_k, calculate probabilities
     probabilities = _setup_importance_probabilities(commutators, fragments, timestep, gridpoints)
 
     if method == "importance":
         return _importance_sampling(
-            commutators, probabilities, sample_size, config.sampling.random_seed
+            commutators, probabilities, sample_size, config.random_seed
         )
 
     if method == "top_k":
@@ -586,51 +506,4 @@ def _group_sums_in_dict(term_dict: dict[tuple[Hashable], complex]) -> list[tuple
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
 
 
-def _handle_return_value(expectations, convergence_info, return_convergence_info):
-    """Helper function to handle return values consistently."""
-    if return_convergence_info:
-        return expectations, convergence_info
-    return expectations
 
-
-def _validate_inputs(
-    product_formula: ProductFormula,
-    fragments: dict[Hashable, Fragment],
-    states: Sequence[AbstractState],
-    order: int,
-):
-    """Validate basic inputs for perturbation error calculation."""
-    if not product_formula.fragments.issubset(fragments.keys()):
-        raise ValueError("Fragments do not match product formula")
-
-    if order <= 0:
-        raise ValueError("Order must be a positive integer")
-
-    # Allow empty states for testing purposes, but only if fragments are None (dummy test case)
-    if not states and not all(v is None for v in fragments.values()):
-        raise ValueError("At least one state is required for perturbation error calculation")
-
-
-def _initialize_convergence_info(
-    commutators: List, config: PerturbationErrorConfig
-) -> Optional[Dict]:
-    """Initialize convergence info dictionary if requested."""
-    if not config.return_convergence_info:
-        return None
-
-    return {
-        "global": {
-            "total_commutators": len(commutators),
-            "sampling_method": config.sampling.sampling_method,
-            "order": None,  # Will be set by caller
-            "timestep": config.timestep,
-        },
-        "states_info": [],
-    }
-
-
-def _get_gridpoints_from_states(states: Sequence[AbstractState]) -> int:
-    """Extract gridpoints from states, with fallback to default value."""
-    if states and hasattr(states[0], "gridpoints"):
-        return states[0].gridpoints
-    return 0

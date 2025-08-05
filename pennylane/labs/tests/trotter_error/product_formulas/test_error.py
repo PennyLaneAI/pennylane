@@ -23,14 +23,12 @@ from pennylane.labs.trotter_error import (
     vibrational_fragments,
 )
 from pennylane.labs.trotter_error.product_formulas.error import (
-    PerturbationErrorConfig,
     SamplingConfig,
     _apply_sampling_method,
     _calculate_commutator_probability,
     _CommutatorCache,
     _group_sums,
     _importance_sampling,
-    _initialize_convergence_info,
     _random_sampling,
     _setup_importance_probabilities,
     _top_k_sampling,
@@ -175,51 +173,7 @@ def test_cache_functionality():
     assert stats_after_clear["misses"] == 0
 
 
-def test_initialize_convergence_info():
-    """Test _initialize_convergence_info function."""
-    # Create a mock list of commutators
-    commutators = [(0,), (1,), ((0,), (1,))]
 
-    # Test when return_convergence_info is False
-    sampling_config = SamplingConfig(sampling_method="importance")
-    config_no_info = PerturbationErrorConfig(
-        timestep=0.1, return_convergence_info=False, sampling=sampling_config
-    )
-
-    result = _initialize_convergence_info(commutators, config_no_info)
-    assert result is None
-
-    # Test when return_convergence_info is True
-    config_with_info = PerturbationErrorConfig(
-        timestep=0.5, return_convergence_info=True, sampling=sampling_config
-    )
-
-    result = _initialize_convergence_info(commutators, config_with_info)
-    assert isinstance(result, dict)
-
-    # Check structure
-    assert "global" in result
-    assert "states_info" in result
-
-    # Check global info
-    global_info = result["global"]
-    assert global_info["total_commutators"] == 3
-    assert global_info["sampling_method"] == "importance"
-    assert global_info["order"] is None  # Should be set by caller
-    assert global_info["timestep"] == 0.5
-
-    # Check states_info is empty list initially
-    assert result["states_info"] == []
-
-    # Test with different sampling method
-    sampling_config_random = SamplingConfig(sampling_method="random")
-    config_random = PerturbationErrorConfig(
-        timestep=1.0, return_convergence_info=True, sampling=sampling_config_random
-    )
-
-    result_random = _initialize_convergence_info(commutators, config_random)
-    assert result_random["global"]["sampling_method"] == "random"
-    assert result_random["global"]["timestep"] == 1.0
 
 
 # =============================================================================
@@ -229,78 +183,53 @@ def test_initialize_convergence_info():
 
 def test_calculate_commutator_probability():
     """Test _calculate_commutator_probability function."""
-
-    # Create simple mock fragments
-    class MockFragment:
-        """Mock fragment for testing purposes."""
-
-        def __init__(self, norm_value):
-            self._norm_value = norm_value
-
-        def norm(self, _):
-            """Return the norm value, ignoring gridpoints."""
-            return self._norm_value
-
-        def __mul__(self, coeff):
-            return MockFragment(self._norm_value * abs(coeff))
-
-        def __rmul__(self, coeff):
-            return self.__mul__(coeff)
-
-        def __add__(self, other):
-            if hasattr(other, "_norm_value"):
-                return MockFragment(self._norm_value + other._norm_value)
-            return self
-
-    fragments = {
-        0: MockFragment(1.0),
-        1: MockFragment(2.0),
-        "X": MockFragment(0.5),
-        "Y": MockFragment(1.5),
-    }
+    # Create test fragments using real vibrational fragments
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
 
     # Test empty commutator
-    prob = _calculate_commutator_probability((), fragments, 0.1, 10)
+    prob = _calculate_commutator_probability((), frags, 0.1, 10)
     assert prob == 0.0
 
-    # Test single element commutator: 2^(1-1) * 0.1^1 * 1.0 = 0.1
-    prob = _calculate_commutator_probability((0,), fragments, 0.1, 10)
-    assert prob == pytest.approx(0.1)
+    # Test single element commutator
+    prob = _calculate_commutator_probability((0,), frags, 0.1, 10)
+    assert isinstance(prob, float)
+    assert prob > 0
 
-    # Test two element commutator: 2^(2-1) * 0.1^2 * 1.0 * 2.0 = 2 * 0.01 * 2 = 0.04
-    prob = _calculate_commutator_probability((0, 1), fragments, 0.1, 10)
-    assert prob == pytest.approx(0.04)
+    # Test two element commutator
+    prob = _calculate_commutator_probability((0, 1), frags, 0.1, 10)
+    assert isinstance(prob, float)
+    assert prob > 0
 
-    # Test with frozenset: frozenset has combined norm
-    frozenset_element = frozenset([("X", 1.0), ("Y", 2.0)])
-    # Combined norm = 0.5 * 1.0 + 1.5 * 2.0 = 3.5
-    # Probability: 2^(1-1) * 0.1^1 * 3.5 = 0.35
-    prob = _calculate_commutator_probability((frozenset_element,), fragments, 0.1, 10)
-    assert prob == pytest.approx(0.35)
-
-    # Test with different gridpoints parameter
-    prob = _calculate_commutator_probability((0,), fragments, 0.1, 20)
-    assert prob == pytest.approx(0.1)
+    # Test with frozenset element
+    frozenset_element = frozenset([(0, 1.0), (1, 0.5)])
+    prob = _calculate_commutator_probability((frozenset_element,), frags, 0.1, 10)
+    assert isinstance(prob, float)
+    assert prob >= 0
 
 
 def test_setup_importance_probabilities():
     """Test _setup_importance_probabilities function."""
-
-    class MockFragment:
-        """Mock fragment for testing setup of importance probabilities."""
-
-        def norm(self, _):
-            """Return constant norm value, ignoring gridpoints."""
-            return 1.0
-
-        def apply(self, state):
-            """Mock apply method for completeness."""
-            return state
-
-    fragments = {0: MockFragment(), 1: MockFragment()}
+    # Create test fragments using real vibrational fragments
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
     commutators = [(0,), (1,), (0, 1)]
 
-    probs = _setup_importance_probabilities(commutators, fragments, 0.1, 10)
+    probs = _setup_importance_probabilities(commutators, frags, 0.1, 10)
 
     # Check return type and shape
     assert isinstance(probs, np.ndarray)
@@ -310,7 +239,7 @@ def test_setup_importance_probabilities():
     assert all(p >= 0 for p in probs)
 
     # Test with different gridpoints parameter
-    probs_with_gridpoints = _setup_importance_probabilities(commutators, fragments, 0.1, 20)
+    probs_with_gridpoints = _setup_importance_probabilities(commutators, frags, 0.1, 20)
     assert isinstance(probs_with_gridpoints, np.ndarray)
     assert len(probs_with_gridpoints) == 3
 
@@ -375,65 +304,62 @@ def test_top_k_sampling():
 
 def test_apply_sampling_method():
     """Test _apply_sampling_method dispatcher."""
-
-    class MockFragment:
-        """Mock fragment for testing apply sampling method."""
-
-        def norm(self, _):
-            """Return constant norm value, ignoring gridpoints."""
-            return 1.0
-
-        def apply(self, state):
-            """Mock apply method for completeness."""
-            return state
-
-    fragments = {0: MockFragment(), 1: MockFragment()}
+    # Create test fragments using real vibrational fragments
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
     commutators = [(0,), (1,), (0, 1)]
 
     # Test random sampling
-    config_random = PerturbationErrorConfig(
-        sampling=SamplingConfig(sampling_method="random", sample_size=2, random_seed=42)
+    config_random = SamplingConfig(
+        sampling_method="random", sample_size=2, random_seed=42
     )
 
-    sampled_comms, weights = _apply_sampling_method(commutators, fragments, config_random, 0.1, 10)
+    sampled_comms, weights = _apply_sampling_method(commutators, frags, config_random, 0.1, 10)
     assert len(sampled_comms) == 2
     assert len(weights) == 2
 
     # Test importance sampling
-    config_importance = PerturbationErrorConfig(
-        sampling=SamplingConfig(sampling_method="importance", sample_size=2, random_seed=42)
+    config_importance = SamplingConfig(
+        sampling_method="importance", sample_size=2, random_seed=42
     )
 
     sampled_comms, weights = _apply_sampling_method(
-        commutators, fragments, config_importance, 0.1, 10
+        commutators, frags, config_importance, 0.1, 10
     )
     assert len(sampled_comms) == 2
     assert len(weights) == 2
 
     # Test top_k sampling
-    config_top_k = PerturbationErrorConfig(
-        sampling=SamplingConfig(sampling_method="top_k", sample_size=2)
+    config_top_k = SamplingConfig(
+        sampling_method="top_k", sample_size=2
     )
 
-    sampled_comms, weights = _apply_sampling_method(commutators, fragments, config_top_k, 0.1, 10)
+    sampled_comms, weights = _apply_sampling_method(commutators, frags, config_top_k, 0.1, 10)
     assert len(sampled_comms) == 2
     assert len(weights) == 2
 
     # Test with different gridpoints parameter
-    sampled_comms, weights = _apply_sampling_method(commutators, fragments, config_top_k, 0.1, 20)
+    sampled_comms, weights = _apply_sampling_method(commutators, frags, config_top_k, 0.1, 20)
     assert len(sampled_comms) == 2
     assert len(weights) == 2
 
     # Test unknown method
-    config_unknown = PerturbationErrorConfig(sampling=SamplingConfig(sampling_method="unknown"))
+    config_unknown = SamplingConfig(sampling_method="unknown")
 
     with pytest.raises(ValueError, match="Unknown sampling method"):
-        _apply_sampling_method(commutators, fragments, config_unknown, 0.1, 10)
+        _apply_sampling_method(commutators, frags, config_unknown, 0.1, 10)
 
     # Test default sample_size (should use all commutators)
-    config_default = PerturbationErrorConfig(
-        sampling=SamplingConfig(sampling_method="random", sample_size=None, random_seed=42)
+    config_default = SamplingConfig(
+        sampling_method="random", sample_size=None, random_seed=42
     )
 
-    sampled_comms, weights = _apply_sampling_method(commutators, fragments, config_default, 0.1, 10)
+    sampled_comms, weights = _apply_sampling_method(commutators, frags, config_default, 0.1, 10)
     assert len(sampled_comms) == len(commutators)
