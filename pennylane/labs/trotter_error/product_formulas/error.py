@@ -122,7 +122,7 @@ def perturbation_error(
             objects to compute the perturbation error from
         states (Sequence[AbstractState]): the states to compute expectation values from
         max_order (float): the maximum commutator order to compute in BCH
-        timestep (float): time step for the trotter error operator.
+        timestep (float): time step for the Trotter error operator.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backends.
             Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
@@ -133,7 +133,7 @@ def perturbation_error(
             Default value is set to "state".
 
     Returns:
-        List[Dict[int, float]]: the list of dictionaries of expectation values computed from the Trotter error operator and the input states. 
+        List[Dict[int, float]]: the list of dictionaries of expectation values computed from the Trotter error operator and the input states.
             The dictionary is indexed by the commutator orders and its value is the error obtained from the commutators of that order.
 
     **Example**
@@ -211,8 +211,8 @@ def perturbation_error(
                 )
 
             new_states = defaultdict(
-                lambda: _AdditiveIdentity()
-            )  # pylint: disable=unnecessary-lambda
+                lambda: _AdditiveIdentity()  # pylint: disable=unnecessary-lambda
+            )
             for applied_state, order in applied_commutators:
                 new_states[order] += applied_state
 

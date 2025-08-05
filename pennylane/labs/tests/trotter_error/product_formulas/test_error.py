@@ -65,7 +65,6 @@ def test_perturbation_error(backend, parallel_mode, mpi4py_support):
         parallel_mode=parallel_mode,
     )
 
-    print(errors)
     assert isinstance(errors, list)
     assert len(errors) == 2
 
