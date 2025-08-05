@@ -34,6 +34,7 @@ from pennylane.resource.resource import (
     mul_in_parallel,
     mul_in_series,
     substitute,
+    specs_from_tape,
 )
 from pennylane.tape import QuantumScript
 
@@ -572,9 +573,13 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
         initialized without a `resources` method."""
 
         class CustomOpNoResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
+            """A custom operation that does not implement the resources method."""
+
             num_wires = 2
 
         class CustomOPWithResources(ResourcesOperation):  # pylint: disable=too-few-public-methods
+            """A custom operation that implements the resources method."""
+
             num_wires = 2
 
             def resources(self):
@@ -695,3 +700,21 @@ def test_scale_dict(scalar):
     result = _scale_dict(d1, scalar)
 
     assert result == expected
+
+
+def test_specs_compute_depth():
+    """Test that depth is skipped with `specs_from_tape`."""
+
+    ops = [
+        qml.RX(0.432, wires=0),
+        qml.Rot(0.543, 0, 0.23, wires=0),
+        qml.CNOT(wires=[0, "a"]),
+        qml.RX(0.133, wires=4),
+    ]
+    obs = [qml.expval(qml.PauliX(wires="a")), qml.probs(wires=[0, "a"])]
+
+    tape = QuantumScript(ops=ops, measurements=obs)
+    specs = specs_from_tape(tape)
+
+    assert len(specs) == 4
+    assert specs["resources"].depth is None

@@ -603,6 +603,36 @@ def substitute(initial_resources: Resources, gate_info: tuple[str, int], replace
     return initial_resources
 
 
+# The reason why this function is not a method of the QuantumScript class is
+# because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
+# The `QuantumScript.specs` property will eventually be deprecated in favor of (potentially) this function.
+def specs_from_tape(tape: QuantumScript) -> SpecsDict[str, Any]:
+    """
+    Extracts the resource information from a quantum circuit (tape).
+
+    Similar to the :meth:`~.QuantumScript.specs` property, but the depth of the quantum script
+    is not computed. This is useful when the depth is not needed, for example, in some
+    resource counting scenarios or heavy circuits where computing depth is expensive.
+
+    Args:
+        tape (.QuantumScript): The quantum circuit for which we extract resources
+
+    Returns:
+        (.SpecsDict): The specifications extracted from the workflow
+    """
+    resources = _count_resources(tape, compute_depth=False)
+    algo_errors = _compute_algo_error(tape)
+
+    return SpecsDict(
+        {
+            "resources": resources,
+            "errors": algo_errors,
+            "num_observables": len(tape.observables),
+            "num_trainable_params": tape.num_params,
+        }
+    )
+
+
 def _combine_dict(dict1: dict, dict2: dict):
     r"""Combines two dictionaries and adds values of common keys."""
     combined_dict = copy.copy(dict1)
@@ -663,33 +693,3 @@ def _count_resources(tape: QuantumScript, compute_depth: bool = True) -> Resourc
             num_gates += 1
 
     return Resources(num_wires, num_gates, gate_types, gate_sizes, depth, shots)
-
-
-# The reason why this function is not a method of the QuantumScript class is
-# because we don't want a core module (QuantumScript) to depend on an auxiliary module (Resource).
-# The `QuantumScript.specs` property will eventually be deprecated in favor of (potentially) this function.
-def specs_from_tape(tape: QuantumScript) -> SpecsDict[str, Any]:
-    """
-    Extracts the resource information from a quantum circuit (tape).
-
-    Similar to the :meth:`~.QuantumScript.specs` property, but the depth of the quantum script
-    is not computed. This is useful when the depth is not needed, for example, in some
-    resource counting scenarios or heavy circuits where computing depth is expensive.
-
-    Args:
-        tape (.QuantumScript): The quantum circuit for which we extract resources
-
-    Returns:
-        (.SpecsDict): The specifications extracted from the workflow
-    """
-    resources = _count_resources(tape, compute_depth=False)
-    algo_errors = _compute_algo_error(tape)
-
-    return SpecsDict(
-        {
-            "resources": resources,
-            "errors": algo_errors,
-            "num_observables": len(tape.observables),
-            "num_trainable_params": tape.num_params,
-        }
-    )
