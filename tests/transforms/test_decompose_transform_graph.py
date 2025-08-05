@@ -53,6 +53,64 @@ def test_fixed_alt_decomps_not_available():
         qml.transforms.decompose(tape, alt_decomps={qml.CNOT: [my_cnot]})
 
 
+class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+    """A custom operation."""
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self):
+        return {}
+
+
+@qml.register_resources({qml.Toffoli: 2, qml.CRot: 1}, work_wires={"burnable": 2})
+def _decomp_with_work_wire(wires, **__):
+    with qml.allocation.allocate(2, require_zeros=True, restored=False) as work_wires:
+        qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
+        qml.Toffoli(wires=[wires[1], work_wires[0], work_wires[1]])
+        qml.CRot(0.1, 0.2, 0.3, wires=[work_wires[1], wires[2]])
+
+
+@qml.register_resources({qml.Toffoli: 4, qml.CRot: 3})
+def _decomp_without_work_wire(wires, **__):
+    qml.Toffoli(wires=wires)
+    qml.CRot(0.1, 0, 0, wires=[wires[0], wires[1]])
+    qml.Toffoli(wires=wires[::-1])
+    qml.CRot(0, 0.2, 0, wires=[wires[1], wires[2]])
+    qml.Toffoli(wires=wires)
+    qml.CRot(0, 0, 0.3, wires=[wires[2], wires[0]])
+    qml.Toffoli(wires=wires[::1])
+
+
+class LargeOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+    """A larger custom operation."""
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self):
+        return {}
+
+
+@qml.register_resources({qml.Toffoli: 2, CustomOpDynamicWireDecomp: 2}, work_wires={"zeroed": 1})
+def _decomp2_with_work_wire(wires, **__):
+    with qml.allocation.allocate(1, require_zeros=True, restored=True) as work_wires:
+        qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
+        CustomOpDynamicWireDecomp(wires=[work_wires[0], wires[2], wires[3]])
+        qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
+        CustomOpDynamicWireDecomp(wires=[wires[1], wires[2], wires[3]])
+
+
+@qml.register_resources({qml.Toffoli: 4, CustomOpDynamicWireDecomp: 2})
+def _decomp2_without_work_wire(wires, **__):
+    qml.Toffoli(wires=[wires[0], wires[1], wires[2]])
+    CustomOpDynamicWireDecomp(wires=[wires[1], wires[2], wires[3]])
+    qml.Toffoli(wires=[wires[1], wires[2], wires[3]])
+    qml.Toffoli(wires=[wires[2], wires[3], wires[4]])
+    CustomOpDynamicWireDecomp(wires=[wires[2], wires[3], wires[4]])
+    qml.Toffoli(wires=[wires[2], wires[1], wires[0]])
+
+
 @pytest.mark.usefixtures("enable_graph_decomposition")
 class TestDecomposeGraphEnabled:
     """Tests the decompose transform with graph enabled."""
@@ -366,60 +424,8 @@ class TestDecomposeGraphEnabled:
     def test_dynamic_work_wire_allocation(self, num_work_wires, expected_gate_count):
         """Tests that the decompose transform supports dynamic wire allocation."""
 
-        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
-            """A custom operation."""
-
-            resource_keys = set()
-
-            @property
-            def resource_params(self):
-                return {}
-
-        @qml.register_resources({qml.Toffoli: 2, qml.CRot: 1}, work_wires={"burnable": 2})
-        def _decomp_with_work_wire(wires, **__):
-            with qml.allocation.allocate(2, require_zeros=True, restored=False) as work_wires:
-                qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
-                qml.Toffoli(wires=[wires[1], work_wires[0], work_wires[1]])
-                qml.CRot(0.1, 0.2, 0.3, wires=[work_wires[1], wires[2]])
-
-        @qml.register_resources({qml.Toffoli: 4, qml.CRot: 3})
-        def _decomp_without_work_wire(wires, **__):
-            qml.Toffoli(wires=wires)
-            qml.CRot(0.1, 0, 0, wires=[wires[0], wires[1]])
-            qml.Toffoli(wires=wires[::-1])
-            qml.CRot(0, 0.2, 0, wires=[wires[1], wires[2]])
-            qml.Toffoli(wires=wires)
-            qml.CRot(0, 0, 0.3, wires=[wires[2], wires[0]])
-            qml.Toffoli(wires=wires[::1])
-
-        class LargeOp(Operation):  # pylint: disable=too-few-public-methods
-            """A larger custom operation."""
-
-            resource_keys = set()
-
-            @property
-            def resource_params(self):
-                return {}
-
-        @qml.register_resources({qml.Toffoli: 2, CustomOp: 2}, work_wires={"zeroed": 1})
-        def _decomp2_with_work_wire(wires, **__):
-            with qml.allocation.allocate(1, require_zeros=True, restored=True) as work_wires:
-                qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
-                CustomOp(wires=[work_wires[0], wires[2], wires[3]])
-                qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
-                CustomOp(wires=[wires[1], wires[2], wires[3]])
-
-        @qml.register_resources({qml.Toffoli: 4, CustomOp: 2})
-        def _decomp2_without_work_wire(wires, **__):
-            qml.Toffoli(wires=[wires[0], wires[1], wires[2]])
-            CustomOp(wires=[wires[1], wires[2], wires[3]])
-            qml.Toffoli(wires=[wires[1], wires[2], wires[3]])
-            qml.Toffoli(wires=[wires[2], wires[3], wires[4]])
-            CustomOp(wires=[wires[2], wires[3], wires[4]])
-            qml.Toffoli(wires=[wires[2], wires[1], wires[0]])
-
-        op1 = LargeOp(wires=[0, 1, 2, 3, 4])
-        op2 = CustomOp(wires=[0, 1, 2])
+        op1 = LargeOpDynamicWireDecomp(wires=[0, 1, 2, 3, 4])
+        op2 = CustomOpDynamicWireDecomp(wires=[0, 1, 2])
         tape = qml.tape.QuantumScript([op1, op2])
 
         [decomp], _ = qml.transforms.decompose(
@@ -427,8 +433,8 @@ class TestDecomposeGraphEnabled:
             gate_set={qml.Toffoli, qml.RZ, qml.RY, qml.CNOT},
             num_available_work_wires=num_work_wires,
             alt_decomps={
-                CustomOp: [_decomp_without_work_wire, _decomp_with_work_wire],
-                LargeOp: [_decomp2_without_work_wire, _decomp2_with_work_wire],
+                CustomOpDynamicWireDecomp: [_decomp_without_work_wire, _decomp_with_work_wire],
+                LargeOpDynamicWireDecomp: [_decomp2_without_work_wire, _decomp2_with_work_wire],
             },
         )
         if num_work_wires is None:
