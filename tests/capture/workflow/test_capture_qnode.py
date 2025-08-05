@@ -54,40 +54,6 @@ def get_qnode_output_eqns(jaxpr):
     return qnode_output_eqns
 
 
-def test_error_if_shot_vector():
-    """Test that a NotImplementedError is raised if a shot vector is provided."""
-
-    dev = qml.device("default.qubit", wires=1, shots=(50, 50))
-
-    @qml.qnode(dev)
-    def circuit():
-        return qml.sample()
-
-    with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
-        jax.make_jaxpr(circuit)()
-
-    with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
-        circuit()
-
-    jax.make_jaxpr(partial(circuit, shots=50))()  # should run fine
-    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
-        res = circuit(shots=50)
-        assert qml.math.allclose(res, jnp.zeros((50,)))
-
-
-def test_error_if_overridden_shot_vector():
-    """Test that a NotImplementedError is raised if a shot vector is provided on call."""
-
-    dev = qml.device("default.qubit", wires=1)
-
-    @qml.qnode(dev)
-    def circuit():
-        return qml.sample()
-
-    with pytest.raises(NotImplementedError, match="shot vectors are not yet supported"):
-        jax.make_jaxpr(partial(circuit, shots=(1, 1, 1)))()
-
-
 def test_error_if_no_device_wires():
     """Test that a NotImplementedError is raised if the device does not provide wires."""
 
@@ -132,7 +98,7 @@ def test_simple_qnode():
 
     assert eqn0.params["device"] == dev
     assert eqn0.params["qnode"] == circuit
-    assert eqn0.params["shots"] == qml.measurements.Shots(None)
+    assert eqn0.params["shots_len"] == 0
     expected_config = qml.devices.ExecutionConfig(
         gradient_method="backprop",
         use_device_gradient=True,
@@ -167,13 +133,13 @@ def test_overriding_shots():
     def circuit():
         return qml.sample()
 
-    jaxpr = jax.make_jaxpr(partial(circuit, shots=50))()
+    jaxpr = jax.make_jaxpr(qml.set_shots(circuit, shots=50))()
     assert len(jaxpr.eqns) == 1
     eqn0 = jaxpr.eqns[0]
 
     assert eqn0.primitive == qnode_prim
     assert eqn0.params["device"] == dev
-    assert eqn0.params["shots"] == qml.measurements.Shots(50)
+    assert eqn0.params["shots_len"] == 1
     assert (
         eqn0.params["qfunc_jaxpr"].eqns[0].primitive == qml.measurements.SampleMP._wires_primitive
     )
