@@ -17,6 +17,7 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 import pennylane as qml
+
 from .resource import specs_from_tape
 
 
