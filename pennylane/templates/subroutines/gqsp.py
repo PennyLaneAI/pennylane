@@ -17,12 +17,18 @@ Contains the GQSP template.
 
 import copy
 
-from pennylane import ops
+from pennylane import ops, capture
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class GQSP(Operation):
@@ -202,6 +208,9 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
     angles = parameters[0]
 
     thetas, phis, lambds = angles[0], angles[1], angles[2]
+
+    if has_jax and capture.enabled():
+        thetas, phis, lambds = jnp.array(thetas), jnp.array(phis), jnp.array(lambds)
 
     # These four gates adapt PennyLane's ops.U3 to the chosen U3 format in the GQSP paper.
     ops.X(control)
