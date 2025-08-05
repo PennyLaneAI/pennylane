@@ -249,7 +249,7 @@ def concatenate(values, axis=0, like=None):
                 device_set.add(t.device.type)
                 dev_indices.add(t.device.index)
 
-        if len(device_set):  # pragma: no cover
+        if device_set:  # pragma: no cover
             # If data exists on two separate GPUs, outright fail
             if len(dev_indices) > 1:
                 device_names = ", ".join(str(d) for d in device_set)
