@@ -882,7 +882,7 @@ class TestQNodeVmapIntegration:
 
         x = jnp.array([1.0, 2.0, 3.0])
 
-        jaxpr = jax.make_jaxpr(jax.vmap(partial(circuit, shots=50), in_axes=0))(x)
+        jaxpr = jax.make_jaxpr(jax.vmap(qml.set_shots(circuit, shots=50), in_axes=0))(x)
         with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
             res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
@@ -891,7 +891,7 @@ class TestQNodeVmapIntegration:
 
         assert eqn0.primitive == qnode_prim
         assert eqn0.params["device"] == dev
-        assert eqn0.params["shots"] == qml.measurements.Shots(50)
+        assert eqn0.params["shots_len"] == 1
         assert (
             eqn0.params["qfunc_jaxpr"].eqns[0].primitive
             == qml.measurements.SampleMP._wires_primitive

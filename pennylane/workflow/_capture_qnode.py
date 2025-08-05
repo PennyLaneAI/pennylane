@@ -207,15 +207,16 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
 
     if shots_len == 0:
         shots = None
+        non_shots_args = args
     else:
-        shots, args = args[:shots_len], args[shots_len:]
+        shots, non_shots_args = args[:shots_len], args[shots_len:]
     if qml.measurements.Shots(shots) != device.shots:
         raise NotImplementedError(
             "Overriding shots is not yet supported with the program capture execution."
         )
 
-    consts = args[:n_consts]
-    non_const_args = args[n_consts:]
+    consts = non_shots_args[:n_consts]
+    non_const_args = non_shots_args[n_consts:]
 
     device_program = device.preprocess_transforms(execution_config)
     if batch_dims is not None:
@@ -227,8 +228,8 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
                 temp_all_args.append(a[tuple(slices)])
             else:
                 temp_all_args.append(a)
-        temp_consts = temp_all_args[:n_consts]
-        temp_args = temp_all_args[n_consts:]
+        temp_consts = temp_all_args[shots_len : (n_consts + shots_len)]
+        temp_args = temp_all_args[(n_consts + shots_len) :]
     else:
         temp_consts = consts
         temp_args = non_const_args
@@ -264,7 +265,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
     )
     if batch_dims is None:
         return partial_eval(*non_const_args)
-    return jax.vmap(partial_eval, batch_dims[n_consts:])(*non_const_args)
+    return jax.vmap(partial_eval, batch_dims[(n_consts + shots_len) :])(*non_const_args)
 
 
 def custom_staging_rule(
@@ -279,8 +280,18 @@ def custom_staging_rule(
     invars = [jaxpr_trace.getvar(x) for x in tracers]
     shots_vars = invars[:shots_len]
 
+    n_consts = params["n_consts"]
+    batch_dims = params.get("batch_dims")
+    split = n_consts + params["shots_len"]
+    batch_shape = (
+        _get_batch_shape(tracers[split:], batch_dims[split:]) if batch_dims is not None else ()
+    )
+
     new_shapes = _get_shapes_for(
-        *jaxpr.outvars, shots=shots_vars, num_device_wires=len(device.wires)
+        *jaxpr.outvars,
+        shots=shots_vars,
+        num_device_wires=len(device.wires),
+        batch_shape=batch_shape,
     )
     out_tracers = [pe.DynamicJaxprTracer(jaxpr_trace, o) for o in new_shapes]
 
@@ -345,7 +356,7 @@ def _qnode_batching_rule(
         # Regardless of their shape, jax.vmap automatically inserts `None` as the batch dimension for constants.
         # However, if the constant is not a standard JAX type, the batch dimension is not inserted at all.
         # How to handle this case is still an open question. For now, we raise a warning and give the user full flexibility.
-        if idx < n_consts:
+        if idx < (n_consts + shots_len):
             warn(
                 f"Constant argument at index {idx} is not scalar. "
                 "This may lead to unintended behavior or wrong results if the argument is provided "
