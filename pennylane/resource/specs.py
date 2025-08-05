@@ -18,7 +18,7 @@ from copy import copy
 from typing import Any, Literal
 
 import pennylane as qml
-from pennylane.resource.resource import specs_from_tape
+from .resource import specs_from_tape
 
 
 def _get_absolute_import_path(fn):

@@ -24,7 +24,7 @@ from typing import Any
 
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
-from pennylane.resource.error import _compute_algo_error
+from .error import _compute_algo_error
 from pennylane.tape import QuantumScript
 from pennylane.tape.qscript import SpecsDict
 
