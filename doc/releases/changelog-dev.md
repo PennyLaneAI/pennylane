@@ -442,6 +442,9 @@
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
+* Fixed an issue with :math:`\LaTeX` rendering in the documentation for `TrotterProduct`.
+  [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
+
 <h3>Bug fixes 🐛</h3>
 
 * Fixes an issue with tree-traversal and non-sequential wire orders.
