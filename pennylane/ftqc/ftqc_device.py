@@ -15,10 +15,11 @@
 Contains an implementation of a PennyLane frontend (Device) for an FTQC/MBQC based
 hardware device (or emulator)
 """
-import copy
 from dataclasses import replace
-from functools import cached_property
 from pathlib import Path
+
+# ToDo: see if we can get rid of this in favour of backend.device.preprocess
+from pennylane_lightning.lightning_qubit.lightning_qubit import stopping_condition_shots
 
 import pennylane as qml
 from pennylane.devices.capabilities import DeviceCapabilities, validate_mcm_method
@@ -27,6 +28,7 @@ from pennylane.devices.execution_config import DefaultExecutionConfig, Execution
 from pennylane.devices.preprocess import (
     measurements_from_samples,
     no_analytic,
+    null_postprocessing,
     validate_device_wires,
     validate_observables,
 )
@@ -36,11 +38,12 @@ from pennylane.ftqc import (
     convert_to_mbqc_gateset,
     diagonalize_mcms,
 )
-from pennylane.measurements import Shots
 from pennylane.ops import RZ
 from pennylane.tape.qscript import QuantumScript
 from pennylane.transforms import combine_global_phases, split_non_commuting
 from pennylane.typing import Result
+
+from .quantum_script_sequence import QuantumScriptSequence
 
 
 class FTQCQubit(Device):
@@ -87,6 +90,7 @@ class FTQCQubit(Device):
 
         program.add_transform(convert_to_mbqc_gateset)
         program.add_transform(combine_global_phases)
+        program.add_transform(split_at_non_clifford_gates)
         program.add_transform(convert_to_mbqc_formalism)
 
         # validate that conversion didn't use too many wires
@@ -99,12 +103,23 @@ class FTQCQubit(Device):
         # set up for backend execution (including MCM handling)
         if self.backend.diagonalize_mcms:
             program.add_transform(diagonalize_mcms)
-        # backend preprocess will include mcm execution method if relevant
-        backend_program, _ = self.backend.device.preprocess(execution_config)
 
-        # we skip gradient preprocess transforms, not worrying about derivatives for this prototype
+        # backend_program, _ = self.backend.device.preprocess(execution_config)
 
-        return program + backend_program
+        program.add_transform(
+            qml.devices.preprocess.mid_circuit_measurements,
+            device=self,
+            mcm_config=execution_config.mcm_config,
+        )
+
+        program.add_transform(
+            qml.devices.preprocess.decompose,
+            stopping_condition=stopping_condition_shots,
+            skip_initial_state_prep=True,
+            name=self.name,
+        )
+
+        return program
 
     def setup_execution_config(
         self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
@@ -129,13 +144,17 @@ class FTQCQubit(Device):
         if config is None:
             config = ExecutionConfig()
 
-        # get mcm method - "device" if its an option, otherwise "one-shot"
-        default_mcm_method = _default_mcm_method(self.backend.capabilities, shots_present=True)
-        new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
-        config = replace(config, mcm_config=new_mcm_config)
+        if config.mcm_config.mcm_method is None:
+            # get mcm method - "device" if its an option, otherwise "one-shot"
+            default_mcm_method = _default_mcm_method(self.backend.capabilities, shots_present=True)
+            new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
+            config = replace(config, mcm_config=new_mcm_config)
         validate_mcm_method(
             self.backend.capabilities, config.mcm_config.mcm_method, shots_present=True
         )
+
+        if config.mcm_config.mcm_method == "deferred":
+            raise ValueError("Please no deferred measurements, thanks")
 
         return config
 
@@ -181,11 +200,12 @@ class LightningQubitBackend:
         results = []
         for circuit in circuits:
             if isinstance(circuit, QuantumScript):
-                results.append(self._qscript_execute(circuit, mcmc, postselect_mode))
+                res = self._qscript_execute(circuit, mcmc, postselect_mode)
             elif isinstance(circuit, QuantumScriptSequence):
-                results.append(self._sequence_execute(circuit, mcmc, postselect_mode))
+                res = self._sequence_execute(circuit, mcmc, postselect_mode)
             else:
                 raise RuntimeError("That's not a QuantumScript or a QuantumScriptSequence")
+            results.append(tuple(res))
         return tuple(results)
 
     def _qscript_execute(self, qscript, mcmc, postselect_mode):
@@ -201,19 +221,23 @@ class LightningQubitBackend:
         for _ in range(qscript.shots.total_shots):
             # calling dynamic_wires_from_circuit for each call of simulate
             # resets the statevector
-            circ_res.append(
-                # pylint: disable=protected-access
-                self.simulate(
-                    self.device.dynamic_wires_from_circuit(aux_circ),
-                    self.device._statevector,
-                    mcmc=mcmc,
-                    postselect_mode=postselect_mode,
-                )
+            res = self.simulate(
+                self.device.dynamic_wires_from_circuit(aux_circ),
+                self.device._statevector,  # pylint: disable=protected-access
+                mcmc=mcmc,
+                postselect_mode=postselect_mode,
             )
-        return tuple(circ_res)
+            # simulate has already cast it to an array, but we are
+            # doing shots in a different order than it expects, so
+            # it messes up array indexing in post-processing. Casting
+            # to a list is a hack to fix this.
+            circ_res.append(list(res))
+        return circ_res
 
     def _sequence_execute(self, sequence, mcmc, postselect_mode):
-
+        """Execute a QuantumTapeSequence, containing several tapes to be executed
+        in succession without resetting the state, followed by terminal measurements
+        performed at the end of the sequence"""
         # this resets the statevector and makes it the correct size
         # We need to do it once for the full sequence, then reset for each shot
         sequence = self.device.dynamic_wires_from_circuit(sequence)
@@ -222,6 +246,7 @@ class LightningQubitBackend:
         # pylint: disable=protected-access
         for _ in range(sequence.shots.total_shots):
             self.device._statevector.reset_state()
+
             for segment in sequence.intermediate_tapes:
 
                 _ = self.simulate(
@@ -231,15 +256,14 @@ class LightningQubitBackend:
                     postselect_mode=postselect_mode,
                 )
 
-            circ_res.append(
-                self.simulate(
-                    sequence.final_tape,
-                    self.device._statevector,
-                    mcmc=mcmc,
-                    postselect_mode=postselect_mode,
-                )
+            res = self.simulate(
+                sequence.final_tape,
+                self.device._statevector,
+                mcmc=mcmc,
+                postselect_mode=postselect_mode,
             )
-        return tuple(circ_res)
+            circ_res.append(list(res))
+        return circ_res
 
     def simulate(
         self,
@@ -296,191 +320,22 @@ class NullQubitBackend:
 
     def execute(self, circuits, execution_config):
         """Probably not in need of any modification, since its mocked."""
-        return self.device.execute(circuits, execution_config)
 
+        assert isinstance(
+            circuits[0], QuantumScriptSequence
+        ), "something is amiss - this device uses QuantumScriptSequence"
 
-class QuantumScriptSequence:
-    """A sequence of tapes meant to be executed in order without resetting the system state.
-    Intermediate tapes may return mid-circuit measurements, or nothing. This is not currently
-    validated. The final tape returns terminal measurements."""
-
-    def __init__(self, tapes, shots=None):
-
-        if shots is None:
-            shots = [tape.shots for tape in tapes]
-            if len(set(shots)) != 1:
-                raise RuntimeError(
-                    "All scripts in a QuantumScriptSequence must have the same shots"
-                )
-            shots = shots[0]
-        else:
-            if not isinstance(shots, Shots):
-                shots = Shots(shots)
-        self._shots = shots
-
-        self._tapes = []
-
-        for tape in tapes:
-            aux_tape = qml.tape.QuantumScript(
-                tape.operations,
-                tape.measurements,
-                shots=[1],
-            )
-            self._tapes.append(aux_tape)
-
-    @property
-    def tapes(self):
-        """Returns all the tapes in the sequence.
-
-        Returns:
-            list[QuantumScript]: list of all tapes
-        """
-        return self._tapes
-
-    @property
-    def final_tape(self):
-        """Returns the final tape in the sequence.
-
-        Returns:
-            QuantumScript: the final tape in the sequence, with terminal measurements
-        """
-        return self._tapes[-1]
-
-    @property
-    def intermediate_tapes(self):
-        """Returns all but the final tape in the sequence.
-
-        Returns:
-            list[QuantumScript]: list of all tapes except the tape with terminal measurements
-        """
-
-        return self._tapes[:-1]
-
-    @property
-    def measurements(self):
-        """Returns the final measurements for the sequence.
-
-        Returns:
-            list[.MeasurementProcess]: list of measurement processes
-        """
-        return self.final_tape.measurements
-
-    @property
-    def intermediate_measurements(self):
-        """Returns the intermediate measurements for all but the final tape. Since these
-        are in the middle of an execution, they are expected to be empty, or to be mid-circuit
-        measurements.
-
-        Returns:
-            list[list[MidMeasureMP]]: nested list of the returned MCMs for all but the final tape
-        """
-        return [tape.measurements for tape in self.intermediate_tapes]
-
-    @property
-    def operations(self):
-        """Returns the operations for each tape
-
-        Returns:
-            list[list[Operation]]: a nested list of the operations for each tape
-        """
-        return [tape.operations for tape in self.tapes]
-
-    @cached_property
-    def wires(self) -> qml.wires.Wires:
-        """Returns the wires used in the quantum script process
-
-        Returns:
-            ~.Wires: wires in quantum script process
-        """
-        wires = self.tapes[0].wires
-        for tape in self.tapes[1:]:
-            wires += tape.wires
-        return wires
-
-    @property
-    def num_wires(self) -> int:
-        """Returns the number of wires in the quantum script process
-
-        Returns:
-            int: number of wires in quantum script process
-        """
-        return len(self.wires)
-
-    @property
-    def shots(self):
-        """Returns a ``Shots`` object containing information about the number
-        and batches of shots
-
-        Returns:
-            ~.Shots: Object with shot information
-        """
-        return self._shots
-
-    def __repr__(self) -> str:
-        return f"<QuantumScriptSequence: wires={list(self.wires)}>"
-
-    def map_to_standard_wires(self) -> "QuantumScriptSequence":
-        """Wrapper to apply qscript.map_to_standard_wires to each segment contained in the Sequence"""
-        wire_map = self._get_standard_wire_map()
-        if wire_map is None:
-            return self
-        new_tapes = []
-        for tape in self.tapes:
-            tapes, fn = qml.map_wires(tape, wire_map)
-            new_tapes.append(fn(tapes))
-
-        return self.copy(tapes=new_tapes)
-
-    def _get_standard_wire_map(self) -> dict:
-        """Helper function to produce the wire map for map_to_standard_wires. Wire map
-        is the same as if the sequence were a flat tape"""
-        flat_ops = []
-        for ops in self.operations:
-            flat_ops.extend(ops)
-
-        as_tape = qml.tape.QuantumScript(flat_ops, self.measurements)
-        return as_tape._get_standard_wire_map()  # pylint: disable=protected-access
-
-    def copy(self, copy_operations: bool = False, **update):
-        """Make it copy-able as if it were a tape where possible. Do not allow
-        modifications to operations or trainable parameters, because any transform
-        or function modifying operations on a tape will not work on a sequence of
-        tapes. Allow updating tapes as a whole as an alternative for
-        QuantumScriptSquence-specific functions to deal with modifying operations
-        on tapes.
-
-        This is not able to support trainable parameters and almost certainly also
-        has other flaws. It is not a thorough implementation of the desired behaviour."""
-        if copy_operations is True:
-            raise RuntimeError("Can't use copy_operations when copying a QuantumScriptSequence")
-
-        if update:
-            if "ops" in update:
-                update["operations"] = update["ops"]
-            for k in update:
-                if k not in ["tapes", "measurements", "shots"]:
-                    raise TypeError(f"{self.__class__}.copy() cannot update '{k}'")
-            if "tapes" in update and "measurements" in update:
-                raise RuntimeError(
-                    "Can't update tapes and measurements at the same time, as tapes include measurements"
-                )
-
-        _tapes = update.get("tapes", [copy.copy(tape) for tape in self.tapes])
-        _shots = update.get("shots", self.shots)
-
-        if "measurements" in update:
-            old_final_tape = _tapes.pop()
-            _new_final_tape = old_final_tape.copy(measurements=update["measurements"])
-            _tapes.append(_new_final_tape)
-
-        new_sequence = QuantumScriptSequence(
-            tapes=_tapes,
-            shots=_shots,
+        tapes_to_execute = []
+        for circuit in circuits:
+            shots = circuit.shots.total_shots
+            final_tape = circuit.final_tape
+            tapes_to_execute.append(final_tape.copy(shots=shots))
+        return tuple(
+            self.device.execute(tapes_to_execute, execution_config),
         )
 
-        return new_sequence
 
-
+@qml.transform
 def split_at_non_clifford_gates(tape):
     """The most basic implementation to ensure that we flush the buffer before
     each non-Clifford gate. Pays no attention to wires/commutation, and splits
@@ -498,4 +353,6 @@ def split_at_non_clifford_gates(tape):
         tapes.append(tape.copy(operations=ops_list, measurements=[]))
     tapes.append(tape.copy(operations=all_operations[-1]))
 
-    return QuantumScriptSequence(tapes)
+    return [
+        QuantumScriptSequence(tapes),
+    ], null_postprocessing
