@@ -104,7 +104,7 @@ class FTQCQubit(Device):
         if self.backend.diagonalize_mcms:
             program.add_transform(diagonalize_mcms)
 
-        # backend_program, _ = self.backend.device.preprocess()
+        # backend_program, _ = self.backend.device.preprocess(execution_config)
 
         program.add_transform(
             qml.devices.preprocess.mid_circuit_measurements,
