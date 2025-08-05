@@ -15,7 +15,6 @@
 Tests for the for_loop
 """
 import pytest
-
 from jax import numpy as jnp
 
 import pennylane as qml
