@@ -19,6 +19,7 @@ from collections.abc import Hashable, Sequence
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
+import numpy as np
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator
@@ -279,6 +280,41 @@ def _insert_fragments(
         _insert_fragments(term, fragments) if isinstance(term, tuple) else fragments[term]
         for term in commutator
     )
+
+
+# =============================================================================
+# Importance Probability Calculation Functions
+# =============================================================================
+
+def _calculate_commutator_probability(commutator, fragments, gridpoints, timestep):
+    """Calculate importance probability using: prob = 2^(k-1) * timestep^k * ∏||H_i||
+    
+    where k is commutator order and H_i are the fragment operators.
+    """
+    if not commutator:
+        return 0.0
+    
+    # Get norms for each fragment in commutator
+    norms = []
+    for element in commutator:
+        if isinstance(element, frozenset):
+            # Sum fragments in frozenset, then get norm
+            combined = sum((coeff * fragments[label] for label, coeff in element), _AdditiveIdentity())
+            norms.append(combined.norm(gridpoints))
+        else:
+            norms.append(fragments[element].norm(gridpoints))
+    
+    # Apply formula: 2^(k-1) * timestep^k * ∏norms
+    k = len(commutator)
+    return 2**(k-1) * timestep**k * np.prod(norms)
+
+
+def _setup_importance_probabilities(commutators, fragments, gridpoints, timestep):
+    """Setup importance probabilities for all commutators."""
+    return np.array([
+        _calculate_commutator_probability(comm, fragments, gridpoints, timestep) 
+        for comm in commutators
+    ])
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
