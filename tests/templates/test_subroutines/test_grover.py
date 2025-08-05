@@ -210,8 +210,10 @@ def test_expand(wires):
 
 
 @pytest.mark.parametrize("wires", ((0, 1, 2), ("a", "c", "b")))
+@pytest.mark.jax
+@pytest.mark.capture
 def test_decomposition_new(wires):
-    """Tests the decomposition rule implemented with the new system."""
+    """Tests the decomposition rule implemented with the new system."""te
     op = qml.GroverOperator(wires=wires)
 
     for rule in qml.list_decomps(qml.GroverOperator):

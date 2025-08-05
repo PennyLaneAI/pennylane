@@ -133,6 +133,8 @@ class TestGQSP:
         for op1, op2 in zip(decomposition, expected):
             qml.assert_equal(op1, op2)
 
+    @pytest.mark.jax
+    @pytest.mark.capture
     def test_decomposition_new(self):
         """Tests the decomposition rule implemented with the new system."""
         angles = np.array([[1, 2], [3, 4], [5, 6]])

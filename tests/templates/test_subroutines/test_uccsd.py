@@ -223,6 +223,8 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "s_wires, d_wires, weights, n_repeats, ref_gates", test_data_decomposition
     )
+    @pytest.mark.jax
+    @pytest.mark.capture
     def test_decomposition_new(
         self, s_wires, d_wires, weights, n_repeats, ref_gates
     ):  # pylint: disable=unused-argument
