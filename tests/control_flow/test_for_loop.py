@@ -14,8 +14,29 @@
 """
 Tests for the for_loop
 """
+import pytest
+
+from jax import numpy as jnp
 
 import pennylane as qml
+
+
+@pytest.mark.capture
+@pytest.mark.jax
+def test_early_exit(mocker):
+    """Test we exit early when start==stop."""
+    inner_arr = jnp.array([])
+
+    @qml.for_loop(len(inner_arr))
+    def inner_loop(i, x):
+        x += 1
+        return x
+
+    enabled_call = mocker.spy(inner_loop, "_call_capture_enabled")
+
+    ret = inner_loop(0)
+    assert ret == 0
+    assert enabled_call.call_count == 0
 
 
 def test_for_loop_python_fallback():
