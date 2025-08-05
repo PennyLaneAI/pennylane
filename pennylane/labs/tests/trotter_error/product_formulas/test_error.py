@@ -181,11 +181,6 @@ def test_cache_functionality():
     assert stats_after_clear["misses"] == 0
 
 
-# =============================================================================
-# Tests for Importance Probability Functions
-# =============================================================================
-
-
 def test_calculate_commutator_probability():
     """Test _calculate_commutator_probability function."""
     # Create test fragments using real vibrational fragments
@@ -247,11 +242,6 @@ def test_setup_importance_probabilities():
     probs_with_gridpoints = _setup_importance_probabilities(commutators, frags, 0.1, 20)
     assert isinstance(probs_with_gridpoints, np.ndarray)
     assert len(probs_with_gridpoints) == 3
-
-
-# =============================================================================
-# Tests for Sampling Methods
-# =============================================================================
 
 
 def test_random_sampling():
