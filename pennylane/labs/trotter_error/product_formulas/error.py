@@ -286,9 +286,12 @@ def _insert_fragments(
 # Importance Probability Calculation Functions
 # =============================================================================
 
-def _calculate_commutator_probability(commutator, fragments, gridpoints, timestep):
-    """Calculate importance probability using: prob = 2^(k-1) * timestep^k * ∏||H_i||
-    
+def _calculate_commutator_probability(commutator, fragments, timestep, gridpoints):
+    """Calculate importance probability using:
+
+    .. math::
+        prob = 2^{k-1} \cdot timestep^k \cdot \prod \|H_i\|
+
     where k is commutator order and H_i are the fragment operators.
     """
     if not commutator:
@@ -309,12 +312,77 @@ def _calculate_commutator_probability(commutator, fragments, gridpoints, timeste
     return 2**(k-1) * timestep**k * np.prod(norms)
 
 
-def _setup_importance_probabilities(commutators, fragments, gridpoints, timestep):
+def _setup_importance_probabilities(commutators, fragments, timestep, gridpoints):
     """Setup importance probabilities for all commutators."""
     return np.array([
-        _calculate_commutator_probability(comm, fragments, gridpoints, timestep) 
+        _calculate_commutator_probability(comm, fragments, timestep, gridpoints) 
         for comm in commutators
     ])
+
+
+# =============================================================================
+# Sampling Methods Layer
+# =============================================================================
+
+def _random_sampling(commutators, sample_size, random_seed=None):
+    """Random uniform sampling with replacement. Weights = 1/n."""
+    if random_seed is not None:
+        np.random.seed(random_seed)
+    
+    n_total = len(commutators)
+    indices = np.random.choice(n_total, size=sample_size, replace=True)
+    sampled_commutators = [commutators[i] for i in indices]
+    weights = np.full(sample_size, 1.0 / sample_size)
+    
+    return sampled_commutators, weights
+
+
+def _importance_sampling(commutators, probabilities, sample_size, random_seed=None):
+    """Importance sampling based on probabilities. Weights = 1/(prob_i * n)."""
+    if random_seed is not None:
+        np.random.seed(random_seed)
+    
+    # Normalize probabilities
+    probs_normalized = probabilities / np.sum(probabilities)
+    
+    # Sample according to probabilities
+    indices = np.random.choice(len(commutators), size=sample_size, replace=True, p=probs_normalized)
+    sampled_commutators = [commutators[i] for i in indices]
+    
+    # Importance weights: 1 / (prob_i * n_samples)
+    weights = 1.0 / (probs_normalized[indices] * sample_size)
+    
+    return sampled_commutators, weights
+
+
+def _top_k_sampling(commutators, probabilities, sample_size):
+    """Deterministic top-k sampling. Weights = 1.0."""
+    # Get indices of top-k probabilities
+    top_indices = np.argsort(probabilities)[-sample_size:]
+    sampled_commutators = [commutators[i] for i in top_indices]
+    weights = np.ones(sample_size)
+    
+    return sampled_commutators, weights
+
+
+def _apply_sampling_method(commutators, fragments, config, timestep, gridpoints):
+    """Dispatch to specific sampling method based on configuration."""
+    method = config.sampling.sampling_method
+    sample_size = config.sampling.sample_size or len(commutators)
+    
+    # For random sampling, no probabilities needed
+    if method == "random":
+        return _random_sampling(commutators, sample_size, config.sampling.random_seed)
+    
+    # For importance and top_k, calculate probabilities
+    probabilities = _setup_importance_probabilities(commutators, fragments, timestep, gridpoints)
+    
+    if method == "importance":
+        return _importance_sampling(commutators, probabilities, sample_size, config.sampling.random_seed)
+    elif method == "top_k":
+        return _top_k_sampling(commutators, probabilities, sample_size)
+    else:
+        raise ValueError(f"Unknown sampling method: {method}")
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
