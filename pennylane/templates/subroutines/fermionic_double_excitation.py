@@ -19,7 +19,13 @@ import copy
 
 import numpy as np
 
-from pennylane import math
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
+
+from pennylane import math, capture
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
@@ -637,6 +643,9 @@ def _layer_qfunc1(weight, s, r, q, p, set_cnot_wires):
     Returns:
           list[.Operator]: sequence of operators defined by this function
     """
+    if has_jax and capture.enabled():
+        set_cnot_wires = jnp.array(set_cnot_wires)
+
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
     Hadamard(wires=r)
@@ -688,6 +697,9 @@ def _layer_qfunc2(weight, s, r, q, p, set_cnot_wires):
     Returns:
         list[.Operator]: sequence of operators defined by this function
     """
+    if has_jax and capture.enabled():
+        set_cnot_wires = jnp.array(set_cnot_wires)
+
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     RX(-np.pi / 2, wires=s)
     Hadamard(wires=r)
@@ -739,6 +751,9 @@ def _layer_qfunc3(weight, s, r, q, p, set_cnot_wires):
     Returns:
         list[.Operator]: sequence of operators defined by this function
     """
+    if has_jax and capture.enabled():
+        set_cnot_wires = jnp.array(set_cnot_wires)
+
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
     RX(-np.pi / 2, wires=r)
@@ -790,6 +805,9 @@ def _layer_qfunc4(weight, s, r, q, p, set_cnot_wires):
     Returns:
         list[.Operator]: sequence of operators defined by this function
     """
+    if has_jax and capture.enabled():
+        set_cnot_wires = jnp.array(set_cnot_wires)
+
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
     Hadamard(wires=r)
@@ -841,6 +859,9 @@ def _layer_qfunc5(weight, s, r, q, p, set_cnot_wires):
     Returns:
         list[.Operator]: sequence of operators defined by this function
     """
+    if has_jax and capture.enabled():
+        set_cnot_wires = jnp.array(set_cnot_wires)
+
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     RX(-np.pi / 2, wires=s)
     Hadamard(wires=r)
@@ -892,6 +913,9 @@ def _layer_qfunc6(weight, s, r, q, p, set_cnot_wires):
     Returns:
         list[.Operator]: sequence of operators defined by this function
     """
+    if has_jax and capture.enabled():
+        set_cnot_wires = jnp.array(set_cnot_wires)
+
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     Hadamard(wires=s)
     RX(-np.pi / 2, wires=r)
@@ -943,6 +967,9 @@ def _layer_qfunc7(weight, s, r, q, p, set_cnot_wires):
     Returns:
         list[.Operator]: sequence of operators defined by this function
     """
+    if has_jax and capture.enabled():
+        set_cnot_wires = jnp.array(set_cnot_wires)
+
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     RX(-np.pi / 2, wires=s)
     RX(-np.pi / 2, wires=r)
@@ -994,6 +1021,9 @@ def _layer_qfunc8(weight, s, r, q, p, set_cnot_wires):
     Returns:
         list[.Operator]: sequence of operators defined by this function
     """
+    if has_jax and capture.enabled():
+        set_cnot_wires = jnp.array(set_cnot_wires)
+
     # U_1, U_2, U_3, U_4 acting on wires 's', 'r', 'q' and 'p'
     RX(-np.pi / 2, wires=s)
     RX(-np.pi / 2, wires=r)
