@@ -17,11 +17,17 @@ Contains the FermionicSingleExcitation template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
 
-from pennylane import math
+from pennylane import math, capture
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class FermionicSingleExcitation(Operation):
@@ -223,6 +229,9 @@ def _fermionic_single_excitation_decomposition(weight, wires):
 
     # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
     set_cnot_wires = [wires[l : l + 2] for l in range(len(wires) - 1)]
+
+    if has_jax and capture.enabled():
+        set_cnot_wires = jnp.array(set_cnot_wires)
 
     # ------------------------------------------------------------------
     # Apply the first layer
