@@ -585,7 +585,7 @@ class TestComputePartitionIndices:
         partition_indices = compute_partition_indices(
             observables, grouping_type="qwc", method=method
         )
-        assert set(partition_indices) == set(((0,), (1, 2)))
+        assert set(partition_indices) == {(0,), (1, 2)}
 
 
 class TestDifferentiable:
