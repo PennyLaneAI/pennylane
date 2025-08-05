@@ -339,6 +339,8 @@ class Adjoint(SymbolicOp):
 
     def __init__(self, base=None, id=None):
         self._name = f"Adjoint({base.name})"
+        if isinstance(base, Operator):
+            base = type(base)._unflatten(*base._flatten())
         super().__init__(base, id=id)
         if self.base.pauli_rep:
             pr = {pw: qml.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
