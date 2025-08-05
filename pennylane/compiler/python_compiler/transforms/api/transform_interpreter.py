@@ -21,7 +21,8 @@ is integrated into the PassPipeline object since PassPipeline only runs
 if there are more than two passes. Here we are running one pass at a time
 which will prevent the callback from being called.
 
-See here. https://github.com/xdslproject/xdsl/blob/334492e660b1726bc661efc7afb927e74bac48f4/xdsl/passes.py#L211-L222
+
+See here (link valid with xDSL 0.46): https://github.com/xdslproject/xdsl/blob/334492e660b1726bc661efc7afb927e74bac48f4/xdsl/passes.py#L211-L222
 """
 
 import io
