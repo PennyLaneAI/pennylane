@@ -24,6 +24,12 @@ from pennylane.ops import CNOT, Rot
 from pennylane.ops.op_math import cond
 from pennylane.wires import Wires
 
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
+
 
 class StronglyEntanglingLayers(Operation):
     r"""Layers consisting of single qubit rotations and entanglers, inspired by the circuit-centric classifier design
@@ -305,9 +311,10 @@ def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
 @register_resources(_strongly_entangling_resources)
 def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
 
-    if capture.enabled():
-        wires = math.array(wires, like="jax")
-        ranges = math.array(ranges, like="jax")
+    if capture.enabled() and has_jax:
+        wires = jnp.array(wires)
+        ranges = jnp.array(ranges)
+        weights = jnp.array(weights)
 
     n_wires = len(wires)
     n_layers = weights.shape[0]
@@ -326,7 +333,7 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
         def imprim_true():
             @for_loop(n_wires)
             def imprimitive_loop(i):
-                if capture.enabled():
+                if capture.enabled() and has_jax:
                     act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
                 else:
                     act_on = math.array([i, i + ranges[l]]) % n_wires
