@@ -24,11 +24,22 @@ from pennylane.labs.trotter_error import (
 )
 from pennylane.labs.trotter_error.product_formulas.error import (
     SamplingConfig,
+    _apply_commutator_with_cache,
+    _apply_sampling,
     _apply_sampling_strategy,
     _calculate_commutator_probability,
     _CommutatorCache,
+    _compute_expectation_values_with_cache,
+    _get_element_norm,
+    _get_expval_state_with_cache,
     _group_sums,
+    _importance_sampling,
+    _insert_fragments,
+    _random_sampling,
+    _setup_importance_probabilities,
     _setup_probability_distribution,
+    _top_k_sampling,
+    _validate_fragments,
 )
 from pennylane.labs.trotter_error.realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum
 
@@ -141,19 +152,19 @@ def test_cache_functionality():
     stats = cache.get_stats()
     assert stats["hits"] == 1
     assert stats["misses"] == 1
-    assert stats["size"] == 1  # Changed from "cache_size" to "size"
+    assert stats["cache_size"] == 1
 
     # Test cache key generation with different types
     # Test with simple tuple
     key1 = cache.get_cache_key((0, 1), 1)
     assert isinstance(key1, str)
-    assert "s1_c" in key1  # Updated to match new format
+    assert "comm:" in key1 and "state:1" in key1
 
     # Test with frozenset
     frozen_set = frozenset([("A", 1), ("B", 2)])
     key2 = cache.get_cache_key((frozen_set,), 2)
     assert isinstance(key2, str)
-    assert "s2_c" in key2  # Updated to match new format
+    assert "state:2" in key2
 
     # Test cache overflow (max_size=5)
     for i in range(10):
@@ -172,7 +183,7 @@ def test_cache_functionality():
 
 def test_calculate_commutator_probability():
     """Test _calculate_commutator_probability function."""
-    # Create test fragments
+    # Create test fragments using real vibrational fragments
     n_modes = 2
     r_state = np.random.RandomState(42)
     freqs = r_state.random(n_modes)
@@ -183,50 +194,176 @@ def test_calculate_commutator_probability():
     ]
     frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
 
-    # Test with simple commutator
-    commutator = (0,)
-    prob = _calculate_commutator_probability(commutator, frags, timestep=0.1, gridpoints=5)
-    assert isinstance(prob, float)
-    assert prob > 0
-
-    # Test with longer commutator
-    commutator = (0, 1)
-    prob = _calculate_commutator_probability(commutator, frags, timestep=0.1, gridpoints=5)
-    assert isinstance(prob, float)
-    assert prob > 0
-
-    # Test with empty commutator
-    prob = _calculate_commutator_probability((), frags, timestep=0.1, gridpoints=5)
+    # Test empty commutator
+    prob = _calculate_commutator_probability((), frags, 0.1, 10)
     assert prob == 0.0
 
-    # Test with frozenset
+    # Test single element commutator
+    prob = _calculate_commutator_probability((0,), frags, 0.1, 10)
+    assert isinstance(prob, float)
+    assert prob > 0
+
+    # Test two element commutator
+    prob = _calculate_commutator_probability((0, 1), frags, 0.1, 10)
+    assert isinstance(prob, float)
+    assert prob > 0
+
+    # Test with frozenset element
     frozenset_element = frozenset([(0, 1.0), (1, 0.5)])
-    commutator = (frozenset_element,)
-    prob = _calculate_commutator_probability(commutator, frags, timestep=0.1, gridpoints=5)
+    prob = _calculate_commutator_probability((frozenset_element,), frags, 0.1, 10)
     assert isinstance(prob, float)
     assert prob >= 0
 
 
-# NOTE: _validate_sampling_inputs was removed as it was not used in production code
-# and provided redundant validations already covered by existing functions
+def test_setup_importance_probabilities():
+    """Test _setup_importance_probabilities function."""
+    # Create test fragments using real vibrational fragments
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    commutators = [(0,), (1,), (0, 1)]
+
+    probs = _setup_importance_probabilities(commutators, frags, 0.1, 10)
+
+    # Check return type and shape
+    assert isinstance(probs, np.ndarray)
+    assert len(probs) == 3
+
+    # All probabilities should be positive
+    assert all(p >= 0 for p in probs)
+
+    # Test with different gridpoints parameter
+    probs_with_gridpoints = _setup_importance_probabilities(commutators, frags, 0.1, 20)
+    assert isinstance(probs_with_gridpoints, np.ndarray)
+    assert len(probs_with_gridpoints) == 3
+
+
+def test_random_sampling():
+    """Test _random_sampling function."""
+    commutators = [(0,), (1,), (0, 1), (1, 0)]
+
+    # Test basic functionality
+    sampled_comms, weights = _random_sampling(commutators, 3, random_seed=42)
+
+    assert len(sampled_comms) == 3
+    assert len(weights) == 3
+    assert all(w == pytest.approx(1.0 / 3) for w in weights)
+
+    # Test reproducibility
+    sampled_comms2, weights2 = _random_sampling(commutators, 3, random_seed=42)
+    assert sampled_comms == sampled_comms2
+    assert np.allclose(weights, weights2)
+
+
+def test_importance_sampling():
+    """Test _importance_sampling function."""
+    commutators = [(0,), (1,), (0, 1)]
+    probabilities = np.array([0.1, 0.2, 0.7])  # Heavily weighted toward last commutator
+
+    sampled_comms, weights = _importance_sampling(commutators, probabilities, 2, random_seed=42)
+
+    assert len(sampled_comms) == 2
+    assert len(weights) == 2
+
+    # Check that weights are positive
+    assert all(w > 0 for w in weights)
+
+    # Test reproducibility
+    sampled_comms2, weights2 = _importance_sampling(commutators, probabilities, 2, random_seed=42)
+    assert sampled_comms == sampled_comms2
+    assert np.allclose(weights, weights2)
+
+
+def test_top_k_sampling():
+    """Test _top_k_sampling function."""
+    commutators = [(0,), (1,), (0, 1), (1, 0)]
+    probabilities = np.array([0.1, 0.4, 0.2, 0.3])
+
+    # Sample top 2
+    sampled_comms, weights = _top_k_sampling(commutators, probabilities, 2)
+
+    assert len(sampled_comms) == 2
+    assert len(weights) == 2
+    assert all(w == 1.0 for w in weights)
+
+    # Should get the commutators with highest probabilities (indices 1 and 3)
+    expected_comms = [(1,), (1, 0)]  # Indices 1 and 3 sorted by probability
+    assert set(sampled_comms) == set(expected_comms)
+
+
+def test_apply_sampling():
+    """Test _apply_sampling dispatcher."""
+    # Create test fragments using real vibrational fragments
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    commutators = [(0,), (1,), (0, 1)]
+
+    # Test random sampling
+    config_random = SamplingConfig(sampling_method="random", sample_size=2, random_seed=42)
+
+    sampled_comms, weights = _apply_sampling(commutators, frags, config_random, 0.1, 10)
+    assert len(sampled_comms) == 2
+    assert len(weights) == 2
+
+    # Test importance sampling
+    config_importance = SamplingConfig(sampling_method="importance", sample_size=2, random_seed=42)
+
+    sampled_comms, weights = _apply_sampling(commutators, frags, config_importance, 0.1, 10)
+    assert len(sampled_comms) == 2
+    assert len(weights) == 2
+
+    # Test top_k sampling
+    config_top_k = SamplingConfig(sampling_method="top_k", sample_size=2)
+
+    sampled_comms, weights = _apply_sampling(commutators, frags, config_top_k, 0.1, 10)
+    assert len(sampled_comms) == 2
+    assert len(weights) == 2
+
+    # Test with different gridpoints parameter
+    sampled_comms, weights = _apply_sampling(commutators, frags, config_top_k, 0.1, 20)
+    assert len(sampled_comms) == 2
+    assert len(weights) == 2
+
+    # Test unknown method
+    with pytest.raises(ValueError, match="sampling_method must be one of"):
+        SamplingConfig(sampling_method="unknown")
+
+    # Test default sample_size (should use all commutators)
+    config_default = SamplingConfig(sampling_method="random", sample_size=None, random_seed=42)
+
+    sampled_comms, weights = _apply_sampling(commutators, frags, config_default, 0.1, 10)
+    assert len(sampled_comms) == len(commutators)
 
 
 def test_sampling_config_validation():
     """Test SamplingConfig validation."""
     # Test valid configurations
     config = SamplingConfig()
-    assert config.method == "exact"
+    assert config.sampling_method == "importance"
     assert config.sample_size is None
     assert config.random_seed is None
 
-    config = SamplingConfig(method="importance", sample_size=10, random_seed=42)
-    assert config.method == "importance"
+    config = SamplingConfig(sampling_method="random", sample_size=10, random_seed=42)
+    assert config.sampling_method == "random"
     assert config.sample_size == 10
     assert config.random_seed == 42
 
     # Test invalid method
-    with pytest.raises(ValueError, match="method must be one of"):
-        SamplingConfig(method="invalid_method")
+    with pytest.raises(ValueError, match="sampling_method must be one of"):
+        SamplingConfig(sampling_method="invalid_method")
 
     # Test invalid sample_size
     with pytest.raises(ValueError, match="sample_size must be positive"):
@@ -271,10 +408,9 @@ def test_cache_improved_functionality():
 
     # Test statistics
     stats = cache.get_stats()
-    assert "total" in stats
-    assert "max_size" in stats
-    assert stats["max_size"] == 3
-    assert stats["size"] == 3
+    assert "hit_rate" in stats
+    assert "cache_size" in stats
+    assert stats["cache_size"] == 3
 
 
 def test_cache_error_handling():
@@ -344,22 +480,331 @@ def test_apply_sampling_strategy():
     """Test the _apply_sampling_strategy function."""
     commutators = [(0,), (1,), (0, 1)]
 
-    # Test exact method
-    config = SamplingConfig(method="exact")
+    # Test random method
+    config = SamplingConfig(sampling_method="random", sample_size=2, random_seed=42)
     selected, weights = _apply_sampling_strategy(commutators, config)
 
-    assert selected == commutators
-    assert weights == [1.0, 1.0, 1.0]
+    assert len(selected) == 2
+    assert len(weights) == 2
+    assert all(w > 0 for w in weights)
 
-    # Test unimplemented methods
-    config = SamplingConfig(method="random")
-    with pytest.raises(NotImplementedError, match="Random sampling will be implemented"):
+    # Test importance method - requires probabilities
+    config = SamplingConfig(sampling_method="importance", sample_size=2, random_seed=42)
+    probabilities = np.array([0.1, 0.3, 0.6])
+    selected, weights = _apply_sampling_strategy(commutators, config, probabilities)
+
+    assert len(selected) == 2
+    assert len(weights) == 2
+    assert all(w > 0 for w in weights)
+
+    # Test top_k method - requires probabilities
+    config = SamplingConfig(sampling_method="top_k", sample_size=2)
+    selected, weights = _apply_sampling_strategy(commutators, config, probabilities)
+
+    assert len(selected) == 2
+    assert len(weights) == 2
+    assert all(w == 1.0 for w in weights)
+
+    # Test error cases
+    config = SamplingConfig(sampling_method="importance")
+    with pytest.raises(ValueError, match="Probabilities required for importance sampling"):
         _apply_sampling_strategy(commutators, config)
 
-    config = SamplingConfig(method="importance")
-    with pytest.raises(NotImplementedError, match="Importance sampling will be implemented"):
+    config = SamplingConfig(sampling_method="top_k")
+    with pytest.raises(ValueError, match="Probabilities required for top-k sampling"):
         _apply_sampling_strategy(commutators, config)
 
-    config = SamplingConfig(method="top_k")
-    with pytest.raises(NotImplementedError, match="Top-k sampling will be implemented"):
-        _apply_sampling_strategy(commutators, config)
+    # Test unknown method
+    with pytest.raises(ValueError, match="sampling_method must be one of"):
+        SamplingConfig(sampling_method="unknown")
+
+
+def test_get_element_norm():
+    """Test _get_element_norm function with different element types."""
+    # Create test fragments using real vibrational fragments
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    gridpoints = 10
+
+    # Test simple element norm
+    norm = _get_element_norm(0, frags, gridpoints)
+    assert isinstance(norm, float)
+    assert norm > 0
+
+    # Test another element
+    norm = _get_element_norm(1, frags, gridpoints)
+    assert isinstance(norm, float)
+    assert norm > 0
+
+    # Test frozenset element (weighted fragments)
+    frozenset_element = frozenset([(0, 1.0), (1, 0.5)])
+    norm = _get_element_norm(frozenset_element, frags, gridpoints)
+    assert isinstance(norm, float)
+    assert norm >= 0
+
+    # Test frozenset with missing fragments (should handle gracefully)
+    frozenset_with_missing = frozenset([(0, 1.0), (999, 0.5)])  # 999 doesn't exist
+    norm = _get_element_norm(frozenset_with_missing, frags, gridpoints)
+    assert isinstance(norm, float)
+    assert norm >= 0
+
+    # Test empty frozenset
+    empty_frozenset = frozenset()
+    norm = _get_element_norm(empty_frozenset, frags, gridpoints)
+    assert norm == 0.0
+
+    # Test element not in fragments (fallback to 1.0)
+    norm = _get_element_norm(999, frags, gridpoints)
+    assert norm == 1.0
+
+
+def test_validate_fragments():
+    """Test _validate_fragments function."""
+    # Create test product formula and fragments
+    frag_labels = [0, 1, 1, 0]
+    frag_coeffs = [1 / 2, 1 / 2, 1 / 2, 1 / 2]
+    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
+    # Test valid fragments (should not raise)
+    _validate_fragments(pf, frags)
+
+    # Test missing fragments (should raise ValueError)
+    incomplete_frags = {0: frags[0]}  # Missing fragment 1
+    with pytest.raises(ValueError, match="Fragments do not match product formula"):
+        _validate_fragments(pf, incomplete_frags)
+
+    # Test with extra fragments (should be fine)
+    extra_frags = dict(frags)
+    extra_frags[2] = frags[0]  # Add extra fragment
+    _validate_fragments(pf, extra_frags)  # Should not raise
+
+
+def test_insert_fragments():
+    """Test _insert_fragments function."""
+    # Create test fragments
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
+    # Test simple commutator
+    commutator = (0, 1)
+    result = _insert_fragments(commutator, frags)
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    assert result[0] == frags[0]
+    assert result[1] == frags[1]
+
+    # Test nested commutator
+    nested_commutator = (0, (1, 0))
+    result = _insert_fragments(nested_commutator, frags)
+    assert isinstance(result, tuple)
+    assert len(result) == 2
+    assert result[0] == frags[0]
+    assert isinstance(result[1], tuple)
+    assert len(result[1]) == 2
+    assert result[1][0] == frags[1]
+    assert result[1][1] == frags[0]
+
+    # Test single element
+    single_commutator = (0,)
+    result = _insert_fragments(single_commutator, frags)
+    assert isinstance(result, tuple)
+    assert len(result) == 1
+    assert result[0] == frags[0]
+
+
+def test_apply_commutator_with_cache():
+    """Test _apply_commutator_with_cache function."""
+    # Create test fragments and state
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
+    gridpoints = 5
+    state = HOState(n_modes, gridpoints, {(0, 0): 1})
+
+    # Test without cache
+    commutator = (0, 1)
+    result1 = _apply_commutator_with_cache(commutator, frags, state)
+    assert result1 is not None
+
+    # Test with cache
+    cache = _CommutatorCache(max_size=10)
+    result2 = _apply_commutator_with_cache(commutator, frags, state, cache, state_id=0)
+    assert result2 is not None
+
+    # Cache should now contain the result
+    assert len(cache) == 1
+    stats = cache.get_stats()
+    assert stats["misses"] == 1
+    assert stats["hits"] == 0
+
+    # Test cache hit
+    result3 = _apply_commutator_with_cache(commutator, frags, state, cache, state_id=0)
+    assert result3 is not None
+
+    # Should be a cache hit
+    stats = cache.get_stats()
+    assert stats["hits"] == 1
+    assert stats["misses"] == 1
+
+    # Test different commutator (cache miss)
+    commutator2 = (1, 0)
+    result4 = _apply_commutator_with_cache(commutator2, frags, state, cache, state_id=0)
+    assert result4 is not None
+
+    stats = cache.get_stats()
+    assert stats["hits"] == 1
+    assert stats["misses"] == 2
+    assert len(cache) == 2
+
+    # Test cache with None state_id (should not use cache)
+    result5 = _apply_commutator_with_cache(commutator, frags, state, cache, state_id=None)
+    assert result5 is not None
+    # Cache stats shouldn't change
+    stats_after = cache.get_stats()
+    assert stats_after["hits"] == stats["hits"]
+    assert stats_after["misses"] == stats["misses"]
+
+
+def test_get_expval_state_with_cache():
+    """Test _get_expval_state_with_cache function."""
+    # Create test fragments and state
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
+    gridpoints = 5
+    state = HOState(n_modes, gridpoints, {(0, 0): 1})
+
+    commutators = [(0,), (1,), (0, 1)]
+
+    # Test without cache
+    result1 = _get_expval_state_with_cache(commutators, frags, state)
+    assert isinstance(result1, (float, complex))
+
+    # Test with cache
+    cache = _CommutatorCache(max_size=10)
+    result2 = _get_expval_state_with_cache(commutators, frags, state, cache, state_id=0)
+    assert isinstance(result2, (float, complex))
+
+    # Cache should contain results for each commutator
+    assert len(cache) == 3
+
+    # Test with weights
+    weights = [1.0, 2.0, 0.5]
+    result3 = _get_expval_state_with_cache(commutators, frags, state, weights=weights)
+    assert isinstance(result3, (float, complex))
+
+    # Test with (commutator, weight) tuples
+    commutator_weight_pairs = [((0,), 1.0), ((1,), 2.0), ((0, 1), 0.5)]
+    result4 = _get_expval_state_with_cache(commutator_weight_pairs, frags, state)
+    assert isinstance(result4, (float, complex))
+
+    # Test empty commutators
+    result5 = _get_expval_state_with_cache([], frags, state)
+    assert result5 == 0.0
+
+    # Test with None cache
+    result6 = _get_expval_state_with_cache(commutators, frags, state, cache=None, state_id=None)
+    assert isinstance(result6, (float, complex))
+
+
+def test_compute_expectation_values_with_cache():
+    """Test _compute_expectation_values_with_cache function."""
+    # Create test fragments and states
+    n_modes = 2
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(n_modes)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+    ]
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+
+    gridpoints = 5
+    states = [HOState(n_modes, gridpoints, {(0, 0): 1}), HOState(n_modes, gridpoints, {(1, 1): 1})]
+
+    commutators = [(0,), (1,), (0, 1)]
+    weights = [1.0, 1.0, 1.0]
+
+    # Test with caching enabled
+    results_with_cache = _compute_expectation_values_with_cache(
+        commutators, weights, frags, states, use_cache=True
+    )
+    assert isinstance(results_with_cache, list)
+    assert len(results_with_cache) == 2
+    assert all(isinstance(r, (float, complex)) for r in results_with_cache)
+
+    # Test with caching disabled
+    results_without_cache = _compute_expectation_values_with_cache(
+        commutators, weights, frags, states, use_cache=False
+    )
+    assert isinstance(results_without_cache, list)
+    assert len(results_without_cache) == 2
+    assert all(isinstance(r, (float, complex)) for r in results_without_cache)
+
+    # Results should be similar (within numerical precision)
+    for r1, r2 in zip(results_with_cache, results_without_cache):
+        assert abs(r1 - r2) < 1e-10
+
+    # Test with empty states
+    empty_results = _compute_expectation_values_with_cache(
+        commutators, weights, frags, [], use_cache=True
+    )
+    assert not empty_results
+
+    # Test with empty commutators
+    empty_comm_results = _compute_expectation_values_with_cache(
+        [], [], frags, states, use_cache=True
+    )
+    assert len(empty_comm_results) == 2
+    assert all(r == 0.0 for r in empty_comm_results)
+
+    # Test with different weights
+    different_weights = [2.0, 0.5, 1.5]
+    weighted_results = _compute_expectation_values_with_cache(
+        commutators, different_weights, frags, states, use_cache=True
+    )
+    assert isinstance(weighted_results, list)
+    assert len(weighted_results) == 2
+
+    # Results should be different due to different weights
+    for r1, r2 in zip(results_with_cache, weighted_results):
+        assert abs(r1 - r2) > 1e-10  # Should be significantly different

@@ -35,21 +35,25 @@ MIN_PROBABILITY_THRESHOLD = 1e-12
 
 @dataclass
 class SamplingConfig:
-    """Configuration for sampling methods (for future use).
+    """Configuration for sampling parameters.
 
-    This class provides a unified configuration interface for different
-    sampling strategies that will be implemented in future versions.
+    Args:
+        sample_size (Optional[int]): Number of commutators to sample for fixed-size sampling.
+        sampling_method (str): Sampling strategy ("random", "importance", "top_k").
+        random_seed (Optional[int]): Random seed for reproducibility.
     """
 
-    method: str = "exact"
     sample_size: Optional[int] = None
+    sampling_method: str = "importance"
     random_seed: Optional[int] = None
 
     def __post_init__(self):
         """Validate configuration parameters."""
-        valid_methods = {"exact", "random", "importance", "top_k"}
-        if self.method not in valid_methods:
-            raise ValueError(f"method must be one of {valid_methods}, got '{self.method}'")
+        valid_methods = {"random", "importance", "top_k"}
+        if self.sampling_method not in valid_methods:
+            raise ValueError(
+                f"sampling_method must be one of {valid_methods}, got '{self.sampling_method}'"
+            )
 
         if self.sample_size is not None and self.sample_size <= 0:
             raise ValueError(f"sample_size must be positive, got {self.sample_size}")
@@ -59,17 +63,11 @@ class _CommutatorCache:
     """Cache for storing computed commutator applications to avoid redundant calculations.
 
     This cache stores the results of applying commutators to states to avoid redundant
-    calculations during sampling. Uses simple key generation and basic eviction.
-    Can be used as a context manager for automatic resource management.
+    calculations during sampling. The cache uses a robust key generation mechanism
+    and includes memory management to prevent unbounded growth.
     """
 
     def __init__(self, max_size: int = DEFAULT_CACHE_SIZE):
-        """Initialize the cache with optional size limit.
-
-        Args:
-            max_size: Maximum number of entries to store. When exceeded,
-                     oldest entries are removed (FIFO).
-        """
         self.cache = {}
         self.max_size = max_size
         self.hits = 0
@@ -86,17 +84,29 @@ class _CommutatorCache:
 
     @staticmethod
     def get_cache_key(commutator: Tuple[Hashable | Set], state_id: int) -> str:
-        """Generate a simple cache key for a commutator-state pair."""
+        """Generate a robust cache key for commutator and state combination."""
         try:
-            # Simple string representation for key
-            comm_str = str(commutator)
-            return f"s{state_id}_c{comm_str}"
+            # Convert commutator to a hashable representation
+            if isinstance(commutator, tuple):
+                key_parts = []
+                for item in commutator:
+                    if isinstance(item, frozenset):
+                        # Sort frozenset items for consistent key generation
+                        sorted_items = tuple(sorted(item, key=str))
+                        key_parts.append(f"frozenset({sorted_items})")
+                    else:
+                        key_parts.append(str(item))
+                commutator_str = f"({','.join(key_parts)})"
+            else:
+                commutator_str = str(commutator)
+
+            return f"comm:{commutator_str}|state:{state_id}"
         except (TypeError, ValueError, AttributeError):
-            # Fallback to id-based key if conversion fails
-            return f"s{state_id}_c{id(commutator)}"
+            # Fallback to a simpler key if conversion fails
+            return f"comm:{id(commutator)}|state:{state_id}"
 
     def get(self, commutator: Tuple[Hashable | Set], state_id: int):
-        """Retrieve cached result if available."""
+        """Get cached result for commutator applied to state."""
         key = self.get_cache_key(commutator, state_id)
         if key in self.cache:
             self.hits += 1
@@ -106,9 +116,9 @@ class _CommutatorCache:
         return None
 
     def put(self, commutator: Tuple[Hashable | Set], state_id: int, result):
-        """Store result in cache with simple eviction if needed."""
-        # Simple eviction: remove first item if cache is full
+        """Store result in cache."""
         if len(self.cache) >= self.max_size:
+            # Simple LRU: remove first item
             first_key = next(iter(self.cache))
             del self.cache[first_key]
 
@@ -116,37 +126,40 @@ class _CommutatorCache:
         self.cache[key] = result
 
     def clear(self):
-        """Clear the cache and reset statistics."""
+        """Clear the cache."""
         self.cache.clear()
         self.hits = 0
         self.misses = 0
 
     def get_stats(self):
-        """Get cache hit/miss statistics."""
-        total = self.hits + self.misses
-        hit_rate = self.hits / total if total > 0 else 0.0
+        """Get cache statistics."""
+        total_requests = self.hits + self.misses
+        hit_rate = self.hits / total_requests if total_requests > 0 else 0
         return {
             "hits": self.hits,
             "misses": self.misses,
-            "total": total,
             "hit_rate": hit_rate,
-            "size": len(self.cache),
-            "max_size": self.max_size,
+            "cache_size": len(self.cache),
         }
 
     def __len__(self):
-        """Return current cache size."""
         return len(self.cache)
 
 
 class _AdditiveIdentity:
-    """Only used to initialize accumulators for summing Fragments"""
+    r"""Only used to initialize accumulators for summing Fragments"""
 
     def __add__(self, other):
         return other
 
     def __radd__(self, other):
         return other
+
+    def __mul__(self, other):
+        return self
+
+    def __rmul__(self, other):
+        return self
 
 
 def effective_hamiltonian(
@@ -226,6 +239,287 @@ def _validate_fragments(product_formula: ProductFormula, fragments: dict[Hashabl
     """
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
+
+
+# =============================================================================
+# Importance Probability Calculation Functions
+# =============================================================================
+
+
+def _get_element_norm(element, fragments: Dict[Hashable, Fragment], gridpoints: int) -> float:
+    """Calculate the norm of a single commutator element."""
+    if isinstance(element, frozenset):
+        # Handle frozenset of weighted fragments
+        weighted_fragment = sum(
+            (coeff * fragments[key] for key, coeff in element if key in fragments),
+            _AdditiveIdentity(),
+        )
+        # Check if weighted_fragment is still _AdditiveIdentity (empty sum case)
+        if isinstance(weighted_fragment, _AdditiveIdentity):
+            return 0.0
+        return weighted_fragment.norm({"gridpoints": gridpoints})
+
+    return fragments[element].norm({"gridpoints": gridpoints}) if element in fragments else 1.0
+
+
+def _calculate_commutator_probability(commutator, fragments, timestep, gridpoints):
+    r"""Calculate importance probability using:
+
+    .. math::
+        prob = 2^{k-1} \cdot timestep^k \cdot \prod \|H_i\|
+
+    where k is commutator order and H_i are the fragment operators.
+    """
+    if not commutator:
+        return 0.0
+
+    # Get norms for each fragment in commutator using helper function
+    fragment_norms = [_get_element_norm(element, fragments, gridpoints) for element in commutator]
+
+    # Apply formula: 2^(k-1) * timestep^k * ∏norms
+    k = len(commutator)
+    prob = 2 ** (k - 1) * timestep**k * np.prod(fragment_norms)
+    return max(prob, MIN_PROBABILITY_THRESHOLD)  # Use MIN_PROBABILITY_THRESHOLD
+
+
+def _setup_probability_distribution(
+    commutators: List[Tuple[Hashable | Set]],
+    fragments: Dict[Hashable, Fragment],
+    timestep: float,
+    gridpoints: int = DEFAULT_GRIDPOINTS,
+) -> np.ndarray:
+    """Setup normalized probability distribution for importance sampling.
+
+    This function calculates and normalizes probabilities for all commutators,
+    providing a foundation for importance sampling methods.
+
+    Args:
+        commutators: List of commutator tuples
+        fragments: Fragment dictionary
+        timestep: Time step for probability calculation
+        gridpoints: Number of gridpoints for norm calculations
+
+    Returns:
+        Normalized probability array
+    """
+    # Calculate raw probabilities using vectorized operations
+    probabilities = np.array(
+        [
+            _calculate_commutator_probability(comm, fragments, timestep, gridpoints)
+            for comm in commutators
+        ]
+    )
+
+    # Normalize with fallback to uniform distribution
+    total_prob = np.sum(probabilities)
+    return (
+        probabilities / total_prob
+        if total_prob > 0
+        else np.ones(len(commutators)) / len(commutators)
+    )
+
+
+def _setup_importance_probabilities(commutators, fragments, timestep, gridpoints):
+    """Setup importance probabilities for all commutators (non-normalized)."""
+    return np.array(
+        [
+            _calculate_commutator_probability(comm, fragments, timestep, gridpoints)
+            for comm in commutators
+        ]
+    )
+
+
+# =============================================================================
+# Sampling Methods Layer
+# =============================================================================
+
+
+def _random_sampling(commutators, sample_size, random_seed=None):
+    """Random uniform sampling with replacement. Weights = 1/n."""
+    if random_seed is not None:
+        np.random.seed(random_seed)
+
+    n_total = len(commutators)
+    indices = np.random.choice(n_total, size=sample_size, replace=True)
+    sampled_commutators = [commutators[i] for i in indices]
+    weights = np.full(sample_size, 1.0 / sample_size)
+
+    return sampled_commutators, weights
+
+
+def _importance_sampling(commutators, probabilities, sample_size, random_seed=None):
+    """Importance sampling based on probabilities. Weights = 1/(prob_i * n)."""
+    if random_seed is not None:
+        np.random.seed(random_seed)
+
+    # Normalize probabilities
+    probs_normalized = probabilities / np.sum(probabilities)
+
+    # Sample according to probabilities
+    indices = np.random.choice(len(commutators), size=sample_size, replace=True, p=probs_normalized)
+    sampled_commutators = [commutators[i] for i in indices]
+
+    # Importance weights: 1 / (prob_i * n_samples)
+    weights = 1.0 / (probs_normalized[indices] * sample_size)
+
+    return sampled_commutators, weights
+
+
+def _top_k_sampling(commutators, probabilities, sample_size):
+    """Deterministic top-k sampling. Weights = 1.0."""
+    # Get indices of top-k probabilities
+    top_indices = np.argsort(probabilities)[-sample_size:]
+    sampled_commutators = [commutators[i] for i in top_indices]
+    weights = np.ones(sample_size)
+
+    return sampled_commutators, weights
+
+
+def _apply_sampling(commutators, fragments, config, timestep, gridpoints):
+    """Dispatch to specific sampling method based on configuration."""
+    method = config.sampling_method
+    sample_size = config.sample_size or len(commutators)
+
+    # For random sampling, no probabilities needed
+    if method == "random":
+        return _random_sampling(commutators, sample_size, config.random_seed)
+
+    # For importance and top_k, calculate probabilities
+    probabilities = _setup_importance_probabilities(commutators, fragments, timestep, gridpoints)
+
+    if method == "importance":
+        return _importance_sampling(commutators, probabilities, sample_size, config.random_seed)
+
+    if method == "top_k":
+        return _top_k_sampling(commutators, probabilities, sample_size)
+
+    raise ValueError(f"Unknown sampling method: {method}")
+
+
+def _apply_sampling_strategy(
+    commutators: List[Tuple[Hashable | Set]],
+    config: SamplingConfig,
+    probabilities: Optional[np.ndarray] = None,
+) -> Tuple[List[Tuple[Hashable | Set]], List[float]]:
+    """Apply sampling strategy to select commutators and compute weights.
+
+    This function provides a unified interface for different sampling methods.
+    Currently supports 'random', 'importance', and 'top_k' methods.
+
+    Args:
+        commutators: List of all available commutators
+        config: Sampling configuration
+        probabilities: Pre-computed probabilities (for importance/top_k methods)
+
+    Returns:
+        Tuple of (selected_commutators, weights)
+
+    Raises:
+        ValueError: For unknown sampling methods
+    """
+    method = config.sampling_method
+    sample_size = config.sample_size or len(commutators)
+
+    if method == "random":
+        return _random_sampling(commutators, sample_size, config.random_seed)
+
+    if method == "importance":
+        if probabilities is None:
+            raise ValueError("Probabilities required for importance sampling")
+        return _importance_sampling(commutators, probabilities, sample_size, config.random_seed)
+
+    if method == "top_k":
+        if probabilities is None:
+            raise ValueError("Probabilities required for top-k sampling")
+        return _top_k_sampling(commutators, probabilities, sample_size)
+
+    raise ValueError(f"Unknown sampling method: {method}")
+
+
+# =============================================================================
+# Parallel Computation Functions
+# =============================================================================
+
+
+def _compute_serial(commutators, fragments, states):
+    """Compute perturbation error serially."""
+    expectations = []
+    for state in states:
+        new_state = _AdditiveIdentity()
+        for commutator in commutators:
+            new_state += _apply_commutator(commutator, fragments, state)
+        expectations.append(state.dot(new_state))
+    return expectations
+
+
+def _compute_parallel_by_state(commutators, fragments, states, backend, num_workers):
+    """Compute perturbation error with parallelization by state."""
+    executor = concurrency.backends.get_executor(backend)
+    with executor(max_workers=num_workers) as ex:
+        expectations = ex.starmap(
+            _get_expval_state,
+            [(commutators, fragments, state) for state in states],
+        )
+    return expectations
+
+
+def _compute_parallel_by_commutator(commutators, fragments, states, backend, num_workers):
+    """Compute perturbation error with parallelization by commutator."""
+    executor = concurrency.backends.get_executor(backend)
+    expectations = []
+    for state in states:
+        with executor(max_workers=num_workers) as ex:
+            applied_commutators = ex.starmap(
+                _apply_commutator,
+                [(commutator, fragments, state) for commutator in commutators],
+            )
+
+        new_state = _AdditiveIdentity()
+        for applied_state in applied_commutators:
+            new_state += applied_state
+
+        expectations.append(state.dot(new_state))
+    return expectations
+
+
+def _compute_expectation_values_with_cache(
+    commutators: List[Tuple[Hashable | Set]],
+    weights: List[float],
+    fragments: Dict[Hashable, Fragment],
+    states: Sequence[AbstractState],
+    use_cache: bool = True,
+) -> List[float]:
+    """Compute expectation values with optional caching.
+
+    This function provides an optimized path for computing expectation values
+    with caching support, which will be essential for sampling methods.
+
+    Args:
+        commutators: List of commutator tuples
+        weights: Weights for each commutator
+        fragments: Fragment dictionary
+        states: States to compute expectation values for
+        use_cache: Whether to use caching for commutator applications
+
+    Returns:
+        List of expectation values for each state
+    """
+    commutator_weight_pairs = list(zip(commutators, weights))
+    expectations = []
+
+    for state_idx, state in enumerate(states):
+        cache = _CommutatorCache() if use_cache else None
+        state_id = state_idx if use_cache else None
+
+        expectation = _get_expval_state_with_cache(
+            commutator_weight_pairs, fragments, state, cache, state_id
+        )
+        expectations.append(expectation)
+
+        if cache is not None:
+            cache.clear()  # Clean up cache for each state
+
+    return expectations
 
 
 # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -312,48 +606,17 @@ def perturbation_error(
     raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
 
 
-def _compute_serial(commutators, fragments, states):
-    """Compute perturbation error serially."""
-    expectations = []
-    for state in states:
-        new_state = _AdditiveIdentity()
-        for commutator in commutators:
-            new_state += _apply_commutator(commutator, fragments, state)
-        expectations.append(state.dot(new_state))
-    return expectations
+def _get_expval_state(commutators, fragments, state: AbstractState) -> float:
+    """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
+
+    new_state = _AdditiveIdentity()
+    for commutator in commutators:
+        new_state += _apply_commutator(commutator, fragments, state)
+
+    return state.dot(new_state)
 
 
-def _compute_parallel_by_state(commutators, fragments, states, backend, num_workers):
-    """Compute perturbation error with parallelization by state."""
-    executor = concurrency.backends.get_executor(backend)
-    with executor(max_workers=num_workers) as ex:
-        expectations = ex.starmap(
-            _get_expval_state,
-            [(commutators, fragments, state) for state in states],
-        )
-    return expectations
-
-
-def _compute_parallel_by_commutator(commutators, fragments, states, backend, num_workers):
-    """Compute perturbation error with parallelization by commutator."""
-    executor = concurrency.backends.get_executor(backend)
-    expectations = []
-    for state in states:
-        with executor(max_workers=num_workers) as ex:
-            applied_commutators = ex.starmap(
-                _apply_commutator,
-                [(commutator, fragments, state) for commutator in commutators],
-            )
-
-        new_state = _AdditiveIdentity()
-        for applied_state in applied_commutators:
-            new_state += applied_state
-
-        expectations.append(state.dot(new_state))
-    return expectations
-
-
-def _get_expval_state(
+def _get_expval_state_with_cache(
     commutators,
     fragments,
     state: AbstractState,
@@ -385,14 +648,44 @@ def _get_expval_state(
             commutator = item
             weight = weights[i] if weights is not None else 1.0
 
-        applied_state = _apply_commutator(commutator, fragments, state, cache, state_id)
-        new_state += weight * applied_state
+        applied_state = _apply_commutator_with_cache(commutator, fragments, state, cache, state_id)
+
+        # Skip if applied_state is _AdditiveIdentity (no contribution)
+        if isinstance(applied_state, _AdditiveIdentity):
+            continue
+
+        weighted_applied_state = weight * applied_state
+        new_state += weighted_applied_state
 
     # Return 0 if no commutators were applied, otherwise compute expectation
     return 0.0 if isinstance(new_state, _AdditiveIdentity) else state.dot(new_state)
 
 
 def _apply_commutator(
+    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
+) -> AbstractState:
+    """Returns the state obtained from applying ``commutator`` to ``state``."""
+
+    new_state = _AdditiveIdentity()
+
+    for term, coeff in _op_list(commutator).items():
+        tmp_state = copy.copy(state)
+        for frag in reversed(term):
+            if isinstance(frag, frozenset):
+                frag = sum(
+                    (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
+                )
+            else:
+                frag = fragments[frag]
+
+            tmp_state = frag.apply(tmp_state)
+
+        new_state += coeff * tmp_state
+
+    return new_state
+
+
+def _apply_commutator_with_cache(
     commutator: Tuple[Hashable],
     fragments: Dict[Hashable, Fragment],
     state: AbstractState,
@@ -480,163 +773,3 @@ def _group_sums_in_dict(term_dict: dict[tuple[Hashable], complex]) -> list[tuple
         grouped_comms[tail].add((head, coeff))
 
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
-
-
-def _calculate_commutator_probability(
-    commutator: Tuple[Hashable | Set],
-    fragments: Dict[Hashable, Fragment],
-    timestep: float,
-    gridpoints: int = DEFAULT_GRIDPOINTS,
-) -> float:
-    r"""Calculate the unnormalized probability for importance sampling a commutator.
-
-    The unnormalized probability for a commutator :math:`C_k` of order :math:`k` is computed as:
-
-    .. math::
-        p_k = 2^{k-1} \cdot \tau^k \cdot \prod_{i=1}^{k} \|\hat{H}_i\|
-
-    where:
-    - :math:`k` is the commutator order (number of operators in the commutator)
-    - :math:`\tau` is the timestep parameter
-    - :math:`\hat{H}_i` are the fragment operators appearing in the commutator
-    - :math:`\|\hat{H}_i\|` is the operator norm of fragment :math:`i`
-
-    Args:
-        commutator: Tuple representing a commutator structure
-        fragments: Dictionary mapping fragment keys to Fragment objects
-        timestep: Time step for the simulation
-        gridpoints: Number of gridpoints for norm calculation
-
-    Returns:
-        float: Unnormalized probability for importance sampling
-    """
-    if not commutator:
-        return 0.0
-
-    fragment_norms = [_get_element_norm(element, fragments, gridpoints) for element in commutator]
-    prob = 2 ** (len(commutator) - 1) * timestep ** len(commutator) * np.prod(fragment_norms)
-    return max(prob, MIN_PROBABILITY_THRESHOLD)
-
-
-def _get_element_norm(element, fragments: Dict[Hashable, Fragment], gridpoints: int) -> float:
-    """Calculate the norm of a single commutator element."""
-    if isinstance(element, frozenset):
-        # Handle frozenset of weighted fragments
-        weighted_fragment = sum(
-            (coeff * fragments[key] for key, coeff in element if key in fragments),
-            _AdditiveIdentity(),
-        )
-        return weighted_fragment.norm({"gridpoints": gridpoints}) if weighted_fragment else 0.0
-
-    return fragments[element].norm({"gridpoints": gridpoints}) if element in fragments else 1.0
-
-
-def _setup_probability_distribution(
-    commutators: List[Tuple[Hashable | Set]],
-    fragments: Dict[Hashable, Fragment],
-    timestep: float,
-    gridpoints: int = DEFAULT_GRIDPOINTS,
-) -> np.ndarray:
-    """Setup normalized probability distribution for importance sampling.
-
-    This function calculates and normalizes probabilities for all commutators,
-    providing a foundation for importance sampling methods in future PRs.
-
-    Args:
-        commutators: List of commutator tuples
-        fragments: Fragment dictionary
-        timestep: Time step for probability calculation
-        gridpoints: Number of gridpoints for norm calculations
-
-    Returns:
-        Normalized probability array
-    """
-    # Calculate raw probabilities using vectorized operations
-    probabilities = np.array(
-        [
-            _calculate_commutator_probability(comm, fragments, timestep, gridpoints)
-            for comm in commutators
-        ]
-    )
-
-    # Normalize with fallback to uniform distribution
-    total_prob = np.sum(probabilities)
-    return (
-        probabilities / total_prob
-        if total_prob > 0
-        else np.ones(len(commutators)) / len(commutators)
-    )
-
-
-def _apply_sampling_strategy(
-    commutators: List[Tuple[Hashable | Set]],
-    config: SamplingConfig,
-    probabilities: Optional[np.ndarray] = None,  # pylint: disable=unused-argument
-) -> Tuple[List[Tuple[Hashable | Set]], List[float]]:
-    """Apply sampling strategy to select commutators and compute weights.
-
-    This function provides a unified interface for different sampling methods
-    that will be implemented in future PRs. Currently supports only 'exact' method.
-
-    Args:
-        commutators: List of all available commutators
-        config: Sampling configuration
-        probabilities: Pre-computed probabilities (for importance/top_k methods)
-
-    Returns:
-        Tuple of (selected_commutators, weights)
-
-    Raises:
-        NotImplementedError: For sampling methods not yet implemented
-    """
-    if config.method == "exact":
-        # Return all commutators with uniform weights
-        return commutators, [1.0] * len(commutators)
-
-    # Future PRs will implement these methods
-    if config.method == "random":
-        raise NotImplementedError("Random sampling will be implemented in future PR")
-    if config.method == "importance":
-        raise NotImplementedError("Importance sampling will be implemented in future PR")
-    if config.method == "top_k":
-        raise NotImplementedError("Top-k sampling will be implemented in future PR")
-
-    raise ValueError(f"Unknown sampling method: {config.method}")
-
-
-def _compute_expectation_values_with_cache(
-    commutators: List[Tuple[Hashable | Set]],
-    weights: List[float],
-    fragments: Dict[Hashable, Fragment],
-    states: Sequence[AbstractState],
-    use_cache: bool = True,
-) -> List[float]:
-    """Compute expectation values with optional caching.
-
-    This function provides an optimized path for computing expectation values
-    with caching support, which will be essential for sampling methods.
-
-    Args:
-        commutators: List of commutator tuples
-        weights: Weights for each commutator
-        fragments: Fragment dictionary
-        states: States to compute expectation values for
-        use_cache: Whether to use caching for commutator applications
-
-    Returns:
-        List of expectation values for each state
-    """
-    commutator_weight_pairs = list(zip(commutators, weights))
-    expectations = []
-
-    for state_idx, state in enumerate(states):
-        cache = _CommutatorCache() if use_cache else None
-        state_id = state_idx if use_cache else None
-
-        expectation = _get_expval_state(commutator_weight_pairs, fragments, state, cache, state_id)
-        expectations.append(expectation)
-
-        if cache is not None:
-            cache.clear()  # Clean up cache for each state
-
-    return expectations
