@@ -15,17 +15,10 @@
 This module contains functions for adding the TensorFlow Autograph interface
 to a PennyLane Device class.
 """
-import warnings
-
 # pylint: disable=too-many-arguments,too-many-statements
 from functools import reduce
 
 import numpy as np
-
-from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-# pylint: disable=wrong-import-position, wrong-import-order
-warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
 import tensorflow as tf
 
 import pennylane as qml
@@ -94,7 +87,6 @@ def _jac_restructured(jacs, tapes):
     return tuple(jacs_nested)
 
 
-# pylint: disable=too-many-positional-arguments
 def execute(
     tapes,
     device,

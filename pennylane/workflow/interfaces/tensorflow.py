@@ -103,10 +103,6 @@ import inspect
 import logging
 import warnings
 
-from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-# pylint: disable=wrong-import-position, wrong-import-order
-warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
 import tensorflow as tf
 from tensorflow.python.eager import context
 
