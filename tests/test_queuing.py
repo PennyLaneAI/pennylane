@@ -24,6 +24,25 @@ from pennylane.exceptions import QueuingError
 from pennylane.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 
 
+def test_adjoint_queueing_bug():
+    """Test that adjoint operations are not queued when the adjoint is called on an operation."""
+    h = qml.Hadamard(0)
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def my_circuit():
+        qml.apply(h)
+        qml.adjoint(h)
+        qml.CNOT(wires=[0, 1])
+
+        return qml.state()
+
+    tape = qml.workflow.construct_tape(my_circuit)()
+    assert len(tape.operations) == 3
+    assert tape.operations == [qml.H(0), qml.adjoint(qml.H(0)), qml.CNOT(wires=[0, 1])]
+
+
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
 class TestStopRecording:
     """Test the stop_recording method of QueuingManager."""
