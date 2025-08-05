@@ -25,7 +25,6 @@ import scipy as sp
 import pennylane as qml
 from pennylane.decomposition import (
     add_decomps,
-    register_condition,
     register_resources,
     resource_rep,
 )
