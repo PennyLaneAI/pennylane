@@ -93,14 +93,14 @@ class FTQCQubit(Device):
         program.add_transform(split_at_non_clifford_gates)
         program.add_transform(convert_to_mbqc_formalism)
 
-        # # validate that conversion didn't use too many wires
+        # validate that conversion didn't use too many wires
         program.add_transform(
             validate_device_wires,
             wires=self.backend.wires,
             name=f"{self.name}.{self.backend.name}",
         )
 
-        # # set up for backend execution (including MCM handling)
+        # set up for backend execution (including MCM handling)
         if self.backend.diagonalize_mcms:
             program.add_transform(diagonalize_mcms)
 
