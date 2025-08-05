@@ -211,6 +211,6 @@ class NonDifferentiableError(Exception):
 
 
 _TF_DEPRECATION_MSG = (
-    "The TensorFlow interface is deprecated and will be removed in a future release. "
-    "Please consider migrating to use JAX / torch interface instead."
+    "Support for the TensorFlow interface is deprecated and will be removed in v0.44. "
+    "Please consider migrating to use JAX / torch interface instead for machine learning applications."
 )
