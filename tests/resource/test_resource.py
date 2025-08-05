@@ -33,8 +33,8 @@ from pennylane.resource.resource import (
     add_in_series,
     mul_in_parallel,
     mul_in_series,
-    substitute,
     specs_from_tape,
+    substitute,
 )
 from pennylane.tape import QuantumScript
 
