@@ -135,6 +135,33 @@ def test_postselect_mode_transform(postselect_mode):
     assert np.all(res != np.iinfo(np.int32).min)
 
 
+def test_multi_wire_sample_shape_broadcasting():
+    """Test that multi-wire sampling with postselect mode works correctly."""
+
+    measurement = qml.sample(wires=[0, 1])
+
+    # Create samples with the problematic 3D shape that triggers the bug
+    shots = 100
+    samples = np.ones((shots, 1, 2), dtype=np.int32)  # Shape: (shots, 1, wires)
+    is_valid = np.ones((shots,), dtype=bool)  # Shape: (shots,)
+
+    result = gather_non_mcm(measurement, samples, is_valid, postselect_mode="pad-invalid-samples")
+
+    # The result should have the same shape as the input samples
+    assert result.shape == samples.shape
+    assert np.all(result == samples)  # All valid, so result == samples
+
+    is_valid_mixed = np.array([True, False] * (shots // 2), dtype=bool)
+    result_mixed = gather_non_mcm(
+        measurement, samples, is_valid_mixed, postselect_mode="pad-invalid-samples"
+    )
+
+    # Result should have fill_in_value where invalid
+    expected = np.where(is_valid_mixed.reshape(-1, 1, 1), samples, fill_in_value)
+    assert result_mixed.shape == samples.shape
+    assert np.all(result_mixed == expected)
+
+
 @pytest.mark.jax
 @pytest.mark.parametrize("use_jit", [True, False])
 @pytest.mark.parametrize("diff_method", [None, "best"])
