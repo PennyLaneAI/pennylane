@@ -294,12 +294,12 @@ class TestEqual:
         I3 = qml.Identity(wires=[0, 1, 2, 3])
         I4 = qml.Identity(wires=["a", "b"])
 
-        assert qml.equal(I1, I2)
-        assert qml.equal(I1, I3)
-        assert qml.equal(I1, I4)
-        assert qml.equal(I2, I3)
-        assert qml.equal(I2, I4)
-        assert qml.equal(I3, I4)
+        assert qml.equal(I1, I2) is True
+        assert qml.equal(I1, I3) is True
+        assert qml.equal(I1, I4) is True
+        assert qml.equal(I2, I3) is True
+        assert qml.equal(I2, I4) is True
+        assert qml.equal(I3, I4) is True
 
     @pytest.mark.parametrize(("op1", "op2", "res"), equal_pauli_operators)
     def test_pauli_operator_equals(self, op1, op2, res):
@@ -312,14 +312,14 @@ class TestEqual:
     @pytest.mark.parametrize("ops", PARAMETRIZED_OPERATIONS_COMBINATIONS)
     def test_equal_simple_diff_op(self, ops):
         """Test different operators return False"""
-        assert not qml.equal(ops[0], ops[1], check_trainability=False, check_interface=False)
+        assert qml.equal(ops[0], ops[1], check_trainability=False, check_interface=False) is False
         with pytest.raises(AssertionError, match="op1 and op2 are of different types"):
             assert_equal(ops[0], ops[1], check_trainability=False, check_interface=False)
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS)
     def test_equal_simple_same_op(self, op1):
         """Test same operators return True"""
-        assert qml.equal(op1, op1, check_trainability=False, check_interface=False)
+        assert qml.equal(op1, op1, check_trainability=False, check_interface=False) is True
         assert_equal(op1, op1, check_trainability=False, check_interface=False)
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_1W)
@@ -328,11 +328,14 @@ class TestEqual:
         wire = 0
         param = 0.123
         test_operator = op1(param, wires=wire)
-        assert qml.equal(
-            test_operator,
-            test_operator,
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                test_operator,
+                test_operator,
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
         assert_equal(
             test_operator,
@@ -342,11 +345,14 @@ class TestEqual:
         )
 
         test_operator_diff_parameter = op1(param * 2, wires=wire)
-        assert not qml.equal(
-            test_operator,
-            test_operator_diff_parameter,
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                test_operator,
+                test_operator_diff_parameter,
+                check_trainability=False,
+                check_interface=False,
+            )
+            is False
         )
         with pytest.raises(AssertionError, match="op1 and op2 have different data."):
             assert_equal(
@@ -356,11 +362,14 @@ class TestEqual:
                 check_interface=False,
             )
         test_operator_diff_wire = op1(param, wires=wire + 1)
-        assert not qml.equal(
-            test_operator,
-            test_operator_diff_wire,
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                test_operator,
+                test_operator_diff_wire,
+                check_trainability=False,
+                check_interface=False,
+            )
+            is False
         )
         with pytest.raises(AssertionError, match="op1 and op2 have different wires."):
             assert_equal(
@@ -388,32 +397,44 @@ class TestEqual:
 
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
-            assert qml.equal(
-                op1(p1, wires=wire),
-                op1(p2, wires=wire),
-                check_trainability=False,
-                check_interface=False,
+            assert (
+                qml.equal(
+                    op1(p1, wires=wire),
+                    op1(p2, wires=wire),
+                    check_trainability=False,
+                    check_interface=False,
+                )
+                is True
             )
-            assert not qml.equal(
-                op1(p1, wires=wire),
-                op1(p2, wires=wire),
-                check_trainability=False,
-                check_interface=True,
+            assert (
+                qml.equal(
+                    op1(p1, wires=wire),
+                    op1(p2, wires=wire),
+                    check_trainability=False,
+                    check_interface=True,
+                )
+                is False
             )
 
         param_qml_1 = param_qml.copy()
         param_qml_1.requires_grad = False
-        assert qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=True,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+            is False
         )
 
         with pytest.raises(AssertionError, match="Parameters have different trainability"):
@@ -442,32 +463,44 @@ class TestEqual:
 
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
-            assert qml.equal(
-                op1(p1, wires=wire),
-                op1(p2, wires=wire),
-                check_trainability=False,
-                check_interface=False,
+            assert (
+                qml.equal(
+                    op1(p1, wires=wire),
+                    op1(p2, wires=wire),
+                    check_trainability=False,
+                    check_interface=False,
+                )
+                is True
             )
-            assert not qml.equal(
-                op1(p1, wires=wire),
-                op1(p2, wires=wire),
-                check_trainability=False,
-                check_interface=True,
+            assert (
+                qml.equal(
+                    op1(p1, wires=wire),
+                    op1(p2, wires=wire),
+                    check_trainability=False,
+                    check_interface=True,
+                )
+                is False
             )
 
         param_qml_1 = param_qml.copy()
         param_qml_1.requires_grad = False
-        assert qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=True,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+            is False
         )
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_2W)
@@ -475,23 +508,32 @@ class TestEqual:
         """Test changing parameter or wire returns False"""
         wire = [0, 1]
         param = 0.123
-        assert qml.equal(
-            op1(param, wires=wire),
-            op1(param, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param, wires=wire),
+                op1(param, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(param, wires=wire),
-            op1(param * 2, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param, wires=wire),
+                op1(param * 2, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is False
         )
-        assert not qml.equal(
-            op1(param, wires=wire),
-            op1(param, wires=[w + 1 for w in wire]),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param, wires=wire),
+                op1(param, wires=[w + 1 for w in wire]),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is False
         )
 
     @pytest.mark.all_interfaces
@@ -512,32 +554,44 @@ class TestEqual:
 
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
-            assert qml.equal(
-                op1(p1, wires=wire),
-                op1(p2, wires=wire),
-                check_trainability=False,
-                check_interface=False,
+            assert (
+                qml.equal(
+                    op1(p1, wires=wire),
+                    op1(p2, wires=wire),
+                    check_trainability=False,
+                    check_interface=False,
+                )
+                is True
             )
-            assert not qml.equal(
-                op1(p1, wires=wire),
-                op1(p2, wires=wire),
-                check_trainability=False,
-                check_interface=True,
+            assert (
+                qml.equal(
+                    op1(p1, wires=wire),
+                    op1(p2, wires=wire),
+                    check_trainability=False,
+                    check_interface=True,
+                )
+                is False
             )
 
         param_qml_1 = param_qml.copy()
         param_qml_1.requires_grad = False
-        assert qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=True,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+            is False
         )
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_1P_4W)
@@ -545,23 +599,33 @@ class TestEqual:
         """Test changing parameter or wire returns False"""
         wire = [0, 1, 2, 3]
         param = 0.123
-        assert qml.equal(
-            op1(param, wires=wire),
-            op1(param, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param, wires=wire),
+                op1(param, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(param, wires=wire),
-            op1(param * 2, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param, wires=wire),
+                op1(param * 2, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is False
         )
-        assert not qml.equal(
-            op1(param, wires=wire),
-            op1(param, wires=[w + 1 for w in wire]),
-            check_trainability=False,
-            check_interface=False,
+
+        assert (
+            qml.equal(
+                op1(param, wires=wire),
+                op1(param, wires=[w + 1 for w in wire]),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is False
         )
 
     @pytest.mark.all_interfaces
@@ -582,32 +646,44 @@ class TestEqual:
 
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
-            assert qml.equal(
-                op1(p1[0], p1[1], p1[2], wires=wire),
-                op1(p2[0], p2[1], p2[2], wires=wire),
-                check_trainability=False,
-                check_interface=False,
+            assert (
+                qml.equal(
+                    op1(p1[0], p1[1], p1[2], wires=wire),
+                    op1(p2[0], p2[1], p2[2], wires=wire),
+                    check_trainability=False,
+                    check_interface=False,
+                )
+                is True
             )
-            assert not qml.equal(
-                op1(p1[0], p1[1], p1[2], wires=wire),
-                op1(p2[0], p2[1], p2[2], wires=wire),
-                check_trainability=False,
-                check_interface=True,
+            assert (
+                qml.equal(
+                    op1(p1[0], p1[1], p1[2], wires=wire),
+                    op1(p2[0], p2[1], p2[2], wires=wire),
+                    check_trainability=False,
+                    check_interface=True,
+                )
+                is False
             )
 
         param_qml_1 = param_qml.copy()
         param_qml_1.requires_grad = False
-        assert qml.equal(
-            op1(*param_qml, wires=wire),
-            op1(*param_qml_1, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(*param_qml, wires=wire),
+                op1(*param_qml_1, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(*param_qml, wires=wire),
-            op1(*param_qml_1, wires=wire),
-            check_trainability=True,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(*param_qml, wires=wire),
+                op1(*param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+            is False
         )
 
     @pytest.mark.parametrize("op1", PARAMETRIZED_OPERATIONS_3P_1W)
@@ -615,23 +691,32 @@ class TestEqual:
         """Test changing parameter or wire returns False"""
         wire = 0
         param = [0.123] * 3
-        assert qml.equal(
-            op1(*param, wires=wire),
-            op1(*param, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(*param, wires=wire),
+                op1(*param, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(*param, wires=wire),
-            op1(*param, wires=wire + 1),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(*param, wires=wire),
+                op1(*param, wires=wire + 1),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is False
         )
-        assert not qml.equal(
-            op1(*param, wires=wire),
-            op1(param[0] * 2, param[1], param[2], wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(*param, wires=wire),
+                op1(param[0] * 2, param[1], param[2], wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is False
         )
 
     @pytest.mark.all_interfaces
@@ -668,17 +753,23 @@ class TestEqual:
 
         param_qml_1 = param_qml.copy()
         param_qml_1.requires_grad = False
-        assert qml.equal(
-            op1(*param_qml, wires=wire),
-            op1(*param_qml_1, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(*param_qml, wires=wire),
+                op1(*param_qml_1, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(*param_qml, wires=wire),
-            op1(*param_qml_1, wires=wire),
-            check_trainability=True,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(*param_qml, wires=wire),
+                op1(*param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+            is False
         )
 
         wire = [1, 2, 3]
@@ -691,32 +782,44 @@ class TestEqual:
         op1 = PARAMETRIZED_OPERATIONS_1P_3W[0]
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
-            assert qml.equal(
-                op1(p1, wires=wire),
-                op1(p2, wires=wire),
-                check_trainability=False,
-                check_interface=False,
+            assert (
+                qml.equal(
+                    op1(p1, wires=wire),
+                    op1(p2, wires=wire),
+                    check_trainability=False,
+                    check_interface=False,
+                )
+                is True
             )
-            assert not qml.equal(
-                op1(p1, wires=wire),
-                op1(p2, wires=wire),
-                check_trainability=False,
-                check_interface=True,
+            assert (
+                qml.equal(
+                    op1(p1, wires=wire),
+                    op1(p2, wires=wire),
+                    check_trainability=False,
+                    check_interface=True,
+                )
+                is False
             )
 
         param_qml_1 = param_qml.copy()
         param_qml_1.requires_grad = False
-        assert qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=True,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+            is False
         )
 
         wire = [1, 2]
@@ -729,32 +832,44 @@ class TestEqual:
         op1 = PARAMETRIZED_OPERATIONS_3P_2W[0]
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
-            assert qml.equal(
-                op1(p1[0], p1[1], p1[2], wires=wire),
-                op1(p2[0], p2[1], p2[2], wires=wire),
-                check_trainability=False,
-                check_interface=False,
+            assert (
+                qml.equal(
+                    op1(p1[0], p1[1], p1[2], wires=wire),
+                    op1(p2[0], p2[1], p2[2], wires=wire),
+                    check_trainability=False,
+                    check_interface=False,
+                )
+                is True
             )
-            assert not qml.equal(
-                op1(p1[0], p1[1], p1[2], wires=wire),
-                op1(p2[0], p2[1], p2[2], wires=wire),
-                check_trainability=False,
-                check_interface=True,
+            assert (
+                qml.equal(
+                    op1(p1[0], p1[1], p1[2], wires=wire),
+                    op1(p2[0], p2[1], p2[2], wires=wire),
+                    check_trainability=False,
+                    check_interface=True,
+                )
+                is False
             )
 
         param_qml_1 = param_qml.copy()
         param_qml_1.requires_grad = False
-        assert qml.equal(
-            op1(*param_qml, wires=wire),
-            op1(*param_qml_1, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(*param_qml, wires=wire),
+                op1(*param_qml_1, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(*param_qml, wires=wire),
-            op1(*param_qml_1, wires=wire),
-            check_trainability=True,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(*param_qml, wires=wire),
+                op1(*param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+            is False
         )
 
         wire = 0
@@ -843,32 +958,44 @@ class TestEqual:
         op1 = PARAMETRIZED_OPERATIONS_Remaining[2]
         param_list = [param_qml, param_torch, param_jax, param_tf, param_np]
         for p1, p2 in itertools.combinations(param_list, 2):
-            assert qml.equal(
-                op1(p1, wires=wire),
-                op1(p2, wires=wire),
-                check_trainability=False,
-                check_interface=False,
+            assert (
+                qml.equal(
+                    op1(p1, wires=wire),
+                    op1(p2, wires=wire),
+                    check_trainability=False,
+                    check_interface=False,
+                )
+                is True
             )
-            assert not qml.equal(
-                op1(p1, wires=wire),
-                op1(p2, wires=wire),
-                check_trainability=False,
-                check_interface=True,
+            assert (
+                qml.equal(
+                    op1(p1, wires=wire),
+                    op1(p2, wires=wire),
+                    check_trainability=False,
+                    check_interface=True,
+                )
+                is False
             )
 
         param_qml_1 = param_qml.copy()
         param_qml_1.requires_grad = False
-        assert qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=False,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=False,
+                check_interface=False,
+            )
+            is True
         )
-        assert not qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=True,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+            is False
         )
 
         wire = 0
@@ -1443,8 +1570,8 @@ class TestMeasurementsEqual:
         ob1 = qml.Hermitian(M1, 0)
         ob2 = qml.Hermitian(M2, 0)
 
-        assert not qml.equal(qml.expval(ob1), qml.expval(ob2))
-        assert qml.equal(qml.expval(ob1), qml.expval(ob2), rtol=1e-2)
+        assert qml.equal(qml.expval(ob1), qml.expval(ob2)) is False
+        assert qml.equal(qml.expval(ob1), qml.expval(ob2), rtol=1e-2) is True
 
     def test_eigvals_atol(self):
         """Check atol affects comparisons of eigenvalues."""
@@ -1452,7 +1579,7 @@ class TestMeasurementsEqual:
         m2 = ProbabilityMP(eigvals=(1, 0))
 
         assert not qml.equal(m1, m2)
-        assert qml.equal(m1, m2, atol=1e-2)
+        assert qml.equal(m1, m2, atol=1e-2) is True
 
     def test_eigvals_rtol(self):
         """Check that rtol affects comparisons of eigenvalues."""
@@ -1460,7 +1587,7 @@ class TestMeasurementsEqual:
         m2 = ProbabilityMP(eigvals=(1, 0))
 
         assert not qml.equal(m1, m2)
-        assert qml.equal(m1, m2, rtol=1e-2)
+        assert qml.equal(m1, m2, rtol=1e-2) is True
 
     def test_observables_equal_but_wire_order_not(self):
         """Test that when the wire orderings are not equal but the observables are, that
@@ -2659,7 +2786,7 @@ class TestBasisRotation:
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
     def test_non_equal_training_params_comparison(self, op, other_op):
-        assert qml.equal(op, other_op)
+        assert qml.equal(op, other_op) is True
         assert_equal(op, other_op)
 
     @pytest.mark.parametrize("op, other_op", [(op1, op4)])
@@ -2681,7 +2808,7 @@ class TestBasisRotation:
             ]
         )
         other_op = qml.BasisRotation(wires=range(2), unitary_matrix=rotation_mat_jax)
-        assert qml.equal(op, other_op, check_interface=False)
+        assert qml.equal(op, other_op, check_interface=False) is True
         assert_equal(op, other_op, check_interface=False)
         assert qml.equal(op, other_op) is False
 
@@ -2750,21 +2877,21 @@ class TestHilbertSchmidt:
     @pytest.mark.parametrize("op, other_op", [(op1, op1), (op2, op2), (op4, op4)])
     def test_equality(self, op, other_op):
         """Test that two identical HilbertSchmidt operators are found equal."""
-        assert qml.equal(op, other_op)
+        assert qml.equal(op, other_op) is True
 
     # The second test case (incl op1_eps_tape) ensures that the kwargs of equal are
     # passed to the tape comparisons correctly
     @pytest.mark.parametrize("op, other_op", [(op1, op1_eps), (op1, op1_eps_tape)])
     def test_different_tolerances_comparison(self, op, other_op):
         """Test that the tolerance parameters are used correctly."""
-        assert qml.equal(op, other_op)
-        assert not qml.equal(op, other_op, rtol=0)
-        assert qml.equal(op, other_op, rtol=0, atol=1e-5)
+        assert qml.equal(op, other_op) is True
+        assert qml.equal(op, other_op, rtol=0) is False
+        assert qml.equal(op, other_op, rtol=0, atol=1e-5) is True
 
     @pytest.mark.parametrize("op, other_op", [(op1, op2)])
     def test_non_equal_data(self, op, other_op):
         """Test that differing data is found."""
-        assert not qml.equal(op, other_op)
+        assert qml.equal(op, other_op) is False
         other_op.data = op.data
 
         v_ops = op.hyperparameters["V"]
@@ -2781,39 +2908,39 @@ class TestHilbertSchmidt:
     @pytest.mark.parametrize("op, other_op", [(op1, op4)])
     def test_non_equal_u_ops(self, op, other_op):
         """Test that differing u operations are found."""
-        assert not qml.equal(op, other_op)
+        assert qml.equal(op, other_op) is False
 
         new_other_op = deepcopy(other_op)
         new_other_op.hyperparameters["U"] = op.hyperparameters["U"]
-        assert qml.equal(op, new_other_op)
+        assert qml.equal(op, new_other_op) is True
 
     @pytest.mark.parametrize("op, other_op", [(op1, op7)])
     def test_non_equal_v_wires(self, op, other_op):
         """Test that differing v_wires are found."""
-        assert not qml.equal(op, other_op)
+        assert qml.equal(op, other_op) is False
         new_other_op = deepcopy(other_op)
         new_other_op.hyperparameters["V"] = op.hyperparameters["V"]
-        assert qml.equal(op, new_other_op)
+        assert qml.equal(op, new_other_op) is True
 
     @pytest.mark.parametrize("op, other_op", [(op5, op6), (op1_trainable, op1_untrainable)])
     def test_trainability(self, op, other_op):
         """Test that differing trainabilities are found."""
-        assert not qml.equal(op, other_op)
-        assert qml.equal(op, other_op, check_trainability=False)
+        assert qml.equal(op, other_op) is False
+        assert qml.equal(op, other_op, check_trainability=False) is True
 
     @pytest.mark.parametrize("op, other_op", [(op1, op6), (op1, op1_untrainable)])
     def test_interface(self, op, other_op):
         """Test that differing interfaces are found."""
-        assert not qml.equal(op, other_op)
-        assert qml.equal(op, other_op, check_interface=False)
+        assert qml.equal(op, other_op) is False
+        assert qml.equal(op, other_op, check_interface=False) is True
 
     @pytest.mark.parametrize("op, other_op", [(op1, op5), (op1, op1_trainable)])
     def test_interface_and_trainability(self, op, other_op):
         """Test that simultaneously differing interfaces and trainabilities are found."""
-        assert not qml.equal(op, other_op)
+        assert qml.equal(op, other_op) is False
         assert not qml.equal(op, other_op, check_interface=False)
         assert not qml.equal(op, other_op, check_trainability=False)
-        assert qml.equal(op, other_op, check_interface=False, check_trainability=False)
+        assert qml.equal(op, other_op, check_interface=False, check_trainability=False) is True
 
 
 # pylint: disable=too-few-public-methods
@@ -2868,7 +2995,7 @@ def test_ops_with_abstract_parameters_not_equal():
 )
 def test_not_equal_prep_sel_prep(op, other_op):
     """Test that two PrepSelPrep operators with different Hamiltonian are not equal."""
-    assert not qml.equal(op, other_op)
+    assert qml.equal(op, other_op) is False
 
 
 def test_select():
@@ -2895,4 +3022,4 @@ def test_select():
     op1 = qml.Select((qml.X(0),), control=2)
     op2 = qml.Select((qml.X(0),), control=2)
     qml.assert_equal(op1, op2)
-    assert qml.equal(op1, op2)
+    assert qml.equal(op1, op2) is True
