@@ -20,10 +20,9 @@ import os
 import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
-from typing import Optional, Type
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
@@ -31,7 +30,6 @@ from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import WireError
 
 from .execution_config import MCMConfig
 
@@ -47,10 +45,10 @@ def _operator_decomposition_gen(  # pylint: disable = too-many-positional-argume
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
-    max_expansion: Optional[int] = None,
+    max_expansion: int | None = None,
     current_depth=0,
     name: str = "device",
-    error: Optional[Type[Exception]] = None,
+    error: type[Exception] | None = None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     if error is None:
@@ -111,7 +109,7 @@ def no_sampling(
 
 @transform
 def validate_device_wires(
-    tape: QuantumScript, wires: Optional[qml.wires.Wires] = None, name: str = "device"
+    tape: QuantumScript, wires: qml.wires.Wires | None = None, name: str = "device"
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Validates that all wires present in the tape are in the set of provided wires. Adds the
     device wires to measurement processes like :class:`~.measurements.StateMP` that are broadcasted
@@ -302,11 +300,11 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     stopping_condition: Callable[[qml.operation.Operator], bool],
     stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
     skip_initial_state_prep: bool = True,
-    decomposer: Optional[
+    decomposer: None | (
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
-    ] = None,
+    ) = None,
     name: str = "device",
-    error: Optional[Type[Exception]] = None,
+    error: type[Exception] | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
@@ -606,7 +604,7 @@ def measurements_from_samples(tape):
            [1, 0]])
 
     >>> fn((res,))
-    (-0.2, array([0.6, 0.4]))
+    [-0.2, array([0.6, 0.4])]
     """
     if not tape.shots:
         return (tape,), null_postprocessing
@@ -686,7 +684,7 @@ def measurements_from_counts(tape):
     >>> measurements = [qml.expval(qml.Y(0)), qml.probs(wires=[1])]
     >>> tape = qml.tape.QuantumScript(ops, measurements, shots=10)
 
-    We can apply the transform to diagonalize and convert the two measurements to a single sample:
+    We can apply the transform to diagonalize and convert the two measurements to a single `counts` measurement:
 
     >>> (new_tape, ), fn = qml.devices.preprocess.measurements_from_counts(tape)
     >>> new_tape.measurements
@@ -708,7 +706,7 @@ def measurements_from_counts(tape):
     And these can be post-processed to get the originally requested measurements:
 
     >>> fn((res,))
-    (-0.19999999999999996, array([0.7, 0.3]))
+    [-0.19999999999999996, array([0.7, 0.3])]
     """
     if tape.shots.total_shots is None:
         return (tape,), null_postprocessing

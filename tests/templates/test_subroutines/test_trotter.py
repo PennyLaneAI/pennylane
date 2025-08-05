@@ -24,6 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as qnp
 from pennylane.math import allclose, get_interface
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.resource import Resources
 from pennylane.resource.error import SpectralNormError
 from pennylane.templates.subroutines.trotter import (
@@ -775,6 +776,16 @@ class TestDecomposition:
         ]
         for op1, op2 in zip(decomp, true_decomp):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize("order", (1, 2, 4))
+    @pytest.mark.parametrize("hamiltonian_index, hamiltonian", enumerate(test_hamiltonians))
+    def test_decomposition_new(
+        self, hamiltonian, hamiltonian_index, order
+    ):  # pylint: disable=unused-argument
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.TrotterProduct(hamiltonian, 4.2, order=order)
+        for rule in qml.list_decomps(qml.TrotterProduct):
+            _test_decomposition_rule(op, rule)
 
     @pytest.mark.parametrize("order", (1, 2))
     @pytest.mark.parametrize("num_steps", (1, 2, 3))
