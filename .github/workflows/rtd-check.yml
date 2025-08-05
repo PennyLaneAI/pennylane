@@ -40,10 +40,10 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pip install --upgrade --no-cache-dir pip setuptools 
-        pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
-        pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
-        pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
+        uv pip install --upgrade --no-cache-dir pip setuptools 
+        uv pip install --upgrade --no-cache-dir ${{ env.PIP_PACKAGES_TO_INSTALL }}
+        uv pip install --exists-action=w --no-cache-dir -r doc/requirements.txt   
+        uv pip install --upgrade --upgrade-strategy only-if-needed --no-cache-dir  .      
 
 
     - name: Build Sphinx HTML

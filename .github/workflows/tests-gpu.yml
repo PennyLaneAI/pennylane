@@ -92,24 +92,24 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip wheel setuptools>=75.8.1
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
+          uv pip install --upgrade pip wheel setuptools>=75.8.1
+          uv pip install -r requirements-ci.txt --upgrade
+          uv pip install -r requirements-dev.txt --upgrade
 
       - name: Install Torch
         run: |
-          python -m pip install --no-cache-dir torch==${{ env.TORCH_VERSION }} -f https://download.pytorch.org/whl/cu118/torch_stable.html
+          uv pip install --no-cache-dir torch==${{ env.TORCH_VERSION }} -f https://download.pytorch.org/whl/cu118/torch_stable.html
 
       - name: Install PennyLane
         run: |
-          python -m build --wheel
-          pip install dist/pennylane*.whl
+          uv build --wheel
+          uv pip install dist/pennylane*.whl
 
       - name: Install Lightning-master
-        run: python -m pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
+        run: uv pip install -i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade
 
       - name: Run tests
-        run: python -m pytest -m "${{ env.SUITE }}" tests
+        run: uv pytest -m "${{ env.SUITE }}" tests
 
       # Cleans up the working directory so subsequent jobs on same runner get a clean working directory
       # This step runs even if any of the previous steps fail
@@ -121,4 +121,4 @@ jobs:
           rm -rf .git
           rm -rf .gitignore
           rm -rf .github
-          pip cache purge
+          uv pip cache purge

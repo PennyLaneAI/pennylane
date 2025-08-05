@@ -25,15 +25,15 @@ install:
 ifndef PYTHON3
 	@echo "To install PennyLane you need to have Python 3 installed"
 endif
-	$(PYTHON) -m pip install .
+	uv pip install .
 
 .PHONY: wheel
 wheel:
-	$(PYTHON) -m build --wheel
+	uv build --wheel
 
 .PHONY: dist
 dist:
-	$(PYTHON) -m build --sdist 
+	uv build --sdist 
 
 .PHONY : clean
 clean:
