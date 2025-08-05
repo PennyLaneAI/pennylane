@@ -533,11 +533,7 @@ def apply(op, context=QueuingManager):
     if not QueuingManager.recording():
         raise RuntimeError("No queuing context available to append operation to.")
 
-    # pylint: disable=unsupported-membership-test
-    if op in getattr(context, "queue", QueuingManager.active_context()):
-        # Queuing contexts can only contain unique objects.
-        # If the object to be queued already exists, copy it.
-        op = copy.copy(op)
+    op = copy.copy(op)
 
     if hasattr(op, "queue"):
         # operator provides its own logic for queuing
