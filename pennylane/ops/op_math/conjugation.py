@@ -1,18 +1,39 @@
 from collections import Counter
 from functools import reduce
+from itertools import combinations
 
+from pennylane.wires import Wires
 from scipy.sparse import kron as sparse_kron
 
 from pennylane import math, queuing, apply
-from pennylane.ops import adjoint
+from pennylane.ops.op_math import adjoint
 from pennylane.typing import TensorLike
 from pennylane.decomposition import resource_rep, register_resources, add_decomps
 
 from .composite import CompositeOp, handle_recursion_error
+from ...operation import Operator
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
 computing the sparse matrix representation."""
+
+
+def conjugation(U, V, U_dag=None):
+    """Construct an operator which represents the product of the
+    operators provided.
+
+    Args:
+        U (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
+        V (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
+        U_dag (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations. Default is U_dag=qml.adjoint(U).
+
+    Returns:
+        ~ops.op_math.Conjugation: the operator representing the compute, uncompute pattern.
+    """
+
+    ops_simp = Conjugation(U, V, U_dag)
+
+    return ops_simp
 
 
 class Conjugation(CompositeOp):
@@ -35,6 +56,9 @@ class Conjugation(CompositeOp):
 
     resource_keys = frozenset({"resources"})
 
+    _op_symbol = "@"
+    _math_op = staticmethod(math.prod)
+
     @property
     @handle_recursion_error
     def resource_params(self):
@@ -42,6 +66,37 @@ class Conjugation(CompositeOp):
         return {"resources": resources}
 
     grad_method = None
+
+    @classmethod
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
+        """Sorts the ops.
+
+        Args:
+            op_list (List[.Operator]): list of operators to be sorted
+            wire_map (dict): Dictionary containing the wire values as keys and its indexes as values.
+                Defaults to None.
+
+        Returns:
+            List[.Operator]: sorted list of operators
+        """
+
+
+        # TODO: sorting, maybe go in a base class
+
+        return op_list
+
+    @property
+    def is_hermitian(self):
+        """Check if the product operator is hermitian.
+
+        Note, this check is not exhaustive. There can be hermitian operators for which this check
+        yields false, which ARE hermitian. So a false result only implies a more explicit check
+        must be performed.
+        """
+        for o1, o2 in combinations(self.operands, r=2):
+            if Wires.shared_wires([o1.wires, o2.wires]):
+                return False
+        return all(op.is_hermitian for op in self)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property

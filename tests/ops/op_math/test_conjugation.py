@@ -25,7 +25,7 @@ import pennylane.numpy as qnp
 from pennylane import math
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.operation import Operator
-from pennylane.ops.op_math.conjugation import Conjugation, _swappable_ops, conjugation
+from pennylane.ops.op_math.conjugation import Conjugation, conjugation
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
@@ -83,19 +83,11 @@ ops = (
     ),
 )
 
-ops_hermitian_status = (  # computed manually
-    True,  # True
-    False,  # True
-    False,  # False
-    False,  # False
-)
-
-
 def test_basic_validity():
     """Run basic validity checks on a conjugation operator."""
     op1 = qml.PauliZ(0)
     op2 = qml.Rot(1.2, 2.3, 3.4, wires=0)
-    op3 = qml.IsingZZ(4.32, wires=("a", "b"))
+    op3 = qml.PauliZ(0)
     op = qml.conjugation(op1, op2, op3)
     qml.ops.functions.assert_valid(op)
 
@@ -135,7 +127,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize("id", ("foo", "bar"))
     def test_init_conjugation_op(self, id):
         """Test the initialization of a Conjugation operator."""
-        conjugation_op = conjugation(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
+        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
 
         assert conjugation_op.wires == Wires((0, "a"))
         assert conjugation_op.num_wires == 2
@@ -170,29 +162,29 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             [qml.conjugation(qml.Hadamard(0), X(1))],
         ),
         (
-            qml.conjugation(qml.Hadamard(0), qml.s_conjugation(4, X(1)), qml.s_conjugation(2, X(2))),
+            qml.conjugation(qml.Hadamard(0), qml.conjugation(Y(4), X(1)), qml.conjugation(Z(2), X(2))),
             [2 * 4],
             [qml.conjugation(qml.Hadamard(0), X(1), X(2))],
         ),  # conjugationuct with scalar conjugationucts inside
         (
-            qml.conjugation(qml.Hadamard(0), qml.s_conjugation(4, X(0)), qml.s_conjugation(2, X(1))),
+            qml.conjugation(qml.Hadamard(0), qml.conjugation(Y(4), X(0)), qml.conjugation(Z(2), X(1))),
             [2 * 4],
             [qml.conjugation(qml.Hadamard(0), X(0), X(1))],
         ),  # conjugationuct with scalar conjugationucts on same wire
         (
-            qml.conjugation(qml.Hadamard(0), qml.s_conjugation(4, Y(1)), qml.sum(X(2), X(3))),
+            qml.conjugation(qml.Hadamard(0), qml.conjugation(Y(4), Y(1)), qml.sum(X(2), X(3))),
             [4, 4],
             [qml.conjugation(qml.Hadamard(0), Y(1), X(2)), qml.conjugation(qml.Hadamard(0), Y(1), X(3))],
         ),  # conjugationuct with sums inside
         (
             qml.conjugation(
                 qml.conjugation(qml.Hadamard(0), X(2), X(3)),
-                qml.s_conjugation(0.5, qml.sum(qml.Hadamard(5), qml.s_conjugation(0.4, X(6)))),
+                qml.conjugation(Z(0), qml.sum(qml.Hadamard(5), qml.conjugation(X(0), X(6)))),
             ),
             [0.5, 0.2],
             [
-                qml.conjugation(X(2), X(3), qml.Hadamard(5), qml.Hadamard(0)),
-                qml.conjugation(X(6), X(2), X(3), qml.Hadamard(0)),
+                qml.conjugation(X(2), X(3), qml.Hadamard(5)),
+                qml.conjugation(X(6), X(2), qml.Hadamard(0)),
             ],
         ),  # contrived example
     )
@@ -207,27 +199,27 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     PROD_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
         (qml.conjugation(X(0), X(1), X(2)), [1.0], [qml.conjugation(X(0), X(1), X(2))]),  # trivial conjugationuct
         (
-            qml.conjugation(X(0), X(1), X(2), qml.Identity(0)),
+            qml.conjugation(X(0), X(1), X(2)),
             [1.0],
             [qml.conjugation(X(0), X(1), X(2))],
         ),  # trivial conjugationuct
         (
-            qml.conjugation(X(0), qml.s_conjugation(4, X(1)), qml.s_conjugation(2, X(2))),
+            qml.conjugation(X(0), qml.conjugation(Y(4), X(1)), qml.conjugation(Z(2), X(2))),
             [2 * 4],
             [qml.conjugation(X(0), X(1), X(2))],
         ),  # conjugationuct with scalar conjugationucts inside
         (
-            qml.conjugation(X(0), qml.s_conjugation(4, X(0)), qml.s_conjugation(2, X(1))),
+            qml.conjugation(X(0), qml.conjugation(Y(4), X(0)), qml.conjugation(Z(2), X(1))),
             [2 * 4],
             [X(1)],
         ),  # conjugationuct with scalar conjugationucts on same wire
         (
-            qml.conjugation(X(0), qml.s_conjugation(4, Y(0)), qml.s_conjugation(2, X(1))),
+            qml.conjugation(X(0), qml.conjugation(Y(4), Y(0)), qml.conjugation(Z(2), X(1))),
             [1j * 2 * 4],
             [qml.conjugation(Z(0), X(1))],
         ),  # conjugationuct with scalar conjugationucts on same wire
         (
-            qml.conjugation(X(0), qml.s_conjugation(4, Y(1)), qml.sum(X(2), X(3))),
+            qml.conjugation(X(0), qml.conjugation(Y(4), Y(1)), qml.sum(X(2), X(3))),
             [4, 4],
             [qml.conjugation(X(0), Y(1), X(2)), qml.conjugation(X(0), Y(1), X(3))],
         ),  # conjugationuct with sums inside

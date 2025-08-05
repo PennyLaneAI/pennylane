@@ -25,6 +25,7 @@ Constructor Functions
     ~adjoint
     ~ctrl
     ~cond
+    ~conjugation
     ~exp
     ~sum
     ~pow
@@ -139,6 +140,7 @@ from .exp import Exp, exp
 from .linear_combination import LinearCombination
 from .pow import Pow, pow
 from .prod import Prod, prod
+from .conjugation import Conjugation, conjugation
 from .sprod import SProd, s_prod
 from .sum import Sum, sum
 from .symbolicop import ScalarSymbolicOp, SymbolicOp
