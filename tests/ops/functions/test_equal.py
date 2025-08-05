@@ -968,11 +968,14 @@ class TestEqual:
             )
             is True
         )
-        assert qml.equal(
-            op1(param_qml, wires=wire),
-            op1(param_qml_1, wires=wire),
-            check_trainability=True,
-            check_interface=False,
+        assert (
+            qml.equal(
+                op1(param_qml, wires=wire),
+                op1(param_qml_1, wires=wire),
+                check_trainability=True,
+                check_interface=False,
+            )
+            is False
         )
 
         wire = 0
