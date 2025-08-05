@@ -18,6 +18,9 @@ hardware device (or emulator)
 from dataclasses import replace
 from pathlib import Path
 
+# ToDo: see if we can get rid of this in favour of backend.device.preprocess
+from pennylane_lightning.lightning_qubit.lightning_qubit import stopping_condition_shots
+
 import pennylane as qml
 from pennylane.devices.capabilities import DeviceCapabilities, validate_mcm_method
 from pennylane.devices.device_api import Device, _default_mcm_method
@@ -25,6 +28,7 @@ from pennylane.devices.execution_config import DefaultExecutionConfig, Execution
 from pennylane.devices.preprocess import (
     measurements_from_samples,
     no_analytic,
+    null_postprocessing,
     validate_device_wires,
     validate_observables,
 )
@@ -100,13 +104,13 @@ class FTQCQubit(Device):
         if self.backend.diagonalize_mcms:
             program.add_transform(diagonalize_mcms)
 
+        # backend_program, _ = self.backend.device.preprocess()
+
         program.add_transform(
             qml.devices.preprocess.mid_circuit_measurements,
             device=self,
             mcm_config=execution_config.mcm_config,
         )
-
-        from pennylane_lightning.lightning_qubit.lightning_qubit import stopping_condition_shots
 
         program.add_transform(
             qml.devices.preprocess.decompose,
@@ -316,32 +320,19 @@ class NullQubitBackend:
 
     def execute(self, circuits, execution_config):
         """Probably not in need of any modification, since its mocked."""
-        results = []
+
+        assert isinstance(
+            circuits[0], QuantumScriptSequence
+        ), "something is amiss - this device uses QuantumScriptSequence"
+
+        tapes_to_execute = []
         for circuit in circuits:
-            if isinstance(circuit, QuantumScript):
-                results.append(
-                    self.device.execute(
-                        [
-                            circuit,
-                        ],
-                        execution_config,
-                    )
-                )
-            elif isinstance(circuit, QuantumScriptSequence):
-                results.append(
-                    self.device.execute(
-                        [
-                            circuit.final_tape,
-                        ],
-                        execution_config,
-                    )
-                )
-            else:
-                raise RuntimeError("That's not a QuantumScript or a QuantumScriptSequence")
-        return tuple(results)
-
-
-from pennylane.devices.preprocess import null_postprocessing
+            shots = circuit.shots.total_shots
+            final_tape = circuit.final_tape
+            tapes_to_execute.append(final_tape.copy(shots=shots))
+        return tuple(
+            self.device.execute(tapes_to_execute, execution_config),
+        )
 
 
 @qml.transform

@@ -433,7 +433,10 @@ class TransformProgram:
                 # I'm so sorry for this, but it *does* do the thing,
                 # at least for the little subset of transforms we need
                 # for this prototype
-                if "QuantumScriptSequence" in str(type(tape)) and not transform.__name__ == "convert_to_mbqc_formalism":
+                if (
+                    "QuantumScriptSequence" in str(type(tape))
+                    and not transform.__name__ == "convert_to_mbqc_formalism"
+                ):
                     new_inner_tapes = []
                     for inner_tape in tape.intermediate_tapes:
                         # this will only work if the postprocessing is null

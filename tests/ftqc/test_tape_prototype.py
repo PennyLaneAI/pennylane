@@ -78,7 +78,7 @@ def test_executing_arbitrary_circuit(backend_cls):
         return qml.expval(X(0)), qml.expval(Y(0)), qml.expval(Y(1))
 
     ftqc_circ = qml.qnode(device=dev)(circ)
-    ftqc_circ = qml.set_shots(ftqc_circ, shots=10)
+    ftqc_circ = qml.set_shots(ftqc_circ, shots=1500)
 
     ref_circ = qml.qnode(device=qml.device("lightning.qubit", wires=2))(circ)
 
@@ -423,7 +423,7 @@ class TestBackendExecution:
         spy_qscript_execute.assert_not_called()
 
     def test_null_qubit_backend_execution(self):
-        """Test execution of tapes and QuantumScriptSequences succeeds with the null.qubit
+        """Test execution of QuantumScriptSequences succeeds with the null.qubit
         backend."""
 
         tape1 = qml.tape.QuantumScript([H(0)])
@@ -433,11 +433,10 @@ class TestBackendExecution:
 
         backend = NullQubitBackend()
 
-        results = backend.execute([tape2, tape2, sequence], ExecutionConfig())
+        results = backend.execute([sequence, sequence, sequence], ExecutionConfig())
 
         print(results)
         assert len(results) == 3
         for res in results:
-            # zero index because its stored as (results, )
-            assert len(res[0]) == 2
+            assert len(res) == 2
             assert np.allclose(res, 0)
