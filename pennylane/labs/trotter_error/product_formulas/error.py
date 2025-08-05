@@ -27,7 +27,6 @@ from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
-
 # Constants
 DEFAULT_CACHE_SIZE = 1000
 DEFAULT_GRIDPOINTS = 10
@@ -52,11 +51,12 @@ class SamplingConfig:
         """Validate configuration parameters."""
         valid_methods = {"random", "importance", "top_k"}
         if self.sampling_method not in valid_methods:
-            raise ValueError(f"sampling_method must be one of {valid_methods}, got '{self.sampling_method}'")
+            raise ValueError(
+                f"sampling_method must be one of {valid_methods}, got '{self.sampling_method}'"
+            )
 
         if self.sample_size is not None and self.sample_size <= 0:
             raise ValueError(f"sample_size must be positive, got {self.sample_size}")
-
 
 
 class _CommutatorCache:
@@ -283,7 +283,7 @@ def _calculate_commutator_probability(commutator, fragments, timestep, gridpoint
 
 
 def _setup_probability_distribution(
-    commutators: List[Tuple[Hashable | Set]], 
+    commutators: List[Tuple[Hashable | Set]],
     fragments: Dict[Hashable, Fragment],
     timestep: float,
     gridpoints: int = DEFAULT_GRIDPOINTS,
@@ -303,10 +303,12 @@ def _setup_probability_distribution(
         Normalized probability array
     """
     # Calculate raw probabilities using vectorized operations
-    probabilities = np.array([
-        _calculate_commutator_probability(comm, fragments, timestep, gridpoints)
-        for comm in commutators
-    ])
+    probabilities = np.array(
+        [
+            _calculate_commutator_probability(comm, fragments, timestep, gridpoints)
+            for comm in commutators
+        ]
+    )
 
     # Normalize with fallback to uniform distribution
     total_prob = np.sum(probabilities)
@@ -319,10 +321,12 @@ def _setup_probability_distribution(
 
 def _setup_importance_probabilities(commutators, fragments, timestep, gridpoints):
     """Setup importance probabilities for all commutators (non-normalized)."""
-    return np.array([
-        _calculate_commutator_probability(comm, fragments, timestep, gridpoints)
-        for comm in commutators
-    ])
+    return np.array(
+        [
+            _calculate_commutator_probability(comm, fragments, timestep, gridpoints)
+            for comm in commutators
+        ]
+    )
 
 
 # =============================================================================
@@ -384,9 +388,7 @@ def _apply_sampling_method(commutators, fragments, config, timestep, gridpoints)
     probabilities = _setup_importance_probabilities(commutators, fragments, timestep, gridpoints)
 
     if method == "importance":
-        return _importance_sampling(
-            commutators, probabilities, sample_size, config.random_seed
-        )
+        return _importance_sampling(commutators, probabilities, sample_size, config.random_seed)
 
     if method == "top_k":
         return _top_k_sampling(commutators, probabilities, sample_size)
@@ -509,7 +511,9 @@ def _compute_expectation_values_with_cache(
         cache = _CommutatorCache() if use_cache else None
         state_id = state_idx if use_cache else None
 
-        expectation = _get_expval_state_with_cache(commutator_weight_pairs, fragments, state, cache, state_id)
+        expectation = _get_expval_state_with_cache(
+            commutator_weight_pairs, fragments, state, cache, state_id
+        )
         expectations.append(expectation)
 
         if cache is not None:
@@ -645,11 +649,11 @@ def _get_expval_state_with_cache(
             weight = weights[i] if weights is not None else 1.0
 
         applied_state = _apply_commutator_with_cache(commutator, fragments, state, cache, state_id)
-        
+
         # Skip if applied_state is _AdditiveIdentity (no contribution)
         if isinstance(applied_state, _AdditiveIdentity):
             continue
-            
+
         weighted_applied_state = weight * applied_state
         new_state += weighted_applied_state
 
@@ -769,6 +773,3 @@ def _group_sums_in_dict(term_dict: dict[tuple[Hashable], complex]) -> list[tuple
         grouped_comms[tail].add((head, coeff))
 
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
-
-
-

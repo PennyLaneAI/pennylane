@@ -22,7 +22,6 @@ from pennylane.labs.trotter_error import (
     perturbation_error,
     vibrational_fragments,
 )
-from pennylane.labs.trotter_error.realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum
 from pennylane.labs.trotter_error.product_formulas.error import (
     SamplingConfig,
     _apply_commutator_with_cache,
@@ -42,6 +41,7 @@ from pennylane.labs.trotter_error.product_formulas.error import (
     _top_k_sampling,
     _validate_fragments,
 )
+from pennylane.labs.trotter_error.realspace import RealspaceCoeffs, RealspaceOperator, RealspaceSum
 
 
 @pytest.mark.parametrize(
@@ -179,9 +179,6 @@ def test_cache_functionality():
     stats_after_clear = cache.get_stats()
     assert stats_after_clear["hits"] == 0
     assert stats_after_clear["misses"] == 0
-
-
-
 
 
 # =============================================================================
@@ -325,29 +322,21 @@ def test_apply_sampling_method():
     commutators = [(0,), (1,), (0, 1)]
 
     # Test random sampling
-    config_random = SamplingConfig(
-        sampling_method="random", sample_size=2, random_seed=42
-    )
+    config_random = SamplingConfig(sampling_method="random", sample_size=2, random_seed=42)
 
     sampled_comms, weights = _apply_sampling_method(commutators, frags, config_random, 0.1, 10)
     assert len(sampled_comms) == 2
     assert len(weights) == 2
 
     # Test importance sampling
-    config_importance = SamplingConfig(
-        sampling_method="importance", sample_size=2, random_seed=42
-    )
+    config_importance = SamplingConfig(sampling_method="importance", sample_size=2, random_seed=42)
 
-    sampled_comms, weights = _apply_sampling_method(
-        commutators, frags, config_importance, 0.1, 10
-    )
+    sampled_comms, weights = _apply_sampling_method(commutators, frags, config_importance, 0.1, 10)
     assert len(sampled_comms) == 2
     assert len(weights) == 2
 
     # Test top_k sampling
-    config_top_k = SamplingConfig(
-        sampling_method="top_k", sample_size=2
-    )
+    config_top_k = SamplingConfig(sampling_method="top_k", sample_size=2)
 
     sampled_comms, weights = _apply_sampling_method(commutators, frags, config_top_k, 0.1, 10)
     assert len(sampled_comms) == 2
@@ -363,9 +352,7 @@ def test_apply_sampling_method():
         SamplingConfig(sampling_method="unknown")
 
     # Test default sample_size (should use all commutators)
-    config_default = SamplingConfig(
-        sampling_method="random", sample_size=None, random_seed=42
-    )
+    config_default = SamplingConfig(sampling_method="random", sample_size=None, random_seed=42)
 
     sampled_comms, weights = _apply_sampling_method(commutators, frags, config_default, 0.1, 10)
     assert len(sampled_comms) == len(commutators)
@@ -459,7 +446,7 @@ def test_cache_error_handling():
 def test_cache_context_manager():
     """Test that cache works properly as a context manager."""
     cache_instance = None
-    
+
     with _CommutatorCache() as cache:
         cache_instance = cache
         # Add some data
@@ -491,7 +478,7 @@ def test_setup_probability_distribution():
 
     # Should be normalized (sum to 1)
     assert abs(np.sum(probs) - 1.0) < 1e-10
-    
+
     # Should have same length as commutators
     assert len(probs) == len(commutators)
 
@@ -506,7 +493,7 @@ def test_apply_sampling_strategy():
     # Test random method
     config = SamplingConfig(sampling_method="random", sample_size=2, random_seed=42)
     selected, weights = _apply_sampling_strategy(commutators, config)
-    
+
     assert len(selected) == 2
     assert len(weights) == 2
     assert all(w > 0 for w in weights)
@@ -515,7 +502,7 @@ def test_apply_sampling_strategy():
     config = SamplingConfig(sampling_method="importance", sample_size=2, random_seed=42)
     probabilities = np.array([0.1, 0.3, 0.6])
     selected, weights = _apply_sampling_strategy(commutators, config, probabilities)
-    
+
     assert len(selected) == 2
     assert len(weights) == 2
     assert all(w > 0 for w in weights)
@@ -523,7 +510,7 @@ def test_apply_sampling_strategy():
     # Test top_k method - requires probabilities
     config = SamplingConfig(sampling_method="top_k", sample_size=2)
     selected, weights = _apply_sampling_strategy(commutators, config, probabilities)
-    
+
     assert len(selected) == 2
     assert len(weights) == 2
     assert all(w == 1.0 for w in weights)
@@ -592,7 +579,7 @@ def test_validate_fragments():
     """Test _validate_fragments function."""
     # Create test product formula and fragments
     frag_labels = [0, 1, 1, 0]
-    frag_coeffs = [1/2, 1/2, 1/2, 1/2]
+    frag_coeffs = [1 / 2, 1 / 2, 1 / 2, 1 / 2]
     pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
 
     n_modes = 2
@@ -671,40 +658,40 @@ def test_apply_commutator_with_cache():
         r_state.random(size=(n_modes, n_modes)),
     ]
     frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
-    
+
     gridpoints = 5
     state = HOState(n_modes, gridpoints, {(0, 0): 1})
-    
+
     # Test without cache
     commutator = (0, 1)
     result1 = _apply_commutator_with_cache(commutator, frags, state)
     assert result1 is not None
-    
+
     # Test with cache
     cache = _CommutatorCache(max_size=10)
     result2 = _apply_commutator_with_cache(commutator, frags, state, cache, state_id=0)
     assert result2 is not None
-    
+
     # Cache should now contain the result
     assert len(cache) == 1
     stats = cache.get_stats()
     assert stats["misses"] == 1
     assert stats["hits"] == 0
-    
+
     # Test cache hit
     result3 = _apply_commutator_with_cache(commutator, frags, state, cache, state_id=0)
     assert result3 is not None
-    
+
     # Should be a cache hit
     stats = cache.get_stats()
     assert stats["hits"] == 1
     assert stats["misses"] == 1
-    
+
     # Test different commutator (cache miss)
     commutator2 = (1, 0)
     result4 = _apply_commutator_with_cache(commutator2, frags, state, cache, state_id=0)
     assert result4 is not None
-    
+
     stats = cache.get_stats()
     assert stats["hits"] == 1
     assert stats["misses"] == 2
@@ -731,38 +718,38 @@ def test_get_expval_state_with_cache():
         r_state.random(size=(n_modes, n_modes)),
     ]
     frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
-    
+
     gridpoints = 5
     state = HOState(n_modes, gridpoints, {(0, 0): 1})
-    
+
     commutators = [(0,), (1,), (0, 1)]
-    
+
     # Test without cache
     result1 = _get_expval_state_with_cache(commutators, frags, state)
     assert isinstance(result1, (float, complex))
-    
+
     # Test with cache
     cache = _CommutatorCache(max_size=10)
     result2 = _get_expval_state_with_cache(commutators, frags, state, cache, state_id=0)
     assert isinstance(result2, (float, complex))
-    
+
     # Cache should contain results for each commutator
     assert len(cache) == 3
-    
+
     # Test with weights
     weights = [1.0, 2.0, 0.5]
     result3 = _get_expval_state_with_cache(commutators, frags, state, weights=weights)
     assert isinstance(result3, (float, complex))
-    
+
     # Test with (commutator, weight) tuples
     commutator_weight_pairs = [((0,), 1.0), ((1,), 2.0), ((0, 1), 0.5)]
     result4 = _get_expval_state_with_cache(commutator_weight_pairs, frags, state)
     assert isinstance(result4, (float, complex))
-    
+
     # Test empty commutators
     result5 = _get_expval_state_with_cache([], frags, state)
     assert result5 == 0.0
-    
+
     # Test with None cache
     result6 = _get_expval_state_with_cache(commutators, frags, state, cache=None, state_id=None)
     assert isinstance(result6, (float, complex))
@@ -780,16 +767,13 @@ def test_compute_expectation_values_with_cache():
         r_state.random(size=(n_modes, n_modes)),
     ]
     frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
-    
+
     gridpoints = 5
-    states = [
-        HOState(n_modes, gridpoints, {(0, 0): 1}),
-        HOState(n_modes, gridpoints, {(1, 1): 1})
-    ]
-    
+    states = [HOState(n_modes, gridpoints, {(0, 0): 1}), HOState(n_modes, gridpoints, {(1, 1): 1})]
+
     commutators = [(0,), (1,), (0, 1)]
     weights = [1.0, 1.0, 1.0]
-    
+
     # Test with caching enabled
     results_with_cache = _compute_expectation_values_with_cache(
         commutators, weights, frags, states, use_cache=True
@@ -797,7 +781,7 @@ def test_compute_expectation_values_with_cache():
     assert isinstance(results_with_cache, list)
     assert len(results_with_cache) == 2
     assert all(isinstance(r, (float, complex)) for r in results_with_cache)
-    
+
     # Test with caching disabled
     results_without_cache = _compute_expectation_values_with_cache(
         commutators, weights, frags, states, use_cache=False
@@ -805,24 +789,24 @@ def test_compute_expectation_values_with_cache():
     assert isinstance(results_without_cache, list)
     assert len(results_without_cache) == 2
     assert all(isinstance(r, (float, complex)) for r in results_without_cache)
-    
+
     # Results should be similar (within numerical precision)
     for r1, r2 in zip(results_with_cache, results_without_cache):
         assert abs(r1 - r2) < 1e-10
-    
+
     # Test with empty states
     empty_results = _compute_expectation_values_with_cache(
         commutators, weights, frags, [], use_cache=True
     )
-    assert empty_results == []
-    
+    assert not empty_results
+
     # Test with empty commutators
     empty_comm_results = _compute_expectation_values_with_cache(
         [], [], frags, states, use_cache=True
     )
     assert len(empty_comm_results) == 2
     assert all(r == 0.0 for r in empty_comm_results)
-    
+
     # Test with different weights
     different_weights = [2.0, 0.5, 1.5]
     weighted_results = _compute_expectation_values_with_cache(
@@ -830,7 +814,7 @@ def test_compute_expectation_values_with_cache():
     )
     assert isinstance(weighted_results, list)
     assert len(weighted_results) == 2
-    
+
     # Results should be different due to different weights
     for r1, r2 in zip(results_with_cache, weighted_results):
         assert abs(r1 - r2) > 1e-10  # Should be significantly different
