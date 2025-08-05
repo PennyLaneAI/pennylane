@@ -447,6 +447,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug in `~.for_loop` that caused loops to be entered even when `start==stop`.
+  [(#8026)](https://github.com/PennyLaneAI/pennylane/pull/8026)
+
 * Plxpr primitives now only return dynamically shaped arrays if their outputs
   actually have dynamic shapes.
   [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
