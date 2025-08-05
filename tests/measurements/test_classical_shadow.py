@@ -985,7 +985,7 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
         wires, basis=circuit_basis, shots=shots, interface=interface, device=device
     )
     bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
-    new_bits, new_recipes = circuit()
+    new_bits, new_recipes = circuit()  # pylint: disable=unpacking-non-sequence
 
     # test that the recipes follow a rough uniform distribution
     ratios = np.unique(recipes, return_counts=True)[1] / (wires * shots)
@@ -1024,7 +1024,7 @@ def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recip
     # high number of shots to prevent true negatives
     shots = 1000
 
-    dev = DefaultQubitLegacy(wires=wires, shots=shots)
+    dev = DefaultQubitLegacy(wires=wires, shots=shots, seed=seed)
 
     @qml.qnode(dev, interface=interface)
     def circuit():
