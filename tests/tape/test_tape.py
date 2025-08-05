@@ -588,16 +588,6 @@ class TestResourceEstimation:
         assert specs2["num_observables"] == 2
         assert specs2["num_trainable_params"] == 6
 
-    @pytest.mark.parametrize("compute_depth", [True, False])
-    def test_specs_compute_depth(self, make_tape, compute_depth):
-        """Test that depth is skipped if compute_depth is False"""
-        tape = make_tape
-
-        specs = tape.compute_specs(compute_depth=compute_depth)
-
-        assert len(specs) == 4
-        assert specs["resources"].depth == (3 if compute_depth else None)
-
 
 class TestParameters:
     """Tests for parameter processing, setting, and manipulation"""

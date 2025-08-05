@@ -18,6 +18,7 @@ from copy import copy
 from typing import Any, Literal
 
 import pennylane as qml
+from pennylane.resource.resource import specs_from_tape
 
 
 def _get_absolute_import_path(fn):
@@ -204,8 +205,7 @@ def specs(
 
         for tape in batch:
 
-            tape_specs = tape.compute_specs(compute_depth=compute_depth)
-            info = copy(tape_specs)
+            info = copy(tape.specs) if compute_depth else specs_from_tape(tape)
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires
             info["device_name"] = qnode.device.name

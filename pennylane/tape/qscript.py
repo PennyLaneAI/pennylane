@@ -1128,25 +1128,8 @@ class QuantumScript:
         gate_sizes:
         {1: 4, 2: 2}
         """
-        return self.compute_specs()
-
-    def compute_specs(self, compute_depth: bool = True) -> SpecsDict[str, Any]:
-        """
-        Compute the specifications of the quantum script.
-
-        Similar to the :meth:`~.specs` property, but allows for the depth of the quantum script to be
-        optionally computed. If the depth is not computed, it will not be included in the returned
-        specifications.
-
-        Args:
-            compute_depth (bool): Whether to compute the depth of the quantum script.
-
-        Returns:
-            SpecsDict[str, Any]: A dictionary containing the specifications of the quantum script.
-        """
-
         if self._specs is None:
-            resources = qml.resource.resource._count_resources(self, compute_depth=compute_depth)
+            resources = qml.resource.resource._count_resources(self)
             algo_errors = qml.resource.error._compute_algo_error(self)
 
             self._specs = SpecsDict(
