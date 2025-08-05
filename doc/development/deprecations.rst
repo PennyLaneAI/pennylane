@@ -9,6 +9,12 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Support for the ``tensorflow`` interface has been deprecated and will be removed in v0.44.
+  Instead we recommended migrating to ``jax`` or ``torch`` for machine learning applications.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
   :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter
