@@ -294,6 +294,8 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             (qml.Snapshot(), ["─|Snap|", "─|Snap|", "─|Snap|", "─|Snap|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
             (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
+            (qml.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰─"]),
+            (qml.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰─"]),
         ],
     )
     def test_add_obj(self, op, out):
@@ -674,6 +676,14 @@ single_op_tests_data = [
             control_values=[False],
         ),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─├●─┤  \n4: ─╰Y─┤  ",
+    ),
+    (
+        qml.TemporaryAND([3, 0, 2], control_values=(1, 0)),
+        "3: ─╭●─┤  \n0: ─├○─┤  \n2: ─╰──┤  ",
+    ),
+    (
+        qml.adjoint(qml.TemporaryAND([3, 0, 2], control_values=(0, 1))),
+        "3: ──○╮─┤  \n0: ──●┤─┤  \n2: ───╯─┤  ",
     ),
 ]
 
