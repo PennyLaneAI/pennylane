@@ -143,7 +143,7 @@ State Preparation:
 
     ~ResourceMPSPrep
     ~ResourceQROMStatePreparation
-    
+
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
