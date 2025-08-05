@@ -164,6 +164,8 @@ def test_decorator():
 
     @dataclass(frozen=True)
     class PrintModule(passes.ModulePass):
+        """A pass that prints the module"""
+
         name = "print-module"
 
         def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
@@ -209,6 +211,7 @@ def test_integration_for_transform_interpreter(capsys):
 
 
 def test_callback_integration(capsys):
+    """Test that the callback mechanism works with the transform interpreter"""
 
     @compiler_transform
     @dataclass(frozen=True)
@@ -241,6 +244,132 @@ def test_callback_integration(capsys):
     pipeline.apply(ctx, program())
     captured = capsys.readouterr()
     assert captured.out.strip() == "hello world"
+
+
+def test_transform_sequence_multiple_passes(capsys):
+    """Test that we can inspect the circuit after each transform pass"""
+
+    @compiler_transform
+    @dataclass(frozen=True)
+    class _(passes.ModulePass):
+        name = "first-pass"
+
+        # pylint: disable=arguments-renamed, redefined-outer-name
+        def apply(self, _ctx, module):
+            print("=== After First Pass ===")
+            print(module)
+
+    @compiler_transform
+    @dataclass(frozen=True)
+    class _(passes.ModulePass):
+        name = "second-pass"
+
+        # pylint: disable=arguments-renamed, redefined-outer-name
+        def apply(self, _ctx, module):
+            print("=== After Second Pass ===")
+            print(module)
+
+    @xdsl_from_docstring
+    def program():
+        """
+        builtin.module {
+          builtin.module {
+            transform.named_sequence @__transform_main(%arg0 : !transform.op<"builtin.module">) {
+              %0 = transform.apply_registered_pass "first-pass" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              %1 = transform.apply_registered_pass "second-pass" to %0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              transform.yield %1 : !transform.op<"builtin.module">
+              func.func @foo() -> () {
+                func.return
+              }
+            }
+          }
+        }
+        """
+
+    ctx = Context()
+    ctx.load_dialect(builtin.Builtin)
+    ctx.load_dialect(transform.Transform)
+
+    pipeline = xdsl.passes.PassPipeline((ApplyTransformSequence(),))
+    pipeline.apply(ctx, program())
+
+    captured = capsys.readouterr().out
+
+    assert "=== After First Pass ===" in captured
+    assert "func.func @foo()" in captured
+    assert "=== After Second Pass ===" in captured
+
+
+def test_callback_prints_module_after_each_pass(capsys):
+    """Test that the callback prints the module after each pass"""
+
+    # pylint: disable=redefined-outer-name
+    def print_between_passes(_, module, __):
+        print("=== Between Pass ===")
+        print(module)
+
+    register_callback(print_between_passes)
+
+    @xdsl_from_docstring
+    def program_2_passes():
+        """
+        builtin.module {
+          builtin.module @module_foo {
+            transform.named_sequence @__transform_main(%arg0 : !transform.op<"builtin.module">) {
+              %0 = transform.apply_registered_pass "xdsl-cancel-inverses" to %arg0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              %1 = transform.apply_registered_pass "xdsl-merge-rotations" to %0 : (!transform.op<"builtin.module">) -> !transform.op<"builtin.module">
+              transform.yield %1 : !transform.op<"builtin.module">
+              func.func public @foo() -> (tensor<2xf64>) attributes {diff_method = "parameter-shift", llvm.linkage = #llvm.linkage<internal>, qnode} {
+                %2 = "stablehlo.constant"() <{value = dense<0> : tensor<i64>}> : () -> tensor<i64>
+                %3 = tensor.extract %2[] : tensor<i64>
+                quantum.device shots(%3) ["/home/pietropaolo.frisoni/anaconda3/envs/PennyLaneNew/lib/python3.11/site-packages/catalyst/utils/../lib/librtd_null_qubit.so", "NullQubit", "{'track_resources': False}"]
+                %4 = "stablehlo.constant"() <{value = dense<1> : tensor<i64>}> : () -> tensor<i64>
+                %5 = quantum.alloc(1) : !quantum.reg
+                %6 = tensor.extract %2[] : tensor<i64>
+                %7 = quantum.extract %5[%6] : !quantum.reg -> !quantum.bit
+                %8 = "stablehlo.constant"() <{value = dense<1.000000e+00> : tensor<f64>}> : () -> tensor<f64>
+                %9 = tensor.extract %8[] : tensor<f64>
+                %10 = quantum.custom "RX"(%9) %7 : !quantum.bit
+                %11 = tensor.extract %8[] : tensor<f64>
+                %12 = quantum.custom "RX"(%11) %10 : !quantum.bit
+                %13 = quantum.custom "Hadamard"() %12 : !quantum.bit
+                %14 = quantum.custom "Hadamard"() %13 : !quantum.bit
+                %15 = tensor.extract %1[] : tensor<i64>
+                %16 = quantum.insert %5[%15], %14 : !quantum.reg, !quantum.bit
+                %17 = quantum.compbasis qreg %16 : !quantum.obs
+                %18 = quantum.probs %17 : tensor<2xf64>
+                quantum.dealloc %16 : !quantum.reg
+                quantum.device_release
+                func.return %18 : tensor<2xf64>
+              }
+            }
+          }
+        }
+        """
+
+    ctx = Context()
+    ctx.load_dialect(builtin.Builtin)
+    pipeline = xdsl.passes.PassPipeline((ApplyTransformSequence(),))
+    pipeline.apply(ctx, program_2_passes())
+
+    out = capsys.readouterr().out
+
+    # We split the output for each callback execution
+    # (skipping the first part before the first callback)
+    printed_modules = out.split("=== Between Pass ===")[1:]
+
+    assert len(printed_modules) == 2, "Callback should have been called twice (after each pass)."
+
+    # callback after cancel-inverses
+    assert 'quantum.custom "RX"' in printed_modules[0]
+    assert 'quantum.custom "Hadamard"' not in printed_modules[0]
+
+    # callback after merge-rotations
+    # We expect an `arith.addf` if rotations were merged
+    assert "arith.addf" in printed_modules[1], "Expected merged RX gates into a single rotation"
+    assert 'quantum.custom "RX"' in printed_modules[1]
+
+    assert printed_modules[0] != printed_modules[1], "IR should differ between passes"
 
 
 if __name__ == "__main__":
