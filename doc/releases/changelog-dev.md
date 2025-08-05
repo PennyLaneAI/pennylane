@@ -58,6 +58,7 @@
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
   [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
+  [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
   
   The included templates are:
 
@@ -90,6 +91,8 @@
   * :class:`~.StatePrep`
 
   * :class:`~.TrotterProduct`
+
+  * :class:`~.QROM`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
@@ -203,6 +206,10 @@
   `ResourceIntegerComparator` and `ResourceRegisterComparator` templates.
   [(#7857)](https://github.com/PennyLaneAI/pennylane/pull/7857)
 
+* Added state of the art resources for the `ResourceUniformStatePrep`,
+  and `ResourceAliasSampling` templates.
+  [(#7883)](https://github.com/PennyLaneAI/pennylane/pull/7883)
+
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
 
@@ -214,6 +221,9 @@
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 
 <h3>Breaking changes 💔</h3>
+
+* Remove support for Python 3.10 and adds support for 3.13.
+  [(#7935)](https://github.com/PennyLaneAI/pennylane/pull/7935)
 
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
@@ -417,6 +427,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Updated the code examples in the documentation of :func:`~.specs`.
+  [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
+
 * Clarifies the use case for `Operator.pow` and `Operator.adjoint`.
   [(#7999)](https://github.com/PennyLaneAI/pennylane/pull/7999)
 
@@ -429,7 +442,14 @@
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
+* Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
+  [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
+
 <h3>Bug fixes 🐛</h3>
+
+* Plxpr primitives now only return dynamically shaped arrays if their outputs
+  actually have dynamic shapes.
+  [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
 
 * Fixes an issue with tree-traversal and non-sequential wire orders.
   [(#7991)](https://github.com/PennyLaneAI/pennylane/pull/7991)
