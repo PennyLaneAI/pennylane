@@ -133,7 +133,8 @@ def perturbation_error(
             Default value is set to "state".
 
     Returns:
-        List[float]: the list of expectation values computed from the Trotter error operator and the input states
+        List[Dict[int, float]]: the list of dictionaries of expectation values computed from the Trotter error operator and the input states. 
+            The dictionary is indexed by the commutator orders and its value is the error obtained from the commutators of that order.
 
     **Example**
 
@@ -161,11 +162,7 @@ def perturbation_error(
     >>>
     >>> errors = perturbation_error(pf, frags, [state1, state2], order=3)
     >>> print(errors)
-    [0.9189251160920877j, 4.797716682426847j]
-    >>>
-    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3, num_workers=4, backend="mp_pool", parallel_mode="commutator")
-    >>> print(errors)
-    [0.9189251160920877j, 4.797716682426847j]
+    [{3: 0.9189251160920876j}, {3: 4.7977166824268505j}]
     """
 
     if not product_formula.fragments.issubset(fragments.keys()):
