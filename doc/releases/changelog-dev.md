@@ -3,6 +3,10 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
+  This makes the expensive depth computation performed by `qml.specs` optional.
+  [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
+
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
@@ -345,6 +349,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Removed unnecessary execution tests along with accuracy validation in `tests/ops/functions/test_map_wires.py`.
+  [(#8032)](https://github.com/PennyLaneAI/pennylane/pull/8032)
 
 * Added a new `all-tests-passed` gatekeeper job to `interface-unit-tests.yml` to ensure all test
   jobs complete successfully before triggering downstream actions. This reduces the need to
