@@ -105,16 +105,22 @@ class TestMapWiresTapes:
 
         with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
+            qml.expval(op=qml.PauliZ(1))
 
         tape = QuantumScript.from_queue(q_tape, shots=shots)
         tape.trainable_params = [0, 2]
 
         [s_tape], _ = qml.map_wires(tape, wire_map=wire_map)
-        assert len(s_tape) == 1
+        assert len(s_tape) == 2
         assert s_tape.trainable_params == [0, 2]
         assert s_tape.shots == tape.shots
+        # check ops
         s_op = s_tape[0]
         qml.assert_equal(s_op, mapped_op)
+        # check observables
+        s_obs = s_tape.observables
+        assert len(s_obs) == 1
+        assert s_obs[0].wires == Wires(wire_map[1])
 
     def test_map_wires_batch(self):
         """Test that map_wires can be applied to a batch of tapes."""
