@@ -486,7 +486,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             raise DecompositionError(
                 f"Decomposition not found for {op_names} to the gate set {set(self._gate_set_weights)}"
             )
-        return DecompGraphSolution(visitor, self._graph, self._all_op_indices)
+        return DecompGraphSolution(visitor, self._graph, self._all_op_indices, self._op_to_op_nodes)
 
 
 class DecompGraphSolution:
@@ -496,10 +496,12 @@ class DecompGraphSolution:
         self,
         visitor: _DecompositionSearchVisitor,
         graph: rx.PyDiGraph,
-        all_op_indices: dict[CompressedResourceOp, int],
+        all_op_indices: dict[_OperatorNode, int],
+        op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]],
     ) -> None:
         self._visitor = visitor
         self._graph = graph
+        self._op_to_op_nodes = op_to_op_nodes
         self._all_op_indices = all_op_indices
 
     def _all_solutions(
