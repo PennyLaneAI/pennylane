@@ -18,9 +18,6 @@ hardware device (or emulator)
 from dataclasses import replace
 from pathlib import Path
 
-# ToDo: see if we can get rid of this in favour of backend.device.preprocess
-from pennylane_lightning.lightning_qubit.lightning_qubit import stopping_condition_shots
-
 import pennylane as qml
 from pennylane.devices.capabilities import DeviceCapabilities, validate_mcm_method
 from pennylane.devices.device_api import Device, _default_mcm_method
@@ -32,6 +29,7 @@ from pennylane.devices.preprocess import (
     validate_observables,
 )
 from pennylane.ftqc import (
+    GraphStatePrep,
     convert_to_mbqc_formalism,
     convert_to_mbqc_gateset,
     diagonalize_mcms,
@@ -97,21 +95,17 @@ class FTQCQubit(Device):
             name=f"{self.name}.{self.backend.name}",
         )
 
-        # set up for backend execution (including MCM handling)
+        # set up for backend execution (MCM handling, decomposing GraphStatePrep)
         if self.backend.diagonalize_mcms:
             program.add_transform(diagonalize_mcms)
-
-        # backend_program, _ = self.backend.device.preprocess()
-
         program.add_transform(
             qml.devices.preprocess.mid_circuit_measurements,
             device=self,
             mcm_config=execution_config.mcm_config,
         )
-
         program.add_transform(
             qml.devices.preprocess.decompose,
-            stopping_condition=stopping_condition_shots,
+            stopping_condition=lambda op: not isinstance(op, GraphStatePrep),
             skip_initial_state_prep=True,
             name=self.name,
         )
@@ -141,17 +135,19 @@ class FTQCQubit(Device):
         if config is None:
             config = ExecutionConfig()
 
-        if config.mcm_config.mcm_method is None:
-            # get mcm method - "device" if its an option, otherwise "one-shot"
-            default_mcm_method = _default_mcm_method(self.backend.capabilities, shots_present=True)
-            new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
-            config = replace(config, mcm_config=new_mcm_config)
+        # get mcm method - "device" if its an option, otherwise "one-shot"
+        default_mcm_method = _default_mcm_method(self.backend.capabilities, shots_present=True)
+
+        if config.mcm_config.mcm_method not in [None, default_mcm_method]:
+            raise ValueError(
+                f"The {self.backend.name} FTQC backend only supports {default_mcm_method} for handling mid-circuit measurements, but {config.mcm_config.mcm_method} was specified."
+            )
+
+        new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
+        config = replace(config, mcm_config=new_mcm_config)
         validate_mcm_method(
             self.backend.capabilities, config.mcm_config.mcm_method, shots_present=True
         )
-
-        if config.mcm_config.mcm_method == "deferred":
-            raise ValueError("Please no deferred measurements, thanks")
 
         return config
 

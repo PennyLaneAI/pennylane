@@ -79,7 +79,6 @@ def test_executing_arbitrary_circuit(backend_cls):
 
     ftqc_circ = qml.qnode(device=dev)(circ)
     ftqc_circ = qml.set_shots(ftqc_circ, shots=1500)
-    ftqc_circ = qml.set_shots(ftqc_circ, shots=1500)
 
     ref_circ = qml.qnode(device=qml.device("lightning.qubit", wires=2))(circ)
 
