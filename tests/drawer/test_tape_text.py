@@ -737,6 +737,31 @@ class TestLayering:
 
         assert tape_text(_tape, wire_order=[0, 1, 2]) == expected
 
+    def test_multiple_elbows(self):
+        """Test that multiple elbows are drawn correctly."""
+        _tape = qml.tape.QuantumScript(
+            [
+                qml.TemporaryAND(["a", "b", "c"]),
+                qml.adjoint(qml.TemporaryAND(["f", "d", "e"])),
+                qml.adjoint(qml.TemporaryAND(["a", "d", "b"], control_values=(0, 0))),
+                qml.TemporaryAND(["e", "h", "f"], control_values=(0, 1)),
+            ]
+        )
+        expected = (
+            "a: ─╭●───○╮─┤  \n"
+            "b: ─├●────┤─┤  \n"
+            "c: ─╰─────│─┤  \n"
+            "d: ──●╮──○╯─┤  \n"
+            "e: ───┤─╭○──┤  \n"
+            "f: ──●╯─├───┤  \n"
+            "g: ─────│───┤  \n"
+            "h: ─────╰●──┤  "
+        )
+        out = tape_text(
+            _tape, wire_order=["a", "b", "c", "d", "e", "f", "g", "h"], show_all_wires=True
+        )
+        assert out == expected
+
 
 tape_matrices = qml.tape.QuantumScript(
     ops=[qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1)), qml.QubitUnitary(np.eye(2), wires=0)],
