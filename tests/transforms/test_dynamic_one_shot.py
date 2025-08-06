@@ -157,9 +157,8 @@ def test_multi_wire_sample_shape_broadcasting():
     )
 
     # Result should have fill_in_value where invalid
-    expected = np.where(
-        is_valid_mixed.reshape(-1, 1, 1), samples, fill_in_value
-    )  # pylint: disable=too-many-function-args
+    # pylint: disable=too-many-function-args
+    expected = np.where(is_valid_mixed.reshape(-1, 1, 1), samples, fill_in_value)
     assert result_mixed.shape == samples.shape
     assert np.all(result_mixed == expected)
 
