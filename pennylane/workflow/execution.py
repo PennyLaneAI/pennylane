@@ -218,7 +218,7 @@ def execute(
 
         from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
 
-        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning)
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=4)
 
     config = qml.devices.ExecutionConfig(
         interface=interface,
