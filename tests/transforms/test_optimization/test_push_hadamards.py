@@ -21,6 +21,7 @@ import pennylane as qml
 from pennylane.tape import QuantumScript
 
 
+@pytest.mark.external
 class TestPushHadamards:
 
     @pytest.mark.parametrize(
