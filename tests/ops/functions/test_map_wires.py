@@ -117,8 +117,8 @@ class TestMapWiresTapes:
         qml.assert_equal(s_op, mapped_op)
 
     @pytest.mark.parametrize("shots", [None, 5000])
-    def test_execute_mapped_tape(self, shots):
-        """Test the execution of a mapped tape."""
+    def test_mapped_tape_attributes(self, shots):
+        """Test the attributes of a mapped tape."""
         dev = qml.device("default.qubit", wires=5)
         with qml.queuing.AnnotatedQueue() as q_tape:
             build_op()
