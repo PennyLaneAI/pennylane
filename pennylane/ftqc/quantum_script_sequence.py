@@ -19,9 +19,36 @@ FTQC/MBQC device prototype.
 import copy
 from functools import cached_property
 
-import pennylane as qml
+from pennylane.devices.preprocess import null_postprocessing
+from pennylane.ftqc import RotXZX
 from pennylane.measurements import Shots
+from pennylane.ops import RZ
+from pennylane.ops.functions import map_wires
 from pennylane.tape.qscript import QuantumScript
+from pennylane.transforms import transform
+
+
+@transform
+def split_at_non_clifford_gates(tape):
+    """The most basic implementation to ensure that we flush the buffer before
+    each non-Clifford gate. Pays no attention to wires/commutation, and splits
+    the tapes up more than necessary, but the logic is very simple."""
+    all_operations = [[]]
+
+    for op in tape.operations:
+        # if its a non-Clifford gate, and there are already ops in the list, add a new list
+        if isinstance(op, (RotXZX, RZ)) and all_operations[-1]:
+            all_operations.append([])
+        all_operations[-1].append(op)
+
+    tapes = []
+    for ops_list in all_operations[:-1]:
+        tapes.append(tape.copy(operations=ops_list, measurements=[]))
+    tapes.append(tape.copy(operations=all_operations[-1]))
+
+    return [
+        QuantumScriptSequence(tapes),
+    ], null_postprocessing
 
 
 class QuantumScriptSequence:
@@ -111,7 +138,7 @@ class QuantumScriptSequence:
         return [tape.operations for tape in self.tapes]
 
     @cached_property
-    def wires(self) -> qml.wires.Wires:
+    def wires(self):
         """Returns the wires used in the quantum script process
 
         Returns:
@@ -151,7 +178,7 @@ class QuantumScriptSequence:
             return self
         new_tapes = []
         for tape in self.tapes:
-            tapes, fn = qml.map_wires(tape, wire_map)
+            tapes, fn = map_wires(tape, wire_map)
             new_tapes.append(fn(tapes))
 
         return self.copy(tapes=new_tapes)

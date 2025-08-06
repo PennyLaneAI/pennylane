@@ -367,32 +367,7 @@ class TestQuantumScriptSequence:
 
 class TestBackendExecution:
 
-    def test_lightning_backend_execute_with_tapes(self, mocker):
-
-        tape = qml.tape.QuantumScript(
-            [H(0)], measurements=[qml.expval(X(0)), qml.expval(Y(0))], shots=3000
-        )
-        backend = LightningQubitBackend()
-        spy_qscript_execute = mocker.spy(backend, "_qscript_execute")
-        spy_sequence_execute = mocker.spy(backend, "_sequence_execute")
-        spy_simulate = mocker.spy(backend, "simulate")
-
-        results = backend.execute([tape, tape, tape], ExecutionConfig())
-
-        assert len(results) == 3
-
-        # all results are as expected - backend state is reset between tape executions
-        for res in results:
-            assert len(res) == 3000
-            assert np.allclose(np.average(res, axis=0), [1, 0], atol=0.05)
-
-        # executed 3 tapes of 3000 shots each
-        assert spy_qscript_execute.call_count == 3
-        assert spy_simulate.call_count == 3 * 3000
-
-        spy_sequence_execute.assert_not_called()
-
-    def test_lightning_backend_execution_with_tape_sequences(self, mocker):
+    def test_lightning_backend_execution_with_sequences(self, mocker):
 
         tape1 = qml.tape.QuantumScript([qml.RX(0.21, 0)])
         tape2 = qml.tape.QuantumScript([qml.RX(0.21, 0)])
@@ -403,24 +378,20 @@ class TestBackendExecution:
         sequence = QuantumScriptSequence([tape1, tape2, tape3], shots=3000)
 
         backend = LightningQubitBackend()
-        spy_qscript_execute = mocker.spy(backend, "_qscript_execute")
-        spy_sequence_execute = mocker.spy(backend, "_sequence_execute")
         spy_simulate = mocker.spy(backend, "simulate")
 
         results = backend.execute([sequence, sequence, sequence], ExecutionConfig())
 
         assert len(results) == 3
 
-        # all results are as expected - backend state is reset between tape executions
+        # all results are as expected - backend state is correctly maintained during a
+        # sequence execution and reset between executions
         for res in results:
             assert len(res) == 3000
             assert np.allclose(np.average(res, axis=0), [-np.sin(0.63), np.cos(0.63)], atol=0.05)
 
         # executed 3 sequences of 3 segments, with 3000 shots each
-        assert spy_sequence_execute.call_count == 3
         assert spy_simulate.call_count == 3 * 3 * 3000
-
-        spy_qscript_execute.assert_not_called()
 
     def test_null_qubit_backend_execution(self):
         """Test execution of QuantumScriptSequences succeeds with the null.qubit
