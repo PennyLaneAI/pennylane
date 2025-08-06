@@ -268,7 +268,9 @@
 <h3>Deprecations 👋</h3>
 
 * Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in Pennylane v0.44.
-  Instead, we recommended migration to ``jax`` or ``torch`` interfaces for machine learning applications.
+  Future versions of PennyLane are not guaranteed to work with TensorFlow.
+  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` for
+  machine learning applications to benefit from enhanced support and features.
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
 
 * Providing `num_steps` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,

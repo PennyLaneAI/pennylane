@@ -6,8 +6,9 @@ TensorFlow interface
 .. warning::
 
     Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in Pennylane v0.44.
+    Future versions of PennyLane are not guaranteed to work with TensorFlow.
     Instead, we recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
-    machine learning applications.
+    machine learning applications to benefit from enhanced support and features.
 
 In order to use PennyLane in combination with TensorFlow, we have to generate TensorFlow-compatible
 quantum nodes. Such a QNode can be created explicitly using the ``interface='tf'`` keyword in the
