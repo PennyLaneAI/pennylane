@@ -171,8 +171,6 @@ def _single_point(molecule, method="rhf"):
     ]
     spin = int((molecule.mult - 1) / 2)
     mol = pyscf.gto.Mole(atom=geom, symmetry="C1", spin=spin, charge=molecule.charge, unit="Bohr")
-    # pyscf.lib.num_threads(20)
-    print(f"Using {pyscf.lib.num_threads()} threads for PySCF calculations.")
     mol.basis = molecule.basis_name
     mol.build()
     if method == "rhf":
