@@ -3,6 +3,10 @@
 
 <h3>New features since last release</h3>
 
+* The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
+  This makes the expensive depth computation performed by `qml.specs` optional.
+  [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
+
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
