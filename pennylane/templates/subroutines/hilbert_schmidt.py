@@ -106,8 +106,8 @@ class HilbertSchmidt(Operation):
     @classmethod
     def _primitive_bind_call(cls, V, U, **kwargs):  # kwarg is id
         # pylint: disable=arguments-differ
-        U = (U,) if isinstance(U, (Operator)) or is_abstract(U) else U
-        V = (V,) if isinstance(V, (Operator)) or is_abstract(V) else V
+        U = (U,) if isinstance(U, Operator) or is_abstract(U) else U
+        V = (V,) if isinstance(V, Operator) or is_abstract(V) else V
         num_v_ops = len(V)
         return cls._primitive.bind(*V, *U, num_v_ops=num_v_ops, **kwargs)
 

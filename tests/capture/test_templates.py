@@ -486,7 +486,7 @@ class TestModifiedTemplates:
 
         U = qml.Hadamard(0)
         V = qml.RZ(v_params[0], wires=1)
-        assert qml.equal(q.queue[0], template(V, U))
+        assert qml.equal(q.queue[0], template(V, U)) is True
 
     @pytest.mark.parametrize("template", [qml.HilbertSchmidt, qml.LocalHilbertSchmidt])
     def test_hilbert_schmidt_multiple_ops(self, template):
@@ -523,7 +523,7 @@ class TestModifiedTemplates:
 
         U = [qml.Hadamard(0), qml.Hadamard(1)]
         V = [qml.RZ(v_params[0], wires=2), qml.RX(v_params[1], wires=3)]
-        assert qml.equal(q.queue[0], template(V, U))
+        assert qml.equal(q.queue[0], template(V, U)) is True
 
     @pytest.mark.parametrize("template", [qml.MERA, qml.MPS, qml.TTN])
     def test_tensor_networks(self, template):

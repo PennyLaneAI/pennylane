@@ -776,12 +776,12 @@ def _equal_hilbert_schmidt(
 
     U1 = qml.prod(*op1.hyperparameters["U"])
     U2 = qml.prod(*op2.hyperparameters["U"])
-    if not qml.equal(U1, U2, **equal_kwargs):
+    if qml.equal(U1, U2, **equal_kwargs) is False:
         return False
 
     V1 = qml.prod(*op1.hyperparameters["V"])
     V2 = qml.prod(*op2.hyperparameters["V"])
-    if not qml.equal(V1, V2, **equal_kwargs):
+    if qml.equal(V1, V2, **equal_kwargs) is False:
         return False
 
     return True
