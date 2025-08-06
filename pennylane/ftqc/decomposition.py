@@ -69,12 +69,11 @@ def convert_to_mbqc_formalism(tape):
     On this branch, the transform has been extended so it can be used directly on the experimental
     QuantumScriptSequence class"""
 
-    if tape.measurements:
-        if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
-            raise NotImplementedError(
-                "Transforming to the MBQC formalism is not implemented for circuits where the "
-                "final measurements have not been converted to a single samples measurement"
-            )
+    if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
+        raise NotImplementedError(
+            "Transforming to the MBQC formalism is not implemented for circuits where the "
+            "final measurements have not been converted to a single samples measurement"
+        )
 
     mp = tape.measurements[0]
     meas_wires = mp.wires if mp.wires else tape.wires
