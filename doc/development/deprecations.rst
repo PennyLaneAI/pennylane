@@ -120,12 +120,12 @@ for details on how to port your legacy code to the new system. The following fun
   - Removed in v0.40
 
 * :meth:`pennylane.pauli.PauliSentence.hamiltonian` and :meth:`pennylane.pauli.PauliWord.hamiltonian` have been removed. Instead, please use
-  :meth:`pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
+  :meth:`pennylane.pauli.PauliSentence.operation` and :meth:`pennylane.pauli.PauliWord.operation` respectively.
 
   - Deprecated in v0.39
   - Removed in v0.40
 
-* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
+* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`pennylane.operation.Operator.simplify`.
 
   - Deprecated in v0.39
   - Removed in v0.40
