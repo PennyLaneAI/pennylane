@@ -54,7 +54,7 @@ class HilbertSchmidt(Operation):
     Args:
         V (Operator or Iterable[Operator]): The operators that represent the unitary `V`.
         U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
-        id (str or None): Identifier for the operation.
+        id (str or None): Optional identifier for the operation.
 
     Raises:
         ValueError: ``V`` is not an Operator or an iterable of Operators.
@@ -275,7 +275,7 @@ class LocalHilbertSchmidt(HilbertSchmidt):
     Args:
         V (Operator or Iterable[Operator]): The operators that represent the approximate compiled unitary `V`.
         U (Operator or Iterable[Operator]): The operators that represent the unitary `U`.
-        id (str or None): Identifier for the operation.
+        id (str or None): Optional identifier for the operation.
 
     Raises:
         ValueError: ``V`` is not an Operator or an iterable of Operators.
