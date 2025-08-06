@@ -80,9 +80,9 @@ def _eval_unary_op(operand: any, operator: str, line: int):
     if operator == "!":
         return not operand
     if operator == "-":
-        return -operand
+        return -operand  # pylint: disable=invalid-unary-operand-type
     if operator == "~":
-        return ~operand
+        return ~operand  # pylint: disable=invalid-unary-operand-type
     # we shouldn't ever get this error if the parser did its job right
     raise SyntaxError(  # pragma: no covers
         f"Invalid operator {operator} encountered in unary expression " f"on line {line}."
@@ -368,7 +368,9 @@ class Context:
             return CONSTANTS[name]
         raise TypeError(f"Attempt to use undeclared variable {name} in {self.name}")
 
-    def update_var(self, value: any, name: str, operator: str, line: int):
+    def update_var(
+        self, value: any, name: str, operator: str, line: int
+    ):  # pylint: disable=too-many-branches
         """
         Updates a variable, or raises if it is constant.
         Args:
@@ -1452,7 +1454,9 @@ class QasmInterpreter:
         return ret
 
     @visit.register(ast.BinaryExpression)
-    def visit_binary_expression(self, node: ast.BinaryExpression, context: Context):
+    def visit_binary_expression(
+        self, node: ast.BinaryExpression, context: Context
+    ):  # pylint: disable=too-many-branches, too-many-return-statements
         """
         Registers a binary expression.
 

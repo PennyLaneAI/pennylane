@@ -15,6 +15,8 @@ r"""
 Contains the hardware-efficient ParticleConservingU2 template.
 """
 from pennylane import math
+
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, CRX, RZ
 

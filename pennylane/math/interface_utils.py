@@ -52,6 +52,7 @@ class Interface(Enum):
         return super().__eq__(interface)
 
     def __hash__(self):
+        # pylint: disable=useless-super-delegation
         return super().__hash__()
 
 

@@ -188,7 +188,7 @@ class AllocOp(IRDLOperation):
         if self.nqubits_attr is None:
             return
 
-        if self.nqubits_attr.value.data < 0:
+        if self.nqubits_attr.value.data < 0:  # pylint: disable=no-member
             raise VerifyException("Cannot allocate less than zero qubits.")
 
 
@@ -493,6 +493,7 @@ class GlobalPhaseOp(IRDLOperation):
 
     out_ctrl_qubits = var_result_def(QubitType)
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
         *,
@@ -646,7 +647,7 @@ class MeasureOp(IRDLOperation):
         if self.postselect is None:
             return
 
-        if self.postselect.value.data not in [0, 1]:
+        if self.postselect.value.data not in [0, 1]:  # pylint: disable=no-member
             raise VerifyException("'postselect' must be 0 or 1.")
 
 

@@ -84,6 +84,7 @@ def _get_abstract_measurement():
                 return f"AbstractMeasurement(n_wires={self.n_wires}, has_eigvals=True)"
             return f"AbstractMeasurement(n_wires={self.n_wires})"
 
+        # pylint: disable=missing-function-docstring
         def at_least_vspace(self):
             # TODO: investigate the proper definition of this method
             raise NotImplementedError
@@ -93,6 +94,7 @@ def _get_abstract_measurement():
             # TODO: investigate the proper definition of this method
             raise NotImplementedError
 
+        # pylint: disable=missing-function-docstring
         def update(self, **kwargs):
             # TODO: investigate the proper definition of this method
             raise NotImplementedError

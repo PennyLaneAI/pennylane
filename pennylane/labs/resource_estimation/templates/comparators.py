@@ -22,7 +22,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable=arguments-differ
+# pylint: disable=arguments-differ,unused-argument
 
 
 class ResourceSingleQubitComparator(ResourceOperator):

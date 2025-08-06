@@ -483,7 +483,9 @@ def construct_batch(
             postselect_mode=qnode.execute_kwargs["postselect_mode"],
             mcm_method=qnode.execute_kwargs["mcm_method"],
         )
-        execution_config = _make_execution_config(qnode, qnode.diff_method, mcm_config)
+        execution_config = _make_execution_config(
+            qnode, qnode.diff_method, mcm_config
+        )  # pylint: disable = protected-access
 
         ###### Resolution of the execution config ######
         execution_config = _resolve_execution_config(

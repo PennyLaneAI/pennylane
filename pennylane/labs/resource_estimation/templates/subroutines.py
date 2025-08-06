@@ -26,7 +26,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ,too-many-arguments,unused-argument,super-init-not-called
+# pylint: disable=arguments-differ,protected-access,too-many-arguments,unused-argument,super-init-not-called
 
 
 class ResourceOutOfPlaceSquare(ResourceOperator):
@@ -939,7 +939,7 @@ class ResourceSelect(ResourceOperator):
                 self.num_wires = len(self.wires) + num_ctrl_wires
 
     @classmethod
-    def default_resource_decomp(cls, cmpr_ops, **kwargs):
+    def default_resource_decomp(cls, cmpr_ops, **kwargs):  # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
@@ -1395,7 +1395,7 @@ class ResourceQROM(ResourceOperator):
         num_bit_flips=None,
         clean=True,
         select_swap_depth=None,
-    ) -> CompressedResourceOp:
+    ) -> CompressedResourceOp:  # pylint: disable=too-many-arguments
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 

@@ -17,7 +17,7 @@ This module contains the :class:`QutritDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in QubitDevice to minimize size of pull request
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-renamed
+# pylint: disable=bad-option-value,arguments-renamed
 import itertools
 
 import numpy as np

@@ -57,7 +57,7 @@ class MeasurementsFromSamplesPass(passes.ModulePass):
 
     name = "measurements-from-samples"
 
-    # pylint: disable=no-self-use
+    # pylint: disable=arguments-renamed,no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the measurements-from-samples pass."""
         shots = _get_static_shots_value_from_first_device_op(module)
@@ -77,6 +77,7 @@ class MeasurementsFromSamplesPass(passes.ModulePass):
 measurements_from_samples_pass = compiler_transform(MeasurementsFromSamplesPass)
 
 
+# pylint: disable=too-few-public-methods
 class MeasurementsFromSamplesPattern(RewritePattern):
     """Rewrite pattern base class for the ``measurements_from_samples`` transform, which replaces
     all terminal measurements in a program with a single :func:`pennylane.sample` measurement, and
@@ -370,6 +371,7 @@ class ExpvalAndVarPattern(MeasurementsFromSamplesPattern):
         shots (int): The number of shots (e.g. as retrieved from the DeviceInitOp).
     """
 
+    # pylint: disable=arguments-renamed
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
         self, matched_op: quantum.ExpvalOp | quantum.VarianceOp, rewriter: PatternRewriter, /
@@ -445,6 +447,7 @@ class ProbsPattern(MeasurementsFromSamplesPattern):
         shots (int): The number of shots (e.g. as retrieved from the DeviceInitOp).
     """
 
+    # pylint: disable=arguments-renamed
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, probs_op: quantum.ProbsOp, rewriter: PatternRewriter, /):
         """Match and rewrite for quantum.ProbsOp."""
@@ -505,6 +508,7 @@ class CountsPattern(MeasurementsFromSamplesPattern):
         shots (int): The number of shots (e.g. as retrieved from the DeviceInitOp).
     """
 
+    # pylint: disable=arguments-renamed
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, counts_op: quantum.CountsOp, rewriter: PatternRewriter, /):
         """Match and rewrite for quantum.CountsOp."""
@@ -523,6 +527,7 @@ class StatePattern(MeasurementsFromSamplesPattern):
         shots (int): The number of shots (e.g. as retrieved from the DeviceInitOp).
     """
 
+    # pylint: disable=arguments-renamed
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, state_op: quantum.StateOp, rewriter: PatternRewriter, /):
         """Match and rewrite for quantum.StateOp."""

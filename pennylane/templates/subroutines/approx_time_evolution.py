@@ -14,7 +14,7 @@
 r"""
 Contains the ApproxTimeEvolution template.
 """
-# pylint: disable-msg=protected-access
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import copy
 
 from pennylane.operation import Operation

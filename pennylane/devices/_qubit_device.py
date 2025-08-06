@@ -18,7 +18,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ,too-many-branches,no-member,arguments-renamed
+# pylint: disable=arguments-differ,too-many-branches,no-member,bad-option-value,arguments-renamed
 # pylint: disable=too-many-arguments
 import abc
 import inspect

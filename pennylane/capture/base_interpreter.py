@@ -18,7 +18,7 @@ from collections.abc import Callable, Sequence
 from copy import copy
 from functools import partial, wraps
 
-# pylint: disable=no-self-use
+# pylint: disable=no-self-use, wrong-import-position
 from importlib.metadata import version
 
 import jax
@@ -645,6 +645,7 @@ else:  # pragma: no cover
     from jax._src.pjit import pjit_p
 
 
+# pylint: disable=protected-access
 @FlattenedInterpreter.register_primitive(pjit_p)
 def _(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:

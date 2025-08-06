@@ -30,7 +30,7 @@ from pennylane.wires import Wires
 # pylint: disable=arguments-differ, too-many-arguments
 
 
-class ResourceTrotterCDF(ResourceOperator):
+class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of compressed double factorized Hamiltonian.
 
@@ -311,7 +311,7 @@ class ResourceTrotterCDF(ResourceOperator):
         return gate_list
 
 
-class ResourceTrotterTHC(ResourceOperator):
+class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestors
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of tensor hypercontracted Hamiltonian.
 

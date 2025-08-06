@@ -61,7 +61,9 @@ class MergeRotationsPattern(
 
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
-    def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
+    def match_and_rewrite(
+        self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter
+    ):  # pylint: disable=arguments-differ
         """Implementation of rewriting FuncOps that may contain operations corresponding to
         consecutive composable rotations."""
         for op in funcOp.body.walk():
@@ -112,7 +114,7 @@ class MergeRotationsPass(passes.ModulePass):
 
     name = "xdsl-merge-rotations"
 
-    # pylint: disable=no-self-use
+    # pylint: disable=arguments-renamed,no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the merge rotations pass."""
         pattern_rewriter.PatternRewriteWalker(

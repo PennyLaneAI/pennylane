@@ -24,7 +24,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 )
 
 
-# pylint: disable=arguments-differ
+# pylint: disable=arguments-differ, unused-argument
 class ResourceUniformStatePrep(ResourceOperator):
     r"""Resource class for preparing a uniform superposition.
 

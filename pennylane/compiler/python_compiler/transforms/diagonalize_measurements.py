@@ -72,7 +72,9 @@ class DiagonalizeFinalMeasurementsPattern(
 
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
-    def match_and_rewrite(self, observable: NamedObsOp, rewriter: pattern_rewriter.PatternRewriter):
+    def match_and_rewrite(
+        self, observable: NamedObsOp, rewriter: pattern_rewriter.PatternRewriter
+    ):  # pylint: disable=arguments-differ
         """Replace non-diagonalized observables with their diagonalizing gates and PauliZ."""
 
         if _diagonalize(observable):
@@ -114,7 +116,7 @@ class DiagonalizeFinalMeasurementsPass(passes.ModulePass):
 
     name = "diagonalize-final-measurements"
 
-    # pylint: disable=no-self-use
+    # pylint: disable=arguments-renamed, no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the diagonalize final measurements pass."""
         pattern_rewriter.PatternRewriteWalker(

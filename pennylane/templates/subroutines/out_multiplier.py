@@ -324,6 +324,7 @@ def _out_multiplier_decomposition_resources(
     }
 
 
+# pylint: disable=no-value-for-parameter
 @register_resources(_out_multiplier_decomposition_resources)
 def _out_multiplier_decomposition(
     x_wires: WiresLike,

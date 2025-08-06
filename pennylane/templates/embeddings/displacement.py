@@ -16,7 +16,7 @@ Contains the ``DisplacementEmbedding`` template.
 """
 from pennylane import math
 
-# pylint: disable-msg=too-many-arguments
+# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.operation import Operation
 from pennylane.ops.cv import Displacement
 

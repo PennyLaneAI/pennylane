@@ -26,7 +26,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ,too-many-arguments,too-many-positional-arguments,super-init-not-called
+# pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called
 
 
 class ResourceAdjoint(ResourceOperator):

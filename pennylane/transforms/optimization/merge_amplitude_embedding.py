@@ -29,7 +29,7 @@ from pennylane.typing import PostprocessingFn
 
 # pylint: disable=too-many-statements
 @lru_cache
-def _get_plxpr_merge_amplitude_embedding():
+def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr

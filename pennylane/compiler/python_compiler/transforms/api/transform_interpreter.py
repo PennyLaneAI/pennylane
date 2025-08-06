@@ -21,7 +21,7 @@ to be passed in as options.
 import io
 from collections.abc import Callable
 
-from catalyst.compiler import _quantum_opt
+from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
 from xdsl.context import Context
 from xdsl.dialects import builtin, transform
 from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls

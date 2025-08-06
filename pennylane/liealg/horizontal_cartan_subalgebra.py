@@ -368,7 +368,6 @@ def _op_to_adjvec_ps(ops: PauliSentence, basis: PauliSentence, is_orthogonal: bo
     res = []
     if is_orthogonal:
         norms_squared = [(basis_i @ basis_i).trace() for basis_i in basis]
-        inv_gram = None
     else:
         # Fake the norm correction if we anyways will apply the inverse Gram matrix later
         norms_squared = math.ones(len(basis))

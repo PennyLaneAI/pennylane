@@ -238,6 +238,7 @@ def _adder_decomposition_resources(num_x_wires, mod) -> dict:
     }
 
 
+# pylint: disable=no-value-for-parameter
 @register_resources(_adder_decomposition_resources)
 def _adder_decomposition(k, x_wires: WiresLike, mod, work_wires: WiresLike, **__):
     if mod == 2 ** len(x_wires):

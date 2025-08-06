@@ -21,7 +21,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable=arguments-differ,no-self-use
+# pylint: disable=arguments-differ,no-self-use,too-many-ancestors
 
 
 class ResourceIdentity(ResourceOperator):

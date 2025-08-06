@@ -20,7 +20,7 @@ from typing import TypeAlias
 
 from catalyst import QJIT
 from jax._src.lib import _jax
-from jaxlib.mlir.dialects import stablehlo as jstablehlo
+from jaxlib.mlir.dialects import stablehlo as jstablehlo  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Context as jContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jModule  # pylint: disable=no-name-in-module
 from xdsl.context import Context as xContext
@@ -40,7 +40,7 @@ from .dialects import MBQC, Catalyst, Quantum
 JaxJittedFunction: TypeAlias = _jax.PjitFunction  # pylint: disable=c-extension-no-member
 
 
-class QuantumParser(xParser):  # pylint: disable=too-few-public-methods
+class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-methods
     """A subclass of ``xdsl.parser.Parser`` that automatically loads relevant dialects
     into the input context.
 

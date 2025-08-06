@@ -731,6 +731,7 @@ class QNode:
         old_gradient_kwargs.update(new_gradient_kwargs)
         kwargs["gradient_kwargs"] = old_gradient_kwargs
 
+        # pylint: disable=protected-access
         old_shots = self._shots
         # set shots issue
         if "device" in kwargs:

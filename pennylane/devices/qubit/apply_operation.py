@@ -655,7 +655,7 @@ def apply_snapshot(
     return state
 
 
-# pylint:disable = import-outside-toplevel
+# pylint:disable = no-value-for-parameter, import-outside-toplevel
 @apply_operation.register
 def apply_parametrized_evolution(
     op: qml.pulse.ParametrizedEvolution,

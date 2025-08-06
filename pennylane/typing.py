@@ -74,7 +74,7 @@ True
 
 def _is_jax(other, subclass=False):
     """Check if other is an instance or a subclass of a jax tensor."""
-
+    # pylint: disable=c-extension-no-member
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
             from jax import Array
