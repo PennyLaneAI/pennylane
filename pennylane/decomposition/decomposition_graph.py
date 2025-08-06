@@ -127,7 +127,7 @@ class _DecompositionNode:
         return num_work_wires - self.num_work_wire_not_available >= self.work_wire_spec.total
 
 
-class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
+class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """A graph that models a decomposition problem.
 
     The decomposition graph contains two types of nodes: operator nodes and decomposition nodes.
@@ -190,10 +190,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
             operations=[op],
             gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
         )
-        graph.solve()
+        solution = graph.solve()
 
     >>> with qml.queuing.AnnotatedQueue() as q:
-    ...     graph.decomposition(op)(0.5, wires=[0, 1])
+    ...     solution.decomposition(op)(0.5, wires=[0, 1])
     >>> q.queue
     [RZ(1.5707963267948966, wires=[1]),
      RY(0.25, wires=[1]),
@@ -201,7 +201,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
      RY(-0.25, wires=[1]),
      CNOT(wires=[0, 1]),
      RZ(-1.5707963267948966, wires=[1])]
-    >>> graph.resource_estimate(op)
+    >>> solution.resource_estimate(op)
     <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
     """
@@ -240,52 +240,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
 
         # Initializes the graph.
         self._graph = rx.PyDiGraph()
-        self._visitor: _DecompositionSearchVisitor | None = None
 
         # Construct the decomposition graph
         self._start = self._graph.add_node(None)
         self._construct_graph(operations)
-
-    def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
-        """Helper function to get a list of decomposition rules."""
-
-        op_name = _to_name(op)
-
-        if op_name in self._fixed_decomps:
-            return [self._fixed_decomps[op_name]]
-
-        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
-
-        if (
-            issubclass(op.op_type, qml.ops.Adjoint)
-            and self_adjoint not in decomps
-            and adjoint_rotation not in decomps
-        ):
-            # In general, we decompose the adjoint of an operator by applying adjoint to the
-            # decompositions of the operator. However, this is not necessary if the operator
-            # is self-adjoint or if it has a single rotation angle which can be trivially
-            # inverted to obtain its adjoint. In this case, `self_adjoint` or `adjoint_rotation`
-            # would've already been retrieved as a potential decomposition rule for this
-            # operator, so there is no need to consider the general case.
-            decomps.extend(self._get_adjoint_decompositions(op))
-
-        elif (
-            issubclass(op.op_type, qml.ops.Pow)
-            and pow_rotation not in decomps
-            and pow_involutory not in decomps
-        ):
-            # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
-            # approach we take to decompose powers of operators. However, if the operator is
-            # involutory or if it has a single rotation angle that can be trivially multiplied
-            # with the power, we would've already retrieved `pow_involutory` or `pow_rotation`
-            # as a potential decomposition rule for this operator, so there is no need to consider
-            # the general case.
-            decomps.extend(self._get_pow_decompositions(op))
-
-        elif op.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
-            decomps.extend(self._get_controlled_decompositions(op))
-
-        return decomps
 
     def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
         """Constructs the decomposition graph."""
@@ -390,6 +348,47 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         self._graph.add_edge(d_node_idx, op_idx, 0)
         return d_node
 
+    def _get_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
+        """Helper function to get a list of decomposition rules."""
+
+        op_name = _to_name(op)
+
+        if op_name in self._fixed_decomps:
+            return [self._fixed_decomps[op_name]]
+
+        decomps = self._alt_decomps.get(op_name, []) + list_decomps(op_name)
+
+        if (
+            issubclass(op.op_type, qml.ops.Adjoint)
+            and self_adjoint not in decomps
+            and adjoint_rotation not in decomps
+        ):
+            # In general, we decompose the adjoint of an operator by applying adjoint to the
+            # decompositions of the operator. However, this is not necessary if the operator
+            # is self-adjoint or if it has a single rotation angle which can be trivially
+            # inverted to obtain its adjoint. In this case, `self_adjoint` or `adjoint_rotation`
+            # would've already been retrieved as a potential decomposition rule for this
+            # operator, so there is no need to consider the general case.
+            decomps.extend(self._get_adjoint_decompositions(op))
+
+        elif (
+            issubclass(op.op_type, qml.ops.Pow)
+            and pow_rotation not in decomps
+            and pow_involutory not in decomps
+        ):
+            # Similar to the adjoint case, the `_get_pow_decompositions` contains the general
+            # approach we take to decompose powers of operators. However, if the operator is
+            # involutory or if it has a single rotation angle that can be trivially multiplied
+            # with the power, we would've already retrieved `pow_involutory` or `pow_rotation`
+            # as a potential decomposition rule for this operator, so there is no need to consider
+            # the general case.
+            decomps.extend(self._get_pow_decompositions(op))
+
+        elif op.op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
+            decomps.extend(self._get_controlled_decompositions(op))
+
+        return decomps
+
     def _get_adjoint_decompositions(self, op: CompressedResourceOp) -> list[DecompositionRule]:
         """Gets the decomposition rules for the adjoint of an operator."""
 
@@ -464,8 +463,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
                 found for all operations that the graph was initialized with. Otherwise, the
                 entire graph will be explored.
 
+        Returns:
+            DecompGraphSolution
+
         """
-        self._visitor = _DecompositionSearchVisitor(
+        visitor = _DecompositionSearchVisitor(
             self._graph,
             self._gate_set_weights,
             self._original_ops_indices,
@@ -475,15 +477,30 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
         rx.dijkstra_search(
             self._graph,
             source=[self._start],
-            weight_fn=self._visitor.edge_weight,
-            visitor=self._visitor,
+            weight_fn=visitor.edge_weight,
+            visitor=visitor,
         )
-        if self._visitor.unsolved_op_indices:
-            unsolved_ops = [self._graph[op_idx] for op_idx in self._visitor.unsolved_op_indices]
-            op_names = {op_node.op.name for op_node in unsolved_ops}
+        if visitor.unsolved_op_indices:
+            unsolved_ops = [self._graph[op_idx] for op_idx in visitor.unsolved_op_indices]
+            op_names = {op.name for op in unsolved_ops}
             raise DecompositionError(
                 f"Decomposition not found for {op_names} to the gate set {set(self._gate_set_weights)}"
             )
+        return DecompGraphSolution(visitor, self._graph, self._all_op_indices)
+
+
+class DecompGraphSolution:
+    """A solution to a decomposition graph."""
+
+    def __init__(
+        self,
+        visitor: _DecompositionSearchVisitor,
+        graph: rx.PyDiGraph,
+        all_op_indices: dict[CompressedResourceOp, int],
+    ) -> None:
+        self._visitor = visitor
+        self._graph = graph
+        self._all_op_indices = all_op_indices
 
     def _all_solutions(
         self, visitor: _DecompositionSearchVisitor, op: Operator, num_work_wires: int | None

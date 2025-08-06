@@ -26,6 +26,7 @@ from functools import lru_cache, partial
 from pennylane import math, ops, queuing
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import DecompositionGraph, enabled_graph
+from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
 from pennylane.operation import Operator
 from pennylane.transforms.core import transform
@@ -100,7 +101,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     "to enable the new system."
                 )
 
-            self._decomp_graph = None
+            self._decomp_graph_solution = None
             self._target_gate_names = None
             self._fixed_decomps, self._alt_decomps = fixed_decomps, alt_decomps
             self._num_available_work_wires = num_available_work_wires
@@ -187,7 +188,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                         op,
                         self.stopping_condition,
                         max_expansion=max_expansion,
-                        decomp_graph=self._decomp_graph,
+                        decomp_graph_solution=self._decomp_graph_solution,
                     )
                 )
 
@@ -202,9 +203,9 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
                 return self.interpret_operation(op)
 
-            if enabled_graph() and self._decomp_graph.is_solved_for(op):
+            if enabled_graph() and self._decomp_graph_solution.is_solved_for(op):
 
-                rule = self._decomp_graph.decomposition(op)
+                rule = self._decomp_graph_solution.decomposition(op)
                 num_wires = len(op.wires)
 
                 def compute_qfunc_decomposition(*_args, **_kwargs):
@@ -245,7 +246,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             for const, constvar in zip(consts, jaxpr.constvars, strict=True):
                 self._env_map[constvar] = const
 
-            if enabled_graph() and not self._decomp_graph:
+            if enabled_graph() and not self._decomp_graph_solution:
 
                 with pause():
 
@@ -254,7 +255,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     operations = collector.state["ops"]
 
                 if operations:
-                    self._decomp_graph = _construct_and_solve_decomp_graph(
+                    self._decomp_graph_solution = _construct_and_solve_decomp_graph(
                         operations,
                         self._gate_set,
                         self._num_available_work_wires,
@@ -326,7 +327,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if (
                 op.has_qfunc_decomposition
                 or enabled_graph()
-                and self._decomp_graph.is_solved_for(op)
+                and self._decomp_graph_solution.is_solved_for(op)
             ):
                 return self._evaluate_jaxpr_decomposition(op)
 
@@ -785,11 +786,11 @@ def decompose(
 
     # If the decomposition graph is enabled, we create a DecompositionGraph instance
     # to optimize the decomposition.
-    decomp_graph = None
+    decomp_graph_solution = None
 
     if enabled_graph():
 
-        decomp_graph = _construct_and_solve_decomp_graph(
+        decomp_graph_solution = _construct_and_solve_decomp_graph(
             tape.operations,
             gate_set,
             num_work_wires=num_available_work_wires,
@@ -806,7 +807,7 @@ def decompose(
                 _stopping_condition,
                 max_expansion=max_expansion,
                 num_available_work_wires=num_available_work_wires,
-                decomp_graph=decomp_graph,
+                decomp_graph_solution=decomp_graph_solution,
             )
         ]
     except RecursionError as e:
@@ -827,7 +828,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
     max_expansion: int | None = None,
     current_depth=0,
     num_available_work_wires: int | None = 0,
-    decomp_graph: DecompositionGraph | None = None,
+    decomp_graph_solution: DecompGraphSolution | None = None,
 ) -> Generator[Operator]:
     """A generator that yields the next operation that is accepted."""
 
@@ -841,8 +842,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
         yield op
     elif isinstance(op, (Allocate, Deallocate)):
         yield op
-    elif decomp_graph is not None and decomp_graph.is_solved_for(op, num_available_work_wires):
-        op_rule = decomp_graph.decomposition(op, num_work_wires=num_available_work_wires)
+    elif decomp_graph_solution is not None and decomp_graph_solution.is_solved_for(op):
+        op_rule = decomp_graph_solution.decomposition(op)
         with queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         decomp = decomposed_ops.queue
@@ -860,7 +861,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
             max_expansion=max_expansion,
             current_depth=current_depth,
             num_available_work_wires=num_available_work_wires,
-            decomp_graph=decomp_graph,
+            decomp_graph_solution=decomp_graph_solution,
         )
 
 
@@ -961,5 +962,4 @@ def _construct_and_solve_decomp_graph(
     )
 
     # Find the efficient pathways to the target gate set
-    decomp_graph.solve(num_work_wires=num_work_wires)
-    return decomp_graph
+    return decomp_graph.solve(num_work_wires=num_work_wires)

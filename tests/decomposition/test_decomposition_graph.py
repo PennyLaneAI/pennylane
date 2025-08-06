@@ -62,10 +62,10 @@ class TestDecompositionGraph:
             operations=[op],
             gate_set=gate_weights,
         )
-        graph.solve()
+        solution = graph.solve()
 
         expected_resource = to_resources({qml.CZ: 2, qml.RX: 2})
-        assert graph.resource_estimate(op) == expected_resource
+        assert solution.resource_estimate(op) == expected_resource
 
         # the RZ CZ RX CZ decomp is avoided when the CZ weight is large.
         gate_weights = {
@@ -81,12 +81,12 @@ class TestDecompositionGraph:
             operations=[op],
             gate_set=gate_weights,
         )
-        graph.solve()
+        solution = graph.solve()
 
         expected_resource = to_resources(
             {qml.RX: 2, qml.CNOT: 2, qml.RY: 4, qml.GlobalPhase: 4, qml.RZ: 4}
         )
-        assert graph.resource_estimate(op) == expected_resource
+        assert solution.resource_estimate(op) == expected_resource
 
     def test_get_decomp_rule(self, _):
         """Tests the internal method that gets the decomposition rules for an operator."""
@@ -238,13 +238,13 @@ class TestDecompositionGraph:
             operations=[op],
             gate_set={"RX", "RY", "RZ", "GlobalPhase"},
         )
-        graph.solve()
+        solution = graph.solve()
 
         # verify that the better decomposition rule is chosen when both are valid.
-        assert graph.resource_estimate(op) == to_resources(
+        assert solution.resource_estimate(op) == to_resources(
             {qml.RY: 1, qml.GlobalPhase: 1, qml.RZ: 1},
         )
-        assert graph.decomposition(op).compute_resources() == to_resources(
+        assert solution.decomposition(op).compute_resources() == to_resources(
             {qml.RY: 1, qml.GlobalPhase: 1, qml.RZ: 1},
         )
 
@@ -315,17 +315,17 @@ class TestDecompositionGraph:
                 AnotherOp: [_another_decomp],
             },
         )
-        graph.solve(lazy=True)
-        assert not graph.is_solved_for(AnotherOp(wires=[0, 1]))
+        solution = graph.solve(lazy=True)
+        assert not solution.is_solved_for(AnotherOp(wires=[0, 1]))
 
         with pytest.raises(DecompositionError, match="is unsolved in this decomposition graph."):
-            graph.resource_estimate(AnotherOp(wires=[0, 1]))
+            solution.resource_estimate(AnotherOp(wires=[0, 1]))
 
         with pytest.raises(DecompositionError, match="is unsolved in this decomposition graph."):
-            graph.decomposition(AnotherOp(wires=[0, 1]))
+            solution.decomposition(AnotherOp(wires=[0, 1]))
 
-        graph.solve(lazy=False)
-        assert graph.is_solved_for(AnotherOp(wires=[0, 1]))
+        solution = graph.solve(lazy=False)
+        assert solution.is_solved_for(AnotherOp(wires=[0, 1]))
 
     def test_decomposition_with_resource_params(self, _):
         """Tests operators with non-empty resource params."""
@@ -363,17 +363,17 @@ class TestDecompositionGraph:
         # and 4 edges from the dummy starting node to the target gate set
         assert len(graph._graph.edges()) == 27
 
-        graph.solve()
-        assert graph.resource_estimate(op) == to_resources(
+        solution = graph.solve()
+        assert solution.resource_estimate(op) == to_resources(
             {qml.CZ: 14, qml.RZ: 59, qml.RX: 28, qml.GlobalPhase: 28},
         )
-        assert graph.decomposition(op).compute_resources(**op.resource_params) == to_resources(
+        assert solution.decomposition(op).compute_resources(**op.resource_params) == to_resources(
             {
                 qml.resource_rep(qml.MultiRZ, num_wires=4): 1,
                 qml.resource_rep(qml.MultiRZ, num_wires=3): 2,
             },
         )
-        assert graph.decomposition(qml.Hadamard(wires=[0])).compute_resources() == to_resources(
+        assert solution.decomposition(qml.Hadamard(wires=[0])).compute_resources() == to_resources(
             {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1},
         )
 
@@ -403,12 +403,12 @@ class TestDecompositionGraph:
             alt_decomps={CustomOp: [_decomp_without_work_wire, _decomp_with_work_wire]},
         )
 
-        graph.solve(num_work_wires=0)
-        assert graph.decomposition(CustomOp(wires=[0, 1, 2])) is _decomp_without_work_wire
+        solution = graph.solve(num_work_wires=0)
+        assert solution.decomposition(CustomOp(wires=[0, 1, 2])) is _decomp_without_work_wire
 
-        graph.solve(num_work_wires=1)
+        solution = graph.solve(num_work_wires=1)
         assert (
-            graph.decomposition(CustomOp(wires=[0, 1, 2]), num_work_wires=1)
+            solution.decomposition(CustomOp(wires=[0, 1, 2]), num_work_wires=1)
             is _decomp_with_work_wire
         )
 
@@ -468,15 +468,15 @@ class TestDecompositionGraph:
         assert len(graph._graph.nodes()) == 16
         assert len(graph._graph.edges()) == 26
 
-        graph.solve(num_work_wires=0)
-        assert graph.decomposition(op) is _decomp2_without_work_wire
-        assert graph.decomposition(small_op) is _decomp_without_work_wire
+        solution = graph.solve(num_work_wires=0)
+        assert solution.decomposition(op) is _decomp2_without_work_wire
+        assert solution.decomposition(small_op) is _decomp_without_work_wire
 
-        graph.solve(num_work_wires=1)
-        assert graph.decomposition(op, num_work_wires=1) is _decomp2_with_work_wire
-        assert graph.decomposition(small_op, num_work_wires=0) is _decomp_without_work_wire
+        solution = graph.solve(num_work_wires=1)
+        assert solution.decomposition(op, num_work_wires=1) is _decomp2_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=0) is _decomp_without_work_wire
 
-        graph.solve(num_work_wires=2)
+        solution = graph.solve(num_work_wires=2)
         # When there are only 2 work wires available, by construction, it is more
         # resource efficient to use them on the CustomOp, so even where there are
         # enough work wires to use the more efficient decomposition for the LargeOp,
@@ -484,17 +484,17 @@ class TestDecompositionGraph:
         # resource efficiency. Because if we use one of the work wires to decompose
         # the LargeOp, there won't be enough work wires left to further decompose
         # the 2 CustomOp and it would result in significantly more gates.
-        assert graph.decomposition(op, num_work_wires=2) is _decomp2_without_work_wire
-        assert graph.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
+        assert solution.decomposition(op, num_work_wires=2) is _decomp2_without_work_wire
+        assert solution.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
 
-        graph.solve(num_work_wires=3)
-        assert graph.decomposition(op, num_work_wires=3) is _decomp2_with_work_wire
-        assert graph.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
-        assert graph.decomposition(small_op, num_work_wires=3) is _decomp_with_work_wire
+        solution = graph.solve(num_work_wires=3)
+        assert solution.decomposition(op, num_work_wires=3) is _decomp2_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=3) is _decomp_with_work_wire
 
-        graph.solve(num_work_wires=None)
-        assert graph.decomposition(op, num_work_wires=None) is _decomp2_with_work_wire
-        assert graph.decomposition(small_op, num_work_wires=None) is _decomp_with_work_wire
+        solution = graph.solve(num_work_wires=None)
+        assert solution.decomposition(op, num_work_wires=None) is _decomp2_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=None) is _decomp_with_work_wire
 
 
 @pytest.mark.unit
@@ -518,10 +518,10 @@ class TestControlledDecompositions:
         assert len(graph._graph.edges()) == 6
 
         # Verify the decompositions
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
 
         assert q.queue == [
             qml.PhaseShift(-0.5, wires=[1]),
@@ -541,10 +541,10 @@ class TestControlledDecompositions:
         assert len(graph._graph.edges()) == 49
 
         # Verify the decompositions
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
 
         assert q.queue == [qml.CNOT(wires=[1, 0]), qml.CH(wires=[1, 0])]
 
@@ -612,24 +612,24 @@ class TestControlledDecompositions:
         # and 6 edge from the dummy starting node to the target gate set.
         assert len(graph._graph.edges()) == 58
 
-        graph.solve()
+        solution = graph.solve()
 
         # Check that decomposition rules are found for the necessary controlled operators.
-        assert graph.decomposition(op1)
-        assert graph.decomposition(op2)
-        assert graph.decomposition(op3)
-        assert graph.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1]))
-        assert graph.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1, 2]))
-        assert graph.decomposition(qml.ctrl(CustomOp(wires=[1]), control=[0, 2]))
+        assert solution.decomposition(op1)
+        assert solution.decomposition(op2)
+        assert solution.decomposition(op3)
+        assert solution.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1]))
+        assert solution.decomposition(qml.ctrl(qml.GlobalPhase(0.5), control=[1, 2]))
+        assert solution.decomposition(qml.ctrl(CustomOp(wires=[1]), control=[0, 2]))
 
     def test_flip_controlled_adjoint(self, _):
         """Tests that the controlled form of an adjoint operator is decomposed properly."""
 
         op = qml.ctrl(qml.adjoint(qml.U1(0.5, wires=0)), control=[1])
         graph = DecompositionGraph(operations=[op], gate_set={"ControlledPhaseShift"})
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
         assert q.queue == [qml.adjoint(qml.ops.Controlled(qml.U1(0.5, wires=0), control_wires=[1]))]
 
     def test_decompose_with_single_work_wire(self, _):
@@ -638,18 +638,18 @@ class TestControlledDecompositions:
         op = qml.ctrl(qml.Rot(0.123, 0.234, 0.345, wires=0), control=[1, 2, 3])
 
         graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot"})
-        graph.solve(num_work_wires=1)
+        solution = graph.solve(num_work_wires=1)
         with qml.queuing.AnnotatedQueue() as q:
-            rule = graph.decomposition(op, num_work_wires=1)
+            rule = solution.decomposition(op, num_work_wires=1)
             rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         tape = qml.tape.QuantumScript.from_queue(q)
-        [tape], _ = qml.transforms.resolve_dynamic_wires([tape], min_int=5)
+        [tape], _ = qml.transforms.resolve_dynamic_wires([tape], min_int=4)
         assert tape.operations == [
             qml.MultiControlledX(wires=[1, 2, 3, 4]),
             qml.CRot(0.123, 0.234, 0.345, wires=[4, 0]),
             qml.MultiControlledX(wires=[1, 2, 3, 4]),
         ]
-        assert graph.resource_estimate(op) == to_resources(
+        assert solution.resource_estimate(op) == to_resources(
             {controlled_resource_rep(qml.X, {}, num_control_wires=3): 2, qml.CRot: 1}
         )
 
@@ -672,12 +672,12 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.nodes()) == 4
         assert len(graph._graph.edges()) == 3
 
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.RX(0.5, wires=[0])]
-        assert graph.resource_estimate(op) == to_resources({qml.RX: 1})
+        assert solution.resource_estimate(op) == to_resources({qml.RX: 1})
 
     def test_adjoint_custom(self, _):
         """Tests adjoint of an operator that defines its own adjoint."""
@@ -689,12 +689,12 @@ class TestSymbolicDecompositions:
         assert len(graph._graph.nodes()) == 4
         assert len(graph._graph.edges()) == 3
 
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.RX(-0.5, wires=[0])]
-        assert graph.resource_estimate(op) == to_resources({qml.RX: 1})
+        assert solution.resource_estimate(op) == to_resources({qml.RX: 1})
 
     def test_adjoint_general(self, _):
         """Tests decomposition of a generalized adjoint operation."""
@@ -730,9 +730,9 @@ class TestSymbolicDecompositions:
         # and 4 edges from the dummy starting node to the target gate set.
         assert len(graph._graph.edges()) == 19
 
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [
             qml.adjoint(qml.T(2)),
@@ -741,7 +741,7 @@ class TestSymbolicDecompositions:
             qml.adjoint(qml.CNOT(wires=[0, 1])),
             qml.adjoint(qml.H(wires=0)),
         ]
-        assert graph.resource_estimate(op) == to_resources(
+        assert solution.resource_estimate(op) == to_resources(
             {qml.H: 1, qml.CNOT: 2, qml.RX: 1, qml.PhaseShift: 1},
         )
 
@@ -759,19 +759,19 @@ class TestSymbolicDecompositions:
         # H**6 decomposes to nothing, so H isn't counted.
         assert len(graph._graph.edges()) == 4
 
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
 
         assert q.queue == [qml.pow(qml.H(0), 6)]
-        assert graph.resource_estimate(op) == to_resources({})
+        assert solution.resource_estimate(op) == to_resources({})
 
         op2 = qml.pow(qml.H(0), 6)
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
 
         assert q.queue == []
-        assert graph.resource_estimate(op2) == to_resources({})
+        assert solution.resource_estimate(op2) == to_resources({})
 
     def test_custom_symbolic_decompositions(self, _):
         """Tests that custom symbolic decompositions are used."""
@@ -796,18 +796,18 @@ class TestSymbolicDecompositions:
         op3 = qml.ops.Controlled(qml.H(0), control_wires=1)
         op4 = qml.adjoint(qml.RX(0.5, wires=0))
 
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
-            graph.decomposition(op3)(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
-            graph.decomposition(op4)(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op3)(*op3.parameters, wires=op3.wires, **op3.hyperparameters)
+            solution.decomposition(op4)(*op4.parameters, wires=op4.wires, **op4.hyperparameters)
 
         assert q.queue == [qml.H(0), qml.H(1), qml.CH(wires=[1, 0]), qml.RX(-0.5, wires=0)]
-        assert graph.resource_estimate(op1) == to_resources({qml.H: 1})
-        assert graph.resource_estimate(op2) == to_resources({qml.H: 1})
-        assert graph.resource_estimate(op3) == to_resources({qml.CH: 1})
-        assert graph.resource_estimate(op4) == to_resources({qml.RX: 1})
+        assert solution.resource_estimate(op1) == to_resources({qml.H: 1})
+        assert solution.resource_estimate(op2) == to_resources({qml.H: 1})
+        assert solution.resource_estimate(op3) == to_resources({qml.CH: 1})
+        assert solution.resource_estimate(op4) == to_resources({qml.RX: 1})
 
     def test_special_pow_decomps(self, _):
         """Tests special cases for decomposing a power."""
@@ -836,14 +836,14 @@ class TestSymbolicDecompositions:
         op1 = qml.pow(CustomOp(0), 0)
         op2 = qml.pow(CustomOp(1), 1)
 
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
 
         assert q.queue == [CustomOp(1)]
-        assert graph.resource_estimate(op1) == to_resources({})
-        assert graph.resource_estimate(op2) == to_resources({CustomOp: 1})
+        assert solution.resource_estimate(op1) == to_resources({})
+        assert solution.resource_estimate(op2) == to_resources({CustomOp: 1})
 
     def test_general_pow_decomps(self, _):
         """Tests the more general power decomposition rules."""
@@ -872,10 +872,10 @@ class TestSymbolicDecompositions:
         op1 = qml.pow(CustomOp(0), 2)
         op2 = qml.pow(qml.adjoint(CustomOp(1)), 2)
 
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
-            graph.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
+            solution.decomposition(op1)(*op1.parameters, wires=op1.wires, **op1.hyperparameters)
+            solution.decomposition(op2)(*op2.parameters, wires=op2.wires, **op2.hyperparameters)
 
         assert q.queue == [
             CustomOp(0),
