@@ -14,7 +14,6 @@
 r"""
 Contains the hardware-efficient ParticleConservingU1 template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
 
 from pennylane import math

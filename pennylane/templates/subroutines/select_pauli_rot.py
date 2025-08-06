@@ -146,14 +146,14 @@ class SelectPauliRot(Operation):
         """Bind arguments to the primitive operation."""
         return cls._primitive.bind(*args, **kwargs)
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         """Return the operator's decomposition using its parameters and hyperparameters."""
         return self.compute_decomposition(self.parameters[0], **self.hyperparameters)
 
     @staticmethod
     def compute_decomposition(
         angles, control_wires, target_wire, rot_axis
-    ):  # pylint: disable=arguments-differ, too-many-arguments
+    ):  # pylint: disable=arguments-differ
         r"""
         Computes the decomposition operations for the given state vector.
 

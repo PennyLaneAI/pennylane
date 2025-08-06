@@ -38,7 +38,7 @@ def null_postprocessing(results):
 
 
 @lru_cache
-def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-statements
+def _get_plxpr_decompose():  # pylint: disable=too-many-statements
     try:
         # pylint: disable=import-outside-toplevel
         import jax
@@ -899,7 +899,7 @@ def _resolve_gate_set(
         def gate_set_contains(op: Operator) -> bool:
             return (op.name in gate_names) or isinstance(op, gate_types)
 
-    elif isinstance(gate_set, Callable):  # pylint:disable=isinstance-second-argument-not-valid-type
+    elif isinstance(gate_set, Callable):
 
         gate_set_contains = gate_set
 

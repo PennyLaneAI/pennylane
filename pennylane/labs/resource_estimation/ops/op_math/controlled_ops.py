@@ -22,7 +22,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable=arguments-differ,too-many-ancestors,too-many-arguments,too-many-positional-arguments,unused-argument
+# pylint: disable=arguments-differ,too-many-positional-arguments,unused-argument
 
 
 class ResourceCH(ResourceOperator):
@@ -1253,7 +1253,7 @@ class ResourceMultiControlledX(ResourceOperator):
         cls,
         num_ctrl_wires,
         num_ctrl_values,
-        **kwargs,  # pylint: disable=unused-argument
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list of GateCount objects representing the resources of the operator.
         Each GateCount object specifies a gate type and its total occurrence count.

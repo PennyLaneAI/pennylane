@@ -58,7 +58,7 @@ def _cut_circuit_mc_expand(
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Main entry point for expanding operations in sample-based tapes until
     reaching a depth that includes :class:`~.WireCut` operations."""
-    # pylint: disable=unused-argument, too-many-arguments
+    # pylint: disable=unused-argument
 
     def processing_fn(res):
         return res[0]
@@ -421,7 +421,7 @@ def cut_circuit_mc(
         >>> circuit(x)
         tensor(-0.776, requires_grad=True)
     """
-    # pylint: disable=unused-argument, too-many-arguments
+    # pylint: disable=unused-argument
 
     if len(tape.measurements) != 1:
         raise ValueError(

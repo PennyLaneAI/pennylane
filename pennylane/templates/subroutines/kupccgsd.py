@@ -14,7 +14,7 @@
 r"""
 Contains the k-UpCCGSD template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-arguments,protected-access
 # pylint: disable-msg=too-many-positional-arguments
 import copy
 from itertools import product

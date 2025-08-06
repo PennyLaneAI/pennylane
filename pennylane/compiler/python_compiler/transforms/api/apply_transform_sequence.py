@@ -20,7 +20,7 @@ from xdsl.context import Context
 from xdsl.dialects import builtin
 from xdsl.passes import ModulePass, PassPipeline
 
-from .transform_interpreter import TransformInterpreterPass  # pylint: disable=no-name-in-module
+from .transform_interpreter import TransformInterpreterPass
 
 available_passes = {}
 
@@ -30,7 +30,6 @@ def register_pass(name, _callable):
     available_passes[name] = _callable  # pragma: no cover
 
 
-# pylint: disable=too-few-public-methods
 @dataclass(frozen=True)
 class ApplyTransformSequence(ModulePass):
     """
@@ -43,9 +42,7 @@ class ApplyTransformSequence(ModulePass):
 
     name = "apply-transform-sequence"
 
-    def apply(  # pylint: disable=arguments-renamed,no-self-use
-        self, ctx: Context, module: builtin.ModuleOp
-    ) -> None:
+    def apply(self, ctx: Context, module: builtin.ModuleOp) -> None:  # pylint: disable=no-self-use
         """Applies the transformation"""
         nested_modules = []
         for region in module.regions:
@@ -54,10 +51,7 @@ class ApplyTransformSequence(ModulePass):
                     if isinstance(op, builtin.ModuleOp):
                         nested_modules.append(op)
 
-        pipeline = PassPipeline(
-            # pylint: disable-next=unexpected-keyword-arg
-            (TransformInterpreterPass(passes=available_passes),)
-        )
+        pipeline = PassPipeline((TransformInterpreterPass(passes=available_passes),))
         for op in nested_modules:
             pipeline.apply(ctx, op)
 

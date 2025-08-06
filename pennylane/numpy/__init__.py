@@ -80,7 +80,7 @@ For more details, please consult the `Autograd
 docs <https://github.com/HIPS/autograd/blob/master/docs/tutorial.md>`__.
 
 """
-# pylint: disable=wrong-import-position,undefined-variable
+# pylint: disable=wrong-import-position
 
 from autograd import numpy as _np
 from autograd.numpy import *

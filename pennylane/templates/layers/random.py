@@ -14,7 +14,7 @@
 r"""
 Contains the RandomLayers template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable-msg=too-many-arguments
 
 import numpy as np
 

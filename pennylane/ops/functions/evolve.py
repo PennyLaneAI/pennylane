@@ -28,7 +28,7 @@ def evolve(op: ParametrizedHamiltonian, **kwargs) -> ParametrizedEvolution: ...
 @overload
 def evolve(op: Operator, coeff: TensorLike = 1, num_steps: int | None = None) -> Evolution: ...
 @singledispatch
-def evolve(*args, **kwargs):  # pylint: disable=unused-argument
+def evolve(*args, **kwargs):
     r"""This method is dispatched and its functionality depends on the type of the input ``op``.
 
     .. raw:: html
@@ -198,13 +198,13 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     )
 
 
-# pylint: disable=missing-docstring
 @evolve.register
 def parametrized_evolution(op: ParametrizedHamiltonian, **kwargs):
+    """Dispatch rule for ParametrizedHamiltonian."""
     return ParametrizedEvolution(H=op, **kwargs)
 
 
-# pylint: disable=missing-docstring
 @evolve.register
 def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
+    """Dispatch rule for Operator."""
     return Evolution(op, coeff, num_steps)

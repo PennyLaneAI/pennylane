@@ -358,7 +358,7 @@ class TransformProgram:
     @property
     def has_final_transform(self) -> bool:
         """``True`` if the transform program has a terminal transform."""
-        return self[-1].final_transform if self else False  # pylint: disable=no-member
+        return self[-1].final_transform if self else False
 
     def has_classical_cotransform(self) -> bool:
         """Check if the transform program has some classical cotransforms.
@@ -370,7 +370,7 @@ class TransformProgram:
 
     def set_classical_component(self, qnode, args, kwargs):
         """Set the classical jacobians and argnums if the transform is hybrid with a classical cotransform."""
-        # pylint: disable=no-member
+
         if self.has_classical_cotransform() and self[-1].kwargs.get("hybrid", True):
             self.cotransform_cache = CotransformCache(qnode, args, kwargs)
 
@@ -426,7 +426,7 @@ class TransformProgram:
             classical_jacobians = []
             for tape_idx, tape in enumerate(tapes):
                 if argnums is not None:
-                    # pylint: disable=unsubscriptable-object
+
                     tape.trainable_params = argnums[tape_idx]
                 new_tapes, fn = transform(tape, *targs, **tkwargs)
                 execution_tapes.extend(new_tapes)
