@@ -3,6 +3,13 @@
 
 <h3>New features since last release</h3>
 
+* New ZX calculus-based transforms have been added to access circuit optimization
+  passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
+
+    * :func:`~.transforms.push_hadamards` to optimize Clifford+T circuits pushing Hadamard gates
+      to the side to create a few large phase-polynomial blocks.
+      [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
+
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
