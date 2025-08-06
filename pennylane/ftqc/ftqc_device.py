@@ -140,7 +140,8 @@ class FTQCQubit(Device):
 
         if config.mcm_config.mcm_method not in [None, default_mcm_method]:
             raise ValueError(
-                f"The {self.backend.name} FTQC backend only supports {default_mcm_method} for handling mid-circuit measurements, but {config.mcm_config.mcm_method} was specified."
+                f"The {self.backend.name} FTQC backend only supports '{default_mcm_method}' for "
+                f"handling mid-circuit measurements, but '{config.mcm_config.mcm_method}' was specified."
             )
 
         new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
