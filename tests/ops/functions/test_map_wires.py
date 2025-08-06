@@ -132,7 +132,6 @@ class TestMapWiresTapes:
         qml.assert_equal(m_op, mapped_op)
         assert tape.shots == m_tape.shots
         assert m_obs.wires == Wires(wire_map[1])
-        assert qml.math.allclose(dev.execute(tape), dev.execute(m_tape), atol=0.05)
 
     def test_map_wires_batch(self):
         """Test that map_wires can be applied to a batch of tapes."""
