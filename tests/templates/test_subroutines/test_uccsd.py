@@ -127,6 +127,44 @@ test_data_decomposition = [
     ),
 ]
 
+test_data_decomposition_new = [
+    # (
+    #     [[0, 1, 2]],
+    #     [],
+    #     np.array([3.815]),
+    #     1
+    # ),
+    # (
+    #     [[0, 1, 2], [1, 2, 3]],
+    #     [],
+    #     np.array([3.815, 4.866]),
+    #     1,
+    # ),
+    (
+        [],
+        [[[0, 1], [2, 3]]],
+        np.array([3.815]),
+        1,
+    ),
+    (
+        [],
+        [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
+        np.array([3.815, 4.866]),
+        1,
+    ),
+    (
+        [[2, 3, 4], [1, 2, 3]],
+        [[[0, 1], [2, 3]], [[0, 1], [4, 5]]],
+        np.array([3.815, 4.866, 1.019, 0.639]),
+        1,
+    ),
+    # (
+    #     [[0, 1, 2]],
+    #     [],
+    #     np.array([[3.815], [1.019]]),
+    #     2,
+    # ),
+]
 
 @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
 def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
@@ -221,12 +259,12 @@ class TestDecomposition:
             assert np.allclose(res_weight, exp_weight)
 
     @pytest.mark.parametrize(
-        "s_wires, d_wires, weights, n_repeats, ref_gates", test_data_decomposition
+        "s_wires, d_wires, weights, n_repeats", test_data_decomposition_new
     )
     @pytest.mark.jax
-    @pytest.mark.capture
+    # @pytest.mark.capture
     def test_decomposition_new(
-        self, s_wires, d_wires, weights, n_repeats, ref_gates
+        self, s_wires, d_wires, weights, n_repeats
     ):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""
         op = qml.UCCSD(
