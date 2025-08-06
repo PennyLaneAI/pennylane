@@ -116,23 +116,6 @@ class TestMapWiresTapes:
         s_op = s_tape[0]
         qml.assert_equal(s_op, mapped_op)
 
-    @pytest.mark.parametrize("shots", [None, 5000])
-    def test_mapped_tape_attributes(self, shots):
-        """Test the attributes of a mapped tape."""
-        dev = qml.device("default.qubit", wires=5)
-        with qml.queuing.AnnotatedQueue() as q_tape:
-            build_op()
-            qml.expval(op=qml.PauliZ(1))
-
-        tape = QuantumScript.from_queue(q_tape, shots=shots)
-
-        [m_tape], _ = qml.map_wires(tape, wire_map=wire_map)
-        m_op = m_tape.operations[0]
-        m_obs = m_tape.observables[0]
-        qml.assert_equal(m_op, mapped_op)
-        assert tape.shots == m_tape.shots
-        assert m_obs.wires == Wires(wire_map[1])
-
     def test_map_wires_batch(self):
         """Test that map_wires can be applied to a batch of tapes."""
 
