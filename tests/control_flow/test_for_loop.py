@@ -33,7 +33,6 @@ def test_early_exit():
     jaxpr = jax.make_jaxpr(inner_loop)(0)
     assert len(jaxpr.eqns) == 0
 
-
 def test_for_loop_python_fallback():
     """Test that qml.for_loop fallsback to Python
     interpretation if Catalyst is not available"""
