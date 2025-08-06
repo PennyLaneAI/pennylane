@@ -226,6 +226,23 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
+  They now accept an operation or a list of operations as quantum unitaries.
+  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
+
+  In past versions of PennyLane, these templates required providing the `U` and `V` unitaries as a `qml.tape.QuantumTape` and a quantum function,
+  respectively, along with separate parameters and wires.
+
+  With this release, each template has been improved to accept one or more operators as  unitaries. 
+  The wires and parameters of the approximate unitary `V` are inferred from the inputs, according to the order provided.
+
+  ```python
+  >>> U = qml.Hadamard(0)
+  >>> V = qml.RZ(0.1, wires=1)
+  >>> qml.HilbertSchmidt(V, U)
+  HilbertSchmidt(0.1, wires=[0, 1])
+  ```
+
 * Remove support for Python 3.10 and adds support for 3.13.
   [(#7935)](https://github.com/PennyLaneAI/pennylane/pull/7935)
 
@@ -349,6 +366,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Removed unnecessary execution tests along with accuracy validation in `tests/ops/functions/test_map_wires.py`.
+  [(#8032)](https://github.com/PennyLaneAI/pennylane/pull/8032)
 
 * Added a new `all-tests-passed` gatekeeper job to `interface-unit-tests.yml` to ensure all test
   jobs complete successfully before triggering downstream actions. This reduces the need to
