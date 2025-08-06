@@ -35,13 +35,12 @@ except ModuleNotFoundError:
 @transform
 def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
-    Apply the `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__
-    pass to a PennyLane phase-polynomial circuit with :class:`~Hadamard` gates.
+    Pushes Hadamard gates as far as possible to the side to create a few large phase-polynomial blocks,
+    improving the effectiveness of phase-polynomial optimization techniques.
 
-    The transform optimizes the circuit using a strategy that involves delayed placement of gates so that more
-    matches for gate cancellations are found.
-    Specifically, it pushes Hadamard gates as far as possible to the side to create few big phase-polynomial
-    blocks and improve the effectiveness of phase-polynomial optimization techniques.
+    The transform optimizes the circuit using a strategy of delayed gate placement so that more matches
+    for gate cancellations are found.
+    It is based on the the `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
