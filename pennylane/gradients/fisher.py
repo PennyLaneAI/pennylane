@@ -46,11 +46,6 @@ def _torch_jac(circ):
 # TODO: create qml.math.jacobian and replace it here
 def _tf_jac(circ):
     """TF jacobian as a callable function"""
-    import warnings
-
-    from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-    warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
     import tensorflow as tf
 
     def wrapper(*args, **kwargs):

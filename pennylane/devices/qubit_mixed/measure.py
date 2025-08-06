@@ -186,11 +186,6 @@ def full_dot_products_density_matrix(
 
     # Take the diagonal and sum to get the trace
     if math.get_interface(rhoO) == "tensorflow":
-        import warnings
-
-        from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
-
-        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=3)
         import tensorflow as tf
 
         diag_elements = tf.linalg.diag_part(rhoO)
