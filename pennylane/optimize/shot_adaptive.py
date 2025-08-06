@@ -351,8 +351,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         return grads
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=arguments-differ
     def compute_grad(self, objective_fn, args, kwargs):  # pylint: disable=arguments-renamed
         r"""Compute the gradient of the objective function, as well as the variance of the gradient,
         at the given point.

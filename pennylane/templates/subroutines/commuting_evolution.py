@@ -14,7 +14,7 @@
 r"""
 Contains the CommutingEvolution template.
 """
-# pylint: disable-msg=too-many-arguments,import-outside-toplevel
+# pylint: disable-msg=too-many-arguments
 import copy
 
 from pennylane import math
@@ -162,8 +162,6 @@ class CommutingEvolution(Operation):
         context.append(self)
         return self
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(
         time, *_, wires, hamiltonian, **__

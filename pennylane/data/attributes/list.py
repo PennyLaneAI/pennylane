@@ -23,8 +23,6 @@ from pennylane.data.base.mapper import MapperMixin
 from pennylane.data.base.typing_util import T
 
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=too-many-ancestors
 class DatasetList(
     Generic[T],
     DatasetAttribute[HDF5Group, Sequence[T], Iterable[T]],

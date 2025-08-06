@@ -962,8 +962,6 @@ class PauliZ(Operation):
         """
         return qml.pauli.pauli_eigs(1)
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     @staticmethod
     def compute_diagonalizing_gates(
         wires: WiresLike,

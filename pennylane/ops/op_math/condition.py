@@ -243,8 +243,6 @@ class CondCallable:
         for pred, branch_fn in zip(self.preds, self.branch_fns):
             if pred:
                 return branch_fn(*args, **kwargs)
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-        # pylint: disable=not-callable
         return self.false_fn(*args, **kwargs)
 
     def __call_capture_enabled(self, *args, **kwargs):

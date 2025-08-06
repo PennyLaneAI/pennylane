@@ -48,6 +48,7 @@ repos:
           "-rn", # Only display messages
           "-sn", # Don't display the score
           "--rcfile=.pylintrc", # Link to your config file
+          "--enable=useless-suppression", # Enable useless-suppression check
         ]
       exclude: ^(doc/|tests/)
     - id: pylint-test
@@ -60,6 +61,7 @@ repos:
           "-rn", # Only display messages
           "-sn", # Don't display the score
           "--rcfile=tests/.pylintrc", # Link to your config file
+          "--enable=useless-suppression", # Enable useless-suppression check
         ]
       files: ^tests/
     - id: labs-pylint-test
@@ -72,5 +74,6 @@ repos:
           "-rn", # Only display messages
           "-sn", # Don't display the score
           "--rcfile=tests/.pylintrc", # Link to your config file
+          "--enable=useless-suppression", # Enable useless-suppression check
         ]
       files: ^pennylane/labs/tests/

@@ -51,8 +51,8 @@ jobs:
 
       - name: Run Pylint (source files)
         if: always()
-        run: pylint --rcfile .pylintrc $(find pennylane -name "*.py")
+        run: pylint --rcfile .pylintrc --enable useless-suppression $(find pennylane -name "*.py")
 
       - name: Run Pylint (test files)
         if: always()
-        run: pylint --rcfile tests/.pylintrc $(find tests -name "*.py")
+        run: pylint --rcfile tests/.pylintrc --enable useless-suppression $(find tests -name "*.py")
