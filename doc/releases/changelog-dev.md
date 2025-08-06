@@ -33,6 +33,10 @@
   1: ────╰X──H──RZ(1.00)──H─┤  State
   ```
 
+* The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
+  This makes the expensive depth computation performed by `qml.specs` optional.
+  [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
+
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
@@ -88,6 +92,7 @@
   [(#7779)](https://github.com/PennyLaneAI/pennylane/pull/7779)
   [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
+  [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
   
   The included templates are:
 
@@ -120,6 +125,8 @@
   * :class:`~.StatePrep`
 
   * :class:`~.TrotterProduct`
+
+  * :class:`~.QROM`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
@@ -469,7 +476,14 @@
 * Updated the code example in the documentation for :func:`~.transforms.split_non_commuting`.
   [(#7892)](https://github.com/PennyLaneAI/pennylane/pull/7892)
 
+* Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
+  [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
+
 <h3>Bug fixes 🐛</h3>
+
+* Plxpr primitives now only return dynamically shaped arrays if their outputs
+  actually have dynamic shapes.
+  [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
 
 * Fixes an issue with tree-traversal and non-sequential wire orders.
   [(#7991)](https://github.com/PennyLaneAI/pennylane/pull/7991)
