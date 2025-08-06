@@ -69,7 +69,9 @@ class Conjugation(CompositeOp):
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
-        """Sorts the ops.
+        """
+        We do not sort the ops. The order is guaranteed to matter since if the compute
+        and the base operator commute, the pattern would simplify to just being the base operator.
 
         Args:
             op_list (List[.Operator]): list of operators to be sorted
@@ -79,9 +81,6 @@ class Conjugation(CompositeOp):
         Returns:
             List[.Operator]: sorted list of operators
         """
-
-        # TODO: sorting, maybe go in a base class
-
         return op_list
 
     @property
