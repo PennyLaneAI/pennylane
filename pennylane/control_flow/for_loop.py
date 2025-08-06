@@ -420,7 +420,7 @@ class ForLoopCallable:  # pylint:disable=too-few-public-methods, too-many-argume
 
     def __call__(self, *init_state):
 
-        bypass_condition = (
+        start_equals_stop = (
             isinstance(self.stop, int) and isinstance(self.start, int) and self.stop == self.start
         )
 
