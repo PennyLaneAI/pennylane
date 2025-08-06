@@ -95,13 +95,6 @@ def test_executing_arbitrary_circuit(backend_cls):
             assert all(
                 isinstance(op, (Conditional, CZ, H, MidMeasureMP)) for op in inner_tape.operations
             )
-    for sequence in tapes:
-        assert isinstance(sequence, QuantumScriptSequence)
-        assert all(isinstance(mp, qml.measurements.SampleMP) for mp in sequence.measurements)
-        for inner_tape in sequence.tapes:
-            assert all(
-                isinstance(op, (Conditional, CZ, H, MidMeasureMP)) for op in inner_tape.operations
-            )
 
     # circuit executes
     res = ftqc_circ()
@@ -418,7 +411,6 @@ class TestBackendExecution:
 
         results = backend.execute([sequence, sequence, sequence], ExecutionConfig())
 
-        print(results)
         assert len(results) == 3
         for res in results:
             assert len(res) == 2
