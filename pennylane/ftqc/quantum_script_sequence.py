@@ -29,8 +29,6 @@ class QuantumScriptSequence:
     Intermediate tapes may return mid-circuit measurements, or nothing. This is not currently
     validated, but it is assumed. The final tape returns terminal measurements."""
 
-    shortname = "QuantumScriptSequence"
-
     def __init__(self, tapes, shots=None):
 
         if shots is None:
@@ -144,7 +142,7 @@ class QuantumScriptSequence:
         return self._shots
 
     def __repr__(self) -> str:
-        return f"<{self.shortname}: wires={list(self.wires)}>"
+        return f"<QuantumScriptSequence: wires={list(self.wires)}>"
 
     def map_to_standard_wires(self) -> "QuantumScriptSequence":
         """Wrapper to apply qscript.map_to_standard_wires to each segment contained in the Sequence"""
@@ -169,15 +167,15 @@ class QuantumScriptSequence:
         return as_tape._get_standard_wire_map()  # pylint: disable=protected-access
 
     def copy(self, copy_operations: bool = False, **update):
-        """Make it copy-able as if it were a tape where possible. Do not allow
-        modifications to operations or trainable parameters, because any transform
-        or function modifying operations on a tape will not work on a sequence of
-        tapes. Allow updating tapes as a whole as an alternative for
-        QuantumScriptSquence-specific functions to deal with modifying operations
-        on tapes.
+        """Make it copy-able as if it were a tape where possible. This allows transforms
+        that only affect measurements or shots to be applied directly to a QuantumScriptSequnce
+        as if it were a normal QuantumScript. Does not allow modifications to operations or
+        trainable parameters like tape.copy does, because transforms or functions modifying
+        operations on a tape will not work without modification on a sequence of tapes.
 
-        This is not able to support trainable parameters and almost certainly also
-        has other flaws. It is not a thorough implementation of the desired behaviour."""
+        Allows updating tapes as a whole as an alternative for QuantumScriptSquence-specific
+        functions to deal with modifying operations on tapes."""
+
         if copy_operations is True:
             raise RuntimeError("Can't use copy_operations when copying a QuantumScriptSequence")
 
