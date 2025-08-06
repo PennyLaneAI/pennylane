@@ -351,7 +351,7 @@
 <h3>Internal changes ⚙️</h3>
 
 * Removed unnecessary execution tests along with accuracy validation in `tests/ops/functions/test_map_wires.py`.
-  [(#7996)](https://github.com/PennyLaneAI/pennylane/pull/7996)
+  [(#8032)](https://github.com/PennyLaneAI/pennylane/pull/8032)
 
 * Added a new `all-tests-passed` gatekeeper job to `interface-unit-tests.yml` to ensure all test
   jobs complete successfully before triggering downstream actions. This reduces the need to
