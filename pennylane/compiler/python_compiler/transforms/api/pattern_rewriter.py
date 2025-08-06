@@ -167,12 +167,11 @@ class PLPatternRewriter(PatternRewriter):
         # We can also use the following code to perform the same task:
         # self.replace_op(op, (), op.in_qubits + op.in_ctrl_qubits)
 
-        for iq, oq in zip(op.in_qubits, op.out_qubits, strict=True):
+        for iq, oq in zip(
+            op.in_qubits + op.in_ctrl_qubits, op.out_qubits + op.out_ctrl_qubits, strict=True
+        ):
             self.replace_all_uses_with(oq, iq)
             self.wire_manager.update_qubit(oq, iq)
-        for icq, ocq in zip(op.in_ctrl_qubits, op.out_ctrl_qubits, strict=True):
-            self.replace_all_uses_with(ocq, icq)
-            self.wire_manager.update_qubit(ocq, icq)
 
         self.erase_op(op)
 
@@ -273,6 +272,7 @@ class PLPatternRewriter(PatternRewriter):
         for iq, oq in zip(
             customOp.in_qubits + customOp.in_ctrl_qubits,
             customOp.out_qubits + customOp.out_ctrl_qubits,
+            strict=True,
         ):
             iq.replace_by_if(oq, lambda use: use.operation != customOp)
             self.wire_manager.update_qubit(iq, oq)
