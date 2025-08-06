@@ -14,8 +14,6 @@
 """
 Tests that apply to all device modifiers or act on a combination of them together.
 """
-from typing import Optional
-
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring, no-member
 import pytest
 
@@ -32,7 +30,7 @@ def test_chained_modifiers():
     @single_tape_support
     class DummyDev(qml.devices.Device):
 
-        def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: qml.devices.ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
     assert DummyDev._applied_modifiers == [single_tape_support, simulator_tracking]
@@ -72,7 +70,7 @@ class TestModifierDefaultBeahviour:
         class DummyDev(qml.devices.Device):
 
             def execute(
-                self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None
+                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
             ):
                 return 0.0
 
@@ -84,7 +82,7 @@ class TestModifierDefaultBeahviour:
             _applied_modifiers = [None]  # some existing value
 
             def execute(
-                self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None
+                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
             ):
                 return 0.0
 
@@ -97,7 +95,7 @@ class TestModifierDefaultBeahviour:
         class DummyDev(qml.devices.Device):
 
             def execute(
-                self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None
+                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
             ):
                 return 0.0
 
