@@ -18,14 +18,12 @@ from functools import partial, singledispatch
 
 import networkx as nx
 
-import pennylane.ftqc as ftqc
 from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
 from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
 from pennylane.queuing import AnnotatedQueue
-from pennylane.tape import QuantumScript
 from pennylane.transforms import decompose, transform
 
 from .conditional_measure import cond_measure
@@ -66,7 +64,10 @@ def convert_to_mbqc_formalism(tape):
     before applying the transform.
 
     Note that this transform leaves all Paulis and Identities as physical gates, and applies
-    all byproduct operations online immediately after their respective measurement procedures."""
+    all byproduct operations online immediately after their respective measurement procedures.
+
+    On this branch, the transform has been extended so it can be used directly on the experimental
+    QuantumScriptSequence class"""
 
     if tape.measurements:
         if len(tape.measurements) != 1 or not isinstance(tape.measurements[0], (SampleMP)):
@@ -113,18 +114,20 @@ def convert_to_mbqc_formalism(tape):
     if isinstance(tape, QuantumScriptSequence):
         new_inner_tapes = []
 
+        # new ops for intermediate tapes
         for inner_tape in tape.intermediate_tapes:
             ops_queue = get_new_ops(inner_tape, wire_map)
             new_tape = inner_tape.copy(operations=ops_queue)
             new_inner_tapes.append(new_tape)
 
+        # new ops and measurement wires for the final tape
         ops_queue = get_new_ops(tape.final_tape, wire_map)
         new_wires = [wire_map[w] for w in meas_wires]
         new_inner_tapes.append(
             tape.final_tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
         )
 
-        return (tape.copy(tapes=new_inner_tapes),), null_postprocessing
+        new_tape = tape.copy(tapes=new_inner_tapes)
     else:
         ops_queue = get_new_ops(tape, wire_map)
         new_wires = [wire_map[w] for w in meas_wires]

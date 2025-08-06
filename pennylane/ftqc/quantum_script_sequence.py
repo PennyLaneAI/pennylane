@@ -19,17 +19,42 @@ FTQC/MBQC device prototype.
 import copy
 from functools import cached_property
 
-import pennylane as qml
+from pennylane.devices.preprocess import null_postprocessing
+from pennylane.ftqc import RotXZX
 from pennylane.measurements import Shots
+from pennylane.ops import RZ
+from pennylane.ops.functions import map_wires
 from pennylane.tape.qscript import QuantumScript
+from pennylane.transforms import transform
+
+
+@transform
+def split_at_non_clifford_gates(tape):
+    """The most basic implementation to ensure that we flush the buffer before
+    each non-Clifford gate. Pays no attention to wires/commutation, and splits
+    the tapes up more than necessary, but the logic is very simple."""
+    all_operations = [[]]
+
+    for op in tape.operations:
+        # if its a non-Clifford gate, and there are already ops in the list, add a new list
+        if isinstance(op, (RotXZX, RZ)) and all_operations[-1]:
+            all_operations.append([])
+        all_operations[-1].append(op)
+
+    tapes = []
+    for ops_list in all_operations[:-1]:
+        tapes.append(tape.copy(operations=ops_list, measurements=[]))
+    tapes.append(tape.copy(operations=all_operations[-1]))
+
+    return [
+        QuantumScriptSequence(tapes),
+    ], null_postprocessing
 
 
 class QuantumScriptSequence:
     """A sequence of tapes meant to be executed in order without resetting the system state.
     Intermediate tapes may return mid-circuit measurements, or nothing. This is not currently
     validated, but it is assumed. The final tape returns terminal measurements."""
-
-    shortname = "QuantumScriptSequence"
 
     def __init__(self, tapes, shots=None):
 
@@ -113,7 +138,7 @@ class QuantumScriptSequence:
         return [tape.operations for tape in self.tapes]
 
     @cached_property
-    def wires(self) -> qml.wires.Wires:
+    def wires(self):
         """Returns the wires used in the quantum script process
 
         Returns:
@@ -144,7 +169,7 @@ class QuantumScriptSequence:
         return self._shots
 
     def __repr__(self) -> str:
-        return f"<{self.shortname}: wires={list(self.wires)}>"
+        return f"<QuantumScriptSequence: wires={list(self.wires)}>"
 
     def map_to_standard_wires(self) -> "QuantumScriptSequence":
         """Wrapper to apply qscript.map_to_standard_wires to each segment contained in the Sequence"""
@@ -153,7 +178,7 @@ class QuantumScriptSequence:
             return self
         new_tapes = []
         for tape in self.tapes:
-            tapes, fn = qml.map_wires(tape, wire_map)
+            tapes, fn = map_wires(tape, wire_map)
             new_tapes.append(fn(tapes))
 
         return self.copy(tapes=new_tapes)
@@ -169,15 +194,15 @@ class QuantumScriptSequence:
         return as_tape._get_standard_wire_map()  # pylint: disable=protected-access
 
     def copy(self, copy_operations: bool = False, **update):
-        """Make it copy-able as if it were a tape where possible. Do not allow
-        modifications to operations or trainable parameters, because any transform
-        or function modifying operations on a tape will not work on a sequence of
-        tapes. Allow updating tapes as a whole as an alternative for
-        QuantumScriptSquence-specific functions to deal with modifying operations
-        on tapes.
+        """Make it copy-able as if it were a tape where possible. This allows transforms
+        that only affect measurements or shots to be applied directly to a QuantumScriptSequnce
+        as if it were a normal QuantumScript. Does not allow modifications to operations or
+        trainable parameters like tape.copy does, because transforms or functions modifying
+        operations on a tape will not work without modification on a sequence of tapes.
 
-        This is not able to support trainable parameters and almost certainly also
-        has other flaws. It is not a thorough implementation of the desired behaviour."""
+        Allows updating tapes as a whole as an alternative for QuantumScriptSquence-specific
+        functions to deal with modifying operations on tapes."""
+
         if copy_operations is True:
             raise RuntimeError("Can't use copy_operations when copying a QuantumScriptSequence")
 

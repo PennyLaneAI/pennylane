@@ -28,22 +28,19 @@ from pennylane.devices.execution_config import DefaultExecutionConfig, Execution
 from pennylane.devices.preprocess import (
     measurements_from_samples,
     no_analytic,
-    null_postprocessing,
     validate_device_wires,
     validate_observables,
 )
 from pennylane.ftqc import (
-    RotXZX,
     convert_to_mbqc_formalism,
     convert_to_mbqc_gateset,
     diagonalize_mcms,
 )
-from pennylane.ops import RZ
 from pennylane.tape.qscript import QuantumScript
 from pennylane.transforms import combine_global_phases, split_non_commuting
 from pennylane.typing import Result
 
-from .quantum_script_sequence import QuantumScriptSequence
+from .quantum_script_sequence import QuantumScriptSequence, split_at_non_clifford_gates
 
 
 class FTQCQubit(Device):
@@ -93,18 +90,18 @@ class FTQCQubit(Device):
         program.add_transform(split_at_non_clifford_gates)
         program.add_transform(convert_to_mbqc_formalism)
 
-        # validate that conversion didn't use too many wires
+        # # validate that conversion didn't use too many wires
         program.add_transform(
             validate_device_wires,
             wires=self.backend.wires,
             name=f"{self.name}.{self.backend.name}",
         )
 
-        # set up for backend execution (including MCM handling)
+        # # set up for backend execution (including MCM handling)
         if self.backend.diagonalize_mcms:
             program.add_transform(diagonalize_mcms)
 
-        # backend_program, _ = self.backend.device.preprocess(execution_config)
+        # backend_program, _ = self.backend.device.preprocess()
 
         program.add_transform(
             qml.devices.preprocess.mid_circuit_measurements,
@@ -159,9 +156,18 @@ class FTQCQubit(Device):
         return config
 
     def execute(self, circuits, execution_config=DefaultExecutionConfig):
-        """Execution method for the frontend. To be expanded to orchestrate executing
-        in chunks with feedback for corrections before non-Clifford gates. Currently
-        just feeds into the backend execution"""
+        """Execute a circuit or a batch of circuits and turn it into results. For this
+        device, each circuit is expected to the expressed as QuantumScriptSequence. This
+        is ensured by the transform program in device preprocessing.
+
+        Args:
+            circuits (Sequence[QuantumScriptSequence]]): the quantum circuits to be executed
+            execution_config (ExecutionConfig): a datastructure with additional information required for execution
+
+        Returns:
+            TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
+
+        """
         return self.backend.execute(circuits, execution_config)
 
 
@@ -178,15 +184,34 @@ class LightningQubitBackend:
         self.device = qml.device("lightning.qubit")
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
-    def execute(self, circuits, execution_config):
-        """Execute a circuit or a batch of circuits and turn it into results.
+    def execute(self, sequences, execution_config=DefaultExecutionConfig):
+        """Execute a sequence or a batch of sequences and turn it into results.
 
         Args:
-            circuits (Union[QuantumTape, Sequence[QuantumTape]]): the quantum circuits to be executed
+            sequences (Sequence[QuantumScriptSequence]]): the quantum circuits to be executed
             execution_config (ExecutionConfig): a datastructure with additional information required for execution
 
         Returns:
             TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
+        """
+        results = []
+        for sequence in sequences:
+            assert isinstance(
+                sequence, QuantumScriptSequence
+            ), "something is amiss - this device uses QuantumScriptSequence"
+            results.append(self._execute_sequence(sequence, execution_config))
+
+        return tuple(results)
+
+    def _execute_sequence(self, sequence, execution_config):
+        """Execute a single QuantumScriptSecuence.
+
+        Args:
+            circuits (QuantumScriptSequence): the sequence of quantum scripts to be executed
+            execution_config (ExecutionConfig): a datastructure with additional information required for execution
+
+        Returns:
+            tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
         """
 
         # pylint: disable=protected-access
@@ -197,52 +222,9 @@ class LightningQubitBackend:
         }
         postselect_mode = execution_config.mcm_config.postselect_mode
 
-        results = []
-        for circuit in circuits:
-            if isinstance(circuit, QuantumScript):
-                res = self._qscript_execute(circuit, mcmc, postselect_mode)
-            elif isinstance(circuit, QuantumScriptSequence):
-                res = self._sequence_execute(circuit, mcmc, postselect_mode)
-            else:
-                raise RuntimeError("That's not a QuantumScript or a QuantumScriptSequence")
-            results.append(tuple(res))
-        return tuple(results)
-
-    def _qscript_execute(self, qscript, mcmc, postselect_mode):
-        """Execute a circuit defined by a QuantumScript"""
-
-        aux_circ = qml.tape.QuantumScript(
-            qscript.operations,
-            qscript.measurements,
-            shots=[1],
-            trainable_params=qscript.trainable_params,
-        )
-        circ_res = []
-        for _ in range(qscript.shots.total_shots):
-            # calling dynamic_wires_from_circuit for each call of simulate
-            # resets the statevector
-            res = self.simulate(
-                self.device.dynamic_wires_from_circuit(aux_circ),
-                self.device._statevector,  # pylint: disable=protected-access
-                mcmc=mcmc,
-                postselect_mode=postselect_mode,
-            )
-            # simulate has already cast it to an array, but we are
-            # doing shots in a different order than it expects, so
-            # it messes up array indexing in post-processing. Casting
-            # to a list is a hack to fix this.
-            circ_res.append(list(res))
-        return circ_res
-
-    def _sequence_execute(self, sequence, mcmc, postselect_mode):
-        """Execute a QuantumTapeSequence, containing several tapes to be executed
-        in succession without resetting the state, followed by terminal measurements
-        performed at the end of the sequence"""
-        # this resets the statevector and makes it the correct size
-        # We need to do it once for the full sequence, then reset for each shot
         sequence = self.device.dynamic_wires_from_circuit(sequence)
 
-        circ_res = []
+        results = []
         # pylint: disable=protected-access
         for _ in range(sequence.shots.total_shots):
             self.device._statevector.reset_state()
@@ -262,8 +244,8 @@ class LightningQubitBackend:
                 mcmc=mcmc,
                 postselect_mode=postselect_mode,
             )
-            circ_res.append(list(res))
-        return circ_res
+            results.append(list(res))
+        return tuple(results)
 
     def simulate(
         self,
@@ -286,8 +268,6 @@ class LightningQubitBackend:
 
         Returns:
             Tuple[TensorLike]: The results of the simulation
-
-        Note that this function can return measurements for non-commuting observables simultaneously.
         """
         if mcmc is None:
             mcmc = {}
@@ -318,41 +298,25 @@ class NullQubitBackend:
 
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
-    def execute(self, circuits, execution_config):
-        """Probably not in need of any modification, since its mocked."""
+    def execute(self, sequences, execution_config):
+        """Mock execution of a sequence or a batch of sequences and turn it into null results.
 
-        assert isinstance(
-            circuits[0], QuantumScriptSequence
-        ), "something is amiss - this device uses QuantumScriptSequence"
+        Args:
+            sequences (Sequence[QuantumScriptSequence]]): the quantum circuits to be executed
+            execution_config (ExecutionConfig): a datastructure with additional information required for execution
 
+        Returns:
+            TensorLike, tuple[TensorLike], tuple[tuple[TensorLike]]: A numeric result of the computation.
+        """
         tapes_to_execute = []
-        for circuit in circuits:
-            shots = circuit.shots.total_shots
-            final_tape = circuit.final_tape
+        for sequence in sequences:
+            assert isinstance(
+                sequence, QuantumScriptSequence
+            ), "something is amiss - this device uses QuantumScriptSequence"
+            shots = sequence.shots.total_shots
+            final_tape = sequence.final_tape
             tapes_to_execute.append(final_tape.copy(shots=shots))
+
         return tuple(
             self.device.execute(tapes_to_execute, execution_config),
         )
-
-
-@qml.transform
-def split_at_non_clifford_gates(tape):
-    """The most basic implementation to ensure that we flush the buffer before
-    each non-Clifford gate. Pays no attention to wires/commutation, and splits
-    the tapes up more than necessary, but the logic is very simple."""
-    all_operations = [[]]
-
-    for op in tape.operations:
-        # if its a non-Clifford gate, and there are already ops in the list, add a new list
-        if isinstance(op, (RotXZX, RZ)) and all_operations[-1]:
-            all_operations.append([])
-        all_operations[-1].append(op)
-
-    tapes = []
-    for ops_list in all_operations[:-1]:
-        tapes.append(tape.copy(operations=ops_list, measurements=[]))
-    tapes.append(tape.copy(operations=all_operations[-1]))
-
-    return [
-        QuantumScriptSequence(tapes),
-    ], null_postprocessing
