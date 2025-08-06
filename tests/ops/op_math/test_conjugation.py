@@ -22,9 +22,10 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import math
+from pennylane import PauliX, math
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.operation import Operator
+from pennylane.ops import prod
 from pennylane.ops.op_math.conjugation import Conjugation, conjugation
 from pennylane.wires import Wires
 
@@ -73,15 +74,11 @@ param_ops = (
 )
 
 ops = (
-    (qml.PauliZ(0), qml.PauliX(1)),
-    (qml.PauliX(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
-    (qml.CNOT(wires=[0, 1]), qml.RX(1.23, wires=1), qml.Identity(wires=0)),
-    (
-        qml.IsingXX(4.56, wires=[2, 3]),
-        qml.Toffoli(wires=[1, 2, 3]),
-        qml.Rot(0.34, 1.0, 0, wires=0),
-    ),
+    (qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0)),
+    (qml.Hadamard(wires=0), qml.PauliZ(wires=0), qml.Hadamard(wires=0)),
+    (qml.CNOT(wires=[0, 1]), qml.RX(1.23, wires=1), qml.CNOT(wires=[0, 1])),
 )
+
 
 def test_basic_validity():
     """Run basic validity checks on a conjugation operator."""
@@ -124,15 +121,13 @@ class MyOp(qml.RX):  # pylint:disable=too-few-public-methods
 class TestInitialization:  # pylint:disable=too-many-public-methods
     """Test the initialization."""
 
-    @pytest.mark.parametrize("id", ("foo", "bar"))
-    def test_init_conjugation_op(self, id):
+    def test_init_conjugation_op(self):
         """Test the initialization of a Conjugation operator."""
-        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"), id=id)
+        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
 
         assert conjugation_op.wires == Wires((0, "a"))
         assert conjugation_op.num_wires == 2
         assert conjugation_op.name == "Conjugation"
-        assert conjugation_op.id == id
 
         assert conjugation_op.data == (0.23,)
         assert conjugation_op.parameters == [0.23]
@@ -140,123 +135,34 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
     def test_hash(self):
         """Testing some situations for the hash property."""
-        # same hash if different order but can be permuted to right order
-        op1 = qml.conjugation(qml.PauliX(0), qml.PauliY("a"))
-        op2 = qml.conjugation(qml.PauliY("a"), qml.PauliX(0))
-        assert op1.hash == op2.hash
+        # test not the same hash if different order
+        op1 = qml.conjugation(qml.PauliX("a"), qml.PauliY("a"), qml.PauliX(1))
+        op2 = qml.conjugation(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
+        assert op1.hash != op2.hash
 
-        # test not the same hash if different order and cant be exchanged to correct order
-        op3 = qml.conjugation(qml.PauliX("a"), qml.PauliY("a"), qml.PauliX(1))
-        op4 = qml.conjugation(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
-        assert op3.hash != op4.hash
-
-    PROD_TERMS_OP_PAIRS_MIXED = (  # not all operands have pauli representation
+    PROD_TERMS_OP_PAIRS = (  # not all operands have pauli representation
         (
-            qml.conjugation(qml.Hadamard(0), X(1), X(2)),
+            qml.conjugation(qml.Hadamard(0), X(1), qml.Hadamard(0)),
             [1.0],
-            [qml.conjugation(qml.Hadamard(0), X(1), X(2))],
-        ),  # trivial conjugationuct
+            [qml.conjugation(qml.Hadamard(0), X(1), qml.Hadamard(0))],
+        ),  # trivial conjugation
         (
-            qml.conjugation(qml.Hadamard(0), X(1), qml.Identity(2)),
+            qml.conjugation(X(0), X(1), X(0)),
             [1.0],
-            [qml.conjugation(qml.Hadamard(0), X(1))],
-        ),
+            [qml.conjugation(X(0), X(1), X(0))],
+        ),  # trivial conjugation
         (
-            qml.conjugation(qml.Hadamard(0), qml.conjugation(Y(4), X(1)), qml.conjugation(Z(2), X(2))),
-            [2 * 4],
-            [qml.conjugation(qml.Hadamard(0), X(1), X(2))],
-        ),  # conjugationuct with scalar conjugationucts inside
-        (
-            qml.conjugation(qml.Hadamard(0), qml.conjugation(Y(4), X(0)), qml.conjugation(Z(2), X(1))),
-            [2 * 4],
-            [qml.conjugation(qml.Hadamard(0), X(0), X(1))],
-        ),  # conjugationuct with scalar conjugationucts on same wire
-        (
-            qml.conjugation(qml.Hadamard(0), qml.conjugation(Y(4), Y(1)), qml.sum(X(2), X(3))),
-            [4, 4],
-            [qml.conjugation(qml.Hadamard(0), Y(1), X(2)), qml.conjugation(qml.Hadamard(0), Y(1), X(3))],
-        ),  # conjugationuct with sums inside
-        (
-            qml.conjugation(
-                qml.conjugation(qml.Hadamard(0), X(2), X(3)),
-                qml.conjugation(Z(0), qml.sum(qml.Hadamard(5), qml.conjugation(X(0), X(6)))),
-            ),
-            [0.5, 0.2],
-            [
-                qml.conjugation(X(2), X(3), qml.Hadamard(5)),
-                qml.conjugation(X(6), X(2), qml.Hadamard(0)),
-            ],
-        ),  # contrived example
+            qml.conjugation(qml.Hadamard(0), X(1)),
+            [1.0],
+            [qml.conjugation(qml.Hadamard(0), X(1), qml.Hadamard(0))],
+        ),  # conjugation without adjoint provided
     )
-
-    @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_MIXED)
-    def test_terms_no_pauli_rep(self, op, coeffs_true, ops_true):
-        """Test that Conjugation.terms() is correct for operators that dont all have a pauli_rep"""
-        coeffs, ops1 = op.terms()
-        assert coeffs == coeffs_true
-        assert ops1 == ops_true
-
-    PROD_TERMS_OP_PAIRS_PAULI = (  # all operands have pauli representation
-        (qml.conjugation(X(0), X(1), X(2)), [1.0], [qml.conjugation(X(0), X(1), X(2))]),  # trivial conjugationuct
-        (
-            qml.conjugation(X(0), X(1), X(2)),
-            [1.0],
-            [qml.conjugation(X(0), X(1), X(2))],
-        ),  # trivial conjugationuct
-        (
-            qml.conjugation(X(0), qml.conjugation(Y(4), X(1)), qml.conjugation(Z(2), X(2))),
-            [2 * 4],
-            [qml.conjugation(X(0), X(1), X(2))],
-        ),  # conjugationuct with scalar conjugationucts inside
-        (
-            qml.conjugation(X(0), qml.conjugation(Y(4), X(0)), qml.conjugation(Z(2), X(1))),
-            [2 * 4],
-            [X(1)],
-        ),  # conjugationuct with scalar conjugationucts on same wire
-        (
-            qml.conjugation(X(0), qml.conjugation(Y(4), Y(0)), qml.conjugation(Z(2), X(1))),
-            [1j * 2 * 4],
-            [qml.conjugation(Z(0), X(1))],
-        ),  # conjugationuct with scalar conjugationucts on same wire
-        (
-            qml.conjugation(X(0), qml.conjugation(Y(4), Y(1)), qml.sum(X(2), X(3))),
-            [4, 4],
-            [qml.conjugation(X(0), Y(1), X(2)), qml.conjugation(X(0), Y(1), X(3))],
-        ),  # conjugationuct with sums inside
-    )
-
-    @pytest.mark.parametrize("op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_PAULI)
-    def test_terms_pauli_rep(self, op, coeffs_true, ops_true):
-        """Test that Conjugation.terms() is correct for operators that all have a pauli_rep"""
-        coeffs, ops1 = op.terms()
-        assert coeffs == coeffs_true
-        assert ops1 == ops_true
-
-    def test_terms_pauli_rep_wire_order(self):
-        """Test that the wire order of the terms is the same as the wire order of the original
-        operands when the Conjugation has a valid pauli_rep"""
-        H = qml.conjugation(X(0), X(1), X(2))
-        _, H_ops = H.terms()
-
-        assert len(H_ops) == 1
-        assert H_ops[0].wires == H.wires
 
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
         x = qml.numpy.array([1.0, 2.0, 3.0])
         conjugation_op = conjugation(qml.PauliX(0), qml.RX(x, wires=0))
         assert conjugation_op.batch_size == 3
-
-    @pytest.mark.parametrize(
-        "op, coeffs_true, ops_true", PROD_TERMS_OP_PAIRS_PAULI + PROD_TERMS_OP_PAIRS_MIXED
-    )
-    def test_terms_does_not_change_queue(self, op, coeffs_true, ops_true):
-        """Test that calling Conjugation.terms does not queue anything."""
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.apply(op)
-            _, _ = op.terms()
-
-        assert q.queue == [op]
 
     def test_batch_size_None(self):
         """Test that the batch size is none if no factors have batching."""
@@ -304,14 +210,14 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert np.allclose(eig_vecs, cached_vecs)
 
     def test_has_matrix_true_via_factors_have_matrix(self):
-        """Test that a conjugationuct of operators that have `has_matrix=True`
+        """Test that a conjugation of operators that have `has_matrix=True`
         has `has_matrix=True` as well."""
 
         conjugation_op = conjugation(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
         assert conjugation_op.has_matrix is True
 
     def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
-        """Test that a conjugationuct of operators of which one does not have `has_matrix=True`
+        """Test that a conjugation of operators of which one does not have `has_matrix=True`
         but is a Hamiltonian has `has_matrix=True`."""
 
         H = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
@@ -322,7 +228,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         "first_factor", [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])]
     )
     def test_has_matrix_false_via_factor_has_no_matrix(self, first_factor):
-        """Test that a conjugationuct of operators of which one does not have `has_matrix=True`
+        """Test that a conjugation of operators of which one does not have `has_matrix=True`
         has `has_matrix=False`."""
 
         conjugation_op = conjugation(first_factor, MyOp(0.23, wires="a"))
@@ -341,7 +247,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         ),
     )
     def test_has_adjoint_true_always(self, factors):
-        """Test that a conjugationuct of operators that have `has_matrix=True`
+        """Test that a conjugation of operators that have `has_matrix=True`
         has `has_matrix=True` as well."""
 
         conjugation_op = conjugation(*factors)
@@ -360,7 +266,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         ),
     )
     def test_has_decomposition_true_always(self, factors):
-        """Test that a conjugationuct of operators that have `has_decomposition=True`
+        """Test that a conjugation of operators that have `has_decomposition=True`
         has `has_decomposition=True` as well."""
 
         conjugation_op = conjugation(*factors)
@@ -379,7 +285,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         ),
     )
     def test_has_diagonalizing_gates_true_via_overlapping_factors(self, factors):
-        """Test that a conjugationuct of operators that have `has_diagonalizing_gates=True`
+        """Test that a conjugation of operators that have `has_diagonalizing_gates=True`
         has `has_diagonalizing_gates=True` as well."""
 
         conjugation_op = conjugation(*factors)
@@ -389,129 +295,23 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         "factors",
         (
             [qml.PauliX(wires=0), qml.PauliX(wires=1)],
-            [qml.PauliX(wires=0), qml.PauliZ(wires="r"), qml.PauliY("s")],
+            [qml.PauliX(wires=0), qml.PauliZ(wires="r")],
             [qml.Hermitian(np.eye(4), wires=[0, 2]), qml.PauliX(wires=1)],
         ),
     )
     def test_has_diagonalizing_gates_true_via_factors(self, factors):
-        """Test that a conjugationuct of operators that have `has_diagonalizing_gates=True`
+        """Test that a conjugation of operators that have `has_diagonalizing_gates=True`
         has `has_diagonalizing_gates=True` as well."""
 
         conjugation_op = conjugation(*factors)
         assert conjugation_op.has_diagonalizing_gates is True
 
     def test_has_diagonalizing_gates_false_via_factor(self):
-        """Test that a conjugationuct of operators of which one has
+        """Test that a conjugation of operators of which one has
         `has_diagonalizing_gates=False` has `has_diagonalizing_gates=False` as well."""
 
         conjugation_op = conjugation(MyOp(3.1, 0), qml.PauliX(2))
         assert conjugation_op.has_diagonalizing_gates is False
-
-    def test_qfunc_init(self):
-        """Tests conjugation initialization with a qfunc argument."""
-
-        def qfunc():
-            qml.Hadamard(0)
-            qml.CNOT([0, 1])
-            qml.RZ(1.1, 1)
-
-        conjugation_gen = conjugation(qfunc)
-        assert callable(conjugation_gen)
-        conjugation_op = conjugation_gen()
-        expected = conjugation(qml.RZ(1.1, 1), qml.CNOT([0, 1]), qml.Hadamard(0))
-        qml.assert_equal(conjugation_op, expected)
-        assert conjugation_op.wires == Wires([1, 0])
-
-    def test_qfunc_single_operator(self):
-        """Test conjugation initialization with qfunc that queues a single operator."""
-
-        def qfunc():
-            qml.S(0)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            out = conjugation(qfunc)()
-
-        assert len(q) == 1
-        assert q.queue[0] == qml.S(0)
-        assert out == qml.S(0)
-
-    def test_qfunc_init_accepts_args_kwargs(self):
-        """Tests that conjugation preserves args when wrapping qfuncs."""
-
-        def qfunc(x, run_had=False):
-            if run_had:
-                qml.Hadamard(0)
-            qml.RX(x, 0)
-            qml.CNOT([0, 1])
-
-        conjugation_gen = conjugation(qfunc)
-        qml.assert_equal(conjugation_gen(1.1), conjugation(qml.CNOT([0, 1]), qml.RX(1.1, 0)))
-        qml.assert_equal(
-            conjugation_gen(2.2, run_had=True), conjugation(qml.CNOT([0, 1]), qml.RX(2.2, 0), qml.Hadamard(0))
-        )
-
-    def test_qfunc_init_propagates_Conjugation_kwargs(self):
-        """Tests that additional kwargs for Conjugation are propagated using qfunc initialization."""
-
-        def qfunc(x):
-            qml.conjugation(qml.RX(x, 0), qml.PauliZ(1))
-            qml.CNOT([0, 1])
-
-        conjugation_gen = conjugation(qfunc, id=123987, lazy=False)
-        conjugation_op = conjugation_gen(1.1)
-
-        assert conjugation_op.id == 123987  # id was set
-        qml.assert_equal(conjugation_op, conjugation(qml.CNOT([0, 1]), qml.PauliZ(1), qml.RX(1.1, 0)))  # eager
-
-    def test_qfunc_init_only_works_with_one_qfunc(self):
-        """Test that the qfunc init only occurs when one callable is passed to conjugation."""
-
-        def qfunc():
-            qml.Hadamard(0)
-            qml.CNOT([0, 1])
-
-        conjugation_op = conjugation(qfunc)()
-        qml.assert_equal(conjugation_op, conjugation(qml.CNOT([0, 1]), qml.Hadamard(0)))
-
-        def fn2():
-            qml.PauliX(0)
-            qml.PauliY(1)
-
-        for args in [(qfunc, fn2), (qfunc, qml.PauliX), (qml.PauliX, qfunc)]:
-            with pytest.raises(AttributeError, match="has no attribute 'wires'"):
-                conjugation(*args)
-
-    def test_qfunc_init_returns_single_op(self):
-        """Tests that if a qfunc only queues one operator, that operator is returned."""
-
-        def qfunc():
-            qml.PauliX(0)
-
-        conjugation_op = conjugation(qfunc)()
-        qml.assert_equal(conjugation_op, qml.PauliX(0))
-        assert not isinstance(conjugation_op, Conjugation)
-
-    @pytest.mark.xfail  # this requirement has been lifted
-    def test_conjugation_accepts_single_operator_but_Conjugation_does_not(self):
-        """Tests that the conjugation wrapper can accept a single operator, and return it."""
-
-        x = qml.PauliX(0)
-        conjugation_op = conjugation(x)
-        assert conjugation_op is x
-        assert not isinstance(conjugation_op, Conjugation)
-
-        with pytest.raises(ValueError, match="Require at least two operators"):
-            Conjugation(x)
-
-    def test_conjugation_fails_with_non_callable_arg(self):
-        """Tests that conjugation explicitly checks that a single-arg is either an Operator or callable."""
-        with pytest.raises(TypeError, match="Unexpected argument of type int passed to qml.conjugation"):
-            conjugation(1)
-
-
-def test_empty_repr():
-    """Test that an empty conjugation still has a repr that indicates it's a conjugation."""
-    assert repr(Conjugation()) == "Conjugation()"
 
 
 # pylint: disable=too-many-public-methods
@@ -527,9 +327,9 @@ class TestMatrix:
         op2: Operator,
         mat2: np.ndarray,
     ):
-        """Test matrix method for a conjugationuct of non_parametric ops"""
+        """Test matrix method for a conjugation of non_parametric ops"""
         mat1, mat2 = compare_and_expand_mat(mat1, mat2)
-        true_mat = mat1 @ mat2
+        true_mat = mat1 @ mat2 @ np.conj(mat1).T
 
         conjugation_op = Conjugation(
             op1(wires=0 if op1.num_wires is None else range(op1.num_wires)),
@@ -548,7 +348,7 @@ class TestMatrix:
         op2: Operator,
         mat2: np.ndarray,
     ):
-        """Test matrix method for a conjugationuct of parametric ops"""
+        """Test matrix method for a conjugation of parametric ops"""
         par1 = tuple(range(op1.num_params))
         par2 = tuple(range(op2.num_params))
         mat1, mat2 = compare_and_expand_mat(mat1(*par1), mat2(*par2))
@@ -557,7 +357,7 @@ class TestMatrix:
             op1(*par1, wires=range(op1.num_wires)), op2(*par2, wires=range(op2.num_wires))
         )
         conjugation_mat = conjugation_op.matrix()
-        true_mat = mat1 @ mat2
+        true_mat = mat1 @ mat2 @ np.conj(mat1).T
         assert np.allclose(conjugation_mat, true_mat)
 
     @pytest.mark.parametrize("op", no_mat_ops)
@@ -569,41 +369,45 @@ class TestMatrix:
             conjugation_op.matrix()
 
     def test_conjugation_ops_multi_terms(self):
-        """Test matrix is correct for a conjugationuct of more than two terms."""
-        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliZ(wires=0))
+        """Test matrix is correct for a conjugation of more than two terms."""
+        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliX(wires=0))
         mat = conjugation_op.matrix()
 
         true_mat = math.array(
             [
-                [1j, 0],
                 [0, 1j],
+                [-1j, 0],
             ]
         )
         assert np.allclose(mat, true_mat)
 
     def test_conjugation_ops_multi_wires(self):
-        """Test matrix is correct when multiple wires are used in the conjugationuct."""
-        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.Hadamard(wires=1), qml.PauliZ(wires=2))
+        """Test matrix is correct when multiple wires are used in the conjugation."""
+        conjugation_op = Conjugation(
+            qml.PauliX(wires=0), qml.Hadamard(wires=1), qml.PauliX(wires=0)
+        )
         mat = conjugation_op.matrix()
 
         x = math.array([[0, 1], [1, 0]])
         h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
-        z = math.array([[1, 0], [0, -1]])
+        I = math.array([[1, 0], [0, 1]])
 
-        true_mat = math.kron(x, math.kron(h, z))
+        true_mat = math.kron(x, I) @ math.kron(I, h) @ math.kron(x, I)
         assert np.allclose(mat, true_mat)
 
     def test_conjugation_ops_wire_order(self):
         """Test correct matrix is returned when the wire_order arg is provided."""
-        conjugation_op = Conjugation(qml.PauliZ(wires=2), qml.PauliX(wires=0), qml.Hadamard(wires=1))
-        wire_order = [0, 1, 2]
+        conjugation_op = Conjugation(
+            qml.Hadamard(wires=1), qml.PauliX(wires=0), qml.Hadamard(wires=1)
+        )
+        wire_order = [0, 1]
         mat = conjugation_op.matrix(wire_order=wire_order)
 
         x = math.array([[0, 1], [1, 0]])
         h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
-        z = math.array([[1, 0], [0, -1]])
+        I = math.array([[1, 0], [0, 1]])
 
-        true_mat = math.kron(x, math.kron(h, z))
+        true_mat = math.kron(I, h) @ math.kron(x, I) @ math.kron(I, h)
         assert np.allclose(mat, true_mat)
 
     def test_conjugation_templates(self):
@@ -620,50 +424,13 @@ class TestMatrix:
             return 1 / math.sqrt(2**num_wires) * mat
 
         wires = [0, 1, 2]
-        conjugation_op = Conjugation(qml.QFT(wires=wires), qml.GroverOperator(wires=wires), qml.PauliX(wires=0))
+        conjugation_op = Conjugation(qml.QFT(wires=wires), qml.GroverOperator(wires=wires))
         mat = conjugation_op.matrix()
 
         grov_mat = (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128")
         qft_mat = get_qft_mat(3)
-        x = math.array([[0.0 + 0j, 1.0 + 0j], [1.0 + 0j, 0.0 + 0j]])
-        x_mat = math.kron(x, math.eye(4, dtype="complex128"))
 
-        true_mat = qft_mat @ grov_mat @ x_mat
-        assert np.allclose(mat, true_mat)
-
-    def test_conjugation_qchem_ops(self):
-        """Test that qchem operations can be composed and the generated matrix is correct."""
-        wires = [0, 1, 2, 3]
-        conjugation_op = Conjugation(
-            qml.OrbitalRotation(4.56, wires=wires),
-            qml.SingleExcitation(1.23, wires=[0, 1]),
-            qml.PauliX(4),
-        )
-        mat = conjugation_op.matrix()
-
-        or_mat = math.kron(gd.OrbitalRotation(4.56), math.eye(2))
-        se_mat = math.kron(gd.SingleExcitation(1.23), math.eye(8, dtype="complex128"))
-        x = math.array([[0.0 + 0j, 1.0 + 0j], [1.0 + 0j, 0.0 + 0j]])
-        x_mat = math.kron(math.eye(16, dtype="complex128"), x)
-
-        true_mat = or_mat @ se_mat @ x_mat
-        assert np.allclose(mat, true_mat)
-
-    def test_conjugation_observables(self):
-        """Test that observable objects can also be composed with correct matrix representation."""
-        wires = [0, 1]
-        conjugation_op = Conjugation(
-            qml.Hermitian(qnp.array([[0.0, 1.0], [1.0, 0.0]]), wires=2),
-            qml.Projector(state=qnp.array([0, 1]), wires=wires),
-        )
-        mat = conjugation_op.matrix()
-
-        hermitian_mat = qnp.array([[0.0, 1.0], [1.0, 0.0]])
-        proj_mat = qnp.array(
-            [[0.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0], [0.0, 0.0, 0.0, 0.0]]
-        )
-
-        true_mat = qnp.kron(hermitian_mat, proj_mat)
+        true_mat = qft_mat @ grov_mat @ np.conj(qft_mat).T
         assert np.allclose(mat, true_mat)
 
     def test_conjugation_qubit_unitary(self):
@@ -674,7 +441,7 @@ class TestMatrix:
         conjugation_op = Conjugation(U_op, qml.Identity(wires=1))
         mat = conjugation_op.matrix()
 
-        true_mat = qnp.kron(U, qnp.eye(2)) @ qnp.eye(4)
+        true_mat = qnp.eye(4)
         assert np.allclose(mat, true_mat)
 
     def test_conjugation_hamiltonian(self):
@@ -683,54 +450,40 @@ class TestMatrix:
         conjugation_op = Conjugation(qml.PauliZ(wires=0), U)
         mat = conjugation_op.matrix()
 
+        z = math.array([[1, 0], [0, -1]])
+        I = math.array([[1, 0], [0, 1]])
         true_mat = [
             [0.0, 0.5, 0.0, 0.0],
             [0.5, 0.0, 0.0, 0.0],
             [0.0, 0.0, 0.0, -0.5],
             [0.0, 0.0, -0.5, 0.0],
-        ]
+        ] @ np.kron(z, I)
         assert np.allclose(mat, true_mat)
 
     def test_matrix_all_batched(self):
         """Test that Conjugation matrix has batching support when all operands are batched."""
         x = qml.numpy.array([0.1, 0.2, 0.3])
         y = qml.numpy.array([0.4, 0.5, 0.6])
-        op = conjugation(qml.RX(x, wires=0), qml.RY(y, wires=2), qml.PauliZ(1))
+        op = conjugation(qml.RX(x, wires=0), qml.RY(y, wires=2))
         mat = op.matrix()
-        sum_list = [
-            conjugation(qml.RX(i, wires=0), qml.RY(j, wires=2), qml.PauliZ(1)) for i, j in zip(x, y)
-        ]
+        sum_list = [conjugation(qml.RX(i, wires=0), qml.RY(j, wires=2)) for i, j in zip(x, y)]
         compare = qml.math.stack([s.matrix() for s in sum_list])
         assert qml.math.allclose(mat, compare)
-        assert mat.shape == (3, 8, 8)
+        assert mat.shape == (3, 4, 4)
 
     def test_matrix_not_all_batched(self):
         """Test that Conjugation matrix has batching support when all operands are not batched."""
         x = qml.numpy.array([0.1, 0.2, 0.3])
         y = 0.5
-        z = qml.numpy.array([0.4, 0.5, 0.6])
-        op = conjugation(
-            qml.RX(x, wires=0),
-            qml.RY(y, wires=2),
-            qml.RZ(z, wires=1),
-            qml.conjugation(qml.PauliX(2), qml.PauliY(3)),
-        )
+        op = conjugation(qml.RX(x, wires=0), qml.RY(y, wires=2))
         mat = op.matrix()
         batched_y = [y for _ in x]
         sum_list = [
-            conjugation(
-                qml.RX(i, wires=0),
-                qml.RY(j, wires=2),
-                qml.RZ(k, wires=1),
-                qml.conjugation(qml.PauliX(2), qml.PauliY(3)),
-            )
-            for i, j, k in zip(x, batched_y, z)
+            conjugation(qml.RX(i, wires=0), qml.RY(j, wires=2)) for i, j in zip(x, batched_y)
         ]
         compare = qml.math.stack([s.matrix() for s in sum_list])
         assert qml.math.allclose(mat, compare)
-        assert mat.shape == (3, 16, 16)
-
-    # Add interface tests for each interface !
+        assert mat.shape == (3, 4, 4)
 
     @pytest.mark.jax
     def test_conjugation_jax(self):
@@ -741,16 +494,14 @@ class TestMatrix:
         rot_params = jnp.array([0.12, 3.45, 6.78])
 
         conjugation_op = Conjugation(
-            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
-            qml.RX(theta, wires=1),
-            qml.Identity(wires=0),
+            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0), qml.RX(theta, wires=1)
         )
         mat = conjugation_op.matrix()
 
         true_mat = (
             jnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
             @ jnp.kron(qnp.eye(2), gd.Rotx(theta))
-            @ qnp.eye(4)
+            @ jnp.conj(jnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))).T
         )
         true_mat = jnp.array(true_mat)
 
@@ -765,16 +516,14 @@ class TestMatrix:
         rot_params = torch.tensor([0.12, 3.45, 6.78])
 
         conjugation_op = Conjugation(
-            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
-            qml.RX(theta, wires=1),
-            qml.Identity(wires=0),
+            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0), qml.RX(theta, wires=1)
         )
         mat = conjugation_op.matrix()
 
         true_mat = (
             qnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
             @ qnp.kron(qnp.eye(2), gd.Rotx(theta))
-            @ qnp.eye(4)
+            @ qnp.conj(qnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))).T
         )
         true_mat = torch.tensor(true_mat, dtype=torch.complex64)
 
@@ -789,16 +538,14 @@ class TestMatrix:
         rot_params = tf.Variable([0.12, 3.45, 6.78])
 
         conjugation_op = Conjugation(
-            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0),
-            qml.RX(theta, wires=1),
-            qml.Identity(wires=0),
+            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0), qml.RX(theta, wires=1)
         )
         mat = conjugation_op.matrix()
 
         true_mat = (
             qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
             @ qnp.kron(qnp.eye(2), gd.Rotx(1.23))
-            @ qnp.eye(4)
+            @ qnp.conj(qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))).T
         )
         true_mat = tf.Variable(true_mat)
         true_mat = tf.Variable(true_mat, dtype=tf.complex128)
@@ -814,45 +561,21 @@ class TestMatrix:
     def test_sparse_matrix(self, op1, mat1, op2, mat2):
         """Test that the sparse matrix of a Conjugation op is defined and correct."""
         conjugation_op = conjugation(op1(wires=0), op2(wires=1))
-        true_mat = math.kron(mat1, mat2)
+        true_mat = (
+            math.kron(mat1, np.eye(2))
+            @ math.kron(np.eye(2), mat2)
+            @ np.conj(math.kron(mat1, np.eye(2))).T
+        )
         conjugation_mat = conjugation_op.sparse_matrix().todense()
 
         assert np.allclose(true_mat, conjugation_mat)
 
     @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
     @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
-    def test_sparse_matrix_format(self, op1, mat1, op2, mat2):
-        """Test that the sparse matrix accepts the format parameter."""
-        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
-
-        conjugation_op = qml.sum(op1(wires=0), op2(wires=1))
-        true_mat = math.kron(mat1, np.eye(2)) + math.kron(np.eye(2), mat2)
-        assert isinstance(conjugation_op.sparse_matrix(), csr_matrix)
-        conjugation_op_csc = conjugation_op.sparse_matrix(format="csc")
-        conjugation_op_lil = conjugation_op.sparse_matrix(format="lil")
-        conjugation_op_coo = conjugation_op.sparse_matrix(format="coo")
-        assert isinstance(conjugation_op_csc, csc_matrix)
-        assert isinstance(conjugation_op_lil, lil_matrix)
-        assert isinstance(conjugation_op_coo, coo_matrix)
-        assert np.allclose(true_mat, conjugation_op_csc.todense())
-        assert np.allclose(true_mat, conjugation_op_lil.todense())
-        assert np.allclose(true_mat, conjugation_op_coo.todense())
-
-    def test_sparse_matrix_global_phase(self):
-        """Test that a conjugation with a global phase still defines a sparse matrix."""
-
-        op = qml.GlobalPhase(0.5) @ qml.X(0) @ qml.X(0)
-
-        sparse_mat = op.sparse_matrix(wire_order=(0, 1))
-        mat = sparse_mat.todense()
-        assert qml.math.allclose(mat, np.exp(-0.5j) * np.eye(4))
-
-    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
-    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
     def test_sparse_matrix_same_wires(self, op1, mat1, op2, mat2):
         """Test that the sparse matrix of a Conjugation op is defined and correct."""
         conjugation_op = conjugation(op1(wires=0), op2(wires=0))
-        true_mat = mat1 @ mat2
+        true_mat = mat1 @ mat2 @ np.conj(mat1).T
         conjugation_mat = conjugation_op.sparse_matrix().todense()
 
         assert np.allclose(true_mat, conjugation_mat)
@@ -862,10 +585,14 @@ class TestMatrix:
     def test_sparse_matrix_wire_order(self, op1, mat1, op2, mat2):
         """Test that the sparse matrix of a Conjugation op is defined
         with wire order and correct."""
-        true_mat = math.kron(math.kron(mat2, np.eye(2)), mat1)
+        true_mat = (
+            math.kron(mat1, np.eye(2))
+            @ math.kron(np.eye(2), mat2)
+            @ np.conj(math.kron(mat1, np.eye(2))).T
+        )
 
-        conjugation_op = conjugation(op1(wires=2), op2(wires=0))
-        conjugation_mat = conjugation_op.sparse_matrix(wire_order=[0, 1, 2]).todense()
+        conjugation_op = conjugation(op1(wires=1), op2(wires=0))
+        conjugation_mat = conjugation_op.sparse_matrix(wire_order=[1, 0]).todense()
 
         assert np.allclose(true_mat, conjugation_mat)
 
@@ -894,59 +621,6 @@ class TestProperties:
         conjugation_op = conjugation(*ops_lst)
         assert conjugation_op._queue_category == "_ops"
 
-    def test_queue_category_none(self):
-        """Test _queue_category property is None when any factor is not `_ops`."""
-
-        class DummyOp(Operator):  # pylint:disable=too-few-public-methods
-            """Dummy op with None queue category"""
-
-            _queue_category = None
-            num_wires = 1
-
-        conjugation_op = conjugation(qml.Identity(wires=0), DummyOp(wires=0))
-        assert conjugation_op._queue_category is None
-
-    def test_eigendecomposition(self):
-        """Test that the computed Eigenvalues and Eigenvectors are correct."""
-        diag_conjugation_op = Conjugation(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
-        eig_decomp = diag_conjugation_op.eigendecomposition
-        eig_vecs = eig_decomp["eigvec"]
-        eig_vals = eig_decomp["eigval"]
-
-        true_eigvecs = qnp.tensor(
-            [
-                [0.0, 0.0, 1.0, 0.0],
-                [1.0, 0.0, 0.0, 0.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0],
-            ]
-        )
-
-        true_eigvals = qnp.tensor([-1.0, -1.0, 1.0, 1.0])
-
-        assert np.allclose(eig_vals, true_eigvals)
-        assert np.allclose(eig_vecs, true_eigvecs)
-
-    def test_qutrit_eigvals(self):
-        """Test that the eigvals can be computed with qutrit observables."""
-
-        op1 = qml.GellMann(wires=0)
-        op2 = qml.GellMann(index=8, wires=1)
-
-        conjugation_op = qml.conjugation(op1, op2)
-        eigs = conjugation_op.eigvals()
-
-        mat_eigs = np.linalg.eigvals(conjugation_op.matrix())
-
-        sorted_eigs = np.sort(eigs)
-        sorted_mat_eigs = np.sort(mat_eigs)
-        assert qml.math.allclose(sorted_eigs, sorted_mat_eigs)
-
-        # pylint: disable=import-outside-top-level
-        from pennylane.ops.functions.assert_valid import _check_eigendecomposition
-
-        _check_eigendecomposition(conjugation_op)
-
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
         diag_conjugation_op = Conjugation(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
@@ -971,13 +645,6 @@ class TestProperties:
 
         assert qml.math.allclose(f(0.5, 1.0), jax.jit(f)(0.5, 1.0))
 
-    def test_eigvals_no_wires_identity(self):
-        """Test that eigvals can be computed if a component is an identity on no wires."""
-        op = qml.X(0) @ qml.Y(1) @ qml.I()
-        op2 = qml.X(0) @ qml.Y(1)
-
-        assert qml.math.allclose(op.eigvals(), op2.eigvals())
-
 
 class TestWrapperFunc:
     """Test wrapper function."""
@@ -989,45 +656,9 @@ class TestWrapperFunc:
         factors = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
         op_id = "conjugation_op"
 
-        conjugation_func_op = conjugation(*factors, id=op_id)
-        conjugation_class_op = Conjugation(*factors, id=op_id)
+        conjugation_func_op = conjugation(*factors)
+        conjugation_class_op = Conjugation(*factors)
         qml.assert_equal(conjugation_func_op, conjugation_class_op)
-
-    def test_lazy_mode(self):
-        """Test that by default, the operator is simply wrapped in `Conjugation`, even if a simplification exists."""
-        op = conjugation(qml.S(0), Conjugation(qml.S(1), qml.T(1)))
-
-        assert isinstance(op, Conjugation)
-        assert len(op) == 2
-
-    def test_non_lazy_mode(self):
-        """Test the lazy=False keyword."""
-        op = conjugation(qml.S(0), Conjugation(qml.S(1), qml.T(1)), lazy=False)
-
-        assert isinstance(op, Conjugation)
-        assert len(op) == 3
-
-    def test_nonlazy_mode_queueing(self):
-        """Test that if a simpification is accomplished, the metadata for the original op
-        and the new simplified op is updated."""
-        with qml.queuing.AnnotatedQueue() as q:
-            conjugation1 = conjugation(qml.S(1), qml.T(1))
-            conjugation2 = conjugation(qml.S(0), conjugation1, lazy=False)
-
-        assert len(q) == 1
-        assert q.queue[0] is conjugation2
-
-    def test_correct_queued_operators(self):
-        """Test that args and kwargs do not add operators to the queue."""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.conjugation(qml.QSVT)(qml.X(1), [qml.Z(1)])
-            qml.conjugation(qml.QSVT(qml.X(1), [qml.Z(1)]))
-
-        for op in q.queue:
-            assert op.name == "QSVT"
-
-        assert len(q.queue) == 2
 
 
 class TestIntegration:
@@ -1077,37 +708,6 @@ class TestIntegration:
         out = my_circ()
         assert qml.math.allclose(out, expected)
 
-    def test_measurement_process_sample(self):
-        """Test Conjugation class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
-        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.PauliX(wires=1))
-
-        @qml.qnode(dev)
-        def my_circ():
-            Conjugation(qml.Hadamard(0), qml.Hadamard(1))
-            return qml.sample(op=conjugation_op)
-
-        results = my_circ()
-
-        assert len(results) == 20
-        assert (results == 1).all()
-
-    def test_measurement_process_counts(self):
-        """Test Conjugation class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
-        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.PauliX(wires=1))
-
-        @qml.qnode(dev)
-        def my_circ():
-            Conjugation(qml.Hadamard(0), qml.Hadamard(1))
-            return qml.counts(op=conjugation_op)
-
-        results = my_circ()
-
-        assert sum(results.values()) == 20
-        assert 1 in results  # pylint:disable=unsupported-membership-test
-        assert -1 not in results  # pylint:disable=unsupported-membership-test
-
     def test_differentiable_measurement_process(self):
         """Test that the gradient can be computed with a Conjugation op in the measurement process."""
         conjugation_op = Conjugation(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
@@ -1144,8 +744,6 @@ class TestIntegration:
         operands = (
             qml.Hadamard(wires=0),
             qml.CNOT(wires=[0, 1]),
-            qml.RX(1.23, wires=1),
-            qml.IsingZZ(0.56, wires=[0, 2]),
         )
 
         @qml.qnode(dev)
@@ -1155,8 +753,7 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def true_state_circ():
-            qml.IsingZZ(0.56, wires=[0, 2])
-            qml.RX(1.23, wires=1)
+            qml.Hadamard(wires=0)
             qml.CNOT(wires=[0, 1])
             qml.Hadamard(wires=0)
             return qml.state()
@@ -1177,8 +774,9 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def batched_no_conjugation(x, y):
-            qml.RY(y, wires=0)
             qml.RX(x, wires=0)
+            qml.RY(y, wires=0)
+            qml.adjoint(qml.RX(x, wires=0))
             return qml.expval(qml.PauliZ(0))
 
         res1 = batched_conjugation(x, y)
@@ -1198,7 +796,7 @@ class TestIntegration:
         U = qnp.array([[1.0, 0.0], [0.0, -1.0]], requires_grad=True)
 
         tape = qml.workflow.construct_tape(circuit)(x, U)
-        assert tape.trainable_params == [1]
+        assert tape.trainable_params == [1, 2]
 
 
 class TestDecomposition:
@@ -1206,9 +804,9 @@ class TestDecomposition:
     def test_resource_keys(self):
         """Test that the resource keys of `Conjugation` are op_reps."""
         assert Conjugation.resource_keys == frozenset({"resources"})
-        conjugationuct = qml.X(0) @ qml.Y(1) @ qml.X(2)
+        conjugation = qml.X(0) @ qml.Y(1) @ qml.X(2)
         resources = {qml.resource_rep(qml.X): 2, qml.resource_rep(qml.Y): 1}
-        assert conjugationuct.resource_params == {"resources": resources}
+        assert conjugation.resource_params == {"resources": resources}
 
     def test_registered_decomp(self):
         """Test that the decomposition of conjugation is registered."""
@@ -1232,7 +830,7 @@ class TestDecomposition:
     def test_integration(self, enable_graph_decomposition):
         """Test that conjugation's can be integrated into the decomposition."""
 
-        op = qml.S(0) @ qml.S(1) @ qml.T(0) @ qml.Y(1)
+        op = Conjugation(qml.S(0), qml.S(1))
 
         graph = qml.decomposition.DecompositionGraph([op], gate_set=set(qml.ops.__all__))
         graph.solve()

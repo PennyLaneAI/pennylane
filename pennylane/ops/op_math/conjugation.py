@@ -2,16 +2,16 @@ from collections import Counter
 from functools import reduce
 from itertools import combinations
 
-from pennylane.wires import Wires
 from scipy.sparse import kron as sparse_kron
 
-from pennylane import math, queuing, apply
+from pennylane import apply, math, queuing
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.ops.op_math import adjoint
 from pennylane.typing import TensorLike
-from pennylane.decomposition import resource_rep, register_resources, add_decomps
+from pennylane.wires import Wires
 
-from .composite import CompositeOp, handle_recursion_error
 from ...operation import Operator
+from .composite import CompositeOp, handle_recursion_error
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
@@ -79,7 +79,6 @@ class Conjugation(CompositeOp):
         Returns:
             List[.Operator]: sorted list of operators
         """
-
 
         # TODO: sorting, maybe go in a base class
 
