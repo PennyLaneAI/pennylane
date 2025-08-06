@@ -9,8 +9,8 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Support for the ``tensorflow`` interface has been deprecated and will be removed in v0.44.
-  Instead we recommended migrating to ``jax`` or ``torch`` for machine learning applications.
+* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in Pennylane v0.44.
+  Instead, we recommended migration to ``jax`` or ``torch`` interfaces for machine learning applications.
 
   - Deprecated in v0.43
   - Will be removed in v0.44
