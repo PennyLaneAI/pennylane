@@ -128,18 +128,18 @@ test_data_decomposition = [
 ]
 
 test_data_decomposition_new = [
-    # (
-    #     [[0, 1, 2]],
-    #     [],
-    #     np.array([3.815]),
-    #     1
-    # ),
-    # (
-    #     [[0, 1, 2], [1, 2, 3]],
-    #     [],
-    #     np.array([3.815, 4.866]),
-    #     1,
-    # ),
+    (
+        [[0, 1, 2]],
+        [],
+        np.array([3.815]),
+        1
+    ),
+    (
+        [[0, 1, 2], [1, 2, 3]],
+        [],
+        np.array([3.815, 4.866]),
+        1,
+    ),
     (
         [],
         [[[0, 1], [2, 3]]],
@@ -158,12 +158,12 @@ test_data_decomposition_new = [
         np.array([3.815, 4.866, 1.019, 0.639]),
         1,
     ),
-    # (
-    #     [[0, 1, 2]],
-    #     [],
-    #     np.array([[3.815], [1.019]]),
-    #     2,
-    # ),
+    (
+        [[0, 1, 2]],
+        [],
+        np.array([[3.815], [1.019]]),
+        2,
+    ),
 ]
 
 @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
