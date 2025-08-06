@@ -403,12 +403,12 @@ class TestDecompositionGraph:
             alt_decomps={CustomOp: [_decomp_without_work_wire, _decomp_with_work_wire]},
         )
 
-        graph.solve(num_work_wires=0)
-        assert graph.decomposition(CustomOp(wires=[0, 1, 2])) is _decomp_without_work_wire
+        solution = graph.solve(num_work_wires=0)
+        assert solution.decomposition(CustomOp(wires=[0, 1, 2])) is _decomp_without_work_wire
 
-        graph.solve(num_work_wires=1)
+        solution = graph.solve(num_work_wires=1)
         assert (
-            graph.decomposition(CustomOp(wires=[0, 1, 2]), num_work_wires=1)
+            solution.decomposition(CustomOp(wires=[0, 1, 2]), num_work_wires=1)
             is _decomp_with_work_wire
         )
 
@@ -468,15 +468,15 @@ class TestDecompositionGraph:
         assert len(graph._graph.nodes()) == 16
         assert len(graph._graph.edges()) == 26
 
-        graph.solve(num_work_wires=0)
-        assert graph.decomposition(op) is _decomp2_without_work_wire
-        assert graph.decomposition(small_op) is _decomp_without_work_wire
+        solution = graph.solve(num_work_wires=0)
+        assert solution.decomposition(op) is _decomp2_without_work_wire
+        assert solution.decomposition(small_op) is _decomp_without_work_wire
 
-        graph.solve(num_work_wires=1)
-        assert graph.decomposition(op, num_work_wires=1) is _decomp2_with_work_wire
-        assert graph.decomposition(small_op, num_work_wires=0) is _decomp_without_work_wire
+        solution = graph.solve(num_work_wires=1)
+        assert solution.decomposition(op, num_work_wires=1) is _decomp2_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=0) is _decomp_without_work_wire
 
-        graph.solve(num_work_wires=2)
+        solution = graph.solve(num_work_wires=2)
         # When there are only 2 work wires available, by construction, it is more
         # resource efficient to use them on the CustomOp, so even where there are
         # enough work wires to use the more efficient decomposition for the LargeOp,
@@ -484,17 +484,17 @@ class TestDecompositionGraph:
         # resource efficiency. Because if we use one of the work wires to decompose
         # the LargeOp, there won't be enough work wires left to further decompose
         # the 2 CustomOp and it would result in significantly more gates.
-        assert graph.decomposition(op, num_work_wires=2) is _decomp2_without_work_wire
-        assert graph.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
+        assert solution.decomposition(op, num_work_wires=2) is _decomp2_without_work_wire
+        assert solution.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
 
-        graph.solve(num_work_wires=3)
-        assert graph.decomposition(op, num_work_wires=3) is _decomp2_with_work_wire
-        assert graph.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
-        assert graph.decomposition(small_op, num_work_wires=3) is _decomp_with_work_wire
+        solution = graph.solve(num_work_wires=3)
+        assert solution.decomposition(op, num_work_wires=3) is _decomp2_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=3) is _decomp_with_work_wire
 
-        graph.solve(num_work_wires=None)
-        assert graph.decomposition(op, num_work_wires=None) is _decomp2_with_work_wire
-        assert graph.decomposition(small_op, num_work_wires=None) is _decomp_with_work_wire
+        solution = graph.solve(num_work_wires=None)
+        assert solution.decomposition(op, num_work_wires=None) is _decomp2_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=None) is _decomp_with_work_wire
 
 
 @pytest.mark.unit
