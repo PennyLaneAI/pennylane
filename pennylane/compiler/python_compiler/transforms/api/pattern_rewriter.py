@@ -26,60 +26,6 @@ from pennylane.operation import Operator
 
 from ...dialects import mbqc, quantum
 
-# Tuple of all operations that return qubits
-_ops_returning_qubits = (
-    quantum.CustomOp,
-    quantum.AllocQubitOp,
-    quantum.ExtractOp,
-    quantum.GlobalPhaseOp,
-    quantum.MeasureOp,
-    quantum.MultiRZOp,
-    quantum.QubitUnitaryOp,
-    quantum.SetBasisStateOp,
-    quantum.SetStateOp,
-    mbqc.MeasureInBasisOp,
-)
-
-# Tuple of all operations that return "out_qubits"
-_out_qubits_ops = (
-    quantum.CustomOp,
-    quantum.MultiRZOp,
-    quantum.QubitUnitaryOp,
-    quantum.SetBasisStateOp,
-    quantum.SetStateOp,
-)
-
-# Tuple of all operations that return "out_ctrl_qubits"
-_out_ctrl_qubits_ops = (
-    quantum.CustomOp,
-    quantum.GlobalPhaseOp,
-    quantum.MultiRZOp,
-    quantum.QubitUnitaryOp,
-)
-
-# Tuple of all operations that return "out_qubit"
-_out_qubit_ops = (quantum.MeasureOp, mbqc.MeasureInBasisOp)
-
-# Tuple of all operations that return "qubit"
-_qubit_ops = (quantum.AllocQubitOp, quantum.ExtractOp)
-
-
-def _get_bfs_out_qubits(op):
-    out_qubits = ()
-    if not isinstance(op, _ops_returning_qubits):
-        return out_qubits
-
-    if isinstance(op, _out_qubits_ops):
-        out_qubits += tuple(op.out_qubits)
-    if isinstance(op, _out_ctrl_qubits_ops):
-        out_qubits += tuple(op.out_ctrl_qubits)
-    if isinstance(op, _out_qubit_ops):
-        out_qubits += (op.out_qubit,)
-    if isinstance(op, _qubit_ops):
-        out_qubits += (op.qubit,)
-
-    return out_qubits
-
 
 class StateManagement:
     """A container class for managing wire mapping."""
@@ -133,6 +79,61 @@ class StateManagement:
             return wire
 
         return None
+
+
+# Tuple of all operations that return qubits
+_ops_returning_qubits = (
+    quantum.CustomOp,
+    quantum.AllocQubitOp,
+    quantum.ExtractOp,
+    quantum.GlobalPhaseOp,
+    quantum.MeasureOp,
+    quantum.MultiRZOp,
+    quantum.QubitUnitaryOp,
+    quantum.SetBasisStateOp,
+    quantum.SetStateOp,
+    mbqc.MeasureInBasisOp,
+)
+
+# Tuple of all operations that return "out_qubits"
+_out_qubits_ops = (
+    quantum.CustomOp,
+    quantum.MultiRZOp,
+    quantum.QubitUnitaryOp,
+    quantum.SetBasisStateOp,
+    quantum.SetStateOp,
+)
+
+# Tuple of all operations that return "out_ctrl_qubits"
+_out_ctrl_qubits_ops = (
+    quantum.CustomOp,
+    quantum.GlobalPhaseOp,
+    quantum.MultiRZOp,
+    quantum.QubitUnitaryOp,
+)
+
+# Tuple of all operations that return "out_qubit"
+_out_qubit_ops = (quantum.MeasureOp, mbqc.MeasureInBasisOp)
+
+# Tuple of all operations that return "qubit"
+_qubit_ops = (quantum.AllocQubitOp, quantum.ExtractOp)
+
+
+def _get_bfs_out_qubits(op):
+    out_qubits = ()
+    if not isinstance(op, _ops_returning_qubits):
+        return out_qubits
+
+    if isinstance(op, _out_qubits_ops):
+        out_qubits += tuple(op.out_qubits)
+    if isinstance(op, _out_ctrl_qubits_ops):
+        out_qubits += tuple(op.out_ctrl_qubits)
+    if isinstance(op, _out_qubit_ops):
+        out_qubits += (op.out_qubit,)
+    if isinstance(op, _qubit_ops):
+        out_qubits += (op.qubit,)
+
+    return out_qubits
 
 
 # TODO: Integration StateManagement with rewriting
