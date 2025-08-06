@@ -44,7 +44,6 @@ from pennylane.tape import QuantumScript
 from pennylane.tape.tape import expand_tape
 from pennylane.wires import Wires
 
-# pylint: disable=too-few-public-methods
 # pylint: disable=protected-access
 # pylint: disable=pointless-statement
 # pylint: disable=expression-not-assigned
@@ -150,7 +149,7 @@ class TestControlledInit:
         assert op.id == "something"
 
         assert op.num_params == 0
-        assert op.parameters == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert op.parameters == []
         assert op.data == ()
 
         assert op.num_wires == 3

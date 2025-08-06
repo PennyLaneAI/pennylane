@@ -114,7 +114,6 @@ def _recursive_conj(dy):
     return tuple(_recursive_conj(d) for d in dy)
 
 
-# pylint: disable=abstract-method
 @pytreeify
 class ExecuteTapes(torch.autograd.Function):
     """The signature of this ``torch.autograd.Function`` is designed to
@@ -139,7 +138,6 @@ class ExecuteTapes(torch.autograd.Function):
 
     """
 
-    # pylint: disable=arguments-differ
     @staticmethod
     def forward(ctx, kwargs, *parameters):
         """Implements the forward pass batch tape evaluation."""

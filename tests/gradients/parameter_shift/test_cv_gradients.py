@@ -14,7 +14,7 @@
 """
 Unit tests for computing Autograd gradients of quantum functions.
 """
-# pylint: disable=no-value-for-parameter
+
 
 import autograd
 import numpy as np
@@ -30,7 +30,6 @@ thetas = np.linspace(-2 * np.pi, 2 * np.pi, 8)
 sqz_vals = np.linspace(0.0, 1.0, 5)
 
 
-# pylint: disable=too-few-public-methods
 class PolyN(qml.ops.PolyXP):
     "Mimics NumberOperator using the arbitrary 2nd order observable interface. Results should be identical."
 

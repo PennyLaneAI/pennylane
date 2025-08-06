@@ -20,7 +20,6 @@ import dataclasses
 import pennylane as qml
 
 
-# pylint: disable=unused-argument
 class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
     """This device provides derivatives via parameter shift."""
 

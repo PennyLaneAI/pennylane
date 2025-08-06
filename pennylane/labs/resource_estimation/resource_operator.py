@@ -18,7 +18,6 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 from collections.abc import Callable, Hashable, Iterable
 from inspect import signature
-from typing import Union
 
 import numpy as np
 
@@ -28,10 +27,10 @@ from pennylane.operation import classproperty
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
-# pylint: disable=unused-argument, no-member
+# pylint: disable=unused-argument
 
 
-class CompressedResourceOp:  # pylint: disable=too-few-public-methods
+class CompressedResourceOp:
     r"""Instantiate a light weight class corresponding to the operator type and parameters.
 
     This class provides a minimal representation of an operation, containing
@@ -214,7 +213,7 @@ class ResourceOperator(ABC):
 
     @staticmethod
     def dequeue(
-        op_to_remove: Union["ResourceOperator", Iterable],
+        op_to_remove: ResourceOperator | Iterable,
         context: QueuingManager = QueuingManager,
     ):
         """Remove the given resource operator(s) from the Operator queue."""

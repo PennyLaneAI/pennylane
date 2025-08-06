@@ -76,7 +76,7 @@ class TestSemiAdder:
             sample = output[0]
 
         #  check that the output sample is the binary representation of x + y mod 2^len(y_wires)
-        # pylint: disable=bad-reversed-sequence
+
         assert np.allclose(
             sum(bit * (2**i) for i, bit in enumerate(reversed(sample))),
             (x + y) % 2 ** len(y_wires),
@@ -115,9 +115,7 @@ class TestSemiAdder:
             ),
         ],
     )
-    def test_wires_error(
-        self, x_wires, y_wires, work_wires, msg_match
-    ):  # pylint: disable=too-many-arguments
+    def test_wires_error(self, x_wires, y_wires, work_wires, msg_match):
         """Test an error is raised when some work_wires don't meet the requirements"""
         with pytest.raises(ValueError, match=msg_match):
             qml.SemiAdder(x_wires, y_wires, work_wires)

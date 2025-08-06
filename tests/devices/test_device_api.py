@@ -30,13 +30,12 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 from pennylane.wires import Wires
 
-# pylint:disable=unused-argument,too-few-public-methods,unused-variable,protected-access,too-many-arguments
+# pylint:disable=unused-argument,unused-variable,protected-access,too-many-arguments
 
 
 def test_execute_method_abstract():
     """Test that a device can't be instantiated without an execute method."""
 
-    # pylint: disable=too-few-public-methods
     class BadDevice(Device):
         """A bad device"""
 
@@ -654,7 +653,7 @@ class TestMinimalDevice:
         with pytest.raises(
             AttributeError, match="Shots can no longer be set on a device instance."
         ):
-            self.dev.shots = 100  # pylint: disable=attribute-defined-outside-init
+            self.dev.shots = 100
 
     def test_getattr_error(self):
         """Test that querying a property that doesn't exist informs about interface change."""
@@ -756,7 +755,7 @@ class TestMinimalDevice:
     def test_wires_are_read_only(self):
         """Test that device wires cannot be set after device initialization."""
         with pytest.raises(AttributeError):
-            self.dev.wires = [0, 1]  # pylint:disable=attribute-defined-outside-init
+            self.dev.wires = [0, 1]
 
 
 def test_device_with_ambiguous_preprocess():
@@ -795,7 +794,6 @@ class TestProvidingDerivatives:
         class WithDerivative(Device):
             """A device with a derivative."""
 
-            # pylint: disable=unused-argument
             def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
                 return "a"
 
@@ -871,7 +869,6 @@ def test_capture_methods_not_implemented():
     def f(x):
         return x + 1
 
-    # pylint: disable=too-few-public-methods
     class NormalDevice(Device):
 
         def execute(self, circuits, execution_config=None):

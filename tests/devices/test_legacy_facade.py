@@ -46,11 +46,9 @@ class DummyDevice(qml.devices.LegacyDevice):
     def reset(self):
         pass
 
-    # pylint: disable=unused-argument
     def apply(self, operation, wires, par):
         return 0.0
 
-    # pylint: disable=unused-argument
     def expval(self, observable, wires, par):
         return 0.0
 
@@ -218,11 +216,9 @@ def test_preprocessing_program():
     dev = DummyDevice(wires=(0, 1))
     program = LegacyDeviceFacade(dev).preprocess_transforms()
 
-    assert (
-        program[0].transform == legacy_device_batch_transform.transform
-    )  # pylint: disable=no-member
-    assert program[1].transform == legacy_device_expand_fn.transform  # pylint: disable=no-member
-    assert program[2].transform == qml.defer_measurements.transform  # pylint: disable=no-member
+    assert program[0].transform == legacy_device_batch_transform.transform
+    assert program[1].transform == legacy_device_expand_fn.transform
+    assert program[2].transform == qml.defer_measurements.transform
 
     m0 = qml.measure(0)
     tape = qml.tape.QuantumScript(

@@ -80,7 +80,6 @@ def test_auto_with_unsupported_interface():
     # pylint: disable=import-outside-toplevel
     import networkx as nx
 
-    # pylint: disable=too-few-public-methods
     class DummyCustomGraphOp(qml.operation.Operation):
         """Dummy custom operation for testing purposes."""
 
@@ -105,7 +104,6 @@ def test_tf_autograph():
     except ImportError:
         pytest.skip("TensorFlow is not installed.")
 
-    # pylint: disable=not-context-manager
     with tf.Graph().as_default():
         tapes = [
             QuantumScript([qml.RX(tf.constant(0.5), wires=0)], [qml.expval(qml.PauliZ(0))]),

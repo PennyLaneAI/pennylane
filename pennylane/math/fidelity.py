@@ -326,7 +326,6 @@ def _register_torch_vjp():
     # pylint: disable=import-outside-toplevel
     import torch
 
-    # pylint: disable=abstract-method, arguments-differ
     class _TorchFidelity(torch.autograd.Function):
         @staticmethod
         def forward(ctx, dm0, dm1):

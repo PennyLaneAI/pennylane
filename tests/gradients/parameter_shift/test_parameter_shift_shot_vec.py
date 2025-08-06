@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for the gradients.parameter_shift module using the new return types and devices that define a shot vector."""
-# pylint:disable=use-implicit-booleaness-not-comparison,abstract-method
+
 from functools import partial
 
 import pytest
@@ -43,21 +43,18 @@ def grad_fn(tape, dev, fn=qml.gradients.param_shift, **kwargs):
     return fn(dev.execute(tapes))
 
 
-# pylint: disable=too-few-public-methods
 class RY_with_F(qml.RY):
     """Custom variant of qml.RY with grad_method "F"."""
 
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
 class RX_with_F(qml.RX):
     """Custom variant of qml.RX with grad_method "F"."""
 
     grad_method = "F"
 
 
-# pylint: disable=too-few-public-methods
 class RX_par_dep_recipe(qml.RX):
     """RX operation with a parameter-dependent grad recipe."""
 

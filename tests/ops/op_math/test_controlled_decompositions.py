@@ -554,7 +554,6 @@ class TestMultiControlledUnitary:
     def test_invalid_op_matrix(self):
         """Tests that an error is raised when op does not define a matrix"""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operator):
             num_wires = 1
 
@@ -777,7 +776,6 @@ class TestMCXDecomposition:
     def test_wrong_work_wire_type(self):
         """Test that an error is raised if the work wire type is not 'clean' or 'dirty'."""
 
-        # pylint: disable=protected-access
         control_wires = [0, 1]
         target_wire = 2
 
@@ -847,7 +845,6 @@ class TestMCXDecomposition:
         matrix-based version by checking if U^dagger U applies the identity to each basis
         state. This test focuses on the case where there is one work wire."""
 
-        # pylint: disable=protected-access
         control_wires = Wires(range(n_ctrl_wires))
         target_wire = n_ctrl_wires
         work_wires = n_ctrl_wires + 1
@@ -1030,7 +1027,6 @@ class TestMCXDecomposition:
     def test_integration_multi_controlled_x(self, n_ctrl_wires, work_wire_type):
         """Test that the new decompositions are integrated with the operation."""
 
-        # pylint: disable=protected-access
         control_wires = list(range(n_ctrl_wires))
         target_wire = n_ctrl_wires
 
@@ -1080,7 +1076,6 @@ class TestMCXDecomposition:
     def test_private_mcx_decomposition_raises_error(self):
         """Test that an error is raised if not enough work wires are provided"""
 
-        # pylint: disable=protected-access
         control_wires = Wires(range(5))
         target_wire = 5
         work_wires = Wires([6])

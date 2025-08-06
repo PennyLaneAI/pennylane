@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the TF interface with shot vectors and with a QNode"""
-# pylint: disable=too-many-arguments,unexpected-keyword-arg,redefined-outer-name,unused-argument
+# pylint: disable=too-many-arguments,redefined-outer-name,unused-argument
 import pytest
 
 import pennylane as qml

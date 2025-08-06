@@ -52,7 +52,6 @@ class SimplifyInterpreter(PlxprInterpreter):
         return new_mp
 
 
-# pylint: disable=use-implicit-booleaness-not-comparison
 def test_env_and_initialized():
     """Test that env is initialized at the start."""
 

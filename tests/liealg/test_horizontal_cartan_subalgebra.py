@@ -14,7 +14,7 @@
 """Tests for pennylane/labs/dla/horizontal_cartan_subalgebra.py functionality"""
 import numpy as np
 
-# pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring, too-many-positional-arguments, too-many-arguments
+# pylint: disable=no-self-use,too-many-positional-arguments,too-many-arguments
 import pytest
 from scipy.linalg import sqrtm
 

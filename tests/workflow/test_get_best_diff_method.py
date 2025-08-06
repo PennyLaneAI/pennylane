@@ -30,7 +30,6 @@ def dummyfunc():
     return None
 
 
-# pylint: disable=unused-argument
 class CustomDevice(qml.devices.Device):
     """A null device that just returns 0."""
 

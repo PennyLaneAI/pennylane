@@ -630,7 +630,7 @@ def param_shift_hessian(
     for i, g in diff_methods.items():
         if g == "0":
             bool_argnum[i] = bool_argnum[:, i] = False
-    # pylint: disable=invalid-unary-operand-type
+
     if math.all(~bool_argnum):
         return _all_zero_hessian(tape)
 

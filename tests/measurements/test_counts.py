@@ -600,9 +600,7 @@ class TestCountsIntegration:
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
     @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
     @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
-    def test_counts_binned(
-        self, shot_vec, interface, wires, basis_state
-    ):  # pylint:disable=too-many-arguments
+    def test_counts_binned(self, shot_vec, interface, wires, basis_state):
         """Check all interfaces with computational basis state counts and
         different shot vectors"""
         dev = qml.device("default.qubit", wires=3, shots=shot_vec)

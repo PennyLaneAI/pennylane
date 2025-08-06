@@ -644,7 +644,7 @@ class TestTransformProgramCall:
         ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             """A valid transform."""
             new_ops = list(tape.operations)
-            new_ops.pop(index)  # pylint:disable=protected-access
+            new_ops.pop(index)
             return (
                 qml.tape.QuantumScript(new_ops, tape.measurements, shots=tape.shots),
             ), single_null_postprocessing

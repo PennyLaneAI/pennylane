@@ -13,7 +13,7 @@
 # limitations under the License.
 """Unit tests for the ``CommuteControlledInterpreter`` class"""
 
-# pylint:disable=wrong-import-position, unused-argument, protected-access
+# pylint:disable=wrong-import-position,protected-access
 from functools import partial
 
 import numpy as np
@@ -498,7 +498,7 @@ class TestCommuteControlledHigherOrderPrimitives:
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         with qml.capture.pause():
-            # pylint: disable=not-callable
+
             expected_result = circuit()
 
         assert qml.math.allclose(result, expected_result)
@@ -550,7 +550,6 @@ class TestCommuteControlledHigherOrderPrimitives:
                 qml.RZ(x, wires=0)
                 qml.Toffoli(wires=[0, 1, 2])
 
-            # pylint: disable=unused-argument
             def false_branch(x):
                 qml.CNOT(wires=[0, 2])
                 qml.RX(x, wires=2)
@@ -646,7 +645,6 @@ class TestCommuteControlledHigherOrderPrimitives:
             qml.CNOT(wires=[0, 1])
             qml.T(0)
 
-            # pylint: disable=unused-argument
             @qml.while_loop(lambda i, x: i < 2)
             def loop(i, x):
                 qml.CNOT(wires=[0, 2])
@@ -654,7 +652,6 @@ class TestCommuteControlledHigherOrderPrimitives:
                 qml.Toffoli(wires=[0, 1, 2])
                 return i + 1, x
 
-            # pylint: disable=no-value-for-parameter
             loop(0, x)
             qml.Z(0)
             qml.CNOT(wires=[0, 1])

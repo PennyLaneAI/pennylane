@@ -38,8 +38,6 @@ from pennylane.measurements import CountsMP, SampleMP
 from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
 
-# pylint: disable=too-few-public-methods
-
 
 class NoMatOp(Operation):
     """Dummy operation for expanding circuit."""
@@ -536,7 +534,6 @@ class TestMeasurementsFromCountsOrSamples:
         ):
             meas_transform(tape)
 
-    # pylint: disable=unnecessary-lambda
     @pytest.mark.parametrize(
         "meas_transform", (measurements_from_counts, measurements_from_samples)
     )

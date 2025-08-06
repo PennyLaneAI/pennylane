@@ -294,7 +294,7 @@ class TestSpecsTransform:
 
         params_shape = qml.BasicEntanglerLayers.shape(n_layers=n_layers, n_wires=n_wires)
         rng = pnp.random.default_rng(seed=seed)
-        params = rng.standard_normal(params_shape)  # pylint:disable=no-member
+        params = rng.standard_normal(params_shape)
 
         return circuit, params
 

@@ -354,7 +354,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
 
             @dispatched_transform(targs)
             @qml.qnode(device=dev)
-            def qnode_circuit(a):  # pylint:disable=unused-variable
+            def qnode_circuit(a):
                 """QNode circuit."""
                 qml.Hadamard(wires=0)
                 qml.CNOT(wires=[0, 1])
@@ -648,9 +648,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_old_device_transform(self, valid_transform):
         """Test a device transform."""
-        device = qml.devices.LegacyDeviceFacade(
-            DefaultQubitLegacy(wires=2)
-        )  # pylint: disable=redefined-outer-name
+        device = qml.devices.LegacyDeviceFacade(DefaultQubitLegacy(wires=2))
 
         dispatched_transform = transform(valid_transform)
         new_dev = dispatched_transform(device, index=0)
@@ -728,7 +726,7 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
         with pytest.warns(UserWarning, match="Transforms have been disabled, as a Sphinx"):
 
             @qml.transform
-            def custom_transform(  # pylint:disable=unused-variable
+            def custom_transform(
                 tape: QuantumScript, index: int
             ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
                 """A valid transform."""

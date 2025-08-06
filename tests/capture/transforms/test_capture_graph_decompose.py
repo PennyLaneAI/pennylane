@@ -16,7 +16,7 @@
 Tests the ``DecomposeInterpreter`` with the new graph-based decomposition system enabled.
 """
 
-# pylint: disable=no-name-in-module, too-few-public-methods, wrong-import-position, protected-access
+# pylint: disable=wrong-import-position,protected-access
 
 import numpy as np
 import pytest
@@ -55,7 +55,7 @@ class TestDecomposeInterpreterGraphEnabled:
     def test_fall_back(self):
         """Tests that op.decompose() is used for ops unsolved in the graph."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             """Dummy custom op."""
 
             resource_keys = set()
@@ -214,7 +214,7 @@ class TestDecomposeInterpreterGraphEnabled:
     def test_decompose_adjoint(self):
         """Tests that an adjoint operation is decomposed."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = set()
 

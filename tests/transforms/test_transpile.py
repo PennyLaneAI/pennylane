@@ -45,7 +45,6 @@ def build_qfunc_pauli_z(wires):
     return qfunc
 
 
-# pylint: disable=too-many-public-methods
 class TestTranspile:
     """Unit tests for transpile function"""
 

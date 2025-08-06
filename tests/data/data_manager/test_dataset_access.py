@@ -274,15 +274,13 @@ class TestLoadInteractive:
         mock_sleep,
         mock_load,
         side_effect,
-    ):  # pylint:disable=too-many-arguments, redefined-outer-name
+    ):
         """Test that load_interactive succeeds."""
         mock_input.side_effect = side_effect
         assert isinstance(qml.data.load_interactive(), qml.data.Dataset)
 
     @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
-    def test_load_interactive_without_confirm(
-        self, mock_input, _mock_sleep, mock_load
-    ):  # pylint:disable=redefined-outer-name
+    def test_load_interactive_without_confirm(self, mock_input, _mock_sleep, mock_load):
         """Test that load_interactive returns None if the user doesn't confirm."""
         mock_input.side_effect = [
             "qspin",
@@ -317,7 +315,7 @@ class TestLoadInteractive:
     )
     def test_load_interactive_invalid_inputs(
         self, mock_input, _mock_sleep, mock_load, side_effect, error_message
-    ):  # pylint: disable=redefined-outer-name
+    ):
         """Test that load_interactive raises errors as expected."""
         mock_input.side_effect = side_effect
         with pytest.raises(ValueError, match=error_message):
@@ -452,7 +450,6 @@ def test_load(tmp_path, data_name, params, expect_paths, progress_bar, attribute
     }
 
 
-# pylint: disable=too-many-arguments
 @patch.object(pennylane.data.data_manager, "head", head_mock)
 @patch.object(pennylane.data.data_manager.graphql, "get_graphql", graphql_mock)
 @pytest.mark.usefixtures("mock_download_dataset")

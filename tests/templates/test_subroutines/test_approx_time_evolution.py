@@ -429,7 +429,6 @@ class TestInterfaces:
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
 
-# pylint: disable=protected-access, unexpected-keyword-arg
 @pytest.mark.autograd
 @pytest.mark.parametrize(
     "dev_name,diff_method",

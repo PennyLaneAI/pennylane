@@ -14,7 +14,7 @@
 
 """Tests for the transform ``qml.transform.split_to_single_terms``"""
 
-# pylint: disable=import-outside-toplevel,unnecessary-lambda
+# pylint: disable=import-outside-toplevel
 
 from functools import partial
 
@@ -46,7 +46,6 @@ complex_obs_list = [
 ]
 
 
-# pylint: disable=too-few-public-methods
 class NoTermsDevice(qml.devices.DefaultQubit):
     """A device that builds on default.qubit, but won't accept LinearCombination or Sum"""
 

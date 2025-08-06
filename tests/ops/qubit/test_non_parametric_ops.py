@@ -14,7 +14,7 @@
 """
 Unit tests for the available non-parametric qubit operations
 """
-# pylint: disable=too-few-public-methods
+
 import copy
 import itertools
 
@@ -1071,7 +1071,7 @@ class TestControlledMethod:
         qml.assert_equal(out, qml.CCZ(("a", 0, 1)))
 
 
-class TestSpecialPowDecomps:  # pylint: disable=too-few-public-methods
+class TestSpecialPowDecomps:
     """Tests special decomposition rules for Pow of operators."""
 
     @pytest.mark.parametrize("op", [qml.X(0), qml.Y(0), qml.Z(0), qml.S(0)])
@@ -1270,7 +1270,7 @@ op_pauli_rep = (
 
 @pytest.mark.parametrize("op, rep", op_pauli_rep)
 def test_pauli_rep(op, rep):
-    # pylint: disable=protected-access
+
     assert op.pauli_rep == rep
 
 

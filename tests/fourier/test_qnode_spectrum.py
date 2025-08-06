@@ -14,7 +14,7 @@
 """
 Tests for the Fourier spectrum transform.
 """
-# pylint: disable=too-few-public-methods
+
 from collections import OrderedDict
 
 import numpy as np

@@ -151,7 +151,6 @@ def test_resource_tracking_attribute():
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
 
-    # pylint: disable=too-few-public-methods
     class MyOp(qml.operation.Operator):
         pass
 
@@ -1361,7 +1360,6 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
     assert qml.math.shape(res) == qml.math.shape(target)
 
 
-# pylint: disable=unused-argument
 @pytest.mark.capture
 def test_execute_plxpr():
     """Test that null.qubit can execute plxpr."""

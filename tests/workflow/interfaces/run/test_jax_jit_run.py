@@ -91,7 +91,7 @@ class TestJaxJitRun:
         a = jnp.array(0.1)
         res = jax.jit(jax.jacobian(cost))(a)
         if not shots.has_partitioned_shots:
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qml.math.sin(a)
 

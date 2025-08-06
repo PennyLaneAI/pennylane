@@ -256,7 +256,6 @@ class TestVQE:
         cost = generate_cost_fn(lambda params, **kwargs: None, hamiltonian, dev)
         assert cost([]) == sum(expected)
 
-    # pylint: disable=protected-access
     @pytest.mark.torch
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
@@ -304,7 +303,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2, atol=1e-1)
 
-    # pylint: disable=protected-access
     @pytest.mark.tf
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
@@ -350,7 +348,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2, atol=1e-1)
 
-    # pylint: disable=protected-access
     @pytest.mark.autograd
     @pytest.mark.slow
     @pytest.mark.parametrize("shots", [None, [(8000, 5)], [(8000, 5), (9000, 4)]])
@@ -396,7 +393,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2, atol=1e-1)
 
-    # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_multiple_terms_autograd(self, seed):
         """Test that a Hamiltonian cost function is the same with and without
@@ -452,7 +448,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
-    # pylint: disable=protected-access
     @pytest.mark.torch
     def test_optimize_multiple_terms_torch(self, seed):
         """Test that a Hamiltonian cost function is the same with and without
@@ -508,7 +503,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
-    # pylint: disable=protected-access
     @pytest.mark.tf
     def test_optimize_multiple_terms_tf(self, seed):
         """Test that a Hamiltonian cost function is the same with and without
@@ -564,7 +558,6 @@ class TestVQE:
 
         assert np.allclose(c1, c2)
 
-    # pylint: disable=protected-access
     @pytest.mark.autograd
     def test_optimize_grad(self):
         """Test that the gradient of a Hamiltonian cost function is accessible

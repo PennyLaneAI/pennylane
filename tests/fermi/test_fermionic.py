@@ -1221,7 +1221,7 @@ class TestFermiSentenceArithmetic:
     @pytest.mark.parametrize("string", tup_fw_string_error)
     def test_from_string_error(self, string):
         with pytest.raises(ValueError, match="Invalid character encountered in string "):
-            from_string(string)  # pylint: disable=pointless-statement
+            from_string(string)
 
     fw_string = (
         (fw1, "0+ 1-"),

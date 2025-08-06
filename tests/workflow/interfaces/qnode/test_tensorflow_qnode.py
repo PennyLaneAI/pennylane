@@ -15,7 +15,7 @@
 
 import numpy as np
 
-# pylint: disable=too-many-arguments,too-few-public-methods,comparison-with-callable, use-implicit-booleaness-not-comparison
+# pylint: disable=too-many-arguments,comparison-with-callable
 import pytest
 
 import pennylane as qml
@@ -448,13 +448,13 @@ class TestShotsIntegration:
             circuit(weights)
 
         # execute with shots=100
-        res = qml.set_shots(shots=100)(circuit)(weights)  # pylint: disable=unexpected-keyword-arg
+        res = qml.set_shots(shots=100)(circuit)(weights)
         assert res.shape == (100, 2)
 
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
         for gradient computations"""
-        # pylint: disable=unexpected-keyword-arg
+
         dev = DefaultQubit()
         a, b = [0.543, -0.654]
         weights = tf.Variable([a, b], dtype=tf.float64)
@@ -497,9 +497,7 @@ class TestShotsIntegration:
 
         assert qml.math.shape(res1) == ()
 
-        res2 = qml.set_shots(shots=[(1, 1000)])(circuit)(
-            weights
-        )  # pylint: disable=unexpected-keyword-arg
+        res2 = qml.set_shots(shots=[(1, 1000)])(circuit)(weights)
         assert qml.math.shape(res2) == (1000,)
 
         grad = tape.gradient(res1, weights)
@@ -1279,8 +1277,6 @@ class TestTapeExpansion:
 class TestSample:
     """Tests for the sample integration"""
 
-    # pylint:disable=unexpected-keyword-arg
-
     def test_sample_dimension(self):
         """Test sampling works as expected"""
 
@@ -1670,7 +1666,7 @@ class TestAutograph:
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        res = circuit()  # pylint:disable=unexpected-keyword-arg
+        res = circuit()
         res = tf.stack(res)
 
         assert res.shape == (2, 10)

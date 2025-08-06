@@ -141,7 +141,6 @@ class TestCollectRecipes:
         channel_recipe = [(-1, 0, 0), (1, 0, 1)]
         channel_recipe_2nd_order = [(0, 0, 0), (0, 0, 1)]
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qml.RX):
             """A custom RX variant with dummy gradient recipe."""
 
@@ -700,7 +699,6 @@ class TestParameterShiftHessian:
         identified to be 0, and that no tapes were generated."""
         dev = qml.device("default.qubit", wires=2)
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qml.CRZ):
             """A custom variant of qml.CRZ with zero grad_method."""
 
@@ -730,7 +728,6 @@ class TestParameterShiftHessian:
     def test_error_unsupported_op(self):
         """Test that the correct error is thrown for unsupported operations"""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qml.CRZ):
             """A custom variant of qml.CRZ with grad_method "F"."""
 
@@ -892,7 +889,6 @@ class TestParameterShiftHessianQNode:
         c, s = qml.gradients.generate_shift_rule((0.5, 1)).T
         recipe = list(zip(c, np.ones_like(c), s))
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qml.CRX):
             """A custom variant of qml.CRX with a specific gradient recipe."""
 
@@ -1339,7 +1335,6 @@ class TestParameterShiftHessianQNode:
 
         dev = qml.device("default.qubit", wires=2)
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qml.CRZ):
             """A custom variant of qml.CRZ with grad_method "F"."""
 
@@ -1403,7 +1398,6 @@ class TestParameterShiftHessianQNode:
     def test_no_error_nondifferentiable_unsupported_operation(self):
         """Test that no error is thrown for operations that are not marked differentiable"""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qml.CRZ):
             """A custom variant of qml.CRZ with grad_method "F"."""
 

@@ -15,7 +15,6 @@
 Unit tests for the available conditional utitlities for noise models.
 """
 
-# pylint: disable = too-few-public-methods
 import pytest
 
 import pennylane as qml
@@ -132,7 +131,6 @@ class TestNoiseModels:
         assert nadd_model.meas_map[meas_fcond] == meas_noise
         assert nadd_model.metadata["t2"] == noise_model1.metadata["t2"]
 
-    # pylint: disable=comparison-with-callable
     def test_sub_noise_models(self):
         """Test that noise models can be subtracted and manipulated"""
 
@@ -160,7 +158,7 @@ class TestNoiseModels:
         )
         assert qml.NoiseModel({fcond: noise}, t1=0.04) == sub_model1
 
-    # pylint: disable=comparison-with-callable, unused-argument
+    # pylint: disable=unused-argument
     def test_eq_noise_models(self):
         """Test that noise models can be subtracted and manipulated"""
 

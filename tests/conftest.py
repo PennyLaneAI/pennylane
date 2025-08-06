@@ -33,7 +33,6 @@ TF_TOL = 2e-2
 TOL_STOCHASTIC = 0.05
 
 
-# pylint: disable=too-few-public-methods
 class DummyDevice(DefaultGaussian):
     """Dummy device to allow Kerr operations"""
 
@@ -108,7 +107,7 @@ def mock_device(monkeypatch):
         m.setattr(dev, "short_name", "mock_device")
         m.setattr(dev, "capabilities", lambda cls: {"model": "qubit"})
         m.setattr(dev, "operations", {"RX", "RY", "RZ", "CNOT", "SWAP"})
-        yield qml.devices.LegacyDevice(wires=2)  # pylint:disable=abstract-class-instantiated
+        yield qml.devices.LegacyDevice(wires=2)
 
 
 # pylint: disable=protected-access

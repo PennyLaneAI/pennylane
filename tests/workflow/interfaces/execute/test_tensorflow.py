@@ -186,7 +186,7 @@ class TestTensorflowExecuteIntegration:
         with tf.GradientTape(persistent=device_vjp) as tape:
             cost_res = cost(a)
         res = tape.jacobian(cost_res, a, experimental_use_pfor=not device_vjp)
-        assert res.shape == ()  # pylint: disable=no-member
+        assert res.shape == ()
 
         expected = -qml.math.sin(a)
 
@@ -328,7 +328,7 @@ class TestTensorflowExecuteIntegration:
 
         jac = tape.jacobian(res, params, experimental_use_pfor=not device_vjp)
         assert isinstance(jac, tf.Tensor)
-        assert jac.shape == (4, 2)  # pylint: disable=no-member
+        assert jac.shape == (4, 2)
 
         assert np.allclose(jac[1:3], 0, atol=atol_for_shots(shots))
 

@@ -30,7 +30,6 @@ def test_switches_with_jax():
     assert qml.capture.enabled() is False
 
 
-# pylint: disable=unused-argument
 @pytest.mark.capture
 def test_pause():
     """Test that pause recording stops program capture."""
@@ -45,7 +44,6 @@ def test_pause():
     assert len(jaxpr.eqns) == 0
 
 
-# pylint: disable=unused-argument
 @pytest.mark.capture
 def test_pause_with_error():
     """Test that program capture stays enabled if an error occurs."""

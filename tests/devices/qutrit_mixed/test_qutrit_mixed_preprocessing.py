@@ -39,7 +39,6 @@ class NoMatOp(qml.operation.Operation):
         return [qml.TShift(self.wires), qml.TClock(self.wires)]
 
 
-# pylint: disable=too-few-public-methods
 class NoMatNoDecompOp(qml.operation.Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
@@ -50,7 +49,6 @@ class NoMatNoDecompOp(qml.operation.Operation):
         return False
 
 
-# pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
 

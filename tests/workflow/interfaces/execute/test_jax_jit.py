@@ -14,7 +14,7 @@
 """Unit tests for the JAX-JIT interface"""
 import numpy as np
 
-# pylint: disable=protected-access,too-few-public-methods,unnecessary-lambda
+# pylint: disable=protected-access,unnecessary-lambda
 import pytest
 
 import pennylane as qml

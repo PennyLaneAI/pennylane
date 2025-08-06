@@ -24,7 +24,7 @@ from pennylane.measurements import MutualInfoMP, Shots, StateMP, VnEntropyMP
 from pennylane.operation import _UNSET_BATCH_SIZE
 from pennylane.tape import QuantumScript
 
-# pylint: disable=protected-access, unused-argument, too-few-public-methods, use-implicit-booleaness-not-comparison
+# pylint: disable=protected-access,unused-argument
 
 
 def test_to_openqasm_deprecation():
@@ -220,7 +220,6 @@ class TestUpdate:
         assert isinstance(qs.par_info, list) and len(qs.par_info) == 0
         assert QuantumScript([], []).hash == qs.hash and qs.hash != old_hash
 
-    # pylint: disable=unbalanced-tuple-unpacking
     def test_get_operation(self):
         """Tests the tape method get_operation."""
         ops = [

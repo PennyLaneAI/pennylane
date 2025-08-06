@@ -17,8 +17,6 @@ import pytest
 
 from pennylane.fermi.fermionic import FermiA, FermiC, FermiWord
 
-# pylint: disable=too-few-public-methods
-
 
 class TestFermiC:
     """Test the methods of the creation operator FermiC"""

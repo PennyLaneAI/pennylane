@@ -14,7 +14,7 @@
 """
 Unit tests for the HardwareHamiltonian class.
 """
-# pylint: disable=too-few-public-methods, import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 import numpy as np
 import pytest
 
@@ -61,7 +61,7 @@ rydberg_settings = RydbergSettings(atom_coordinates, 1)
 class TestHardwareHamiltonian:
     """Unit tests for the properties of the HardwareHamiltonian class."""
 
-    # pylint: disable=protected-access, comparison-with-callable
+    # pylint: disable=comparison-with-callable
     def test_initialization(self):
         """Test the HardwareHamiltonian class is initialized correctly."""
         rm = HardwareHamiltonian(coeffs=[], observables=[])
@@ -285,7 +285,6 @@ class TestHardwareHamiltonian:
         H_global(params, 2)  # no error raised
 
 
-# pylint: disable=no-member
 class TestInteractionWithOperators:
     """Test that the interaction between a ``HardwareHamiltonian`` and other operators work as
     expected."""

@@ -23,9 +23,6 @@ from pennylane.ftqc import QubitMgr
 from pennylane.ftqc.utils import parity
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 
-# pylint: disable=too-few-public-methods, too-many-public-methods
-
-
 num_qubits_vals = [1, 3, 7]
 acquire_num_vals = [0, 1, 5]
 offsets_vals = [0, 8, 9]

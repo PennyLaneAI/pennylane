@@ -33,7 +33,6 @@ def get_device(device_name, seed):
     return qml.device(device_name, seed=seed)
 
 
-# pylint: disable=too-few-public-methods
 class TestCaching:
     """Tests for caching behaviour"""
 
@@ -239,7 +238,7 @@ class TestAutogradExecuteIntegration:
             res = qml.jacobian(lambda x: qml.math.hstack(cost(x)))(a)
         else:
             res = qml.jacobian(cost)(a)
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qml.math.sin(a)
 
@@ -394,7 +393,7 @@ class TestAutogradExecuteIntegration:
         jac = qml.jacobian(cost)(params)
         assert isinstance(jac, np.ndarray)
         if not shots.has_partitioned_shots:
-            assert jac.shape == (4, 2)  # pylint: disable=no-member
+            assert jac.shape == (4, 2)
 
         d1 = -np.sin(x) * np.cos(y)
         d2 = -np.cos(x) * np.sin(y)

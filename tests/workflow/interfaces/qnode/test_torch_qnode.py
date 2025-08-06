@@ -13,8 +13,8 @@
 # limitations under the License.
 """Integration tests for using the Torch interface with a QNode"""
 
-# pylint: disable=too-many-arguments,unexpected-keyword-arg,no-member,comparison-with-callable, no-name-in-module
-# pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-lambda-assignment, use-dict-literal
+# pylint: disable=too-many-arguments,no-member,comparison-with-callable
+# pylint: disable=unnecessary-lambda-assignment,use-dict-literal
 import numpy as np
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
@@ -492,7 +492,7 @@ class TestQNode:
             gradient_kwargs["num_directions"] = 20
             tol = TOL_FOR_SPSA
 
-        class U3(qml.U3):  # pylint:disable=too-few-public-methods
+        class U3(qml.U3):
             def decomposition(self):
                 theta, phi, lam = self.data
                 wires = self.wires
@@ -1207,7 +1207,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qml.PhaseShift):
             grad_method = None
             has_generator = False
 
@@ -1255,7 +1255,7 @@ class TestTapeExpansion:
         if diff_method not in ("parameter-shift", "finite-diff", "spsa", "hadamard"):
             pytest.skip("Only supports gradient transforms")
 
-        class PhaseShift(qml.PhaseShift):  # pylint:disable=too-few-public-methods
+        class PhaseShift(qml.PhaseShift):
             grad_method = None
 
             def decomposition(self):

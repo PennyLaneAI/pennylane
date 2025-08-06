@@ -16,7 +16,7 @@ Unit tests for the metric tensor transform.
 """
 import importlib
 
-# pylint: disable=too-many-arguments,too-many-public-methods,too-few-public-methods
+# pylint: disable=too-many-arguments
 # pylint: disable=not-callable,too-many-statements, too-many-positional-arguments
 import pytest
 from scipy.linalg import block_diag
@@ -762,7 +762,7 @@ class TestMetricTensor:
             mt_tapes, post_processing = qml.metric_tensor(tape)
         res = post_processing(qml.execute(mt_tapes, dev, None))
 
-        assert mt_tapes == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert mt_tapes == []
         assert res == ()
 
 

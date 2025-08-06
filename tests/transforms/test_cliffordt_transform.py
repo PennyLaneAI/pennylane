@@ -39,7 +39,6 @@ INVSQ2 = 1 / math.sqrt(2)
 PI = math.pi
 
 
-# pylint: disable=too-few-public-methods
 class CustomOneQubitOperation(qml.operation.Operation):
     num_wires = 1
 
@@ -435,7 +434,7 @@ class TestCliffordCompile:
     def test_raise_with_cliffordt_decomposition(self):
         """Test that exception is correctly raise when decomposing gates without any decomposition"""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             pass
 
         tape = qml.tape.QuantumScript([CustomOp(wires=[0, 1, 2])])
@@ -550,7 +549,7 @@ def circuit_7(num_repeat, rand_angles):
 class TestCliffordCached:
     """Unit tests for clifford caching function."""
 
-    # pylint: disable=protected-access, import-outside-toplevel, reimported
+    # pylint: disable=protected-access,import-outside-toplevel
     def test_clifford_cached(self):
         """Test that the cached version of the circuit is equivalent to the original one."""
 

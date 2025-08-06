@@ -31,7 +31,7 @@ try:
     import openqasm3
 
     from pennylane.io.io import from_qasm3  # pylint: disable=ungrouped-imports
-    from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
+    from pennylane.io.qasm_interpreter import QasmInterpreter
 except (ModuleNotFoundError, ImportError) as import_error:
     has_openqasm = False
 
@@ -52,7 +52,6 @@ class MockPluginConverter:
         """True if the mocked loader was called."""
         return self.mock_loader.called
 
-    # pylint: disable=unsubscriptable-object
     @property
     def last_args(self):
         """The last call arguments of the mocked loader."""

@@ -24,8 +24,6 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import finite_diff
 from pennylane.measurements import Shots
 
-# pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
-
 h_val = 0.1
 
 default_shot_vector = (1000, 2000, 3000)
@@ -411,7 +409,6 @@ class TestFiniteDiff:
             def __radd__(self, other):
                 return self + other
 
-        # pylint: disable=too-few-public-methods
         class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
 
@@ -419,7 +416,6 @@ class TestFiniteDiff:
                 """Diagonalizing gates"""
                 return []
 
-        # pylint: disable=too-few-public-methods
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device that supports the above SpecialObservable as a return type."""
 

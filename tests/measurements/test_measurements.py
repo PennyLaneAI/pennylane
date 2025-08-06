@@ -43,7 +43,7 @@ from pennylane.measurements import (
 from pennylane.queuing import AnnotatedQueue
 from pennylane.wires import Wires
 
-# pylint: disable=too-few-public-methods, unused-argument
+# pylint: disable=too-few-public-methods
 
 
 class NotValidMeasurement(MeasurementProcess):
@@ -522,7 +522,7 @@ class TestSampleMeasurement:
         """Test the execution of a custom sampled measurement."""
 
         class MyMeasurement(SampleMeasurement):
-            # pylint: disable=signature-differs
+
             def process_samples(self, samples, wire_order, shot_range=None, bin_size=None):
                 return qml.math.sum(samples[..., self.wires])
 

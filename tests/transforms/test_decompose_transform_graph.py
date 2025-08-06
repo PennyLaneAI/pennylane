@@ -226,7 +226,7 @@ class TestDecomposeGraphEnabled:
     def test_fall_back(self):
         """Tests that op.decompose() is used for ops unsolved in the graph."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             """Dummy custom op."""
 
             resource_keys = set()
@@ -276,7 +276,7 @@ class TestDecomposeGraphEnabled:
     def test_adjoint_decomp(self):
         """Tests decomposing an adjoint operation."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = set()
 

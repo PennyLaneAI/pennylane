@@ -193,7 +193,7 @@ class TestDecompositionRule:
     def test_decomposition_dictionary(self):
         """Tests that decomposition rules can be registered for an operator."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             pass
 
         assert not qml.decomposition.has_decomp(CustomOp)
@@ -247,7 +247,7 @@ class TestDecompositionRule:
     def test_auto_wrap_in_resource_op(self):
         """Tests that simply classes can be auto-wrapped in a ``CompressionResourceOp``."""
 
-        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qml.operation.Operator):
 
             resource_keys = set()
 
@@ -271,7 +271,7 @@ class TestDecompositionRule:
     def test_auto_wrap_fails(self):
         """Tests that an op with non-empty resource_keys cannot be auto-wrapped."""
 
-        class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class DummyOp(qml.operation.Operator):
 
             resource_keys = {"foo"}
 

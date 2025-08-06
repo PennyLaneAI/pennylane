@@ -188,7 +188,6 @@ class TestIterativeCancelInversesPass:
         run_filecheck(program, pipeline)
 
 
-# pylint: disable=too-few-public-methods
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestIterativeCancelInversesIntegration:
     """Integration tests for the IterativeCancelInversesPass."""

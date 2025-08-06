@@ -14,7 +14,7 @@
 """
 Unit tests for the qml.generator transform
 """
-# pylint: disable=too-few-public-methods
+
 from functools import reduce
 from operator import matmul
 

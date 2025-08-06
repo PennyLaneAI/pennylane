@@ -1349,7 +1349,6 @@ class TestApplyOperationUnit:
         class TestSwap(qml.operation.Operation):
             num_wires = 2
 
-            # pylint: disable=unused-argument
             @staticmethod
             def compute_matrix(*params, **hyperparams):
                 return TSWAP

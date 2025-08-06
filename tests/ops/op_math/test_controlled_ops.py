@@ -49,7 +49,6 @@ X = np.array([[0, 1], [1, 0]])
 X_broadcasted = np.array([X] * 3)
 
 
-# pylint: disable=too-many-public-methods
 class TestControlledQubitUnitary:
     """Tests specific to the ControlledQubitUnitary operation"""
 

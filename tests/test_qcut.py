@@ -14,7 +14,7 @@
 """
 Unit tests for the `pennylane.qcut` package.
 """
-# pylint: disable=protected-access, too-few-public-methods, too-many-arguments, too-many-public-methods, comparison-with-callable, unused-argument, no-value-for-parameter, no-member, not-callable, use-implicit-booleaness-not-comparison
+# pylint: disable=protected-access,too-few-public-methods,too-many-arguments,too-many-public-methods,comparison-with-callable,unused-argument,no-member,not-callable
 import copy
 import itertools
 import string
@@ -2694,7 +2694,7 @@ class TestCutCircuitMCTransform:
 
         @partial(qml.cut_circuit_mc, shots=456)
         @qml.qnode(dev)
-        def cut_circuit(x):  # pylint: disable=unused-variable,unused-argument
+        def cut_circuit(x):
             qml.RX(x, wires=0)
             qml.RY(0.5, wires=1)
             qml.RX(1.3, wires=2)
@@ -3749,7 +3749,7 @@ class TestQCutProcessingFn:
         x = tf.Variable(0.9, dtype=tf.float64)
 
         def f(x):
-            x = tf.cast(x, dtype=tf.float64)  # pylint:disable=unexpected-keyword-arg
+            x = tf.cast(x, dtype=tf.float64)
             t1 = x * tf.range(4, dtype=tf.float64)
             t2 = x**2 * tf.range(16, dtype=tf.float64)
             t3 = tf.sin(x * np.pi / 2) * tf.range(4, dtype=tf.float64)

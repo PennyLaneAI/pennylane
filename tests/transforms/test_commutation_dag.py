@@ -142,7 +142,6 @@ class TestCommutationDAG:
 
     def test_dag_pattern(self):
         "Test a the DAG and its attributes for a more complicated circuit."
-        # pylint: disable=protected-access
 
         op_wires = [
             (qml.CNOT, [3, 0]),

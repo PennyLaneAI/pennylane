@@ -180,7 +180,6 @@ def _pl_obs_to_linear_comb(meas_obs):
     return coeffs, paulis
 
 
-# pylint:disable = too-many-instance-attributes
 @simulator_tracking
 @single_tape_support
 class DefaultClifford(Device):
@@ -551,7 +550,7 @@ class DefaultClifford(Device):
         circuit = circuit.map_to_standard_wires()
 
         # Build a stim circuit, tableau and simulator
-        # pylint: disable=no-member
+
         stim_circuit = stim.Circuit()
         tableau_simulator = stim.TableauSimulator()
         if self.wires is not None:
@@ -641,7 +640,7 @@ class DefaultClifford(Device):
                 )
 
             # Build a temporary simulator for obtaining state
-            # pylint: disable=no-member
+
             snap_sim = stim.TableauSimulator()
             if self.wires is not None:
                 snap_sim.set_num_qubits(len(self.wires))
@@ -792,7 +791,7 @@ class DefaultClifford(Device):
             pauli_term = ["I"] * max(np.max(list(wire)) + 1, tableau_simulator.num_qubits)
             for op, wr in zip(pauli, wire):
                 pauli_term[wr] = op
-            # pylint:disable=no-member
+
             stim_pauli = stim.PauliString("".join(pauli_term))
             expecs[idx] = tableau_simulator.peek_observable_expectation(stim_pauli)
 
@@ -958,7 +957,7 @@ class DefaultClifford(Device):
                 diagonalizing_cit.append_from_stim_program_text(f"{stim_op[0]} {stim_op[1]}")
 
         # Build the Tableau simulator from the diagonalized circuit
-        # pylint: disable=no-member
+
         circuit_simulator = stim.TableauSimulator()
         circuit_simulator.do_circuit(diagonalizing_cit)
         if not self._tableau:
@@ -1046,7 +1045,7 @@ class DefaultClifford(Device):
     @staticmethod
     def _measure_single_sample(stim_ct, meas_ops, meas_idx, meas_wire):
         """Sample a single qubit Pauli measurement from a stim circuit"""
-        # pylint: disable=no-member
+
         stim_sm = stim.TableauSimulator()
         stim_sm.do_circuit(stim_ct)
         res = [0] * meas_idx + meas_ops + [0] * (meas_wire - meas_idx - 1)

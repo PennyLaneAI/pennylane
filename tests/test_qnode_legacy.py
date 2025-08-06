@@ -56,11 +56,9 @@ class DummyDevice(qml.devices.LegacyDevice):
     def reset(self):
         pass
 
-    # pylint: disable=unused-argument
     def apply(self, operation, wires, par):
         return 0.0
 
-    # pylint: disable=unused-argument
     def expval(self, observable, wires, par):
         return 0.0
 
@@ -78,7 +76,6 @@ class DeviceDerivatives(DummyDevice):
         return capabilities
 
 
-# pylint: disable=too-many-public-methods
 class TestValidation:
     """Tests for QNode creation and validation"""
 
@@ -785,14 +782,13 @@ class TestIntegration:
             circuit()
 
         tape = qml.workflow.construct_tape(circuit)()
-        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert q.queue == []
         assert len(tape.operations) == 1
 
 
 class TestShots:
     """Unit tests for specifying shots per call."""
 
-    # pylint: disable=unexpected-keyword-arg
     def test_specify_shots_per_call_sample(self):
         """Tests that shots can be set per call for a sample return type."""
         dev = DefaultQubitLegacy(wires=1, shots=10)
@@ -811,7 +807,7 @@ class TestShots:
             assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
 
-    # pylint: disable=unexpected-keyword-arg, protected-access
+    # pylint: disable=protected-access
     def test_specify_shots_per_call_expval(self):
         """Tests that shots can be set per call for an expectation value.
         Note: this test has a vanishingly small probability to fail."""
@@ -840,7 +836,6 @@ class TestShots:
         assert np.std(res1) == 0.0
         assert circuit.device._shots is None
 
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
         """Tests that the per-call shots overwriting is suspended if user
         has a shots keyword argument, but a warning is raised."""
@@ -876,7 +871,6 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
@@ -915,7 +909,6 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_shots_setting_does_not_mutate_device(self):
         """Tests that per-call shots setting does not change the number of shots in the device."""
 
@@ -949,7 +942,6 @@ class TestShots:
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
             circuit(0.3)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_warning_finite_shots_override(self):
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = DefaultQubitLegacy(wires=1, shots=5)
@@ -1007,7 +999,6 @@ class TestShots:
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
             qml.jacobian(circuit, argnum=0)(0.3)
 
-    # pylint: disable=unexpected-keyword-arg
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",
         [
@@ -1246,7 +1237,6 @@ class TestTapeExpansion:
 
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qml.operation.Operation):
             """custom unsupported op."""
 
@@ -1279,7 +1269,6 @@ class TestTapeExpansion:
         not expanded"""
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qml.operation.Operation):
             """custom unsupported op."""
 
@@ -1308,7 +1297,6 @@ class TestTapeExpansion:
         expanded when applying the gradient transform, but not for execution."""
         dev = DefaultQubitLegacy(wires=1)
 
-        # pylint: disable=too-few-public-methods
         class PhaseShift(qml.PhaseShift):
             """custom phase shift."""
 

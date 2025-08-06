@@ -185,7 +185,7 @@ def _get_shift_rule(frequencies, shifts=None):
         coeffs = -2 * linalg_solve(sin_matrix.T, frequencies)
 
     coeffs = np.concatenate((coeffs, -coeffs))
-    # pylint: disable=invalid-unary-operand-type
+
     shifts = np.concatenate((shifts, -shifts))
     return np.stack([coeffs, shifts]).T
 

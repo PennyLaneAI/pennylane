@@ -714,7 +714,7 @@ def _validate_abstract_values(
     for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
         if jax.config.jax_dynamic_shapes:
             # we need to be a bit more manual with the comparison.
-            if type(outval) != type(expected_outval):  # pylint: disable=unidiomatic-typecheck
+            if type(outval) != type(expected_outval):
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
             if getattr(outval, "dtype", None) != getattr(expected_outval, "dtype", None):
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)

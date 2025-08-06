@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for capturing mid-circuit measurements."""
-# pylint: disable=ungrouped-imports, wrong-import-order, wrong-import-position, too-many-positional-arguments
+# pylint: disable=wrong-import-order,wrong-import-position,too-many-positional-arguments
 import pytest
 
 import pennylane as qml
@@ -21,6 +21,7 @@ from pennylane.measurements.mid_measure import MeasurementValue, MidMeasureMP
 jax = pytest.importorskip("jax")
 import jax.numpy as jnp
 
+# pylint: disable=ungrouped-imports
 from pennylane.capture.primitives import AbstractOperator
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]

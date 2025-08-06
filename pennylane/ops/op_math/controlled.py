@@ -980,7 +980,7 @@ def _decompose_custom_ops(op: Controlled) -> list[Operator] | None:
     if len(op.control_wires) == 1 and hasattr(op.base, "_controlled"):
         result = op.base._controlled(op.control_wires[0])  # pylint: disable=protected-access
         # disallow decomposing to itself
-        # pylint: disable=unidiomatic-typecheck
+
         if type(result) != type(op):
             return [result]
         qml.QueuingManager.remove(result)

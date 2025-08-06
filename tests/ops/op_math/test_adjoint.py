@@ -23,7 +23,6 @@ from pennylane import numpy as np
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation, adjoint
 
 
-# pylint: disable=too-few-public-methods
 class PlainOperator(qml.operation.Operator):
     """just an operator."""
 
@@ -57,7 +56,6 @@ class TestInheritanceMixins:
         """When the operation inherits from `Operation`, the `AdjointOperation` mixin is
         added and the Adjoint has Operation functionality."""
 
-        # pylint: disable=too-few-public-methods
         class CustomOp(qml.operation.Operation):
             num_wires = 1
             num_params = 1
@@ -97,7 +95,6 @@ class TestInheritanceMixins:
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_nonparametric_ops(self):
         """Test adjoint initialization for a non parameteric operation."""
         base = qml.PauliX("a")
@@ -202,7 +199,6 @@ class TestProperties:
         """Test `has_decomposition` property is activated because the base operation defines a
         `decomposition` method."""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
 
@@ -218,7 +214,6 @@ class TestProperties:
         """Test `has_decomposition` property is not activated if the base neither
         `has_adjoint` nor `has_decomposition`."""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
 
@@ -230,7 +225,6 @@ class TestProperties:
     def test_has_adjoint_true_always(self):
         """Test `has_adjoint` property to always be true, irrespective of the base."""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             """Operation that does not define `adjoint` and hence has `has_adjoint=False`."""
 
@@ -260,7 +254,6 @@ class TestProperties:
         """Test `has_diagonalizing_gates` property is not activated if the base neither
         `has_adjoint` nor `has_diagonalizing_gates`."""
 
-        # pylint: disable=too-few-public-methods
         class MyOp(qml.operation.Operation):
             num_wires = 1
             has_diagonalizing_gates = False
@@ -278,7 +271,6 @@ class TestProperties:
     def test_is_hermitian(self, value):
         """Test `is_hermitian` property mirrors that of the base."""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
             is_hermitian = value
@@ -385,7 +377,6 @@ class TestMiscMethods:
     def test_flatten_unflatten(self):
         """Test the flatten and unflatten methods."""
 
-        # pylint: disable=too-few-public-methods
         class CustomOp(qml.operation.Operator):
             pass
 
@@ -1037,9 +1028,7 @@ class TestAdjointConstructorIntegration:
         expected_res = np.sin(x)
         expected_grad = np.cos(x)
         assert qml.math.allclose(circ(x), expected_res)
-        assert qml.math.allclose(
-            autograd.grad(circ)(x), expected_grad  # pylint: disable=no-value-for-parameter
-        )
+        assert qml.math.allclose(autograd.grad(circ)(x), expected_grad)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("diff_method", ("backprop", "adjoint", "parameter-shift"))

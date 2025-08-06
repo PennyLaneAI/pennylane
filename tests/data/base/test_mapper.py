@@ -27,7 +27,7 @@ from pennylane.data.base.mapper import AttributeTypeMapper
 pytestmark = pytest.mark.data
 
 
-class TestMapper:  # pylint: disable=too-few-public-methods
+class TestMapper:
     """Tests for :class:`pennylane.data.mapper.AttributeTypeMapper`."""
 
     def test_info(self):

@@ -41,7 +41,7 @@ class TestError:
         """Test that QPE error is correct for a given custom operator."""
 
         class CustomOP(qml.resource.ErrorOperation):
-            # pylint: disable=too-few-public-methods
+
             def error(self):
                 return qml.resource.SpectralNormError(operator_error)
 
@@ -64,7 +64,7 @@ class TestError:
         u_apprx = qml.RY(0.51, wires=0)
 
         class CustomOP(qml.resource.ErrorOperation):
-            # pylint: disable=too-few-public-methods
+
             def error(self):
                 error_value = qml.resource.SpectralNormError.get_error(u_exact, u_apprx)
                 return qml.resource.SpectralNormError(error_value)
@@ -90,7 +90,7 @@ class TestError:
         """Test that the error method works with all interfaces."""
 
         class CustomOP(qml.resource.ErrorOperation):
-            # pylint: disable=too-few-public-methods
+
             def error(self):
                 spectral_norm_error = qml.resource.SpectralNormError(
                     qml.math.array(operator_error, like=interface)
@@ -136,7 +136,7 @@ class TestDecomposition:
         assert qscript[3].base.z == qscript2[3].base.z
         assert qscript[3].control_wires == qscript2[3].control_wires
 
-        assert isinstance(qscript[-1], qml.ops.op_math.Adjoint)  # pylint: disable=no-member
+        assert isinstance(qscript[-1], qml.ops.op_math.Adjoint)
         qml.assert_equal(qscript[-1].base, qml.QFT(wires=(1, 2)))
 
         assert np.allclose(qscript[1].matrix(), qscript[1].matrix())
@@ -145,7 +145,7 @@ class TestDecomposition:
     @pytest.mark.parametrize("phase", [2, 3, 6, np.pi])
     def test_phase_estimated(self, phase):
         """Tests that the QPE circuit can correctly estimate the phase of a simple RX rotation."""
-        # pylint: disable=cell-var-from-loop
+
         estimates = []
         wire_range = range(2, 10)
 
@@ -189,7 +189,6 @@ class TestDecomposition:
     def test_phase_estimated_two_qubit(self):
         """Tests that the QPE circuit can correctly estimate the phase of a random two-qubit
         unitary."""
-        # pylint: disable=cell-var-from-loop
 
         unitary = unitary_group.rvs(4, random_state=1967)
         eigvals, eigvecs = np.linalg.eig(unitary)
@@ -240,7 +239,6 @@ class TestDecomposition:
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 4))
     def test_phase_estimated_single_ops(self, param):
         """Tests that the QPE works correctly for a single operator"""
-        # pylint: disable=cell-var-from-loop
 
         unitary = qml.RX(param, wires=[0])
 
@@ -284,7 +282,6 @@ class TestDecomposition:
     @pytest.mark.parametrize("param", np.linspace(0, 2 * np.pi, 4))
     def test_phase_estimated_ops(self, param):
         """Tests that the QPE works correctly for compound operators"""
-        # pylint: disable=cell-var-from-loop
 
         unitary = qml.RX(param, wires=[0]) @ qml.CNOT(wires=[0, 1])
 

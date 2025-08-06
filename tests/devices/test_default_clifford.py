@@ -418,7 +418,7 @@ def test_prep_snap_clifford(circuit):
 )
 def test_pl_to_stim(pl_op, stim_op):
     """Test that the PennyLane operation get converted to Stim operation"""
-    op, wires = _pl_op_to_stim(pl_op)  # pylint:disable=protected-access
+    op, wires = _pl_op_to_stim(pl_op)
     assert op == stim_op[0]
     assert wires == " ".join(map(str, stim_op[1]))
 

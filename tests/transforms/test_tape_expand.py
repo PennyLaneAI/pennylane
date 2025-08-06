@@ -14,8 +14,8 @@
 """
 Unit tests for tape expansion stopping criteria and expansion functions.
 """
-# pylint: disable=too-few-public-methods, invalid-unary-operand-type, no-member,
-# pylint: disable=arguments-differ, arguments-renamed,
+# pylint: disable=
+# pylint: disable=arguments-differ,
 
 import numpy as np
 import pytest
@@ -145,7 +145,6 @@ class TestExpandMultipar:
         """Test that a gate is decomposed correctly if it has
         generator[0]==None."""
 
-        # pylint: disable=invalid-overridden-method
         class _CRX(qml.CRX):
             @property
             def has_generator(self):

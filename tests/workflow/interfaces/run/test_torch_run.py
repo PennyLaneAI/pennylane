@@ -96,7 +96,7 @@ class TestTorchRun:
 
         res = torch.autograd.functional.jacobian(cost, a)
         if not shots.has_partitioned_shots:
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qml.math.sin(a)
 

@@ -572,12 +572,12 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
         """Test that a not type error is raised if the class is
         initialized without a `resources` method."""
 
-        class CustomOpNoResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
+        class CustomOpNoResource(ResourcesOperation):
             """A custom operation that does not implement the resources method."""
 
             num_wires = 2
 
-        class CustomOPWithResources(ResourcesOperation):  # pylint: disable=too-few-public-methods
+        class CustomOPWithResources(ResourcesOperation):
             """A custom operation that implements the resources method."""
 
             num_wires = 2
@@ -586,12 +586,12 @@ class TestResourcesOperation:  # pylint: disable=too-few-public-methods
                 return Resources(num_wires=self.num_wires)
 
         with pytest.raises(TypeError, match="Can't instantiate"):
-            _ = CustomOpNoResource(wires=[0, 1])  # pylint:disable=abstract-class-instantiated
+            _ = CustomOpNoResource(wires=[0, 1])
 
         assert CustomOPWithResources(wires=[0, 1])  # shouldn't raise an error
 
 
-class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-public-methods
+class _CustomOpWithResource(ResourcesOperation):
     num_wires = 2
     name = "CustomOp1"
 
@@ -605,7 +605,7 @@ class _CustomOpWithResource(ResourcesOperation):  # pylint: disable=too-few-publ
         )
 
 
-class _CustomOpWithoutResource(Operation):  # pylint: disable=too-few-public-methods
+class _CustomOpWithoutResource(Operation):
     num_wires = 2
     name = "CustomOp2"
 

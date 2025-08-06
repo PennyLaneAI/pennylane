@@ -42,7 +42,7 @@ mock_qubit_device_paulis = ["PauliX", "PauliY", "PauliZ"]
 mock_qubit_device_rotations = ["RX", "RY", "RZ"]
 
 
-# pylint: disable=abstract-class-instantiated, no-self-use, redefined-outer-name, invalid-name,abstract-method
+# pylint: disable=no-self-use,redefined-outer-name,invalid-name
 
 
 @pytest.fixture(scope="function")
@@ -306,7 +306,6 @@ class TestObservables:
     ):
         """Check that an error is raised if the return type of an observable is unsupported"""
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedMeasurement(MeasurementProcess):
             _shortname = "SomeUnsupportedReturnType"
 
@@ -727,7 +726,6 @@ class TestVar:
         """Tests that an error is thrown if var is called with an observable that does not have eigenvalues defined."""
         dev = mock_qubit_device_with_original_statistics()
 
-        # pylint: disable=too-few-public-methods
         class MyObs(qml.operation.Operator):
             """Observable with no eigenvalue representation defined."""
 
@@ -1682,7 +1680,7 @@ def test_no_adjoint_jacobian_errors():
     with pytest.raises(QuantumFunctionError, match="Parameter broadcasting is not supported"):
         dev.adjoint_jacobian(tape)
 
-    dev.shots = (10, 10)  # pylint: disable=attribute-defined-outside-init
+    dev.shots = (10, 10)
 
     tape2 = qml.tape.QuantumScript([qml.RX(0.1, 0)], [qml.expval(qml.Z(0))])
     with pytest.raises(QuantumFunctionError, match="Adjoint does not support shot vector"):

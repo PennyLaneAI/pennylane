@@ -15,7 +15,7 @@
 Unit tests for the :mod:`pennylane.circuit_graph.to_openqasm()` method.
 """
 
-# pylint: disable=no-self-use,too-many-arguments,protected-access
+# pylint: disable=no-self-use,protected-access
 from textwrap import dedent
 
 import numpy as np

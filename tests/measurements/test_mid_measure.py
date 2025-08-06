@@ -23,7 +23,7 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import MeasurementValue, MidMeasureMP
 from pennylane.wires import Wires
 
-# pylint: disable=too-few-public-methods, too-many-public-methods
+# pylint: disable=too-many-public-methods
 
 
 def test_samples_computational_basis():
@@ -508,7 +508,7 @@ class TestMeasurementCompositeValueManipulation:
     @pytest.mark.parametrize("boolean", [MeasurementValue([mp3], lambda v: v), True, False, None])
     def test_composition_measurement_values_and_boolean(
         self, mv_dunder_name, boolean_dunder_name, scalar, boolean
-    ):  # pylint: disable=too-many-arguments
+    ):
         """Test the composition of dunder methods, applying one whose argument is scalar and one whose argument
         is a boolean."""
         m0 = MeasurementValue([mp1], lambda v: v)
@@ -543,8 +543,6 @@ class TestMeasurementCompositeValueManipulation:
 
 class TestMeasurementValueItems:
     """Test that a MeasurementValue returns its items correctly."""
-
-    # pylint: disable=protected-access
 
     funcs_and_expected_single = [
         ((lambda v: v), [0, 1]),

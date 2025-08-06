@@ -27,7 +27,6 @@ def dummyfunc():
     return None
 
 
-# pylint: disable=unused-argument
 class CustomDeviceWithDiffMethod(qml.devices.Device):
     """A device that defines its own derivative."""
 
@@ -39,7 +38,6 @@ class CustomDeviceWithDiffMethod(qml.devices.Device):
         return 0
 
 
-# pylint: disable=unused-argument, too-few-public-methods
 class CustomDevice(qml.devices.Device):
     """A null device that just returns 0."""
 
@@ -47,7 +45,6 @@ class CustomDevice(qml.devices.Device):
         return 0
 
 
-# pylint: disable=unused-argument
 class DerivativeDevice(qml.devices.Device):
     """A device that says it supports device derivatives."""
 
@@ -58,7 +55,6 @@ class DerivativeDevice(qml.devices.Device):
         return execution_config.gradient_method == "device"
 
 
-# pylint: disable=unused-argument
 class BackpropDevice(qml.devices.Device):
     """A device that says it supports backpropagation."""
 

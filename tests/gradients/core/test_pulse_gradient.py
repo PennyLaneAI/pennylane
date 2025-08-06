@@ -30,7 +30,6 @@ from pennylane.gradients.pulse_gradient import (
 )
 
 
-# pylint: disable=too-few-public-methods
 @pytest.mark.jax
 class TestSplitEvolOps:
     """Tests for the helper method _split_evol_ops that samples a splitting time and splits up
@@ -833,7 +832,7 @@ class TestStochPulseGrad:
             ),
         ),
     )
-    def test_all_zero_grads(self, ops, arg, exp_shapes):  # pylint:disable=unused-argument
+    def test_all_zero_grads(self, ops, arg, exp_shapes):
         """Test that a zero gradient is returned when all trainable parameters are
         identified to have zero gradient in advance."""
         import jax
@@ -1313,7 +1312,7 @@ class TestStochPulseGrad:
         jax.clear_caches()
 
     @pytest.mark.parametrize("shots", [None, 100])
-    def test_shots_attribute(self, shots):  # pylint:disable=unused-argument
+    def test_shots_attribute(self, shots):
         """Tests that the shots attribute is copied to the new tapes"""
         tape = qml.tape.QuantumTape([], [qml.expval(qml.PauliZ(0)), qml.probs([1, 2])], shots=shots)
         with pytest.warns(UserWarning, match="Attempted to compute the gradient of a tape with no"):

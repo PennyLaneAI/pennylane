@@ -39,7 +39,6 @@ else:
     allocate_prim = QmlPrimitive("allocate")
     allocate_prim.multiple_results = True
 
-    # pylint: disable=unused-argument
     @allocate_prim.def_impl
     def _(*, num_wires, require_zeros=True, restored=False):
         raise NotImplementedError("jaxpr containing qubit allocation cannot be executed.")
@@ -52,7 +51,6 @@ else:
     deallocate_prim = QmlPrimitive("deallocate")
     deallocate_prim.multiple_results = True
 
-    # pylint: disable=unused-argument
     @deallocate_prim.def_impl
     def _(*wires):
         raise NotImplementedError("jaxpr containing qubit deallocation cannot be executed.")
@@ -186,7 +184,6 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
     return Deallocate(wires)
 
 
-# pylint: disable=too-many-ancestors
 class DynamicRegister(Wires):
     """A specialized ``Wires`` class for dynamic wires with a context manager for automatic deallocation."""
 

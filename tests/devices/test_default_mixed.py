@@ -98,7 +98,6 @@ class TestDefaultMixedInit:
         ), "The interface should be set to numpy for an invalid gradient method"
 
 
-# pylint: disable=too-few-public-methods
 class TestDefaultMixedTrainability:
     """Integration tests for DefaultMixed trainable parameters"""
 

@@ -21,7 +21,6 @@ import pytest
 from pennylane.exceptions import AutoGraphWarning
 
 
-# pylint: disable=unused-import
 # This is intended to suppress the *expected* warnings that arise when
 # testing AutoGraph transformation functions with a `QNode` (which by default
 # has AutoGraph transformations applied to it due to the `autograph` argument).

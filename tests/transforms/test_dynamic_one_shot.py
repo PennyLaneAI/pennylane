@@ -37,8 +37,6 @@ from pennylane.transforms.dynamic_one_shot import (
     parse_native_mid_circuit_measurements,
 )
 
-# pylint: disable=too-few-public-methods, too-many-arguments
-
 
 def test_gather_non_mcm_unsupported_measurement():
     """Test that gather_non_mcm raises an error on supported measurements."""

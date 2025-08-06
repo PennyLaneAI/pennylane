@@ -16,8 +16,6 @@ Unit tests for the adjoint_metric_tensor function.
 """
 
 import numpy as onp
-
-# pylint: disable=protected-access
 import pytest
 
 import pennylane as qml
@@ -143,7 +141,7 @@ def fubini_ansatz9(params, wires=None):
 
 
 def fubini_ansatz10(weights, wires=None):
-    # pylint: disable=unused-argument
+
     qml.templates.BasicEntanglerLayers(weights, wires=[wires[0], wires[1]])
 
 

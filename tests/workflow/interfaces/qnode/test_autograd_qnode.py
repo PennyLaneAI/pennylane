@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Integration tests for using the autograd interface with a QNode"""
-# pylint: disable=no-member, too-many-arguments, unexpected-keyword-arg, use-dict-literal, no-name-in-module
+# pylint: disable=no-member,too-many-arguments,use-dict-literal
 
 
 import autograd
@@ -396,7 +396,6 @@ class TestQNode:
             gradient_kwargs["num_directions"] = 10
             tol = TOL_FOR_SPSA
 
-        # pylint: disable=too-few-public-methods
         class U3(qml.U3):
             """Custom U3."""
 
@@ -759,7 +758,6 @@ class TestQubitIntegration:
     def test_chained_qnodes(self, interface, dev, diff_method, grad_on_execution, device_vjp):
         """Test that the gradient of chained QNodes works without error"""
 
-        # pylint: disable=too-few-public-methods
         class Template(qml.templates.StronglyEntanglingLayers):
             """Custom template."""
 
@@ -1448,7 +1446,6 @@ class TestTapeExpansion:
         if max_diff == 2 and diff_method == "hadamard":
             pytest.skip("Max diff > 1 not supported for Hadamard gradient.")
 
-        # pylint: disable=too-few-public-methods
         class PhaseShift(qml.PhaseShift):
             """dummy phase shift."""
 
@@ -2184,7 +2181,7 @@ class TestReturn:
         hess = qml.jacobian(qml.jacobian(cost))(params)
 
         assert isinstance(hess, np.ndarray)
-        assert hess.shape == (3, 2, 2)  # pylint: disable=no-member
+        assert hess.shape == (3, 2, 2)
 
     def test_hessian_probs_var_multiple_params(
         self, dev, diff_method, grad_on_execution, device_vjp
@@ -2261,7 +2258,7 @@ class TestReturn:
         hess = qml.jacobian(qml.jacobian(cost))(params)
 
         assert isinstance(hess, np.ndarray)
-        assert hess.shape == (3, 2, 2)  # pylint: disable=no-member
+        assert hess.shape == (3, 2, 2)
 
 
 def test_no_ops():

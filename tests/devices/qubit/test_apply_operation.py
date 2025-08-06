@@ -69,7 +69,6 @@ def test_custom_operator_with_matrix():
         ]
     )
 
-    # pylint: disable=too-few-public-methods
     class CustomOp(Operation):
         """Custom Operation"""
 
@@ -913,7 +912,7 @@ class TestRXCalcGrad:
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
 @pytest.mark.parametrize("method", methods)
-class TestBroadcasting:  # pylint: disable=too-few-public-methods
+class TestBroadcasting:
     """Tests that broadcasted operations are applied correctly."""
 
     # include operations both with batch_size==1 and batch_size>1
@@ -1441,7 +1440,6 @@ class TestLargeTFCornerCases:
         assert np.array_equal(results[:, 128], [-1.0 + 0.0j] * 3)
 
 
-# pylint: disable=too-few-public-methods
 class TestConditionalsAndMidMeasure:
     """Test dispatching for mid-circuit measurements and conditionals."""
 

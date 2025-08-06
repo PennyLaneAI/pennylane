@@ -203,7 +203,7 @@ class TestQROM:
             (["01", "00", "00", "10", "10", "00", "00", "01"], [0, 1, 2], [3, 4], [5], True),
             (["1", "0", "0", "1"], [0, 1], [2], [], False),
             (["1", "0", "0", "1"], [0, 1], [2], [3, 4], False),
-        ],  # pylint: disable=too-many-arguments
+        ],
     )
     def test_decomposition_new(
         self, bitstrings, control_wires, target_wires, work_wires, clean

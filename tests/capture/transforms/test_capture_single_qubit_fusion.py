@@ -15,7 +15,7 @@
 
 import numpy as np
 
-# pylint:disable=wrong-import-position,protected-access, too-few-public-methods
+# pylint:disable=wrong-import-position,protected-access
 import pytest
 
 import pennylane as qml
@@ -549,7 +549,7 @@ class TestSingleQubitFusionHigherOrderPrimitives:
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.literals)
 
         with qml.capture.pause():
-            # pylint: disable=not-callable
+
             expected_result = circuit()
 
         assert qml.math.allclose(result, expected_result)

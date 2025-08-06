@@ -275,7 +275,6 @@ def test_assert_equal_unspecified():
         def __init__(self):
             pass
 
-    # pylint: disable=unused-argument
     @_equal_dispatch.register
     def _(op1: RandomType, op2, **_):
         """always returns false"""
@@ -635,7 +634,7 @@ class TestEqual:
         )
 
     @pytest.mark.all_interfaces
-    def test_equal_op_remaining(self):  # pylint: disable=too-many-statements
+    def test_equal_op_remaining(self):
         """Test optional arguments are working"""
         # pylint: disable=too-many-statements
         wire = 0
@@ -2846,7 +2845,6 @@ class TestHilbertSchmidt:
         assert qml.equal(op, other_op, check_interface=False, check_trainability=False) is True
 
 
-# pylint: disable=too-few-public-methods
 class DepthIncreaseOperator(Operator):
     """Dummy class which increases depth by one"""
 

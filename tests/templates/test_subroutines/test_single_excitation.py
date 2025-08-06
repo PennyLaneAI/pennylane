@@ -92,7 +92,6 @@ class TestDecomposition:
         """Test the correctness of the FermionicSingleExcitation template including the gate count
         and order, the wires each operation acts on and the correct use of parameters
         in the circuit."""
-        # pylint: disable=protected-access
 
         sqg = 10
         cnots = 4 * (len(single_wires) - 1)

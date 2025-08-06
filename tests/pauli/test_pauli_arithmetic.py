@@ -892,7 +892,7 @@ class TestPauliSentence:
         if len(ps) > 1:
             for ps_summand, op_summand in zip(ps_op.operands, op.operands):
                 assert ps_summand.scalar == op_summand.scalar
-                if isinstance(ps_summand.base, qml.ops.Prod):  # pylint: disable=no-member
+                if isinstance(ps_summand.base, qml.ops.Prod):
                     for pw_factor, op_factor in zip(ps_summand.base, op_summand.base):
                         _compare_ops(pw_factor, op_factor)
                 else:
