@@ -1105,7 +1105,7 @@ class QuantumScript:
         """Resource information about a quantum circuit.
 
         Returns:
-            dict[str, Union[defaultdict,int]]: dictionaries that contain quantum script specifications
+            SpecsDict[str, Any]: A dictionary containing the specifications of the quantum script.
 
         **Example**
          >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
@@ -1128,20 +1128,8 @@ class QuantumScript:
         gate_sizes:
         {1: 4, 2: 2}
         """
-        # pylint: disable=protected-access
         if self._specs is None:
-            resources = qml.resource.resource._count_resources(self)
-            algo_errors = qml.resource.error._compute_algo_error(self)
-
-            self._specs = SpecsDict(
-                {
-                    "resources": resources,
-                    "errors": algo_errors,
-                    "num_observables": len(self.observables),
-                    "num_trainable_params": self.num_params,
-                }
-            )
-
+            self._specs = qml.resource.resource.specs_from_tape(self)
         return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
