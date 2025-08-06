@@ -14,7 +14,6 @@
 """
 Tests for the for_loop
 """
-import jax
 import pytest
 
 import pennylane as qml
@@ -23,6 +22,8 @@ import pennylane as qml
 @pytest.mark.capture
 @pytest.mark.jax
 def test_early_exit():
+    import jax
+
     """Test we exit early when start==stop."""
     @qml.for_loop(0)
     def inner_loop(i, x):  # pylint: disable=unused-argument
