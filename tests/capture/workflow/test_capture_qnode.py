@@ -371,7 +371,7 @@ class TestShots:
         assert eqn0.outvars[0].aval.shape == ()
         assert eqn0.outvars[1].aval.shape == (10,)
         assert eqn0.outvars[2].aval.shape == ()
-        assert eqn0.outavrs[3].aval.shape == (11,)
+        assert eqn0.outvars[3].aval.shape == (11,)
 
     def test_error_dynamic_shots_dynamic_shapes_not_enabled(self):
         """Test that an error is raised if dynamic shots is not enabled."""
