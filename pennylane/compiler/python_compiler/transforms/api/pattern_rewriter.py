@@ -21,6 +21,9 @@ from xdsl.ir import Operation, SSAValue
 from xdsl.pattern_rewriter import PatternRewriter, PatternRewriterListener, PatternRewriteWalker
 from xdsl.rewriter import InsertPoint
 
+from pennylane import ops
+from pennylane.operation import Operator
+
 from ...dialects import mbqc, quantum
 
 # Tuple of all operations that return qubits
@@ -84,7 +87,7 @@ class StateManagement:
     wire_to_qubit_map: dict[int, SSAValue]
     qubit_to_wire_map: dict[SSAValue, int]
 
-    def __init__(self, wires: Sequence[int]):
+    def __init__(self, wires: Sequence[int] | None = None):
         self._wires = tuple(wires)
         self.wire_to_qubit_map = {}
         self.qubit_to_wire_map = {}
@@ -105,7 +108,7 @@ class StateManagement:
         if isinstance(val, SSAValue):
             return self.qubit_to_wire_map[val]
 
-        if val not in self._wires:
+        if self._wires is not None and val not in self._wires:
             raise ValueError(f"{val} is not an available wire.")
         return self.wire_to_qubit_map.get(val, None)
 
@@ -143,6 +146,10 @@ class PLPatternRewriter(PatternRewriter):
     quantum compilation passes.
     """
 
+    def __init__(self, current_operation: Operation):
+        super().__init(current_operation)
+        self.wire_manager = StateManagement()
+
     def erase_quantum_gate_op(self, op: Operation) -> None:
         """Erase a quantum gate.
 
@@ -162,18 +169,22 @@ class PLPatternRewriter(PatternRewriter):
 
         for iq, oq in zip(op.in_qubits, op.out_qubits, strict=True):
             self.replace_all_uses_with(oq, iq)
+            self.wire_manager.update_qubit(oq, iq)
         for icq, ocq in zip(op.in_ctrl_qubits, op.out_ctrl_qubits, strict=True):
             self.replace_all_uses_with(ocq, icq)
+            self.wire_manager.update_qubit(ocq, icq)
 
         self.erase_op(op)
 
-    def create_constant_op(self, cst: Number, insert_point: InsertPoint = None):
-        """Create a constant and insert it into the IR. The corresponding SSA value is returned."""
+    def create_constant(self, cst: Number, insert_point: InsertPoint):
+        """Create a ConstantOp and insert it into the IR. The corresponding SSA value is returned."""
         data = [cst]
         if isinstance(cst, float):
             elem_type = builtin.Float64Type()
         elif isinstance(cst, complex):
             elem_type = builtin.ComplexType()
+        elif isinstance(cst, bool):
+            elem_type = builtin.IntegerType(1)
         else:
             elem_type = builtin.IntegerType(64)
 
@@ -185,19 +196,13 @@ class PLPatternRewriter(PatternRewriter):
             tensor=constantOp.result, indices=indexOp.result, result_type=elem_type
         )
 
-        if insert_point is None:
-            self.insert_op_before_matched_op(constantOp)
-            self.insert_op_before_matched_op(indexOp)
-            self.insert_op_before_matched_op(extractOp)
-
-        else:
-            self.insert_op(constantOp, insert_point)
-            self.insert_op(indexOp, insert_point)
-            self.insert_op(extractOp, insert_point)
+        self.insert_op(constantOp, insert_point)
+        self.insert_op(indexOp, insert_point)
+        self.insert_op(extractOp, insert_point)
 
         return extractOp.result
 
-    def qubit_successors(self, op: Operation, traversal_type="bfs"):
+    def iter_qubit_successors(self, op: Operation, traversal_type="bfs"):
         """Iterator function to do a breadth-first traversal over the output qubits
         of an operation. First returned value is the original operation."""
         if traversal_type not in ("bfs", "dfs"):
@@ -218,7 +223,62 @@ class PLPatternRewriter(PatternRewriter):
 
             yield cur_op
 
+    def _get_gate_base(self, gate: Operator):
+        """Get the base op of a gate."""
+        if not isinstance(gate, ops.SymbolicOp):
+            return gate, (), (), False
 
+        if isinstance(gate, ops.Controlled):
+            base_gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate.base)
+            ctrl_wires = gate.control_wires + ctrl_wires
+            ctrl_vals = gate.control_values + ctrl_vals
+            return base_gate, ctrl_wires, ctrl_vals, adjoint
+
+        if isinstance(gate, ops.Adjoint):
+            base_gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate.base)
+            adjoint = adjoint ^ gate.adjoint
+            return base_gate, ctrl_wires, ctrl_vals, adjoint
+
+        raise RuntimeError("reeeeeeeee")
+
+    def insert_gate(self, gate: Operator, insert_point: InsertPoint):
+        """Insert a PL gate into the IR at the provided insertion point."""
+        gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate)
+
+        # TODO: Add branches for MultiRZ, GlobalPhase, and QubitUnitary
+        params = tuple(self.create_constant(d, insert_point=insert_point) for d in gate.data)
+        in_qubits = tuple(self.wire_manager[w] for w in gate.wires)
+        in_ctrl_qubits = tuple(self.wire_manager[w] for w in ctrl_wires) if ctrl_wires else None
+        in_ctrl_values = None
+
+        if ctrl_vals:
+            true_cst = None
+            false_cst = None
+            if any(ctrl_vals):
+                true_cst = self.create_constant(True, insert_point=insert_point)
+            if not all(ctrl_vals):
+                false_cst = self.create_constant(False, insert_point=insert_point)
+            in_ctrl_values = tuple(true_cst if v else false_cst for v in ctrl_vals)
+
+        customOp = quantum.CustomOp(
+            in_qubits=in_qubits,
+            gate_name=gate.name,
+            params=params,
+            in_ctrl_qubits=in_ctrl_qubits,
+            in_ctrl_values=in_ctrl_values,
+            adjoint=adjoint,
+        )
+        self.insert_op(customOp, insertion_point=insert_point)
+
+        for iq, oq in zip(
+            customOp.in_qubits + customOp.in_ctrl_qubits,
+            customOp.out_qubits + customOp.out_ctrl_qubits,
+        ):
+            iq.replace_by_if(oq, lambda use: use.operation != customOp)
+            self.wire_manager.update_qubit(iq, oq)
+
+
+# pylint: disable=too-few-public-methods
 class PLPatternRewriteWalker(PatternRewriteWalker):
     """A ``PatternRewriteWalker`` for traversing and rewriting modules.
 
@@ -245,6 +305,7 @@ class PLPatternRewriteWalker(PatternRewriteWalker):
         # do/while loop
         while True:
             # Reset the rewriter on `op`
+            # pylint: disable=attribute-defined-outside-init
             rewriter.has_done_action = False
             rewriter.current_operation = op
             rewriter.insertion_point = InsertPoint.before(op)
