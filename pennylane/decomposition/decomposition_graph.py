@@ -67,7 +67,7 @@ class _DecompositionNode:
         return self.decomp_resource.gate_counts.get(op, 0)
 
 
-class DecompositionGraph:  # pylint: disable=too-many-instance-attributes
+class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-few-public-methods
     """A graph that models a decomposition problem.
 
     The decomposition graph contains two types of nodes: operator nodes and decomposition nodes.
