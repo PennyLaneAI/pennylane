@@ -640,7 +640,8 @@ class TestControlledDecompositions:
         graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot"})
         graph.solve(num_work_wires=1)
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
+            rule = graph.decomposition(op, num_work_wires=1)
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         tape = qml.tape.QuantumScript.from_queue(q)
         [tape], _ = qml.transforms.resolve_dynamic_wires([tape], min_int=5)
         assert tape.operations == [
