@@ -15,7 +15,7 @@
 import functools
 from typing import Literal
 
-from pennylane import capture, math
+from pennylane import capture
 from pennylane.capture import FlatFn, enabled
 from pennylane.capture.dynamic_shapes import register_custom_staging_rule
 from pennylane.compiler.compiler import AvailableCompilers, active_compiler
