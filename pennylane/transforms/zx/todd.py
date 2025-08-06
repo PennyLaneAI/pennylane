@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-TODO
+This module contains a transform to apply the
+`phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__
+pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
+to a PennyLane Clifford+T circuit.
 """
 
 import pennylane as qml
