@@ -14,10 +14,11 @@
 """Code for resource estimation"""
 import inspect
 from collections.abc import Callable
-from copy import copy
 from typing import Any, Literal
 
 import pennylane as qml
+
+from .resource import specs_from_tape
 
 
 def _get_absolute_import_path(fn):
@@ -25,7 +26,9 @@ def _get_absolute_import_path(fn):
 
 
 def specs(
-    qnode, level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient"
+    qnode,
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
+    compute_depth: bool = True,
 ) -> Callable[..., list[dict[str, Any]] | dict[str, Any]]:
     r"""Resource information about a quantum circuit.
 
@@ -39,6 +42,7 @@ def specs(
         level (None, str, int, slice): An indication of what transforms to apply before computing the resource information.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
+        compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth will not be included in the returned information.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
@@ -201,7 +205,7 @@ def specs(
 
         for tape in batch:
 
-            info = copy(tape.specs)
+            info = specs_from_tape(tape, compute_depth)
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires
             info["device_name"] = qnode.device.name
