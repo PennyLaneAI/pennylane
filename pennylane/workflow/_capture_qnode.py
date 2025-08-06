@@ -274,15 +274,13 @@ def custom_staging_rule(
     """
     Add new jaxpr equation to the jaxpr_trace and return new tracers.
     """
-
     shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
     device = params["device"]
     invars = [jaxpr_trace.getvar(x) for x in tracers]
     shots_vars = invars[:shots_len]
 
-    n_consts = params["n_consts"]
     batch_dims = params.get("batch_dims")
-    split = n_consts + params["shots_len"]
+    split = params["n_consts"] + params["shots_len"]
     batch_shape = (
         _get_batch_shape(tracers[split:], batch_dims[split:]) if batch_dims is not None else ()
     )
@@ -309,25 +307,6 @@ def custom_staging_rule(
 
 
 pe.custom_staging_rules[qnode_prim] = custom_staging_rule
-
-
-# pylint: disable=unused-argument
-@debug_logger
-@qnode_prim.def_abstract_eval
-def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, batch_dims=None):
-
-    shots, args = args[:shots_len], args[shots_len:]
-
-    mps = qfunc_jaxpr.outvars
-
-    batch_shape = (
-        _get_batch_shape(args[n_consts:], batch_dims[n_consts:]) if batch_dims is not None else ()
-    )
-
-    shapes = _get_shapes_for(
-        *mps, shots=shots, num_device_wires=len(device.wires), batch_shape=batch_shape
-    )
-    return shapes
 
 
 # pylint: disable=too-many-arguments

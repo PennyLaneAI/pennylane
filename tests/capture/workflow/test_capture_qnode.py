@@ -124,35 +124,6 @@ def test_simple_qnode():
     assert qml.math.allclose(output[0], jnp.cos(0.5))
 
 
-def test_overriding_shots():
-    """Test that the number of shots can be overridden on call."""
-
-    dev = qml.device("default.qubit", wires=1)
-
-    @qml.qnode(dev)
-    def circuit():
-        return qml.sample()
-
-    jaxpr = jax.make_jaxpr(qml.set_shots(circuit, shots=50))()
-    assert len(jaxpr.eqns) == 1
-    eqn0 = jaxpr.eqns[0]
-
-    assert eqn0.primitive == qnode_prim
-    assert eqn0.params["device"] == dev
-    assert eqn0.params["shots_len"] == 1
-    assert (
-        eqn0.params["qfunc_jaxpr"].eqns[0].primitive == qml.measurements.SampleMP._wires_primitive
-    )
-
-    assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-        (50,), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
-    )
-
-    with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-        assert qml.math.allclose(res, jnp.zeros((50,)))
-
-
 def test_providing_keyword_argument():
     """Test that keyword arguments can be provided to the qnode."""
 
@@ -318,6 +289,126 @@ def test_qnode_pytree_output():
     assert qml.math.allclose(out["a"], jnp.cos(1.2))
     assert qml.math.allclose(out["b"], -jnp.sin(1.2))
     assert list(out.keys()) == ["a", "b"]
+
+
+class TestShots:
+    """Tests for the number of shots."""
+
+    def test_overriding_shots(self):
+        """Test that the number of shots can be overridden on call."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit():
+            return qml.sample()
+
+        jaxpr = jax.make_jaxpr(qml.set_shots(circuit, shots=50))()
+        assert len(jaxpr.eqns) == 1
+        eqn0 = jaxpr.eqns[0]
+
+        assert eqn0.primitive == qnode_prim
+        assert eqn0.params["device"] == dev
+        assert eqn0.params["shots_len"] == 1
+        assert eqn0.invars[0].val == 50
+        assert (
+            eqn0.params["qfunc_jaxpr"].eqns[0].primitive
+            == qml.measurements.SampleMP._wires_primitive
+        )
+
+        assert eqn0.outvars[0].aval == jax.core.ShapedArray(
+            (50,), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+        )
+
+        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
+            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+            assert qml.math.allclose(res, jnp.zeros((50,)))
+
+    def test_shot_vector(self):
+        """Test that a shot vector can be captured."""
+
+        @qml.set_shots(shots=(10, 10, 20))
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def c():
+            return qml.sample(wires=0)
+
+        jaxpr = jax.make_jaxpr(c)()
+        assert len(jaxpr.eqns) == 1
+        eqn0 = jaxpr.eqns[0]
+        assert eqn0.primitive == qnode_prim
+        assert eqn0.params["shots_len"] == 3
+
+        assert eqn0.invars[0].val == 10
+        assert eqn0.invars[1].val == 10
+        assert eqn0.invars[2].val == 20
+
+        assert len(eqn0.outvars) == 3
+        assert eqn0.outvars[0].aval.shape == (10,)
+        assert eqn0.outvars[1].aval.shape == (10,)
+        assert eqn0.outvars[2].aval.shape == (20,)
+
+    def test_shot_vector_multiple_returns_pytree(self):
+        """Test that shot vectors and multiple returns returns the correct shapes."""
+
+        @qml.set_shots(shots=(10, 11))
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def c():
+            return {"sample": qml.sample(wires=0), "expval": qml.expval(qml.Z(0))}
+
+        def w():
+            out = c()
+            assert isinstance(out, tuple)
+            for i, d in enumerate(out):
+                assert isinstance(d, dict)
+                assert d["sample"].shape == (10 + i,)
+                assert d["expval"].shape == ()
+            return out
+
+        jaxpr = jax.make_jaxpr(w)()
+        eqn0 = jaxpr.eqns[0]
+        assert len(eqn0.outvars) == 4
+        # for some reason flattening the pytree puts the expval first
+        assert eqn0.outvars[0].aval.shape == ()
+        assert eqn0.outvars[1].aval.shape == (10,)
+        assert eqn0.outvars[2].aval.shape == ()
+        assert eqn0.outavrs[3].aval.shape == (11,)
+
+    def test_error_dynamic_shots_dynamic_shapes_not_enabled(self):
+        """Test that an error is raised if dynamic shots is not enabled."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def c():
+            return qml.sample(wires=0), qml.expval(qml.Z(0))
+
+        def w(num_shots):
+            return qml.set_shots(c, num_shots)()
+
+        with pytest.raises(ValueError, match=r"requires setting jax.config.update"):
+            jax.make_jaxpr(w)(3)
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_dynamic_shots(self):
+        """Test that the shot number can be dynamic."""
+
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def c():
+            return qml.sample(wires=0), qml.expval(qml.Z(0))
+
+        def w(num_shots):
+            return qml.set_shots(c, num_shots)()
+
+        jaxpr = jax.make_jaxpr(w)(3)
+        assert len(jaxpr.eqns) == 1
+        eqn0 = jaxpr.eqns[0]
+
+        assert eqn0.params["shots_len"] == 1
+        assert not isinstance(eqn0.invars[0], jax.extend.core.Literal)
+
+        assert isinstance(eqn0.outvars[0].aval, jax.core.DShapedArray)
+        assert isinstance(eqn0.outvars[1].aval, jax.core.ShapedArray)
+
+        assert eqn0.outvars[0].aval.shape[0] is eqn0.invars[0]
+        assert eqn0.outvars[1].aval.shape == ()
 
 
 class TestUserTransforms:
