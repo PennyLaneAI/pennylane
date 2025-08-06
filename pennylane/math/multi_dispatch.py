@@ -262,7 +262,7 @@ def concatenate(values, axis=0, like=None):
             dev_id = dev_indices.pop() if dev_indices else None
             torch_device = torch.device(f"{device}:{dev_id}" if dev_id is not None else device)
 
-        else:
+        else:  # pragma: no cover
             torch_device = torch.device("cpu")
 
         if axis is None:
