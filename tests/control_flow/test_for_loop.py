@@ -28,7 +28,7 @@ def test_early_exit(mocker):
     inner_arr = jnp.array([])
 
     @qml.for_loop(len(inner_arr))
-    def inner_loop(i, x):
+    def inner_loop(i, x):  # pylint: disable=unused-argument
         x += 1
         return x
 
