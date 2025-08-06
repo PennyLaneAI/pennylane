@@ -85,7 +85,6 @@ def test_executing_arbitrary_circuit(backend_cls):
     # the processed circuit is two tapes (split_non_commuting), returning
     # only samples, and expressed in the MBQC formalism
     tapes, _ = qml.workflow.construct_batch(ftqc_circ, level="device")()
-    print(tapes)
     assert len(tapes) == 2
     for sequence in tapes:
         assert isinstance(sequence, QuantumScriptSequence)
