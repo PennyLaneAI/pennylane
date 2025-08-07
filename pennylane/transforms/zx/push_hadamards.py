@@ -15,7 +15,7 @@
 This module contains a transform to apply the
 `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__
 pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
-to a PennyLane phase-polynomial circuit with Hadamard gates.
+to a PennyLane phase-polynomial + Hadamard circuit.
 """
 
 import pennylane as qml
