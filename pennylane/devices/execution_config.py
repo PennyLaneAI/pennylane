@@ -86,10 +86,10 @@ class ExecutionConfig:
     gradient_method: str | TransformDispatcher | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict | None = None
+    gradient_keyword_arguments: dict | MappingProxyType = field(default_factory=dict)
     """Arguments used to control a gradient transform"""
 
-    device_options: dict | None = None
+    device_options: dict | MappingProxyType = field(default_factory=dict)
     """Various options for the device executing a quantum circuit"""
 
     interface: Interface = Interface.NUMPY
@@ -126,21 +126,21 @@ class ExecutionConfig:
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
-        if self.device_options is None:
-            object.__setattr__(self, "device_options", MappingProxyType({}))
-        elif isinstance(self.device_options, dict):
+        if isinstance(self.device_options, dict):
             object.__setattr__(self, "device_options", MappingProxyType(self.device_options))
+        elif isinstance(self.device_options, MappingProxyType):
+            pass
         else:
             raise ValueError(f"Got invalid type {type(self.device_options)} for 'device_options'")
 
-        if self.gradient_keyword_arguments is None:
-            object.__setattr__(self, "gradient_keyword_arguments", MappingProxyType({}))
-        elif isinstance(self.gradient_keyword_arguments, dict):
+        if isinstance(self.gradient_keyword_arguments, dict):
             object.__setattr__(
                 self,
                 "gradient_keyword_arguments",
                 MappingProxyType(self.gradient_keyword_arguments),
             )
+        elif isinstance(self.gradient_keyword_arguments, MappingProxyType):
+            pass
         else:
             raise ValueError(
                 f"Got invalid type {type(self.gradient_keyword_arguments)} for 'gradient_keyword_arguments'"
