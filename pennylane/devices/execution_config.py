@@ -201,6 +201,16 @@ class ExecutionConfig:
                 derivative_order=self.derivative_order,
             )
             object.__setattr__(self, "gradient_config", gradient_config)
+            object.__setattr__(self, "grad_on_execution", gradient_config.grad_on_execution)
+            object.__setattr__(self, "use_device_gradient", gradient_config.use_device_gradient)
+            object.__setattr__(
+                self, "use_device_jacobian_product", gradient_config.use_device_jacobian_product
+            )
+            object.__setattr__(self, "gradient_method", gradient_config.gradient_method)
+            object.__setattr__(
+                self, "gradient_keyword_arguments", gradient_config.gradient_keyword_arguments
+            )
+            object.__setattr__(self, "derivative_order", gradient_config.derivative_order)
         elif isinstance(self.gradient_config, GradientConfig):
             pass
         else:
