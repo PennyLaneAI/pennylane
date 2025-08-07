@@ -447,7 +447,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* The native pennylane `~.for_loop` with capture enabled can now handle over indexing
+* The `~.for_loop` function with capture enabled can now handle over indexing
   into an empty array when `start == stop`.
   [(#8026)](https://github.com/PennyLaneAI/pennylane/pull/8026)
 
