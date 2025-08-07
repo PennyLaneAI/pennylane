@@ -145,7 +145,7 @@ class TestGQSP:
 
     @pytest.mark.jax
     def test_gqsp_jax(self):
-        """Test that GQSP works with jax"""tes
+        """Test that GQSP works with jax"""
 
         import jax.numpy as jnp
 
