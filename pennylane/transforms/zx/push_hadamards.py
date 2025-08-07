@@ -18,12 +18,11 @@ pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/lates
 to a PennyLane phase-polynomial + Hadamard circuit.
 """
 
-import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
-from .converter import from_zx
+from .converter import from_zx, to_zx
 
 try:
     import pyzx
@@ -88,9 +87,9 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
             "The `pyzx` package is required. You can install it with `pip install pyzx`."
         )
 
-    qasm2_no_meas = qml.to_openqasm(tape, measure_all=False)
+    pyzx_graph = to_zx(tape)
 
-    pyzx_circ = pyzx.Circuit.from_qasm(qasm2_no_meas)
+    pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
     pyzx_circ = pyzx.basic_optimization(pyzx_circ.to_basic_gates())
 
     qscript = from_zx(pyzx_circ.to_graph())

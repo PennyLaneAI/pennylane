@@ -27,14 +27,17 @@ class TestPushHadamards:
     @pytest.mark.parametrize(
         "gate",
         (
-            # supported 1-qubit hermitian gates
+            # 1-qubit hermitian gates
             qml.Identity(wires=0),
             qml.PauliX(wires=0),
+            qml.PauliY(wires=0),
             qml.PauliZ(wires=0),
             qml.Hadamard(wires=0),
-            # supported 2-qubit hermitian gates
+            # 2-qubit hermitian gates
             qml.CNOT(wires=[0, 1]),
+            qml.CY(wires=[0, 1]),
             qml.CZ(wires=[0, 1]),
+            qml.CH(wires=[0, 1]),
             qml.SWAP(wires=[0, 1]),
         ),
     )
