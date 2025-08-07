@@ -127,6 +127,10 @@ Templates:
     ~ResourceBasisRotation
     ~ResourceSelect
     ~ResourceQROM
+    ~ResourceSingleQubitComparator
+    ~ResourceTwoQubitComparator
+    ~ResourceIntegerComparator
+    ~ResourceRegisterComparator
     ~ResourceSelectPauliRot
     ~ResourceQubitUnitary
     ~ResourceTrotterCDF
@@ -143,6 +147,8 @@ State Preparation:
 
     ~ResourceMPSPrep
     ~ResourceQROMStatePreparation
+    ~ResourceUniformStatePrep
+    ~ResourceAliasSampling
 
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -227,6 +233,10 @@ from .templates import (
     ResourceBasisRotation,
     ResourceSelect,
     ResourceQROM,
+    ResourceTwoQubitComparator,
+    ResourceIntegerComparator,
+    ResourceSingleQubitComparator,
+    ResourceRegisterComparator,
     ResourceQubitUnitary,
     ResourceSelectPauliRot,
     ResourceTrotterCDF,
@@ -237,4 +247,6 @@ from .templates import (
     ResourceQubitizeTHC,
     ResourceMPSPrep,
     ResourceQROMStatePreparation,
+    ResourceUniformStatePrep,
+    ResourceAliasSampling,
 )

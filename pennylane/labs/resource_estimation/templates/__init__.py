@@ -40,3 +40,10 @@ from .stateprep import (
 
 from .qubitize import ResourceQubitizeTHC
 from .compact_hamiltonian import CompactHamiltonian
+from .comparators import (
+    ResourceIntegerComparator,
+    ResourceSingleQubitComparator,
+    ResourceTwoQubitComparator,
+    ResourceRegisterComparator,
+)
+from .stateprep import ResourceUniformStatePrep, ResourceAliasSampling

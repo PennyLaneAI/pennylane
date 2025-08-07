@@ -11,21 +11,256 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""Resource operators for PennyLane state preparation templates."""
+r"""Resource operators for state preparation templates."""
 import math
 from typing import Dict
 
 import pennylane.numpy as np
-from pennylane.labs import resource_estimation as re
+from pennylane.labs import resource_estimation as plre
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
+    resource_rep,
 )
 
-# pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments,
+# pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments, unused-argument
 
+
+class ResourceUniformStatePrep(ResourceOperator):
+    r"""Resource class for preparing a uniform superposition.
+
+    This operation prepares a uniform superposition over a given number of
+    basis states. The uniform superposition is defined as:
+
+    .. math::
+
+        \frac{1}{\sqrt{l}} \sum_{i=0}^{l} |i\rangle
+
+    where :math:`l` is the number of states.
+
+    This operation uses ``Hadamard`` gates to create the uniform superposition when
+    the number of states is a power of two. If the number of states is not a power of two,
+    amplitude amplification technique defined in
+    `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_ is used.
+
+    Args:
+        num_states (int): the number of states in the uniform superposition
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+        The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l`
+        basis states.
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> unif_state_prep = plre.ResourceUniformStatePrep(10)
+    >>> print(plre.estimate_resources(unif_state_prep))
+    --- Resources: ---
+     Total qubits: 5
+     Total gates : 124
+     Qubit breakdown:
+      clean qubits: 1, dirty qubits: 0, algorithmic qubits: 4
+     Gate breakdown:
+      {'Hadamard': 16, 'X': 12, 'CNOT': 4, 'Toffoli': 4, 'T': 88}
+    """
+
+    resource_keys = {"num_states"}
+
+    def __init__(self, num_states, wires=None):
+        self.num_states = num_states
+        k = (num_states & -num_states).bit_length() - 1
+        L = num_states // (2**k)
+        if L == 1:
+            self.num_wires = k
+        else:
+            self.num_wires = k + int(math.ceil(math.log2(L)))
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_states (int): the number of states over which the uniform superposition is being prepared
+        """
+        return {"num_states": self.num_states}
+
+    @classmethod
+    def resource_rep(cls, num_states: int) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, {"num_states": num_states})
+
+    @classmethod
+    def default_resource_decomp(cls, num_states, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+
+        Args:
+            num_states (int): the number of states over which the uniform superposition is being prepared
+
+        Resources:
+            The resources are obtained from Figure 12 in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+            The circuit uses amplitude amplification to prepare a uniform superposition over :math:`l` basis states.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+
+        gate_lst = []
+        k = (num_states & -num_states).bit_length() - 1
+        L = num_states // (2**k)
+        if L == 1:
+            gate_lst.append(GateCount(resource_rep(plre.ResourceHadamard), k))
+            return gate_lst
+
+        logl = int(math.ceil(math.log2(L)))
+        gate_lst.append(GateCount(resource_rep(plre.ResourceHadamard), k + 3 * logl))
+        gate_lst.append(
+            GateCount(
+                resource_rep(plre.ResourceIntegerComparator, {"value": L, "register_size": logl}), 1
+            )
+        )
+        gate_lst.append(GateCount(resource_rep(plre.ResourceRZ), 2))
+        gate_lst.append(
+            GateCount(
+                resource_rep(
+                    plre.ResourceAdjoint,
+                    {
+                        "base_cmpr_op": resource_rep(
+                            plre.ResourceIntegerComparator, {"value": L, "register_size": logl}
+                        )
+                    },
+                ),
+                1,
+            )
+        )
+
+        return gate_lst
+
+
+class ResourceAliasSampling(ResourceOperator):
+    r"""Resource class for preparing a state using coherent alias sampling.
+
+    Args:
+        num_coeffs (int): the number of unique coefficients in the state
+        precision (float): the precision with which the coefficients are loaded
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+        The circuit uses coherent alias sampling to prepare a state with the given coefficients.
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> alias_sampling = plre.ResourceAliasSampling(num_coeffs=100)
+    >>> print(plre.estimate_resources(alias_sampling))
+    --- Resources: ---
+     Total qubits: 81
+     Total gates : 6.157E+3
+     Qubit breakdown:
+      clean qubits: 6, dirty qubits: 68, algorithmic qubits: 7
+     Gate breakdown:
+      {'Hadamard': 730, 'X': 479, 'CNOT': 4.530E+3, 'Toffoli': 330, 'T': 88}
+    """
+
+    resource_keys = {"num_coeffs", "precision"}
+
+    def __init__(self, num_coeffs, precision=None, wires=None):
+        self.num_coeffs = num_coeffs
+        self.precision = precision
+        self.num_wires = int(math.ceil(math.log2(num_coeffs)))
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_coeffs (int): the number of unique coefficients in the state
+                * precision (float): the precision with which the coefficients are loaded
+
+        """
+        return {"num_coeffs": self.num_coeffs, "precision": self.precision}
+
+    @classmethod
+    def resource_rep(cls, num_coeffs, precision=None) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, {"num_coeffs": num_coeffs, "precision": precision})
+
+    @classmethod
+    def default_resource_decomp(cls, num_coeffs, precision=None, **kwargs) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+
+        Args:
+            num_coeffs (int): the number of unique coefficients in the state
+            precision (float): the precision with which the coefficients are loaded
+
+        Resources:
+            The resources are obtained from Section III D in `arXiv:1805.03662 <https://arxiv.org/pdf/1805.03662>`_.
+            The circuit uses coherent alias sampling to prepare a state with the given coefficients.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+
+        gate_lst = []
+
+        logl = int(math.ceil(math.log2(num_coeffs)))
+        precision = precision or kwargs["config"]["precision_alias_sampling"]
+
+        num_prec_wires = abs(math.floor(math.log2(precision)))
+
+        gate_lst.append(AllocWires(logl + 2 * num_prec_wires + 1))
+
+        gate_lst.append(
+            GateCount(resource_rep(plre.ResourceUniformStatePrep, {"num_states": num_coeffs}), 1)
+        )
+        gate_lst.append(GateCount(resource_rep(plre.ResourceHadamard), num_prec_wires))
+        gate_lst.append(
+            GateCount(
+                resource_rep(
+                    plre.ResourceQROM,
+                    {"num_bitstrings": num_coeffs, "size_bitstring": logl + num_prec_wires},
+                ),
+                1,
+            )
+        )
+        gate_lst.append(
+            GateCount(
+                resource_rep(
+                    plre.ResourceRegisterComparator,
+                    {"first_register": num_prec_wires, "second_register": num_prec_wires},
+                ),
+                1,
+            )
+        )
+        gate_lst.append(GateCount(resource_rep(plre.ResourceCSWAP), logl))
+
+        return gate_lst
 
 class ResourceMPSPrep(ResourceOperator):
     r"""Resource class for the MPSPrep template.
@@ -143,7 +378,7 @@ class ResourceMPSPrep(ResourceOperator):
 
         for index in range(1, num_mps_matrices + 1):
             qubit_unitary_wires = min(index + 1, num_work_wires + 1, (num_mps_matrices - index) + 2)
-            qubit_unitary = re.ResourceQubitUnitary.resource_rep(
+            qubit_unitary = plre.ResourceQubitUnitary.resource_rep(
                 num_wires=qubit_unitary_wires, precision=precision
             )
             gate_lst.append(GateCount(qubit_unitary))
@@ -412,7 +647,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
             gate_counts.append(
                 GateCount(
-                    re.ResourceQROM.resource_rep(
+                    plre.ResourceQROM.resource_rep(
                         num_bitstrings=num_bitstrings,
                         size_bitstring=num_precision_wires,
                         num_bit_flips=num_bit_flips,
@@ -424,9 +659,9 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
             gate_counts.append(
                 GateCount(
-                    re.ResourceAdjoint.resource_rep(
-                        re.resource_rep(
-                            re.ResourceQROM,
+                    plre.ResourceAdjoint.resource_rep(
+                        plre.resource_rep(
+                            plre.ResourceQROM,
                             {
                                 "num_bitstrings": num_bitstrings,
                                 "num_bit_flips": num_bit_flips,
@@ -440,13 +675,13 @@ class ResourceQROMStatePreparation(ResourceOperator):
             )
 
         if use_phase_grad_trick:
-            semi_adder = re.ResourceSemiAdder.resource_rep(max_register_size=num_precision_wires)
-            h = re.ResourceHadamard.resource_rep()
-            s = re.ResourceS.resource_rep()
-            s_dagg = re.ResourceAdjoint.resource_rep(base_cmpr_op=s)
+            semi_adder = plre.ResourceSemiAdder.resource_rep(max_register_size=num_precision_wires)
+            h = plre.ResourceHadamard.resource_rep()
+            s = plre.ResourceS.resource_rep()
+            s_dagg = plre.ResourceAdjoint.resource_rep(base_cmpr_op=s)
             gate_counts.append(
                 GateCount(
-                    re.ResourceControlled.resource_rep(
+                    plre.ResourceControlled.resource_rep(
                         base_cmpr_op=semi_adder, num_ctrl_wires=1, num_ctrl_values=0
                     ),
                     count=num_state_qubits,
@@ -459,13 +694,13 @@ class ResourceQROMStatePreparation(ResourceOperator):
             )  # map RY rotations to RZ for phase grad
 
         else:
-            cry = re.ResourceCRY.resource_rep(eps=precision)
+            cry = plre.ResourceCRY.resource_rep(eps=precision)
             gate_counts.append(GateCount(cry, num_precision_wires * num_state_qubits))
 
         if not positive_and_real:
             gate_counts.append(
                 GateCount(
-                    re.ResourceQROM.resource_rep(
+                    plre.ResourceQROM.resource_rep(
                         num_bitstrings=2**num_state_qubits,
                         size_bitstring=num_precision_wires,
                         num_bit_flips=2 ** (num_state_qubits - 1),
@@ -477,9 +712,9 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
             gate_counts.append(
                 GateCount(
-                    re.ResourceAdjoint.resource_rep(
-                        re.resource_rep(
-                            re.ResourceQROM,
+                    plre.ResourceAdjoint.resource_rep(
+                        plre.resource_rep(
+                            plre.ResourceQROM,
                             {
                                 "num_bitstrings": 2**num_state_qubits,
                                 "size_bitstring": num_precision_wires,
@@ -493,18 +728,18 @@ class ResourceQROMStatePreparation(ResourceOperator):
             )
 
             if use_phase_grad_trick:
-                semi_adder = re.ResourceSemiAdder.resource_rep(
+                semi_adder = plre.ResourceSemiAdder.resource_rep(
                     max_register_size=num_precision_wires
                 )
                 gate_counts.append(
                     GateCount(
-                        re.ResourceControlled.resource_rep(
+                        plre.ResourceControlled.resource_rep(
                             base_cmpr_op=semi_adder, num_ctrl_wires=1, num_ctrl_values=0
                         ),
                     )
                 )
             else:
-                phase_shift = re.ResourcePhaseShift.resource_rep(eps=precision)
+                phase_shift = plre.ResourcePhaseShift.resource_rep(eps=precision)
                 gate_counts.append(GateCount(phase_shift, num_precision_wires))
 
         gate_counts.append(FreeWires(num_precision_wires))
