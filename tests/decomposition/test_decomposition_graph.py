@@ -621,7 +621,7 @@ class TestControlledDecompositions:
             qml.Rot(0.123, 0.234, 0.345, wires=0),
             control=[1, 2, 3],
             work_wires=[4, 5],
-            work_wire_type="clean",
+            work_wire_type="zeroed",
         )
 
         graph = DecompositionGraph(
@@ -632,9 +632,9 @@ class TestControlledDecompositions:
         with qml.queuing.AnnotatedQueue() as q:
             solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
         assert q.queue == [
-            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="clean"),
+            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="zeroed"),
             qml.CRot(0.123, 0.234, 0.345, wires=[4, 0]),
-            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="clean"),
+            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="zeroed"),
         ]
         assert solution.resource_estimate(op) == to_resources(
             {
@@ -643,7 +643,7 @@ class TestControlledDecompositions:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
-                    work_wire_type="clean",
+                    work_wire_type="zeroed",
                 ): 2,
                 qml.CRot: 1,
             }
