@@ -508,6 +508,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes the GPU selection issue in `qml.math` with PyTorch when multiple GPUs are present.
+  [(#8008)](https://github.com/PennyLaneAI/pennylane/pull/8008)
+
 * The `~.for_loop` function with capture enabled can now handle over indexing
   into an empty array when `start == stop`.
   [(#8026)](https://github.com/PennyLaneAI/pennylane/pull/8026)
@@ -552,6 +555,7 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Ali Asadi,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
