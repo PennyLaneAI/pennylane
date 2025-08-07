@@ -6,8 +6,8 @@
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
-    * :func:`~.transforms.push_hadamards` to optimize Clifford+T circuits pushing Hadamard gates
-      to the side to create fewer larger phase-polynomial blocks
+    * :func:`~.transforms.push_hadamards` to optimize phase-polynomial + Hadamard circuits pushing
+      Hadamard gates to the side to create fewer larger phase-polynomial blocks
       (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
       [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 

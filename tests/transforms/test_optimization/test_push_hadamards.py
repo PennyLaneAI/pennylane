@@ -85,6 +85,19 @@ class TestPushHadamards:
 
         assert new_qs.operations == expected_ops
 
+    @pytest.mark.parametrize(
+        "rot_gate",
+        (qml.RX, qml.RY),
+    )
+    def test_rotation_gates_error(self, rot_gate):
+        qs = QuantumScript(ops=[rot_gate(0.5, wires=0)])
+
+        with pytest.raises(
+            TypeError,
+            match=r"The input quantum circuit must be a phase-polynomial \+ Hadamard circuit.",
+        ):
+            qml.transforms.zx.push_hadamards(qs)
+
     def test_transformed_tape(self):
         """Test that the operations of the transformed tape match
         the expected operations for a simple circut."""

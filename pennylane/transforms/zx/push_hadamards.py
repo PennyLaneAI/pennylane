@@ -38,8 +38,8 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     Pushes Hadamard gates as far as possible to the side to create fewer larger phase-polynomial blocks,
     improving the effectiveness of phase-polynomial optimization techniques.
 
-    The transform optimizes the circuit using a strategy of delayed gate placement so that more matches
-    for gate cancellations are found.
+    The transform optimizes a phase-polynomial + Hadamard circuit using a strategy of delayed gate placement
+    so that more matches for gate cancellations are found.
     It is based on the the `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass.
 
     Args:
@@ -51,6 +51,7 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
+        TypeError: if the input quantum circuit is not a phase-polynomial + Hadamard circuit.
 
     **Example:**
 
@@ -90,7 +91,16 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     pyzx_graph = to_zx(tape)
 
     pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
-    pyzx_circ = pyzx.basic_optimization(pyzx_circ.to_basic_gates())
+
+    try:
+        pyzx_circ = pyzx.basic_optimization(pyzx_circ.to_basic_gates())
+
+    except TypeError as e:
+
+        raise TypeError(
+            "The input quantum circuit must be a phase-polynomial + Hadamard circuit. "
+            "RX and RY rotation gates are not supported."
+        ) from e
 
     qscript = from_zx(pyzx_circ.to_graph())
 
