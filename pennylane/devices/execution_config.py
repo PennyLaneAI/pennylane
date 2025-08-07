@@ -128,16 +128,22 @@ class ExecutionConfig:
 
         if self.device_options is None:
             object.__setattr__(self, "device_options", MappingProxyType({}))
-        else:
+        elif isinstance(self.device_options, dict):
             object.__setattr__(self, "device_options", MappingProxyType(self.device_options))
+        else:
+            raise ValueError(f"Got invalid type {type(self.device_options)} for 'device_options'")
 
         if self.gradient_keyword_arguments is None:
             object.__setattr__(self, "gradient_keyword_arguments", MappingProxyType({}))
-        else:
+        elif isinstance(self.gradient_keyword_arguments, dict):
             object.__setattr__(
                 self,
                 "gradient_keyword_arguments",
                 MappingProxyType(self.gradient_keyword_arguments),
+            )
+        else:
+            raise ValueError(
+                f"Got invalid type {type(self.gradient_keyword_arguments)} for 'gradient_keyword_arguments'"
             )
 
         if not (
