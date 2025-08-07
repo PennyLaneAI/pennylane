@@ -496,7 +496,7 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
                 num_control_wires=num_controls,
                 num_zero_control_values=0,
                 num_work_wires=int(num_work_wires > 0),
-                work_wire_type="dirty",
+                work_wire_type="borrowed",
             )
             resources[ctrl_phase_rep] += 1
 

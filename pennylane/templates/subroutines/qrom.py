@@ -492,6 +492,7 @@ def _qrom_decomposition(
     if len(control_wires) == 0:
         for bits in bitstrings:
             BasisEmbedding(int(bits, 2), wires=target_wires)
+        return
 
     swap_wires = target_wires + work_wires
 

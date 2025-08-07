@@ -148,6 +148,8 @@ class TestDecomposition:
             [1, 2, 3, 4],
         ],
     )
+    @pytest.mark.jax
+    @pytest.mark.capture
     def test_decomposition_new(self, single_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qml.FermionicSingleExcitation(

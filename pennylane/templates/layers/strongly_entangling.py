@@ -14,7 +14,7 @@
 r"""
 Contains the StronglyEntanglingLayers template.
 """
-from pennylane import math
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources
 
@@ -23,6 +23,12 @@ from pennylane.operation import Operation
 from pennylane.ops import CNOT, Rot
 from pennylane.ops.op_math import cond
 from pennylane.wires import Wires
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class StronglyEntanglingLayers(Operation):
@@ -304,8 +310,11 @@ def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
 
 @register_resources(_strongly_entangling_resources)
 def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
-    wires = math.array(wires, like="jax")
-    ranges = math.array(ranges, like="jax")
+
+    if capture.enabled() and has_jax:
+        wires = jnp.array(wires)
+        ranges = jnp.array(ranges)
+        weights = jnp.array(weights)
 
     n_wires = len(wires)
     n_layers = weights.shape[0]
@@ -324,8 +333,11 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
         def imprim_true():
             @for_loop(n_wires)
             def imprimitive_loop(i):
-                act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
-                imprimitive(wires=wires[act_on])
+                if capture.enabled() and has_jax:
+                    act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
+                else:
+                    act_on = wires.subset([i, i + ranges[l]], periodic_boundary=True)
+                imprimitive(wires=act_on)
 
             imprimitive_loop()  # pylint: disable=no-value-for-parameter
 

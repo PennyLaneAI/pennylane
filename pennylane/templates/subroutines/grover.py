@@ -16,12 +16,18 @@ Contains the Grover Operation template.
 """
 import numpy as np
 
-from pennylane import math
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, Hadamard, MultiControlledX, PauliZ
 from pennylane.wires import Wires, WiresLike
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class GroverOperator(Operation):
@@ -250,7 +256,7 @@ def _grover_operator_resources(num_wires, num_work_wires):
             num_control_wires=num_wires - 1,
             num_zero_control_values=num_wires - 1,
             num_work_wires=num_work_wires,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         ): 1,
     }
 
@@ -258,6 +264,9 @@ def _grover_operator_resources(num_wires, num_work_wires):
 @register_resources(_grover_operator_resources)
 def _grover_decomposition(wires, work_wires, n_wires):  # pylint: disable=arguments-differ
     ctrl_values = [0] * (n_wires - 1)
+
+    if has_jax and capture.enabled():
+        wires = jnp.array(wires)
 
     @for_loop(len(wires) - 1)
     def apply_hadamards(i):

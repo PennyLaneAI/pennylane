@@ -17,12 +17,17 @@ Contains the GQSP template.
 
 import copy
 
-from pennylane import ops
-from pennylane.control_flow import for_loop
+from pennylane import capture, ops
 from pennylane.decomposition import add_decomps, controlled_resource_rep, register_resources
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class GQSP(Operation):
@@ -88,7 +93,7 @@ class GQSP(Operation):
     def __init__(self, unitary, angles, control, id=None):
         total_wires = Wires(control) + unitary.wires
 
-        self._hyperparameters = {"unitary": unitary, "control": Wires(control)}
+        self._hyperparameters = {"unitary": unitary, "control": control}
 
         super().__init__(angles, *unitary.data, wires=total_wires, id=id)
 
@@ -122,7 +127,7 @@ class GQSP(Operation):
             new_op._hyperparameters["unitary"], wire_map
         )
         new_op._hyperparameters["control"] = tuple(
-            wire_map.get(w, w) for w in new_op._hyperparameters["control"]
+            wire_map.get(w, w) for w in Wires(new_op._hyperparameters["control"])
         )
 
         return new_op
@@ -203,17 +208,16 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
 
     thetas, phis, lambds = angles[0], angles[1], angles[2]
 
+    if has_jax and capture.enabled():
+        thetas, phis, lambds = jnp.array(thetas), jnp.array(phis), jnp.array(lambds)
+
     # These four gates adapt PennyLane's ops.U3 to the chosen U3 format in the GQSP paper.
     ops.X(control)
     ops.U3(2 * thetas[0], phis[0], lambds[0], wires=control)
     ops.X(control)
     ops.Z(control)
 
-    @for_loop(1, min(len(thetas), len(phis), len(lambds)))
-    def loop_over_angles(i):
-        theta = thetas[i]
-        phi = phis[i]
-        lamb = lambds[i]
+    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
 
         ops.Controlled(unitary, control_wires=[control], control_values=[0])
 
@@ -221,8 +225,6 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
         ops.U3(2 * theta, phi, lamb, wires=control)
         ops.X(control)
         ops.Z(control)
-
-    loop_over_angles()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(GQSP, _GQSP_decomposition)
