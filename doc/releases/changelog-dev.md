@@ -228,6 +228,47 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+
+* Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
+  This prevents the potential mutation of a global object. 
+
+  This means that functions like,
+  ```python
+  ...
+    def some_func(..., execution_config = DefaultExecutionConfig):
+      ...
+  ...
+  ```
+  should be written as follows,
+  ```python
+  ...
+    def some_func(..., execution_config: ExecutionConfig | None = None):
+      if execution_config is None:
+          execution_config = ExecutionConfig()
+  ...
+  ```
+
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
+  They now accept an operation or a list of operations as quantum unitaries.
+  [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
+
+  In past versions of PennyLane, these templates required providing the `U` and `V` unitaries as a `qml.tape.QuantumTape` and a quantum function,
+  respectively, along with separate parameters and wires.
+
+  With this release, each template has been improved to accept one or more operators as  unitaries. 
+  The wires and parameters of the approximate unitary `V` are inferred from the inputs, according to the order provided.
+
+  ```python
+  >>> U = qml.Hadamard(0)
+  >>> V = qml.RZ(0.1, wires=1)
+  >>> qml.HilbertSchmidt(V, U)
+  HilbertSchmidt(0.1, wires=[0, 1])
+  ```
+
 * Remove support for Python 3.10 and adds support for 3.13.
   [(#7935)](https://github.com/PennyLaneAI/pennylane/pull/7935)
 
@@ -272,6 +313,12 @@
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 <h3>Deprecations 👋</h3>
+
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+  ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
+  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
+  work wires are restored to their original state upon completing the decomposition.
+  [(#7993)](https://github.com/PennyLaneAI/pennylane/pull/7993)
 
 * Providing `num_steps` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
@@ -351,6 +398,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Removed unnecessary execution tests along with accuracy validation in `tests/ops/functions/test_map_wires.py`.
+  [(#8032)](https://github.com/PennyLaneAI/pennylane/pull/8032)
 
 * Added a new `all-tests-passed` gatekeeper job to `interface-unit-tests.yml` to ensure all test
   jobs complete successfully before triggering downstream actions. This reduces the need to
