@@ -194,9 +194,13 @@ class TestCliffordCompile:
 
     @pytest.mark.catalyst
     @pytest.mark.jax
+    @pytest.mark.external
     @pytest.mark.parametrize("circuit", [circuit_7, circuit_8])
     def test_decomposition_with_rs_qjit(self, circuit):
         """Test decomposition for the Clifford transform with Ross-Selinger method with QJIT enabled."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
 
         dev = qml.device("lightning.qubit", wires=4)
         qnode_cir = qml.qnode(dev)(circuit)
@@ -208,7 +212,12 @@ class TestCliffordCompile:
 
     @pytest.mark.catalyst
     @pytest.mark.jax
+    @pytest.mark.external
     def test_decomposition_with_rs_qjit_dynamic_param(self):
+        """Test clifford T decomposition with qjit and dynamic parameters."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
 
         def circuit(angle, qb):
             qml.H(qb)

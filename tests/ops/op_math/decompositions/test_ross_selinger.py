@@ -101,6 +101,7 @@ def test_exception():
 
 @pytest.mark.catalyst
 @pytest.mark.jax
+@pytest.mark.external
 @pytest.mark.parametrize(
     ("decomposition_info", "expected_ops"),
     [
@@ -121,9 +122,10 @@ def test_exception():
 @pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
 def test_jit_rs_decomposition(decomposition_info, expected_ops):
     """Test that the qjit rs decomposition is working."""
-
-    jnp = pytest.importorskip("jax")
     catalyst = pytest.importorskip("catalyst")
+    jax = pytest.importorskip("jax")
+    jnp = jax.numpy
+
     catalyst_cfs_api = catalyst.api_extensions.control_flow
 
     catalyst_op_dict = {"Cond": catalyst_cfs_api.Cond, "ForLoop": catalyst_cfs_api.ForLoop}
