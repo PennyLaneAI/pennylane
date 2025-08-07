@@ -128,12 +128,7 @@ test_data_decomposition = [
 ]
 
 test_data_decomposition_new = [
-    (
-        [[0, 1, 2]],
-        [],
-        np.array([3.815]),
-        1
-    ),
+    ([[0, 1, 2]], [], np.array([3.815]), 1),
     (
         [[0, 1, 2], [1, 2, 3]],
         [],
@@ -165,6 +160,7 @@ test_data_decomposition_new = [
         2,
     ),
 ]
+
 
 @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats, _", test_data_decomposition)
 def test_standard_validity(s_wires, d_wires, weights, n_repeats, _):
@@ -258,9 +254,7 @@ class TestDecomposition:
             res_weight = queue[idx].parameters
             assert np.allclose(res_weight, exp_weight)
 
-    @pytest.mark.parametrize(
-        "s_wires, d_wires, weights, n_repeats", test_data_decomposition_new
-    )
+    @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats", test_data_decomposition_new)
     @pytest.mark.jax
     # @pytest.mark.capture
     def test_decomposition_new(

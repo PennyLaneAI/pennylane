@@ -28,14 +28,14 @@ from pennylane.operation import Operation
 from pennylane.ops import BasisState
 from pennylane.wires import Wires
 
+from .fermionic_double_excitation import FermionicDoubleExcitation
+from .fermionic_single_excitation import FermionicSingleExcitation
+
 has_jax = True
 try:
     from jax import numpy as jnp
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
-
-from .fermionic_double_excitation import FermionicDoubleExcitation
-from .fermionic_single_excitation import FermionicSingleExcitation
 
 
 class UCCSD(Operation):
