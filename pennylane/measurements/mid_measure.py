@@ -350,10 +350,10 @@ def measure(
         measuring ``1`` on wire 1 after postselection should also be 1. Executing this QNode with 10 shots:
 
         >>> qml.set_shots(func, 10)(np.pi / 2)
-       array([[1],
-       [1],
-       [1],
-       [1]])
+        array([[1],
+        [1],
+        [1],
+        [1]])
 
         Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
         thrown away.
