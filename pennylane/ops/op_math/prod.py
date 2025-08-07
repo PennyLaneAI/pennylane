@@ -242,7 +242,7 @@ class Prod(CompositeOp):
         return {"resources": resources}
 
     _op_symbol = "@"
-    _math_op = math.prod
+    _math_op = staticmethod(math.prod)
     grad_method = None
 
     @property

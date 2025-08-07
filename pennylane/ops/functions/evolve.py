@@ -16,9 +16,7 @@ This module contains the qml.evolve function.
 """
 from functools import singledispatch
 from typing import overload
-from warnings import warn
 
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
@@ -58,7 +56,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
     .. warning::
 
-        Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version.
+        Providing ``num_steps`` to ``qml.evolve`` is deprecated and will be removed in a future release.
         Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
         Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
 
@@ -209,11 +207,4 @@ def parametrized_evolution(op: ParametrizedHamiltonian, **kwargs):
 # pylint: disable=missing-docstring
 @evolve.register
 def evolution(op: Operator, coeff: float = 1, num_steps: int = None):
-    if num_steps is not None:
-        warn(
-            "Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version. "
-            "Instead, you can use ``qml.TrotterProduct`` providing the ``n`` parameter to perform the "
-            "Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.",
-            PennyLaneDeprecationWarning,
-        )
     return Evolution(op, coeff, num_steps)
