@@ -318,7 +318,7 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
     }
 
 
-# pylint: disable=protected-access,unused-argument, too-many-arguments
+# pylint: disable=protected-access,unused-argument,too-many-arguments
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
