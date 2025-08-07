@@ -447,7 +447,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug in native pennylane `~.for_loop` that caused loops to be entered even when there is zero range (`start==stop`).
+* The native pennylane `~.for_loop` with capture enabled can now handle over indexing
+  into an empty array when `start == stop`.
   [(#8026)](https://github.com/PennyLaneAI/pennylane/pull/8026)
 
 * Plxpr primitives now only return dynamically shaped arrays if their outputs
