@@ -40,7 +40,11 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     The transform optimizes a phase-polynomial + Hadamard circuit using a strategy of delayed gate placement
     so that more matches for gate cancellations are found.
-    It is based on the the `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass.
+    It also applies some basic simplification rules to phase-polynomial blocks themselves to merge phase
+    gates together when possible (e.g. T^4 = S^2 = Z).
+
+    The implementation is based on the
+    `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
