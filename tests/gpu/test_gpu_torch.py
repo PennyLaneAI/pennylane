@@ -199,7 +199,7 @@ def test_qnn_torchlayer():
 
 
 @pytest.mark.skipif(
-    not torch_cuda.is_available() or len(torch.cuda.device_count()) < 2,
+    not torch_cuda.is_available() or torch.cuda.device_count() < 2,
     reason="a multi-gpu device is required",
 )
 class TestTorchMultiGPUDevice:
