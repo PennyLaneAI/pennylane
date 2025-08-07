@@ -6,6 +6,7 @@
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
+  [(#8042)](https://github.com/PennyLaneAI/pennylane/pull/8042)
 
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
@@ -417,6 +418,7 @@
 
 * Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
   [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
+  [(#8041)](https://github.com/PennyLaneAI/pennylane/pull/8041)
 
 * Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
   PennyLane submodules.
@@ -503,6 +505,10 @@
 
 * Fixes the GPU selection issue in `qml.math` with PyTorch when multiple GPUs are present.
   [(#8008)](https://github.com/PennyLaneAI/pennylane/pull/8008)
+
+* The `~.for_loop` function with capture enabled can now handle over indexing
+  into an empty array when `start == stop`.
+  [(#8026)](https://github.com/PennyLaneAI/pennylane/pull/8026)
 
 * Plxpr primitives now only return dynamically shaped arrays if their outputs
   actually have dynamic shapes.
