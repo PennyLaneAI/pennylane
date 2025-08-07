@@ -256,7 +256,7 @@ def _grover_operator_resources(num_wires, num_work_wires):
             num_control_wires=num_wires - 1,
             num_zero_control_values=num_wires - 1,
             num_work_wires=num_work_wires,
-            work_wire_type="dirty",
+            work_wire_type="borrowed",
         ): 1,
     }
 
