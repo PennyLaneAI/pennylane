@@ -127,7 +127,7 @@ class GQSP(Operation):
             new_op._hyperparameters["unitary"], wire_map
         )
         new_op._hyperparameters["control"] = tuple(
-            wire_map.get(w, w) for w in new_op._hyperparameters["control"]
+            wire_map.get(w, w) for w in Wires(new_op._hyperparameters["control"])
         )
 
         return new_op
