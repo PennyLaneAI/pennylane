@@ -74,6 +74,11 @@ class TemporaryAND(Operation):
 
     .. code-block:: pycon
 
+        >>> print(qml.draw(circuit)())
+        0: ──X─╭●─────●╮─┤ ╭Sample
+        1: ──X─├●─────●┤─┤ ├Sample
+        2: ────╰──╭●───╯─┤ ├Sample
+        3: ───────╰X─────┤ ╰Sample
         >>> print(circuit())
         [1 1 0 1]
     """
