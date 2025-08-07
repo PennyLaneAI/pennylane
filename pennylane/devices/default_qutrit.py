@@ -24,9 +24,8 @@ import logging
 import numpy as np
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, WireError
 from pennylane.logging import debug_logger, debug_logger_init
-from pennylane.wires import WireError
 
 from .._version import __version__
 from ._qutrit_device import QutritDevice
@@ -181,7 +180,7 @@ class DefaultQutrit(QutritDevice):
             "TSWAP": self._apply_tswap,
         }
 
-    @functools.lru_cache()
+    @functools.lru_cache
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
