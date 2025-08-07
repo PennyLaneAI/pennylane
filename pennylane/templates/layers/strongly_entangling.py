@@ -333,7 +333,10 @@ def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
         def imprim_true():
             @for_loop(n_wires)
             def imprimitive_loop(i):
-                act_on = wires.subset([i, i + ranges[l]], periodic_boundary=True)
+                if capture.enabled() and has_jax:
+                    act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
+                else:
+                    act_on = wires.subset([i, i + ranges[l]], periodic_boundary=True)
                 imprimitive(wires=act_on)
 
             imprimitive_loop()  # pylint: disable=no-value-for-parameter
