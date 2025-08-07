@@ -40,7 +40,7 @@ def test_default_execution_config_deprecation():
             DefaultExecutionConfig,
         )
 
-        
+
 class TestExecutionConfig:
     """Tests for the ExecutionConfig class."""
 
