@@ -20,7 +20,7 @@
 <h4>Other improvements</h4>
 
 
-* We now allow wire labels to be used with mid-circuit measurements.
+* We now allow custom wire labels to be used with :func:`~pennylane.defer_measurements`.
   [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
 
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
