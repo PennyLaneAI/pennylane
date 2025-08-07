@@ -502,6 +502,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* The `~.for_loop` function with capture enabled can now handle over indexing
+  into an empty array when `start == stop`.
+  [(#8026)](https://github.com/PennyLaneAI/pennylane/pull/8026)
+
 * Plxpr primitives now only return dynamically shaped arrays if their outputs
   actually have dynamic shapes.
   [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
