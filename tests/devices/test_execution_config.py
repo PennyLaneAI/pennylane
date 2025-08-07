@@ -146,6 +146,25 @@ class TestExecutionConfig:
 
         assert config.grad_on_execution is True
 
+    def test_default_dict_immutability(self):
+        """Test that the default execution config dict fields are still immutable."""
+
+        config = ExecutionConfig()
+
+        with pytest.raises(
+            TypeError,
+            match="'mappingproxy' object does not support item assignment",
+        ):
+            config.device_options["hi"] = "there"
+
+        assert config.device_options == {}
+
+        with pytest.raises(
+            TypeError,
+            match="'mappingproxy' object does not support item assignment",
+        ):
+            config.gradient_keyword_arguments["foo"] = "buzz"
+
     def test_dict_immutability(self):
         """Test that the device_options and gradient_keyword_arguments are immutable."""
         config = ExecutionConfig(
