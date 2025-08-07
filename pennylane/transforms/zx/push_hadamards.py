@@ -84,7 +84,7 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     if not has_pyzx:  # pragma: no cover
         raise ModuleNotFoundError(
-            "The `pyzx` package is required. You can install it by `pip install pyzx`."
+            "The `pyzx` package is required. You can install it with `pip install pyzx`."
         )
 
     qasm2_no_meas = qml.to_openqasm(tape, measure_all=False)
