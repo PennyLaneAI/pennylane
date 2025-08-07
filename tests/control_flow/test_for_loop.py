@@ -21,22 +21,18 @@ import pennylane as qml
 
 @pytest.mark.capture
 @pytest.mark.jax
-def test_early_exit(mocker):
+def test_early_exit():
     """Test we exit early when start==stop."""
-    from jax import numpy as jnp
+    import jax
 
-    inner_arr = jnp.array([])
-
-    @qml.for_loop(len(inner_arr))
+    @qml.for_loop(0)
     def inner_loop(i, x):  # pylint: disable=unused-argument
         x += 1
         return x
 
-    enabled_call = mocker.spy(inner_loop, "_call_capture_enabled")
-
-    ret = inner_loop(0)
-    assert ret == 0
-    assert enabled_call.call_count == 0
+    jaxpr = jax.make_jaxpr(inner_loop)(0)
+    assert len(jaxpr.eqns) == 0
+    assert inner_loop(4) == 4
 
 
 def test_for_loop_python_fallback():
