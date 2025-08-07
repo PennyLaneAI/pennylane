@@ -25,9 +25,9 @@ from pennylane.typing import PostprocessingFn
 
 from .converter import from_zx
 
-has_pyzx = True
 try:
     import pyzx
+    has_pyzx = True
 except ModuleNotFoundError:
     has_pyzx = False
 
