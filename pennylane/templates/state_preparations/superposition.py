@@ -142,8 +142,10 @@ def _permutation_operator_qfunc(basis1, basis2, wires, work_wire):
     @for_loop(len(basis1))
     def apply_cnots(i):
         b = basis1[i]
+
         def apply_cnot():
             qml.CNOT(wires=work_wire + wires[i])
+
         qml.cond(b != basis2[i], apply_cnot)()
 
     apply_cnots()  # pylint: disable=no-value-for-parameter
