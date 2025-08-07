@@ -202,9 +202,9 @@ def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping
     """Updates ``layer_str`` with ``op`` operation of type Adjoint. Currently
     only differs from ``_add_op`` if the base of the adjoint op is a ``TemporaryAND``,
     making the overall object a right elbow."""
-    if not isinstance(obj.base, TemporaryAND):
-        return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
-    return _add_right_elbow(obj.base, layer_str, config)
+    if isinstance(obj.base, TemporaryAND):
+        return _add_right_elbow(obj.base, layer_str, config)
+    return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
 
 
 @_add_obj.register
