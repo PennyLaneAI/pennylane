@@ -13,18 +13,15 @@
 # limitations under the License.
 r"""Resource operators for PennyLane state preparation templates."""
 import math
-from collections import defaultdict
-from collections.abc import Iterable
 from typing import Dict
 
-import pennylane as qml
+import pennylane.numpy as np
 from pennylane.labs import resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
     ResourceOperator,
-    resource_rep,
 )
 
 # pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments,
@@ -68,7 +65,6 @@ class ResourceMPSPrep(ResourceOperator):
 
     def __init__(self, num_mps_matrices, max_bond_dim, precision=None, wires=None):
         self.num_wires = num_mps_matrices
-
         self.precision = precision
         self.max_bond_dim = max_bond_dim
         self.num_mps_matrices = num_mps_matrices
@@ -139,13 +135,14 @@ class ResourceMPSPrep(ResourceOperator):
             in the decomposition.
         """
         precision = precision or kwargs["config"]["precision_mps_prep"]
-        num_work_wires = math.ceil(math.log2(max_bond_dim))
-        log2_chi = min(num_work_wires, math.ceil(num_mps_matrices / 2))
+        num_work_wires = min(
+            math.ceil(math.log2(max_bond_dim)), math.ceil(num_mps_matrices / 2)  # truncate bond dim
+        )
 
         gate_lst = [AllocWires(num_work_wires)]
 
         for index in range(1, num_mps_matrices + 1):
-            qubit_unitary_wires = min(index + 1, log2_chi + 1, (num_mps_matrices - index) + 2)
+            qubit_unitary_wires = min(index + 1, num_work_wires + 1, (num_mps_matrices - index) + 2)
             qubit_unitary = re.ResourceQubitUnitary.resource_rep(
                 num_wires=qubit_unitary_wires, precision=precision
             )
@@ -288,14 +285,14 @@ class ResourceQROMStatePreparation(ResourceOperator):
         expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
 
         if isinstance(select_swap_depths, int) or select_swap_depths is None:
-            select_swap_depths = [select_swap_depths] * expected_size
-        elif isinstance(select_swap_depths, Iterable):
+            pass
+        elif isinstance(select_swap_depths, (list, tuple, np.ndarray)):
             if len(select_swap_depths) != expected_size:
                 raise ValueError(
                     f"Expected the length of `select_swap_depths` to be {expected_size}, got {len(select_swap_depths)}"
                 )
         else:
-            raise TypeError(f"`select_swap_depth` must be an integer or iterable of integers")
+            raise TypeError(f"`select_swap_depths` must be an integer, None or iterable")
 
         self.selswap_depths = select_swap_depths
         super().__init__(wires=wires)
@@ -341,6 +338,17 @@ class ResourceQROMStatePreparation(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
+        if isinstance(selswap_depths, int) or selswap_depths is None:
+            pass
+        elif isinstance(selswap_depths, (list, tuple, np.ndarray)):
+            if len(selswap_depths) != expected_size:
+                raise ValueError(
+                    f"Expected the length of `selswap_depths` to be {expected_size}, got {len(selswap_depths)}"
+                )
+        else:
+            raise TypeError(f"`selswap_depths` must be an integer, None or iterable")
+
         params = {
             "num_state_qubits": num_state_qubits,
             "precision": precision,
@@ -394,13 +402,6 @@ class ResourceQROMStatePreparation(ResourceOperator):
         expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
         if isinstance(selswap_depths, int) or selswap_depths is None:
             selswap_depths = [selswap_depths] * expected_size
-        elif isinstance(selswap_depths, Iterable):
-            if len(selswap_depths) != expected_size:
-                raise ValueError(
-                    f"Expected the length of `selswap_depths` to be {expected_size}, got {len(selswap_depths)}"
-                )
-        else:
-            raise TypeError(f"`selswap_depths` must be an integer or iterable of integers")
 
         num_precision_wires = math.ceil(math.log2(math.pi / precision)) + 1
         gate_counts.append(AllocWires(num_precision_wires))
