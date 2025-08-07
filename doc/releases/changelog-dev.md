@@ -125,6 +125,9 @@
 
 <h4>Other improvements</h4>
 
+* Program capture can now handle dynamic shots, shot vectors, and shots set with `qml.set_shots`.
+  [(#7652)](https://github.com/PennyLaneAI/pennylane/pull/7652)
+
 * PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
   [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
 

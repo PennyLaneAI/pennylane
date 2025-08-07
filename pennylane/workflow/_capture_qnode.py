@@ -273,6 +273,9 @@ def custom_staging_rule(
 ) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
     """
     Add new jaxpr equation to the jaxpr_trace and return new tracers.
+
+    See capture/intro_to_dynamic_shapes.py for more context and capture.register_custom_staging_rule
+    for the implementation used on other higher order primitives.
     """
     shots_len, jaxpr = params["shots_len"], params["qfunc_jaxpr"]
     device = params["device"]
