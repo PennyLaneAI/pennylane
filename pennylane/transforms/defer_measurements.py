@@ -770,13 +770,13 @@ def defer_measurements(
             "must support the Projector gate to apply postselection."
         )
 
-    integer_wires = list(filter(lambda w: isinstance(w, int), tape.wires))
+    integer_wires = [w for w in tape.wires if isinstance(w, int)]
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}
     cur_wire = (
-        (max(integer_wires) if integer_wires else -1) + 1
+        (max(integer_wires) + 1 if integer_wires else 0)
         if reused_measurement_wires or any_repeated_measurements
         else None
     )

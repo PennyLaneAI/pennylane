@@ -1733,7 +1733,7 @@ def test_custom_wire_labels_allowed_without_reuse():
 
 
 def test_integer_wire_labels_with_reset():
-    """Tests that integer with labels work when qubits are re-used."""
+    """Tests that integer wire labels work when qubits are re-used."""
 
     # Reset example
     with qml.queuing.AnnotatedQueue() as q:
