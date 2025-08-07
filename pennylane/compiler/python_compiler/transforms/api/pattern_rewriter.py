@@ -241,12 +241,16 @@ class PLPatternRewriter(PatternRewriter):
 
         raise RuntimeError("reeeeeeeee")
 
-    def insert_gate(self, gate: Operator, insert_point: InsertPoint):
+    def insert_gate(
+        self, gate: Operator, insert_point: InsertPoint, params: SSAValue | None = None
+    ):
         """Insert a PL gate into the IR at the provided insertion point."""
         gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate)
 
         # TODO: Add branches for MultiRZ, GlobalPhase, and QubitUnitary
-        params = tuple(self.create_constant(d, insert_point=insert_point) for d in gate.data)
+        params = params or tuple(
+            self.create_constant(d, insert_point=insert_point) for d in gate.data
+        )
         in_qubits = tuple(self.wire_manager[w] for w in gate.wires)
         in_ctrl_qubits = tuple(self.wire_manager[w] for w in ctrl_wires) if ctrl_wires else None
         in_ctrl_values = None
