@@ -482,7 +482,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         )
         if visitor.unsolved_op_indices:
             unsolved_ops = [self._graph[op_idx] for op_idx in visitor.unsolved_op_indices]
-            op_names = {op.name for op in unsolved_ops}
+            op_names = {op_node.op.name for op_node in unsolved_ops}
             raise DecompositionError(
                 f"Decomposition not found for {op_names} to the gate set {set(self._gate_set_weights)}"
             )
@@ -535,9 +535,6 @@ class DecompGraphSolution:
             num_work_wires (int): The number of available work wires to decompose this operator.
 
         """
-        if self._visitor is None:
-            raise ValueError("The decomposition graph has not been solved yet.")
-
         return any(self._all_solutions(self._visitor, op, num_work_wires))
 
     def _get_best_solution(
@@ -598,9 +595,6 @@ class DecompGraphSolution:
         <num_gates=10, gate_counts={RZ: 6, CNOT: 2, RX: 2}, weighted_cost=10.0>
 
         """
-        if self._visitor is None:
-            raise ValueError("The decomposition graph has not been solved yet.")
-
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)
         return self._visitor.distances[op_node_idx]
 
@@ -638,9 +632,6 @@ class DecompGraphSolution:
          CNOT(wires=[0, 2])]
 
         """
-        if self._visitor is None:
-            raise ValueError("The decomposition graph has not been solved yet.")
-
         op_node_idx = self._get_best_solution(self._visitor, op, num_work_wires)
         d_node_idx = self._visitor.predecessors[op_node_idx]
         return self._graph[d_node_idx].rule

@@ -248,24 +248,6 @@ class TestDecompositionGraph:
             {qml.RY: 1, qml.GlobalPhase: 1, qml.RZ: 1},
         )
 
-    def test_unsolved_graph_error(self, _):
-        """Tests that querying an unsolved graph raises an error."""
-
-        op = qml.Hadamard(wires=[0])
-        graph = DecompositionGraph(
-            operations=[op],
-            gate_set={"RX", "RY", "RZ", "GlobalPhase"},
-        )
-
-        with pytest.raises(ValueError, match="has not been solved yet"):
-            graph.is_solved_for(op)
-
-        with pytest.raises(ValueError, match="has not been solved yet"):
-            graph.resource_estimate(op)
-
-        with pytest.raises(ValueError, match="has not been solved yet"):
-            graph.decomposition(op)
-
     def test_decomposition_not_found(self, _):
         """Tests that the correct error is raised if a decomposition isn't found."""
 
