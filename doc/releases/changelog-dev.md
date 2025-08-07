@@ -226,6 +226,30 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+
+* Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
+  This prevents the potential mutation of a global object. 
+
+  This means that functions like,
+  ```python
+  ...
+    def some_func(..., execution_config = DefaultExecutionConfig):
+      ...
+  ...
+  ```
+  should be written as follows,
+  ```python
+  ...
+    def some_func(..., execution_config: ExecutionConfig | None = None):
+      if execution_config is None:
+          execution_config = ExecutionConfig()
+  ...
+  ```
+
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
   They now accept an operation or a list of operations as quantum unitaries.
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
@@ -287,6 +311,12 @@
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 <h3>Deprecations 👋</h3>
+
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+  ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
+  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
+  work wires are restored to their original state upon completing the decomposition.
+  [(#7993)](https://github.com/PennyLaneAI/pennylane/pull/7993)
 
 * Providing `num_steps` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use

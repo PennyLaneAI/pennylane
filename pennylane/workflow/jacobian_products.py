@@ -425,9 +425,6 @@ class DeviceDerivatives(JacobianProductCalculator):
         device: qml.devices.Device,
         execution_config: qml.devices.ExecutionConfig | None = None,
     ):
-        if execution_config is None:
-            execution_config = qml.devices.DefaultExecutionConfig
-
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 "DeviceDerivatives created with (%s, %s)",
