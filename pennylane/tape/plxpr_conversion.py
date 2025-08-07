@@ -190,7 +190,6 @@ def _(self, *invals, jaxpr, n_consts, **params):
 def _(
     self, *invals, shots_len, qnode, device, execution_config, qfunc_jaxpr, n_consts
 ):  # pylint: disable=too-many-arguments
-    invals = invals[shots_len:]
     consts = invals[shots_len : shots_len + n_consts]
     args = invals[shots_len + n_consts :]
 
