@@ -502,6 +502,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Operators raised to integer powers then simplified no longer cause recursion errors.
+
 * The `~.for_loop` function with capture enabled can now handle over indexing
   into an empty array when `start == stop`.
   [(#8026)](https://github.com/PennyLaneAI/pennylane/pull/8026)
