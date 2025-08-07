@@ -111,8 +111,8 @@
   (np.float64(1.0), np.float64(0.58))
   ```
 
-* A new preprocess transform, `~.devices.preprocess.no_analytic`, is available for hardware devices and hardware-like simulators.
-  It validates that all executions include shots.
+* A new device preprocess transform, `~.devices.preprocess.no_analytic`, is available for hardware devices and hardware-like simulators.
+  It validates that all executions are shot-based.
   [(#8037)](https://github.com/PennyLaneAI/pennylane/pull/8037)
 
 <h4>OpenQASM-PennyLane interoperability</h4>
