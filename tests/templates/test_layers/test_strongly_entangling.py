@@ -26,6 +26,7 @@ from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.external
+@pytest.mark.capture
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
 

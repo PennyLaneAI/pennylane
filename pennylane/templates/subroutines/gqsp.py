@@ -94,7 +94,7 @@ class GQSP(Operation):
     def __init__(self, unitary, angles, control, id=None):
         total_wires = Wires(control) + unitary.wires
 
-        self._hyperparameters = {"unitary": unitary, "control": Wires(control)}
+        self._hyperparameters = {"unitary": unitary, "control": control}
 
         super().__init__(angles, *unitary.data, wires=total_wires, id=id)
 
@@ -218,11 +218,7 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
     ops.X(control)
     ops.Z(control)
 
-    @for_loop(1, min(len(thetas), len(phis), len(lambds)))
-    def loop_over_angles(i):
-        theta = thetas[i]
-        phi = phis[i]
-        lamb = lambds[i]
+    for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
 
         ops.Controlled(unitary, control_wires=[control], control_values=[0])
 
@@ -230,8 +226,6 @@ def _GQSP_decomposition(*parameters, **hyperparameters):
         ops.U3(2 * theta, phi, lamb, wires=control)
         ops.X(control)
         ops.Z(control)
-
-    loop_over_angles()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(GQSP, _GQSP_decomposition)
