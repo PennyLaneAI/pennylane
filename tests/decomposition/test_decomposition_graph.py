@@ -631,7 +631,7 @@ class TestControlledDecompositions:
             qml.CRot(0.123, 0.234, 0.345, wires=[4, 0]),
             qml.MultiControlledX(wires=[1, 2, 3, 4]),
         ]
-        assert solution.resource_estimate(op) == to_resources(
+        assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
             {controlled_resource_rep(qml.X, {}, num_control_wires=3): 2, qml.CRot: 1}
         )
 

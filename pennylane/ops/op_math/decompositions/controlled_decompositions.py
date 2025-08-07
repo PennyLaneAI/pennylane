@@ -463,7 +463,8 @@ decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "zeroed")
+    lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "zeroed"),
+    work_wires=lambda num_control_wires, **_: {"zeroed": num_control_wires - 2},
 )
 def _mcx_many_zeroed_workers(wires, **kwargs):
     num_control_wires = len(wires) - 1
@@ -479,7 +480,8 @@ decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "borrowed")
+    lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "borrowed"),
+    work_wires=lambda num_control_wires, **_: {"borrowed": num_control_wires - 2},
 )
 def _mcx_many_borroed_workers(wires, **kwargs):
     num_control_wires = len(wires) - 1
@@ -552,7 +554,8 @@ decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "zeroed")
+    lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "zeroed"),
+    work_wires={"zeroed": 2},
 )
 def _mcx_two_zeroed_workers(wires, **kwargs):
     with allocation.allocate(2, require_zeros=True, restored=True) as work_wires:
@@ -566,7 +569,8 @@ decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "borrowed")
+    lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "borrowed"),
+    work_wires={"borrowed": 2},
 )
 def _mcx_two_borrowed_workers(wires, **kwargs):
     with allocation.allocate(2, require_zeros=False, restored=True) as work_wires:
@@ -625,7 +629,8 @@ decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_one_worker_resource(num_control_wires, "zeroed")
+    lambda num_control_wires, **_: _mcx_one_worker_resource(num_control_wires, "zeroed"),
+    work_wires={"zeroed": 1},
 )
 def _mcx_one_zeroed_worker(wires, **kwargs):
     with allocation.allocate(1, require_zeros=True, restored=True) as work_wires:
@@ -639,7 +644,8 @@ decompose_mcx_one_zeroed_worker = flip_zero_control(_mcx_one_zeroed_worker)
 @register_condition(lambda num_work_wires, **_: not num_work_wires)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
-    lambda num_control_wires, **_: _mcx_one_worker_resource(num_control_wires, "borrowed")
+    lambda num_control_wires, **_: _mcx_one_worker_resource(num_control_wires, "borrowed"),
+    work_wires={"borrowed": 1},
 )
 def _mcx_one_borrowed_worker(wires, **kwargs):
     with allocation.allocate(1, require_zeros=False, restored=True) as work_wires:
