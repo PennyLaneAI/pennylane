@@ -201,6 +201,8 @@ class ExecutionConfig:
                 derivative_order=self.derivative_order,
             )
             object.__setattr__(self, "gradient_config", gradient_config)
+        elif isinstance(self.gradient_config, GradientConfig):
+            pass
         else:
             raise ValueError(f"Got invalid type {type(self.gradient_config)} for 'gradient_config'")
 
