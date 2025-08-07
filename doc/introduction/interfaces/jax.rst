@@ -6,7 +6,7 @@ JAX interface
 .. important::
 
     To use the JAX interface in PennyLane, you must first
-    install ``jax`` and ``jaxlib`` with,
+    install ``jax`` and ``jaxlib`` with:
     
     .. code-block:: bash
 
