@@ -129,7 +129,7 @@ class SparseState(AbstractState):
     """
 
     def __init__(self, state: csr_matrix):
-        """Initialize the SparseState."""
+        """Initialize the ``SparseState``."""
 
         if not isinstance(state, csr_matrix):
             raise TypeError(
