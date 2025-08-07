@@ -501,6 +501,12 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixed a shape broadcasting bug in `dynamic_one_shot` transform that caused multi-wire sampling 
+  with `mcm_method="one-shot"` and `postselect_mode="fill-shots"` to fail with incompatible shapes 
+  for broadcasting error. The issue occurred when samples had shape `(shots, 1, wires)` but `is_valid` 
+  had shape `(shots,)`.
+  [(#8016)](https://github.com/PennyLaneAI/pennylane/pull/8016)
+
 * Plxpr primitives now only return dynamically shaped arrays if their outputs
   actually have dynamic shapes.
   [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
