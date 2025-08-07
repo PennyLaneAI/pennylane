@@ -7,7 +7,8 @@
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
     * :func:`~.transforms.push_hadamards` to optimize Clifford+T circuits pushing Hadamard gates
-      to the side to create fewer larger phase-polynomial blocks.
+      to the side to create fewer larger phase-polynomial blocks
+      (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
       [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
