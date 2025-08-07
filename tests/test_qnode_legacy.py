@@ -27,7 +27,7 @@ import pennylane as qml
 from pennylane import QNode
 from pennylane import numpy as pnp
 from pennylane import qnode
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.resource import Resources
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
@@ -803,8 +803,12 @@ class TestShots:
             return qml.sample(qml.PauliZ(wires=0))
 
         assert len(circuit(0.8)) == 10
-        assert len(circuit(0.8, shots=2)) == 2
-        assert len(circuit(0.8, shots=3178)) == 3178
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=2)) == 2
+            assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
 
     # pylint: disable=unexpected-keyword-arg, protected-access
@@ -824,7 +828,11 @@ class TestShots:
         assert circuit.device._shots is None
 
         # check that the circuit is temporary non-analytic
-        res1 = [circuit(shots=1) for _ in range(100)]
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            res1 = [circuit(shots=1) for _ in range(100)]
         assert np.std(res1) != 0.0
 
         # check that the circuit is analytic again
@@ -852,11 +860,19 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8)
         assert tape.operations[0].wires.labels == (0,)
 
-        assert len(circuit(0.8, shots=1)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=1)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
-        assert len(circuit(0.8, shots=0)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(circuit(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
@@ -891,7 +907,11 @@ class TestShots:
                 qml.RX(a, wires=shots)
                 return qml.sample(qml.PauliZ(wires=0))
 
-        assert len(ansatz1(0.8, shots=0)) == 10
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            assert len(ansatz1(0.8, shots=0)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 0)
         assert tape.operations[0].wires.labels == (0,)
 
@@ -907,7 +927,11 @@ class TestShots:
             return qml.sample(qml.PauliZ(wires=0))
 
         assert dev.shots == 3
-        res = circuit(0.8, shots=2)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            res = circuit(0.8, shots=2)
         assert len(res) == 2
         assert dev.shots == 3
 
@@ -938,7 +962,7 @@ class TestShots:
         # no warning on the first execution
         circuit(0.3)
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
-            circuit(0.3, shots=5)
+            qml.set_shots(shots=5)(circuit)(0.3)
 
     def test_warning_finite_shots_tape(self):
         """Tests that a warning is raised when caching is used with finite shots."""
@@ -1414,3 +1438,261 @@ class TestTapeExpansion:
 
         res_H = circuit2(*params)
         assert np.allclose(coeffs @ res, res_H)
+
+
+class TestDefaultQubitLegacySeeding:
+    """Tests for the seeding system of DefaultQubitLegacy device."""
+
+    @pytest.mark.parametrize("num_shots", [100, 1000])
+    @pytest.mark.parametrize("seed", [42, 123, 987])
+    def test_sample_basis_states_reproducibility(self, num_shots, seed):
+        """Test that sample_basis_states produces identical results with the same seed."""
+        # Create a uniform probability distribution for 2 qubits
+        state_probability = np.array([0.25, 0.25, 0.25, 0.25])
+
+        # Create two devices with the same seed
+        dev1 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
+        dev2 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
+
+        # Sample from both devices
+        samples1 = dev1.sample_basis_states(4, state_probability)
+        samples2 = dev2.sample_basis_states(4, state_probability)
+
+        assert np.array_equal(
+            samples1, samples2
+        ), f"Samples with the same seed {seed} are not equal"
+
+    @pytest.mark.parametrize("num_shots", [100, 1000])
+    @pytest.mark.parametrize("seed1, seed2", [(42, 43), (123, 124), (987, 988)])
+    def test_sample_basis_states_variance(self, num_shots, seed1, seed2):
+        """Test that sample_basis_states produces different results with different seeds."""
+        # Create a uniform probability distribution for 2 qubits
+        state_probability = np.array([0.25, 0.25, 0.25, 0.25])
+
+        # Create two devices with different seeds
+        dev1 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed1)
+        dev2 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed2)
+
+        # Sample from both devices
+        samples1 = dev1.sample_basis_states(4, state_probability)
+        samples2 = dev2.sample_basis_states(4, state_probability)
+
+        assert not np.array_equal(
+            samples1, samples2
+        ), f"Samples with different seeds {seed1}, {seed2} are identical"
+
+    @pytest.mark.parametrize("seed", [42, 123, 987])
+    def test_multiple_calls_within_execution_vary(self, seed):
+        """Test that multiple calls to sample_basis_states within the same execution produce different results."""
+        # Create a biased probability distribution (not uniform to make differences more apparent)
+        state_probability = np.array([0.1, 0.3, 0.4, 0.2])
+
+        dev = DefaultQubitLegacy(wires=2, shots=1000, seed=seed)
+
+        # Multiple calls within the same execution should produce different results
+        samples1 = dev.sample_basis_states(4, state_probability)
+        samples2 = dev.sample_basis_states(4, state_probability)
+        samples3 = dev.sample_basis_states(4, state_probability)
+
+        # At least one pair should be different (with very high probability for 1000 shots)
+        assert not (
+            np.array_equal(samples1, samples2) and np.array_equal(samples2, samples3)
+        ), "Multiple sampling calls within the same execution produced identical results"
+
+    def test_execution_boundary_reproducibility(self):
+        """Test that different device instances with the same seed produce identical results."""
+        seed = 42
+        num_shots = 500
+
+        # Create two separate devices with the same seed
+        # Each will start fresh, so their counters should start from 0
+        dev1 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
+        dev2 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
+
+        @qml.qnode(dev1)
+        def circuit1():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            return qml.sample(wires=[0, 1])
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            return qml.sample(wires=[0, 1])
+
+        # Execute both circuits - they should produce identical results
+        # since both devices start fresh with the same seed
+        result1 = circuit1()
+        result2 = circuit2()
+
+        # Results should be identical since both devices start with fresh execution
+        assert np.array_equal(
+            result1, result2
+        ), "samples from different device instances with same seed differ"
+
+    def test_reset_behavior_in_classical_shadow(self):
+        """Test that device reset() calls during classical shadow don't break reproducibility."""
+        seed = 42
+        num_shots = 100
+
+        # Create a circuit that performs classical shadow measurement
+        # This internally calls reset() multiple times
+        dev1 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
+        dev2 = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
+
+        @qml.qnode(dev1)
+        def circuit1():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            return qml.classical_shadow(wires=[0, 1], seed=seed)
+
+        @qml.qnode(dev2)
+        def circuit2():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            return qml.classical_shadow(wires=[0, 1], seed=seed)
+
+        result1 = circuit1()
+        result2 = circuit2()
+
+        # Despite multiple reset() calls during classical shadow, results should be identical
+        assert np.array_equal(
+            result1[0], result2[0]
+        ), "Reset calls during classical shadow broke reproducibility for bits"
+        assert np.array_equal(
+            result1[1], result2[1]
+        ), "Reset calls during classical shadow broke reproducibility for recipes"
+
+    @pytest.mark.parametrize("num_wires", [1, 2, 3])
+    def test_different_contexts_produce_variation(self, num_wires):
+        """Test that different contexts (number of wires, state shapes) produce different sampling patterns."""
+        seed = 42
+        num_shots = 500
+
+        # Create devices with different numbers of wires but same seed
+        dev_small = DefaultQubitLegacy(wires=num_wires, shots=num_shots, seed=seed)
+        dev_large = DefaultQubitLegacy(wires=num_wires + 1, shots=num_shots, seed=seed)
+
+        # Create compatible probability distributions
+        prob_small = np.ones(2**num_wires) / (2**num_wires)
+        prob_large = np.ones(2 ** (num_wires + 1)) / (2 ** (num_wires + 1))
+
+        samples_small = dev_small.sample_basis_states(2**num_wires, prob_small)
+        samples_large = dev_large.sample_basis_states(2 ** (num_wires + 1), prob_large)
+
+        # The samples should be from different ranges due to different context
+        assert samples_small.max() < 2**num_wires, "Small device produced out-of-range samples"
+        assert samples_large.max() < 2 ** (
+            num_wires + 1
+        ), "Large device produced out-of-range samples"
+
+        # With different contexts, even same seeds should produce different effective seeds
+        # This is expected due to the context variation in the seeding mechanism
+
+    def test_no_seed_produces_randomness(self):
+        """Test that devices without explicit seeds produce different results."""
+        num_shots = 1000
+        state_probability = np.array([0.25, 0.25, 0.25, 0.25])
+
+        # Create devices without explicit seeds
+        dev1 = DefaultQubitLegacy(wires=2, shots=num_shots)
+        dev2 = DefaultQubitLegacy(wires=2, shots=num_shots)
+
+        samples1 = dev1.sample_basis_states(4, state_probability)
+        samples2 = dev2.sample_basis_states(4, state_probability)
+
+        # Without seeds, results should be different (with very high probability)
+        assert not np.array_equal(
+            samples1, samples2
+        ), "Devices without seeds produced identical results"
+
+    def test_sample_call_counter_persistence(self):
+        """Test that the sample call counter persists across intermediate resets."""
+        seed = 42
+        num_shots = 100
+        state_probability = np.array([0.5, 0.5])
+
+        dev = DefaultQubitLegacy(wires=1, shots=num_shots, seed=seed)
+
+        # Ensure we're not in fresh execution mode to test intermediate resets
+        dev._fresh_execution = False
+
+        # First sample
+        samples1 = dev.sample_basis_states(2, state_probability)
+        counter_after_first = dev._sample_call_count
+
+        # Manual reset (simulating what happens in classical shadow)
+        # This should NOT reset the counter since _fresh_execution is False
+        dev.reset()
+        counter_after_reset = dev._sample_call_count
+
+        # Second sample after reset
+        samples2 = dev.sample_basis_states(2, state_probability)
+
+        # The counter should have persisted across the reset
+        assert (
+            counter_after_reset == counter_after_first
+        ), f"Counter was reset: {counter_after_first} -> {counter_after_reset}"
+
+        # Results should be different due to different counter values
+        assert not np.array_equal(
+            samples1, samples2
+        ), "Sample call counter was reset during intermediate reset, causing identical results"
+
+    def test_fresh_execution_flag_resets_counter(self):
+        """Test that the fresh execution flag properly resets the counter for new executions."""
+        seed = 42
+        num_shots = 100
+
+        dev = DefaultQubitLegacy(wires=2, shots=num_shots, seed=seed)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            return qml.classical_shadow(wires=[0], seed=seed)
+
+        # First execution
+        result1 = circuit()
+
+        # Manually simulate what happens on a new execution:
+        # The execute() method sets _fresh_execution = True
+        dev._fresh_execution = True  # pylint: disable=protected-access
+
+        # Second execution should produce the same result
+        result2 = circuit()
+
+        # Should be identical due to counter reset on fresh execution
+        assert np.array_equal(
+            result1[0], result2[0]
+        ), "Fresh execution flag failed to reset counter properly"
+        assert np.array_equal(
+            result1[1], result2[1]
+        ), "Fresh execution flag failed to reset counter properly"
+
+    def test_execute_method_sets_fresh_flag(self):
+        """Test that calling execute() properly sets the fresh execution flag."""
+        seed = 42
+        num_shots = 100
+
+        dev = DefaultQubitLegacy(wires=1, shots=num_shots, seed=seed)
+
+        # Create a simple tape for execution
+        tape = qml.tape.QuantumScript(
+            [qml.Hadamard(0)], [qml.classical_shadow(wires=[0], seed=seed)]
+        )
+
+        # First execution
+        result1 = dev.execute(tape)
+
+        # Second execution should produce the same result due to fresh execution flag
+        result2 = dev.execute(tape)
+
+        # Results should be identical
+        bits1, recipes1 = result1
+        bits2, recipes2 = result2
+
+        assert np.array_equal(bits1, bits2), "Execute method failed to provide reproducible results"
+        assert np.array_equal(
+            recipes1, recipes2
+        ), "Execute method failed to provide reproducible results"

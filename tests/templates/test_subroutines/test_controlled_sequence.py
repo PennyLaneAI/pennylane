@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
@@ -165,6 +166,12 @@ class TestMethods:
 
         for op1, op2 in zip(decomp, expected_decomp):
             assert op1 == op2
+
+    def test_decomposition_new(self):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=["a", 1, "blue"])
+        for rule in qml.list_decomps(qml.ControlledSequence):
+            _test_decomposition_rule(op, rule)
 
 
 class TestIntegration:

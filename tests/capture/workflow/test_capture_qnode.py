@@ -91,7 +91,7 @@ def test_error_if_overridden_shot_vector():
 def test_error_if_no_device_wires():
     """Test that a NotImplementedError is raised if the device does not provide wires."""
 
-    dev = qml.device("default.qubit")
+    dev = qml.device("default.qubit", wires=None)
 
     @qml.qnode(dev)
     def circuit():
