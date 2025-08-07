@@ -186,6 +186,8 @@
 
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
+* New caching and auxiliary functions have been created in `error.py` to handle the importance sampling of nested commutators.
+  [(#8013)](https://github.com/PennyLaneAI/pennylane/pull/8013)
 
 <h3>Breaking changes 💔</h3>
 
