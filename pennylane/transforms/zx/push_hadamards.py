@@ -39,7 +39,8 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     Pushes Hadamard gates as far as possible to the side to create fewer larger phase-polynomial blocks,
     improving the effectiveness of phase-polynomial optimization techniques.
 
-    The transform optimizes a Clifford+T circuit using a strategy of delayed gate placement so that more matches for gate cancellations are found.
+    The transform optimizes the circuit using a strategy of delayed gate placement so that more matches
+    for gate cancellations are found.
     It is based on the the `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass.
 
     Args:
@@ -51,7 +52,6 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
-        TypeError: if the input quantum circuit is not Clifford+T.
 
     **Example:**
 
@@ -91,11 +91,7 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     qasm2_no_meas = qml.to_openqasm(tape, measure_all=False)
 
     pyzx_circ = pyzx.Circuit.from_qasm(qasm2_no_meas)
-
-    try:
-        pyzx_circ = pyzx.basic_optimization(pyzx_circ.to_basic_gates())
-    except TypeError as e:
-        raise TypeError("The input quantum circuit must be Clifford+T.") from e
+    pyzx_circ = pyzx.basic_optimization(pyzx_circ.to_basic_gates())
 
     qscript = from_zx(pyzx_circ.to_graph())
 
