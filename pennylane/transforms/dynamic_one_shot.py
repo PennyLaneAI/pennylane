@@ -451,8 +451,8 @@ def _gather_counts(measurement: CountsMP, samples, is_valid, postselect_mode=Non
 # pylint: disable=unused-argument
 @gather_non_mcm.register
 def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=None):
-    if postselect_mode == "pad-invalid-samples" and samples.ndim >= 2:
-        is_valid = qml.math.reshape(is_valid, (-1,) + (1,) * (samples.ndim - 1))
+    if postselect_mode == "pad-invalid-samples" and samples.ndim == 2:
+        is_valid = qml.math.reshape(is_valid, (-1, 1))
     if postselect_mode == "pad-invalid-samples":
         return qml.math.where(is_valid, samples, fill_in_value)
     if qml.math.shape(samples) == ():  # single shot case
