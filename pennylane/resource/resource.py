@@ -25,9 +25,23 @@ from typing import Any
 from pennylane.measurements import Shots, add_shots
 from pennylane.operation import Operation
 from pennylane.tape import QuantumScript
-from pennylane.tape.qscript import SpecsDict
 
 from .error import _compute_algo_error
+
+
+class SpecsDict(dict):
+    """A special dictionary for storing the specs of a circuit. Used to customize ``KeyError`` messages."""
+
+    def __getitem__(self, __k):
+        if __k == "num_diagonalizing_gates":
+            raise KeyError(
+                "num_diagonalizing_gates is no longer in specs due to the ambiguity of the definition "
+                "and extreme performance costs."
+            )
+        try:
+            return super().__getitem__(__k)
+        except KeyError as e:
+            raise KeyError(f"key {__k} not available. Options are {set(self.keys())}") from e
 
 
 @dataclass(frozen=True)
