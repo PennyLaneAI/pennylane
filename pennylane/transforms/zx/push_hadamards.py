@@ -35,7 +35,7 @@ except ModuleNotFoundError:
 @transform
 def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
-    Pushes Hadamard gates as far as possible to the side to create a few large phase-polynomial blocks,
+    Pushes Hadamard gates as far as possible to the side to create fewer larger phase-polynomial blocks,
     improving the effectiveness of phase-polynomial optimization techniques.
 
     The transform optimizes the circuit using a strategy of delayed gate placement so that more matches
