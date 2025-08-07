@@ -157,6 +157,10 @@ class TestExecutionConfig:
     )
     def test_dict_immutability(self, config):
         """Test that the device_options and gradient_keyword_arguments are immutable."""
+
+        og_device_options = config.device_options.copy()
+        og_gradient_keyword_arguments = config.gradient_keyword_arguments.copy()
+
         with pytest.raises(
             TypeError,
             match="'mappingproxy' object does not support item assignment",
@@ -170,8 +174,8 @@ class TestExecutionConfig:
             config.gradient_keyword_arguments["foo"] = "buzz"
 
         # Verify the original dictionaries were not changed
-        assert config.device_options == {"hi": "bye"}
-        assert config.gradient_keyword_arguments == {"foo": "bar"}
+        assert config.device_options == og_device_options
+        assert config.gradient_keyword_arguments == og_gradient_keyword_arguments
 
 
 class TestMCMConfig:
