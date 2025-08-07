@@ -390,6 +390,7 @@
 
 * Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
   [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
+  [(#8041)](https://github.com/PennyLaneAI/pennylane/pull/8041)
 
 * Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
   PennyLane submodules.
@@ -474,7 +475,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug in native pennylane `~.for_loop` that caused loops to be entered even when there is zero range (`start==stop`).
+* The `~.for_loop` function with capture enabled can now handle over indexing
+  into an empty array when `start == stop`.
   [(#8026)](https://github.com/PennyLaneAI/pennylane/pull/8026)
 
 * Plxpr primitives now only return dynamically shaped arrays if their outputs
