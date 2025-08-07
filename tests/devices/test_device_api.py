@@ -14,11 +14,10 @@
 """
 Tests for the basic default behavior of the Device API.
 """
-
 import pytest
 
 import pennylane as qml
-from pennylane.devices import DefaultExecutionConfig, Device, ExecutionConfig, MCMConfig
+from pennylane.devices import Device, ExecutionConfig, MCMConfig
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,
@@ -104,7 +103,7 @@ class TestDeviceCapabilities:
 
                 config_filepath = "nonexistent_file.toml"
 
-                def execute(self, circuits, execution_config=DefaultExecutionConfig):
+                def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                     return (0,)
 
 
@@ -223,7 +222,7 @@ class TestSetupExecutionConfig:
         class CustomDevice(Device):
             """A device with only a dummy execute method provided."""
 
-            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
         dev = CustomDevice()
@@ -531,7 +530,7 @@ class TestPreprocessTransforms:
                 if sum_support:
                     self.capabilities.observables.update({"Sum": OperatorProperties()})
 
-            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
         dev = CustomDevice()
@@ -591,7 +590,7 @@ class TestPreprocessTransforms:
                         }
                     )
 
-            def execute(self, circuits, execution_config=DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig | None = None):
                 return (0,)
 
         dev = CustomDevice()
@@ -617,7 +616,7 @@ class TestMinimalDevice:
     class MinimalDevice(Device):
         """A device with only a dummy execute method provided."""
 
-        def execute(self, circuits, execution_config=DefaultExecutionConfig):
+        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return (0,)
 
     dev = MinimalDevice()
@@ -683,7 +682,7 @@ class TestMinimalDevice:
 
         a = (1,)
         assert fn(a) == (1,)
-        assert config == qml.devices.DefaultExecutionConfig
+        assert config == ExecutionConfig()
 
     def test_preprocess_batch_circuits(self):
         """Test that preprocessing a batch doesn't do anything."""
@@ -782,7 +781,7 @@ def test_device_with_ambiguous_preprocess():
             ) -> TransformProgram:
                 return TransformProgram()
 
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return (0,)
 
 
@@ -796,12 +795,10 @@ class TestProvidingDerivatives:
             """A device with a derivative."""
 
             # pylint: disable=unused-argument
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
-            def compute_derivatives(
-                self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig
-            ):
+            def compute_derivatives(self, circuits, execution_config: ExecutionConfig = None):
                 return ("b",)
 
         dev = WithDerivative()
@@ -821,12 +818,10 @@ class TestProvidingDerivatives:
         class WithJvp(Device):
             """A device with a jvp."""
 
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
-            def compute_jvp(
-                self, circuits, tangents, execution_config: ExecutionConfig = DefaultExecutionConfig
-            ):
+            def compute_jvp(self, circuits, tangents, execution_config: ExecutionConfig = None):
                 return ("c",)
 
         dev = WithJvp()
@@ -843,14 +838,14 @@ class TestProvidingDerivatives:
         class WithVjp(Device):
             """A device with a vjp."""
 
-            def execute(self, circuits, execution_config: ExecutionConfig = DefaultExecutionConfig):
+            def execute(self, circuits, execution_config: ExecutionConfig = None):
                 return "a"
 
             def compute_vjp(
                 self,
                 circuits,
                 cotangents,
-                execution_config: ExecutionConfig = DefaultExecutionConfig,
+                execution_config: ExecutionConfig = None,
             ):
                 return ("c",)
 
