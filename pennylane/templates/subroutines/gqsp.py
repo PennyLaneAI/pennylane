@@ -165,3 +165,4 @@ class GQSP(Operation):
         context.remove(self.hyperparameters["unitary"])
         context.append(self)
         return self
+def

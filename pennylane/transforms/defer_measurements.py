@@ -519,11 +519,6 @@ def defer_measurements(
         :func:`~.pennylane.counts` can only be used with ``defer_measurements`` if wires
         or an observable are explicitly specified.
 
-    .. warning::
-
-        ``defer_measurements`` does not support using custom wire labels if any measured
-        wires are reused or reset.
-
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
         reduce_postselected (bool): Whether to use postselection information to reduce the number
@@ -540,7 +535,6 @@ def defer_measurements(
             transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        ValueError: If custom wire labels are used with qubit reuse or reset
         ValueError: If any measurements with no wires or observable are present
         ValueError: If continuous variable operations or measurements are present
         ValueError: If using the transform with any device other than
