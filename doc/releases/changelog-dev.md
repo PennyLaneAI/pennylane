@@ -204,24 +204,32 @@
 
   For a simple qnode:
 
+  ```pycon
   >>> @qml.qnode(qml.device('default.qubit'))
   ... def c():
   ...   return qml.sample(wires=0)
+  ```
 
   Before the change, we had:
   
+  ```pycon
   >>> qml.set_shots(c, shots=1)()
   0
+  ```
 
   and now we have:
 
+  ```pycon
   >>> qml.set_shots(c, shots=1)()
   array([[0]])
+  ```
 
   Previous behavior can be recovered by squeezing the output:
 
+  ```pycon
   >>> qml.math.squeeze(qml.set_shots(c, shots=1)())
   0
+  ```
 
 * Move custom exceptions into `exceptions.py` and add a documentation page for them in the internals.
   [(#7856)](https://github.com/PennyLaneAI/pennylane/pull/7856)
