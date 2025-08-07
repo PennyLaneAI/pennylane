@@ -126,25 +126,21 @@ class ExecutionConfig:
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
-        if not isinstance(self.device_options, MappingProxyType):
-            if isinstance(self.device_options, dict):
-                object.__setattr__(self, "device_options", MappingProxyType(self.device_options))
-            else:
-                raise ValueError(
-                    f"Got invalid type {type(self.device_options)} for 'device_options'"
-                )
+        if isinstance(self.device_options, dict):
+            object.__setattr__(self, "device_options", MappingProxyType(self.device_options))
+        elif not isinstance(self.device_options, MappingProxyType):
+            raise ValueError(f"Got invalid type {type(self.device_options)} for 'device_options'")
 
-        if not isinstance(self.gradient_keyword_arguments, MappingProxyType):
-            if isinstance(self.gradient_keyword_arguments, dict):
-                object.__setattr__(
-                    self,
-                    "gradient_keyword_arguments",
-                    MappingProxyType(self.gradient_keyword_arguments),
-                )
-            else:
-                raise ValueError(
-                    f"Got invalid type {type(self.gradient_keyword_arguments)} for 'gradient_keyword_arguments'"
-                )
+        if isinstance(self.gradient_keyword_arguments, dict):
+            object.__setattr__(
+                self,
+                "gradient_keyword_arguments",
+                MappingProxyType(self.gradient_keyword_arguments),
+            )
+        elif not isinstance(self.gradient_keyword_arguments, MappingProxyType):
+            raise ValueError(
+                f"Got invalid type {type(self.gradient_keyword_arguments)} for 'gradient_keyword_arguments'"
+            )
 
         if not (
             isinstance(self.gradient_method, (str, TransformDispatcher))
