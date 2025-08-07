@@ -111,6 +111,10 @@
   (np.float64(1.0), np.float64(0.58))
   ```
 
+* A new preprocess transform, `~.devices.preprocess.no_analytic`, is available for hardware devices and hardware-like simulators.
+  It validates that all executions include shots.
+  [(#8037)](https://github.com/PennyLaneAI/pennylane/pull/8037)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
