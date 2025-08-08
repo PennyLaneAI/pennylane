@@ -224,6 +224,8 @@ def sample(
         >>> qml.set_shots(circuit, 1)((0,1))
         array([[0, 0]])
 
+        Previous behavior can be recovered by applying ``qml.math.squeeze(result)`` to the array.
+
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
     :math:`p(\lambda_i) = |\langle \xi_i | \psi \rangle|^2`, where :math:`| \xi_i \rangle`
