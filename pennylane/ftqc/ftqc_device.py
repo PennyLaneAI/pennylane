@@ -21,7 +21,7 @@ from pathlib import Path
 import pennylane as qml
 from pennylane.devices.capabilities import DeviceCapabilities, validate_mcm_method
 from pennylane.devices.device_api import Device, _default_mcm_method
-from pennylane.devices.execution_config import DefaultExecutionConfig, ExecutionConfig
+from pennylane.devices.execution_config import DefaultExecutionConfig, ExecutionConfig, MCMConfig
 from pennylane.devices.preprocess import (
     measurements_from_samples,
     no_analytic,
@@ -40,8 +40,7 @@ class FTQCQubit(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of logical wires present on the device, or iterable that
             contains consecutive integers starting at 0 to be used as wire labels (i.e., ``[0, 1, 2]``).
-            This device allows for ``wires`` to be unspecified at construction time. The number of wires
-            will be limited by the capabilities of the backend.
+            The number of wires will be limited by the capabilities of the backend.
         backend: A backend that circuits will be executed on.
 
     """
@@ -53,7 +52,7 @@ class FTQCQubit(Device):
 
         super().__init__(wires=wires)
 
-        self.backend = backend
+        self._backend = backend
         self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
 
     def preprocess_transforms(self, execution_config=DefaultExecutionConfig):
@@ -94,6 +93,11 @@ class FTQCQubit(Device):
 
         return program + backend_program
 
+    @property
+    def backend(self):
+        """The backend device circuits will be sent to for execution"""
+        return self._backend
+
     def setup_execution_config(
         self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
     ) -> ExecutionConfig:
@@ -114,15 +118,16 @@ class FTQCQubit(Device):
 
         """
 
-        if config is None:
-            config = ExecutionConfig()
-
         # get mcm method - "device" if its an option, otherwise "one-shot"
         default_mcm_method = _default_mcm_method(self.backend.capabilities, shots_present=True)
         assert default_mcm_method in ["device", "one-shot"]
 
-        new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
-        config = replace(config, mcm_config=new_mcm_config)
+        if config is None:
+            config = ExecutionConfig(mcm_config=MCMConfig(mcm_method=default_mcm_method))
+        else:
+            new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
+            config = replace(config, mcm_config=new_mcm_config)
+
         validate_mcm_method(
             self.backend.capabilities, config.mcm_config.mcm_method, shots_present=True
         )
