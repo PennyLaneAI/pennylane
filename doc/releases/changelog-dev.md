@@ -494,6 +494,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Small typos in the docstring for `qml.noise.partial_wires` have been corrected.
+  [(#)]()
+
 * Updated the code examples in the documentation of :func:`~.specs`.
   [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
 
