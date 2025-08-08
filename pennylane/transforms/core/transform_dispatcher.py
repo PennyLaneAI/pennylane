@@ -81,7 +81,7 @@ def _register_primitive_for_expansion(primitive, plxpr_transform):
     @ExpandTransformsInterpreter.register_primitive(primitive)
     def _(
         self, *invals, inner_jaxpr, args_slice, consts_slice, targs_slice, tkwargs
-    ):  # pylint: disable=too-many-arguments,missing-docstring
+    ):  # pylint: disable=too-many-arguments
         args = invals[args_slice]
         consts = invals[consts_slice]
         targs = invals[targs_slice]

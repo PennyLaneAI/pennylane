@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 
 
 @lru_cache
-def _get_plxpr_map_wires():  # pylint: disable=missing-docstring
+def _get_plxpr_map_wires():
     try:
         # pylint: disable=import-outside-toplevel
         from jax import make_jaxpr

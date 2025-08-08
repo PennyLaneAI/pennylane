@@ -491,7 +491,6 @@ class DefaultQubit(Device):
     tuple of string names for all the device options.
     """
 
-    # pylint:disable = too-many-arguments
     @debug_logger_init
     def __init__(
         self,
