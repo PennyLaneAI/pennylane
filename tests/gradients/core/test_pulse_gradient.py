@@ -1382,10 +1382,11 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=1, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(
             dev,
             interface="jax",
@@ -1413,12 +1414,13 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=1, seed=jax.random.PRNGKey(seed))
         T_x = 0.1
         T_y = 0.2
         ham_x = qml.pulse.constant * qml.PauliX(0)
         ham_y = qml.pulse.constant * qml.PauliX(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(
             dev,
             interface="jax",
@@ -1447,10 +1449,11 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=1, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(
             dev,
             interface="jax",
@@ -1477,10 +1480,11 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=1, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(
             dev,
             interface="jax",
@@ -1584,10 +1588,11 @@ class TestStochPulseGradIntegration:
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=1, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
+        @qml.set_shots(shots)
         @qml.qnode(
             dev,
             interface="jax",

@@ -9,6 +9,21 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Setting shots on device level is deprecated.
+  Please use :func:`pennylane.set_shots` on the :class:`~.QNode` instead.
+
+  .. code-block:: python
+  
+    dev = qml.device("default.qubit", wires=2)
+    @qml.set_shots(1000)
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.Z(0))
+
+  - Deprecated in v0.43
+  - Will be removed in a future version
+
 * Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
   ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
@@ -32,6 +47,7 @@ Pending deprecations
 
   Instead of computing the Suzuki-Trotter product approximation as:
 
+  ```pycon
   >>> qml.evolve(H_flat, num_steps=2).decomposition()
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
@@ -46,6 +62,7 @@ Pending deprecations
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
+  ```
   
   - Deprecated in v0.43
   - Will be removed in a future version

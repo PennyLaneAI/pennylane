@@ -308,7 +308,7 @@ def counts(
     all_outcomes=False,
 ) -> CountsMP:
     r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
+    determined from QNode,
     returning the number of counts for each sample. If no observable is provided then basis state
     samples are returned directly from the device.
 

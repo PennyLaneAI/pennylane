@@ -607,9 +607,10 @@ class TestQNodeIntegration:
 
         coeffs, obs = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6], single_term_obs_list
 
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(angles):
             qml.RX(angles[0], wires=0)
@@ -636,9 +637,10 @@ class TestQNodeIntegration:
     def test_general_circuits(self, grouping_strategy, shots, params):
         """Tests executing a QNode with different grouping strategies on a typical circuit."""
 
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         @partial(split_non_commuting, grouping_strategy=grouping_strategy)
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(angles):
             qml.RX(angles[0], wires=0)

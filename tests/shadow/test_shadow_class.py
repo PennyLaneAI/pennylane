@@ -24,9 +24,10 @@ from pennylane.shadows import ClassicalShadow, median_of_means, pauli_expval
 
 wires = range(3)
 shots = 10000
-dev = qml.device("default.qubit", wires=wires, shots=shots)
+dev = qml.device("default.qubit", wires=wires)
 
 
+@qml.set_shots(shots)
 @qml.qnode(dev)
 def qnode(n_wires):
     """Hadamard gate on all wires"""
@@ -107,8 +108,9 @@ class TestIntegrationShadows:
         """Test that a bell state can be faithfully reconstructed"""
         wires = range(2)
 
-        dev = qml.device("default.qubit", wires=wires, shots=10000)
+        dev = qml.device("default.qubit", wires=wires)
 
+        @qml.set_shots(10000)
         @qml.qnode(dev)
         def qnode(n_wires):
             qml.Hadamard(0)
@@ -141,8 +143,9 @@ class TestIntegrationShadows:
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
     """Hadamard circuit to put all qubits in equal superposition (locally)"""
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         for i in range(wires):
@@ -154,8 +157,9 @@ def hadamard_circuit(wires, shots=10000, interface="autograd"):
 
 def max_entangled_circuit(wires, shots=10000, interface="autograd"):
     """maximally entangled state preparation circuit"""
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         qml.Hadamard(wires=0)
@@ -168,11 +172,12 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
 
 def qft_circuit(wires, shots=10000, interface="autograd"):
     """Quantum Fourier Transform circuit"""
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
     one_state = np.zeros(wires)
     one_state[-1] = 1
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         qml.BasisState(one_state, wires=range(wires))

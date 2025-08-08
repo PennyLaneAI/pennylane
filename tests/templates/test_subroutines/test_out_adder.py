@@ -68,8 +68,9 @@ class TestOutAdder:
         self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutAdder template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x, y, z):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -237,9 +238,10 @@ class TestOutAdder:
         y_wires = [2, 3, 5]
         output_wires = [6, 7, 8]
         work_wires = [11, 10]
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
         @jax.jit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)

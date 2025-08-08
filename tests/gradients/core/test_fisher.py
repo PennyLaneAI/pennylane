@@ -124,8 +124,9 @@ class TestIntegration:
         n_wires = 3
         n_params = 3
 
-        dev = qml.device("default.qubit", wires=n_wires, shots=10000)
+        dev = qml.device("default.qubit", wires=n_wires)
 
+        @qml.set_shots(10000)
         @qml.qnode(dev)
         def circ(params):
             for i in range(n_wires):
@@ -158,7 +159,7 @@ class TestIntegration:
         n_wires = 2
 
         rng = pnp.random.default_rng(seed)
-        dev_hard = qml.device("default.qubit", wires=n_wires + 1, shots=1000, seed=rng)
+        dev_hard = qml.device("default.qubit", wires=n_wires + 1, seed=rng)
 
         def qfunc(params):
             qml.RX(params[1], wires=0)
@@ -168,7 +169,7 @@ class TestIntegration:
 
         params = rng.random(2, requires_grad=True)
 
-        circ_hard = qml.QNode(qfunc, dev_hard)
+        circ_hard = qml.set_shots(qml.QNode(qfunc, dev_hard), shots=1000)
         QFIM_hard = quantum_fisher(circ_hard)(params)
         QFIM1_hard = 4.0 * qml.metric_tensor(circ_hard)(params)
 

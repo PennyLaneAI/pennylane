@@ -240,9 +240,10 @@ def test_multi_returns():
 def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
     # pylint:disable=not-an-iterable
-    dev = qml.device("default.qubit", wires=3, shots=(100, (200, 3), 300))
+    dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_params
+    @qml.set_shots((100, (200, 3), 300))
     @qml.qnode(dev)
     def circuit(data, x, weights):
         qml.templates.AngleEmbedding(data, wires=[0, 1, 2])
@@ -267,9 +268,10 @@ def test_shot_vector():
 def test_multi_returns_shot_vector():
     """Test that batching works for a simple circuit with multiple returns
     and with a shot vector"""
-    dev = qml.device("default.qubit", wires=3, shots=(100, (200, 3), 300))
+    dev = qml.device("default.qubit", wires=3)
 
     @qml.batch_params
+    @qml.set_shots((100, (200, 3), 300))
     @qml.qnode(dev)
     def circuit(data, x, weights):
         qml.templates.AngleEmbedding(data, wires=[0, 1, 2])
