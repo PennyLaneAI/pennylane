@@ -157,7 +157,7 @@ class ControlledQubitUnitary(ControlledOp):
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
-        work_wire_type="dirty",
+        work_wire_type="borrowed",
     ):
 
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -177,7 +177,7 @@ class ControlledQubitUnitary(ControlledOp):
         control_values=None,
         unitary_check=False,
         work_wires: WiresLike = (),
-        work_wire_type: str | None = "dirty",
+        work_wire_type: str | None = "borrowed",
     ):
 
         if wires is None:
@@ -1349,9 +1349,9 @@ class MultiControlledX(ControlledOp):
             should take. Integers other than 0 or 1 will be treated as :code:`int(bool(x))`.
         work_wires (Union[Wires, Sequence[int], or int]): optional work wires used to decompose
             the operation into a series of :class:`~.Toffoli` gates
-        work_wire_type (str): whether the work wires are ``"clean"`` or ``"dirty"``. ``"clean"`` indicates that
-            the work wires are in the state :math:`|0\rangle`, while ``"dirty"`` indicates that the
-            work wires are in an arbitrary state. Defaults to ``"dirty"``.
+        work_wire_type (str): whether the work wires are ``"zeroed"`` or ``"borrowed"``. ``"zeroed"`` indicates that
+            the work wires are in the state :math:`|0\rangle`, while ``"borrowed"`` indicates that the
+            work wires are in an arbitrary state. Defaults to ``"borrowed"``.
 
     .. note::
 
@@ -1369,9 +1369,9 @@ class MultiControlledX(ControlledOp):
         #. If at least :math:`n - 2` work wires are provided, the decomposition in Lemma 7.2 will be
            applied using the first :math:`n - 2` work wires.
         #. If at least :math:`2` work wires are provided, Sec. 5.2 and 5.4 of Khattar and Gidney
-           will be used depending on whether the ``work_wire_type`` is ``"clean"`` or ``"dirty"``.
+           will be used depending on whether the ``work_wire_type`` is ``"zeroed"`` or ``"borrowed"``.
         #. If at least :math:`1` work wire is provided, Sec. 5.1 and 5.3 of Khattar and Gidney
-           will be used depending on whether the ``work_wire_type`` is ``"clean"`` or ``"dirty"``.
+           will be used depending on whether the ``work_wire_type`` is ``"zeroed"`` or ``"borrowed"``.
 
         These methods present a tradeoff between qubit number and depth. The method in point 1
         requires fewer Toffoli gates but a greater number of qubits.
@@ -1415,7 +1415,7 @@ class MultiControlledX(ControlledOp):
 
     @classmethod
     def _primitive_bind_call(
-        cls, wires, control_values=None, work_wires=None, work_wire_type="dirty", id=None
+        cls, wires, control_values=None, work_wires=None, work_wire_type="borrowed", id=None
     ):
         return cls._primitive.bind(
             *wires,
@@ -1442,7 +1442,7 @@ class MultiControlledX(ControlledOp):
         wires: WiresLike,
         control_values: None | bool | list[bool] | int | list[int] = None,
         work_wires: WiresLike = (),
-        work_wire_type: Literal["clean", "dirty"] = "dirty",
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
     ):
         wires = Wires(() if wires is None else wires)
         work_wires = Wires(() if work_wires is None else work_wires)
@@ -1547,7 +1547,7 @@ class MultiControlledX(ControlledOp):
         wires: WiresLike = None,
         work_wires: WiresLike = None,
         control_values=None,
-        work_wire_type: Literal["clean", "dirty"] = "dirty",
+        work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
         **kwargs,
     ):
         r"""Representation of the operator as a product of other operators (static method).
@@ -1562,7 +1562,7 @@ class MultiControlledX(ControlledOp):
                 the operation into a series of Toffoli gates.
             control_values (Union[bool, list[bool], int, list[int]]): The value(s) the control wire(s)
                 should take. Integers other than 0 or 1 will be treated as ``int(bool(x))``.
-            work_wire_type (str): whether the work wires are clean or dirty.
+            work_wire_type (str): whether the work wires are zeroed or borrowed.
 
         Returns:
             list[Operator]: decomposition into lower level operations
@@ -1592,9 +1592,9 @@ class MultiControlledX(ControlledOp):
 
         flips1 = [qml.X(w) for w, val in zip(control_wires, control_values) if not val]
 
-        if work_wire_type not in {"clean", "dirty"}:
+        if work_wire_type not in {"zeroed", "borrowed"}:
             raise ValueError(
-                f"work_wire_type must be either 'clean' or 'dirty'. Got '{work_wire_type}'."
+                f"work_wire_type must be either 'zeroed' or 'borrowed'. Got '{work_wire_type}'."
             )
 
         decomp = decompose_mcx(control_wires, target_wire, work_wires, work_wire_type)

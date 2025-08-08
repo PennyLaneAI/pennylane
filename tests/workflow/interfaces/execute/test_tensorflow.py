@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tensorflow specific tests for execute and default qubit 2."""
+from typing import Optional
+
 import numpy as np
 import pytest
 
@@ -839,7 +841,8 @@ def test_device_returns_float32(diff_method):
         return np.array(results, dtype=np.float32)
 
     class Float32Dev(qml.devices.DefaultQubit):
-        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
+
+        def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
             results = super().execute(circuits, execution_config)
             return _to_float32(results)
 

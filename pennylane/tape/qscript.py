@@ -38,21 +38,6 @@ from pennylane.wires import Wires, WiresLike
 QS = TypeVar("QS", bound="QuantumScript")
 
 
-class SpecsDict(dict):
-    """A special dictionary for storing the specs of a circuit. Used to customize ``KeyError`` messages."""
-
-    def __getitem__(self, __k):
-        if __k == "num_diagonalizing_gates":
-            raise KeyError(
-                "num_diagonalizing_gates is no longer in specs due to the ambiguity of the definition "
-                "and extreme performance costs."
-            )
-        try:
-            return super().__getitem__(__k)
-        except KeyError as e:
-            raise KeyError(f"key {__k} not available. Options are {set(self.keys())}") from e
-
-
 class QuantumScript:
     r"""The operations and measurements that represent instructions for
     execution on a quantum device.
@@ -1101,7 +1086,7 @@ class QuantumScript:
         return self._graph
 
     @property
-    def specs(self) -> SpecsDict[str, Any]:
+    def specs(self) -> "qml.resource.resource.SpecsDict[str, Any]":
         """Resource information about a quantum circuit.
 
         Returns:

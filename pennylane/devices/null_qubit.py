@@ -45,7 +45,7 @@ from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .preprocess import decompose
 
 logger = logging.getLogger(__name__)
@@ -346,8 +346,11 @@ class NullQubit(Device):
 
     # pylint: disable=cell-var-from-loop
     def preprocess(
-        self, execution_config=DefaultExecutionConfig
+        self, execution_config: ExecutionConfig | None = None
     ) -> tuple[TransformProgram, ExecutionConfig]:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         program = DefaultQubit.preprocess_transforms(self, execution_config)
         for t in program:
             if t.transform == decompose.transform:
@@ -387,8 +390,10 @@ class NullQubit(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",
@@ -423,15 +428,19 @@ class NullQubit(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         jacs = tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
@@ -441,16 +450,20 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_jvp(
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         jvps = tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
@@ -460,16 +473,20 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_vjp(
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps

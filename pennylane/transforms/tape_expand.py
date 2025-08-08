@@ -430,7 +430,7 @@ def _create_decomp_preprocess(custom_decomps, dev):
 
     original_preprocess = dev.preprocess
 
-    def new_preprocess(execution_config=qml.devices.DefaultExecutionConfig):
+    def new_preprocess(execution_config: qml.devices.ExecutionConfig | None = None):
         program, config = original_preprocess(execution_config)
         return _modify_program(program, custom_decomps), config
 
@@ -440,7 +440,7 @@ def _create_decomp_preprocess(custom_decomps, dev):
 def _create_decomp_preprocess_transforms(custom_decomps, dev):
     original_preprocess_transforms = dev.preprocess_transforms
 
-    def new_preprocess_transforms(execution_config=qml.devices.DefaultExecutionConfig):
+    def new_preprocess_transforms(execution_config: qml.devices.ExecutionConfig | None = None):
         program = original_preprocess_transforms(execution_config)
         return _modify_program(program, custom_decomps)
 
