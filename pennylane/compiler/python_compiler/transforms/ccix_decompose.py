@@ -25,7 +25,7 @@ from pennylane import ops
 
 from ..dialects.quantum import CustomOp
 from .api import compiler_transform
-from .api.pattern_rewriter import PLPatternRewriteWalker, PLPatternRewriter
+from .api.pattern_rewriter import PLPatternRewriter, PLPatternRewriteWalker
 
 
 class CCiXDecomposePattern(pattern_rewriter.RewritePattern):
@@ -75,9 +75,6 @@ class CCiXDecomposePattern(pattern_rewriter.RewritePattern):
                 continue
 
             self.replace_with_subroutine(*match, rewriter)
-            break
-
-        print("foo")
 
 
 class CCiXDecomposePass(passes.ModulePass):
