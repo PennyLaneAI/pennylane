@@ -148,7 +148,7 @@ class MPICommExec(ExtExec):  # pragma: no cover
         from mpi4py import MPI  # Required to call MPI_Init
 
         self._comm = MPI.COMM_WORLD
-        self._size = MPI.COMM_WORLD.Get_size()
+        self._size = MPI.COMM_WORLD.Get_size() if max_workers is None else max_workers
 
         self._cfg = ExecBackendConfig(
             submit_fn="submit",
