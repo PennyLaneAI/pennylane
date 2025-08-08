@@ -298,7 +298,7 @@ class TestDecompositionRule:
         def custom_decomp(*_, **__):
             raise NotImplementedError
 
-        assert custom_decomp.work_wire_spec() == WorkWireSpec(1, 3, 4, 2)
+        assert custom_decomp.get_work_wire_spec() == WorkWireSpec(1, 3, 4, 2)
 
         @register_resources(
             lambda num_wires: {qml.CNOT: num_wires},
@@ -311,4 +311,4 @@ class TestDecompositionRule:
         def custom_decomp_2(*_, **__):
             raise NotImplementedError
 
-        assert custom_decomp_2.work_wire_spec(num_wires=5) == WorkWireSpec(zeroed=2, borrowed=3)
+        assert custom_decomp_2.get_work_wire_spec(num_wires=5) == WorkWireSpec(zeroed=2, borrowed=3)

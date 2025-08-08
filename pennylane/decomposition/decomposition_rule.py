@@ -48,6 +48,11 @@ class WorkWireSpec:
     garbage: int = 0
     """Garbage wires could be allocated in any state, and can be deallocated in any state."""
 
+    @property
+    def total(self) -> int:
+        """The total number of work wires."""
+        return self.zeroed + self.borrowed + self.burnable + self.garbage
+
 
 @overload
 def register_condition(condition: Callable) -> Callable[[Callable], DecompositionRule]: ...
@@ -402,7 +407,7 @@ class DecompositionRule:
             return True
         return self._condition(*args, **kwargs)
 
-    def work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
+    def get_work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
         """Gets the work wire requirements of this decomposition rule"""
         if isinstance(self._work_wire_spec, dict):
             return WorkWireSpec(**self._work_wire_spec)
