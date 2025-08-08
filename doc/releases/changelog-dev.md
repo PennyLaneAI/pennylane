@@ -317,7 +317,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in Pennylane v0.44.
+* Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
   Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
   machine learning applications to benefit from enhanced support and features.
