@@ -35,6 +35,8 @@ import pennylane as qml
 from pennylane import ops
 from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all
+from pennylane import measurements
+from pennylane.measurements import MeasurementProcess
 
 from ..dialects.quantum import AllocOp as AllocOpPL
 from ..dialects.quantum import CustomOp
@@ -47,8 +49,12 @@ from .api import compiler_transform
 from_str_to_PL_gate = {
     name: getattr(ops, name)
     for name in ops_all
-    if inspect.isclass(getattr(ops, name, None))
-    and issubclass(getattr(ops, name), qml.operation.Operator)
+    if inspect.isclass(getattr(ops, name, None)) and issubclass(getattr(ops, name), Operator)
+}
+
+# TODO: only support state measurements for now
+from_str_to_PL_measurement = {
+    "quantum.state": qml.state,
 }
 
 
@@ -58,6 +64,14 @@ def resolve_gate(name: str) -> Operator:
         return from_str_to_PL_gate[name]
     except KeyError as exc:
         raise ValueError(f"Unsupported gate: {name}") from exc
+
+
+def resolve_measurement(name: str) -> MeasurementProcess:
+    """Resolve the measurement from the name."""
+    try:
+        return from_str_to_PL_measurement[name]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported measurement: {name}") from exc
 
 
 def qml_to_xdsl_param(param: Union[int, float]) -> Union[IntegerAttr, FloatAttr]:
@@ -160,6 +174,13 @@ class VisualizationTransform(pattern_rewriter.RewritePattern):
             gate = qml.adjoint(gate)
         return gate
 
+    def xdsl_to_qml_meas(self, meas) -> Operator:
+        """Given a measurement in xDSL, convert it to a PennyLane measurement."""
+        meas_name = meas.name
+        # So far, only `qml.state` is supported
+        measurement = resolve_measurement(meas_name)
+        return measurement()
+
     # TODO: this will probably no longer be needed once PR #7937 is merged
     def initialize_qubit_mapping(self, funcOp: func.FuncOp):
         """Scan the function to populate the quantum register and wire mappings."""
@@ -183,15 +204,15 @@ class VisualizationTransform(pattern_rewriter.RewritePattern):
     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
 
         self.initialize_qubit_mapping(funcOp)
-
         collected_ops = []
+        collected_meas = []
 
         for xdsl_op in funcOp.body.walk():
 
             if isinstance(xdsl_op, StateOp):
-                # TODO: handle StateOp
-                print("DEBUG:stop here")
-
+                qml_meas = self.xdsl_to_qml_meas(xdsl_op)
+                collected_meas.append(qml_meas)
+                print(f"collected meas: {collected_meas}")
             if not isinstance(xdsl_op, CustomOp):
                 continue
             if self.quantum_register is None:
@@ -199,7 +220,6 @@ class VisualizationTransform(pattern_rewriter.RewritePattern):
             if len(self.wire_to_ssa_qubits) == 0:
                 raise NotImplementedError("No wires extracted from the register have been found.")
 
-            print(f"Processing operation: {xdsl_op}")
             qml_op = self.xdsl_to_qml_op(xdsl_op)
             collected_ops.append(qml_op)
             print(f"collected ops: {collected_ops}")
