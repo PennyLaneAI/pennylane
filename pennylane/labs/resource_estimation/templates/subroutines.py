@@ -533,7 +533,7 @@ class ResourceControlledSequence(ResourceOperator):
         if wires and base_op.wires:
             self.wires = Wires.all_wires([wires, base_op.wires])
             self.num_wires = len(self.wires)
-        elif (base_op.wires is None) and not (wires is None):
+        elif (base_op.wires is None) and (wires is not None):
             self.wires = wires
             num_base_wires = base_op.num_wires
             self.num_wires = num_control_wires + num_base_wires
@@ -623,18 +623,12 @@ class ResourceQPE(ResourceOperator):
     r"""Resource class for QuantumPhaseEstimation (QPE).
 
     Args:
-        unitary (array or Operator): the phase estimation unitary, specified as a matrix or an
-            :class:`~.Operator`
-        target_wires (Union[Wires, Sequence[int], or int]): the target wires to apply the unitary.
-            If the unitary is specified as an operator, the target wires should already have been
-            defined as part of the operator. In this case, target_wires should not be specified.
-        estimation_wires (Union[Wires, Sequence[int], or int]): the wires to be used for phase
-            estimation
-
-    Resource Parameters:
-        * base_class (ResourceOperator): The type of the operation corresponding to the phase estimation unitary.
-        * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
-        * num_estimation_wires (int): the number of wires used for measuring out the phase
+        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
+            will be applying controlled powers of.
+        num_estimation_wires (int): the number of wires used for measuring out the phase
+        adj_qft_op (Union[~.pennylane.labs.resource_estimation.ResourceOperator, None]): An optional
+            argument to set the subroutine used to perform the adjoint QFT operation.
+        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The resources are obtained from the standard decomposition of QPE as presented
@@ -647,12 +641,16 @@ class ResourceQPE(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> re.ResourceQuantumPhaseEstimation.resources(
-    ...     base_class=re.ResourceQFT,
-    ...     base_params={"num_wires": 3},
-    ...     num_estimation_wires=3,
-    ... )
-    {Hadamard: 3, Adjoint(QFT(3)): 1, C(QFT(3),1,0,0): 7}
+    >>> gate_set = {"Hadamard", "Adjoint(QFT(5))", "CRX"}
+    >>> qpe = plre.ResourceQPE(plre.ResourceRX(eps=1e-3), 5)
+    >>> print(plre.estimate_resources(qpe, gate_set))
+    --- Resources: ---
+     Total qubits: 6
+     Total gates : 11
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 6
+     Gate breakdown:
+      {'Hadamard': 5, 'CRX': 5, 'Adjoint(QFT(5))': 1}
     """
 
     resource_keys = {"base_cmpr_op", "num_estimation_wires", "adj_qft_cmpr_op"}
@@ -682,26 +680,17 @@ class ResourceQPE(ResourceOperator):
             self.wires = None
             self.num_wires = self.num_estimation_wires + base_op.num_wires
 
-    def queue(self, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        context.append(self)
-        return self
-
-    def dequeue(self, remove_ops, context: QueuingManager = QueuingManager):
-        """Remove operators from the Operator queue."""
-        for op in remove_ops:
-            context.remove(op)
-        return self
-
     @property
     def resource_params(self) -> dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * base_class (Type(ResourceOperator)): The type of the operation corresponding to the phase estimation unitary.
-                * base_params (dict): A dictionary of parameters required to obtain the resources for the phase estimation unitary.
+                * base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the operator that we will be applying controlled powers of.
                 * num_estimation_wires (int): the number of wires used for measuring out the phase
+                * adj_qft_cmpr_op (CompressedResourceOpor None): A compressed resource operator,
+                  corresponding to the adjoint QFT.
         """
 
         return {
@@ -721,11 +710,11 @@ class ResourceQPE(ResourceOperator):
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            base_class (Type(ResourceOperator)): The type of the operation corresponding to the
-                phase estimation unitary.
-            base_params (dict): A dictionary of parameters required to obtain the resources for
-                the phase estimation unitary.
+            base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
+                to the operator that we will be applying controlled powers of.
             num_estimation_wires (int): the number of wires used for measuring out the phase
+            adj_qft_cmpr_op (CompressedResourceOpor None): A compressed resource operator,
+                corresponding to the adjoint QFT.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -743,11 +732,11 @@ class ResourceQPE(ResourceOperator):
         keys are the operators and the associated values are the counts.
 
         Args:
-            base_class (Type(ResourceOperator)): The type of the operation corresponding to the
-                phase estimation unitary.
-            base_params (dict): A dictionary of parameters required to obtain the resources for
-                the phase estimation unitary.
+            base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
+                to the operator that we will be applying controlled powers of.
             num_estimation_wires (int): the number of wires used for measuring out the phase
+            adj_qft_cmpr_op (CompressedResourceOpor None): A compressed resource operator,
+                corresponding to the adjoint QFT.
 
         Resources:
             The resources are obtained from the standard decomposition of QPE as presented
@@ -779,12 +768,52 @@ class ResourceQPE(ResourceOperator):
 
 
 class ResourceIterativeQPE(ResourceOperator):
-    r"""Docs"""
+    r"""Resource class for Iterative Quantum Phase Estimation (IQPE).
 
-    resource_keys = {"num_wires"}
+    Args:
+        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
+            will be applying controlled powers of.
+        num_iter (int): the number of mid-circuit measurements made to read out the phase
+        wires (Sequence[int], optional): the wires the operation acts on
 
-    def __init__(self, num_wires, wires=None):
-        self.num_wires = num_wires
+    Resources:
+        The resources are obtained following the constuction from `arXiv:quant-ph/0610214v3
+        <https://arxiv.org/pdf/quant-ph/0610214v3>`_.
+
+    .. seealso:: :func:`~.iterative_qpe`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> gate_set = {"Hadamard", "CRX", "PhaseShift"}
+    >>> iqpe = plre.ResourceIterativeQPE(plre.ResourceRX(), 5)
+    >>> print(plre.estimate_resources(iqpe, gate_set))
+    --- Resources: ---
+     Total qubits: 2
+     Total gates : 25
+     Qubit breakdown:
+      clean qubits: 1, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'Hadamard': 10, 'CRX': 5, 'PhaseShift': 10}
+    """
+
+    resource_keys = {"base_cmpr_op", "num_iter"}
+
+    def __init__(self, base_op, num_iter, wires=None):
+        self.dequeue(base_op)
+        self.queue()
+
+        self.base_cmpr_op = base_op.resource_rep_from_op()
+        self.num_iter = num_iter
+
+        if wires is not None:
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
+        else:
+            self.wires = base_op.wires or None
+            self.num_wires = base_op.num_wires
+
         super().__init__(wires=wires)
 
     @property
@@ -793,56 +822,60 @@ class ResourceIterativeQPE(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * num_wires (int): the number of qubits to prepare in the phase gradient state
+                * base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the operator that we will be applying controlled powers of.
+                * num_iter (int): the number of mid-circuit measurements made to read out the phase
         """
-        return {"num_wires": self.num_wires}
+        return {"base_cmpr_op": self.base_cmpr_op, "num_iter": self.num_iter}
 
     @classmethod
-    def resource_rep(cls, num_wires) -> CompressedResourceOp:
+    def resource_rep(cls, base_cmpr_op, num_iter) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
         Args:
-            num_wires (int): the number of qubits to prepare in the phase gradient state
+            base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
+                to the operator that we will be applying controlled powers of.
+            num_iter (int): the number of mid-circuit measurements made to read out the phase
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"num_wires": num_wires})
+        return CompressedResourceOp(cls, {"base_cmpr_op": base_cmpr_op, "num_iter": num_iter})
 
     @classmethod
-    def default_resource_decomp(cls, num_wires, **kwargs):
+    def default_resource_decomp(cls, base_cmpr_op, num_iter, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
         Args:
-            num_wires (int): the number of qubits to prepare in the phase gradient state
+            base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
+                to the operator that we will be applying controlled powers of.
+            num_iter (int): the number of mid-circuit measurements made to read out the phase
 
         Resources:
-            The resources are obtained by construction. The phase gradient state is defined as an
-            equal superposition of phaseshifts where each shift is progressively more precise. This
-            is achieved by applying Hadamard gates to each qubit and then applying RZ-rotations to each
-            qubit with progressively smaller rotation angle. The first three rotations can be compiled to
-            a Z-gate, S-gate and a T-gate.
+            The resources are obtained following the constuction from `arXiv:quant-ph/0610214v3
+            <https://arxiv.org/pdf/quant-ph/0610214v3>`_.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        gate_counts = [GateCount(resource_rep(re.ResourceHadamard), num_wires)]
-        if num_wires > 0:
-            gate_counts.append(GateCount(resource_rep(re.ResourceZ)))
+        gate_counts = [
+            GateCount(resource_rep(re.ResourceHadamard), 2 * num_iter),
+            AllocWires(1),
+        ]
 
-        if num_wires > 1:
-            gate_counts.append(GateCount(resource_rep(re.ResourceS)))
+        # Here we want to use this particular decomposition, not any random one the user might override
+        gate_counts += ResourceControlledSequence.default_resource_decomp(base_cmpr_op, num_iter)
 
-        if num_wires > 2:
-            gate_counts.append(GateCount(resource_rep(re.ResourceT)))
+        num_phase_gates = num_iter * (num_iter - 1) // 2
+        gate_counts.append(
+            GateCount(re.ResourcePhaseShift.resource_rep(), num_phase_gates)
+        )  # Classically controlled PS
 
-        if num_wires > 3:
-            gate_counts.append(GateCount(resource_rep(re.ResourceRZ), num_wires - 3))
-
+        gate_counts.append(FreeWires(1))
         return gate_counts
 
 
