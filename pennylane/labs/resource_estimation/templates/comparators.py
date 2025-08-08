@@ -172,10 +172,15 @@ class ResourceTwoQubitCompare(ResourceOperator):
         """
         gate_list = []
 
-        gate_list.append(AllocWires(1))
-        gate_list.append(GateCount(resource_rep(plre.ResourceCSWAP), 2))
-        gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 3))
-        gate_list.append(FreeWires(1))
+        gate_list.append(AllocWires(2))
+
+        gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 2))
+
+        # 5 extra from the two controlled SWAP decompositing to Tempand gates
+        gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 8))
+
+        gate_list.append(GateCount(resource_rep(plre.ResourceX), 3))
+        gate_list.append(FreeWires(2))
 
         return gate_list
 

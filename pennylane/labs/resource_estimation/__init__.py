@@ -202,6 +202,7 @@ from .templates import (
     ResourcePrepSparsePauli,
     ResourcePrepAC,
     ResourceSelectAC,
+    ResourceComparator
 )
 
 from .wrappers import qcow
