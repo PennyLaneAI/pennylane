@@ -21,7 +21,7 @@ from xdsl.ir import Operation, SSAValue
 from xdsl.pattern_rewriter import PatternRewriter, PatternRewriterListener, PatternRewriteWalker
 from xdsl.rewriter import InsertPoint
 
-from pennylane import ops
+from pennylane import measurements, ops
 from pennylane.operation import Operator
 
 from ...dialects import mbqc, quantum
@@ -281,6 +281,15 @@ class PLPatternRewriter(PatternRewriter):
         ):
             iq.replace_by_if(oq, lambda use: use.operation != customOp)
             self.wire_manager.update_qubit(iq, oq)
+
+    def insert_observable(self, obs: Operator, insert_point: InsertPoint):
+        """Insert a PL observable into the IR at the provided insertion point."""
+
+    def insert_measurement(self, mp: measurements.MeasurementProcess, insert_point: InsertPoint):
+        """Insert a PL measurement into the IR at the provided insertion point."""
+
+    def insert_mid_measure(self, mcm: measurements.MidMeasureMP, insert_point: InsertPoint):
+        """Insert a PL measurement into the IR at the provided insertion point."""
 
 
 # pylint: disable=too-few-public-methods
