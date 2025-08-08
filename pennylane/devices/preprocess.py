@@ -639,31 +639,19 @@ def measurements_from_samples(tape):
     diagonalized_tape, measured_wires = _get_diagonalized_tape_and_wires(tape)
     new_tape = diagonalized_tape.copy(measurements=[qml.sample(wires=measured_wires)])
 
-    def unsqueezed(samples):
-        """If the samples have been squeezed to remove the 'extra' dimension in the case where
-        shots=1 or wires=1, unsqueeze to restore the raw samples format expected by mp.process_samples
-        """
-
-        # if we stop squeezing out the extra dimension for shots=1 or wires=1 when sampling (as is
-        # already the case in Catalyst), this problem goes away
-
-        if len(samples.shape) == 1:
-            samples = qml.math.array([[s] for s in samples], like=samples)
-        return samples
-
     def postprocessing_fn(results):
         """A processing function to get measurement values from samples."""
         samples = results[0]
         if tape.shots.has_partitioned_shots:
             results_processed = []
             for s in samples:
-                res = [m.process_samples(unsqueezed(s), measured_wires) for m in tape.measurements]
+                res = [m.process_samples(s, measured_wires) for m in tape.measurements]
                 if len(tape.measurements) == 1:
                     res = res[0]
                 results_processed.append(res)
         else:
             results_processed = [
-                m.process_samples(unsqueezed(samples), measured_wires) for m in tape.measurements
+                m.process_samples(samples, measured_wires) for m in tape.measurements
             ]
             if len(tape.measurements) == 1:
                 results_processed = results_processed[0]

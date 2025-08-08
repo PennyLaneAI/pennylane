@@ -210,9 +210,9 @@ class OutPoly(Operation):
         .. code-block:: pycon
 
             >>> print(circuit())
-            [1 0 1 1]
+            [[1 0 1 1]]
 
-        The result, :math:`[1 0 1 1]`, is the binary representation of :math:`3^2 + 2 = 11`.
+        The result, :math:`[[1 0 1 1]]`, is the binary representation of :math:`3^2 + 2 = 11`.
         Note that the default value of `mod` in this example is :math:`2^{\text{len(output_wires)}} = 2^4 = 16`.
         For more information on using `mod`, see the Usage Details section.
 
@@ -258,9 +258,9 @@ class OutPoly(Operation):
         .. code-block:: pycon
 
             >>> print(circuit())
-            [1 0 1]
+            [[1 0 1]]
 
-        The result, :math:`[1 0 1]`, is the binary representation
+        The result, :math:`[[1 0 1]]`, is the binary representation
         of :math:`1 + f(3, 2) = 1 + 3^2 + 2  \; \text{mod} \; 7 = 5`.
         In this example ``output_wires`` is initialized to :math:`1`, so this value is added to the solution.
         Generically, the expression is definded as:

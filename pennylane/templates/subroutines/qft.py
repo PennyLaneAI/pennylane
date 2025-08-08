@@ -102,7 +102,7 @@ class QFT(Operation):
         .. code-block:: pycon
 
             >>> qft_add(7, 3, n_wires=4)
-            [1 0 1 0]
+            [[1 0 1 0]]
 
         The last building block of this circuit is a QFT, so we may replace it by its
         semiclassical counterpart:
@@ -130,8 +130,8 @@ class QFT(Operation):
 
         .. code-block:: pycon
 
-            >>> scFT_add(7, 3, n_wires=4)
-            [1 0 1 0]
+            >>> qml.set_shots(scFT_add, 1)(7, 3, n_wires=4)
+            array([[1, 1, 1, 0]])
     """
 
     grad_method = None

@@ -85,9 +85,9 @@ class OutAdder(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [1 0 0]
+        [[1 0 0]]
 
-    The result :math:`[1 0 0]`, is the binary representation of
+    The result :math:`[[1 0 0]]`, is the binary representation of
     :math:`5 + 6 \; \text{modulo} \; 7 = 4`.
 
     .. details::
@@ -134,9 +134,9 @@ class OutAdder(Operation):
         .. code-block:: pycon
 
             >>> print(circuit())
-            [1 0 1]
+            [[1 0 1]]
 
-        The result :math:`[1 0 1]`, is the binary representation of
+        The result :math:`[[1 0 1]]`, is the binary representation of
         :math:`5 + 6 + 1\; \text{modulo} \; 7 = 5`.
 
         The fourth set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular addition operation.
