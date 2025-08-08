@@ -14,5 +14,5 @@
 """Module containing functions for computing product formulas"""
 
 from .bch import bch_expansion
-from .error import effective_hamiltonian, perturbation_error
+from .error import effective_hamiltonian, perturbation_error, perturbation_error_with_config
 from .product_formula import ProductFormula
