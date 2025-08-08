@@ -245,4 +245,7 @@ from .templates import (
     ResourceQubitizeTHC,
     ResourceUniformStatePrep,
     ResourceAliasSampling,
+    ResourceQPE,
+    ResourceIterativeQPE,
+    ResourceControlledSequence,
 )
