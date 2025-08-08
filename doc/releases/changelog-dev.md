@@ -229,6 +229,9 @@
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 
+* The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
+  [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
+
 <h3>Breaking changes 💔</h3>
 
 * `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
