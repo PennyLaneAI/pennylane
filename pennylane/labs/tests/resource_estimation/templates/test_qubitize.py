@@ -18,7 +18,7 @@ import pytest
 
 import pennylane.labs.resource_estimation as plre
 
-# pylint: disable=too-many-arguments, no-self-use
+# pylint: disable=no-self-use
 
 
 class TestQubitizeTHC:

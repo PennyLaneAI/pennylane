@@ -37,7 +37,7 @@ subspaces = [(0, 1), (0, 2), (1, 2)]
 kraus_matrix = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]], dtype=complex)
 
 
-class CustomChannel(Channel):  # pylint: disable=too-few-public-methods
+class CustomChannel(Channel):
     num_params = 1
     num_wires = 1
 
@@ -64,7 +64,6 @@ def test_custom_operator_with_matrix(one_qutrit_state):
         ]
     )
 
-    # pylint: disable=too-few-public-methods
     class CustomOp(qml.operation.Operation):
         num_wires = 1
 
@@ -86,9 +85,7 @@ class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
 
     @pytest.mark.usefixtures("two_qutrit_state")
-    def test_no_debugger(
-        self, ml_framework, state, shape, request
-    ):  # pylint: disable=unused-argument
+    def test_no_debugger(self, ml_framework, state, shape, request):
         """Test nothing happens when there is no debugger"""
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
@@ -163,7 +160,7 @@ class TestSnapshot:
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestOperation:  # pylint: disable=too-few-public-methods
+class TestOperation:
     """Tests that broadcasted operations (not channels) are applied correctly."""
 
     broadcasted_ops = [
@@ -280,7 +277,7 @@ class TestOperation:  # pylint: disable=too-few-public-methods
 
 @pytest.mark.parametrize("wire", [0, 1])
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestChannels:  # pylint: disable=too-few-public-methods
+class TestChannels:
     """Tests that Channel operations are applied correctly."""
 
     num_qutrits = 2

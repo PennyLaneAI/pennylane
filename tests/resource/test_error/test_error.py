@@ -18,8 +18,6 @@ Test base AlgorithmicError class and its associated methods.
 from typing import Optional
 
 import numpy as np
-
-# pylint: disable=too-few-public-methods, unused-argument
 import pytest
 
 import pennylane as qml

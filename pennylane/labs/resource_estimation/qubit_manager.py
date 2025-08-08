@@ -16,8 +16,6 @@ r"""This module contains the base class for qubit management"""
 
 import pennylane as qml
 
-# pylint: disable= too-few-public-methods
-
 
 class QubitManager:
     r"""Manages and tracks the auxiliary and algorithmic qubits used in a quantum circuit.

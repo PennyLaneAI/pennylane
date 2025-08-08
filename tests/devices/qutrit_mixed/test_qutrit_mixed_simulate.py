@@ -61,7 +61,6 @@ def expected_TRX_circ_state(phi, subspace):
 class TestCurrentlyUnsupportedCases:
     """Test currently unsupported cases, such as sampling counts or samples without shots, or probs with shots"""
 
-    # pylint: disable=too-few-public-methods
     def test_sample_based_observable(self):
         """Test sample-only measurements raise a NotImplementedError."""
 
@@ -80,7 +79,6 @@ class TestCurrentlyUnsupportedCases:
 def test_custom_operation():
     """Test execution works with a manually defined operator if it has a matrix."""
 
-    # pylint: disable=too-few-public-methods
     class MyOperator(qml.operation.Operator):
         num_wires = 1
 
@@ -494,7 +492,6 @@ class TestDebugger:
         )
         assert qml.math.allclose(debugger.snapshots["final_state"], expected_final_state)
 
-    # pylint: disable=invalid-unary-operand-type
     @pytest.mark.tf
     def test_debugger_tf(self, subspace):
         """Tests debugger with tensorflow."""

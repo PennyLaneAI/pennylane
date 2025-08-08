@@ -14,7 +14,7 @@
 r"""
 Contains the IQPEmbedding template.
 """
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-arguments
 import copy
 from itertools import combinations
 

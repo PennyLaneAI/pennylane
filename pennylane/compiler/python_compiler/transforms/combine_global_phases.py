@@ -36,7 +36,7 @@ class CombineGlobalPhasesPattern(
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(
         self, root: func.FuncOp | IfOp | ForOp | WhileOp, rewriter: pattern_rewriter.PatternRewriter
-    ):  # pylint: disable=arguments-differ, cell-var-from-loop
+    ):  # pylint: disable=cell-var-from-loop
         """Match and rewrite for the combine-global-phases pattern acting on functions or
         control-flow blocks containing GlobalPhase operations.
         """
@@ -74,7 +74,7 @@ class CombineGlobalPhasesPass(passes.ModulePass):
 
     name = "combine-global-phases"
 
-    # pylint: disable=arguments-renamed,no-self-use
+    # pylint: disable=no-self-use
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the combine-global-phases pass."""
         pattern_rewriter.PatternRewriteWalker(

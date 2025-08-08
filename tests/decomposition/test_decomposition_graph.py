@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """Unit tests for the decomposition graph."""
-# pylint: disable=protected-access,no-name-in-module
 
 from unittest.mock import patch
 
@@ -32,7 +31,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.decomposition_graph import _to_name
 from pennylane.exceptions import DecompositionError
 
-# pylint: disable=protected-access,no-name-in-module
+# pylint: disable=protected-access
 
 
 @pytest.mark.unit
@@ -153,7 +152,7 @@ class TestDecompositionGraph:
     def test_graph_construction_non_applicable_rules(self, _):
         """Tests rules which are not applicable are skipped."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             """A custom op"""
 
             resource_keys = {"num_wires"}
@@ -190,7 +189,7 @@ class TestDecompositionGraph:
     def test_gate_set(self, _):
         """Tests that graph construction stops at the target gate set."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
             """A custom operation."""
 
             resource_keys = set()
@@ -258,7 +257,7 @@ class TestDecompositionGraph:
     def test_lazy_solve(self, _):
         """Tests the lazy keyword argument."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             """A custom operation."""
 
             resource_keys = set()
@@ -267,7 +266,7 @@ class TestDecompositionGraph:
             def resource_params(self):
                 return {}
 
-        class AnotherOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class AnotherOp(qml.operation.Operation):
             """Another custom operation."""
 
             resource_keys = set()
@@ -311,7 +310,7 @@ class TestDecompositionGraph:
     def test_decomposition_with_resource_params(self, _):
         """Tests operators with non-empty resource params."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             """A custom operation."""
 
             resource_keys = {"num_wires"}
@@ -413,7 +412,7 @@ class TestControlledDecompositions:
     def test_controlled_base_decomposition(self, _):
         """Tests applying control on the decomposition of the target operator."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             """A custom operation."""
 
             resource_keys = set()
@@ -432,7 +431,7 @@ class TestControlledDecompositions:
             qml.Z(wires=wires[0])
             qml.GlobalPhase(np.pi / 2, wires=wires)
 
-        class CustomControlledOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomControlledOp(qml.operation.Operation):
             """A custom operation."""
 
             resource_keys = set()
@@ -575,7 +574,7 @@ class TestSymbolicDecompositions:
     def test_adjoint_general(self, _):
         """Tests decomposition of a generalized adjoint operation."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             """A custom operation."""
 
             resource_keys = set()
@@ -688,7 +687,7 @@ class TestSymbolicDecompositions:
     def test_special_pow_decomps(self, _):
         """Tests special cases for decomposing a power."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             """A custom operation."""
 
             resource_keys = set()
@@ -724,7 +723,7 @@ class TestSymbolicDecompositions:
     def test_general_pow_decomps(self, _):
         """Tests the more general power decomposition rules."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operation):
             """A custom operation."""
 
             resource_keys = set()

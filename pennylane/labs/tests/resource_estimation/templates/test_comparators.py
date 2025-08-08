@@ -19,7 +19,7 @@ import pytest
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import AllocWires, FreeWires, GateCount, resource_rep
 
-# pylint: disable=no-self-use,too-many-arguments,use-implicit-booleaness-not-comparison
+# pylint: disable=no-self-use,use-implicit-booleaness-not-comparison
 
 
 class TestSingleQubitComparator:

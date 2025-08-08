@@ -635,7 +635,6 @@ class TestDifferentiation:
     def test_error_backprop_unsupported(self):
         """Test an error is raised with backprop if the device does not support it."""
 
-        # pylint: disable=too-few-public-methods
         class DummyDev(qml.devices.Device):
 
             def execute(self, *_, **__):

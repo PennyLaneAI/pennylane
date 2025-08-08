@@ -128,7 +128,7 @@ def expand_matrices(op, num_q, batch_size=0):
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestOperation:  # pylint: disable=too-few-public-methods
+class TestOperation:
     """Tests that broadcasted operations (not channels) are applied correctly."""
 
     unbroadcasted_ops = [
@@ -612,7 +612,7 @@ class TestApplyChannel:
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
-class TestBroadcasting:  # pylint: disable=too-few-public-methods
+class TestBroadcasting:
     """Tests that broadcasted operations are applied correctly."""
 
     broadcasted_ops = [

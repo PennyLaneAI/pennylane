@@ -14,7 +14,7 @@
 """
 Tests for the TrotterProduct template and helper functions.
 """
-# pylint: disable=private-access, protected-access, too-many-arguments
+# pylint: disable=private-access,too-many-arguments
 import copy
 from collections import defaultdict
 from functools import partial, reduce

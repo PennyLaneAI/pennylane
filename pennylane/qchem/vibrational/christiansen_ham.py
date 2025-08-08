@@ -19,7 +19,7 @@ from pennylane.bose import BoseSentence, BoseWord, christiansen_mapping
 
 from .christiansen_utils import christiansen_integrals, christiansen_integrals_dipole
 
-# pylint: disable = too-many-branches, too-many-positional-arguments, too-many-arguments, too-many-nested-blocks,
+# pylint: disable=too-many-branches,too-many-nested-blocks
 
 
 def christiansen_bosonic(one, two=None, three=None, ordered=True):

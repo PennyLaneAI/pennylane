@@ -14,7 +14,7 @@
 """
 Tests for the gradients.hadamard_gradient module.
 """
-# pylint: disable=use-implicit-booleaness-not-comparison
+
 import pytest
 
 import pennylane as qml
@@ -1026,8 +1026,6 @@ class TestHadamardGrad:
 
 class TestHadamardGradEdgeCases:
     """Test the Hadamard gradient transform and edge cases such as non diff parameters, auxiliary wires, etc..."""
-
-    # pylint:disable=too-many-public-methods
 
     device_wires = [qml.wires.Wires([0, 1, "aux"])]
     device_wires_no_aux = [qml.wires.Wires([0, 1, 2])]

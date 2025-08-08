@@ -16,7 +16,7 @@ Unit tests for the composite operator class of qubit operations
 """
 import inspect
 
-# pylint:disable=protected-access, use-implicit-booleaness-not-comparison
+# pylint:disable=protected-access
 from copy import copy
 
 import numpy as np
@@ -45,7 +45,7 @@ ops_rep = (
 
 
 class ValidOp(CompositeOp):
-    # pylint:disable=unused-argument
+
     _op_symbol = "#"
     _math_op = None
 
@@ -75,7 +75,7 @@ class TestConstruction:
     def test_direct_initialization_fails(self):
         """Test directly initializing a CompositeOp fails"""
         with pytest.raises(TypeError, match="Can't instantiate abstract class CompositeOp"):
-            _ = CompositeOp(*self.simple_operands)  # pylint:disable=abstract-class-instantiated
+            _ = CompositeOp(*self.simple_operands)
 
     @pytest.mark.xfail
     def test_raise_error_fewer_than_2_operands(self):
@@ -105,7 +105,7 @@ class TestConstruction:
         assert op.data == (9.87, 1.23, 4.0, 5.67)
 
         new_data = (1.23, 0.0, -1.0, -2.0)
-        op.data = new_data  # pylint:disable=attribute-defined-outside-init
+        op.data = new_data
         assert op.data == new_data
 
         for o in op:
@@ -191,7 +191,7 @@ class TestConstruction:
     def test_map_wires(self, construct_overlapping_ops, expected_overlapping_ops):
         """Test the map_wires method."""
         diag_op = ValidOp(*self.simple_operands)
-        # pylint:disable=attribute-defined-outside-init
+
         diag_op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({0: "X", 1: "Y"}): 1})
         if construct_overlapping_ops:
             _ = diag_op.overlapping_ops

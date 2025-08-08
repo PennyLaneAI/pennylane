@@ -15,7 +15,7 @@
 Tests for the LinearCombination class.
 """
 
-# pylint: disable=too-many-public-methods, too-few-public-methods
+# pylint: disable=too-many-public-methods
 from collections.abc import Iterable
 from copy import copy
 
@@ -1727,7 +1727,6 @@ class TestLinearCombinationDifferentiation:
         assert np.allclose(grad[0], grad_expected[0])
         assert np.allclose(grad[1], grad_expected[1])
 
-    # pylint: disable=superfluous-parens
     @pytest.mark.jax
     def test_nontrainable_coeffs_jax(self):
         """Test the jax interface if the coefficients are explicitly set non-trainable"""

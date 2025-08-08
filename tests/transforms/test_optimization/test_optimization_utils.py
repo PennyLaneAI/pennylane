@@ -83,7 +83,7 @@ class TestRotGateFusion:
             qml.Rot(*qml.math.transpose(angles_1), wires=0)
             qml.Rot(*qml.math.transpose(angles_2), wires=0)
 
-        matrix_expected = qml.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+        matrix_expected = qml.matrix(original_ops, [0])()
 
         fused_angles = fuse_rot_angles(angles_1, angles_2)
         # The reshape is only used in the _mixed_batching test. Otherwise it is irrelevant.
@@ -183,7 +183,7 @@ class TestRotGateFusion:
                 qml.Rot(angles1[..., 0], angles1[..., 1], angles1[..., 2], wires=0)
                 qml.Rot(angles2[..., 0], angles2[..., 1], angles2[..., 2], wires=0)
 
-            return qml.matrix(original_ops, [0])()  # pylint:disable=too-many-function-args
+            return qml.matrix(original_ops, [0])()
 
         def mat_from_fuse(angles):
             angles1, angles2 = angles[..., 0, :], angles[..., 1, :]

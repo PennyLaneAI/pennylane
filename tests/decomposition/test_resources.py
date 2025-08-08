@@ -105,7 +105,7 @@ class TestResources:
         assert repr(resources) == "<num_gates=3, gate_counts={RX: 2, RZ: 1}, weighted_cost=5.0>"
 
 
-class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+class DummyOp(qml.operation.Operator):
     resource_keys = {"foo", "bar"}
 
 
@@ -175,7 +175,7 @@ class TestCompressedResourceOp:
     def test_hash_list_params(self):
         """Tests when the resource params contains a list."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = {"foo", "bar"}
 
@@ -262,7 +262,7 @@ class TestResourceRep:
         with pytest.raises(TypeError, match="op_type must be a type of Operator"):
             resource_rep(int)
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = {}
 

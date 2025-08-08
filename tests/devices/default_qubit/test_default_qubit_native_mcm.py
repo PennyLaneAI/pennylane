@@ -306,7 +306,7 @@ def test_sample_with_broadcasting_and_postselection_error(mcm_method, seed):
         _ = circuit([0.1, 0.2])
 
 
-# pylint: disable=import-outside-toplevel, not-an-iterable
+# pylint: disable=import-outside-toplevel
 @pytest.mark.jax
 class TestJaxIntegration:
     """Integration tests for dynamic_one_shot with jax"""

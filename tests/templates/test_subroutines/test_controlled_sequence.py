@@ -22,8 +22,6 @@ from pennylane import numpy as pnp
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
-# pylint: disable=unidiomatic-typecheck, cell-var-from-loop
-
 
 def test_standard_validity():
     """Check the operation using the assert_valid function."""

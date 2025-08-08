@@ -58,7 +58,7 @@ class TestCollectResourceOps:
     def test_for_loop(self):
         """Tests a function with a for loop."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = {"x"}
 

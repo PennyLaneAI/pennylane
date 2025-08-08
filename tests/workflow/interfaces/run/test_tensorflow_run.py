@@ -18,8 +18,6 @@ from dataclasses import replace
 
 import numpy as np
 import pytest
-
-# pylint: disable=no-name-in-module
 from conftest import atol_for_shots, get_device, test_matrix
 
 import pennylane as qml
@@ -94,7 +92,7 @@ class TestTensorFlowRun:
         with tf.GradientTape(persistent=device_vjp) as tape:
             cost_res = cost(a)
         res = tape.jacobian(cost_res, a, experimental_use_pfor=not device_vjp)
-        assert res.shape == ()  # pylint: disable=no-member
+        assert res.shape == ()
 
         expected = -qml.math.sin(a)
 

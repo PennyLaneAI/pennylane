@@ -16,7 +16,7 @@ Tests for the UCCSD template.
 """
 import numpy as np
 
-# pylint: disable=protected-access,too-many-arguments
+# pylint: disable=too-many-arguments
 import pytest
 
 import pennylane as qml

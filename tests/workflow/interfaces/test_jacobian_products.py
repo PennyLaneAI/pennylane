@@ -99,7 +99,6 @@ def test_no_gradients():
         jpc.execute_and_compute_jacobian(())
 
 
-# pylint: disable=too-few-public-methods
 class TestBasics:
     """Test initialization and repr for jacobian product calculator classes."""
 

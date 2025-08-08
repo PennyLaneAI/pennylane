@@ -110,7 +110,6 @@ def test_primitive_none_behavior():
     be created, but it just won't be captured into jaxpr.
     """
 
-    # pylint: disable=too-few-public-methods
     class MyMeasurement(qml.measurements.MeasurementProcess):
         pass
 

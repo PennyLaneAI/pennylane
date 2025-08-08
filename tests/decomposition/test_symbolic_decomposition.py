@@ -40,8 +40,6 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
     to_controlled_qubit_unitary,
 )
-
-# pylint: disable=no-name-in-module
 from tests.decomposition.conftest import to_resources
 
 
@@ -79,7 +77,7 @@ class TestAdjointDecompositionRules:
     def test_adjoint_general(self):
         """Tests the adjoint of a general operator can be correctly decomposed."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = set()
 
@@ -121,7 +119,7 @@ class TestAdjointDecompositionRules:
     def test_adjoint_rotation(self):
         """Tests the adjoint_rotation decomposition."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = set()
 
@@ -141,7 +139,7 @@ class TestAdjointDecompositionRules:
     def test_self_adjoint(self):
         """Tests the self_adjoint decomposition."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = set()
 
@@ -212,7 +210,7 @@ class TestPowDecomposition:
     def test_flip_pow_adjoint(self):
         """Tests the flip_pow_adjoint decomposition."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = set()
 
@@ -236,7 +234,7 @@ class TestPowDecomposition:
     def test_pow_involutory(self):
         """Tests the pow_involutory decomposition."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = set()
 
@@ -279,7 +277,7 @@ class TestPowDecomposition:
     def test_pow_rotations(self):
         """Tests the pow_rotations decomposition."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(qml.operation.Operator):
 
             resource_keys = set()
 
@@ -297,7 +295,7 @@ class TestPowDecomposition:
         )
 
 
-class CustomMultiQubitOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+class CustomMultiQubitOp(qml.operation.Operation):
     """A custom op."""
 
     resource_keys = {"num_wires"}

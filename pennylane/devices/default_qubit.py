@@ -69,7 +69,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
-    # pylint: disable=ungrouped-imports
     from numbers import Number
 
     from jax.extend.core import Jaxpr
@@ -491,7 +490,6 @@ class DefaultQubit(Device):
     tuple of string names for all the device options.
     """
 
-    # pylint:disable = too-many-arguments
     @debug_logger_init
     def __init__(
         self,

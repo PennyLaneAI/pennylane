@@ -91,7 +91,6 @@ class TestInitialization:
     def test_has_diagonalizing_gates(self, value, constructor):
         """Test that Exp defers has_diagonalizing_gates to base operator."""
 
-        # pylint: disable=too-few-public-methods
         class DummyOp(qml.operation.Operator):
             num_wires = 1
             has_diagonalizing_gates = value
@@ -396,7 +395,7 @@ class TestDecomposition:
     # Order of `qml.ops.qubit.__all__` is not reliable, so
     # must sort for consistent order in testing with multiple
     # workers
-    all_qubit_operators = sorted(qml.ops.qubit.__all__)  # pylint: disable=no-member
+    all_qubit_operators = sorted(qml.ops.qubit.__all__)
 
     def test_sprod_decomposition(self):
         """Test that the exp of an SProd has a decomposition."""
@@ -462,7 +461,7 @@ class TestDecomposition:
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
 
-        op_class = getattr(qml.ops.qubit, op_name)  # pylint:disable=no-member
+        op_class = getattr(qml.ops.qubit, op_name)
 
         if not op_class.has_generator:
             pytest.skip("Operator does not have a generator.")
@@ -740,7 +739,7 @@ class TestMiscMethods:
     def test_repr_deep_operator(self):
         """Test the __repr__ method when the base is any operator with arithmetic depth > 0."""
         base = qml.S(0) @ qml.PauliX(0)
-        op = qml.ops.Exp(base, 3)  # pylint:disable=no-member
+        op = qml.ops.Exp(base, 3)
 
         assert repr(op) == "Exp(3 S(0) @ X(0))"
 
@@ -921,7 +920,7 @@ class TestIntegration:
         phi_real = qml.math.cast(phi, tf.float64)
 
         assert qml.math.allclose(res, tf.cos(phi_real))
-        # pylint: disable=invalid-unary-operand-type
+
         assert qml.math.allclose(phi_grad, -tf.sin(phi))
 
     @pytest.mark.torch
@@ -1047,7 +1046,7 @@ class TestIntegration:
     @pytest.mark.tf
     def test_tf_measurement(self):
         """Test Exp in a measurement with gradient and tensorflow."""
-        # pylint:disable=invalid-unary-operand-type
+
         import tensorflow as tf
 
         x = tf.Variable(2.0, dtype=tf.float64)

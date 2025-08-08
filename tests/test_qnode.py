@@ -290,7 +290,6 @@ class TestValidation:
         with pytest.raises(QuantumFunctionError, match="Invalid device"):
             QNode(dummyfunc, None)
 
-    # pylint: disable=protected-access, too-many-statements
     def test_diff_method(self):
         """Test that a user-supplied diff method correctly returns the right
         diff method."""
@@ -452,7 +451,6 @@ class TestValidation:
         assert len(record) == 0
 
 
-# pylint: disable=too-few-public-methods
 # pylint: disable=unnecessary-lambda
 class TestPyTreeStructure:
     """Tests for preservation of pytree structure through execution"""
@@ -1056,7 +1054,7 @@ class TestIntegration:
             circuit()
 
         tape = qml.workflow.construct_tape(circuit)()
-        assert q.queue == []  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert q.queue == []
         assert len(tape.operations) == 1
 
     def test_qnode_preserves_inferred_numpy_interface(self):
@@ -1099,7 +1097,6 @@ class TestIntegration:
 
         dev = qml.device("default.qubit")
 
-        # pylint: disable=too-few-public-methods
         class DummyCustomGraphOp(qml.operation.Operation):
             """Dummy custom operation for testing purposes."""
 
@@ -1164,7 +1161,6 @@ class TestIntegration:
 class TestShots:
     """Unit tests for specifying shots per call."""
 
-    # pylint: disable=unexpected-keyword-arg
     def test_specify_shots_per_call_sample(self):
         """Tests that shots can be set per call for a sample return type."""
         dev = qml.device("default.qubit", wires=1, shots=10)
@@ -1183,7 +1179,7 @@ class TestShots:
             assert len(circuit(0.8, shots=3178)) == 3178
         assert len(circuit(0.8)) == 10
 
-    # pylint: disable=unexpected-keyword-arg, protected-access
+    # pylint: disable=protected-access
     def test_specify_shots_per_call_expval(self):
         """Tests that shots can be set per call for an expectation value.
         Note: this test has a vanishingly small probability to fail."""
@@ -1212,7 +1208,6 @@ class TestShots:
         assert np.std(res1) == 0.0
         assert circuit.device._shots.total_shots is None
 
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_kwarg(self):
         """Tests that the per-call shots overwriting is suspended if user
         has a shots keyword argument, but a warning is raised."""
@@ -1248,7 +1243,6 @@ class TestShots:
         tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
@@ -1301,7 +1295,6 @@ class TestShots:
         with pytest.warns(UserWarning, match="Cached execution with finite shots detected"):
             circuit(0.3)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_warning_finite_shots_override(self):
         """Tests that a warning is raised when caching is used with finite shots."""
         dev = qml.device("default.qubit", wires=1, shots=5)
@@ -1373,7 +1366,6 @@ class TestShots:
             warnings.filterwarnings("error", message="Cached execution with finite shots detected")
             qml.jacobian(circuit, argnum=0)(0.3)
 
-    # pylint: disable=unexpected-keyword-arg
     @pytest.mark.parametrize(
         "shots, total_shots, shot_vector",
         [
@@ -1703,10 +1695,10 @@ class TestNewDeviceIntegration:
             PennyLaneDeprecationWarning,
             match="'shots' specified on call to a QNode is deprecated",
         ):
-            results = circuit(shots=10)  # pylint: disable=unexpected-keyword-arg
+            results = circuit(shots=10)
             assert qml.math.allclose(results, np.zeros((10, 2)))
 
-            results = circuit(shots=20)  # pylint: disable=unexpected-keyword-arg
+            results = circuit(shots=20)
             assert qml.math.allclose(results, np.zeros((20, 2)))
 
 
@@ -1861,7 +1853,6 @@ class TestTapeExpansion:
         """Test expansion of an unsupported operation on the device"""
         dev = qml.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qml.operation.Operation):
             """custom unsupported op."""
 
@@ -1894,7 +1885,6 @@ class TestTapeExpansion:
         not expanded"""
         dev = qml.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
         class UnsupportedOp(qml.operation.Operation):
             """custom unsupported op."""
 
@@ -1923,7 +1913,6 @@ class TestTapeExpansion:
         expanded when applying the gradient transform, but not for execution."""
         dev = qml.device("default.qubit", wires=1)
 
-        # pylint: disable=too-few-public-methods
         class PhaseShift(qml.PhaseShift):
             """custom phase shift."""
 
@@ -1971,7 +1960,6 @@ class TestTapeExpansion:
 def test_resets_after_execution_error():
     """Test that the interface is reset to ``"auto"`` if an error occurs during execution."""
 
-    # pylint: disable=too-few-public-methods
     class BadOp(qml.operation.Operator):
         """An operator that will cause an error during execution."""
 

@@ -24,8 +24,6 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import spsa_grad
 from pennylane.gradients.spsa_gradient import _rademacher_sampler
 
-# pylint:disable = use-implicit-booleaness-not-comparison,abstract-method
-
 
 def coordinate_sampler(indices, num_params, idx, rng=None):
     """Return a single canonical basis vector, corresponding
@@ -564,8 +562,6 @@ class TestSpsaGradient:
         class SpecialObservable(qml.operation.Operator):
             """SpecialObservable"""
 
-            # pylint:disable=too-few-public-methods
-
             def diagonalizing_gates(self):
                 """Diagonalizing gates"""
                 return []
@@ -573,7 +569,6 @@ class TestSpsaGradient:
         class DeviceSupportingSpecialObservable(DefaultQubitLegacy):
             """A device class supporting SpecialObservable."""
 
-            # pylint:disable=too-few-public-methods
             name = "Device supporting SpecialObservable"
             short_name = "default.qubit.specialobservable"
             observables = DefaultQubitLegacy.observables.union({"SpecialObservable"})

@@ -16,7 +16,7 @@ from functools import partial
 
 import numpy as np
 
-# pylint: disable=too-few-public-methods, protected-access, no-self-use
+# pylint: disable=no-self-use
 import pytest
 
 import pennylane as qml

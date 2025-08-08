@@ -269,7 +269,6 @@ class TestSnapshot:
         qml.assert_equal(target_mp, new_op.hyperparameters["measurement"])
         assert new_op.tag == "my tag"
 
-    # pylint: disable=unused-argument
     @pytest.mark.capture
     @pytest.mark.parametrize("measurement", (None, "state"))
     def test_capture_measurement(self, measurement):

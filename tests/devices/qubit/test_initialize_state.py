@@ -25,7 +25,6 @@ from pennylane.operation import StatePrepBase
 class TestInitializeState:
     """Test the functions in initialize_state.py"""
 
-    # pylint:disable=unused-argument,too-few-public-methods
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 

@@ -20,7 +20,7 @@ from itertools import permutations
 import pytest
 
 import pennylane as qml
-from pennylane.transforms.optimization.relative_phases import (  # pylint: disable=no-name-in-module
+from pennylane.transforms.optimization.relative_phases import (
     match_controlled_iX_gate,
     match_relative_phase_toffoli,
 )

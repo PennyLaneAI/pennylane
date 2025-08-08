@@ -50,7 +50,6 @@ def fourier_function(freq_dict, x):
 class TestExceptions:
     """Test that exceptions for ill-formatted inputs are raised."""
 
-    # pylint: disable=unused-argument
     def dummy_fn(self, *args, **kwargs):
         """Dummy function that returns None."""
 

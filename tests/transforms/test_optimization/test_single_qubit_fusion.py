@@ -26,8 +26,6 @@ from pennylane.wires import Wires
 class TestSingleQubitFusion:
     """Test that sequences of any single-qubit rotations are fully fused."""
 
-    # pylint:disable=too-many-function-args
-
     def test_single_qubit_full_fusion(self):
         """Test that a sequence of single-qubit gates all fuse."""
 

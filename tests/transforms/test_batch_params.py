@@ -239,7 +239,7 @@ def test_multi_returns():
 
 def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
-    # pylint:disable=not-an-iterable
+
     dev = qml.device("default.qubit", wires=3, shots=(100, (200, 3), 300))
 
     @qml.batch_params

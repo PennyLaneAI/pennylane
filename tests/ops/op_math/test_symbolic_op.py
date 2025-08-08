@@ -23,7 +23,7 @@ from pennylane.ops.op_math import ScalarSymbolicOp, SymbolicOp
 from pennylane.wires import Wires
 
 
-class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+class TempScalar(ScalarSymbolicOp):
     """Temporary scalar symbolic op class."""
 
     _name = "TempScalar"
@@ -33,7 +33,7 @@ class TempScalar(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
         pass
 
 
-class TempScalarCopy(ScalarSymbolicOp):  # pylint:disable=too-few-public-methods
+class TempScalarCopy(ScalarSymbolicOp):
     """Copy of temporary scalar symbolic op class."""
 
     _name = "TempScalarCopy"
@@ -75,7 +75,7 @@ def test_map_wires():
     """Test the map_wires method."""
     base = Operator("a")
     op = SymbolicOp(base, id="something")
-    # pylint:disable=attribute-defined-outside-init,protected-access
+    # pylint:disable=protected-access
     op._pauli_rep = qml.pauli.PauliSentence({qml.pauli.PauliWord({"a": "X"}): 1})
     wire_map = {"a": 5}
     mapped_op = op.map_wires(wire_map=wire_map)
@@ -89,8 +89,6 @@ def test_map_wires():
 
 class TestProperties:
     """Test the properties of the symbolic op."""
-
-    # pylint:disable=too-few-public-methods
 
     def test_data(self):
         """Test that the data property for symbolic ops allows for the getting
@@ -241,7 +239,7 @@ class TestScalarSymbolicOp:
         assert op.data == (2.2, 1.1)
 
         # check setting through ScalarSymbolicOp
-        op.data = (3.3, 4.4)  # pylint:disable=attribute-defined-outside-init
+        op.data = (3.3, 4.4)
         assert op.data == (3.3, 4.4)
         assert op.scalar == 3.3
         assert op.base.data == (4.4,)

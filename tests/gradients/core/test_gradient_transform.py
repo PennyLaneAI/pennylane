@@ -70,8 +70,6 @@ def test_repr():
 class TestGradAnalysis:
     """Tests for parameter gradient methods"""
 
-    # pylint: disable=protected-access
-
     def test_non_differentiable(self):
         """Test that a non-differentiable parameter is correctly marked"""
 
@@ -149,8 +147,6 @@ class TestGradAnalysis:
 
 class TestGradMethodValidation:
     """Test the helper function _grad_method_validation."""
-
-    # pylint: disable=protected-access
 
     @pytest.mark.parametrize("method", ["analytic", "best"])
     def test_with_nondiff_parameters(self, method):
@@ -366,7 +362,6 @@ class TestGradientTransformIntegration:
         dev = qml.device("default.qubit", wires=2)
         spy = mocker.spy(qml.gradients.parameter_shift, "expval_param_shift")
 
-        # pylint: disable=too-few-public-methods
         class NonDiffRXGate(qml.RX):
             """A non-differentiable gate that decomposes into RX."""
 
@@ -432,7 +427,7 @@ class TestGradientTransformIntegration:
         y = np.array([[0.2, 0.2], [0.3, 0.5]], requires_grad=True)
 
         expected = qml.jacobian(circuit)(x, y)
-        # pylint:disable=unexpected-keyword-arg
+
         res = qml.gradients.param_shift(circuit)(x, y)
         assert isinstance(res, tuple) and len(res) == 2
         assert all(np.allclose(_r, _e, atol=tol, rtol=0) for _r, _e in zip(res, expected))
@@ -632,7 +627,6 @@ class TestGradientTransformIntegration:
         expected = qml.jacobian(circuit)(weights)
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
-    # pylint: disable=unexpected-keyword-arg
     def test_setting_shots(self):
         """Test that setting the number of shots works correctly for
         a gradient transform"""

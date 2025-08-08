@@ -495,8 +495,6 @@ class PEnumerate(enumerate):
 
     def __init__(self, iterable, start=0):
 
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-        # pylint: disable=super-init-not-called
         # TODO: original enumerate constructor cannot be called as it causes some tests to break
         self.iteration_target = iterable
         self.start_idx = start

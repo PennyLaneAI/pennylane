@@ -15,8 +15,6 @@
 This submodule contains the adapter class for Qualtran-PennyLane interoperability.
 """
 
-# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-# pylint: disable=unused-argument
 
 from collections import defaultdict
 from functools import cached_property, singledispatch, wraps
@@ -51,6 +49,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
     Bloq = object
 
 
+# pylint: disable=unused-argument
 @singledispatch
 def _get_op_call_graph(op):
     """Return call graph for PennyLane Operator. If the call graph is not implemented,
@@ -1042,8 +1041,6 @@ class FromBloq(Operation):
         matrix = bloq.tensor_contract()
         return matrix.shape == (2 ** len(self.wires), 2 ** len(self.wires))
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=no-method-argument
     def compute_matrix(*params, **hyperparams):  # pylint: disable=no-self-argument
         bloq = hyperparams["bloq"]
         matrix = bloq.tensor_contract()
@@ -1149,7 +1146,7 @@ def _gather_input_soqs(bb: "qt.BloqBuilder", op_quregs, qreg_to_qvar):
     return qvars_in
 
 
-class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Bloq optionally)
+class ToBloq(Bloq):
     r"""
     An adapter to convert a PennyLane :class:`~.QNode`, ``Qfunc``, or :class:`~.Operation` to a
     `Qualtran Bloq <https://qualtran.readthedocs.io/en/latest/bloqs/index.html#bloqs-library>`__.
@@ -1225,7 +1222,7 @@ class ToBloq(Bloq):  # pylint:disable=useless-object-inheritance (Inherit qt.Blo
             num_wires = len(make_qscript(self.op)(**self._kwargs).wires)
         return qt.Signature([qt.Register("qubits", qt.QBit(), shape=num_wires)])
 
-    def decompose_bloq(self):  # pylint:disable=too-many-branches
+    def decompose_bloq(self):
         """Decompose the bloq using the op's decomposition or the tape of the QNode"""
         try:
             if isinstance(self.op, QNode):

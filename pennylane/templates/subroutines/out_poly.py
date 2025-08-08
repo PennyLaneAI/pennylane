@@ -505,7 +505,6 @@ def _out_poly_decomposition_resources(num_output_wires, num_work_wires, mod, coe
     return dict(resources)
 
 
-# pylint: disable=no-value-for-parameter
 @register_resources(_out_poly_decomposition_resources)
 def _out_poly_decomposition(
     polynomial_function,
@@ -514,7 +513,7 @@ def _out_poly_decomposition(
     mod=None,
     work_wires: WiresLike = (),
     **kwargs,
-):  # pylint: disable=unused-argument, arguments-differ
+):  # pylint: disable=unused-argument
     registers_wires = [*input_registers, output_wires]
 
     if len(work_wires) == 0:

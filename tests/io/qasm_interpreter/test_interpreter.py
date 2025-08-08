@@ -65,7 +65,7 @@ except (ModuleNotFoundError, ImportError) as import_error:
 
 
 @pytest.mark.external
-class TestBuiltIns:  # pylint: disable=too-few-public-methods
+class TestBuiltIns:
 
     VALID_BIT_TYPE_VAL = [
         ## Valid

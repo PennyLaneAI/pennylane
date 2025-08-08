@@ -57,7 +57,6 @@ class TestCurrentlyUnsupportedCases:
 def test_custom_operation():
     """Test execution works with a manually defined operator if it has a matrix."""
 
-    # pylint: disable=too-few-public-methods
     class MyOperator(qml.operation.Operator):
         num_wires = 1
 
@@ -71,7 +70,6 @@ def test_custom_operation():
     assert qml.math.allclose(result, -1.0)
 
 
-# pylint: disable=too-few-public-methods
 class TestSparsePipeline:
     """System tests for the sparse pipelines."""
 
@@ -234,7 +232,6 @@ class TestBasicCircuit:
         assert qml.math.allclose(g[0], -torch.cos(phi))
         assert qml.math.allclose(g[1], -torch.sin(phi))
 
-    # pylint: disable=invalid-unary-operand-type
     @pytest.mark.tf
     def test_tf_results_and_backprop(self):
         """Tests execution and gradients of a simple circuit with tensorflow."""
@@ -594,7 +591,6 @@ class TestDebugger:
             torch.tensor([torch.cos(phi / 2), -torch.sin(phi / 2) * 1j]),
         )
 
-    # pylint: disable=invalid-unary-operand-type
     @pytest.mark.tf
     def test_debugger_tf(self):
         """Tests debugger with tensorflow."""
@@ -1480,7 +1476,7 @@ class TestMidMeasurements:
     )
     def test_tree_traversal_interface_mcm(self, ml_framework, postselect_mode, seed):
         """Test that tree traversal works numerically with different interfaces"""
-        # pylint:disable = singleton-comparison, import-outside-toplevel
+        # pylint:disable = singleton-comparison
 
         qscript = qml.tape.QuantumScript(
             [

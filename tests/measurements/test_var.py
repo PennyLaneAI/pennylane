@@ -50,9 +50,7 @@ class TestVar:
 
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     @pytest.mark.parametrize("phi", np.arange(0, 2 * np.pi, np.pi / 3))
-    def test_observable_is_measurement_value(
-        self, shots, phi, tol, tol_stochastic
-    ):  # pylint: disable=too-many-arguments
+    def test_observable_is_measurement_value(self, shots, phi, tol, tol_stochastic):
         """Test that variances for mid-circuit measurement values
         are correct for a single measurement value."""
         dev = qml.device("default.qubit", wires=2, shots=shots)
@@ -144,7 +142,7 @@ class TestVar:
     def test_shape(self, obs):
         """Test that the shape is correct."""
         res = qml.var(obs)
-        # pylint: disable=use-implicit-booleaness-not-comparison
+
         assert res.shape(None, 1) == ()
         assert res.shape(100, 1) == ()
 

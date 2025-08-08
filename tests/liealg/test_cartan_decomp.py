@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/labs/dla/cartan.py functionality"""
-# pylint: disable=no-self-use,too-few-public-methods,missing-class-docstring
+# pylint: disable=no-self-use,missing-class-docstring
 import pytest
 
 import pennylane as qml

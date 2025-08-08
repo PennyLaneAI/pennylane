@@ -27,7 +27,7 @@ from pennylane.measurements import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=too-few-public-methods, unused-argument, protected-access
+# pylint: disable=protected-access
 
 
 class NotValidMeasurement(MeasurementProcess):

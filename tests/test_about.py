@@ -14,7 +14,7 @@
 """
 Unit tests for the :mod:`pennylane` configuration classe :class:`Configuration`.
 """
-# pylint: disable=protected-access
+
 
 import contextlib
 import io

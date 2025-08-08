@@ -260,7 +260,6 @@ class TestGrad:
         with pytest.raises(TypeError, match="only applies to real scalar-output functions"):
             grad_fn(arr1)
 
-    # pylint: disable=no-value-for-parameter
     def test_agrees_with_autograd(self, tol):
         """Test that the grad function agrees with autograd"""
 

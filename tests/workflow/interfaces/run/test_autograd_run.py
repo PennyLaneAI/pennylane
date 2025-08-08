@@ -86,7 +86,7 @@ class TestAutogradRun:
             res = qml.jacobian(lambda x: qml.math.hstack(cost(x)))(a)
         else:
             res = qml.jacobian(cost)(a)
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qml.math.sin(a)
 

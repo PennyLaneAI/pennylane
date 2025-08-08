@@ -195,9 +195,7 @@ class TestMultiplier:
     @pytest.mark.parametrize(
         ("k", "x_wire", "mod", "work_wires"), [(3, [1], 1, [2, 3, 4]), (3, [1], 2, [2, 3, 4])]
     )
-    def test_decomposition_new(
-        self, k, x_wire, mod, work_wires
-    ):  # pylint: disable=too-many-arguments
+    def test_decomposition_new(self, k, x_wire, mod, work_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qml.Multiplier(k, x_wire, mod, work_wires)
         for rule in qml.list_decomps(qml.Multiplier):

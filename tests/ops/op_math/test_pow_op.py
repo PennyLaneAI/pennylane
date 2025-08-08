@@ -25,7 +25,6 @@ from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
 
-# pylint: disable=too-few-public-methods
 class TempOperator(qml.operation.Operator):
     """Dummy operator"""
 
@@ -86,15 +85,14 @@ class TestConstructor:
         """Test that when the simplification method returns a list of multiple operators,
         pow returns a list of multiple operators."""
 
-        # pylint: disable=too-few-public-methods
         class Temp(qml.operation.Operator):
             num_wires = 1
 
-            def pow(self, z):  # pylint: disable=unused-argument
+            def pow(self, z):
                 return [qml.S(0), qml.T(0)]
 
         new_op = qml.pow(Temp(0), 2, lazy=False)
-        assert isinstance(new_op, qml.ops.Prod)  # pylint:disable=no-member
+        assert isinstance(new_op, qml.ops.Prod)
         qml.assert_equal(new_op.operands[0], qml.S(0))
         qml.assert_equal(new_op.operands[1], qml.T(0))
 
@@ -199,7 +197,7 @@ class TestInitialization:
         """Test pow initialization for a template."""
         rng = np.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
-        params = rng.random(shape)  # pylint:disable=no-member
+        params = rng.random(shape)
 
         base = qml.StronglyEntanglingLayers(params, wires=[0, 1])
         op: Pow = power_method(base=base, z=2.67)
@@ -218,7 +216,6 @@ class TestInitialization:
         assert op.num_wires == 2
 
 
-# pylint: disable=too-many-public-methods
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestProperties:
     """Test Pow properties."""
@@ -445,7 +442,7 @@ class TestSimplify:
 
     def test_depth_property(self):
         """Test depth property."""
-        pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)  # pylint:disable=no-member
+        pow_op = Pow(base=qml.ops.Adjoint(qml.PauliX(0)), z=2)
         assert pow_op.arithmetic_depth == 2
 
     def test_simplify_nested_pow_ops(self):

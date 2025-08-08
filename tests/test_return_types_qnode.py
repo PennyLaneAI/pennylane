@@ -1312,7 +1312,7 @@ class TestIntegrationMultipleReturns:
 
         def circuit(x):
             func(x)
-            # pylint:disable=unexpected-keyword-arg
+
             return [
                 qml.expval(obs(wires=i) if device != "default.qutrit" else obs(wires=i, index=3))
                 for i in range(0, wires)

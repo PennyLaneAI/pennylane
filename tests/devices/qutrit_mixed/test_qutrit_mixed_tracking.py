@@ -177,8 +177,6 @@ shot_testing_combos = [
 class TestExecuteTracker:
     """Test that tracker tracks default qutrit mixed execute number of shots"""
 
-    # pylint: disable=too-few-public-methods
-
     @pytest.mark.parametrize("mps, expected_exec, expected_shots", shot_testing_combos)
     def test_single_expval(self, mps, expected_exec, expected_shots):
         """Test tracker tracks default qutrit mixed execute number of shots for single measurements"""

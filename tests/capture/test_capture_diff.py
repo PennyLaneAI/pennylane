@@ -284,7 +284,7 @@ class TestGrad:
     @pytest.mark.parametrize("argnum", ([0, 1, 2], [0, 2], [1], 0))
     def test_grad_qnode_with_pytrees(self, argnum):
         """Test capturing the gradient of a qnode that uses Pytrees."""
-        # pylint: disable=protected-access
+
         fdtype = jax.numpy.float64 if jax.config.jax_enable_x64 else jax.numpy.float32
 
         dev = qml.device("default.qubit", wires=2)
@@ -437,7 +437,7 @@ class TestJacobian:
                  |
                  | (2 prod(x)/x_i * cos(x) e_i - prod(x) sin(x) e_i e_i, 2)  for i = j
         """
-        # pylint: disable=too-many-statements
+
         fdtype = jnp.float64 if jax.config.jax_enable_x64 else jnp.float32
 
         def func(x):

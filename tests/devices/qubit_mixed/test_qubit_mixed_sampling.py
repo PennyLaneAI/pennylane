@@ -14,7 +14,7 @@
 # limitations under the License.
 """Unit tests for sampling states in devices/qubit_mixed."""
 
-# pylint: disable=unused-argument,too-many-arguments, import-outside-toplevel
+# pylint: disable=import-outside-toplevel
 
 import numpy as np
 import pytest

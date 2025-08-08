@@ -1902,7 +1902,6 @@ class TestCycles:
     def test_out_flow_constraint_raises(self):
         """Test the out-flow constraint function may raise an error."""
 
-        # pylint: disable=super-init-not-called
         class OtherDirectedGraph(nx.DiGraph):
             def __init__(self, *args, **kwargs):
                 pass
@@ -2029,7 +2028,6 @@ class TestCycles:
     def test_net_flow_constraint_undirected_raises_error(self):
         """Test the net-flow constraint function may raise an error."""
 
-        # pylint: disable=super-init-not-called
         class OtherDirectedGraph(nx.DiGraph):
             def __init__(self, *args, **kwargs):
                 pass

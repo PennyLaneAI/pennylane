@@ -346,7 +346,6 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
     def error(
         self, method: str = "commutator-bound", fast: bool = True
     ):  # pylint: disable=arguments-differ
-        # pylint: disable=protected-access
         r"""Compute an *upper-bound* on the spectral norm error for approximating the
         time-evolution of the base Hamiltonian using the Suzuki-Trotter product formula.
 

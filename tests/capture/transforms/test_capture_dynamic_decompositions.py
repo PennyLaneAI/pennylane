@@ -14,7 +14,7 @@
 """Unit tests for the ``DecomposeInterpreter`` class with dynamic decompositions."""
 import numpy as np
 
-# pylint:disable=protected-access,unused-argument, wrong-import-position, no-value-for-parameter, too-few-public-methods, wrong-import-order, too-many-arguments
+# pylint:disable=protected-access,unused-argument,wrong-import-position,no-value-for-parameter,wrong-import-order,too-many-arguments
 import pytest
 
 import pennylane as qml
@@ -276,7 +276,6 @@ class CustomOpForLoop(Operation):
             qml.RX(phi, wires)
             return jax.numpy.sin(phi)
 
-        # pylint: disable=unused-variable
         loop_rx(phi)
 
 
@@ -330,7 +329,6 @@ class CustomOpNestedCond(Operation):
                 qml.RX(phi, wires)
                 return jax.numpy.sin(phi)
 
-            # pylint: disable=unused-variable
             loop_rx(phi)
 
         def false_fn(phi, wires):
@@ -427,7 +425,6 @@ class CustomOpNestedOpControlFlow(Operation):
                 CustomOpNestedOp(phi, wires)
                 return jax.numpy.sin(phi)
 
-            # pylint: disable=unused-variable
             loop_rx(phi)
 
         def false_fn(phi, wires):
@@ -708,7 +705,6 @@ class TestDynamicDecomposeInterpreter:
                 qml.RX(phi, wires=wire)
                 return jax.numpy.sin(phi)
 
-            # pylint: disable=unused-variable
             loop_rx(x)
 
             return qml.expval(qml.Z(wires=wire))
@@ -788,7 +784,6 @@ class TestDynamicDecomposeInterpreter:
                     qml.RX(phi, wires=wire)
                     return jax.numpy.sin(phi)
 
-                # pylint: disable=unused-variable
                 loop_rx(x)
 
             def false_fn(x, wire):

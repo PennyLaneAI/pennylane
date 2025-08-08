@@ -15,7 +15,7 @@
 """PyTests for the AutoGraph source-to-source transformation feature for
 converting if/else statements to qml.cond."""
 
-# pylint: disable=wrong-import-order, wrong-import-position, ungrouped-imports
+# pylint: disable=wrong-import-order,wrong-import-position
 
 import numpy as np
 import pytest
@@ -30,6 +30,7 @@ jax = pytest.importorskip("jax")
 # must be below jax importorskip
 from jax.core import eval_jaxpr
 
+# pylint: disable = ungrouped-imports
 from pennylane.capture.autograph.transformer import TRANSFORMER, run_autograph
 from pennylane.exceptions import AutoGraphError
 
@@ -145,7 +146,6 @@ class TestConditionals:
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
-        # pylint: disable=singleton-comparison
         assert res(3) == 0
         assert res(6) == 1
 
@@ -170,7 +170,6 @@ class TestConditionals:
         def res(x):
             return eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)[0]
 
-        # pylint: disable=singleton-comparison
         assert res(5) == 25
         assert res(2) == 8
 
@@ -230,7 +229,6 @@ class TestConditionals:
             def cond_fn():
                 return n**2
 
-            # pylint: disable=unused-variable
             @cond_fn.otherwise
             def else_fn():
                 return n

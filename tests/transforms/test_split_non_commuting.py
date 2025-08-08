@@ -194,7 +194,7 @@ class TestSplitNonCommuting:
     ):
         """Tests that precomputed grouping of a single Hamiltonian is used."""
 
-        H.grouping_indices = grouping_indices  # pylint: disable=protected-access
+        H.grouping_indices = grouping_indices
         initial_tape = qml.tape.QuantumScript([qml.X(0)], [qml.expval(H)], shots=100)
         tapes, fn = split_non_commuting(initial_tape)
         assert len(tapes) == len(grouping_indices)

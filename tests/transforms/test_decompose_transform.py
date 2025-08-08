@@ -24,7 +24,6 @@ from pennylane.operation import Operation
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
 # pylint: disable=unnecessary-lambda-assignment
-# pylint: disable=too-few-public-methods
 
 
 @pytest.fixture(autouse=True)

@@ -470,7 +470,6 @@ class TestIntegerComparator:
         tape2 = qml.tape.QuantumScript.from_queue(q2)
         assert all(isinstance(op, qml.Identity) for op in tape2.operations)
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_power(self):
         """Test ``pow`` method."""
         op = qml.IntegerComparator(3, wires=[0, 1, 2, 3])

@@ -243,8 +243,6 @@ class CondCallable:
         for pred, branch_fn in zip(self.preds, self.branch_fns):
             if pred:
                 return branch_fn(*args, **kwargs)
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-        # pylint: disable=not-callable
         return self.false_fn(*args, **kwargs)
 
     def __call_capture_enabled(self, *args, **kwargs):
@@ -716,7 +714,7 @@ def _validate_abstract_values(
     for i, (outval, expected_outval) in enumerate(zip(outvals, expected_outvals)):
         if jax.config.jax_dynamic_shapes:
             # we need to be a bit more manual with the comparison.
-            if type(outval) != type(expected_outval):  # pylint: disable=unidiomatic-typecheck
+            if type(outval) != type(expected_outval):
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
             if getattr(outval, "dtype", None) != getattr(expected_outval, "dtype", None):
                 _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)

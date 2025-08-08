@@ -20,7 +20,7 @@ import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import GateCount
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments,too-many-positional-arguments
+# pylint: disable=no-self-use
 
 
 class TestResourceCH:
@@ -960,9 +960,7 @@ class TestResourceControlledPhaseShift:
         """Test the resource parameters"""
 
         op = re.ResourceControlledPhaseShift()
-        assert op.resource_params == {
-            "eps": None
-        }  # pylint: disable=use-implicit-booleaness-not-comparison
+        assert op.resource_params == {"eps": None}
 
     def test_resource_rep(self):
         """Test the compressed representation"""

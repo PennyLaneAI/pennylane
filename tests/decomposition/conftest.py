@@ -14,7 +14,6 @@
 
 """A fixed set of decomposition rules for testing purposes."""
 
-# pylint: disable=too-few-public-methods,protected-access
 
 from collections import defaultdict
 

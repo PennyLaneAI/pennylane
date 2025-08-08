@@ -36,7 +36,7 @@ def test_default_execution_config_deprecation():
         UserWarning,
         match="`pennylane.devices.execution_config.DefaultExecutionConfig` is deprecated and will be removed in v0.44.",
     ):
-        from pennylane.devices.execution_config import (  # pylint: disable=unused-import, import-outside-toplevel, no-name-in-module
+        from pennylane.devices.execution_config import (  # pylint: disable=import-outside-toplevel,no-name-in-module
             DefaultExecutionConfig,
         )
 

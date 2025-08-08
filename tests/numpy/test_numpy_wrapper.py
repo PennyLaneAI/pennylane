@@ -34,7 +34,7 @@ class TestExtractTensors:
     def test_empty_iterable(self):
         """Test that an empty iterable returns nothing"""
         res = list(np.extract_tensors([]))
-        # pylint: disable=use-implicit-booleaness-not-comparison
+
         assert res == []
 
     def test_iterable_with_strings(self):

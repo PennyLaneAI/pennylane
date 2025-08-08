@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for executing circuits with mid-circuit measurements"""
-# pylint:disable=wrong-import-position, protected-access
+# pylint:disable=wrong-import-position
 import pytest
 
 import pennylane as qml
@@ -241,7 +241,6 @@ class TestExecutionAnalytic:
             assert qml.math.allclose(r, e)
 
 
-# pylint: disable=too-few-public-methods
 @pytest.mark.slow
 class TestExecutionFiniteShots:
     """Tests for executing circuits with finite shots."""

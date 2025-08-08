@@ -170,7 +170,7 @@ class TestPauliGroupingStrategy:
 
         # compute observable and custom indices partitions
         observables_partitioned = groupper.partition_observables()
-        # pylint: disable=protected-access
+
         indices_partitioned = groupper.idx_partitions_from_graph(observables_indices=custom_indices)
         for group_obs, group_custom_indices in zip(observables_partitioned, indices_partitioned):
             for i, custom_idx in enumerate(group_custom_indices):

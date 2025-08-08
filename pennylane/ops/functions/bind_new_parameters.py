@@ -14,7 +14,7 @@
 """
 This module contains the qml.bind_new_parameters function.
 """
-# pylint: disable=missing-docstring
+# pylint: disable = missing-function-docstring
 
 import copy
 from collections.abc import Sequence

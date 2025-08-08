@@ -148,7 +148,6 @@ class ExecutionConfig:
             object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
 
 
-# pylint: disable=missing-function-docstring, inconsistent-return-statements
 def __getattr__(name):
     if name == "DefaultExecutionConfig":
         # pylint: disable=import-outside-toplevel

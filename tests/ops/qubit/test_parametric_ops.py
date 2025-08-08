@@ -2390,7 +2390,6 @@ class TestGrad:
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
-        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
@@ -2433,7 +2432,6 @@ class TestGrad:
 
         phi = tf.Variable(phi, dtype=tf.complex128)
 
-        # pylint:disable=invalid-unary-operand-type
         expected = (
             0.5
             * (1 / norm**2)
@@ -4066,7 +4064,6 @@ class TestParametricPow:
         assert qml.math.allclose(qml.math.linalg.matrix_power(op_mat, n), pow_mat)
 
 
-# pylint:disable = use-implicit-booleaness-not-comparison
 def test_diagonalization_static_global_phase():
     """Test the static compute_diagonalizing_gates method for the GlobalPhase operation."""
     assert qml.GlobalPhase.compute_diagonalizing_gates(0.123, wires=1) == []

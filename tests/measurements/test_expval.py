@@ -213,7 +213,7 @@ class TestExpval:
         """Test that the shape is correct."""
 
         res = qml.expval(obs)
-        # pylint: disable=use-implicit-booleaness-not-comparison
+
         assert res.shape(None, 1) == ()
         assert res.shape(100, 1) == ()
 

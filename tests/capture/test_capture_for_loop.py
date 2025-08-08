@@ -15,7 +15,7 @@
 Tests for capturing for loops into jaxpr.
 """
 
-# pylint: disable=no-value-for-parameter, too-few-public-methods, no-self-use
+# pylint: disable=no-value-for-parameter,no-self-use
 # pylint: disable=too-many-positional-arguments, too-many-arguments
 
 import numpy as np
@@ -239,7 +239,6 @@ class TestCaptureForLoop:
 @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
 class TestDynamicShapes:
 
-    # pylint: disable=unused-argument
     def test_dynamic_shape_input(self):
         """Test that the for loop can accept inputs with dynamic shapes."""
 

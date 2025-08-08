@@ -14,7 +14,7 @@
 """Integration tests for using the JAX-JIT interface with a QNode"""
 
 
-# pylint: disable=too-many-arguments,too-few-public-methods,protected-access
+# pylint: disable=too-many-arguments
 import pytest
 from param_shift_dev import ParamShiftDerivativesDevice
 
@@ -828,8 +828,8 @@ class TestShotsIntegration:
             circuit(a, b)
 
         # execute with shots=100
-        res = qml.set_shots(shots=100)(circuit)(a, b)  # pylint: disable=unexpected-keyword-arg
-        assert res.shape == (100, 2)  # pylint:disable=comparison-with-callable
+        res = qml.set_shots(shots=100)(circuit)(a, b)
+        assert res.shape == (100, 2)
 
     def test_gradient_integration(self, interface):
         """Test that temporarily setting the shots works
@@ -852,7 +852,7 @@ class TestShotsIntegration:
 
     def test_update_diff_method(self, interface):
         """Test that temporarily setting the shots updates the diff method"""
-        # pylint: disable=unused-argument
+
         a, b = jax.numpy.array([0.543, -0.654])
 
         dev = DefaultQubit()
@@ -935,6 +935,7 @@ class TestShotsIntegration:
         # Test return shapes for shot vectors
         assert isinstance(res, tuple)
         assert len(res) == 2  # Two different shot counts
+        # pylint: disable=not-an-iterable
         assert all(isinstance(r, jax.numpy.ndarray) for r in res)
         assert all(r.shape == () for r in res)  # Scalar outputs
 
@@ -2104,7 +2105,6 @@ class TestJIT:
         assert np.allclose(g0, expected_g[0][idx], atol=tol, rtol=0)
         assert np.allclose(g1, expected_g[1][idx], atol=tol, rtol=0)
 
-    # pylint: disable=unused-argument
     def test_matrix_parameter(
         self, dev_name, diff_method, grad_on_execution, device_vjp, jacobian, tol, interface, seed
     ):
@@ -2119,7 +2119,6 @@ class TestJIT:
         if jacobian == jax.jacfwd and device_vjp:
             pytest.skip("device vjps are not compatible with forward differentiation.")
 
-        # pylint: disable=unused-argument
         @qml.qnode(
             get_device(dev_name, wires=1, seed=seed),
             diff_method=diff_method,

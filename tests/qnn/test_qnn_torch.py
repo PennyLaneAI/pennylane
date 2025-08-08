@@ -768,7 +768,7 @@ def test_vjp_is_unwrapped_for_param_shift():
 
     device = qml.device("default.qubit", wires=nqubits)
 
-    class DummyOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+    class DummyOp(qml.operation.Operation):
         """Dummy operation."""
 
         num_wires = 1

@@ -322,8 +322,6 @@ class Adjoint(SymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0])
 
-    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-    # pylint: disable=unused-argument
     def __new__(cls, base=None, id=None):
         """Returns an uninitialized type with the necessary mixins.
 

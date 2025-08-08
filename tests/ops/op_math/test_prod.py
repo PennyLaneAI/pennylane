@@ -120,7 +120,7 @@ def compare_and_expand_mat(mat1, mat2):
     return smaller_mat, larger_mat
 
 
-class MyOp(qml.RX):  # pylint:disable=too-few-public-methods
+class MyOp(qml.RX):
     """Variant of qml.RX that claims to not have `adjoint` or a matrix defined."""
 
     has_matrix = False
@@ -881,7 +881,7 @@ class TestMatrix:
         """Test that an error is raised when the sparse matrix method
         is undefined for any of the factors."""
 
-        class DummyOp(qml.operation.Operation):  # pylint:disable=too-few-public-methods
+        class DummyOp(qml.operation.Operation):
             num_wires = 1
 
             def sparse_matrix(self, wire_order=None):
@@ -905,7 +905,7 @@ class TestProperties:
     @pytest.mark.tf
     def test_is_hermitian_tf(self):
         """Test that is_hermitian works when a tf type scalar is provided."""
-        # pylint:disable=invalid-unary-operand-type
+
         import tensorflow as tf
 
         theta = tf.Variable(1.23)
@@ -957,7 +957,7 @@ class TestProperties:
     def test_queue_category_none(self):
         """Test _queue_category property is None when any factor is not `_ops`."""
 
-        class DummyOp(Operator):  # pylint:disable=too-few-public-methods
+        class DummyOp(Operator):
             """Dummy op with None queue category"""
 
             _queue_category = None
@@ -1038,7 +1038,6 @@ class TestProperties:
 
         assert qml.math.allclose(op.eigvals(), op2.eigvals())
 
-    # pylint: disable=use-implicit-booleaness-not-comparison
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_prod_op = Prod(qml.PauliZ(wires=0), qml.PauliZ(wires=1))

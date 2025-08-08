@@ -238,7 +238,7 @@ class TestTorchExecuteIntegration:
 
         res = torch.autograd.functional.jacobian(cost, a)
         if not shots.has_partitioned_shots:
-            assert res.shape == ()  # pylint: disable=no-member
+            assert res.shape == ()
 
         expected = -qml.math.sin(a)
 
@@ -394,7 +394,7 @@ class TestTorchExecuteIntegration:
 
         jac = torch.autograd.functional.jacobian(cost, params)
         assert isinstance(jac, torch.Tensor)
-        assert jac.shape == (4, 2)  # pylint: disable=no-member
+        assert jac.shape == (4, 2)
 
         assert torch.allclose(jac[1:3], torch.tensor(0.0), atol=atol_for_shots(shots))
 

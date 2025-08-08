@@ -19,7 +19,7 @@ from itertools import product
 from pennylane import math
 from pennylane.operation import CVOperation
 
-# pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+# pylint: disable=too-many-branches,too-many-arguments
 from pennylane.ops import Beamsplitter, Rotation
 from pennylane.wires import Wires
 

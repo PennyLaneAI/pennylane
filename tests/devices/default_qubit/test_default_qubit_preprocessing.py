@@ -38,7 +38,6 @@ class NoMatOp(qml.operation.Operation):
         return [qml.PauliX(self.wires), qml.PauliY(self.wires)]
 
 
-# pylint: disable=too-few-public-methods
 class NoMatNoDecompOp(qml.operation.Operation):
     """Dummy operation for checking check_validity throws error when
     expected."""
@@ -49,17 +48,15 @@ class NoMatNoDecompOp(qml.operation.Operation):
         return False
 
 
-# pylint: disable=too-few-public-methods
 class HasDiagonalizingGatesOp(qml.operation.Operator):
     """Dummy observable that has diagonalizing gates."""
 
-    # pylint: disable=arguments-renamed,invalid-overridden-method,no-self-argument
+    # pylint: disable=no-self-argument
     @classproperty
     def has_diagonalizing_gates(cls):
         return True
 
 
-# pylint: disable=too-few-public-methods
 class CustomizedSparseOp(qml.operation.Operator):
 
     def __init__(self, wires):
@@ -202,7 +199,6 @@ class TestConfigSetup:
         assert processed.mcm_config.mcm_method == "tree-traversal"
 
 
-# pylint: disable=too-few-public-methods
 class TestPreprocessing:
     """Unit tests for the preprocessing method."""
 
@@ -699,13 +695,11 @@ class TestPreprocessingIntegration:
     def test_preprocess_single_circuit(self, max_workers):
         """Test integration between preprocessing and execution with numpy parameters."""
 
-        # pylint: disable=too-few-public-methods
         class MyTemplate(qml.operation.Operation):
             """Temp operator."""
 
             num_wires = 2
 
-            # pylint: disable=missing-function-docstring
             def decomposition(self):
                 return [
                     qml.RX(self.data[0], self.wires[0]),
@@ -749,13 +743,11 @@ class TestPreprocessingIntegration:
     def test_preprocess_batch_circuit(self, max_workers):
         """Test preprocess integrates with default qubit when we start with a batch of circuits."""
 
-        # pylint: disable=too-few-public-methods
         class CustomIsingXX(qml.operation.Operation):
             """Temp operator."""
 
             num_wires = 2
 
-            # pylint: disable=missing-function-docstring
             def decomposition(self):
                 return [qml.IsingXX(self.data[0], self.wires)]
 

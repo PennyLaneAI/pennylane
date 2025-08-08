@@ -36,8 +36,6 @@ from pennylane.qchem.vibrational.taylor_ham import (
     taylor_hamiltonian,
 )
 from pennylane.qchem.vibrational.vibrational_class import VibrationalPES
-
-# pylint: disable=no-name-in-module
 from tests.qchem.vibrational.test_ref_files.pes_object import (
     expected_coeffs_x_arr,
     expected_coeffs_y_arr,
