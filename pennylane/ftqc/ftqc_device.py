@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 Contains an implementation of a PennyLane frontend (Device) for an FTQC/MBQC based
-hardware device (or emulator)
+device
 """
 from dataclasses import replace
 from pathlib import Path
