@@ -741,7 +741,9 @@ def _coerce_types_torch(tensors):
         ]
     else:
         device = device_set.pop()
-        tensors = [torch.as_tensor(t, device=device) for t in tensors]
+        dev_id = dev_indices.pop() if dev_indices else None
+        torch_device = torch.device(f"{device}:{dev_id}" if dev_id is not None else device)
+        tensors = [torch.as_tensor(t, device=torch_device) for t in tensors]
 
     dtypes = {i.dtype for i in tensors}
 
