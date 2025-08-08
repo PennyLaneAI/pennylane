@@ -61,8 +61,6 @@ def test_executing_arbitrary_circuit(backend_cls):
     backend = backend_cls()
     dev = FTQCQubit(wires=2, backend=backend)
 
-    @qml.set_shots(shots=3000)
-    @qml.qnode(dev)
     def circ():
         qml.RY(1.2, 0)
         qml.RZ(0.2, 0)

@@ -21,8 +21,6 @@ import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
 
-import numpy as np
-
 import pennylane as qml
 from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
@@ -651,7 +649,7 @@ def measurements_from_samples(tape):
 
         # if we stop squeezing out the extra dimension for shots=1 or wires=1 when sampling (as is
         # already the case in Catalyst), this problem goes away
-        if len(np.array(samples).shape) == 1:
+        if len(samples.shape) == 1:
             samples = qml.math.array([[s] for s in samples], like=samples)
         return samples
 

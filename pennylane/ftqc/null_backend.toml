@@ -59,7 +59,7 @@ runtime_code_generation = false
 supported_mcm_methods = [ "device" ]
 
 # Whether the device supports dynamic qubit allocation/deallocation.
-dynamic_qubit_management = false
+dynamic_qubit_management = true
 
 # Whether simultaneous measurements of non-commuting observables is supported.
 non_commuting_observables = false

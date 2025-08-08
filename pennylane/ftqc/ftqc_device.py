@@ -49,7 +49,7 @@ class FTQCQubit(Device):
     name = "ftqc.qubit"
     config_filepath = Path(__file__).parent / "ftqc_device.toml"
 
-    def __init__(self, wires=None, backend=None):
+    def __init__(self, wires, backend):
         if backend is None:
             raise RuntimeError
 
@@ -121,6 +121,8 @@ class FTQCQubit(Device):
 
         # get mcm method - "device" if its an option, otherwise "one-shot"
         default_mcm_method = _default_mcm_method(self.backend.capabilities, shots_present=True)
+        assert default_mcm_method in ["device", "one-shot"]
+
         new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
         config = replace(config, mcm_config=new_mcm_config)
         validate_mcm_method(
