@@ -28,6 +28,7 @@ try:
     from xdsl.context import Context
     from xdsl.dialects import test
     from xdsl.passes import PassPipeline
+    from xdsl.printer import Printer
 
     from pennylane.compiler.python_compiler import Compiler
     from pennylane.compiler.python_compiler.jax_utils import (
@@ -38,7 +39,7 @@ except (ImportError, ModuleNotFoundError):
     deps_available = False
 
 
-def _run_filecheck_impl(program_str, pipeline=()):
+def _run_filecheck_impl(program_str, pipeline=(), roundtrip=False):
     """Run filecheck on an xDSL module, comparing it to a program string containing
     filecheck directives."""
     if not deps_available:
@@ -47,13 +48,23 @@ def _run_filecheck_impl(program_str, pipeline=()):
     ctx = Context(allow_unregistered=True)
     xdsl_module = QuantumParser(ctx, program_str, extra_dialects=(test.Test,)).parse_module()
 
+    if roundtrip:
+        # Print generic format
+        stream = StringIO()
+        Printer(stream=stream, print_generic_format=True).print_op(xdsl_module)
+        xdsl_module = QuantumParser(
+            ctx, stream.getvalue(), extra_dialects=(test.Test,)
+        ).parse_module()
+
     pipeline = PassPipeline(pipeline)
     pipeline.apply(ctx, xdsl_module)
 
+    stream = StringIO()
+    Printer(stream).print_op(xdsl_module)
     opts = parse_argv_options(["filecheck", __file__])
     matcher = Matcher(
         opts,
-        FInput("no-name", str(xdsl_module)),
+        FInput("no-name", stream.getvalue()),
         Parser(opts, StringIO(program_str), *pattern_for_opts(opts)),
     )
 

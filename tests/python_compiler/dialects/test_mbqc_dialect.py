@@ -92,7 +92,7 @@ def test_assembly_format(run_filecheck):
     %res:2 = "mbqc.measure_in_basis"(%qubit, %angle) <{plane = #mbqc<measurement_plane XY>, postselect = 0 : i32}> : (!quantum.bit, f64) -> (i1, !quantum.bit)
     """
 
-    run_filecheck(program)
+    run_filecheck(program, roundtrip=True)
 
 
 class TestMeasureInBasisOp:
