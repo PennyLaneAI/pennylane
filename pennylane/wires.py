@@ -207,13 +207,16 @@ class Wires(Sequence):
         other = Wires(other)
         return Wires.all_wires([other, self])
 
-    def __array__(self):
+    def __array__(self, dtype=None):
         """Defines a numpy array representation of the Wires object.
+
+        Args:
+            dtype Optional[Any]: the dtype of the array
 
         Returns:
             ndarray: array representing Wires object
         """
-        return np.array(self._labels)
+        return np.array(self._labels, dtype=dtype)
 
     def __jax_array__(self):
         """Defines a JAX numpy array representation of the Wires object.
