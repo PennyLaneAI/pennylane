@@ -163,4 +163,4 @@ def __getattr__(name):
             stacklevel=2,
         )
         return ExecutionConfig()
-    raise AttributeError(f"module 'pennylane.devices.exeuction_config' has no attribute '{name}'")
+    raise AttributeError(f"module 'pennylane.devices.execution_config' has no attribute '{name}'")
