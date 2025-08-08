@@ -188,7 +188,8 @@ def _add_left_elbow(
 
 
 def _add_right_elbow(obj: TemporaryAND, layer_str, config):
-    """Updates ``layer_str`` with a right elbow."""
+    """Updates ``layer_str`` with ``op`` operation of type ``Adjoint(TemporaryAND)``,
+    also known as right elbow."""
     layer_str, mapped_wires = _add_elbow_core(obj, layer_str, config)
     # Fill with "─" on intermediate wires the elbow does not act on, to shift "|" correctly
     for w in range(min(mapped_wires) + 1, max(mapped_wires)):
