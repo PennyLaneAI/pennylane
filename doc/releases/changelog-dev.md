@@ -320,6 +320,10 @@
 
 <h3>Deprecations 👋</h3>
 
+* `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
+  Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
+  [(#7987)](https://github.com/PennyLaneAI/pennylane/pull/7987)
+
 * Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
   ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
