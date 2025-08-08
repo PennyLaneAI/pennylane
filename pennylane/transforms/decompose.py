@@ -849,7 +849,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
         decomp = decomposed_ops.queue
         current_depth += 1
         if num_available_work_wires is not None:
-            num_available_work_wires -= op_rule.work_wire_spec(**op.resource_params).total
+            num_available_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
     else:
         decomp = op.decomposition()
         current_depth += 1

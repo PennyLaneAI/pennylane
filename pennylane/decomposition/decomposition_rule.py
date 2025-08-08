@@ -407,7 +407,7 @@ class DecompositionRule:
             return True
         return self._condition(*args, **kwargs)
 
-    def work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
+    def get_work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
         """Gets the work wire requirements of this decomposition rule"""
         if isinstance(self._work_wire_spec, dict):
             return WorkWireSpec(**self._work_wire_spec)
