@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Contains the :class:`ExecutionConfig` data class.
+Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
 from dataclasses import dataclass, field
-from typing import Optional, Union
+from typing import Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.concurrency.executors.base import RemoteExec
@@ -23,24 +23,26 @@ from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
 
-@dataclass
+@dataclass(frozen=True)
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: Optional[str] = None
+    mcm_method: (
+        Literal["deferred", "one-shot", "tree-traversal", "single-branch-statistics"] | str | None
+    ) = None
     """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
     the device will decide which method to use."""
 
-    postselect_mode: Optional[str] = None
+    postselect_mode: Literal["hw-like", "fill-shots", "pad-invalid-samples"] | str | None = None
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
     discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
     will be of the same size as the original number of shots. If not specified, the device will
     decide which mode to use. Note that internally ``"pad-invalid-samples"`` is used internally
-    instead of ``"hw-like"`` when using jax/catalyst"""
+    instead of ``"hw-like"`` when using jax/catalyst."""
 
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
@@ -49,7 +51,7 @@ class MCMConfig:
 
 
 # pylint: disable=too-many-instance-attributes
-@dataclass
+@dataclass(frozen=True)
 class ExecutionConfig:
     """
     A class to configure the execution of a quantum circuit on a device.
@@ -57,13 +59,13 @@ class ExecutionConfig:
     See the Attributes section to learn more about the various configurable options.
     """
 
-    grad_on_execution: Optional[bool] = None
+    grad_on_execution: bool | None = None
     """Whether or not to compute the gradient at the same time as the execution.
 
     If ``None``, then the device or execution pipeline can decide which one is most efficient for the situation.
     """
 
-    use_device_gradient: Optional[bool] = None
+    use_device_gradient: bool | None = None
     """Whether or not to compute the gradient on the device.
 
     ``None`` indicates to use the device if possible, but to fall back to pennylane behaviour if it isn't.
@@ -71,7 +73,7 @@ class ExecutionConfig:
     True indicates a request to either use the device gradient or fail.
     """
 
-    use_device_jacobian_product: Optional[bool] = None
+    use_device_jacobian_product: bool | None = None
     """Whether or not to use the device provided vjp or jvp to compute gradients.
 
     ``None`` indicates to use the device if possible, but to fall back to the device Jacobian
@@ -80,13 +82,13 @@ class ExecutionConfig:
     ``True`` indicates to either use the device Jacobian products or fail.
     """
 
-    gradient_method: Optional[Union[str, TransformDispatcher]] = None
+    gradient_method: str | TransformDispatcher | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: Optional[dict] = None
+    gradient_keyword_arguments: dict | None = None
     """Arguments used to control a gradient transform"""
 
-    device_options: Optional[dict] = None
+    device_options: dict | None = None
     """Various options for the device executing a quantum circuit"""
 
     interface: Interface = Interface.NUMPY
@@ -95,7 +97,7 @@ class ExecutionConfig:
     derivative_order: int = 1
     """The derivative order to compute while evaluating a gradient"""
 
-    mcm_config: MCMConfig = field(default_factory=MCMConfig)
+    mcm_config: MCMConfig | dict = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
 
     convert_to_numpy: bool = True
@@ -105,7 +107,7 @@ class ExecutionConfig:
     execution itself will be jitted.
     """
 
-    executor_backend: Optional[RemoteExec] = None
+    executor_backend: RemoteExec | None = None
     """
     Defines the class for the executor backend.
     """
@@ -116,7 +118,7 @@ class ExecutionConfig:
 
         Note that this hook is automatically called after init via the dataclass integration.
         """
-        self.interface = get_canonical_interface_name(self.interface)
+        object.__setattr__(self, "interface", get_canonical_interface_name(self.interface))
 
         if self.grad_on_execution not in {True, False, None}:
             raise ValueError(
@@ -124,10 +126,10 @@ class ExecutionConfig:
             )
 
         if self.device_options is None:
-            self.device_options = {}
+            object.__setattr__(self, "device_options", {})
 
         if self.gradient_keyword_arguments is None:
-            self.gradient_keyword_arguments = {}
+            object.__setattr__(self, "gradient_keyword_arguments", {})
 
         if not (
             isinstance(self.gradient_method, (str, TransformDispatcher))
@@ -138,13 +140,12 @@ class ExecutionConfig:
             )
 
         if isinstance(self.mcm_config, dict):
-            self.mcm_config = MCMConfig(**self.mcm_config)  # pylint: disable=not-a-mapping
-
+            object.__setattr__(self, "mcm_config", MCMConfig(**self.mcm_config))
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
 
         if self.executor_backend is None:
-            self.executor_backend = get_executor(backend=ExecBackends.MP_Pool)
+            object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
 
 
 DefaultExecutionConfig = ExecutionConfig()

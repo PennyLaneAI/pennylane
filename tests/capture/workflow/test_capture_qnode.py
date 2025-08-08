@@ -91,7 +91,7 @@ def test_error_if_overridden_shot_vector():
 def test_error_if_no_device_wires():
     """Test that a NotImplementedError is raised if the device does not provide wires."""
 
-    dev = qml.device("default.qubit")
+    dev = qml.device("default.qubit", wires=None)
 
     @qml.qnode(dev)
     def circuit():
@@ -1564,9 +1564,7 @@ class TestQNodeAutographIntegration:
 class TestStaticArgnums:
     """Unit tests for `QNode.static_argnums`."""
 
-    @pytest.mark.parametrize(
-        "sort_static_argnums", [True, pytest.param(False, marks=pytest.mark.xfail)]
-    )
+    @pytest.mark.parametrize("sort_static_argnums", [True, False])
     def test_qnode_static_argnums(self, sort_static_argnums):
         """Test that a QNode's static argnums are used to capture the QNode's quantum function."""
         # Testing using `jax.jit` with `static_argnums` is done in the `TestCaptureCaching` class

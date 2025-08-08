@@ -22,6 +22,8 @@ from typing import List, Sequence, Tuple, Hashable, Dict, Set, Optional
 
 from tqdm import tqdm
 import numpy as np
+from collections.abc import Hashable, Sequence
+
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
@@ -259,7 +261,7 @@ class _AdditiveIdentity:
 
 def effective_hamiltonian(
     product_formula: ProductFormula,
-    fragments: Dict[Hashable, Fragment],
+    fragments: dict[Hashable, Fragment],
     order: int,
     timestep: float = 1.0,
 ):
@@ -311,8 +313,8 @@ def effective_hamiltonian(
 
 
 def _insert_fragments(
-    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment]
-) -> Tuple[Fragment]:
+    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment]
+) -> tuple[Fragment]:
     """This function transforms a commutator of labels to a commutator of concrete `Fragment` objects.
     The function recurses through the nested structure of the tuple replacing each hashable `label` with
     the concrete value `fragments[label]`."""
@@ -535,9 +537,9 @@ def _execute_sampling_strategy(
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 def perturbation_error(
     product_formula: ProductFormula,
-    fragments: Dict[Hashable, Fragment],
+    fragments: dict[Hashable, Fragment],
     states: Sequence[AbstractState],
-    order: int,
+    max_order: int,
     timestep: float = 1.0,
     num_workers: int = 1,
     backend: str = "serial",
@@ -555,7 +557,7 @@ def perturbation_error(
     convergence_window: int = 10,
     min_convergence_checks: int = 3,
     return_convergence_info: bool = False,
-):
+) -> list[float]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
@@ -566,8 +568,8 @@ def perturbation_error(
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute the perturbation error from
         states (Sequence[AbstractState]): the states to compute expectation values from
-        order (int): the order of the BCH expansion
-        timestep (float): time step for the trotter error operator.
+        max_order (float): the maximum commutator order to compute in BCH
+        timestep (float): time step for the Trotter error operator.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backends.
             Available options : "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
@@ -615,9 +617,8 @@ def perturbation_error(
             If False (default), returns only the expectation values for backward compatibility.
 
     Returns:
-        List[float] or Tuple[List[float], Dict]: If return_convergence_info is False,
-            returns the list of expectation values. If True, returns a tuple containing both
-            the expectation values and a dictionary with detailed convergence information.
+        List[Dict[int, float]]: the list of dictionaries of expectation values computed from the Trotter error operator and the input states.
+            The dictionary is indexed by the commutator orders and its value is the error obtained from the commutators of that order.
 
     **Example**
 
@@ -779,6 +780,7 @@ def _get_expval_state(
         float: The expectation value
     """
 
+    expectations = {}
     new_state = _AdditiveIdentity()
     for commutator in commutators:
         new_state += _apply_commutator(commutator, fragments, state, cache, state_id)
@@ -856,7 +858,6 @@ def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
     Returns:
         Dict[Tuple[Hashable], complex]: Dictionary mapping operation sequences to coefficients
     """
-
     if not commutator:
         return Counter()
 

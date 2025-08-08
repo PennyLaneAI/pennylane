@@ -14,7 +14,7 @@
 """
 Contains a utility for handling inputs with dynamically shaped arrays.
 """
-from typing import Callable, Sequence, Union
+from collections.abc import Callable, Sequence
 
 has_jax = True
 try:
@@ -176,11 +176,14 @@ def register_custom_staging_rule(
         Returned vars are cached in env for use in future shapes
         """
         if not hasattr(outvar.aval, "shape"):
-            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval)
+            out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, outvar.aval, None)
             return out_tracer, jaxpr_trace.makevar(out_tracer)
         new_shape = [s if isinstance(s, int) else env[s] for s in outvar.aval.shape]
-        new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
-        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval)
+        if all(isinstance(s, int) for s in outvar.aval.shape):
+            new_aval = jax.core.ShapedArray(tuple(new_shape), outvar.aval.dtype)
+        else:
+            new_aval = jax.core.DShapedArray(tuple(new_shape), outvar.aval.dtype)
+        out_tracer = pe.DynamicJaxprTracer(jaxpr_trace, new_aval, None)
         new_var = jaxpr_trace.makevar(out_tracer)
 
         if not isinstance(outvar, jax.extend.core.Literal):
@@ -188,14 +191,16 @@ def register_custom_staging_rule(
         return out_tracer, new_var
 
     def custom_staging_rule(
-        jaxpr_trace: pe.DynamicJaxprTrace, *tracers: pe.DynamicJaxprTracer, **params
-    ) -> Union[Sequence[pe.DynamicJaxprTracer], pe.DynamicJaxprTracer]:
+        jaxpr_trace: pe.DynamicJaxprTrace, source_info, *tracers: pe.DynamicJaxprTracer, **params
+    ) -> Sequence[pe.DynamicJaxprTracer] | pe.DynamicJaxprTracer:
         """
         Add new jaxpr equation to the jaxpr_trace and return new tracers.
         """
         if not jax.config.jax_dynamic_shapes:
             # fallback to normal behavior
-            return jaxpr_trace.default_process_primitive(primitive, tracers, params)
+            return jaxpr_trace.default_process_primitive(
+                primitive, tracers, params, source_info=source_info
+            )
         outvars = get_outvars_from_params(params)
 
         env: dict[jax.extend.core.Var, jax.extend.core.Var] = {}  # branch var to new equation var

@@ -145,6 +145,7 @@ class TestExpval:
         are correct for a composite measurement value."""
         dev = qml.device("default.qubit", seed=seed)
 
+        @qml.set_shots(shots=shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -171,7 +172,7 @@ class TestExpval:
 
         atol = tol if shots is None else tol_stochastic
         for func in [circuit, qml.defer_measurements(circuit)]:
-            res = func(phi, shots=shots)
+            res = func(phi)
             assert np.allclose(np.array(res), expected, atol=atol, rtol=0)
 
     def test_eigvals_instead_of_observable(self, seed):

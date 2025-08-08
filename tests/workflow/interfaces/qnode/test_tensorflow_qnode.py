@@ -448,7 +448,7 @@ class TestShotsIntegration:
             circuit(weights)
 
         # execute with shots=100
-        res = circuit(weights, shots=100)  # pylint: disable=unexpected-keyword-arg
+        res = qml.set_shots(shots=100)(circuit)(weights)  # pylint: disable=unexpected-keyword-arg
         assert res.shape == (100, 2)
 
     def test_gradient_integration(self, interface):
@@ -459,6 +459,7 @@ class TestShotsIntegration:
         a, b = [0.543, -0.654]
         weights = tf.Variable([a, b], dtype=tf.float64)
 
+        @qml.set_shots(shots=[10000, 10000, 10000])
         @qnode(dev, interface=interface, diff_method=qml.gradients.param_shift)
         def circuit(weights):
             qml.RY(weights[0], wires=0)
@@ -467,7 +468,7 @@ class TestShotsIntegration:
             return qml.expval(qml.PauliY(1))
 
         with tf.GradientTape() as tape:
-            res = circuit(weights, shots=[10000, 10000, 10000])
+            res = circuit(weights)
             res = tf.transpose(tf.stack(res))
 
         assert len(res) == 3
@@ -496,7 +497,9 @@ class TestShotsIntegration:
 
         assert qml.math.shape(res1) == ()
 
-        res2 = circuit(weights, shots=[(1, 1000)])  # pylint: disable=unexpected-keyword-arg
+        res2 = qml.set_shots(shots=[(1, 1000)])(circuit)(
+            weights
+        )  # pylint: disable=unexpected-keyword-arg
         assert qml.math.shape(res2) == (1000,)
 
         grad = tape.gradient(res1, weights)
@@ -517,7 +520,7 @@ class TestShotsIntegration:
 
         with dev.tracker:
             with tf.GradientTape() as tape:
-                res = circuit(weights, shots=100)
+                res = qml.set_shots(shots=100)(circuit)(weights)
             tape.gradient(res, weights)
         # since we are using finite shots, use parameter shift
         assert dev.tracker.totals["executions"] == 5
@@ -1213,6 +1216,7 @@ class TestTapeExpansion:
 
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
+        @qml.set_shots(shots=50000)
         @qnode(
             dev,
             diff_method=diff_method,
@@ -1237,7 +1241,7 @@ class TestTapeExpansion:
         # test output
         with tf.GradientTape(persistent=True) as _t2:
             with tf.GradientTape() as t1:
-                res = circuit(d, w, c, shots=50000)  # pylint:disable=unexpected-keyword-arg
+                res = circuit(d, w, c)
 
             expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
             assert np.allclose(res, expected, atol=tol)
@@ -1280,13 +1284,14 @@ class TestSample:
     def test_sample_dimension(self):
         """Test sampling works as expected"""
 
+        @qml.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="tf")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        res = circuit(shots=10)
+        res = circuit()
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -1299,13 +1304,14 @@ class TestSample:
     def test_sampling_expval(self):
         """Test sampling works as expected if combined with expectation values"""
 
+        @qml.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="tf")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        res = circuit(shots=10)
+        res = circuit()
 
         assert len(res) == 2
         assert isinstance(res, tuple)
@@ -1317,13 +1323,14 @@ class TestSample:
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
 
+        @qml.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="tf")
         def circuit():
             qml.RX(0.54, wires=0)
 
             return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
 
-        result = circuit(shots=10)
+        result = circuit()
 
         assert len(result) == 3
         assert result[0].shape == (10,)
@@ -1339,13 +1346,14 @@ class TestSample:
     def test_single_wire_sample(self):
         """Test the return type and shape of sampling a single wire"""
 
+        @qml.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="tf")
         def circuit():
             qml.RX(0.54, wires=0)
 
             return qml.sample(qml.PauliZ(0))
 
-        result = circuit(shots=10)
+        result = circuit()
 
         assert isinstance(result, tf.Tensor)
         assert np.array_equal(result.shape, (10,))
@@ -1354,11 +1362,12 @@ class TestSample:
         """Test the return type and shape of sampling multiple wires
         where a rectangular array is expected"""
 
+        @qml.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="tf")
         def circuit():
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
-        result = circuit(shots=10)
+        result = circuit()
         result = tf.stack(result)
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
@@ -1370,13 +1379,14 @@ class TestSample:
         """Test counts works as expected for TF"""
 
         # pylint:disable=unsubscriptable-object,no-member
+        @qml.set_shots(shots=100)
         @qnode(DefaultQubit(), interface="tf")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             return qml.counts(qml.PauliZ(0))
 
-        res = circuit(shots=100)
+        res = circuit()
 
         assert isinstance(res, dict)
         assert list(res.keys()) == [-1, 1]
@@ -1653,13 +1663,14 @@ class TestAutograph:
         """Test sampling works as expected"""
 
         @decorator
+        @qml.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface=interface)
         def circuit(**_):
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        res = circuit(shots=10)  # pylint:disable=unexpected-keyword-arg
+        res = circuit()  # pylint:disable=unexpected-keyword-arg
         res = tf.stack(res)
 
         assert res.shape == (2, 10)

@@ -15,11 +15,12 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
-from typing import Union
+
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.operation import Operator, TermsUndefinedError
+from pennylane.exceptions import TermsUndefinedError
+from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
@@ -137,9 +138,7 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(
-        self, scalar: Union[int, float, complex], base: Operator, id=None, _pauli_rep=None
-    ):
+    def __init__(self, scalar: qml.typing.TensorLike, base: Operator, id=None, _pauli_rep=None):
         super().__init__(base=base, scalar=scalar, id=id)
 
         if _pauli_rep:
