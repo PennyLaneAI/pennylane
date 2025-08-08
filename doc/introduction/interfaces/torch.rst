@@ -15,7 +15,7 @@ PyTorch interface
         import torch
 
 In order to use PennyLane in combination with PyTorch, we have to generate PyTorch-compatible
-quantum nodes. Such a QNode can be created explicitly using the ``interface='torch'`` keyword in
+quantum nodes. Such a QNode can be created explicitly using the ``interface="torch"`` keyword in
 the QNode decorator or QNode class constructor.
 
 .. _torch_interf_keyword:
