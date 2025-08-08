@@ -47,17 +47,22 @@ class CCiXDecomposePattern(pattern_rewriter.RewritePattern):
     def replace_with_subroutine(self, s, toffoli, rewriter: PLPatternRewriter):
         in_wires = [rewriter.wire_manager[q] for q in toffoli.in_qubits]
 
-        insertion_point = InsertPoint.after(toffoli)
-        rewriter.insert_gate(ops.Hadamard(in_wires[2]), insertion_point)
-        rewriter.insert_gate(ops.adjoint(ops.T(in_wires[2])), insertion_point)
-        rewriter.insert_gate(ops.CNOT(in_wires[1:]), insertion_point)
-        rewriter.insert_gate(ops.T(in_wires[2]), insertion_point)
-        rewriter.insert_gate(ops.CNOT([in_wires[0], in_wires[2]]), insertion_point)
-        rewriter.insert_gate(ops.adjoint(ops.T(in_wires[2])), insertion_point)
-        rewriter.insert_gate(ops.CNOT(in_wires[1:]), insertion_point)
-        rewriter.insert_gate(ops.T(in_wires[2]), insertion_point)
-        rewriter.insert_gate(ops.CNOT([in_wires[0], in_wires[2]]), insertion_point)
-        rewriter.insert_gate(ops.Hadamard(in_wires[2]), insertion_point)
+        insertion_point = InsertPoint.before(toffoli)
+        gates = [
+            ops.Hadamard(in_wires[2]),
+            ops.adjoint(ops.T(in_wires[2])),
+            ops.CNOT(in_wires[1:]),
+            ops.T(in_wires[2]),
+            ops.CNOT([in_wires[0], in_wires[2]]),
+            ops.adjoint(ops.T(in_wires[2])),
+            ops.CNOT(in_wires[1:]),
+            ops.T(in_wires[2]),
+            ops.CNOT([in_wires[0], in_wires[2]]),
+            ops.Hadamard(in_wires[2]),
+        ]
+
+        for gate in gates:
+            rewriter.insert_gate(gate, insertion_point)
 
         rewriter.erase_quantum_gate_op(s, update_qubits=False)
         rewriter.erase_quantum_gate_op(toffoli, update_qubits=False)
