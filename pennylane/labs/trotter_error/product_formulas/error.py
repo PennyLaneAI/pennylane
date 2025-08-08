@@ -17,12 +17,12 @@ import copy
 import time
 import warnings
 from collections import Counter, defaultdict
+from collections.abc import Hashable, Sequence
 from dataclasses import dataclass
-from typing import List, Sequence, Tuple, Hashable, Dict, Set, Optional
+from typing import List, Tuple, Dict, Set, Optional
 
 from tqdm import tqdm
 import numpy as np
-from collections.abc import Hashable, Sequence
 
 
 from pennylane import concurrency
@@ -401,14 +401,14 @@ def _validate_inputs(
     product_formula: ProductFormula,
     fragments: Dict[Hashable, Fragment],
     states: Sequence[AbstractState],
-    order: int
+    max_order: int
 ):
     """Validate basic inputs for perturbation error calculation."""
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
     
-    if order <= 0:
-        raise ValueError(f"order must be positive, got {order}")
+    if max_order <= 0:
+        raise ValueError(f"max_order must be positive, got {max_order}")
         
     # Allow empty states for testing purposes, but only if fragments are None (dummy test case)
     if not states and not all(v is None for v in fragments.values()):
@@ -557,7 +557,7 @@ def perturbation_error(
     convergence_window: int = 10,
     min_convergence_checks: int = 3,
     return_convergence_info: bool = False,
-) -> list[float]:
+) -> list[dict[int, float]]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
@@ -644,15 +644,15 @@ def perturbation_error(
     >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
     >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
     >>>
-    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3)
+    >>> errors = perturbation_error(pf, frags, [state1, state2], max_order=3)
     >>> print(errors)
-    [0.9189251160920877j, 4.797716682426847j]
+    [{3: 0.9189251160920876j}, {3: 4.7977166824268505j}]
     >>>
     >>> # Use top-k sampling to select the 10 most important commutators
-    >>> errors_topk = perturbation_error(pf, frags, [state1, state2], order=3,
+    >>> errors_topk = perturbation_error(pf, frags, [state1, state2], max_order=3,
     ...                                  sample_size=10, sampling_method="top_k")
     >>>
-    >>> errors, conv_info = perturbation_error(pf, frags, [state1, state2], order=3,
+    >>> errors, conv_info = perturbation_error(pf, frags, [state1, state2], max_order=3,
     ...                                         adaptive_sampling=True, return_convergence_info=True)
     >>> print(conv_info['states'][0]['mean_history'])  # Mean evolution for first state
     """
@@ -679,30 +679,101 @@ def perturbation_error(
     )
     
     # Step 2: Validate inputs only after configuration is validated
-    _validate_inputs(product_formula, fragments, states, order)
+    _validate_inputs(product_formula, fragments, states, max_order)
     
-    # Step 3: Compute commutators
-    commutators = _group_sums(bch_expansion(product_formula(1j * config.timestep), order))
+    # Step 3: Compute commutators by order like in PR #8020
+    commutator_lists = [
+        _group_sums(commutators) for commutators in bch_expansion(product_formula, max_order)[1:]
+    ]
     
-    # Step 4: Initialize convergence info
-    convergence_info = _initialize_convergence_info(commutators, config)
-    if convergence_info:
-        convergence_info['global']['order'] = order
+    # For sampling methods, we need to flatten and then return structured results
+    if sample_size is not None or adaptive_sampling or convergence_sampling:
+        # Use sampling approach - flatten all commutators for sampling then reconstruct by order
+        all_commutators = [x for xs in commutator_lists for x in xs]
+        
+        # Step 4: Initialize convergence info  
+        convergence_info = _initialize_convergence_info(all_commutators, config)
+        if convergence_info:
+            convergence_info['global']['order'] = max_order
+        
+        # Step 5: Execute sampling strategy
+        sampled_expectations = _execute_sampling_strategy(
+            all_commutators, fragments, states, config, convergence_info
+        )
+        
+        # Convert sampled results back to ordered structure
+        expectations = []
+        for expectation_value in sampled_expectations:
+            # For sampling, we get a single scalar - put it in highest order
+            expectations.append({max_order: expectation_value})
+        
+        return _handle_return_value(expectations, convergence_info, config.return_convergence_info)
     
-    # Step 5: Execute sampling strategy
-    expectations = _execute_sampling_strategy(
-        commutators, fragments, states, config, convergence_info
-    )
+    # Non-sampling approach - process by order like master branch
+    if backend == "serial":
+        assert num_workers == 1, "num_workers must be set to 1 for serial execution."
+        expectations = []
+        for state in states:
+            state_expectations = {}
+            for commutators in commutator_lists:
+                if len(commutators) == 0:
+                    continue
+                
+                order = len(commutators[0])
+                new_state = _AdditiveIdentity()
+                for commutator in commutators:
+                    new_state += _apply_commutator(commutator, fragments, state)
+                
+                state_expectations[order] = (1j * timestep) ** order * state.dot(new_state)
+            
+            expectations.append(state_expectations)
+        
+        return expectations
     
-    # Step 6: Return results
-    return _handle_return_value(expectations, convergence_info, config.return_convergence_info)
+    if parallel_mode == "state":
+        executor = concurrency.backends.get_executor(backend)
+        with executor(max_workers=num_workers) as ex:
+            expectations = ex.starmap(
+                _get_expval_state,
+                [(commutator_lists, fragments, state, timestep) for state in states],
+            )
+        
+        return expectations
+    
+    if parallel_mode == "commutator":
+        executor = concurrency.backends.get_executor(backend)
+        expectations = []
+        commutators = [x for xs in commutator_lists for x in xs]
+        for state in states:
+            with executor(max_workers=num_workers) as ex:
+                applied_commutators = ex.starmap(
+                    _apply_commutator_track_order,
+                    [(commutator, fragments, state) for commutator in commutators],
+                )
+            
+            new_states = defaultdict(
+                lambda: _AdditiveIdentity()  # pylint: disable=unnecessary-lambda
+            )
+            for applied_state, order in applied_commutators:
+                new_states[order] += applied_state
+            
+            expectations.append(
+                {
+                    order: (1j * timestep) ** order * state.dot(new_state)
+                    for order, new_state in new_states.items()
+                }
+            )
+        
+        return expectations
+    
+    raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
 
 
 def perturbation_error_with_config(
     product_formula: ProductFormula,
     fragments: Dict[Hashable, Fragment],
     states: Sequence[AbstractState],
-    order: int,
+    max_order: int,
     config: PerturbationErrorConfig
 ):
     """Alternative API for perturbation error calculation using configuration objects.
@@ -714,11 +785,11 @@ def perturbation_error_with_config(
         product_formula (ProductFormula): The product formula to analyze
         fragments (Dict[Hashable, Fragment]): Fragment dictionary
         states (Sequence[AbstractState]): States to compute expectation values for
-        order (int): Order of the BCH expansion
+        max_order (int): Maximum order of the BCH expansion
         config (PerturbationErrorConfig): Complete configuration object
         
     Returns:
-        List[float] or Tuple[List[float], Dict]: Results based on config.return_convergence_info
+        List[Dict[int, float]] or Tuple[List[Dict[int, float]], Dict]: Results based on config.return_convergence_info
         
     **Example**
     
@@ -735,63 +806,78 @@ def perturbation_error_with_config(
     ... )
     >>> 
     >>> # Calculate perturbation error
-    >>> errors, conv_info = perturbation_error_with_config(pf, frags, states, order=3, config=config)
+    >>> errors, conv_info = perturbation_error_with_config(pf, frags, states, max_order=3, config=config)
     """
     
     # Step 1: Validate inputs
-    _validate_inputs(product_formula, fragments, states, order)
+    _validate_inputs(product_formula, fragments, states, max_order)
     
-    # Step 2: Compute commutators
-    commutators = _group_sums(bch_expansion(product_formula(1j * config.timestep), order))
+    # Step 2: Compute commutators by order like in PR #8020
+    commutator_lists = [
+        _group_sums(commutators) for commutators in bch_expansion(product_formula, max_order)[1:]
+    ]
     
-    # Step 3: Initialize convergence info
-    convergence_info = _initialize_convergence_info(commutators, config)
-    if convergence_info:
-        convergence_info['global']['order'] = order
+    # For sampling methods, we need to flatten and then return structured results
+    if (config.sampling.sample_size is not None or 
+        config.adaptive_sampling.enabled or 
+        config.convergence_sampling.enabled):
+        # Use sampling approach - flatten all commutators for sampling then reconstruct by order
+        all_commutators = [x for xs in commutator_lists for x in xs]
+        
+        # Step 3: Initialize convergence info  
+        convergence_info = _initialize_convergence_info(all_commutators, config)
+        if convergence_info:
+            convergence_info['global']['order'] = max_order
+        
+        # Step 4: Execute sampling strategy
+        sampled_expectations = _execute_sampling_strategy(
+            all_commutators, fragments, states, config, convergence_info
+        )
+        
+        # Convert sampled results back to ordered structure
+        expectations = []
+        for expectation_value in sampled_expectations:
+            # For sampling, we get a single scalar - put it in highest order
+            expectations.append({max_order: expectation_value})
+        
+        return _handle_return_value(expectations, convergence_info, config.return_convergence_info)
     
-    # Step 4: Execute sampling strategy
-    expectations = _execute_sampling_strategy(
-        commutators, fragments, states, config, convergence_info
-    )
+    # Non-sampling approach - process by order like master branch
+    expectations = []
+    for state in states:
+        state_expectations = {}
+        for commutators in commutator_lists:
+            if len(commutators) == 0:
+                continue
+            
+            order = len(commutators[0])
+            new_state = _AdditiveIdentity()
+            for commutator in commutators:
+                new_state += _apply_commutator(commutator, fragments, state)
+            
+            state_expectations[order] = (1j * config.timestep) ** order * state.dot(new_state)
+        
+        expectations.append(state_expectations)
     
-    # Step 5: Return results
-    return _handle_return_value(expectations, convergence_info, config.return_convergence_info)
+    return expectations
 
 
-def _get_expval_state(
-    commutators,
-    fragments,
-    state: AbstractState,
-    cache: Optional[_CommutatorCache] = None,
-    state_id: Optional[int] = None
-) -> float:
-    """
-    Returns the expectation value of a state with respect to the operator obtained
-    by substituting fragments into commutators.
-
-    Args:
-        commutators: List of commutator tuples
-        fragments: Dictionary mapping fragment keys to Fragment objects
-        state: The quantum state to compute expectation value for
-        cache: Optional cache to store/retrieve computed results
-        state_id: Optional state identifier for caching
-
-    Returns:
-        float: The expectation value
-    """
+def _get_expval_state(commutator_lists, fragments, state: AbstractState, timestep: float) -> dict[int, float]:
+    """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
     expectations = {}
-    new_state = _AdditiveIdentity()
-    for commutator in commutators:
-        new_state += _apply_commutator(commutator, fragments, state, cache, state_id)
+    for commutators in commutator_lists:
+        if len(commutators) == 0:
+            continue
 
-    # Handle case where new_state is still _AdditiveIdentity (no commutators applied)
-    if isinstance(new_state, _AdditiveIdentity):
-        result = 0.0
-    else:
-        result = state.dot(new_state)
+        order = len(commutators[0])
+        new_state = _AdditiveIdentity()
+        for commutator in commutators:
+            new_state += _apply_commutator(commutator, fragments, state)
 
-    return result
+        expectations[order] = (1j * timestep) ** order * state.dot(new_state)
+
+    return expectations
 
 
 def _apply_commutator(
@@ -830,12 +916,7 @@ def _apply_commutator(
                     (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
                 )
             else:
-                # Handle tuple wrapping from _op_list structure
-                if isinstance(frag, tuple) and len(frag) == 1:
-                    frag_key = frag[0]
-                else:
-                    frag_key = frag
-                frag = fragments[frag_key]
+                frag = fragments[frag]
 
             tmp_state = frag.apply(tmp_state)
 
@@ -846,6 +927,30 @@ def _apply_commutator(
         cache.put(commutator, state_id, new_state)
 
     return new_state
+
+
+def _apply_commutator_track_order(
+    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment], state: AbstractState
+) -> tuple[AbstractState, int]:
+    """Returns the state obtained from applying ``commutator`` to ``state``."""
+
+    new_state = _AdditiveIdentity()
+
+    for term, coeff in _op_list(commutator).items():
+        tmp_state = copy.copy(state)
+        for frag in reversed(term):
+            if isinstance(frag, frozenset):
+                frag = sum(
+                    (frag_coeff * fragments[x] for x, frag_coeff in frag), _AdditiveIdentity()
+                )
+            else:
+                frag = fragments[frag]
+
+            tmp_state = frag.apply(tmp_state)
+
+        new_state += coeff * tmp_state
+
+    return new_state, len(commutator)
 
 
 def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
@@ -876,9 +981,7 @@ def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
     return ops1
 
 
-def _group_sums(
-    term_dicts: List[Dict[Tuple[Hashable], complex]],
-) -> List[Tuple[Hashable | Set]]:
+def _group_sums(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple[Hashable | Set]]:
     """
     Reduce the number of commutators by grouping them using linearity in the first argument.
 
@@ -886,25 +989,10 @@ def _group_sums(
     will be merged into one commutator :math:`[a \\cdot X + b \\cdot Y, A, B]`.
 
     Args:
-        term_dicts: List of dictionaries mapping commutator tuples to complex coefficients
-
-    Returns:
-        List of grouped commutator tuples
-    """
-    return [
-        x for xs in [_group_sums_in_dict(term_dict) for term_dict in term_dicts[1:]] for x in xs
-    ]
-
-
-def _group_sums_in_dict(term_dict: Dict[Tuple[Hashable], complex]) -> List[Tuple[Hashable | Set]]:
-    """
-    Group commutators in a single dictionary by their tail structure.
-
-    Args:
         term_dict: Dictionary mapping commutator tuples to complex coefficients
 
     Returns:
-        List of grouped commutator tuples with frozensets for combined heads
+        List of grouped commutator tuples
     """
     grouped_comms = defaultdict(set)
     for commutator, coeff in term_dict.items():
