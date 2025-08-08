@@ -110,6 +110,22 @@ def circuit_6():
     return qml.expval(qml.PauliZ(0))
 
 
+def circuit_7():
+    """Circuit 7 with RX, RY, and RZ"""
+    qml.RX(PI / 3, wires=0)
+    qml.RZ(PI / 5, wires=0)
+    qml.RY(PI / 8, wires=0)
+    return qml.expval(qml.PauliZ(0))
+
+
+def circuit_8():
+    """Circuit 8 with only RZ and CNOT"""
+    qml.RZ(PI / 8, wires=0)
+    qml.CNOT(wires=[0, 1])
+    qml.RZ(PI / 2, wires=1)
+    return qml.expval(qml.PauliZ(1))
+
+
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -175,6 +191,53 @@ class TestCliffordCompile:
             [old_tape, new_tape], device=dev, transform_program=transform_program
         )
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
+
+    @pytest.mark.catalyst
+    @pytest.mark.jax
+    @pytest.mark.external
+    @pytest.mark.parametrize("circuit", [circuit_7, circuit_8])
+    def test_decomposition_with_rs_qjit(self, circuit):
+        """Test decomposition for the Clifford transform with Ross-Selinger method with QJIT enabled."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
+
+        dev = qml.device("lightning.qubit", wires=4)
+        qnode_cir = qml.qnode(dev)(circuit)
+        decomp_cir = clifford_t_decomposition(qnode_cir, method="gridsynth")
+        qjit_cir = qml.qjit(decomp_cir)
+
+        res1, res2 = decomp_cir(), qjit_cir()
+        assert qml.math.isclose(res1, res2, atol=1e-2)
+
+    @pytest.mark.catalyst
+    @pytest.mark.jax
+    @pytest.mark.external
+    def test_decomposition_with_rs_qjit_dynamic_param(self):
+        """Test clifford T decomposition with qjit and dynamic parameters."""
+
+        pytest.importorskip("jax")
+        pytest.importorskip("catalyst")
+
+        def circuit(angle, qb):
+            qml.H(qb)
+            qml.CNOT(qb, qb + 1)
+            qml.RX(angle * 0.37, qb)
+            qml.RZ(angle * 0.27, qb + 1)
+            qml.RY(angle * 0.73, qb)
+            qml.CNOT(qb + 1, qb)
+            qml.H(qb)
+            return qml.expval(qml.Z(0) @ qml.Z(1))
+
+        dev = qml.device("lightning.qubit", wires=2)
+        qnode_cir = qml.qnode(dev)(circuit)
+        decomp_cir = clifford_t_decomposition(qnode_cir, method="gridsynth")
+        qjit_cir = qml.qjit(decomp_cir)
+
+        angle, qb = PI, 0
+        default_res, qjit_res = decomp_cir(angle, qb), qjit_cir(angle, qb)
+
+        assert qml.math.allclose(default_res, qjit_res, atol=1e-2)
 
     def test_qnode_decomposition(self):
         """Test decomposition for the Clifford transform applied to a QNode."""

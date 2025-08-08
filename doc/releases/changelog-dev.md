@@ -56,6 +56,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
+  with quantum just-in-time compilation via the `@qml.qjit` decorator.
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
