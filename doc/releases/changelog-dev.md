@@ -6,6 +6,7 @@
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
+  [(#8042)](https://github.com/PennyLaneAI/pennylane/pull/8042)
 
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
@@ -110,6 +111,10 @@
   >>> np.trace(Lambda), np.trace(Lambda @ Lambda)
   (np.float64(1.0), np.float64(0.58))
   ```
+
+* A new device preprocess transform, `~.devices.preprocess.no_analytic`, is available for hardware devices and hardware-like simulators.
+  It validates that all executions are shot-based.
+  [(#8037)](https://github.com/PennyLaneAI/pennylane/pull/8037)
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
@@ -224,6 +229,9 @@
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 
+* The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
+  [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
+
 <h3>Breaking changes 💔</h3>
 
 * `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
@@ -311,6 +319,10 @@
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 <h3>Deprecations 👋</h3>
+
+* `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
+  Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
+  [(#7987)](https://github.com/PennyLaneAI/pennylane/pull/7987)
 
 * Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
   ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
@@ -505,6 +517,8 @@
 * Simplifying operators raised to integer powers no longer causes recursion errors.
   [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
 
+* Fixes the GPU selection issue in `qml.math` with PyTorch when multiple GPUs are present.
+  [(#8008)](https://github.com/PennyLaneAI/pennylane/pull/8008)
 
 * The `~.for_loop` function with capture enabled can now handle over indexing
   into an empty array when `start == stop`.
@@ -550,11 +564,13 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Ali Asadi,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
 David Ittah,
