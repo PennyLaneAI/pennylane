@@ -50,8 +50,6 @@ class FTQCQubit(Device):
     config_filepath = Path(__file__).parent / "ftqc_device.toml"
 
     def __init__(self, wires, backend):
-        if backend is None:
-            raise RuntimeError
 
         super().__init__(wires=wires)
 
