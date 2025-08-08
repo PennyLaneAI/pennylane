@@ -328,7 +328,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return None  # skip the decomposition rule if it is not applicable
 
         decomp_resource = rule.compute_resources(**op_node.op.params)
-        work_wire_spec = rule.work_wire_spec(**op_node.op.params)
+        work_wire_spec = rule.get_work_wire_spec(**op_node.op.params)
 
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
         d_node_idx = self._graph.add_node(d_node)
