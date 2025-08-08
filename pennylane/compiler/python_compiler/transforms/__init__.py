@@ -21,7 +21,6 @@ from .diagonalize_measurements import (
     DiagonalizeFinalMeasurementsPass,
     diagonalize_final_measurements_pass,
 )
-from .visualization import VisualizationTransformPass, visualization_pass
 
 
 __all__ = [
@@ -35,6 +34,4 @@ __all__ = [
     "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
-    "visualization_pass",
-    "VisualizationTransformPass",
 ]

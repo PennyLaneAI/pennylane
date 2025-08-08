@@ -33,15 +33,13 @@ from xdsl.ir import SSAValue
 
 import pennylane as qml
 from pennylane import measurements, ops
+from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
+from pennylane.compiler.python_compiler.dialects.quantum import CustomOp
+from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
+from pennylane.compiler.python_compiler.dialects.quantum import StateOp
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all
-
-from ..dialects.quantum import AllocOp as AllocOpPL
-from ..dialects.quantum import CustomOp
-from ..dialects.quantum import ExtractOp as ExtractOpPL
-from ..dialects.quantum import StateOp
-from .api import compiler_transform
 
 # This is just a preliminary structure for mapping of PennyLane gates to xDSL operations.
 # Support for all PennyLane gates is not implemented yet.
@@ -102,6 +100,8 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
                 return resolve_constant_params(op.operands[0])
     if op.name == "stablehlo.constant":
         return _extract_dense_constant_value(op)
+    if op.name == "arith.addf":
+        return resolve_constant_params(op.operands[0]) + resolve_constant_params(op.operands[1])
     raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
 
 
@@ -166,31 +166,15 @@ def xdsl_to_qml_meas(meas) -> Operator:
     return measurement()
 
 
-class VisualizationTransform(pattern_rewriter.RewritePattern):
-    """A pattern that matches a function and rewrites it to collect
-    the quantum operations into a list of PennyLane operators."""
+class QMLCollector:
+    """Collects PennyLane ops and measurements from an xDSL module."""
 
-    # Several TODO for this pass/transform:
-    #
-    # - Add support for qml.ctrl (WIP)
-    # - Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.),
-    #   both in the visualization and in the gate set.
-    # - Add support for the decomp_graph
-    # - Move the logic for qubit mapping and operator conversion to a separate class
-    #   if this turns out to be useful in other transforms.
-    # - Add support for complex parameters (e.g., complex numbers, arrays, etc.)
-    # - Add support for dynamic wires and parameters
-
-    def __init__(
-        self,
-        module: builtin.ModuleOp,
-    ):
-        super().__init__()
+    def __init__(self, module: builtin.ModuleOp):
         self.module = module
-        self.wire_to_ssa_qubits: Dict[int, SSAValue] = {}
-        self.ssa_qubits_to_wires: Dict[SSAValue, int] = {}
-        self.params_to_ssa_params: Dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
-        self.quantum_register: Union[SSAValue, None] = None
+        self.wire_to_ssa_qubits: dict[int, SSAValue] = {}
+        self.ssa_qubits_to_wires: dict[SSAValue, int] = {}
+        self.params_to_ssa_params: dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
+        self.quantum_register: SSAValue | None = None
 
     # TODO: this will probably no longer be needed once PR #7937 is merged
     def initialize_qubit_mapping(self, funcOp: func.FuncOp):
@@ -210,44 +194,115 @@ class VisualizationTransform(pattern_rewriter.RewritePattern):
                     # but this should not be used in practice for visualization.
                     self.ssa_qubits_to_wires[op.qubit] = wire
 
-    # pylint:disable=arguments-differ, too-many-branches
-    @pattern_rewriter.op_type_rewrite_pattern
-    def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
-
-        self.initialize_qubit_mapping(funcOp)
+    def collect(self) -> tuple[list[Operator], list[Operator]]:
+        """Collect PennyLane ops and measurements from the module."""
         collected_ops = []
         collected_meas = []
 
-        for xdsl_op in funcOp.body.walk():
-            if isinstance(xdsl_op, StateOp):
-                qml_meas = xdsl_to_qml_meas(xdsl_op)
-                collected_meas.append(qml_meas)
-            if not isinstance(xdsl_op, CustomOp):
+        # Walk all FuncOps in the module
+        for funcOp in self.module.walk():
+            if not isinstance(funcOp, func.FuncOp):
                 continue
-            if self.quantum_register is None:
-                raise ValueError("Quantum register (AllocOp) not found in the function.")
-            if len(self.wire_to_ssa_qubits) == 0:
-                raise NotImplementedError("No wires extracted from the register have been found.")
 
-            qml_op = xdsl_to_qml_op(xdsl_op)
-            collected_ops.append(qml_op)
+            self.initialize_qubit_mapping(funcOp)
 
-        print(f"collected ops: {collected_ops}")
-        print(f"collected meas: {collected_meas}")
+            for xdsl_op in funcOp.body.walk():
+                if isinstance(xdsl_op, StateOp):
+                    qml_meas = xdsl_to_qml_meas(xdsl_op)
+                    collected_meas.append(qml_meas)
+                elif isinstance(xdsl_op, CustomOp):
+                    if self.quantum_register is None:
+                        raise ValueError("Quantum register (AllocOp) not found.")
+                    if not self.wire_to_ssa_qubits:
+                        raise NotImplementedError("No wires extracted from the register found.")
+                    qml_op = xdsl_to_qml_op(xdsl_op)
+                    collected_ops.append(qml_op)
 
-
-@dataclass(frozen=True)
-class VisualizationTransformPass(passes.ModulePass):
-    """A pass that applies the Transform pattern to a module."""
-
-    name = "visualization-transform"
-
-    # pylint: disable=arguments-renamed,no-self-use, arguments-differ
-    def apply(self, _ctx: context.MLContext, module: builtin.ModuleOp) -> None:
-        pattern = VisualizationTransform(module)
-        pattern_rewriter.PatternRewriteWalker(
-            pattern_rewriter.GreedyRewritePatternApplier([pattern]), apply_recursively=False
-        ).rewrite_module(module)
+        return collected_ops, collected_meas
 
 
-visualization_pass = compiler_transform(VisualizationTransformPass)
+# class VisualizationTransform(pattern_rewriter.RewritePattern):
+#     """A pattern that matches a function and rewrites it to collect
+#     the quantum operations into a list of PennyLane operators."""
+
+#     # Several TODO for this pass/transform:
+#     #
+#     # - Add support for qml.ctrl (WIP)
+#     # - Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.),
+#     #   both in the visualization and in the gate set.
+#     # - Add support for the decomp_graph
+#     # - Move the logic for qubit mapping and operator conversion to a separate class
+#     #   if this turns out to be useful in other transforms.
+#     # - Add support for complex parameters (e.g., complex numbers, arrays, etc.)
+#     # - Add support for dynamic wires and parameters
+
+#     def __init__(
+#         self,
+#         module: builtin.ModuleOp,
+#     ):
+#         super().__init__()
+#         self.module = module
+#         self.wire_to_ssa_qubits: Dict[int, SSAValue] = {}
+#         self.ssa_qubits_to_wires: Dict[SSAValue, int] = {}
+#         self.params_to_ssa_params: Dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
+#         self.quantum_register: Union[SSAValue, None] = None
+
+#     # TODO: this will probably no longer be needed once PR #7937 is merged
+#     def initialize_qubit_mapping(self, funcOp: func.FuncOp):
+#         """Scan the function to populate the quantum register and wire mappings."""
+#         saw_alloc = False
+#         for op in funcOp.body.walk():
+#             if isinstance(op, AllocOpPL):
+#                 if saw_alloc:
+#                     raise ValueError("Found more than one AllocOp for this FuncOp.")
+#                 saw_alloc = True
+#                 self.quantum_register = op.qreg
+#             elif isinstance(op, ExtractOpPL):
+#                 wire = resolve_constant_wire(op.idx)
+#                 if wire not in self.wire_to_ssa_qubits:
+#                     self.wire_to_ssa_qubits[wire] = op.qubit
+#                     # We update the reverse mapping as well for completeness,
+#                     # but this should not be used in practice for visualization.
+#                     self.ssa_qubits_to_wires[op.qubit] = wire
+
+#     # pylint:disable=arguments-differ, too-many-branches
+#     @pattern_rewriter.op_type_rewrite_pattern
+#     def match_and_rewrite(self, funcOp: func.FuncOp, rewriter: pattern_rewriter.PatternRewriter):
+
+#         self.initialize_qubit_mapping(funcOp)
+#         collected_ops = []
+#         collected_meas = []
+
+#         for xdsl_op in funcOp.body.walk():
+#             if isinstance(xdsl_op, StateOp):
+#                 qml_meas = xdsl_to_qml_meas(xdsl_op)
+#                 collected_meas.append(qml_meas)
+#             if not isinstance(xdsl_op, CustomOp):
+#                 continue
+#             if self.quantum_register is None:
+#                 raise ValueError("Quantum register (AllocOp) not found in the function.")
+#             if len(self.wire_to_ssa_qubits) == 0:
+#                 raise NotImplementedError("No wires extracted from the register have been found.")
+
+#             qml_op = xdsl_to_qml_op(xdsl_op)
+#             collected_ops.append(qml_op)
+
+#         print(f"collected ops: {collected_ops}")
+#         print(f"collected meas: {collected_meas}")
+
+
+# @dataclass(frozen=True)
+# class VisualizationTransformPass(passes.ModulePass):
+#     """A pass that applies the Transform pattern to a module."""
+
+#     name = "visualization-transform"
+
+#     # pylint: disable=arguments-renamed,no-self-use, arguments-differ
+#     def apply(self, _ctx: context.MLContext, module: builtin.ModuleOp) -> None:
+#         pattern = VisualizationTransform(module)
+#         pattern_rewriter.PatternRewriteWalker(
+#             pattern_rewriter.GreedyRewritePatternApplier([pattern]), apply_recursively=False
+#         ).rewrite_module(module)
+
+
+# visualization_pass = compiler_transform(VisualizationTransformPass)

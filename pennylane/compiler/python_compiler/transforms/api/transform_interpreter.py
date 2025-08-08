@@ -53,6 +53,7 @@ class TransformFunctionsExt(TransformFunctions):
     def __init__(self, ctx, passes, callback=None):
         super().__init__(ctx, passes)
         self.callback = callback
+        self.level = 0
 
     @impl(transform.ApplyRegisteredPassOp)
     def run_apply_registered_pass_op(  # pragma: no cover
@@ -69,11 +70,14 @@ class TransformFunctionsExt(TransformFunctions):
             pass_class = self.passes[pass_name]()
             pass_instance = pass_class()
             pipeline = PassPipeline((pass_instance,))
-            pipeline.apply(self.ctx, args[0])
             if self.callback:
-                next = None  # We don't know which one
-                callback_returned_stuff = self.callback(pass_instance, args[0], next)
-                print("Callback returned:", callback_returned_stuff)
+                # TODO: decide how this should be handled
+                self.callback(pass_instance, args[0], self.level)
+                pipeline.apply(self.ctx, args[0])
+                self.level += 1
+                self.callback(pass_instance, args[0], self.level)
+            else:
+                pipeline.apply(self.ctx, args[0])
             return (args[0],)
 
         # pragma: no cover
