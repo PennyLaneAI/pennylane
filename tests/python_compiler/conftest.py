@@ -52,6 +52,7 @@ def _run_filecheck_impl(program_str, pipeline=(), roundtrip=False):
         # Print generic format
         stream = StringIO()
         Printer(stream=stream, print_generic_format=True).print_op(xdsl_module)
+        ctx = Context(allow_unregistered=True)
         xdsl_module = QuantumParser(
             ctx, stream.getvalue(), extra_dialects=(test.Test,)
         ).parse_module()
