@@ -405,7 +405,7 @@ class DecompositionRule:
         """Checks whether this decomposition rule is applicable."""
         return all(condition(*args, **kwargs) for condition in self._conditions)
 
-    def work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
+    def get_work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
         """Gets the work wire requirements of this decomposition rule"""
         if isinstance(self._work_wire_spec, dict):
             return WorkWireSpec(**self._work_wire_spec)

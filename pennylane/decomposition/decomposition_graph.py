@@ -328,7 +328,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             return None  # skip the decomposition rule if it is not applicable
 
         decomp_resource = rule.compute_resources(**op_node.op.params)
-        work_wire_spec = rule.work_wire_spec(**op_node.op.params)
+        work_wire_spec = rule.get_work_wire_spec(**op_node.op.params)
 
         d_node = _DecompositionNode(rule, decomp_resource, work_wire_spec, num_used_work_wires)
         d_node_idx = self._graph.add_node(d_node)
@@ -472,7 +472,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             DecompGraphSolution
 
         """
-        visitor = _DecompositionSearchVisitor(
+        visitor = DecompositionSearchVisitor(
             self._graph,
             self._gate_set_weights,
             self._original_ops_indices,
@@ -491,7 +491,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             raise DecompositionError(
                 f"Decomposition not found for {op_names} to the gate set {set(self._gate_set_weights)}"
             )
-        return DecompGraphSolution(visitor, self._graph, self._all_op_indices, self._op_to_op_nodes)
+        return DecompGraphSolution(visitor, self._all_op_indices, self._op_to_op_nodes)
 
 
 class DecompGraphSolution:
@@ -499,18 +499,17 @@ class DecompGraphSolution:
 
     def __init__(
         self,
-        visitor: _DecompositionSearchVisitor,
-        graph: rx.PyDiGraph,
+        visitor: DecompositionSearchVisitor,
         all_op_indices: dict[_OperatorNode, int],
         op_to_op_nodes: dict[CompressedResourceOp, set[_OperatorNode]],
     ) -> None:
         self._visitor = visitor
-        self._graph = graph
+        self._graph = visitor._graph  # pylint: disable=protected-access
         self._op_to_op_nodes = op_to_op_nodes
         self._all_op_indices = all_op_indices
 
     def _all_solutions(
-        self, visitor: _DecompositionSearchVisitor, op: Operator, num_work_wires: int | None
+        self, visitor: DecompositionSearchVisitor, op: Operator, num_work_wires: int | None
     ) -> Iterable[_OperatorNode]:
         """Returns all valid solutions for an operator and a work wire constraint."""
 
@@ -543,7 +542,7 @@ class DecompGraphSolution:
         return any(self._all_solutions(self._visitor, op, num_work_wires))
 
     def _get_best_solution(
-        self, visitor: _DecompositionSearchVisitor, op: Operator, num_work_wires: int | None
+        self, visitor: DecompositionSearchVisitor, op: Operator, num_work_wires: int | None
     ) -> int:
         """Finds the best solution for an operator in terms of resource efficiency."""
 
@@ -585,10 +584,10 @@ class DecompGraphSolution:
                 operations=[op],
                 gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
             )
-            graph.solve()
+            solution = graph.solve()
 
         >>> with qml.queuing.AnnotatedQueue() as q:
-        ...     graph.decomposition(op)(0.5, wires=[0, 1])
+        ...     solution.decomposition(op)(0.5, wires=[0, 1])
         >>> q.queue
         [RZ(1.5707963267948966, wires=[1]),
          RY(0.25, wires=[1]),
@@ -625,8 +624,8 @@ class DecompGraphSolution:
                 operations=[op],
                 gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
             )
-            graph.solve()
-            rule = graph.decomposition(op)
+            solution = graph.solve()
+            rule = solution.decomposition(op)
 
         >>> with qml.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
@@ -642,7 +641,7 @@ class DecompGraphSolution:
         return self._graph[d_node_idx].rule
 
 
-class _DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-instance-attributes
+class DecompositionSearchVisitor(DijkstraVisitor):  # pylint: disable=too-many-instance-attributes
     """The visitor used in the Dijkstra search for the optimal decomposition."""
 
     def __init__(  # pylint: disable=too-many-arguments
