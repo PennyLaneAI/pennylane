@@ -278,7 +278,7 @@ class ResourceMPSPrep(ResourceOperator):
     Resources:
         The resources for MPSPrep are according to the decomposition, which uses the generic
         :class:`~.labs.resource_estimation.ResourceQubitUnitary`. The decomposition is based on
-        the routine described in `Fomichev et al. (2024) <https://arxiv.org/pdf/2310.18410>`_.
+        the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
     .. seealso:: :class:`~.MPSPrep`
 
@@ -286,7 +286,7 @@ class ResourceMPSPrep(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> mps = plre.ResourceMPSPrep(num_mps_matrices=10, max_bond_dim=5)
+    >>> mps = plre.ResourceMPSPrep(num_mps_matrices=10, max_bond_dim=2**3)
     >>> print(plre.estimate_resources(mps, gate_set={"CNOT", "RZ", "RY"}))
     --- Resources: ---
      Total qubits: 13
@@ -363,7 +363,7 @@ class ResourceMPSPrep(ResourceOperator):
         Resources:
             The resources for MPSPrep are according to the decomposition, which uses the generic
             :class:`~.labs.resource_estimation.ResourceQubitUnitary`. The decomposition is based on
-            the routine described in `Fomichev et al. (2024) <https://arxiv.org/pdf/2310.18410>`_.
+            the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -397,7 +397,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
     This operation implements the state preparation method described
     in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-    :class: `~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+    :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
 
     .. note::
 
@@ -418,9 +418,9 @@ class ResourceQROMStatePreparation(ResourceOperator):
     Resources:
         The resources for QROMStatePreparation are according to the decomposition as described
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-        :class: `~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+        :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
         These rotations gates are implmented using an inplace controlled-adder operation
-        (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`)_ to a phase gradient.
+        (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to a phase gradient.
 
     .. seealso:: :class:`~.QROMStatePreparation`
 
@@ -466,7 +466,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_ for more details.
 
         The ``select_swap_depths`` parameter allows a user to configure the ``select_swap_depth`` of
-        each individual :class: `~.labs.resource_estimation.ResourceQROM` used. The
+        each individual :class:`~.labs.resource_estimation.ResourceQROM` used. The
         ``select_swap_depths`` argument can be one of :code:`(int, None, Iterable(int, None))`.
 
         If an integer or :code:`None` is passed (the default value for this parameter is 1), then that
@@ -620,12 +620,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
         Resources:
             The resources for QROMStatePreparation are according to the decomposition as described
             in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-            :class: `~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+            :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
 
             Controlled-RY (and phase shifts) gates are used to apply all of the rotations coherently. If
             :code:`use_phase_grad_trick == True` then these rotations gates are implmented using an
             inplace controlled semi-adder operation (see figure 4. of
-            `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`)_.
+            `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_).
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -770,7 +770,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         Resources:
             The resources for QROMStatePreparation are according to the decomposition as described
             in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-            :class: `~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+            :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
             Controlled-RY (and phase shifts) gates are used to apply all of the rotations coherently.
 
         Returns:
@@ -812,9 +812,9 @@ class ResourceQROMStatePreparation(ResourceOperator):
         Resources:
             The resources for QROMStatePreparation are according to the decomposition as described
             in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
-            :class: `~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+            :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
             These rotations gates are implmented using an inplace controlled-adder operation
-            (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`)_ to phase gradient.
+            (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to phase gradient.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
