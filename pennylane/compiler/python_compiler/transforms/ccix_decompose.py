@@ -69,7 +69,6 @@ class CCiXDecomposePattern(pattern_rewriter.RewritePattern):
 
             match = self.find_match(op)
             if match is None:
-                print(op)
                 # Update wire manager
                 rewriter.wire_manager.update_from_op(op)
                 continue
