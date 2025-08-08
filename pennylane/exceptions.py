@@ -208,3 +208,10 @@ class InvalidCapabilitiesError(Exception):
 class NonDifferentiableError(Exception):
     """Exception raised if attempting to differentiate non-trainable
     :class:`~.tensor` using Autograd."""
+
+
+_TF_DEPRECATION_MSG = (
+    "Support for the TensorFlow interface is deprecated and will be removed in v0.44. "
+    "Future versions of PennyLane are not guaranteed to work with TensorFlow. "
+    "Please migrate your workflows to JAX or Pytorch to benefit from enhanced support and features."
+)
