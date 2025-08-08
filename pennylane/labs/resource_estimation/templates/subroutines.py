@@ -1316,16 +1316,19 @@ class ResourceMultiplexedRotation(ResourceOperator):
     r"""Resource class for the MultiplexedRotation
 
     Args:
-        num_ctrl_wires: number of wires qrom is controlled on
+        num_bit_strings: number of bit strings for QROM
         precision: precision with which angles are being loaded
 
     """
 
     resource_keys = {"register_size"}
 
-    def __init__(self, num_ctrl_wires, precision=None, wires=None):
-        self.num_ctrl_wires = num_ctrl_wires
+    def __init__(self, num_bit_strings, parallel_rotations=None, select_swap_depth=None, one_body=False, precision=None, wires=None):
+        self.num_bit_strings = num_bit_strings
         self.precision = precision
+        self.parallel_rotations= parallel_rotations
+        self.select_swap_depth = select_swap_depth
+        self.one_body = one_body
         super().__init__(wires=wires)
 
     @property
@@ -1334,28 +1337,28 @@ class ResourceMultiplexedRotation(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-             * num_ctrl_wires: number of wires to control the qrom on
+             * num_bit_strings: number of wires to control the qrom on
              * precision: precision for loading angles
 
         """
-        return {"num_ctrl_wires":self.num_ctrl_wires, "precision": self.precision}
+        return {"num_bit_strings":self.num_bit_strings, "parallel_rotations": self.parallel_rotations, "select_swap_depth": self.select_swap_depth, "one_body": self.one_body, "precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, num_ctrl_wires, precision=None):
+    def resource_rep(cls, num_bit_strings, parallel_rotations=None, select_swap_depth=None, one_body=False, precision=None):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            num_ctrl_wires: number of wires to control the qrom on
+            num_bit_strings: number of wires to control the qrom on
             precision: precision for loading angles
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"num_ctrl_wires":num_ctrl_wires, "precision": precision})
+        return CompressedResourceOp(cls, {"num_bit_strings":num_bit_strings, "parallel_rotations": parallel_rotations, "select_swap_depth": select_swap_depth, "one_body":one_body, "precision": precision})
 
     @classmethod
-    def default_resource_decomp(cls, num_ctrl_wires, precision=None, **kwargs):
+    def default_resource_decomp(cls, num_bit_strings, parallel_rotations=None, select_swap_depth=None, one_body=False, precision=None, **kwargs):
         r"""Returns a list representing the resources of the operator.
 
         Args:
@@ -1368,18 +1371,32 @@ class ResourceMultiplexedRotation(ResourceOperator):
         """
         precision = precision or kwargs["config"]["precision_multiplexer"]
         num_prec_wires = abs(math.floor(math.log2(precision)))
-        gate_lst = []
 
-        qrom = resource_rep(
+        parallel_rotations = parallel_rotations or kwargs["config"]["parallel_rotations"]
+        gate_lst = []
+        if one_body:
+            qrom = resource_rep(
             plre.ResourceQROM,
-            {
-                "num_bitstrings": 2**num_ctrl_wires,
-                "size_bitstring": num_prec_wires,
-                "clean": False,
-            },
-        )
+                {
+                    "num_bitstrings": num_bit_strings,
+                    "size_bitstring": num_prec_wires,
+                    "clean": True,
+                    "select_swap_depth": select_swap_depth
+                },
+                )
+        else:
+            qrom = resource_rep(
+                plre.ResourceQROM,
+                {
+                    "num_bitstrings": num_bit_strings+parallel_rotations,
+                    "size_bitstring": num_prec_wires,
+                   "clean": True,
+                   "select_swap_depth": select_swap_depth
+                },
+            )
 
         gate_lst.append(GateCount(qrom))
+
         gate_lst.append(
             GateCount(
                 resource_rep(
@@ -1387,12 +1404,13 @@ class ResourceMultiplexedRotation(ResourceOperator):
                     {
                         "base_cmpr_op": resource_rep(
                             plre.ResourceSemiAdder,
-                            {"max_register_size": num_prec_wires},
+                            {"max_register_size": num_prec_wires-1},
                         ),
                         "num_ctrl_wires": 1,
                         "num_ctrl_values": 0,
                     },
-                )
+                ),
+                parallel_rotations
             )
         )
 
@@ -1409,78 +1427,6 @@ class ResourceMultiplexedRotation(ResourceOperator):
 
         return gate_lst
 
-class ResourceUniformStatePrep(ResourceOperator):
-    r"""Resource class for the preparing the uniform state as defined in Fig. 12
-    https://journals.aps.org/prx/pdf/10.1103/PhysRevX.8.041015
-
-    Args:
-        register_size (int): the size of the input register to be put in superposition
-        wires (Sequence[int], optional): the wires the operation acts on
-
-    """
-
-    resource_keys = {"register_size"}
-
-    def __init__(self, register_size, wires=None):
-        self.register_size = register_size
-        self.num_wires = register_size
-        super().__init__(wires=wires)
-
-    @property
-    def resource_params(self):
-        r"""Returns a dictionary containing the minimal information needed to compute the resources.
-
-        Returns:
-            dict: A dictionary containing the resource parameters:
-
-        """
-        return {"register_size": self.register_size}
-
-    @classmethod
-    def resource_rep(cls, register_size):
-        r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
-
-        Returns:
-            CompressedResourceOp: the operator in a compressed representation
-        """
-        return CompressedResourceOp(cls, {"register_size": register_size})
-
-    @classmethod
-    def default_resource_decomp(cls, register_size, **kwargs):
-        r"""Returns a list representing the resources of the operator.
-
-        Args:
-            register_size (int): the size of the input register
-
-        Returns:
-            list[GateCount]: A list of GateCount objects, where each object
-            represents a specific quantum gate and the number of times it appears
-            in the decomposition.
-        """
-
-        k = (register_size & -register_size).bit_length() - 1
-
-        L = register_size // (2 ** k)
-
-        l = math.ceil(math.log2(L))
-
-        gate_lst = []
-        gate_lst.append(AllocWires(1+k))
-
-        hadamard = resource_rep(plre.ResourceHadamard)
-
-        gate_lst.append(plre.GateCount(hadamard, 2**k + 3*l))
-
-        comparator = resource_rep(plre.ResourceComparator, {"num_wires": l})
-        gate_lst.append(plre.GateCount(comparator, 1))
-
-        rz = resource_rep(plre.ResourceRZ)
-        gate_lst.append(plre.GateCount(rz, 2))
-
-        gate_lst.append(FreeWires(1+k))
-
-        return gate_lst
 
 class ResourceComparator(ResourceOperator):
     r"""Resource class for the preparing the uniform state as defined in Fig. 12
@@ -1543,16 +1489,17 @@ class ResourceParallelMultiplexedRotation(ResourceOperator):
     r"""Resource class for the MultiplexedRotation
 
     Args:
-        num_ctrl_wires: number of wires qrom is controlled on
+        num_bit_strings: number of bit strings for QROM
         precision: precision with which angles are being loaded
 
     """
 
-
-    def __init__(self, num_ctrl_wires, total_rotations, parallel_rotations=None, precision=None, wires=None):
-        self.num_ctrl_wires = num_ctrl_wires
+    def __init__(self, num_bit_strings, total_rotations, select_swap_depth=None, parallel_rotations=None, one_body=False, precision=None, wires=None):
+        self.num_bit_strings = num_bit_strings
         self.total_rotations = total_rotations
+        self.select_swap_depth = select_swap_depth
         self.parallel_rotations= parallel_rotations
+        self.one_body = one_body
         self.precision = precision
         super().__init__(wires=wires)
 
@@ -1560,28 +1507,27 @@ class ResourceParallelMultiplexedRotation(ResourceOperator):
     def resource_params(self):
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
         """
-        return {"num_ctrl_wires":self.num_ctrl_wires, "total_rotations": self.total_rotations, "parallel_rotations": self.parallel_rotations, "precision": self.precision}
+        return {"num_bit_strings":self.num_bit_strings, "total_rotations": self.total_rotations, "select_swap_depth": self.select_swap_depth, "parallel_rotations": self.parallel_rotations, "one_body": self.one_body, "precision": self.precision}
 
     @classmethod
-    def resource_rep(cls, num_ctrl_wires, total_rotations, parallel_rotations=None, precision=None):
+    def resource_rep(cls, num_bit_strings, total_rotations, select_swap_depth=None, parallel_rotations=None, one_body=False, precision=None):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            num_ctrl_wires: number of wires to control the qrom on
+            num_bit_strings: number of bit strings for QROM
             precision: precision for loading angles
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"num_ctrl_wires":num_ctrl_wires, "total_rotations": total_rotations, "parallel_rotations": parallel_rotations, "precision": precision})
+        return CompressedResourceOp(cls, {"num_bit_strings":num_bit_strings, "total_rotations": total_rotations, "select_swap_depth": select_swap_depth, "parallel_rotations": parallel_rotations, "one_body": one_body, "precision": precision})
 
     @classmethod
-    def default_resource_decomp(cls, num_ctrl_wires, total_rotations, parallel_rotations=None, precision=None, **kwargs):
+    def default_resource_decomp(cls, num_bit_strings, total_rotations, select_swap_depth=None, parallel_rotations=None, one_body=False, precision=None, **kwargs):
         r"""Returns a list representing the resources of the operator.
 
         Args:
-            register_size (int): the size of the input register
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -1594,7 +1540,7 @@ class ResourceParallelMultiplexedRotation(ResourceOperator):
         num_prec_wires = abs(math.floor(math.log2(precision)))
         gate_lst = []
         phasegrad = resource_rep(plre.ResourcePhaseGradient, {"num_wires": num_prec_wires})
-        mult_rot = resource_rep(plre.ResourceMultiplexedRotation, {"num_ctrl_wires": num_ctrl_wires})
+        mult_rot = resource_rep(plre.ResourceMultiplexedRotation, {"num_bit_strings": num_bit_strings, "parallel_rotations": parallel_rotations, "select_swap_depth":select_swap_depth, "one_body": one_body, "precision": precision})
 
         num_full_blocks = total_rotations // parallel_rotations  # Integer division
         num_leftover_rotations = total_rotations % parallel_rotations # Remainder
@@ -1607,51 +1553,5 @@ class ResourceParallelMultiplexedRotation(ResourceOperator):
             gate_lst.append(plre.GateCount(mult_rot, 1))
 
         gate_lst.append(FreeWires(num_prec_wires * parallel_rotations))
-
         return gate_lst
 
-
-class ResourceAliasSampling(ResourceOperator):
-    r""" Subprepare circuit in Fig 11 of https://journals.aps.org/prx/abstract/10.1103/PhysRevX.8.041015
-
-    """
-
-    def __init__(self, num_coeffs, num_bitstrings, size_bitstring, wires=None):
-        self.num_coeffs = num_coeffs
-        self.num_bitstrings = num_bitstrings
-        self.size_bitstring = size_bitstring
-        self.num_wires = 2 * np.ceil(np.log2(num_bitstrings)) + 2 * size_bitstring + 4
-        super().__init__(wires=wires)
-
-    @property
-    def resource_params(self) -> dict:
-        return {"num_coeffs": self.num_coeffs, "num_bitstrings": self.num_bitstrings, "size_bitstring": self.size_bitstring}
-
-    @classmethod
-    def resource_rep(cls, num_coeffs, num_bitstrings, size_bitstring) -> CompressedResourceOp:
-        params = {"num_coeffs": num_coeffs, "num_bitstrings": num_bitstrings, "size_bitstring": size_bitstring}
-        return CompressedResourceOp(cls, params)
-
-    @classmethod
-    def default_resource_decomp(cls, num_coeffs, num_bitstrings, size_bitstring, **kwargs) -> list[GateCount]:
-
-        gate_types = []
-        hadamard = resource_rep(plre.ResourceHadamard)
-        uniform = resource_rep(plre.ResourceUniformStatePrep, {"register_size": num_bitstrings}) # Special uniform for THC
-        comparator = resource_rep(plre.ResourceComparator, {"num_wires":size_bitstring}) #todo: define
-        qrom = resource_rep(plre.ResourceQROM, {"num_bitstrings":num_bitstrings, "size_bitstring":size_bitstring})
-        cswap = resource_rep(plre.ResourceCSWAP())
-
-        # Contiguizer resources
-        adder = resource_rep(plre.ResourceSemiAdder, {"max_register_size": num_coeffs})
-        multiplier = resource_rep(plre.ResourceOutMultiplier, {"a_num_qubits": int(np.ceil(np.log2(num_bitstrings))), "b_num_qubits": int(np.ceil(np.log2(num_bitstrings)))})
-
-        gate_types.append(plre.GateCount(hadamard, size_bitstring))
-        gate_types.append(plre.GateCount((uniform), 1)) # Two uniforms, for mu and nu
-        gate_types.append(plre.GateCount(adder, 2))
-        gate_types.append(plre.GateCount(multiplier,1))
-        gate_types.append(plre.GateCount((comparator), 1))
-        gate_types.append(plre.GateCount((qrom), 1))
-        gate_types.append(plre.GateCount((cswap), np.ceil(np.log2(num_bitstrings))))
-
-        return gate_types
