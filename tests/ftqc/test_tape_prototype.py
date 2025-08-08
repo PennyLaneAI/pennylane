@@ -59,28 +59,28 @@ def test_ftqc_device_initializes(backend_cls):
     assert isinstance(dev.capabilities, qml.devices.DeviceCapabilities)
 
 
+@pytest.mark.parametrize("wires", ([0, 1], ["a", "b"]))
 @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
-def test_executing_arbitrary_circuit(backend_cls):
+def test_executing_arbitrary_circuit(backend_cls, wires):
     """Test that an arbitrary circuit is preprocessed to be expressed in the
     MBQC formalism before executing, and executes as expected"""
 
     qml.decomposition.enable_graph()
 
     backend = backend_cls()
-    dev = FTQCQubit(wires=2, backend=backend)
+    dev = FTQCQubit(wires=wires, backend=backend)
 
     @qml.set_shots(shots=3000)
     @qml.qnode(dev)
     def circ():
-        qml.RY(1.2, 0)
-        qml.RZ(0.2, 0)
-        qml.RX(0.45, 1)
-        return qml.expval(X(0)), qml.expval(Y(0)), qml.expval(Y(1))
+        qml.RY(1.2, wires[1])  # first wire on tape is not first wire on device
+        qml.RX(0.45, wires[0])
+        return qml.expval(X(wires[1])), qml.expval(Y(wires[0])), qml.expval(Y(wires[1]))
 
     ftqc_circ = qml.qnode(device=dev)(circ)
     ftqc_circ = qml.set_shots(ftqc_circ, shots=1500)
 
-    ref_circ = qml.qnode(device=qml.device("lightning.qubit", wires=2))(circ)
+    ref_circ = qml.qnode(device=qml.device("lightning.qubit", wires=wires))(circ)
 
     # the processed circuit is two tapes (split_non_commuting), returning
     # only samples, and expressed in the MBQC formalism
