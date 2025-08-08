@@ -1714,7 +1714,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         """The negation operation of an Operator object."""
         return qml.s_prod(scalar=-1, operator=self, lazy=False)
 
-    def __pow__(self, other: TensorLike):
+    def __pow__(self, other: TensorLike) -> "Operator":
         r"""The power operation of an Operator object."""
         if isinstance(other, TensorLike):
             return qml.pow(self, z=other)
