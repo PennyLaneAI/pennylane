@@ -16,7 +16,7 @@
 from collections.abc import Sequence
 from numbers import Number
 
-from xdsl.dialects import arith, builtin, tensor
+from xdsl.dialects import arith, builtin, stablehlo, tensor
 from xdsl.ir import Operation, SSAValue
 from xdsl.pattern_rewriter import PatternRewriter, PatternRewriterListener, PatternRewriteWalker
 from xdsl.rewriter import InsertPoint
@@ -25,61 +25,6 @@ from pennylane import measurements, ops
 from pennylane.operation import Operator
 
 from ...dialects import mbqc, quantum
-
-
-class StateManagement:
-    """A container class for managing wire mapping."""
-
-    wire_to_qubit_map: dict[int, SSAValue]
-    qubit_to_wire_map: dict[SSAValue, int]
-
-    def __init__(self, wires: Sequence[int] | None = None):
-        self._wires = tuple(wires)
-        self.wire_to_qubit_map = {}
-        self.qubit_to_wire_map = {}
-
-    @property
-    def wires(self) -> tuple[int]:
-        """Wire labels."""
-        return self._wires
-
-    def update_qubit(self, old_qubit: SSAValue, new_qubit: SSAValue) -> None:
-        """Update a qubit."""
-        wire = self.qubit_to_wire_map[old_qubit]
-        self.wire_to_qubit_map[wire] = new_qubit
-        self.qubit_to_wire_map[new_qubit] = wire
-        self.qubit_to_wire_map.pop(old_qubit, None)
-
-    def __getitem__(self, val: int | SSAValue) -> int | SSAValue | None:
-        if isinstance(val, SSAValue):
-            return self.qubit_to_wire_map[val]
-
-        if self._wires is not None and val not in self._wires:
-            raise ValueError(f"{val} is not an available wire.")
-        return self.wire_to_qubit_map.get(val, None)
-
-    def __setitem__(self, key: int | SSAValue, item: SSAValue | int) -> None:
-        if isinstance(key, SSAValue):
-            old_wire = self.qubit_to_wire_map.pop(key, None)
-            self.wire_to_qubit_map.pop(old_wire, None)
-            self.qubit_to_wire_map[key] = item
-            self.wire_to_qubit_map[item] = key
-        else:
-            old_qubit = self.wire_to_qubit_map.pop(key, None)
-            self.qubit_to_wire_map.pop(old_qubit, None)
-            self.wire_to_qubit_map[key] = item
-            self.qubit_to_wire_map[item] = key
-
-    def get_static_wire(self, op: quantum.ExtractOp, update=True) -> int | None:
-        """Get the wire label to which a qubit extraction corresponds."""
-        if (idx_attr := getattr(op, "idx_attr", None)) is not None:
-            wire = idx_attr.value.data
-            if update:
-                self[wire] = op.qubit
-            return wire
-
-        return None
-
 
 # Tuple of all operations that return qubits
 _ops_returning_qubits = (
@@ -119,6 +64,90 @@ _out_qubit_ops = (quantum.MeasureOp, mbqc.MeasureInBasisOp)
 _qubit_ops = (quantum.AllocQubitOp, quantum.ExtractOp)
 
 
+class StateManagement:
+    """A container class for managing wire mapping."""
+
+    wire_to_qubit_map: dict[int, SSAValue]
+    qubit_to_wire_map: dict[SSAValue, int]
+
+    def __init__(self, wires: Sequence[int] | None = None):
+        self._wires = tuple(wires) if wires else ()
+        self.wire_to_qubit_map = {}
+        self.qubit_to_wire_map = {}
+
+    @property
+    def wires(self) -> tuple[int]:
+        """Wire labels."""
+        return self._wires
+
+    def update_qubit(self, old_qubit: SSAValue, new_qubit: SSAValue) -> None:
+        """Update a qubit."""
+        wire = self.qubit_to_wire_map[old_qubit]
+        self.wire_to_qubit_map[wire] = new_qubit
+        self.qubit_to_wire_map[new_qubit] = wire
+        self.qubit_to_wire_map.pop(old_qubit, None)
+
+    def __getitem__(self, val: int | SSAValue) -> int | SSAValue | None:
+        if isinstance(val, SSAValue):
+            return self.qubit_to_wire_map[val]
+
+        if self._wires and val not in self._wires:
+            raise ValueError(f"{val} is not an available wire.")
+        return self.wire_to_qubit_map.get(val, None)
+
+    def __setitem__(self, key: int | SSAValue, item: SSAValue | int) -> None:
+        if isinstance(key, SSAValue):
+            old_wire = self.qubit_to_wire_map.pop(key, None)
+            self.wire_to_qubit_map.pop(old_wire, None)
+            self.qubit_to_wire_map[key] = item
+            self.wire_to_qubit_map[item] = key
+        else:
+            old_qubit = self.wire_to_qubit_map.pop(key, None)
+            self.qubit_to_wire_map.pop(old_qubit, None)
+            self.wire_to_qubit_map[key] = item
+            self.qubit_to_wire_map[item] = key
+
+    def get_static_wire(self, op: quantum.ExtractOp, update=True) -> int | None:
+        """Get the wire label to which a qubit extraction corresponds."""
+        wire = None
+        if (idx_attr := getattr(op, "idx_attr", None)) is not None:
+            wire = idx_attr.value.data
+
+        else:
+            idx = op.idx
+            if isinstance(idx.owner, arith.ConstantOp):
+                wire = idx.owner.properties["value"].data
+            elif isinstance(idx.owner, tensor.ExtractOp):
+                operand = idx.owner.operands[0]
+                if isinstance(operand.owner, stablehlo.ConstantOp):
+                    wire = operand.owner.properties["value"].get_values()[0]
+
+        if wire is not None and update:
+            self[wire] = op.qubit
+        return wire
+
+    def update_from_op(self, op: Operation):
+        """Update the wire mapping from an operation's outputs"""
+        if isinstance(op, quantum.ExtractOp):
+            _ = self.get_static_wire(op, update=True)
+
+        if isinstance(op, _out_qubit_ops):
+            self.update_qubit(op.in_qubit, op.out_qubit)
+
+        if isinstance(op, _out_qubits_ops):
+            for iq, oq in zip(op.in_qubits, op.out_qubits, strict=True):
+                self.update_qubit(iq, oq)
+
+        if isinstance(op, _out_ctrl_qubits_ops):
+            for iq, oq in zip(op.in_ctrl_qubits, op.out_ctrl_qubits, strict=True):
+                self.update_qubit(iq, oq)
+
+        if isinstance(op, (quantum.InsertOp, quantum.DeallocQubitOp)):
+            qubit = op.qubit
+            wire = self.qubit_to_wire_map.pop(qubit, None)
+            _ = self.wire_to_qubit_map.pop(wire, None)
+
+
 def _get_bfs_out_qubits(op):
     out_qubits = ()
     if not isinstance(op, _ops_returning_qubits):
@@ -148,10 +177,10 @@ class PLPatternRewriter(PatternRewriter):
     """
 
     def __init__(self, current_operation: Operation):
-        super().__init(current_operation)
+        super().__init__(current_operation)
         self.wire_manager = StateManagement()
 
-    def erase_quantum_gate_op(self, op: Operation) -> None:
+    def erase_quantum_gate_op(self, op: Operation, update_qubits: bool = True) -> None:
         """Erase a quantum gate.
 
         Safely erase a quantum gate from the module being transformed. This method automatically
@@ -172,7 +201,8 @@ class PLPatternRewriter(PatternRewriter):
             op.in_qubits + op.in_ctrl_qubits, op.out_qubits + op.out_ctrl_qubits, strict=True
         ):
             self.replace_all_uses_with(oq, iq)
-            self.wire_manager.update_qubit(oq, iq)
+            if update_qubits:
+                self.wire_manager.update_qubit(oq, iq)
 
         self.erase_op(op)
 
@@ -230,14 +260,14 @@ class PLPatternRewriter(PatternRewriter):
 
         if isinstance(gate, ops.Controlled):
             base_gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate.base)
-            ctrl_wires = gate.control_wires + ctrl_wires
-            ctrl_vals = gate.control_values + ctrl_vals
+            ctrl_wires = tuple(gate.control_wires) + tuple(ctrl_wires)
+            ctrl_vals = tuple(gate.control_values) + tuple(ctrl_vals)
             return base_gate, ctrl_wires, ctrl_vals, adjoint
 
         if isinstance(gate, ops.Adjoint):
             base_gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate.base)
-            adjoint = adjoint ^ gate.adjoint
-            return base_gate, ctrl_wires, ctrl_vals, adjoint
+            adjoint = adjoint ^ True
+            return base_gate, tuple(ctrl_wires), tuple(ctrl_vals), adjoint
 
         raise RuntimeError("reeeeeeeee")
 
@@ -280,6 +310,7 @@ class PLPatternRewriter(PatternRewriter):
             strict=True,
         ):
             iq.replace_by_if(oq, lambda use: use.operation != customOp)
+            self.notify_op_modified(customOp)
             self.wire_manager.update_qubit(iq, oq)
 
     def insert_observable(self, obs: Operator, insert_point: InsertPoint):
