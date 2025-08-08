@@ -103,6 +103,7 @@ from .product_formulas import (
     bch_expansion,
     effective_hamiltonian,
     perturbation_error,
+    perturbation_error_with_config,
 )
 from .realspace import (
     RealspaceCoeffs,
