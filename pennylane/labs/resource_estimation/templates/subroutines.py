@@ -24,7 +24,6 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ,protected-access,too-many-arguments,unused-argument,super-init-not-called
@@ -524,7 +523,8 @@ class ResourceControlledSequence(ResourceOperator):
     resource_keys = {"base_cmpr_op", "num_ctrl_wires"}
 
     def __init__(self, base_op: ResourceOperator, num_control_wires, wires=None) -> None:
-        self.queue(remove_op=base_op)
+        self.dequeue(op_to_remove=base_op)
+        self.queue()
         base_cmpr_op = base_op.resource_rep_from_op()
 
         self.base_cmpr_op = base_cmpr_op
@@ -541,12 +541,6 @@ class ResourceControlledSequence(ResourceOperator):
             self.wires = None or base_op.wires
             num_base_wires = base_op.num_wires
             self.num_wires = num_control_wires + num_base_wires
-
-    def queue(self, remove_op, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        context.remove(remove_op)
-        context.append(self)
-        return self
 
     @property
     def resource_params(self):
@@ -1288,7 +1282,8 @@ class ResourceSelect(ResourceOperator):
     resource_keys = {"cmpr_ops"}
 
     def __init__(self, select_ops, wires=None) -> None:
-        self.queue(select_ops)
+        self.dequeue(op_to_remove=select_ops)
+        self.queue()
         num_select_ops = len(select_ops)
         num_ctrl_wires = math.ceil(math.log2(num_select_ops))
 
@@ -1311,13 +1306,6 @@ class ResourceSelect(ResourceOperator):
             else:
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires) + num_ctrl_wires
-
-    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
-        """Append the operator to the Operator queue."""
-        for op in ops_to_remove:
-            context.remove(op)
-        context.append(self)
-        return self
 
     @classmethod
     def default_resource_decomp(cls, cmpr_ops, **kwargs):  # pylint: disable=unused-argument
