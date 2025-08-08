@@ -6,6 +6,7 @@
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
+  [(#8042)](https://github.com/PennyLaneAI/pennylane/pull/8042)
 
 * New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
@@ -135,6 +136,10 @@
   (np.float64(1.0), np.float64(0.58))
   ```
 
+* A new device preprocess transform, `~.devices.preprocess.no_analytic`, is available for hardware devices and hardware-like simulators.
+  It validates that all executions are shot-based.
+  [(#8037)](https://github.com/PennyLaneAI/pennylane/pull/8037)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -250,6 +255,30 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+
+* Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
+  This prevents the potential mutation of a global object. 
+
+  This means that functions like,
+  ```python
+  ...
+    def some_func(..., execution_config = DefaultExecutionConfig):
+      ...
+  ...
+  ```
+  should be written as follows,
+  ```python
+  ...
+    def some_func(..., execution_config: ExecutionConfig | None = None):
+      if execution_config is None:
+          execution_config = ExecutionConfig()
+  ...
+  ```
+
+  [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
   They now accept an operation or a list of operations as quantum unitaries.
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
@@ -311,6 +340,12 @@
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 <h3>Deprecations 👋</h3>
+
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+  ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
+  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
+  work wires are restored to their original state upon completing the decomposition.
+  [(#7993)](https://github.com/PennyLaneAI/pennylane/pull/7993)
 
 * Providing `num_steps` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
   and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
@@ -411,6 +446,7 @@
 
 * Improves readability of `dynamic_one_shot` postprocessing to allow further modification.
   [(#7962)](https://github.com/PennyLaneAI/pennylane/pull/7962)
+  [(#8041)](https://github.com/PennyLaneAI/pennylane/pull/8041)
 
 * Update PennyLane's top-level `__init__.py` file imports to improve Python language server support for finding
   PennyLane submodules.
@@ -495,6 +531,13 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes the GPU selection issue in `qml.math` with PyTorch when multiple GPUs are present.
+  [(#8008)](https://github.com/PennyLaneAI/pennylane/pull/8008)
+
+* The `~.for_loop` function with capture enabled can now handle over indexing
+  into an empty array when `start == stop`.
+  [(#8026)](https://github.com/PennyLaneAI/pennylane/pull/8026)
+
 * Plxpr primitives now only return dynamically shaped arrays if their outputs
   actually have dynamic shapes.
   [(#8004)](https://github.com/PennyLaneAI/pennylane/pull/8004)
@@ -535,11 +578,13 @@
 This release contains contributions from (in alphabetical order):
 
 Guillermo Alonso,
+Ali Asadi,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
 Diksha Dhawan,
 Marcus Edwards,
+Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
 David Ittah,
