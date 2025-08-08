@@ -14,8 +14,10 @@
 
 """This submodule contains xDSL dialects for the Python compiler."""
 
+from .catalyst import Catalyst
 from .mbqc import MBQC
 from .quantum import Quantum
-from .catalyst import Catalyst
+from .transform import Transform
 
-__all__ = ["Catalyst", "MBQC", "Quantum"]
+
+__all__ = ["Catalyst", "MBQC", "Quantum", "Transform"]
