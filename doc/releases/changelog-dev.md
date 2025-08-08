@@ -502,7 +502,7 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Operators raised to integer powers then simplified no longer cause recursion errors.
+* Simplifying operators raised to integer powers no longer causes recursion errors.
   [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
 
 
