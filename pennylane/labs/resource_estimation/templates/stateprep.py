@@ -262,6 +262,7 @@ class ResourceAliasSampling(ResourceOperator):
 
         return gate_lst
 
+
 class ResourceMPSPrep(ResourceOperator):
     r"""Resource class for the MPSPrep template.
 
@@ -527,7 +528,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
                     f"Expected the length of `select_swap_depths` to be {expected_size}, got {len(select_swap_depths)}"
                 )
         else:
-            raise TypeError(f"`select_swap_depths` must be an integer, None or iterable")
+            raise TypeError("`select_swap_depths` must be an integer, None or iterable")
 
         self.selswap_depths = select_swap_depths
         super().__init__(wires=wires)
@@ -582,7 +583,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
                     f"Expected the length of `selswap_depths` to be {expected_size}, got {len(selswap_depths)}"
                 )
         else:
-            raise TypeError(f"`selswap_depths` must be an integer, None or iterable")
+            raise TypeError("`selswap_depths` must be an integer, None or iterable")
 
         params = {
             "num_state_qubits": num_state_qubits,

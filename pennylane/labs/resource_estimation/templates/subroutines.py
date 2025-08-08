@@ -1142,12 +1142,12 @@ class ResourceQROM(ResourceOperator):
                 raise ValueError(
                     f"`select_swap_depth` must be None or an integer. Got {type(select_swap_depth)}"
                 )
-            else:
-                exponent = int(math.log2(select_swap_depth))
-                if 2**exponent != select_swap_depth:
-                    raise ValueError(
-                        f"`select_swap_depth` must be 1 or a positive integer power of 2. Got {select_swap_depth}"
-                    )
+
+            exponent = int(math.log2(select_swap_depth))
+            if 2**exponent != select_swap_depth:
+                raise ValueError(
+                    f"`select_swap_depth` must be 1 or a positive integer power of 2. Got {select_swap_depth}"
+                )
 
         self.select_swap_depth = select_swap_depth
         super().__init__(wires=wires)
@@ -1467,12 +1467,12 @@ class ResourceQROM(ResourceOperator):
                 raise ValueError(
                     f"`select_swap_depth` must be None or an integer. Got {type(select_swap_depth)}"
                 )
-            else:
-                exponent = int(math.log2(select_swap_depth))
-                if 2**exponent != select_swap_depth:
-                    raise ValueError(
-                        f"`select_swap_depth` must be 1 or a positive integer power of 2. Got f{select_swap_depth}"
-                    )
+
+            exponent = int(math.log2(select_swap_depth))
+            if 2**exponent != select_swap_depth:
+                raise ValueError(
+                    f"`select_swap_depth` must be 1 or a positive integer power of 2. Got f{select_swap_depth}"
+                )
 
         params = {
             "num_bitstrings": num_bitstrings,
