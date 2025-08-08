@@ -773,14 +773,15 @@ def _equal_hilbert_schmidt(
         "atol": atol,
         "rtol": rtol,
     }
-    # Check hyperparameters using qml.equal rather than == where necessary
-    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
+
+    U1 = qml.prod(*op1.hyperparameters["U"])
+    U2 = qml.prod(*op2.hyperparameters["U"])
+    if qml.equal(U1, U2, **equal_kwargs) is False:
         return False
-    if not qml.equal(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"], **equal_kwargs):
-        return False
-    if not qml.equal(op1.hyperparameters["v_tape"], op2.hyperparameters["v_tape"], **equal_kwargs):
-        return False
-    if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
+
+    V1 = qml.prod(*op1.hyperparameters["V"])
+    V2 = qml.prod(*op2.hyperparameters["V"])
+    if qml.equal(V1, V2, **equal_kwargs) is False:
         return False
 
     return True
