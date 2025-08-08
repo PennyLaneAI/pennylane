@@ -338,7 +338,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             DecompGraphSolution
 
         """
-        visitor = _DecompositionSearchVisitor(
+        visitor = DecompositionSearchVisitor(
             self._graph,
             self._weights,
             self._original_ops_indices,
@@ -356,7 +356,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
             raise DecompositionError(
                 f"Decomposition not found for {op_names} to the gate set {set(self._weights)}"
             )
-        return DecompGraphSolution(visitor, self._graph, self._all_op_indices)
+        return DecompGraphSolution(visitor, self._all_op_indices)
 
 
 class DecompGraphSolution:
@@ -364,12 +364,11 @@ class DecompGraphSolution:
 
     def __init__(
         self,
-        visitor: _DecompositionSearchVisitor,
-        graph: rx.PyDiGraph,
+        visitor: DecompositionSearchVisitor,
         all_op_indices: dict[CompressedResourceOp, int],
     ) -> None:
         self._visitor = visitor
-        self._graph = graph
+        self._graph = visitor._graph  # pylint: disable=protected-access
         self._all_op_indices = all_op_indices
 
     def is_solved_for(self, op):
@@ -401,10 +400,10 @@ class DecompGraphSolution:
                 operations=[op],
                 gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
             )
-            graph.solve()
+            solution = graph.solve()
 
         >>> with qml.queuing.AnnotatedQueue() as q:
-        ...     graph.decomposition(op)(0.5, wires=[0, 1])
+        ...     solution.decomposition(op)(0.5, wires=[0, 1])
         >>> q.queue
         [RZ(1.5707963267948966, wires=[1]),
          RY(0.25, wires=[1]),
@@ -444,8 +443,8 @@ class DecompGraphSolution:
                 operations=[op],
                 gate_set={"RZ", "RX", "CNOT", "GlobalPhase"},
             )
-            graph.solve()
-            rule = graph.decomposition(op)
+            solution = graph.solve()
+            rule = solution.decomposition(op)
 
         >>> with qml.queuing.AnnotatedQueue() as q:
         ...     rule(*op.parameters, wires=op.wires, **op.hyperparameters)
@@ -465,7 +464,7 @@ class DecompGraphSolution:
         return self._graph[d_node_idx].rule
 
 
-class _DecompositionSearchVisitor(DijkstraVisitor):
+class DecompositionSearchVisitor(DijkstraVisitor):
     """The visitor used in the Dijkstra search for the optimal decomposition."""
 
     def __init__(
