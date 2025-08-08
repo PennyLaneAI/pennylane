@@ -72,7 +72,8 @@ class TransformFunctionsExt(TransformFunctions):
             pipeline.apply(self.ctx, args[0])
             if self.callback:
                 next = None  # We don't know which one
-                self.callback(pass_instance, args[0], next)
+                callback_returned_stuff = self.callback(pass_instance, args[0], next)
+                print("Callback returned:", callback_returned_stuff)
             return (args[0],)
 
         # pragma: no cover

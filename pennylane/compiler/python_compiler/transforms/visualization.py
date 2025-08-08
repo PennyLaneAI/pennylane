@@ -20,24 +20,26 @@ from typing import Callable, Dict, Iterable, Optional, Union
 
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin, func
-from xdsl.dialects.arith import ConstantOp
-from xdsl.dialects.builtin import Float64Type, FloatAttr, IntegerAttr, IntegerType
-from xdsl.dialects.tensor import ExtractOp as ExtractOpXDSL
-from xdsl.ir import SSAValue
-
-from xdsl.dialects.builtin import IntegerAttr, FloatAttr, DenseIntOrFPElementsAttr
-from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
+from xdsl.dialects.builtin import (
+    DenseIntOrFPElementsAttr,
+    Float64Type,
+    FloatAttr,
+    IntegerAttr,
+    IntegerType,
+)
 from xdsl.dialects.stablehlo import ConstantOp as StableHLOConstantOp
+from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
+from xdsl.ir import SSAValue
 
 import pennylane as qml
 from pennylane import ops
 from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all
 
-from ..dialects.quantum import ExtractOp as ExtractOpPL
 from ..dialects.quantum import AllocOp as AllocOpPL
-
 from ..dialects.quantum import CustomOp
+from ..dialects.quantum import ExtractOp as ExtractOpPL
+from ..dialects.quantum import StateOp
 from .api import compiler_transform
 
 # This is just a preliminary structure for mapping of PennyLane gates to xDSL operations.
@@ -66,6 +68,15 @@ def qml_to_xdsl_param(param: Union[int, float]) -> Union[IntegerAttr, FloatAttr]
     if isinstance(val, float):
         return FloatAttr(val, Float64Type())
     raise TypeError(f"Unsupported parameter type: {type(val)}")
+
+
+def _extract_dense_constant_value(op) -> float | int:
+    """Extract the first value from a stablehlo.constant op."""
+    attr = op.properties.get("value")
+    if isinstance(attr, DenseIntOrFPElementsAttr):
+        # TODO: handle multi-value cases if needed
+        return attr.get_values()[0]
+    raise NotImplementedError(f"Unexpected attr type in constant: {type(attr)}")
 
 
 # pylint: disable=too-many-instance-attributes
@@ -97,9 +108,9 @@ class VisualizationTransform(pattern_rewriter.RewritePattern):
 
         self.quantum_register: Union[SSAValue, None] = None
 
-    def resolve_constant_params(self, param: SSAValue) -> Union[float, int]:
+    def resolve_constant_params(self, ssa: SSAValue) -> float | int:
         """Resolve a constant parameter SSA value to a Python float or int."""
-        op = param.owner
+        op = ssa.owner
         if isinstance(op, TensorExtractOp):
             return self.resolve_constant_params(op.tensor)
         if op.name == "builtin.unregistered":
@@ -107,62 +118,25 @@ class VisualizationTransform(pattern_rewriter.RewritePattern):
                 if op.attributes["op_name__"].data == "stablehlo.convert":
                     return self.resolve_constant_params(op.operands[0])
         if op.name == "stablehlo.constant":
-            attr = op.properties["value"]
-            if isinstance(attr, DenseIntOrFPElementsAttr):
-                # TODO: extend this in case there is more than one value
-                value = attr.get_values()[0]
-                return value
-            raise NotImplementedError(f"Unexpected attr type in constant: {type(attr)}")
-        raise NotImplementedError(f"Cannot resolve constant from op: {op}")
+            return _extract_dense_constant_value(op)
+        raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
 
-    def resolve_constant_wire(self, in_qubit: SSAValue) -> int:
+    def resolve_constant_wire(self, ssa: SSAValue) -> int:
         """Resolve the wire for the given SSA qubit."""
-        op = in_qubit.owner
-        if isinstance(op, ExtractOpPL):
-            wire = self.get_wire_from_quantum_extract(op.idx)
-            return wire
+        op = ssa.owner
         if isinstance(op, TensorExtractOp):
-            print("TensorExtractOp found")
             return self.resolve_constant_wire(op.tensor)
         if op.name == "builtin.unregistered":
             if hasattr(op, "attributes"):
                 if op.attributes["op_name__"].data == "stablehlo.convert":
-                    # print(f"StableHLOConvertOp found")
                     return self.resolve_constant_wire(op.operands[0])
         if op.name == "stablehlo.constant":
-            print("StableHLOConstantOp found")
-            attr = op.properties["value"]
-            if isinstance(attr, DenseIntOrFPElementsAttr):
-                # TODO: extend this in case there is more than one value
-                value = attr.get_values()[0]
-                return value
-            raise NotImplementedError(f"Unexpected attr type in constant: {type(attr)}")
-        if isinstance(op, ConstantOp):
-            val = op.value
-            return val.value.data
+            return _extract_dense_constant_value(op)
         if isinstance(op, CustomOp):
-            # TODO: extend this to support more wires case
-            wire_position = in_qubit.index
-            return self.resolve_constant_wire(op.in_qubits[wire_position])
-        raise NotImplementedError(f"Cannot resolve wire for operation {op}")
-
-    def get_wire_from_quantum_extract(self, op: SSAValue) -> int:
-        """Get the wire from a quantum ExtractOp."""
-
-        op = op.owner
-
-        if isinstance(op, TensorExtractOp):
-            return self.get_wire_from_quantum_extract(op.tensor)
-
-        if op.name == "stablehlo.constant":
-            print("StableHLOConstantOp found")
-            attr = op.properties["value"]
-            if isinstance(attr, DenseIntOrFPElementsAttr):
-                # TODO: extend this in case there is more than one value
-                value = attr.get_values()[0]
-                return value
-
-        raise NotImplementedError(f"Cannot resolve wire from op: {op}")
+            return self.resolve_constant_wire(op.in_qubits[ssa.index])
+        if isinstance(op, ExtractOpPL):
+            return self.resolve_constant_wire(op.idx)
+        raise NotImplementedError(f"Cannot resolve wire for op: {op}")
 
     def ssa_to_qml_params(self, op: CustomOp) -> list[float | int]:
         """Get the parameters from the operation."""
@@ -180,14 +154,13 @@ class VisualizationTransform(pattern_rewriter.RewritePattern):
         """Given a ``quantum.custom`` xDSL op, convert it to a PennyLane operator."""
         gate_name = op.properties["gate_name"].data
         parameters = self.ssa_to_qml_params(op)
-        print(f"parameters: {parameters}")
         wires = self.ssa_to_qml_wires(op)
-        print(f"wires: {wires}")
         gate = resolve_gate(gate_name)(*parameters, wires=wires)
         if op.properties.get("adjoint") is not None:
             gate = qml.adjoint(gate)
         return gate
 
+    # TODO: this will probably no longer be needed once PR #7937 is merged
     def initialize_qubit_mapping(self, funcOp: func.FuncOp):
         """Scan the function to populate the quantum register and wire mappings."""
         saw_alloc = False
@@ -198,16 +171,12 @@ class VisualizationTransform(pattern_rewriter.RewritePattern):
                 saw_alloc = True
                 self.quantum_register = op.qreg
             elif isinstance(op, ExtractOpPL):
-                wire = self.get_wire_from_quantum_extract(op.idx)
+                wire = self.resolve_constant_wire(op.idx)
                 if wire not in self.wire_to_ssa_qubits:
                     self.wire_to_ssa_qubits[wire] = op.qubit
                     # We update the reverse mapping as well for completeness,
                     # but this should not be used in practice for visualization.
                     self.ssa_qubits_to_wires[op.qubit] = wire
-
-                print(f"ExtractOp: wire {wire} -> SSA qubit {op.qubit}")
-                print(f"self.wire_to_ssa_qubits: {self.wire_to_ssa_qubits}")
-                print(f"self.ssa_qubits_to_wires: {self.ssa_qubits_to_wires}")
 
     # pylint:disable=arguments-differ, too-many-branches
     @pattern_rewriter.op_type_rewrite_pattern
@@ -219,6 +188,10 @@ class VisualizationTransform(pattern_rewriter.RewritePattern):
 
         for xdsl_op in funcOp.body.walk():
 
+            if isinstance(xdsl_op, StateOp):
+                # TODO: handle StateOp
+                print("DEBUG:stop here")
+
             if not isinstance(xdsl_op, CustomOp):
                 continue
             if self.quantum_register is None:
@@ -227,13 +200,9 @@ class VisualizationTransform(pattern_rewriter.RewritePattern):
                 raise NotImplementedError("No wires extracted from the register have been found.")
 
             print(f"Processing operation: {xdsl_op}")
-
             qml_op = self.xdsl_to_qml_op(xdsl_op)
             collected_ops.append(qml_op)
-
             print(f"collected ops: {collected_ops}")
-
-            # How can I tell to the rewriter not to do anything to the IR?
 
 
 @dataclass(frozen=True)
