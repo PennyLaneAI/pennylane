@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tensorflow specific tests for execute and default qubit 2."""
-from typing import Optional
-
 import numpy as np
 import pytest
 
@@ -34,12 +32,22 @@ def test_tensorflow_interface_deprecation():
     params = tf.Variable(0.1)
 
     @qml.qnode(dev)
-    def circuit(x):
+    def circuit_variable(x):
         qml.RX(x, wires=0)
         return qml.expval(qml.PauliZ(0))
 
     with pytest.warns(PennyLaneDeprecationWarning, match=_TF_DEPRECATION_MSG):
-        circuit(params)
+        circuit_variable(params)
+
+    params = [0.1]
+
+    @qml.qnode(dev, interface="tensorflow")
+    def circuit_interface(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.PauliZ(0))
+
+    with pytest.warns(PennyLaneDeprecationWarning, match=_TF_DEPRECATION_MSG):
+        circuit_interface(params)
 
 
 # pylint: disable=too-few-public-methods
@@ -858,7 +866,7 @@ def test_device_returns_float32(diff_method):
 
     class Float32Dev(qml.devices.DefaultQubit):
 
-        def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config: qml.devices.ExecutionConfig | None = None):
             results = super().execute(circuits, execution_config)
             return _to_float32(results)
 
