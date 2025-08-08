@@ -428,7 +428,29 @@ class TransformProgram:
                 if argnums is not None:
                     # pylint: disable=unsubscriptable-object
                     tape.trainable_params = argnums[tape_idx]
-                new_tapes, fn = transform(tape, *targs, **tkwargs)
+
+                #### THIS SHOULD NEVER MERGE INTO PENNYLANE PROPER ####
+                # I'm so sorry for this, but it *does* do the thing,
+                # at least for the little subset of transforms we need
+                # for this prototype
+                if (
+                    "QuantumScriptSequence" in str(type(tape))
+                    and not transform.__name__ == "convert_to_mbqc_formalism"
+                ):
+                    new_inner_tapes = []
+                    for inner_tape in tape.intermediate_tapes:
+                        # this will only work if the postprocessing is null
+                        # or related only to measurements on the final tape
+                        new_tape, _ = transform(inner_tape, *targs, **tkwargs)
+                        new_inner_tapes.append(new_tape[0])
+                    final_tape, fn = transform(tape.final_tape, *targs, **tkwargs)
+                    new_inner_tapes.append(final_tape[0])
+                    new_tapes = [
+                        tape.copy(tapes=new_inner_tapes),
+                    ]
+                else:
+                    new_tapes, fn = transform(tape, *targs, **tkwargs)
+                #### --------------------------------------------- ####
                 execution_tapes.extend(new_tapes)
 
                 fns.append(fn)
