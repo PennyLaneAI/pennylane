@@ -821,16 +821,10 @@ class TestMultiControlledX:
         op_repr = qml.MultiControlledX(wires=wires, control_values=control_values).__repr__()
         assert op_repr == f"MultiControlledX(wires={wires}, control_values={control_values})"
 
-    @pytest.mark.parametrize("num_work_wires", [1, 2, 3])
-    def test_decomposition_rules_explicit_work_wires(self, num_work_wires):
+    @pytest.mark.parametrize("num_work_wires", [0, 1, 2, 3])
+    def test_decomposition_rules_with_work_wires(self, num_work_wires):
         """Tests the decomposition rules of MCX when work wires are specified."""
         op = qml.MultiControlledX([0, 1, 2, 3, 4, 5], work_wires=range(6, num_work_wires + 6))
-        for rule in qml.list_decomps(qml.MultiControlledX):
-            _test_decomposition_rule(op, rule)
-
-    def test_decomposition_rules_dynamic_work_wires(self, num_work_wires):
-        """Tests the decomposition rules of MCX when work wires are specified."""
-        op = qml.MultiControlledX([0, 1, 2, 3, 4, 5])
         for rule in qml.list_decomps(qml.MultiControlledX):
             _test_decomposition_rule(op, rule)
 
