@@ -69,7 +69,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
-    # pylint: disable=ungrouped-imports
     from numbers import Number
 
     from jax.extend.core import Jaxpr

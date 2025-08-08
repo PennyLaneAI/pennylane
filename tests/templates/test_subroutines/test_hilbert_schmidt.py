@@ -21,8 +21,6 @@ import pytest
 
 import pennylane as qml
 
-# pylint: disable=expression-not-assigned
-
 
 # pylint: disable=protected-access
 @pytest.mark.parametrize("op_type", (qml.HilbertSchmidt, qml.LocalHilbertSchmidt))

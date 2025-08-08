@@ -882,7 +882,6 @@ class TestBroadcasting:
             # third batch of samples can be any of |00>, |01>, |10>, or |11>
             assert np.all(np.logical_or(r[2] == 0, r[2] == 1))
 
-    # pylint:disable = too-many-arguments
     @pytest.mark.parametrize(
         "shots",
         [

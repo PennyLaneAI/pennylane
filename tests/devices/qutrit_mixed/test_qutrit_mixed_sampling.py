@@ -492,7 +492,6 @@ class TestBroadcasting:
 
             assert_correct_sampled_batched_two_qutrit_pure_state(r)
 
-    # pylint:disable = too-many-arguments
     @pytest.mark.parametrize(
         "shots",
         shots_to_test_nonsamples,

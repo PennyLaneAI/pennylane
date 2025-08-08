@@ -23,7 +23,7 @@ from pennylane.labs.resource_estimation.ops.qubit.parametric_ops_single_qubit im
     _rotation_resources,
 )
 
-# pylint: disable=no-self-use, use-implicit-booleaness-not-comparison,too-many-arguments
+# pylint: disable=no-self-use
 
 params = list(zip([10e-3, 10e-4, 10e-5], [17, 21, 24]))
 
@@ -89,7 +89,7 @@ class TestPauliRotation:
 
     @pytest.mark.parametrize("resource_class", params_classes)
     @pytest.mark.parametrize("epsilon", params_errors)
-    def test_resource_params(self, resource_class, epsilon):  # pylint: disable=unused-argument
+    def test_resource_params(self, resource_class, epsilon):
         """Test that the resource params are correct"""
         op = resource_class(epsilon, wires=0)
         assert op.resource_params == {"eps": epsilon}
@@ -170,6 +170,7 @@ class TestPauliRotation:
 
     @pytest.mark.parametrize("resource_class, local_res", zip(params_classes, params_ctrl_res))
     @pytest.mark.parametrize("ctrl_wires, ctrl_values, general_res", ctrl_res_data)
+    # pylint: disable=too-many-arguments
     def test_controlled_decomposition_multi_controlled(
         self, resource_class, local_res, ctrl_wires, ctrl_values, general_res
     ):
