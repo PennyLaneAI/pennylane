@@ -294,6 +294,8 @@ class TestHelperFunctions:  # pylint: disable=too-many-arguments, too-many-posit
             (qml.Snapshot(), ["─|Snap|", "─|Snap|", "─|Snap|", "─|Snap|"]),
             (qml.Barrier(), ["─||", "─||", "─||", "─||"]),
             (qml.S(0) @ qml.T(0), ["─S@T", "─", "─", "─"]),
+            (qml.TemporaryAND([0, 1, 3]), ["╭●", "├●", "│", "╰─"]),
+            (qml.TemporaryAND([1, 0, 3], control_values=(0, 1)), ["╭●", "├○", "│", "╰─"]),
         ],
     )
     def test_add_obj(self, op, out):
@@ -675,6 +677,14 @@ single_op_tests_data = [
         ),
         "0: ─╭○─┤  \n1: ─├●─┤  \n2: ─├○─┤  \n3: ─├●─┤  \n4: ─╰Y─┤  ",
     ),
+    (
+        qml.TemporaryAND([3, 0, 2], control_values=(1, 0)),
+        "3: ─╭●─┤  \n0: ─├○─┤  \n2: ─╰──┤  ",
+    ),
+    (
+        qml.adjoint(qml.TemporaryAND([3, 0, 2], control_values=(0, 1))),
+        "3: ──○╮─┤  \n0: ──●┤─┤  \n2: ───╯─┤  ",
+    ),
 ]
 
 
@@ -726,6 +736,31 @@ class TestLayering:
         expected = "0: ──X─╭IsingXX────┤  \n1: ────│─────────X─┤  \n2: ────╰IsingXX────┤  "
 
         assert tape_text(_tape, wire_order=[0, 1, 2]) == expected
+
+    def test_multiple_elbows(self):
+        """Test that multiple elbows are drawn correctly."""
+        _tape = qml.tape.QuantumScript(
+            [
+                qml.TemporaryAND(["a", "b", "c"]),
+                qml.adjoint(qml.TemporaryAND(["f", "d", "e"])),
+                qml.adjoint(qml.TemporaryAND(["a", "d", "b"], control_values=(0, 0))),
+                qml.TemporaryAND(["e", "h", "f"], control_values=(0, 1)),
+            ]
+        )
+        expected = (
+            "a: ─╭●───○╮─┤  \n"
+            "b: ─├●────┤─┤  \n"
+            "c: ─╰─────│─┤  \n"
+            "d: ──●╮──○╯─┤  \n"
+            "e: ───┤─╭○──┤  \n"
+            "f: ──●╯─├───┤  \n"
+            "g: ─────│───┤  \n"
+            "h: ─────╰●──┤  "
+        )
+        out = tape_text(
+            _tape, wire_order=["a", "b", "c", "d", "e", "f", "g", "h"], show_all_wires=True
+        )
+        assert out == expected
 
 
 tape_matrices = qml.tape.QuantumScript(

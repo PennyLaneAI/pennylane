@@ -56,6 +56,30 @@
 
 <h3>Improvements 🛠</h3>
 
+* Improved the drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint.
+  Also added a custom ``repr`` to :class:`~.TemporaryAND`.
+  [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
+
+  ```python
+  import pennylane as qml
+
+  @qml.draw
+  @qml.qnode(qml.device("lightning.qubit", wires=4))
+  def node():
+      qml.TemporaryAND([0, 1, 2], control_values=[1, 0])
+      qml.CNOT([2, 3])
+      qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[1, 0]))
+      return qml.expval(qml.Z(3))
+  ```
+
+  ```pycon
+  print(node())
+  0: ─╭●─────●╮─┤     
+  1: ─├○─────○┤─┤     
+  2: ─╰──╭●───╯─┤     
+  3: ────╰X─────┤  <Z>
+  ```
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
