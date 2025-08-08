@@ -114,26 +114,26 @@ class ResourceSelectTHC(ResourceOperator):
 
 class ResourcePrepTHC(ResourceOperator):
 
-    def __init__(self, compact_ham, coeff_precision= 2e-5, wires=None):
+    def __init__(self, compact_ham, coeff_precision= 2e-5, select_swap_depth=None, wires=None):
 
         self.compact_ham = compact_ham
         self.coeff_precision = coeff_precision
-        num_orb = compact_ham.params["num_orbitals"]
+        self.select_swap_depth = select_swap_depth
         tensor_rank = compact_ham.params["tensor_rank"]
         self.num_wires = 2 * int(np.ceil(math.log2(tensor_rank+1)))
         super().__init__(wires=wires)
 
     @property
     def resource_params(self) -> dict:
-        return {"compact_ham": self.compact_ham, "coeff_precision": self.coeff_precision}
+        return {"compact_ham": self.compact_ham, "coeff_precision": self.coeff_precision, "select_swap_depth": self.select_swap_depth}
 
     @classmethod
-    def resource_rep(cls, compact_ham, coeff_precision=2e-5) -> CompressedResourceOp:
-        params = {"compact_ham": compact_ham, "coeff_precision": coeff_precision}
+    def resource_rep(cls, compact_ham, coeff_precision=2e-5, select_swap_depth=None) -> CompressedResourceOp:
+        params = {"compact_ham": compact_ham, "coeff_precision": coeff_precision, "select_swap_depth":select_swap_depth}
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def default_resource_decomp(cls, compact_ham, coeff_precision=2e-5, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(cls, compact_ham, coeff_precision=2e-5, select_swap_depth=None, **kwargs) -> list[GateCount]:
 
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
@@ -197,7 +197,7 @@ class ResourcePrepTHC(ResourceOperator):
         #Contiguous register cost
         gate_list.append(plre.GateCount(toffoli, m_register**2+m_register-1))
 
-        qrom_coeff = resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": 2*m_register+2+coeff_prec_wires, "clean": False,"select_swap_depth": 4})
+        qrom_coeff = resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": 2*m_register+2+coeff_prec_wires, "clean": False,"select_swap_depth": select_swap_depth})
         gate_list.append(plre.GateCount(qrom_coeff, 1))
 
         # Comparator
@@ -219,7 +219,7 @@ class ResourcePrepTHC(ResourceOperator):
         return gate_list
 
     @classmethod
-    def default_adjoint_resource_decomp(cls, compact_ham, coeff_precision=2e-5, **kwargs) -> list[GateCount]:
+    def default_adjoint_resource_decomp(cls, compact_ham, coeff_precision=2e-5, select_swap_depth=None, **kwargs) -> list[GateCount]:
 
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
@@ -228,7 +228,7 @@ class ResourcePrepTHC(ResourceOperator):
         compare_precision_wires = abs(math.floor(math.log2(coeff_precision)))
 
         # Number of qubits needed for the integrals tensors
-        num_coeff = num_orb + tensor_rank*(tensor_rank+1)
+        num_coeff = num_orb + tensor_rank*(tensor_rank+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
         m_register = int(np.ceil(math.log2(tensor_rank+1)))
         gate_list = []
@@ -279,7 +279,7 @@ class ResourcePrepTHC(ResourceOperator):
         #Contiguous register cost
         gate_list.append(plre.GateCount(toffoli, m_register**2+m_register-1))
 
-        qrom_adj= resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": 2*m_register+2+coeff_prec_wires, "clean": False, "select_swap_depth": 4})})
+        qrom_adj= resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": 2*m_register+2+coeff_prec_wires, "clean": False, "select_swap_depth": select_swap_depth})})
         gate_list.append(plre.GateCount(qrom_adj, 1))
 
         # swap cost
