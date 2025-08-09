@@ -31,9 +31,9 @@ from ._loop_abstract_axes import (
 
 
 def while_loop(cond_fn, allow_array_resizing: Literal["auto", True, False] = "auto"):
-    """A :func:`~.qjit` compatible for-loop for PennyLane programs. When
+    """A :func:`~.qjit` compatible while-loop for PennyLane programs. When
     used without :func:`~.qjit` or program capture, this function will fall back to a standard
-    Python for loop.
+    Python while loop.
 
     This decorator provides a functional version of the traditional while loop,
     similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
