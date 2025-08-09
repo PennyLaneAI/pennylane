@@ -11,13 +11,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# pylint: disable=inconsistent-return-statements
+
 """
 The :code:`default.gaussian` device is a simulator for Gaussian continuous-variable
 quantum computations, and can be used as a template for writing PennyLane
 devices for new CV backends.
 
-It implements the necessary :class:`~pennylane._device.Device` methods as well as all built-in
+It implements the necessary :class:`~pennylane.devices._legacy_device.Device` methods as well as all built-in
 :mod:`continuous-variable Gaussian operations <pennylane.ops.cv>`, and provides a very simple simulation of a
 Gaussian-based quantum circuit architecture.
 """
@@ -30,10 +30,11 @@ import numpy as np
 from scipy.special import factorial as fac
 
 import pennylane as qml
-from pennylane import Device
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import Identity
 
 from .._version import __version__
+from ._legacy_device import Device
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -55,7 +56,7 @@ def partitions(s, include_singles=True):
     Returns:
         tuple: returns a nested tuple, containing all partitions of the sequence.
     """
-    # pylint: disable=too-many-branches
+
     if len(s) == 2:
         if include_singles:
             yield (s[0],), (s[1],)
@@ -358,7 +359,7 @@ def vacuum_state(wires, hbar=2.0):
     Returns:
         array: the vacuum state
     """
-    means = np.zeros((2 * wires))
+    means = np.zeros(2 * wires)
     cov = np.identity(2 * wires) * hbar / 2
     state = [cov, means]
     return state
@@ -394,7 +395,7 @@ def squeezed_state(r, phi, hbar=2.0):
     Returns:
         array: the squeezed state
     """
-    means = np.zeros((2))
+    means = np.zeros(2)
     state = [squeezed_cov(r, phi, hbar), means]
     return state
 
@@ -616,7 +617,7 @@ def fock_expectation(cov, mu, params, hbar=2.0):
     Returns:
         tuple: the Fock state expectation and variance
     """
-    # pylint: disable=unused-argument
+
     ex = fock_prob(cov, mu, params[0], hbar=hbar)
 
     # var[|n><n|] = E[|n><n|^2] -  E[|n><n|]^2 = E[|n><n|] -  E[|n><n|]^2
@@ -895,7 +896,7 @@ class DefaultGaussian(Device):
     # pylint: disable=arguments-differ
     def execute(self, operations, observables):
         if len(observables) > 1:
-            raise qml.QuantumFunctionError("Default gaussian only support single measurements.")
+            raise QuantumFunctionError("Default gaussian only support single measurements.")
         return super().execute(operations, observables)
 
     def batch_execute(self, circuits):

@@ -18,8 +18,9 @@ import warnings
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
+from pennylane.ops import CNOT, RY, SWAP, Hadamard
 from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
 from pennylane.wires import Wires
 
@@ -73,9 +74,6 @@ class FABLE(Operation):
         of the input matrix are within :math:`[-1, 1]`. Apply a subnormalization factor if needed.
     """
 
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
-
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -85,11 +83,11 @@ class FABLE(Operation):
     def __init__(self, input_matrix, wires, tol=0, id=None):
         wires = Wires(wires)
 
-        if not qml.math.is_abstract(input_matrix):
-            if qml.math.any(qml.math.iscomplex(input_matrix)):
+        if not math.is_abstract(input_matrix):
+            if math.any(math.iscomplex(input_matrix)):
                 raise ValueError("Support for imaginary values has not been implemented.")
 
-            alpha = qml.math.linalg.norm(qml.math.ravel(input_matrix), np.inf)
+            alpha = math.linalg.norm(math.ravel(input_matrix), np.inf)
             if alpha > 1:
                 raise ValueError(
                     "The subnormalization factor should be lower than 1."
@@ -101,20 +99,20 @@ class FABLE(Operation):
                     "JIT is not supported for tolerance values greater than 0. Set tol = 0 to run."
                 )
 
-        row, col = qml.math.shape(input_matrix)
+        row, col = math.shape(input_matrix)
         if row != col:
             warnings.warn(
                 f"The input matrix should be of shape NxN, got {input_matrix.shape}."
                 + "Zeroes were padded automatically."
             )
             dimension = max(row, col)
-            input_matrix = qml.math.pad(input_matrix, ((0, dimension - row), (0, dimension - col)))
-            row, col = qml.math.shape(input_matrix)
-        n = int(qml.math.ceil(qml.math.log2(col)))
+            input_matrix = math.pad(input_matrix, ((0, dimension - row), (0, dimension - col)))
+            row, col = math.shape(input_matrix)
+        n = int(math.ceil(math.log2(col)))
         if n == 0:  ### For edge case where someone puts a 1x1 array.
             n = 1
         if col < 2**n:
-            input_matrix = qml.math.pad(input_matrix, ((0, 2**n - col), (0, 2**n - col)))
+            input_matrix = math.pad(input_matrix, ((0, 2**n - col), (0, 2**n - col)))
             col = 2**n
             warnings.warn(
                 "The input matrix should be of shape NxN, where N is a power of 2."
@@ -140,51 +138,47 @@ class FABLE(Operation):
         Returns:
             list[.Operator]: list of gates for efficient circuit
         """
-        op_list = []
-        alphas = qml.math.arccos(input_matrix).flatten()
+        alphas = math.arccos(input_matrix).flatten()
         thetas = compute_theta(alphas)
 
         ancilla = [wires[0]]
         wires_i = wires[1 : 1 + len(wires) // 2][::-1]
         wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
 
-        code = gray_code((2 * qml.math.log2(len(input_matrix))))
-        n_selections = len(code)
+        code = gray_code(int(2 * math.log2(len(input_matrix))))
+        control_wires = np.log2(code ^ np.roll(code, -1)).astype(int)
 
-        control_wires = [
-            int(qml.math.log2(int(code[i], 2) ^ int(code[(i + 1) % n_selections], 2)))
-            for i in range(n_selections)
-        ]
         wire_map = dict(enumerate(wires_j + wires_i))
 
-        for w in wires_i:
-            op_list.append(qml.Hadamard(w))
+        op_list = [Hadamard(w) for w in wires_i]
 
         nots = {}
         for theta, control_index in zip(thetas, control_wires):
-            if qml.math.is_abstract(theta):
+            if math.is_abstract(theta):
                 for c_wire in nots:
-                    op_list.append(qml.CNOT(wires=[c_wire] + ancilla))
-                op_list.append(qml.RY(2 * theta, wires=ancilla))
+                    op_list.append(CNOT(wires=[c_wire] + ancilla))
+                op_list.append(RY(2 * theta, wires=ancilla))
+                nots = {}
                 nots[wire_map[control_index]] = 1
+                continue
+
+            if math.abs(2 * theta) > tol:
+                for c_wire in nots:
+                    op_list.append(CNOT(wires=[c_wire] + ancilla))
+                op_list.append(RY(2 * theta, wires=ancilla))
+                nots = {}
+            if wire_map[control_index] in nots:
+                del nots[wire_map[control_index]]
             else:
-                if abs(2 * theta) > tol:
-                    for c_wire in nots:
-                        op_list.append(qml.CNOT(wires=[c_wire] + ancilla))
-                    op_list.append(qml.RY(2 * theta, wires=ancilla))
-                    nots = {}
-                if wire_map[control_index] in nots:
-                    del nots[wire_map[control_index]]
-                else:
-                    nots[wire_map[control_index]] = 1
+                nots[wire_map[control_index]] = 1
 
         for c_wire in nots:
-            op_list.append(qml.CNOT([c_wire] + ancilla))
+            op_list.append(CNOT([c_wire] + ancilla))
 
         for w_i, w_j in zip(wires_i, wires_j):
-            op_list.append(qml.SWAP(wires=[w_i, w_j]))
+            op_list.append(SWAP(wires=[w_i, w_j]))
 
         for w in wires_i:
-            op_list.append(qml.Hadamard(w))
+            op_list.append(Hadamard(w))
 
         return op_list

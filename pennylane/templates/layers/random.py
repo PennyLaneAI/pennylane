@@ -18,8 +18,10 @@ Contains the RandomLayers template.
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
+from pennylane.ops import CNOT, RX, RY, RZ
+from pennylane.wires import Wires
 
 
 class RandomLayers(Operation):
@@ -91,11 +93,11 @@ class RandomLayers(Operation):
 
         You can verify this by drawing the circuits.
 
-        >>> print(qml.draw(circuit1, expansion_strategy="device")(weights))
+        >>> print(qml.draw(circuit1, level="device")(weights))
         0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
         1: ──RX(0.10)──RX(-2.10)─╰●─╰●───────────┤
 
-        >>> print(qml.draw(circuit2, expansion_strategy="device")(weights))
+        >>> print(qml.draw(circuit2, level="device")(weights))
         0: ──────────────────────╭X─╭X──RZ(1.40)─┤  <Z>
         1: ──RX(0.10)──RX(-2.10)─╰●─╰●───────────┤
 
@@ -111,10 +113,10 @@ class RandomLayers(Operation):
         ...     return qml.expval(qml.Z(0))
         >>> np.allclose(circuit(weights, seed=9), circuit(weights, seed=12))
         False
-        >>>  print(qml.draw(circuit, expansion_strategy="device")(weights, seed=9))
+        >>>  print(qml.draw(circuit, level="device")(weights, seed=9))
         0: ─╭X──RX(0.10)────────────┤  <Z>
         1: ─╰●──RY(-2.10)──RX(1.40)─┤
-        >>> print(qml.draw(circuit, expansion_strategy="device")(weights, seed=12))
+        >>> print(qml.draw(circuit, level="device")(weights, seed=12))
         0: ─╭X──RZ(0.10)──╭●─╭X───────────┤  <Z>
         1: ─╰●──RX(-2.10)─╰X─╰●──RZ(1.40)─┤
 
@@ -167,7 +169,6 @@ class RandomLayers(Operation):
             weights = np.random.random(size=shape)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(
@@ -180,14 +181,14 @@ class RandomLayers(Operation):
         seed=42,
         id=None,
     ):
-        shape = qml.math.shape(weights)
+        shape = math.shape(weights)
         if len(shape) != 2:
             raise ValueError(f"Weights tensor must be 2-dimensional; got shape {shape}")
 
         self._hyperparameters = {
             "ratio_imprim": ratio_imprim,
-            "imprimitive": imprimitive or qml.CNOT,
-            "rotations": tuple(rotations) if rotations else (qml.RX, qml.RY, qml.RZ),
+            "imprimitive": imprimitive or CNOT,
+            "rotations": tuple(rotations) if rotations else (RX, RY, RZ),
             "seed": seed,
         }
 
@@ -232,11 +233,11 @@ class RandomLayers(Operation):
          CNOT(wires=['b', 'a']),
          RX(tensor(1.4000), wires=['a'])]
         """
-        wires = qml.wires.Wires(wires)
+        wires = Wires(wires)
         rng = np.random.default_rng(seed)
 
-        shape = qml.math.shape(weights)
-        n_layers = qml.math.shape(weights)[0]
+        shape = math.shape(weights)
+        n_layers = math.shape(weights)[0]
         op_list = []
 
         for l in range(n_layers):

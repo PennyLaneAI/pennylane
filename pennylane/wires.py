@@ -16,15 +16,25 @@ This module contains the :class:`Wires` class, which takes care of wire bookkeep
 """
 import functools
 import itertools
-from collections.abc import Iterable, Sequence
+from collections.abc import Hashable, Iterable, Sequence
+from importlib import import_module, util
 
 import numpy as np
 
+from pennylane import math
+from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
 
+if util.find_spec("jax") is not None:
+    jax = import_module("jax")
+    jax_available = True
+else:
+    jax_available = False
+    jax = None
 
-class WireError(Exception):
-    """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
+if jax_available:
+    # pylint: disable=unnecessary-lambda
+    setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
 
 
 def _process(wires):
@@ -49,11 +59,15 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
+    if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
+        wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
+
     try:
         # Use tuple conversion as a check for whether `wires` can be iterated over.
         # Note, this is not the same as `isinstance(wires, Iterable)` which would
         # pass for 0-dim numpy arrays that cannot be iterated over.
         tuple_of_wires = tuple(wires)
+
     except TypeError:
         # if not iterable, interpret as single wire label
         try:
@@ -82,7 +96,7 @@ class Wires(Sequence):
     r"""
     A bookkeeping class for wires, which are ordered collections of unique objects.
 
-    If the input `wires` can be iterated over, it is interpreted as a sequence of wire labels that have to be
+    If the input ``wires`` can be iterated over, it is interpreted as a sequence of wire labels that have to be
     unique and hashable. Else it is interpreted as a single wire label that has to be hashable. The
     only exception are strings which are interpreted as wire labels.
 
@@ -102,7 +116,7 @@ class Wires(Sequence):
     """
 
     def _flatten(self):
-        """Serialize Wires into a flattened representation according to the PyTree convension."""
+        """Serialize Wires into a flattened representation according to the PyTree convention."""
         return self._labels, ()
 
     @classmethod
@@ -111,6 +125,8 @@ class Wires(Sequence):
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
+        if wires is None:
+            raise TypeError("Must specify a set of wires. None is not a valid wire label.")
         if _override:
             self._labels = wires
         else:
@@ -144,7 +160,7 @@ class Wires(Sequence):
 
     def __repr__(self):
         """Method defining the string representation of this class."""
-        return f"<Wires = {list(self._labels)}>"
+        return f"Wires({list(self._labels)})"
 
     def __eq__(self, other):
         """Method to support the '==' operator.
@@ -198,6 +214,16 @@ class Wires(Sequence):
             ndarray: array representing Wires object
         """
         return np.array(self._labels)
+
+    def __jax_array__(self):
+        """Defines a JAX numpy array representation of the Wires object.
+
+        Returns:
+            JAX ndarray: array representing Wires object
+        """
+        if jax_available:
+            return jax.numpy.array(self._labels)
+        raise ModuleNotFoundError("JAX not found")  # pragma: no cover
 
     @property
     def labels(self):
@@ -259,7 +285,7 @@ class Wires(Sequence):
             wires (Iterable[Number, str], Number, str, Wires): Wire(s) whose indices are to be found
 
         Returns:
-            List: index list
+            list: index list
 
         **Example**
 
@@ -286,7 +312,7 @@ class Wires(Sequence):
         >>> wires = Wires(['a', 'b', 'c'])
         >>> wire_map = {'a': 4, 'b':2, 'c': 3}
         >>> wires.map(wire_map)
-        <Wires = [4, 2, 3]>
+        Wires([4, 2, 3])
         """
         # Make sure wire_map has `Wires` keys and values so that the `in` operator always works
 
@@ -322,9 +348,9 @@ class Wires(Sequence):
 
         >>> wires = Wires([4, 0, 1, 5, 6])
         >>> wires.subset([2, 3, 0])
-        <Wires = [1, 5, 4]>
+        Wires([1, 5, 4])
         >>> wires.subset(1)
-        <Wires = [0]>
+        Wires([0])
 
         If ``periodic_boundary`` is True, the modulo of the number of wires of an index is used instead of an index,
         so that  ``wires.subset(i) == wires.subset(i % n_wires)`` where ``n_wires`` is the number of wires of this
@@ -332,7 +358,7 @@ class Wires(Sequence):
 
         >>> wires = Wires([4, 0, 1, 5, 6])
         >>> wires.subset([5, 1, 7], periodic_boundary=True)
-        <Wires = [4, 0, 1]>
+        Wires([4, 0, 1])
 
         """
 
@@ -378,7 +404,7 @@ class Wires(Sequence):
         This is similar to a set intersection method, but keeps the order of wires as they appear in the list.
 
         Args:
-            list_of_wires (List[Wires]): list of Wires objects
+            list_of_wires (list[Wires]): list of Wires objects
 
         Returns:
             Wires: shared wires
@@ -389,9 +415,9 @@ class Wires(Sequence):
         >>> wires2 = Wires([3, 0, 4])
         >>> wires3 = Wires([4, 0])
         >>> Wires.shared_wires([wires1, wires2, wires3])
-        <Wires = [4, 0]>
+        Wires([4, 0])
         >>> Wires.shared_wires([wires2, wires1, wires3])
-        <Wires = [0, 4]>
+        Wires([0, 4])
         """
 
         for wires in list_of_wires:
@@ -417,7 +443,7 @@ class Wires(Sequence):
         This is similar to a set combine method, but keeps the order of wires as they appear in the list.
 
         Args:
-            list_of_wires (List[Wires]): List of Wires objects
+            list_of_wires (list[Wires]): list of Wires objects
             sort (bool): Toggle for sorting the combined wire labels. The sorting is based on
                 value if all keys are int, else labels' str representations are used.
 
@@ -431,7 +457,7 @@ class Wires(Sequence):
         >>> wires3 = Wires([5, 3])
         >>> list_of_wires = [wires1, wires2, wires3]
         >>> Wires.all_wires(list_of_wires)
-        <Wires = [4, 0, 1, 3, 5]>
+        Wires([4, 0, 1, 3, 5])
         """
         converted_wires = (
             wires if isinstance(wires, Wires) else Wires(wires) for wires in list_of_wires
@@ -452,7 +478,7 @@ class Wires(Sequence):
         """Return the wires that are unique to any Wire object in the list.
 
         Args:
-            list_of_wires (List[Wires]): list of Wires objects
+            list_of_wires (list[Wires]): list of Wires objects
 
         Returns:
             Wires: unique wires
@@ -463,7 +489,7 @@ class Wires(Sequence):
         >>> wires2 = Wires([0, 2, 3])
         >>> wires3 = Wires([5, 3])
         >>> Wires.unique_wires([wires1, wires2, wires3])
-        <Wires = [4, 1, 2, 5]>
+        Wires([4, 1, 2, 5])
         """
 
         for wires in list_of_wires:
@@ -493,6 +519,213 @@ class Wires(Sequence):
 
         return Wires(tuple(unique), _override=True)
 
+    def union(self, other):
+        """Return the union of the current :class:`~.Wires` object and either another :class:`~.Wires` object or an
+        iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
+
+        Args:
+            other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
+                to perform the union with
+
+        Returns:
+            Wires: A new :class:`~.Wires` object representing the union of the two :class:`~.Wires` objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([3, 4, 5])
+        >>> wires1.union(wires2)
+        Wires([1, 2, 3, 4, 5])
+
+        Alternatively, use the ``|`` operator:
+
+        >>> wires1 | wires2
+        Wires([1, 2, 3, 4, 5])
+        """
+        return Wires(set(self.labels) | set(_process(other)))
+
+    def __or__(self, other):
+        """Return the union of the current Wires object and either another Wires object or an
+        iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with
+
+        Returns:
+            Wires: A new Wires object representing the union of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([3, 4, 5])
+        >>> wires1 | wires2
+        Wires([1, 2, 3, 4, 5])
+        """
+        return self.union(other)
+
+    def __ror__(self, other):
+        """Right-hand version of __or__."""
+        return self.union(other)
+
+    def intersection(self, other):
+        """Return the intersection of the current :class:`~.Wires` object and either another :class:`~.Wires` object or
+        an iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
+
+        Args:
+            other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
+                to perform the intersection with
+
+        Returns:
+            Wires: A new :class:`~.Wires` object representing the intersection of the two :class:`~.Wires` objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([2, 3, 4])
+        >>> wires1.intersection(wires2)
+        Wires([2, 3])
+
+        Alternatively, use the ``&`` operator:
+
+        >>> wires1 & wires2
+        Wires([2, 3])
+        """
+        return Wires(set(self.labels) & set(_process(other)))
+
+    def __and__(self, other):
+        """Return the intersection of the current Wires object and either another Wires object or
+        an iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with
+
+        Returns:
+            Wires: A new Wires object representing the intersection of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([2, 3, 4])
+        >>> wires1 & wires2
+        Wires([2, 3])
+        """
+        return self.intersection(other)
+
+    def __rand__(self, other):
+        """Right-hand version of __and__."""
+        return self.intersection(other)
+
+    def difference(self, other):
+        """Return the difference of the current :class:`~.Wires` object and either another :class:`~.Wires` object or
+        an iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
+
+        Args:
+            other (Any): :class:`~.Wires` object or any iterable that can be interpreted like a :class:`~.Wires` object
+                to perform the difference with
+
+        Returns:
+            Wires: A new :class:`~.Wires` object representing the difference of the two :class:`~.Wires` objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([2, 3, 4])
+        >>> wires1.difference(wires2)
+        Wires([1])
+
+        Alternatively, use the ``-`` operator:
+
+        >>> wires1 - wires2
+        Wires([1])
+        """
+        return Wires(set(self.labels) - set(_process(other)))
+
+    def __sub__(self, other):
+        """Return the difference of the current Wires object and either another Wires object or
+        an iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with
+
+        Returns:
+            Wires: A new Wires object representing the difference of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([2, 3, 4])
+        >>> wires1 - wires2
+        Wires([1])
+        """
+        return self.difference(other)
+
+    def __rsub__(self, other):
+        """Right-hand version of __sub__."""
+        return Wires(set(_process(other)) - set(self.labels))
+
+    def symmetric_difference(self, other):
+        """Return the symmetric difference of the current :class:`~.Wires` object and either another :class:`~.Wires`
+        object or an iterable that can be interpreted like a :class:`~.Wires` object, e.g., a ``list``.
+
+        Args:
+            other (Any): :class:`~.Wires` or any iterable that can be interpreted like a :class:`~.Wires` object
+                to perform the symmetric difference with
+
+        Returns:
+            Wires: A new :class:`~.Wires` object representing the symmetric difference of the two :class:`~.Wires` objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([3, 4, 5])
+        >>> wires1.symmetric_difference(wires2)
+        Wires([1, 2, 4, 5])
+
+        Alternatively, use the ``^`` operator:
+
+        >>> wires1 ^ wires2
+        Wires([1, 2, 4, 5])
+        """
+
+        return Wires(set(self.labels) ^ set(_process(other)))
+
+    def __xor__(self, other):
+        """Return the symmetric difference of the current Wires object and either another Wires
+        object or an iterable that can be interpreted like a Wires object e.g., List.
+
+        Args:
+            other (Any): Wires or any iterable that can be interpreted like a Wires object
+                to perform the union with
+
+        Returns:
+            Wires: A new Wires object representing the symmetric difference of the two Wires objects.
+
+        **Example**
+
+        >>> from pennylane.wires import Wires
+        >>> wires1 = Wires([1, 2, 3])
+        >>> wires2 = Wires([3, 4, 5])
+        >>> wires1 ^ wires2
+        Wires([1, 2, 4, 5])
+        """
+        return self.symmetric_difference(other)
+
+    def __rxor__(self, other):
+        """Right-hand version of __xor__."""
+        return Wires(set(_process(other)) ^ set(self.labels))
+
+
+WiresLike = Wires | Iterable[Hashable] | Hashable
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access

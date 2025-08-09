@@ -20,9 +20,9 @@ import pytest
 import pennylane as qml
 
 _grad_log_map = {
-    "adjoint": "gradient_fn=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
-    "backprop": "gradient_fn=backprop, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
-    "parameter-shift": "gradient_fn=<transform: param_shift>",
+    "adjoint": "diff_method=adjoint, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
+    "backprop": "diff_method=backprop, interface=autograd, grad_on_execution=best, gradient_kwargs={}",
+    "parameter-shift": "diff_method=<transform: param_shift>",
 }
 
 
@@ -69,7 +69,7 @@ class TestLogging:
                 return qml.expval(qml.PauliZ(0))
 
             circuit(params)
-        assert len(caplog.records) == 8
+        assert len(caplog.records) == 11
         log_records_expected = [
             (
                 "pennylane.workflow.qnode",
@@ -80,27 +80,36 @@ class TestLogging:
                 ["Calling <construct(self=<QNode: device='<default.qubit device"],
             ),
             (
-                "pennylane.devices.default_qubit",
-                ["Calling <preprocess(self=<default.qubit device (wires=2)"],
-            ),
-            (
                 "pennylane.workflow.execution",
                 [
                     "device=<default.qubit device (wires=2)",
-                    "gradient_fn=None, interface=None",
+                    "diff_method=None, interface=auto",
                 ],
+            ),
+            (
+                "pennylane.workflow.resolution",
+                ["Calling <_resolve_diff_method("],
+            ),
+            (
+                "pennylane.devices.default_qubit",
+                ["Calling <setup_execution_config(self=<default.qubit device (wires=2)"],
+            ),
+            (
+                "pennylane.devices.default_qubit",
+                ["Calling <preprocess_transforms(self=<default.qubit device (wires=2)"],
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:3]):
+        for expected, actual in zip(log_records_expected, caplog.records[:5]):
             assert expected[0] in actual.name
-            assert all(msg in actual.getMessage() for msg in expected[1])
+            for msg in expected[1]:
+                assert msg in actual.getMessage()
 
     @pytest.mark.parametrize(
-        "diff_method,num_records", [("parameter-shift", 23), ("backprop", 14), ("adjoint", 18)]
+        "diff_method,num_records", [("parameter-shift", 23), ("backprop", 13), ("adjoint", 17)]
     )
     def test_dq_qnode_execution_grad(self, caplog, diff_method, num_records):
-        "Test logging of QNode with parameterised gradients"
+        "Test logging of QNode with parametrized gradients"
 
         dev = qml.device("default.qubit", wires=2)
         params = qml.numpy.array(0.1234)
@@ -123,13 +132,7 @@ class TestLogging:
                 [
                     "Creating QNode(func=<function TestLogging.test_dq_qnode_execution_grad",
                     "device=<default.qubit device (wires=2)",
-                    f"interface=auto, diff_method={diff_method}, expansion_strategy=gradient, max_expansion=10, grad_on_execution=best,",
-                ],
-            ),
-            (
-                "pennylane.workflow.qnode",
-                [
-                    "Calling <get_gradient_fn(device=<default.qubit device (wires=2)",
+                    f"interface=Interface.AUTO, diff_method={diff_method}, grad_on_execution=best,",
                 ],
             ),
             (
@@ -141,9 +144,10 @@ class TestLogging:
             ),
         ]
 
-        for expected, actual in zip(log_records_expected, caplog.records[:2]):
+        for expected, actual in zip(log_records_expected, caplog.records[:1]):
             assert expected[0] in actual.name
-            assert all(msg in actual.getMessage() for msg in expected[1])
+            for exp_msg in expected[1]:
+                assert exp_msg in actual.getMessage()
 
     def test_execution_debugging_qutrit_mixed(self, caplog):
         """Test logging of QNode forward pass from default qutrit mixed."""
@@ -159,7 +163,7 @@ class TestLogging:
 
             circuit(params)
 
-        assert len(caplog.records) == 6
+        assert len(caplog.records) == 9
 
         log_records_expected = [
             (
@@ -178,7 +182,7 @@ class TestLogging:
                 "pennylane.workflow.execution",
                 [
                     "device=<default.qutrit.mixed device (wires=2)",
-                    "gradient_fn=None, interface=None",
+                    "diff_method=None, interface=Interface.AUTOGRAD",
                 ],
             ),
         ]

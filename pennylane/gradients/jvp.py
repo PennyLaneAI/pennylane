@@ -17,7 +17,7 @@ of tapes.
 """
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
 from pennylane.measurements import ProbabilityMP
 
 
@@ -163,40 +163,40 @@ def compute_jvp_single(tangent, jac):
     """
     if jac is None:
         return None
-    single_param = not isinstance(jac, tuple)
+    single_param = not isinstance(jac, (list, tuple))
     if (single_param and jac.shape == (0,)) or (not single_param and len(jac) == 0):
         # No trainable parameters
-        return qml.math.zeros((1, 0))
+        return math.zeros((1, 0))
 
     if single_param:
-        tangent = qml.math.stack(tangent)
+        tangent = math.stack(tangent)
         first_tangent_ndim = len(tangent.shape[1:])
-        tangent = qml.math.flatten(tangent)
+        tangent = math.flatten(tangent)
         tangent_size = tangent.shape[0]
         shape = jac.shape
         new_shape = shape[: len(shape) - first_tangent_ndim] + (tangent_size,)
-        jac = qml.math.cast(qml.math.convert_like(jac, tangent), tangent.dtype)
-        jac = qml.math.reshape(jac, new_shape)
-        return qml.math.tensordot(jac, tangent, [[-1], [0]])
+        jac = math.cast(math.convert_like(jac, tangent), tangent.dtype)
+        jac = math.reshape(jac, new_shape)
+        return math.tensordot(jac, tangent, [[-1], [0]])
 
     tangent_ndims = [getattr(t, "ndim", 0) for t in tangent]
     if isinstance(tangent, (tuple, list)) and any(ndim > 0 for ndim in tangent_ndims):
         # At least one tangent entry is not a scalar, requiring us to flatten them and hstack
-        tangent = [qml.math.flatten(t) for t in tangent]
+        tangent = [math.flatten(t) for t in tangent]
         tangent_sizes = [t.shape[0] for t in tangent]
-        tangent = qml.math.hstack(tangent)
+        tangent = math.hstack(tangent)
     else:
         # Only scalar tangent entries, no flattening required and we may use stack
         tangent_sizes = [1] * len(tangent)
-        tangent = qml.math.stack(tangent)
+        tangent = math.stack(tangent)
     jac_shapes = [j.shape for j in jac]
     new_shapes = [
         shape[: len(shape) - t_ndim] + (tsize,)
         for shape, t_ndim, tsize in zip(jac_shapes, tangent_ndims, tangent_sizes)
     ]
-    jac = qml.math.concatenate([qml.math.reshape(j, s) for j, s in zip(jac, new_shapes)], axis=-1)
-    jac = qml.math.cast(qml.math.convert_like(jac, tangent), tangent.dtype)
-    return qml.math.tensordot(jac, tangent, [[-1], [0]])
+    jac = math.concatenate([math.reshape(j, s) for j, s in zip(jac, new_shapes)], axis=-1)
+    jac = math.cast(math.convert_like(jac, tangent), tangent.dtype)
+    return math.tensordot(jac, tangent, [[-1], [0]])
 
 
 def compute_jvp_multi(tangent, jac):
@@ -295,22 +295,29 @@ def jvp(tape, tangent, gradient_fn, gradient_kwargs=None):
     if len(tape.trainable_params) == 0:
         # The tape has no trainable parameters; the JVP
         # is simply none.
-        def zero_vjp(_):
-            res = tuple(np.zeros(mp.shape(None, tape.shots)) for mp in tape.measurements)
+        def zero_jvp_for_single_shots(s):
+            res = tuple(
+                np.zeros(mp.shape(shots=s), dtype=mp.numeric_type) for mp in tape.measurements
+            )
             return res[0] if len(tape.measurements) == 1 else res
 
-        return tuple(), zero_vjp
+        def zero_jvp(_):
+            if tape.shots.has_partitioned_shots:
+                return tuple(zero_jvp_for_single_shots(s) for s in tape.shots)
+            return zero_jvp_for_single_shots(tape.shots.total_shots)
+
+        return tuple(), zero_jvp
 
     multi_m = len(tape.measurements) > 1
 
     try:
         # if qml.math.allclose(qml.math.stack(tangent), 0):
-        if qml.math.allclose(tangent, 0):
+        if math.allclose(tangent, 0):
             # If the tangent vector is zero, then the
             # corresponding element of the JVP will be zero,
             # and we can avoid a quantum computation.
 
-            def func(_):  # pylint: disable=unused-argument
+            def func(_):
                 # TODO: Update shape for CV variables and for qutrit simulations
                 res = tuple(_single_measurement_zero(m, tangent) for m in tape.measurements)
                 if not multi_m:
@@ -410,7 +417,7 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 
     We have two JVPs; one per tape. Each one corresponds to the shape of the output of their respective tape.
     """
-    # pylint: disable=too-many-arguments
+
     gradient_kwargs = gradient_kwargs or {}
     reshape_info = []
     gradient_tapes = []
@@ -455,6 +462,6 @@ def batch_jvp(tapes, tangents, gradient_fn, reduction="append", gradient_kwargs=
 def _single_measurement_zero(m, tangent):
     """Aux function to create a zero tensor from a measurement."""
     dim = 2 ** len(m.wires) if isinstance(m, ProbabilityMP) else ()
-    res = qml.math.convert_like(np.zeros(dim), tangent)
-    res = qml.math.cast_like(res, tangent)
+    res = math.convert_like(np.zeros(dim), tangent)
+    res = math.cast_like(res, tangent)
     return res

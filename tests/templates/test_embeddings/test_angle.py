@@ -23,7 +23,7 @@ from pennylane import numpy as pnp
 
 def test_standard_validity():
     """Check the operation using the assert_valid function."""
-    op = qml.AngleEmbedding(features=[1, 2, 3], wires=range(3), rotation="Z")
+    op = qml.AngleEmbedding(features=[1.0, 2.0, 3.0], wires=range(3), rotation="Z")
     qml.ops.functions.assert_valid(op)
 
 
@@ -47,7 +47,7 @@ def test_flatten_unflatten():
     assert metadata[1] == (("rotation", "Z"),)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    qml.assert_equal(op, new_op)
     assert op is not new_op
 
 
@@ -59,7 +59,7 @@ class TestDecomposition:
         """Checks the queue for the default settings."""
 
         op = qml.AngleEmbedding(features=features, wires=range(4))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == len(features)
         for gate in tape.operations:
@@ -73,7 +73,7 @@ class TestDecomposition:
 
         op = qml.AngleEmbedding(features=features, wires=range(4))
         assert op.batch_size == 5
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == 3
         for gate in tape.operations:
@@ -86,7 +86,7 @@ class TestDecomposition:
         """Checks the queue for the specified rotation settings."""
 
         op = qml.AngleEmbedding(features=[1, 1, 1], wires=range(4), rotation=rotation)
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         for gate in tape.operations:
             assert gate.name == "R" + rotation
@@ -275,6 +275,32 @@ class TestInterfaces:
         grads2 = grad_fn2(features)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests jit with the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        features = jnp.array([1.0, 1.0, 1.0])
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(features)
+        res2 = circuit2(features)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(features)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(features)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

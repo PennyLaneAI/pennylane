@@ -23,7 +23,6 @@ from scipy.linalg import block_diag
 from scipy.special import factorial as fac
 
 import pennylane as qml
-from pennylane import DeviceError
 from pennylane.devices.default_gaussian import (
     beamsplitter,
     coherent_state,
@@ -39,6 +38,7 @@ from pennylane.devices.default_gaussian import (
     two_mode_squeezing,
     vacuum_state,
 )
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.wires import Wires
 
 U = np.array(
@@ -76,6 +76,7 @@ U2 = np.array(
         ],
     ]
 )
+
 
 H = np.array([[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]])
 
@@ -654,7 +655,7 @@ class TestSample:
             gaussian_device_1_wire.sample("QuadP", Wires([0]), [])
             assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
             assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
-            assert input_logger.args[2] == gaussian_device_1_wire.shots
+            assert gaussian_device_1_wire.shots == qml.measurements.Shots(input_logger.args[2])
 
     @pytest.mark.parametrize("alpha", [0.324 - 0.59j, 2.3 + 1.2j, 1.3j, -1.2])
     def test_sampling_parameters_coherent_quad_operator(
@@ -672,7 +673,7 @@ class TestSample:
             gaussian_device_1_wire.sample("QuadOperator", Wires([0]), [np.pi / 2])
             assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
             assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
-            assert input_logger.args[2] == gaussian_device_1_wire.shots
+            assert gaussian_device_1_wire.shots == qml.measurements.Shots(input_logger.args[2])
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("r,phi", [(1.0, 0.0)])
@@ -689,7 +690,7 @@ class TestSample:
             gaussian_device_1_wire.sample("QuadP", Wires([0]), [])
             assert np.isclose(input_logger.args[0], mean, atol=tol, rtol=0)
             assert np.isclose(input_logger.args[1], std, atol=tol, rtol=0)
-            assert input_logger.args[2] == gaussian_device_1_wire.shots
+            assert gaussian_device_1_wire.shots == qml.measurements.Shots(input_logger.args[2])
 
     @pytest.mark.parametrize(
         "observable,n_sample", [("QuadP", 10), ("QuadP", 25), ("QuadX", 1), ("QuadX", 16)]
@@ -697,7 +698,7 @@ class TestSample:
     def test_sample_shape_and_dtype(self, gaussian_device_2_wires, observable, n_sample):
         """Test that the sample function outputs samples of the right size"""
 
-        gaussian_device_2_wires.shots = n_sample
+        gaussian_device_2_wires.target_device._shots = n_sample
         sample = gaussian_device_2_wires.sample(observable, Wires([0]), [])
 
         assert np.array_equal(sample.shape, (n_sample,))
@@ -711,7 +712,7 @@ class TestSample:
 
     @pytest.mark.parametrize(
         "observable",
-        sorted(set(qml.ops.cv.__obs__) - set(["QuadP", "QuadX", "QuadOperator"])),
+        sorted(set(qml.ops.cv.__obs__) - {"QuadP", "QuadX", "QuadOperator"}),
     )
     def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
         """Test that the sample function raises an error if the given observable is not supported"""
@@ -728,7 +729,7 @@ class TestDefaultGaussianIntegration:
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.gaussian", wires=1)
-        cap = dev.capabilities()
+        cap = dev.target_device.capabilities()
         capabilities = {
             "model": "cv",
             "supports_finite_shots": True,
@@ -744,7 +745,7 @@ class TestDefaultGaussianIntegration:
 
         dev = qml.device("default.gaussian", wires=2, hbar=2)
         assert dev.num_wires == 2
-        assert dev.shots is None
+        assert dev.shots == qml.measurements.Shots(None)
         assert dev.hbar == 2
         assert dev.short_name == "default.gaussian"
 
@@ -851,7 +852,7 @@ class TestDefaultGaussianIntegration:
             match="Specifying a list of shots is only supported for QubitDevice based devices.",
         ):
             circuit()
-        assert dev.shots == sum(shots)
+        assert dev.shots.total_shots == sum(shots)
 
     def test_new_return_type_error_multi_measurements(self):
         """Test that multiple measurements raise an error with the new return type."""
@@ -863,7 +864,7 @@ class TestDefaultGaussianIntegration:
             return qml.sample(qml.QuadX(0)), qml.expval(qml.QuadX(1))
 
         with pytest.raises(
-            qml.QuantumFunctionError,
+            QuantumFunctionError,
             match="Default gaussian only support single measurements.",
         ):
             circuit()

@@ -48,7 +48,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op is not op
 
 
@@ -80,7 +80,7 @@ class TestDecomposition:
         op = qml.templates.TwoLocalSwapNetwork(
             wire_order, acquaintances, weights, fermionic=fermionic, shift=shift
         )
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         # number of gates
         assert len(queue) == sum(
@@ -103,7 +103,7 @@ class TestDecomposition:
                 gate_order.append(sw_op)
 
         for op1, op2 in zip(queue, gate_order):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_custom_wire_labels(self, tol=1e-8):
         """Test that template can deal with non-numeric, nonconsecutive wire labels."""
@@ -405,6 +405,32 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Test jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weights = jnp.array(np.random.random(size=6))
+
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

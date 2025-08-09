@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import DecompositionUndefinedError
+from pennylane.exceptions import AdjointUndefinedError, DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
@@ -48,7 +48,7 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
     op = qml.pow(qml.Hermitian(np.eye(2), 0), 2)
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=True)
 
 
 class TestConstructor:
@@ -58,15 +58,15 @@ class TestConstructor:
         op = qml.pow(qml.PauliX(0), 2)
         assert isinstance(op, Pow)
         assert op.z == 2
-        assert qml.equal(op.base, qml.PauliX(0))
+        qml.assert_equal(op.base, qml.PauliX(0))
 
-    def test_nonlazy_no_simplification(self):
-        """Test that if lazy=False, but no decomposition exists, then the operator is simply
-        wrapped in a Pow class."""
+    def test_nonlazy_product_expansion(self):
+        """Test that nonlazy pow returns an expanded product of operators"""
 
-        op = qml.pow(TempOperator(0), 2, lazy=False)
-        assert isinstance(op, Pow)
-        assert isinstance(op.base, TempOperator)
+        op = TempOperator(0)
+        op_pow = qml.pow(op, 2, lazy=False)
+        op_prod = qml.prod(op, op)
+        qml.assert_equal(op_pow, op_prod)
 
     @pytest.mark.parametrize("op", (qml.PauliX(0), qml.CNOT((0, 1))))
     def test_nonlazy_identity_simplification(self, op):
@@ -74,7 +74,13 @@ class TestConstructor:
         to the identity."""
 
         op_new = qml.pow(op, 2, lazy=False)
-        assert qml.equal(op_new, qml.Identity(op.wires))
+        qml.assert_equal(op_new, qml.Identity(op.wires))
+
+    def test_simplify_with_pow_not_defined(self):
+        """Test the simplify method with an operator that has not defined the op.pow method."""
+        op = Pow(qml.U2(1, 1, 0), z=1.23)
+        simplified_op = op.simplify()
+        qml.assert_equal(simplified_op, op)
 
     def test_simplification_multiple_ops(self):
         """Test that when the simplification method returns a list of multiple operators,
@@ -89,8 +95,8 @@ class TestConstructor:
 
         new_op = qml.pow(Temp(0), 2, lazy=False)
         assert isinstance(new_op, qml.ops.Prod)  # pylint:disable=no-member
-        assert qml.equal(new_op.operands[0], qml.S(0))
-        assert qml.equal(new_op.operands[1], qml.T(0))
+        qml.assert_equal(new_op.operands[0], qml.S(0))
+        qml.assert_equal(new_op.operands[1], qml.T(0))
 
     def test_nonlazy_simplification_queueing(self):
         """Test that if a simpification is accomplished, the metadata for the original op
@@ -116,7 +122,6 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, PowOperation)
 
         # checking we can call `dir` without problems
@@ -136,57 +141,11 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, PowOperation)
 
         # check operation-specific properties made it into the mapping
         assert "grad_recipe" in dir(op)
         assert "control_wires" in dir(op)
-
-    def test_observable(self, power_method):
-        """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
-
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
-
-        base = CustomObs(wires=0)
-        ob: Pow = power_method(base=base, z=-1.2)
-
-        assert isinstance(ob, Pow)
-        assert isinstance(ob, qml.operation.Operator)
-        assert not isinstance(ob, qml.operation.Operation)
-        assert not isinstance(ob, PowOperation)
-
-        # Check some basic observable functionality
-        assert ob.compare(ob)
-
-        # check the dir
-        assert "grad_recipe" not in dir(ob)
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_observable_legacy_opmath(self, power_method):
-        """Test that when the base is an Observable, Adjoint will also inherit from Observable."""
-
-        class CustomObs(qml.operation.Observable):
-            num_wires = 1
-            num_params = 0
-
-        base = CustomObs(wires=0)
-        ob: Pow = power_method(base=base, z=-1.2)
-
-        assert isinstance(ob, Pow)
-        assert isinstance(ob, qml.operation.Operator)
-        assert not isinstance(ob, qml.operation.Operation)
-        assert isinstance(ob, qml.operation.Observable)
-        assert not isinstance(ob, PowOperation)
-
-        # Check some basic observable functionality
-        assert ob.compare(ob)
-        assert isinstance(1.0 * ob @ ob, qml.Hamiltonian)
-
-        # check the dir
-        assert "grad_recipe" not in dir(ob)
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
@@ -236,9 +195,9 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires("b")
         assert op.num_wires == 1
 
-    def test_template_base(self, power_method):
+    def test_template_base(self, power_method, seed):
         """Test pow initialization for a template."""
-        rng = np.random.default_rng(seed=42)
+        rng = np.random.default_rng(seed=seed)
         shape = qml.StronglyEntanglingLayers.shape(n_layers=2, n_wires=2)
         params = rng.random(shape)  # pylint:disable=no-member
 
@@ -258,27 +217,8 @@ class TestInitialization:
         assert op.wires == qml.wires.Wires((0, 1))
         assert op.num_wires == 2
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_hamiltonian_base(self, power_method):
-        """Test pow initialization for a hamiltonian."""
-        base = qml.Hamiltonian([2.0, 1.0], [qml.PauliX(0) @ qml.PauliY(0), qml.PauliZ("b")])
 
-        op: Pow = power_method(base=base, z=3.4)
-
-        assert op.base is base
-        assert op.z == 3.4
-        assert op.hyperparameters["base"] is base
-        assert op.hyperparameters["z"] == 3.4
-        assert op.name == "Hamiltonian**3.4"
-
-        assert op.num_params == 2
-        assert qml.math.allclose(op.parameters, [2.0, 1.0])
-        assert qml.math.allclose(op.data, [2.0, 1.0])
-
-        assert op.wires == qml.wires.Wires([0, "b"])
-        assert op.num_wires == 2
-
-
+# pylint: disable=too-many-public-methods
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestProperties:
     """Test Pow properties."""
@@ -316,6 +256,26 @@ class TestProperties:
         op: Pow = power_method(base=TempOperator(wires=0), z=2.0)
 
         assert op.has_matrix is False
+
+    @pytest.mark.parametrize("z", [-2, 3, 2])
+    def test_has_adjoint_true(self, z, power_method):
+        """Test `has_adjoint` property is true for integer powers."""
+        # Note that even if the base would have `base.has_adjoint=False`, `qml.adjoint`
+        # would succeed because it would create an `Adjoint(base)` operator.
+        base = qml.PauliX(0)
+        op: Pow = power_method(base=base, z=z)
+
+        assert op.has_adjoint is True
+
+    @pytest.mark.parametrize("z", [-2.0, 1.0, 0.32])
+    def test_has_adjoint_false(self, z, power_method):
+        """Test `has_adjoint` property is false for non-integer powers."""
+        # Note that the integer power check is a type check, so that floats like 2.
+        # are not considered to be integers.
+
+        op: Pow = power_method(base=TempOperator(wires=0), z=z)
+
+        assert op.has_adjoint is False
 
     @pytest.mark.parametrize("z", [1, 3])
     def test_has_decomposition_true_via_int(self, power_method, z):
@@ -402,12 +362,6 @@ class TestProperties:
         op: Pow = power_method(base=qml.PauliX(0), z=3.5)
         assert op._queue_category == "_ops"  # pylint: disable=protected-access
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_queue_category_None(self, power_method):
-        """Test that the queue category `None` for some observables carries over."""
-        op: Pow = power_method(base=qml.PauliX(0) @ qml.PauliY(1), z=-1.1)
-        assert op._queue_category is None  # pylint: disable=protected-access
-
     def test_batching_properties(self, power_method):
         """Test the batching properties and methods."""
 
@@ -465,6 +419,26 @@ class TestProperties:
         op = power_method(base, z=2)
         assert op.pauli_rep is None
 
+    @pytest.mark.parametrize("z", [-2, 3, 2])
+    def test_adjoint_integer_power(self, z, power_method):
+        """Test the `adjoint` method for integer powers."""
+        base = qml.PauliX(0)
+        op: Pow = power_method(base=base, z=z)
+        adj_op = op.adjoint()
+
+        assert isinstance(adj_op, Pow)
+        assert adj_op.z is op.z
+        qml.assert_equal(adj_op.base, qml.ops.Adjoint(qml.X(0)))
+
+    @pytest.mark.parametrize("z", [-2.0, 1.0, 0.32])
+    def test_adjoint_non_integer_power_raises(self, z, power_method):
+        """Test that the `adjoint` method raises and error for non-integer powers."""
+
+        base = qml.PauliX(0)
+        op: Pow = power_method(base=base, z=z)
+        with pytest.raises(AdjointUndefinedError, match="The adjoint of Pow operators"):
+            _ = op.adjoint()
+
 
 class TestSimplify:
     """Test Pow simplify method and depth property."""
@@ -476,7 +450,7 @@ class TestSimplify:
 
     def test_simplify_nested_pow_ops(self):
         """Test the simplify method with nested pow operations."""
-        pow_op = Pow(base=Pow(base=qml.adjoint(Pow(base=qml.CNOT([1, 0]), z=1.2)), z=2), z=5)
+        pow_op = Pow(base=Pow(base=qml.adjoint(Pow(base=qml.CNOT([1, 0]), z=2)), z=1.2), z=5)
         final_op = qml.Identity([1, 0])
         simplified_op = pow_op.simplify()
 
@@ -487,7 +461,7 @@ class TestSimplify:
 
     def test_simplify_zero_power(self):
         """Test that simplifying a matrix raised to the power of 0 returns an Identity matrix."""
-        assert qml.equal(Pow(base=qml.PauliX(0), z=0).simplify(), qml.Identity(0))
+        qml.assert_equal(Pow(base=qml.PauliX(0), z=0).simplify(), qml.Identity(0))
 
     def test_simplify_zero_power_multiple_wires(self):
         """Test that simplifying a multi-wire operator raised to the power of 0 returns a product
@@ -495,46 +469,21 @@ class TestSimplify:
         pow_op = Pow(base=qml.CNOT([0, 1]), z=0)
         final_op = qml.Identity([0, 1])
         simplified_op = pow_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.Identity)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_method(self):
         """Test that the simplify method reduces complexity to the minimum."""
         pow_op = Pow(qml.sum(qml.PauliX(0), qml.PauliX(0)) + qml.PauliX(0), 2)
-        final_op = qml.s_prod(9, qml.PauliX(0))
+        final_op = qml.s_prod(9, qml.Identity(0))
         simplified_op = pow_op.simplify()
-
-        # TODO: Use qml.equal when supported for nested operators
-
-        assert isinstance(simplified_op, qml.ops.SProd)  # pylint:disable=no-member
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
     def test_simplify_method_with_controlled_operation(self):
         """Test simplify method with controlled operation."""
         pow_op = Pow(ControlledOp(base=qml.Hadamard(0), control_wires=1, id=3), z=3)
         final_op = qml.CH([1, 0], id=3)
         simplified_op = pow_op.simplify()
-
-        assert isinstance(simplified_op, ControlledOp)
-        assert final_op.data == simplified_op.data
-        assert final_op.wires == simplified_op.wires
-        assert final_op.arithmetic_depth == simplified_op.arithmetic_depth
-
-    def test_simplify_with_adjoint_not_defined(self):
-        """Test the simplify method with an operator that has not defined the op.pow method."""
-        op = Pow(qml.U2(1, 1, 0), z=3)
-        simplified_op = op.simplify()
-        assert isinstance(simplified_op, Pow)
-        assert op.data == simplified_op.data
-        assert op.wires == simplified_op.wires
-        assert op.arithmetic_depth == simplified_op.arithmetic_depth
+        qml.assert_equal(simplified_op, final_op)
 
 
 class TestMiscMethods:
@@ -546,7 +495,7 @@ class TestMiscMethods:
 
         base = qml.RX(1, 0) + qml.S(1)
         op = Pow(base, 2.5)
-        assert repr(op) == "(RX(1, wires=[0]) + S(wires=[1]))**2.5"
+        assert repr(op) == "(RX(1, wires=[0]) + S(1))**2.5"
 
     # pylint: disable=protected-access
     def test_flatten_unflatten(self):
@@ -565,7 +514,7 @@ class TestMiscMethods:
 
         new_op = type(op)._unflatten(*op._flatten())
         assert new_op is not op
-        assert qml.equal(new_op, op)
+        qml.assert_equal(new_op, op)
 
     def test_copy(self):
         """Test that a copy of a power operator can have its parameters updated
@@ -835,7 +784,6 @@ class TestMatrix:
 
         assert qml.math.allclose(op_mat, compare_mat)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pow_hamiltonian(self):
         """Test that a hamiltonian object can be exponentiated."""
         U = qml.Hamiltonian([1.0], [qml.PauliX(wires=0)])
@@ -889,6 +837,21 @@ class TestSparseMatrix:
         with pytest.raises(qml.operation.SparseMatrixUndefinedError):
             op.sparse_matrix()
 
+    def test_sparse_matrix_format(self):
+        """Test the sparse matrix is correct when the base defines a
+        sparse matrix and the exponennt is an int."""
+        from scipy.sparse import coo_matrix, csc_matrix, csr_matrix, lil_matrix
+
+        H = np.array([[6 + 0j, 1 - 2j], [1 + 2j, -1]])
+        H = csr_matrix(H)
+        base = qml.SparseHamiltonian(H, wires=0)
+        op = Pow(base, 3)
+
+        assert isinstance(op.sparse_matrix(), csr_matrix)
+        assert isinstance(op.sparse_matrix(format="csc"), csc_matrix)
+        assert isinstance(op.sparse_matrix(format="lil"), lil_matrix)
+        assert isinstance(op.sparse_matrix(format="coo"), coo_matrix)
+
 
 class TestDecompositionExpand:
     """Test the Pow Operator decomposition and expand methods."""
@@ -907,7 +870,7 @@ class TestDecompositionExpand:
         """Test that the expand method uses a shortcut if it is defined for that exponent and base."""
         base = qml.PauliX(0)
         op = Pow(base, 0.5)
-        expansion_tape = op.expand()
+        expansion_tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(expansion_tape) == 1
         assert isinstance(expansion_tape[0], qml.SX)
@@ -931,7 +894,7 @@ class TestDecompositionExpand:
 
         base = qml.SX(0)
         op = Pow(base, 3)
-        expansion_tape = op.expand()
+        expansion_tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(expansion_tape) == 3
 
@@ -954,15 +917,12 @@ class TestDecompositionExpand:
         z = 2
         op = Pow(base, z)
 
-        # if this fails, someone must have implemented it! will need a new operator to use
-        with pytest.raises(qml.operation.PowUndefinedError):
-            base.pow(2)
-
         with qml.queuing.AnnotatedQueue() as q:
             op.decomposition()
 
         assert len(q.queue) == z
-        assert all(qml.equal(applied_op, base) for applied_op in q.queue)
+        for applied_op in q.queue:
+            qml.assert_equal(applied_op, base)
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])

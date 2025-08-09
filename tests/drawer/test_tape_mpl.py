@@ -18,6 +18,8 @@ page in the developement guide.
 """
 # pylint: disable=protected-access, expression-not-assigned
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -114,6 +116,18 @@ class TestLabelling:
 
         for text_obj in ax.texts[0:3]:
             assert text_obj.get_fontsize() == 10.0
+
+        plt.close()
+
+    @pytest.mark.parametrize("kwargs, _", label_data)
+    def test_hide_wire_labels(self, kwargs, _):
+        """Test that wire labels are skipped with show_wire_labels=False."""
+        fig, ax = tape_mpl(tape1, show_wire_labels=False, **kwargs)
+
+        # Only PauliX gate labels should be present
+        assert len(ax.texts) == 3
+        assert all(t.get_text() == "X" for t in ax.texts)
+        assert fig.get_figwidth() == 3
 
         plt.close()
 
@@ -644,6 +658,7 @@ class TestGeneralOperations:
         assert isinstance(ax, mpl.axes._axes.Axes)
 
         assert fig.axes == [ax]
+        assert len(ax.patches) == len(ax.texts) == 0
 
         # Test that `qml.Snapshot` works properly when other gates are present
         tape = QuantumScript([qml.Snapshot(), qml.Hadamard(0), qml.Hadamard(1), qml.Hadamard(2)])
@@ -656,6 +671,138 @@ class TestGeneralOperations:
         assert ax.patches[0].get_height() == 2 + self.width
 
         plt.close()
+
+    @pytest.mark.parametrize("input_wires", [tuple(), (0, 1), (0, 2, 1, 3)])
+    @pytest.mark.parametrize("show_all_wires", [False, True])
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_global_phase(self, input_wires, show_all_wires, cls):
+        """Test that `GlobalPhase` and `Identity` works properly with `tape_mpl`."""
+
+        data = [0.3625][: cls.num_params]
+        tape = QuantumScript([cls(*data, wires=input_wires), qml.X(0)])
+        fig, ax = tape_mpl(tape, show_all_wires=show_all_wires, wire_order=[0, 1, 2, 3, 4])
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        if show_all_wires:
+            num_wires = 5
+        else:
+            num_wires = max(len(input_wires), 1)
+        assert isinstance(ax.patches[0], mpl.patches.FancyBboxPatch)
+        assert ax.patches[0].get_x() == -self.width / 2.0
+        assert ax.patches[0].get_y() == -self.width / 2.0
+        assert ax.patches[0].get_width() == self.width
+        assert ax.patches[0].get_height() == num_wires - 1 + self.width
+
+        plt.close()
+
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_multiple_global_ops(self, cls):
+        """Test that global ops correctly reserve layers for themselves."""
+        data = [0.3625][: cls.num_params]
+        tape = QuantumScript([cls(*data, wires=wires) for wires in [[], [0], [1, 2]]])
+
+        fig, ax = tape_mpl(tape)
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        assert len(ax.patches) == 3  # Three boxes without notches
+        for i, patch in enumerate(ax.patches):
+            assert isinstance(patch, mpl.patches.FancyBboxPatch)
+            assert patch.get_x() == i + -self.width / 2.0
+            assert patch.get_y() == -self.width / 2.0
+            assert patch.get_width() == self.width
+            assert patch.get_height() == 2 + self.width
+
+        plt.close()
+
+    @pytest.mark.parametrize(
+        "input_wires, control_wires",
+        [
+            (tuple(), (0,)),
+            ((0, 1), (2, 3)),
+            ((0, 3), (2,)),
+            ((0, 2, 3), (1,)),
+            ((0, 3), (1, 2)),
+            ((0, 2), (1, 3)),
+        ],
+    )
+    @pytest.mark.parametrize("show_all_wires", [False, True])
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_ctrl_global_op(self, input_wires, control_wires, show_all_wires, cls):
+        """Test that controlled `GlobalPhase` and `Identity` works properly with `tape_mpl`."""
+
+        data = [0.3625][: cls.num_params]
+        op = qml.ctrl(cls(*data, wires=input_wires), control=control_wires)
+        tape = QuantumScript([op, qml.X(0), qml.X(1)])
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            fig, ax = tape_mpl(tape, show_all_wires=show_all_wires, wire_order=[0, 1, 2, 3, 4])
+
+        assert isinstance(fig, mpl.figure.Figure)
+        assert isinstance(ax, mpl.axes._axes.Axes)
+
+        assert fig.axes == [ax]
+
+        # Control node circular patches (may be invisible)
+        for i, c in enumerate(control_wires):
+            patch = ax.patches[i]
+            assert isinstance(patch, mpl.patches.Circle)
+            assert patch.center == (0, c)
+
+        # Main box
+        if show_all_wires:
+            covered_wires = range(5)
+        elif len(input_wires) == 0:
+            covered_wires = (0, 1)  # Wires for qml.X operations transfer to GlobalPhase
+        else:
+            covered_wires = range(min(input_wires), max(input_wires) + 1)
+        min_box_wire = min([w for w in covered_wires if w not in control_wires])
+        max_box_wire = max([w for w in covered_wires if w not in control_wires])
+        i = len(control_wires)
+        main_patch = ax.patches[i]
+        assert isinstance(main_patch, mpl.patches.FancyBboxPatch)
+
+        assert main_patch.get_x() == -self.width / 2.0
+        assert main_patch.get_y() == min_box_wire - self.width / 2.0
+        assert main_patch.get_width() == self.width
+        assert main_patch.get_height() == max_box_wire - min_box_wire + self.width
+        for j in range(i):
+            assert main_patch.zorder > ax.patches[j].zorder
+
+        # Notches
+        i += 1
+        for w in control_wires:
+            if min_box_wire < w < max_box_wire:
+                notch_patch = ax.patches[i]
+                assert isinstance(notch_patch, mpl.patches.FancyBboxPatch)
+                assert notch_patch.zorder < main_patch.zorder
+
+        plt.close()
+
+    @pytest.mark.parametrize("cls", [qml.GlobalPhase, qml.Identity])
+    def test_ctrl_global_op_without_target(self, cls):
+        """Test that an error is raised if a controlled GlobalPhase is present that can
+        not infer any target wires."""
+
+        data = [0.251][: cls.num_params]
+        op = qml.ctrl(cls(*data, wires=[]), control=(0, 4))
+        tape = QuantumScript([op])
+        with pytest.raises(ValueError, match="controlled global gate with unknown"):
+            _ = tape_mpl(tape)
+
+        # No error if wire_order provides additional wire(s)
+        _ = tape_mpl(tape, wire_order=[0, 1, 2], show_all_wires=True)
+
+        # Error if wire_order provides additional wire(s) but they are not drawn
+        with pytest.raises(ValueError, match="controlled global gate with unknown"):
+            _ = tape_mpl(tape, wire_order=[0, 1, 2], show_all_wires=False)
 
     @pytest.mark.parametrize("op", general_op_data)
     def test_general_operations_decimals(self, op):
@@ -844,7 +991,7 @@ class TestClassicalControl:
             qml.cond(m0, qml.PauliY)(0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        _, ax = qml.drawer.tape_mpl(tape)
+        _, ax = qml.drawer.tape_mpl(tape, style="black_white")
 
         assert len(ax.patches) == 5  # three for measure, two for boxes
 
@@ -857,11 +1004,11 @@ class TestClassicalControl:
 
         # probably not a good way to test this, but the best I can figure out
         assert pe1._gc == {
-            "linewidth": 5 * plt.rcParams["lines.linewidth"],
+            "linewidth": 5 * 1.5,  # hardcoded value to black_white linewidth
             "foreground": "black",  # lines.color for black white style
         }
         assert pe2._gc == {
-            "linewidth": 3 * plt.rcParams["lines.linewidth"],
+            "linewidth": 3 * 1.5,  # hardcoded value to black_white linewidth
             "foreground": "white",  # figure.facecolor for black white sytle
         }
         plt.close()
@@ -875,7 +1022,7 @@ class TestClassicalControl:
             qml.cond(m0 & m1, qml.PauliY)(0)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        _, ax = qml.drawer.tape_mpl(tape)
+        _, ax = qml.drawer.tape_mpl(tape, style="black_white")
 
         assert len(ax.patches) == 7  # three for 2 measurements, one for box
         [_, _, cwire1, cwire2, eraser] = ax.lines
@@ -891,18 +1038,18 @@ class TestClassicalControl:
 
             # probably not a good way to test this, but the best I can figure out
             assert pe1._gc == {
-                "linewidth": 5 * plt.rcParams["lines.linewidth"],
+                "linewidth": 5 * 1.5,  # hardcoded value to black_white linewidth
                 "foreground": "black",  # lines.color for black white style
             }
             assert pe2._gc == {
-                "linewidth": 3 * plt.rcParams["lines.linewidth"],
+                "linewidth": 3 * 1.5,  # hardcoded value to black_white linewidth
                 "foreground": "white",  # figure.facecolor for black white sytle
             }
 
         assert eraser.get_xdata() == (1.8, 2)
         assert eraser.get_ydata() == (2, 2)
-        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
-        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+        assert eraser.get_color() == "white"  # hardcoded value to black_white color
+        assert eraser.get_linewidth() == 3 * 1.5  # hardcoded value to black_white linewidth
 
         plt.close()
 
@@ -918,7 +1065,7 @@ class TestClassicalControl:
             qml.cond(m1, qml.T)(1)
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        _, ax = qml.drawer.tape_mpl(tape)
+        _, ax = qml.drawer.tape_mpl(tape, style="black_white")
 
         [_, _, cwire1, cwire2, eraser] = ax.lines
 
@@ -933,18 +1080,18 @@ class TestClassicalControl:
 
             # probably not a good way to test this, but the best I can figure out
             assert pe1._gc == {
-                "linewidth": 5 * plt.rcParams["lines.linewidth"],
+                "linewidth": 5 * 1.5,  # hardcoded value to black_white linewidth
                 "foreground": "black",  # lines.color for black white style
             }
             assert pe2._gc == {
-                "linewidth": 3 * plt.rcParams["lines.linewidth"],
+                "linewidth": 3 * 1.5,  # hardcoded value to black_white linewidth
                 "foreground": "white",  # figure.facecolor for black white sytle
             }
 
         assert eraser.get_xdata() == (1.8, 2.2)
         assert eraser.get_ydata() == (2, 2)
-        assert eraser.get_color() == plt.rcParams["figure.facecolor"]
-        assert eraser.get_linewidth() == 3 * plt.rcParams["lines.linewidth"]
+        assert eraser.get_color() == "white"  # hardcoded value to black_white color
+        assert eraser.get_linewidth() == 3 * 1.5  # hardcoded value to black_white linewidth
 
         plt.close()
 
@@ -954,7 +1101,7 @@ class TestClassicalControl:
         with qml.queuing.AnnotatedQueue() as q:
             m0 = qml.measure(0)
             qml.expval(m0)
-        _, ax = tape_mpl(qml.tape.QuantumScript.from_queue(q))
+        _, ax = tape_mpl(qml.tape.QuantumScript.from_queue(q), style="black_white")
 
         assert len(ax.patches) == 6  # two measurement boxes
         assert ax.patches[3].get_x() == 1 - 0.75 / 2 + 0.2  # 1 - box_length/2 + pad
@@ -974,11 +1121,11 @@ class TestClassicalControl:
 
         # probably not a good way to test this, but the best I can figure out
         assert pe1._gc == {
-            "linewidth": 5 * plt.rcParams["lines.linewidth"],
+            "linewidth": 5 * 1.5,  # hardcoded value to black_white linewidth
             "foreground": "black",  # lines.color for black white style
         }
         assert pe2._gc == {
-            "linewidth": 3 * plt.rcParams["lines.linewidth"],
+            "linewidth": 3 * 1.5,  # hardcoded value to black_white linewidth
             "foreground": "white",  # figure.facecolor for black white sytle
         }
 

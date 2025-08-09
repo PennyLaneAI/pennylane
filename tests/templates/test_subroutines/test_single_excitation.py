@@ -98,7 +98,7 @@ class TestDecomposition:
         cnots = 4 * (len(single_wires) - 1)
         weight = np.pi / 3
         op = qml.FermionicSingleExcitation(weight, wires=single_wires)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert len(queue) == sqg + cnots
 
@@ -215,6 +215,24 @@ class TestInterfaces:
 
         # check that the gradient is computed without error
         grad_fn(weight)
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        """Tests jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weight = jnp.array(0.5)
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(circuit_template, dev)
+        jit_circuit = jax.jit(circuit)
+        assert qml.math.allclose(circuit(weight), jit_circuit(weight))
+
+        grad_fn = jax.grad(circuit)
+        grad_jit = jax.grad(jit_circuit)
+        assert qml.math.allclose(grad_fn(weight), grad_jit(weight))
 
     @pytest.mark.tf
     def test_tf(self):

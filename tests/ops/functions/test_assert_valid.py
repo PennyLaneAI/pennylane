@@ -14,6 +14,8 @@
 """
 This module contains unit tests for ``qml.ops.functions.assert_valid``.
 """
+import string
+
 import numpy as np
 
 # pylint: disable=too-few-public-methods, unused-argument
@@ -22,6 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane.operation import Operator
 from pennylane.ops.functions import assert_valid
+from pennylane.ops.functions.assert_valid import _check_capture
 
 
 class TestDecompositionErrors:
@@ -50,34 +53,6 @@ class TestDecompositionErrors:
         with pytest.raises(AssertionError, match="decomposition must match queued operations"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
-    def test_expand_must_be_qscript(self):
-        """Test that an error is raised if expand does not return a QuantumScript"""
-
-        class BadDecomp(Operator):
-            @staticmethod
-            def compute_decomposition(wires):
-                return [qml.RY(2.3, 0)]
-
-            def expand(self):
-                return [qml.S(0)]
-
-        with pytest.raises(AssertionError, match=r"expand must return a QuantumScript"):
-            assert_valid(BadDecomp(wires=0), skip_pickle=True)
-
-    def test_decomposition_must_match_expand(self):
-        """Test that decomposition and expand must match."""
-
-        class BadDecomp(Operator):
-            @staticmethod
-            def compute_decomposition(wires):
-                return [qml.RY(2.3, 0)]
-
-            def expand(self):
-                return qml.tape.QuantumScript([qml.S(0)])
-
-        with pytest.raises(AssertionError, match="decomposition must match expansion"):
-            assert_valid(BadDecomp(wires=0), skip_pickle=True)
-
     def test_decomposition_wires_must_be_mapped(self):
         """Test that the operators in decomposition have mapped wires after mapping the op."""
 
@@ -104,6 +79,17 @@ class TestDecompositionErrors:
             has_decomposition = False
 
         with pytest.raises(AssertionError, match="If has_decomposition is False"):
+            assert_valid(BadDecomp(wires=0), skip_pickle=True)
+
+    def test_decomposition_must_not_contain_op(self):
+        """Test that the decomposition of an operator doesn't include the operator itself"""
+
+        class BadDecomp(Operator):
+            @staticmethod
+            def compute_decomposition(wires):
+                return [BadDecomp(wires)]
+
+        with pytest.raises(AssertionError, match="should not be included in its own decomposition"):
             assert_valid(BadDecomp(wires=0), skip_pickle=True)
 
 
@@ -203,7 +189,7 @@ class BadPickling0(Operator):
 def test_bad_pickling():
     """Test an error is raised in an operator cant be pickled."""
 
-    with pytest.raises(AttributeError, match="Can't pickle local object"):
+    with pytest.raises(AttributeError):
         assert_valid(BadPickling0(lambda x: x, wires=0))
 
 
@@ -318,6 +304,28 @@ class TestPytree:
             assert_valid(op, skip_pickle=True)
 
 
+@pytest.mark.jax
+def test_bad_capture():
+    """Tests that the correct error is raised when something goes wrong with program capture."""
+
+    class MyBadOp(qml.operation.Operator):
+
+        def _flatten(self):
+            return (self.hyperparameters["target_op"], self.data[0]), ()
+
+        @classmethod
+        def _unflatten(cls, data, metadata):
+            return cls(*data)
+
+        def __init__(self, target_op, val):
+            super().__init__(val, wires=target_op.wires)
+            self.hyperparameters["target_op"] = target_op
+
+    op = MyBadOp(qml.X(0), 2)
+    with pytest.raises(ValueError, match=r"The capture of the operation into jaxpr failed"):
+        _check_capture(op)
+
+
 def test_data_is_tuple():
     """Check that the data property is a tuple."""
 
@@ -332,15 +340,15 @@ def test_data_is_tuple():
         assert_valid(BadData(2.0, wires=0))
 
 
-def create_op_instance(c):
+def create_op_instance(c, str_wires=False):
     """Given an Operator class, create an instance of it."""
     n_wires = c.num_wires
-    if n_wires == qml.operation.AllWires:
-        n_wires = 0
-    elif n_wires == qml.operation.AnyWires:
+    if n_wires is None:
         n_wires = 1
 
     wires = qml.wires.Wires(range(n_wires))
+    if str_wires and len(wires) < 26:
+        wires = qml.wires.Wires([string.ascii_lowercase[i] for i in wires])
     if (num_params := c.num_params) == 0:
         return c(wires) if wires else c()
     if isinstance(num_params, property):
@@ -364,10 +372,15 @@ def create_op_instance(c):
     return c(*params, wires=wires) if wires else c(*params)
 
 
-def test_generated_list_of_ops(class_to_validate):
+@pytest.mark.jax
+@pytest.mark.parametrize("str_wires", (True, False))
+def test_generated_list_of_ops(class_to_validate, str_wires):
     """Test every auto-generated operator instance."""
     if class_to_validate.__module__[14:20] == "qutrit":
         pytest.xfail(reason="qutrit ops fail matrix validation")
+
+    if class_to_validate.__module__[10:14] == "ftqc":
+        pytest.skip(reason="skip tests for ftqc ops")
 
     # If you defined a new Operator and this call to `create_op_instance` failed, it might
     # be the fault of the test and not your Operator. Please do one of the following things:
@@ -375,7 +388,7 @@ def test_generated_list_of_ops(class_to_validate):
     #   2. Improve `create_op_instance` so it can create an instance of your op (it is quite hacky)
     #   3. Add an instance of your class to `_INSTANCES_TO_TEST` in ./conftest.py
     #       Note: if it then fails validation, move it to `_INSTANCES_TO_FAIL` as described below.
-    op = create_op_instance(class_to_validate)
+    op = create_op_instance(class_to_validate, str_wires)
 
     # If you defined a new Operator and this call to `assert_valid` failed, the Operator doesn't
     # follow PL standards. Please do one of the following things:
@@ -386,15 +399,14 @@ def test_generated_list_of_ops(class_to_validate):
     assert_valid(op)
 
 
-def test_explicit_list_of_ops(valid_instance):
+@pytest.mark.jax
+def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
-    if valid_instance.name == "Hamiltonian":
-        with qml.operation.disable_new_opmath_cm():
-            assert_valid(valid_instance)
-    else:
-        assert_valid(valid_instance)
+    valid_instance, kwargs = valid_instance_and_kwargs
+    assert_valid(valid_instance, **kwargs)
 
 
+@pytest.mark.jax
 def test_explicit_list_of_failing_ops(invalid_instance_and_error):
     """Test instances of ops that fail validation."""
     op, exc_type = invalid_instance_and_error

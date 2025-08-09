@@ -21,7 +21,12 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.mottonen import _get_alpha_y, gray_code
+from pennylane.templates.state_preparations.mottonen import (
+    _get_alpha_y,
+    compute_theta,
+    gray_code,
+    mottonen_decomp,
+)
 
 
 def test_standard_validity():
@@ -32,24 +37,57 @@ def test_standard_validity():
 
     op = qml.MottonenStatePreparation(state_vector=state, wires=range(3))
 
-    qml.ops.functions.assert_valid(op)
+    qml.ops.functions.assert_valid(op, heuristic_resources=True)
+
+
+def compute_theta_reference(alpha):
+    """Maps the angles alpha of the multi-controlled rotations decomposition of a
+    uniformly controlled rotation to the rotation angles used in the Gray code implementation.
+
+    Args:
+        alpha (tensor_like): alpha parameters
+
+    Returns:
+        (tensor_like): rotation angles theta
+    """
+    ln = alpha.shape[-1]
+
+    def _matrix_M_row(row):
+        """Returns one row of entries for the matrix that maps alpha to theta.
+
+        See Eq. (3) in `Möttönen et al. (2004) <https://arxiv.org/abs/quant-ph/0407010>`_.
+
+        Args:
+            row (int): one-based row number
+
+        Returns:
+            (float): transformation matrix row at given row index
+        """
+        # (row >> 1) ^ row is the Gray code of row
+        COL = np.arange(ln)
+        b_and_g = COL & ((row >> 1) ^ row)
+        sum_of_ones = np.array([val.bit_count() for val in b_and_g])
+        return (-1) ** sum_of_ones
+
+    alpha = qml.math.transpose(alpha)
+    theta = qml.math.array([qml.math.dot(_matrix_M_row(i), alpha) for i in range(ln)])
+    return qml.math.transpose(theta) / ln
 
 
 class TestHelpers:
     """Tests the helper functions for classical pre-processsing."""
 
     # fmt: off
-    @pytest.mark.parametrize("rank,expected_gray_code", [
-        (1, ['0', '1']),
-        (2, ['00', '01', '11', '10']),
-        (3, ['000', '001', '011', '010', '110', '111', '101', '100']),
+    @pytest.mark.parametrize("rank, expected_gray_code", [
+        (1, [0, 1]), (2, [0, 1, 3, 2]), (3, [0, 1, 3, 2, 6, 7, 5, 4])
     ])
     # fmt: on
     def test_gray_code(self, rank, expected_gray_code):
-        """Tests that the function gray_code generates the proper
-        Gray code of given rank."""
+        """Tests that the function gray_code generates the correct Gray code of given rank."""
 
-        assert gray_code(rank) == expected_gray_code
+        code = gray_code(rank)
+        assert code.dtype == np.int64
+        assert np.allclose(code, expected_gray_code)
 
     @pytest.mark.parametrize(
         "current_qubit, expected",
@@ -66,75 +104,74 @@ class TestHelpers:
         res = _get_alpha_y(state, 3, current_qubit)
         assert np.allclose(res, expected, atol=tol)
 
+    @pytest.mark.parametrize("batch_dim", [None, 1, 5, 10])
+    @pytest.mark.parametrize("n", list(range(1, 11)))
+    def test_compute_theta(self, n, batch_dim):
+        """Test that the fast Walsh-Hadamard transform-based method reproduces the
+        matrix given in Eq. (3) in
+        `Möttönen et al. (2004) <https://arxiv.org/abs/quant-ph/0407010>`_."""
+        shape = (2**n,) if batch_dim is None else (batch_dim, 2**n)
+        alpha = np.random.random(shape)
+        expected_theta = compute_theta_reference(alpha)
+        theta = compute_theta(alpha)
+        assert theta.shape == shape == expected_theta.shape
+        assert np.allclose(expected_theta, theta)
+
+
+# fmt: off
+fixed_states = (
+    [
+        -0.17133152 - 0.18777771j, 0.00240643 - 0.40704011j, 0.18684538 - 0.36315606j,
+        -0.07096948 + 0.104501j, 0.30357755 - 0.23831927j, -0.38735106 + 0.36075556j,
+        0.12351096 - 0.0539908j, 0.27942828 - 0.24810483j,
+    ],
+    [
+        -0.29972867 + 0.04964242j, -0.28309418 + 0.09873227j, 0.00785743 - 0.37560696j,
+        -0.3825148 + 0.00674343j, -0.03008048 + 0.31119167j, 0.03666351 - 0.15935903j,
+        -0.25358831 + 0.35461265j, -0.32198531 + 0.33479292j,
+    ],
+    [
+        -0.39340123 + 0.05705932j, 0.1980509 - 0.24234781j, 0.27265585 - 0.0604432j,
+        -0.42641249 + 0.25767258j, 0.40386614 - 0.39925987j, 0.03924761 + 0.13193724j,
+        -0.06059103 - 0.01753834j, 0.21707136 - 0.15887973j,
+    ],
+    [
+        -1.33865287e-01 + 0.09802308j, 1.25060033e-01 + 0.16087698j, -4.14678130e-01 - 0.00774832j,
+        1.10121136e-01 + 0.37805482j, -3.21284864e-01 + 0.21521063j, -2.23121454e-04 + 0.28417422j,
+        5.64131205e-02 + 0.38135286j, 2.32694503e-01 + 0.41331133j,
+    ],
+)
+# fmt: on
+decomposition_test_cases = [
+    ([1, 0], 0, np.eye(8)[0]),
+    ([1, 0], [0], np.eye(8)[0]),
+    ([1, 0], [1], np.eye(8)[0]),
+    ([1, 0], [2], np.eye(8)[0]),
+    ([0, 1], [0], np.eye(8)[4]),
+    ([0, 1], [1], np.eye(8)[2]),
+    ([0, 1], [2], np.eye(8)[1]),
+    ([0, 1, 0, 0], [0, 1], np.eye(8)[2]),
+    ([0, 0, 0, 1], [0, 2], np.eye(8)[5]),
+    ([0, 0, 0, 1], [1, 2], np.eye(8)[3]),
+    (np.eye(8)[0], [0, 1, 2], np.eye(8)[0]),
+    (1j * np.eye(8)[4], [0, 1, 2], 1j * np.eye(8)[4]),
+    (x := np.array([1, 0, 0, 0, 1, 1j, -1, 0]) / 2, [0, 1, 2], x),
+    (x := np.array([1, 0, 0, 0, 2j, 2j, 0, 0]) / 3, [0, 1, 2], x),
+    (x := np.array([2, 0, 0, 0, 1, 0, 0, 2]) / 3, [0, 1, 2], x),
+    (x := np.array([1, 1j, 1, -1j, 1, 1, 1, 1j]) / np.sqrt(8), [0, 1, 2], x),
+    (fixed_states[0], [0, 1, 2], fixed_states[0]),
+    (fixed_states[1], [0, 1, 2], fixed_states[1]),
+    (fixed_states[2], [0, 1, 2], fixed_states[2]),
+    (fixed_states[3], [0, 1, 2], fixed_states[3]),
+    (x := np.array([1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0]), [0, 1, 2], x),
+    (np.array([1 / 2, 0, 1j / 2, 1j / np.sqrt(2)]), [0, 1], x),
+]
+
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
 
-    # fmt: off
-    @pytest.mark.parametrize("state_vector,wires,target_state", [
-        ([1, 0], 0, [1, 0, 0, 0, 0, 0, 0, 0]),
-        ([1, 0], [0], [1, 0, 0, 0, 0, 0, 0, 0]),
-        ([1, 0], [1], [1, 0, 0, 0, 0, 0, 0, 0]),
-        ([1, 0], [2], [1, 0, 0, 0, 0, 0, 0, 0]),
-        ([0, 1], [0], [0, 0, 0, 0, 1, 0, 0, 0]),
-        ([0, 1], [1], [0, 0, 1, 0, 0, 0, 0, 0]),
-        ([0, 1], [2], [0, 1, 0, 0, 0, 0, 0, 0]),
-        ([0, 1, 0, 0], [0, 1], [0, 0, 1, 0, 0, 0, 0, 0]),
-        ([0, 0, 0, 1], [0, 2], [0, 0, 0, 0, 0, 1, 0, 0]),
-        ([0, 0, 0, 1], [1, 2], [0, 0, 0, 1, 0, 0, 0, 0]),
-        ([1, 0, 0, 0, 0, 0, 0, 0], [0, 1, 2], [1, 0, 0, 0, 0, 0, 0, 0]),
-        ([0, 0, 0, 0, 1j, 0, 0, 0], [0, 1, 2], [0, 0, 0, 0, 1j, 0, 0, 0]),
-        ([1 / 2, 0, 0, 0, 1 / 2, 1j / 2, -1 / 2, 0], [0, 1, 2], [1 / 2, 0, 0, 0, 1 / 2, 1j / 2, -1 / 2, 0]),
-        ([1 / 3, 0, 0, 0, 2j / 3, 2j / 3, 0, 0], [0, 1, 2], [1 / 3, 0, 0, 0, 2j / 3, 2j / 3, 0, 0]),
-        ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], [0, 1, 2], [2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3]),
-        (
-                [1 / np.sqrt(8), 1j / np.sqrt(8), 1 / np.sqrt(8), -1j / np.sqrt(8), 1 / np.sqrt(8),
-                 1 / np.sqrt(8), 1 / np.sqrt(8), 1j / np.sqrt(8)],
-                [0, 1, 2],
-                [1 / np.sqrt(8), 1j / np.sqrt(8), 1 / np.sqrt(8), -1j / np.sqrt(8), 1 / np.sqrt(8),
-                 1 / np.sqrt(8), 1 / np.sqrt(8), 1j / np.sqrt(8)],
-        ),
-        (
-                [-0.17133152 - 0.18777771j, 0.00240643 - 0.40704011j, 0.18684538 - 0.36315606j, -0.07096948 + 0.104501j,
-                 0.30357755 - 0.23831927j, -0.38735106 + 0.36075556j, 0.12351096 - 0.0539908j,
-                 0.27942828 - 0.24810483j],
-                [0, 1, 2],
-                [-0.17133152 - 0.18777771j, 0.00240643 - 0.40704011j, 0.18684538 - 0.36315606j, -0.07096948 + 0.104501j,
-                 0.30357755 - 0.23831927j, -0.38735106 + 0.36075556j, 0.12351096 - 0.0539908j,
-                 0.27942828 - 0.24810483j],
-        ),
-        (
-                [-0.29972867 + 0.04964242j, -0.28309418 + 0.09873227j, 0.00785743 - 0.37560696j,
-                 -0.3825148 + 0.00674343j, -0.03008048 + 0.31119167j, 0.03666351 - 0.15935903j,
-                 -0.25358831 + 0.35461265j, -0.32198531 + 0.33479292j],
-                [0, 1, 2],
-                [-0.29972867 + 0.04964242j, -0.28309418 + 0.09873227j, 0.00785743 - 0.37560696j,
-                 -0.3825148 + 0.00674343j, -0.03008048 + 0.31119167j, 0.03666351 - 0.15935903j,
-                 -0.25358831 + 0.35461265j, -0.32198531 + 0.33479292j],
-        ),
-        (
-                [-0.39340123 + 0.05705932j, 0.1980509 - 0.24234781j, 0.27265585 - 0.0604432j, -0.42641249 + 0.25767258j,
-                 0.40386614 - 0.39925987j, 0.03924761 + 0.13193724j, -0.06059103 - 0.01753834j,
-                 0.21707136 - 0.15887973j],
-                [0, 1, 2],
-                [-0.39340123 + 0.05705932j, 0.1980509 - 0.24234781j, 0.27265585 - 0.0604432j, -0.42641249 + 0.25767258j,
-                 0.40386614 - 0.39925987j, 0.03924761 + 0.13193724j, -0.06059103 - 0.01753834j,
-                 0.21707136 - 0.15887973j],
-        ),
-        (
-                [-1.33865287e-01 + 0.09802308j, 1.25060033e-01 + 0.16087698j, -4.14678130e-01 - 0.00774832j,
-                 1.10121136e-01 + 0.37805482j, -3.21284864e-01 + 0.21521063j, -2.23121454e-04 + 0.28417422j,
-                 5.64131205e-02 + 0.38135286j, 2.32694503e-01 + 0.41331133j],
-                [0, 1, 2],
-                [-1.33865287e-01 + 0.09802308j, 1.25060033e-01 + 0.16087698j, -4.14678130e-01 - 0.00774832j,
-                 1.10121136e-01 + 0.37805482j, -3.21284864e-01 + 0.21521063j, -2.23121454e-04 + 0.28417422j,
-                 5.64131205e-02 + 0.38135286j, 2.32694503e-01 + 0.41331133j],
-        ),
-        ([1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0], [0, 1, 2],
-         [1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0]),
-        ([1 / 2, 0, 1j / 2, 1j / np.sqrt(2)], [0, 1], [1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0]),
-    ])
-    # fmt: on
+    @pytest.mark.parametrize("state_vector,wires,target_state", decomposition_test_cases)
     def test_state_preparation(self, state_vector, wires, target_state):
         """Tests that the template produces correct states."""
 
@@ -147,71 +184,7 @@ class TestDecomposition:
 
         assert np.allclose(state, target_state)
 
-    # fmt: off
-    @pytest.mark.parametrize("state_vector,wires,target_state", [
-        ([1, 0], 0, [1, 0, 0, 0, 0, 0, 0, 0]),
-        ([1, 0], [0], [1, 0, 0, 0, 0, 0, 0, 0]),
-        ([1, 0], [1], [1, 0, 0, 0, 0, 0, 0, 0]),
-        ([1, 0], [2], [1, 0, 0, 0, 0, 0, 0, 0]),
-        ([0, 1], [0], [0, 0, 0, 0, 1, 0, 0, 0]),
-        ([0, 1], [1], [0, 0, 1, 0, 0, 0, 0, 0]),
-        ([0, 1], [2], [0, 1, 0, 0, 0, 0, 0, 0]),
-        ([0, 1, 0, 0], [0, 1], [0, 0, 1, 0, 0, 0, 0, 0]),
-        ([0, 0, 0, 1], [0, 2], [0, 0, 0, 0, 0, 1, 0, 0]),
-        ([0, 0, 0, 1], [1, 2], [0, 0, 0, 1, 0, 0, 0, 0]),
-        ([1, 0, 0, 0, 0, 0, 0, 0], [0, 1, 2], [1, 0, 0, 0, 0, 0, 0, 0]),
-        ([0, 0, 0, 0, 1j, 0, 0, 0], [0, 1, 2], [0, 0, 0, 0, 1j, 0, 0, 0]),
-        ([1 / 2, 0, 0, 0, 1 / 2, 1j / 2, -1 / 2, 0], [0, 1, 2], [1 / 2, 0, 0, 0, 1 / 2, 1j / 2, -1 / 2, 0]),
-        ([1 / 3, 0, 0, 0, 2j / 3, 2j / 3, 0, 0], [0, 1, 2], [1 / 3, 0, 0, 0, 2j / 3, 2j / 3, 0, 0]),
-        ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], [0, 1, 2], [2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3]),
-        (
-                [1 / np.sqrt(8), 1j / np.sqrt(8), 1 / np.sqrt(8), -1j / np.sqrt(8), 1 / np.sqrt(8),
-                 1 / np.sqrt(8), 1 / np.sqrt(8), 1j / np.sqrt(8)],
-                [0, 1, 2],
-                [1 / np.sqrt(8), 1j / np.sqrt(8), 1 / np.sqrt(8), -1j / np.sqrt(8), 1 / np.sqrt(8),
-                 1 / np.sqrt(8), 1 / np.sqrt(8), 1j / np.sqrt(8)],
-        ),
-        (
-                [-0.17133152 - 0.18777771j, 0.00240643 - 0.40704011j, 0.18684538 - 0.36315606j, -0.07096948 + 0.104501j,
-                 0.30357755 - 0.23831927j, -0.38735106 + 0.36075556j, 0.12351096 - 0.0539908j,
-                 0.27942828 - 0.24810483j],
-                [0, 1, 2],
-                [-0.17133152 - 0.18777771j, 0.00240643 - 0.40704011j, 0.18684538 - 0.36315606j, -0.07096948 + 0.104501j,
-                 0.30357755 - 0.23831927j, -0.38735106 + 0.36075556j, 0.12351096 - 0.0539908j,
-                 0.27942828 - 0.24810483j],
-        ),
-        (
-                [-0.29972867 + 0.04964242j, -0.28309418 + 0.09873227j, 0.00785743 - 0.37560696j,
-                 -0.3825148 + 0.00674343j, -0.03008048 + 0.31119167j, 0.03666351 - 0.15935903j,
-                 -0.25358831 + 0.35461265j, -0.32198531 + 0.33479292j],
-                [0, 1, 2],
-                [-0.29972867 + 0.04964242j, -0.28309418 + 0.09873227j, 0.00785743 - 0.37560696j,
-                 -0.3825148 + 0.00674343j, -0.03008048 + 0.31119167j, 0.03666351 - 0.15935903j,
-                 -0.25358831 + 0.35461265j, -0.32198531 + 0.33479292j],
-        ),
-        (
-                [-0.39340123 + 0.05705932j, 0.1980509 - 0.24234781j, 0.27265585 - 0.0604432j, -0.42641249 + 0.25767258j,
-                 0.40386614 - 0.39925987j, 0.03924761 + 0.13193724j, -0.06059103 - 0.01753834j,
-                 0.21707136 - 0.15887973j],
-                [0, 1, 2],
-                [-0.39340123 + 0.05705932j, 0.1980509 - 0.24234781j, 0.27265585 - 0.0604432j, -0.42641249 + 0.25767258j,
-                 0.40386614 - 0.39925987j, 0.03924761 + 0.13193724j, -0.06059103 - 0.01753834j,
-                 0.21707136 - 0.15887973j],
-        ),
-        (
-                [-1.33865287e-01 + 0.09802308j, 1.25060033e-01 + 0.16087698j, -4.14678130e-01 - 0.00774832j,
-                 1.10121136e-01 + 0.37805482j, -3.21284864e-01 + 0.21521063j, -2.23121454e-04 + 0.28417422j,
-                 5.64131205e-02 + 0.38135286j, 2.32694503e-01 + 0.41331133j],
-                [0, 1, 2],
-                [-1.33865287e-01 + 0.09802308j, 1.25060033e-01 + 0.16087698j, -4.14678130e-01 - 0.00774832j,
-                 1.10121136e-01 + 0.37805482j, -3.21284864e-01 + 0.21521063j, -2.23121454e-04 + 0.28417422j,
-                 5.64131205e-02 + 0.38135286j, 2.32694503e-01 + 0.41331133j],
-        ),
-        ([1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0], [0, 1, 2],
-         [1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0]),
-        ([1 / 2, 0, 1j / 2, 1j / np.sqrt(2)], [0, 1], [1 / 2, 0, 0, 0, 1j / 2, 0, 1j / np.sqrt(2), 0]),
-    ])
-    # fmt: on
+    @pytest.mark.parametrize("state_vector,wires,target_state", decomposition_test_cases)
     def test_state_preparation_probability_distribution(
         self, tol, state_vector, wires, target_state
     ):
@@ -224,32 +197,32 @@ class TestDecomposition:
                 qml.expval(qml.PauliZ(0)),
                 qml.expval(qml.PauliZ(1)),
                 qml.expval(qml.PauliZ(2)),
-                qml.state(),
+                qml.probs(),
             )
 
         results = circuit()
 
-        state = results[-1].ravel()
+        probabilities = results[-1].ravel()
 
-        probabilities = np.abs(state) ** 2
         target_probabilities = np.abs(target_state) ** 2
 
         assert np.allclose(probabilities, target_probabilities, atol=tol, rtol=0)
 
-    # fmt: off
-    @pytest.mark.parametrize("state_vector, n_wires", [
-        ([1 / 2, 1 / 2, 1 / 2, 1 / 2], 2),
-        ([1, 0, 0, 0], 2),
-        ([0, 1, 0, 0], 2),
-        ([0, 0, 0, 1], 2),
-        ([0, 1, 0, 0, 0, 0, 0, 0], 3),
-        ([0, 0, 0, 0, 1, 0, 0, 0], 3),
-        ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], 3),
-        ([1 / 2, 0, 0, 0, 1 / 2, 1 / 2, 1 / 2, 0], 3),
-        ([1 / 3, 0, 0, 0, 2 / 3, 2 / 3, 0, 0], 3),
-        ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], 3),
-    ])
-    # fmt: on
+    @pytest.mark.parametrize(
+        "state_vector, n_wires",
+        [
+            ([1 / 2, 1 / 2, 1 / 2, 1 / 2], 2),
+            ([1, 0, 0, 0], 2),
+            ([0, 1, 0, 0], 2),
+            ([0, 0, 0, 1], 2),
+            ([0, 1, 0, 0, 0, 0, 0, 0], 3),
+            ([0, 0, 0, 0, 1, 0, 0, 0], 3),
+            ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], 3),
+            ([1 / 2, 0, 0, 0, 1 / 2, 1 / 2, 1 / 2, 0], 3),
+            ([1 / 3, 0, 0, 0, 2 / 3, 2 / 3, 0, 0], 3),
+            ([2 / 3, 0, 0, 0, 1 / 3, 0, 0, 2 / 3], 3),
+        ],
+    )
     def test_RZ_skipped(self, mocker, state_vector, n_wires):
         """Tests that the cascade of RZ gates is skipped for real-valued states."""
 
@@ -312,6 +285,80 @@ class TestDecomposition:
         gphase = decomp[-1]
         assert isinstance(gphase, qml.GlobalPhase)
         assert qml.math.allclose(gphase.data[0], qml.math.mean(-1 * qml.math.angle(state)))
+
+    def test_mottonen_resources(self):
+        """Test the resources for MottonenStatePreparataion."""
+
+        assert qml.MottonenStatePreparation.resource_keys == frozenset({"num_wires"})
+
+        op = qml.MottonenStatePreparation([0, 0, 0, 1], wires=(0, 1))
+        assert op.resource_params == {"num_wires": 2}
+
+    def test_decomposition_rule(self):
+        """Test that MottonenStatePreparation has a correct decomposition rule registered."""
+
+        decomp = qml.list_decomps(qml.MottonenStatePreparation)[0]
+
+        resource_obj = decomp.compute_resources(num_wires=3)
+
+        n = 1 + 2 + 4  # 7
+
+        assert resource_obj.num_gates == 1 + 2 * n + 2 * (n - 1)
+        assert resource_obj.gate_counts == {
+            qml.resource_rep(qml.GlobalPhase): 1,
+            qml.resource_rep(qml.RY): n,
+            qml.resource_rep(qml.RZ): n,
+            qml.resource_rep(qml.CNOT): 2 * (n - 1),
+        }
+
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(np.array([0, 0, 0, 1j]), wires=(0, 1))
+
+        q = q.queue
+
+        qml.assert_equal(q[0], qml.RY(np.pi, 0))
+        qml.assert_equal(q[1], qml.RY(np.pi / 2, 1))
+        qml.assert_equal(q[2], qml.CNOT((0, 1)))
+        qml.assert_equal(q[3], qml.RY(-np.pi / 2, 1))
+        qml.assert_equal(q[4], qml.CNOT((0, 1)))
+        qml.assert_equal(q[5], qml.RZ(np.pi / 4, 0))
+        qml.assert_equal(q[6], qml.RZ(np.pi / 4, 1))
+        qml.assert_equal(q[7], qml.CNOT((0, 1)))
+        qml.assert_equal(q[8], qml.RZ(-np.pi / 4, 1))
+        qml.assert_equal(q[9], qml.CNOT((0, 1)))
+        qml.assert_equal(q[10], qml.GlobalPhase(-np.pi / 8, wires=(0, 1)))
+
+    @pytest.mark.capture
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_decomposition_capture(self):
+        """Tests that the new decomposition works with capture."""
+        from jax import numpy as jnp
+
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
+        state = jnp.array([0, 0, 0, 1j])
+
+        def circuit(state):
+            mottonen_decomp(state, (0, 1))
+
+        plxpr = qml.capture.make_plxpr(circuit)(state)
+        collector = CollectOpsandMeas()
+        collector.eval(plxpr.jaxpr, plxpr.consts, state)
+        q = collector.state["ops"]
+        assert len(q) == 11
+
+        pi = jnp.array(jnp.pi)
+        qml.assert_equal(q[0], qml.RY(pi, 0))
+        qml.assert_equal(q[1], qml.RY(pi / 2, 1))
+        qml.assert_equal(q[2], qml.CNOT((0, 1)))
+        qml.assert_equal(q[3], qml.RY(-pi / 2, 1))
+        qml.assert_equal(q[4], qml.CNOT((0, 1)))
+        qml.assert_equal(q[5], qml.RZ(pi / 4, 0))
+        qml.assert_equal(q[6], qml.RZ(pi / 4, 1))
+        qml.assert_equal(q[7], qml.CNOT((0, 1)))
+        qml.assert_equal(q[8], qml.RZ(-pi / 4, 1))
+        qml.assert_equal(q[9], qml.CNOT((0, 1)))
+        qml.assert_equal(q[10], qml.GlobalPhase(-pi / 8, wires=(0, 1)))
 
 
 class TestInputs:
@@ -492,3 +539,39 @@ def test_adjoint_brings_back_to_zero(adj_base_op):
     expected = np.zeros(8)
     expected[0] = 1.0
     assert qml.math.allclose(actual, expected)
+
+
+@pytest.mark.jax
+def test_jacobians_with_and_without_jit_match(seed):
+    """Test that the Jacobian of the circuit is the same with and without jit."""
+    import jax
+
+    shots = None
+    atol = 0.005
+
+    dev = qml.device("default.qubit", shots=shots, seed=seed)
+    dev_no_shots = qml.device("default.qubit", shots=None)
+
+    def circuit(coeffs):
+        qml.MottonenStatePreparation(coeffs, wires=[0, 1])
+        return qml.probs(wires=[0, 1])
+
+    circuit_fd = qml.QNode(circuit, dev, diff_method="finite-diff", gradient_kwargs={"h": 0.05})
+    circuit_ps = qml.QNode(circuit, dev, diff_method="parameter-shift")
+    circuit_exact = qml.QNode(circuit, dev_no_shots)
+
+    params = jax.numpy.array([0.5, 0.5, 0.5, 0.5], dtype=jax.numpy.float64)
+    jac_exact_fn = jax.jacobian(circuit_exact)
+    jac_fd_fn = jax.jacobian(circuit_fd)
+    jac_fd_fn_jit = jax.jit(jac_fd_fn)
+    jac_ps_fn = jax.jacobian(circuit_ps)
+    jac_ps_fn_jit = jax.jit(jac_ps_fn)
+
+    jac_exact = jac_exact_fn(params)
+    jac_fd = jac_fd_fn(params)
+    jac_fd_jit = jac_fd_fn_jit(params)
+    jac_ps = jac_ps_fn(params)
+    jac_ps_jit = jac_ps_fn_jit(params)
+
+    for compare in [jac_fd, jac_fd_jit, jac_ps, jac_ps_jit]:
+        assert qml.math.allclose(jac_exact, compare, atol=atol)

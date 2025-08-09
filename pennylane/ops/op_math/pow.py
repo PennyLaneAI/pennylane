@@ -21,13 +21,13 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qml
 from pennylane import math as qmlmath
-from pennylane.operation import (
+from pennylane.exceptions import (
+    AdjointUndefinedError,
     DecompositionUndefinedError,
-    Observable,
-    Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.operation import Operation
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
 
@@ -78,7 +78,7 @@ def pow(base, z=1, lazy=True, id=None):
     >>> qml.pow(qml.X(0), 0.5)
     X(0)**0.5
     >>> qml.pow(qml.X(0), 0.5, lazy=False)
-    SX(wires=[0])
+    SX(0)
     >>> qml.pow(qml.X(0), 0.1, lazy=False)
     X(0)**0.1
     >>> qml.pow(qml.X(0), 2, lazy=False)
@@ -117,7 +117,7 @@ class Pow(ScalarSymbolicOp):
 
     >>> sqrt_x = Pow(qml.X(0), 0.5)
     >>> sqrt_x.decomposition()
-    [SX(wires=[0])]
+    [SX(0)]
     >>> qml.matrix(sqrt_x)
     array([[0.5+0.5j, 0.5-0.5j],
                 [0.5-0.5j, 0.5+0.5j]])
@@ -130,6 +130,8 @@ class Pow(ScalarSymbolicOp):
 
     """
 
+    resource_keys = {"base_class", "base_params", "z"}
+
     def _flatten(self):
         return (self.base, self.z), tuple()
 
@@ -137,6 +139,7 @@ class Pow(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return pow(data[0], z=data[1])
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     def __new__(cls, base=None, z=1, id=None):
         """Mixes in parents based on inheritance structure of base.
@@ -159,14 +162,9 @@ class Pow(ScalarSymbolicOp):
         """
 
         if isinstance(base, Operation):
-            if isinstance(base, Observable):
-                return object.__new__(PowOpObs)
 
             # not an observable
             return object.__new__(PowOperation)
-
-        if isinstance(base, Observable):
-            return object.__new__(PowObs)
 
         return object.__new__(Pow)
 
@@ -195,6 +193,14 @@ class Pow(ScalarSymbolicOp):
             if self.base.arithmetic_depth > 0
             else f"{self.base}**{self.z}"
         )
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "base_class": type(self.base),
+            "base_params": self.base.resource_params,
+            "z": self.z,
+        }
 
     @property
     def z(self):
@@ -245,12 +251,17 @@ class Pow(ScalarSymbolicOp):
 
         return fractional_matrix_power(mat, scalar)
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_sparse_matrix(self) -> bool:
+        return self.base.has_sparse_matrix and isinstance(self.z, int)
+
     # pylint: disable=arguments-differ
     @staticmethod
-    def compute_sparse_matrix(*params, base=None, z=0):
+    def compute_sparse_matrix(*params, base=None, z=0, format="csr"):
         if isinstance(z, int):
             base_matrix = base.compute_sparse_matrix(*params, **base.hyperparameters)
-            return base_matrix**z
+            return (base_matrix**z).asformat(format)
         raise SparseMatrixUndefinedError
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -341,8 +352,37 @@ class Pow(ScalarSymbolicOp):
     def pow(self, z):
         return [Pow(base=self.base, z=self.z * z)]
 
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_adjoint(self):
+        return isinstance(self.z, int)
+
     def adjoint(self):
-        return Pow(base=qml.adjoint(self.base), z=self.z)
+        """Create an operation that is the adjoint of this one.
+
+        Adjointed operations are the conjugated and transposed version of the
+        original operation. Adjointed ops are equivalent to the inverted operation for unitary
+        gates.
+
+        .. warning::
+
+            The adjoint of a fractional power of an operator is not well-defined due to branch cuts in the power function.
+            Therefore, an ``AdjointUndefinedError`` is raised when the power ``z`` is not an integer.
+
+            The integer power check is a type check, so that floats like ``2.0`` are not considered to be integers.
+
+        Returns:
+            The adjointed operation.
+
+        Raises:
+            AdjointUndefinedError: If the exponent ``z`` is not of type ``int``.
+
+        """
+        if isinstance(self.z, int):
+            return Pow(base=qml.adjoint(self.base), z=self.z)
+        raise AdjointUndefinedError(
+            "The adjoint of Pow operators only is well-defined for integer powers."
+        )
 
     def simplify(self) -> Union["Pow", Identity]:
         # try using pauli_rep:
@@ -350,18 +390,17 @@ class Pow(ScalarSymbolicOp):
             pr.simplify()
             return pr.operation(wire_order=self.wires)
 
-        base = self.base.simplify()
+        base = self.base if qml.capture.enabled() else self.base.simplify()
         try:
             ops = base.pow(z=self.z)
             if not ops:
                 return qml.Identity(self.wires)
             op = qml.prod(*ops) if len(ops) > 1 else ops[0]
-            return op.simplify()
+            return op if qml.capture.enabled() else op.simplify()
         except PowUndefinedError:
             return Pow(base=base, z=self.z)
 
 
-# pylint: disable=no-member
 class PowOperation(Pow, Operation):
     """Operation-specific methods and properties for the ``Pow`` class.
 
@@ -385,20 +424,3 @@ class PowOperation(Pow, Operation):
     @property
     def control_wires(self):
         return self.base.control_wires
-
-
-class PowObs(Pow, Observable):
-    """A child class of ``Pow`` that also inherits from ``Observable``."""
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)
-
-
-# pylint: disable=too-many-ancestors
-class PowOpObs(PowOperation, Observable):
-    """A child class of ``Pow`` that inherits from both
-    ``Observable`` and ``Operation``.
-    """
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)

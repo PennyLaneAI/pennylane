@@ -19,7 +19,7 @@ from warnings import warn
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import GeneratorUndefinedError
+from pennylane.exceptions import GeneratorUndefinedError
 
 from .exp import Exp
 
@@ -39,6 +39,35 @@ class Evolution(Exp):
     Returns:
        :class:`Evolution`: A :class:`~.operation.Operator` representing an operator exponential of the form :math:`e^{-ix\hat{G}}`,
        where x is real.
+
+    .. warning::
+
+        Providing ``num_steps`` to ``Evolution`` is deprecated and will be removed in a future release.
+        Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
+        Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+
+        As a concrete example, consider the following case:
+
+        >>> coeffs = [0.5, -0.6]
+        >>> ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
+        >>> H_flat = qml.dot(coeffs, ops)
+
+        Instead of computing the Suzuki-Trotter product approximation as:
+
+        >>> qml.ops.op_math.Evolution(H_flat, num_steps=2).decomposition()
+        [RX(0.5, wires=[0]),
+        PauliRot(-0.6, XY, wires=[0, 1]),
+        RX(0.5, wires=[0]),
+        PauliRot(-0.6, XY, wires=[0, 1])]
+
+        The same result can be obtained using :class:`~.TrotterProduct` as follows:
+
+        >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+        >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+        [RX(0.5, wires=[0]),
+        PauliRot(-0.6, XY, wires=[0, 1]),
+        RX(0.5, wires=[0]),
+        PauliRot(-0.6, XY, wires=[0, 1])]
 
     **Usage Details**
 
@@ -77,7 +106,6 @@ class Evolution(Exp):
     _name = "Evolution"
     num_params = 1
 
-    # pylint: disable=too-many-arguments
     def __init__(self, generator, param=1, num_steps=None, id=None):
         super().__init__(generator, coeff=-1j * param, num_steps=num_steps, id=id)
         self._data = (param,)
@@ -116,11 +144,10 @@ class Evolution(Exp):
 
     def simplify(self):
         new_base = self.base.simplify()
-        if isinstance(new_base, qml.ops.op_math.SProd):  # pylint: disable=no-member
+        if isinstance(new_base, qml.ops.op_math.SProd):
             return Evolution(new_base.base, self.param * new_base.scalar)
         return Evolution(new_base, self.param)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_generator(self):
         return not qml.math.real(self.coeff)
@@ -147,7 +174,7 @@ class Evolution(Exp):
                 f"The operator coefficient {self.coeff} is not imaginary; the expected format is exp(-ixG)."
                 f"The generator is not defined."
             )
-        return self.base
+        return -1 * self.base
 
     def __copy__(self):
         copied = super().__copy__()

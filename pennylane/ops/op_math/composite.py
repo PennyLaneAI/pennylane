@@ -14,10 +14,11 @@
 """
 This submodule defines a base class for composite operations.
 """
-# pylint: disable=too-many-instance-attributes
+# pylint: disable=invalid-sequence-index
 import abc
 import copy
-from typing import Callable, List
+from collections.abc import Callable
+from functools import wraps
 
 import pennylane as qml
 from pennylane import math
@@ -25,6 +26,24 @@ from pennylane.operation import _UNSET_BATCH_SIZE, Operator
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-instance-attributes
+
+
+def handle_recursion_error(func):
+    """Handles any recursion errors raised from too many levels of nesting."""
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except RecursionError as e:
+            raise RuntimeError(
+                "Maximum recursion depth reached! This is likely due to nesting too many levels "
+                "of composite operators. Try setting lazy=False when calling qml.sum, qml.prod, "
+                "and qml.s_prod, or use the +, @, and * operators instead. Alternatively, you "
+                "can periodically call qml.simplify on your operators."
+            ) from e
+
+    return wrapper
 
 
 class CompositeOp(Operator):
@@ -59,7 +78,6 @@ class CompositeOp(Operator):
         self, *operands: Operator, id=None, _pauli_rep=None
     ):  # pylint: disable=super-init-not-called
         self._id = id
-        self.queue_idx = None
         self._name = self.__class__.__name__
 
         self.operands = operands
@@ -70,7 +88,9 @@ class CompositeOp(Operator):
         self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
+        self._hyperparameters = {"operands": operands}
 
+    @handle_recursion_error
     def _check_batching(self):
         batch_sizes = {op.batch_size for op in self if op.batch_size is not None}
         if len(batch_sizes) > 1:
@@ -81,10 +101,13 @@ class CompositeOp(Operator):
         self._batch_size = batch_sizes.pop() if batch_sizes else None
 
     def __repr__(self):
+        if len(self) == 0:
+            return f"{type(self).__name__}()"
         return f" {self._op_symbol} ".join(
             [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
         )
 
+    @handle_recursion_error
     def __copy__(self):
         cls = self.__class__
         copied_op = cls.__new__(cls)
@@ -114,6 +137,7 @@ class CompositeOp(Operator):
         """The symbol used when visualizing the composite operator"""
 
     @property
+    @handle_recursion_error
     def data(self):
         """Create data property"""
         return tuple(d for op in self for d in op.data)
@@ -133,6 +157,7 @@ class CompositeOp(Operator):
         return len(self.wires)
 
     @property
+    @handle_recursion_error
     def num_params(self):
         return sum(op.num_params for op in self)
 
@@ -153,9 +178,11 @@ class CompositeOp(Operator):
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
+    @handle_recursion_error
     def has_matrix(self):
-        return all(op.has_matrix or isinstance(op, qml.ops.Hamiltonian) for op in self)
+        return all(op.has_matrix for op in self)
 
+    @handle_recursion_error
     def eigvals(self):
         """Return the eigenvalues of the specified operator.
 
@@ -169,12 +196,12 @@ class CompositeOp(Operator):
         for ops in self.overlapping_ops:
             if len(ops) == 1:
                 eigvals.append(
-                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                    math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
                 )
             else:
                 tmp_composite = self.__class__(*ops)
                 eigvals.append(
-                    qml.utils.expand_vector(
+                    math.expand_vector(
                         tmp_composite.eigendecomposition["eigval"],
                         list(tmp_composite.wires),
                         list(self.wires),
@@ -189,29 +216,43 @@ class CompositeOp(Operator):
         """Representation of the operator as a matrix in the computational basis."""
 
     @property
-    def overlapping_ops(self) -> List[List[Operator]]:
+    def overlapping_ops(self) -> list[list[Operator]]:
         """Groups all operands of the composite operator that act on overlapping wires.
 
         Returns:
             List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
             inner lists commute with each other.
         """
-        if self._overlapping_ops is None:
-            overlapping_ops = []  # [(wires, [ops])]
-            for op in self:
-                ops = [op]
-                wires = op.wires
-                op_added = False
-                for idx, (old_wires, old_ops) in enumerate(overlapping_ops):
-                    if any(wire in old_wires for wire in wires):
-                        overlapping_ops[idx] = (old_wires + wires, old_ops + ops)
-                        op_added = True
-                        break
-                if not op_added:
-                    overlapping_ops.append((op.wires, [op]))
 
-            self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
+        if self._overlapping_ops is not None:
+            return self._overlapping_ops
 
+        groups = []
+        for op in self:
+            # For every op, find all groups that have overlapping wires with it.
+            i = 0
+            first_group_idx = None
+            while i < len(groups):
+                if first_group_idx is None and any(wire in op.wires for wire in groups[i][1]):
+                    # Found the first group that has overlapping wires with this op
+                    groups[i][1] = groups[i][1] + op.wires
+                    first_group_idx = i  # record the index of this group
+                    i += 1
+                elif first_group_idx is not None and any(wire in op.wires for wire in groups[i][1]):
+                    # If the op has already been added to the first group, every subsequent
+                    # group that overlaps with this op is merged into the first group
+                    ops, wires = groups.pop(i)
+                    groups[first_group_idx][0].extend(ops)
+                    groups[first_group_idx][1] = groups[first_group_idx][1] + wires
+                else:
+                    i += 1
+            if first_group_idx is not None:
+                groups[first_group_idx][0].append(op)
+            else:
+                # Create new group
+                groups.append([[op], op.wires])
+
+        self._overlapping_ops = [group[0] for group in groups]
         return self._overlapping_ops
 
     @property
@@ -277,6 +318,7 @@ class CompositeOp(Operator):
                 )
         return diag_gates
 
+    @handle_recursion_error
     def label(self, decimals=None, base_label=None, cache=None):
         r"""How the composite operator is represented in diagrams and drawings.
 
@@ -327,10 +369,11 @@ class CompositeOp(Operator):
 
     @classmethod
     @abc.abstractmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Sort composite operands by their wire indices."""
 
     @property
+    @handle_recursion_error
     def hash(self):
         if self._hash is None:
             self._hash = hash(
@@ -344,6 +387,7 @@ class CompositeOp(Operator):
         return None
 
     @property
+    @handle_recursion_error
     def arithmetic_depth(self) -> int:
         return 1 + max(op.arithmetic_depth for op in self)
 
@@ -352,6 +396,7 @@ class CompositeOp(Operator):
     def _math_op(self) -> Callable:
         """The function used when combining the operands of the composite operator"""
 
+    @handle_recursion_error
     def map_wires(self, wire_map: dict):
         # pylint:disable=protected-access
         cls = self.__class__

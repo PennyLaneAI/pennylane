@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the :func:`_cache_transform` and :func:`_apply_cache_transform` functions.
+Unit tests for the :func:`_cache_transform` transform function.
 """
 # pylint: disable=protected-access,redefined-outer-name
-from typing import MutableMapping
+from collections.abc import MutableMapping
 from unittest.mock import MagicMock
 
 import pytest
 
 import pennylane as qml
 from pennylane.tape import QuantumScript
-from pennylane.workflow.execution import _apply_cache_transform, _cache_transform
+from pennylane.workflow import _cache_transform
 
 
 @pytest.fixture
@@ -40,7 +40,7 @@ def cache() -> MutableMapping:
 @pytest.fixture
 def transform_spy(mocker) -> MagicMock:
     """Returns a spy on the underlying ``_cache_transform()`` function."""
-    return mocker.spy(qml.workflow.execution._cache_transform, "_transform")
+    return mocker.spy(qml.workflow._cache_transform, "_transform")
 
 
 def test_cache_miss_before_cache_hit(tape, cache):
@@ -101,30 +101,14 @@ def test_batch_of_identical_tapes(cache):
     assert batch_fns((result,)) == (result, result, result)
 
 
-def test_finite_shots_with_persistent_cache_warning(cache):
+def test_finite_shots_with_persistent_cache_warning():
     """Tests that a UserWarning is emitted if a cache hit occurs for a tape with
-    finite shots that uses a persistent cache.
+    finite shots that uses a cache.
     """
     tape = QuantumScript([], [qml.expval(qml.Z(0))], shots=1)
 
-    batch_tapes, batch_fns = _cache_transform([tape, tape], cache=cache)
+    batch_tapes, batch_fns = _cache_transform([tape, tape], cache={})
     assert len(batch_tapes) == 1
 
     with pytest.warns(UserWarning, match=r"Cached execution with finite shots detected!"):
         batch_fns(((1.23,),))
-
-
-def test_apply_cache_transform_with_cache(transform_spy, tape, cache):
-    """Tests that calling ``_apply_cache_transform()`` with a cache returns a
-    function that applies the cache transform.
-    """
-    _apply_cache_transform(MagicMock(return_value=[1.23]), cache=cache)([tape])
-    transform_spy.assert_called_once_with(tape, cache=cache)
-
-
-def test_apply_cache_transform_without_cache(transform_spy, tape):
-    """Tests that calling ``_apply_cache_transform()`` without a cache returns a
-    function that does not apply the cache transform.
-    """
-    _apply_cache_transform(MagicMock(return_value=[1.23]), cache=None)([tape])
-    transform_spy.assert_not_called()

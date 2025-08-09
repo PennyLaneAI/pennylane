@@ -1,6 +1,8 @@
 qml.tape
 ========
 
+.. currentmodule:: pennylane.tape
+
 Quantum tapes are a datastructure that can represent quantum circuits and measurement statistics in PennyLane. They are queuing contexts that can record and process quantum operations and measurements.
 
 In addition to being created internally by QNodes, quantum tapes can also be created,
@@ -18,12 +20,15 @@ TensorFlow, and PyTorch.
     details on creating QNodes, as well as the :func:`~pennylane.qnode` decorator
     and :func:`~pennylane.QNode` constructor.
 
+.. _tape-vs-script:
+
 QuantumTape versus QuantumScript
 --------------------------------
 
 A ``QuantumScript`` is purely a representation of a quantum circuit, and can only be constructed
 via initialization. Once it is initialized, the contents should then remain immutable throughout its lifetime.
 
+>>> from pennylane.tape import QuantumScript
 >>> ops = [qml.PauliX(0)]
 >>> measurements = [qml.expval(qml.PauliZ(0))]
 >>> QuantumScript(ops, measurements, shots=10)
@@ -34,6 +39,7 @@ are set on exiting the context, rather than upon initialization. Since queuing r
 :class:`~pennylane.QueuingManager`, the ``QuantumTape`` requires a ``threading.RLock`` which complicates its use in distributed
 situations.
 
+>>> from pennylane.tape import QuantumTape
 >>> with QuantumTape(shots=10) as tape:
 ...     qml.PauliX(0)
 ...     qml.expval(qml.PauliZ(0))
@@ -41,7 +47,7 @@ situations.
 <QuantumTape: wires=[0], params=0>
 
 The ``QuantumTape`` also carries around the unprocessed queue in addition to the processed ``operations`` and ``measurements``, 
-to a larger memory footprint.
+resulting in a larger memory footprint.
 
 >>> tape.items()
 ((PauliX(wires=[0]), {}), (expval(PauliZ(wires=[0])), {}))
@@ -66,5 +72,6 @@ and a reduction in unintended side effects, ``QuantumScript`` is strictly used i
 
 .. automodapi:: pennylane.tape
     :no-main-docstr:
+    :skip: QuantumTapeBatch, QuantumScriptBatch
     :include-all-objects:
     :inheritance-diagram:

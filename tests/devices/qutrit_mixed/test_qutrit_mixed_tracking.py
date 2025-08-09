@@ -157,7 +157,7 @@ shot_testing_combos = [
     ([qml.expval(qml.GellMann(0, 1))], 1, 10),
     ([qml.expval(qml.GellMann(0, 1)), qml.expval(qml.GellMann(0, 2))], 2, 20),
     # Hamiltonian test cases
-    ([qml.expval(qml.Hamiltonian([1, 1], [qml.GellMann(0, 1), qml.GellMann(1, 5)]))], 2, 20),
+    ([qml.expval(qml.Hamiltonian([1, 1], [qml.GellMann(0, 1), qml.GellMann(1, 5)]))], 1, 10),
     # op arithmetic test cases
     ([qml.expval(qml.sum(qml.GellMann(0, 1), qml.GellMann(1, 4)))], 2, 20),
     (
@@ -201,7 +201,6 @@ class TestExecuteTracker:
         assert dev.tracker.totals["simulations"] == 1
         assert dev.tracker.totals["shots"] == 3 * expected_shots
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_multiple_expval_with_prods(self):
         """
         Test tracker tracks default qutrit mixed execute number of shots for new and old opmath tensors.

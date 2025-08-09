@@ -22,8 +22,6 @@ import pennylane.numpy as np
 from pennylane.shadows import ClassicalShadow
 from pennylane.shadows.classical_shadow import _project_density_matrix_spectrum
 
-np.random.seed(777)
-
 
 def max_entangled_circuit(wires, shots=10000, interface="autograd"):
     """maximally entangled state preparation circuit"""
@@ -70,9 +68,7 @@ class TestShadowEntropies:
         expected = np.log(2) / np.log(base)
         assert np.allclose(entropies, expected, atol=2e-2)
 
-    def test_non_constant_distribution(
-        self,
-    ):
+    def test_non_constant_distribution(self):
         """Test entropies match roughly with exact solution for a non-constant distribution using other PennyLane functionalities"""
         n_wires = 4
         # exact solution
@@ -105,12 +101,16 @@ class TestShadowEntropies:
         bitstrings, recipes = qnode(x)
         shadow = ClassicalShadow(bitstrings, recipes)
 
+        # Get the full dm of the qnode_exact
+        state = qnode_exact(x)
+        rho = qml.math.dm_from_state_vector(state)
+
         # Check for the correct entropies for all possible 2-site reduced density matrix (rdm)
         for rdm_wires in [[0, 1], [0, 2], [0, 3], [1, 2], [1, 3], [2, 3]]:
             # this is intentionally not done in a parametrize loop because this would re-execute the quantum function
 
             # exact solution
-            rdm = qml.qinfo.reduced_dm(qnode_exact, wires=rdm_wires)(x)
+            rdm = qml.math.reduce_dm(rho, indices=rdm_wires)
             evs = qml.math.eigvalsh(rdm)
 
             evs = evs[np.where(evs > 0)]

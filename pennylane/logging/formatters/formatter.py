@@ -15,7 +15,7 @@
 import inspect
 import logging
 from logging import Formatter
-from typing import NamedTuple, Tuple, Union
+from typing import NamedTuple
 
 # For color-code definitions see https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
 # 24-bit mode support RGB color codes in 8bit-wide r;g;b format
@@ -38,14 +38,14 @@ class ColorScheme(NamedTuple):
     warning: str
     error: str
     critical: str
-    debug_bg: Union[None, str]
-    info_bg: Union[None, str]
-    warning_bg: Union[None, str]
-    error_bg: Union[None, str]
-    critical_bg: Union[None, str]
+    debug_bg: str | None
+    info_bg: str | None
+    warning_bg: str | None
+    error_bg: str | None
+    critical_bg: str | None
 
 
-def build_code_rgb(rgb: Tuple[int, int, int], rgb_bg: Union[None, Tuple[int, int, int]] = None):
+def build_code_rgb(rgb: tuple[int, int, int], rgb_bg: tuple[int, int, int] | None = None):
     """
     Utility function to generate the appropriate ANSI RGB codes for a given set of foreground (font) and background colors.
     """

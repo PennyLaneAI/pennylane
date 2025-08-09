@@ -14,24 +14,18 @@
 """
 Integration tests for the capture of pennylane operations into jaxpr.
 """
+import numpy as np
+
 # pylint: disable=protected-access
 import pytest
 
 import pennylane as qml
-from pennylane.capture.primitives import _get_abstract_operator
 
 jax = pytest.importorskip("jax")
 
-pytestmark = pytest.mark.jax
+from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
 
-AbstractOperator = _get_abstract_operator()
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 def test_abstract_operator():
@@ -54,7 +48,6 @@ def test_abstract_operator():
     # arithmetic dunders integration tested
 
 
-@pytest.mark.usefixtures("new_opmath_only")
 def test_operators_constructed_when_plxpr_enabled():
     """Test that normal operators can still be constructed when plxpr is enabled."""
 
@@ -106,7 +99,7 @@ def test_hybrid_capture_wires():
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1, 2)
 
     assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.X(3))
+    qml.assert_equal(q.queue[0], qml.X(3))
 
 
 def test_hybrid_capture_parametrization():
@@ -134,13 +127,27 @@ def test_hybrid_capture_parametrization():
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.5)
 
     assert len(q) == 1
-    assert qml.equal(
+    qml.assert_equal(
         q.queue[0], qml.Rot(1.0, jax.numpy.sqrt(0.5), 0.25, wires=1), check_interface=False
     )
 
 
 @pytest.mark.parametrize("as_kwarg", (True, False))
-@pytest.mark.parametrize("w", (0, (0,), [0], range(1), qml.wires.Wires(0), {0}))
+@pytest.mark.parametrize(
+    "w",
+    (
+        0,
+        (0,),
+        [0],
+        range(1),
+        qml.wires.Wires(0),
+        {0},
+        jax.numpy.array(0),
+        jax.numpy.array([0]),
+        np.array(0),
+        np.array([0]),
+    ),
+)
 def test_different_wires(w, as_kwarg):
     """Test that wires can be passed positionally and as a keyword in a variety of different types."""
 
@@ -152,13 +159,19 @@ def test_different_wires(w, as_kwarg):
 
     jaxpr = jax.make_jaxpr(qfunc)()
 
-    assert len(jaxpr.eqns) == 1
+    if isinstance(w, jax.numpy.ndarray) and w.shape != ():
+        offset = 1
+    else:
+        offset = 0
 
-    eqn = jaxpr.eqns[0]
+    assert len(jaxpr.eqns) == 1 + offset
+
+    eqn = jaxpr.eqns[offset + 0]
     assert eqn.primitive == qml.X._primitive
     assert len(eqn.invars) == 1
-    assert isinstance(eqn.invars[0], jax.core.Literal)
-    assert eqn.invars[0].val == 0
+    if not isinstance(w, jax.numpy.ndarray):
+        assert isinstance(eqn.invars[0], jax.extend.core.Literal)
+        assert eqn.invars[0].val == 0
 
     assert isinstance(eqn.outvars[0].aval, AbstractOperator)
     assert isinstance(eqn.outvars[0], jax.core.DropVar)
@@ -169,7 +182,31 @@ def test_different_wires(w, as_kwarg):
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
     assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.X(0))
+    qml.assert_equal(q.queue[0], qml.X(0))
+
+
+@pytest.mark.parametrize("as_kwarg", (True, False))
+@pytest.mark.parametrize("interface", ("numpy", "jax"))
+def test_ndarray_multiple_wires(as_kwarg, interface):
+    """Test that wires can be provided as an ndarray."""
+
+    def qfunc():
+        if as_kwarg:
+            qml.GroverOperator(wires=qml.math.arange(4, like=interface))
+        else:
+            qml.GroverOperator(qml.math.arange(4, like=interface))
+
+    jaxpr = jax.make_jaxpr(qfunc)()
+
+    assert jaxpr.eqns[-1].primitive == qml.GroverOperator._primitive
+    assert jaxpr.eqns[-1].params == {"n_wires": 4}
+    assert len(jaxpr.eqns[-1].invars) == 4
+
+    with qml.queuing.AnnotatedQueue() as q:
+        qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+    assert len(q) == 1
+    qml.assert_equal(q.queue[0], qml.GroverOperator(wires=(0, 1, 2, 3)))
 
 
 def test_parametrized_op():
@@ -191,33 +228,71 @@ def test_parametrized_op():
         jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0, 2.0, 3.0, 10)
 
     assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.Rot(1.0, 2.0, 3.0, 10))
+    qml.assert_equal(q.queue[0], qml.Rot(1.0, 2.0, 3.0, 10))
 
 
-def test_pauli_rot():
-    """Test a special operation that has positional metadata and overrides binding."""
+class TestSpecialOps:
 
-    def qfunc(a, wire0, wire1):
-        qml.PauliRot(a, "XY", (wire0, wire1))
+    def test_pauli_rot(self):
+        """Test a special operation that has positional metadata and overrides binding."""
 
-    jaxpr = jax.make_jaxpr(qfunc)(0.5, 2, 3)
-    assert len(jaxpr.eqns) == 1
-    eqn = jaxpr.eqns[0]
+        def qfunc(a, wire0, wire1):
+            qml.PauliRot(a, "XY", (wire0, wire1))
 
-    assert eqn.primitive == qml.PauliRot._primitive
-    assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
+        jaxpr = jax.make_jaxpr(qfunc)(0.5, 2, 3)
+        assert len(jaxpr.eqns) == 1
+        eqn = jaxpr.eqns[0]
 
-    assert len(eqn.invars) == 3  # The rotation parameter and the two wires
-    assert jaxpr.jaxpr.invars == eqn.invars
+        assert eqn.primitive == qml.PauliRot._primitive
+        assert eqn.params == {"pauli_word": "XY", "id": None, "n_wires": 2}
 
-    with qml.queuing.AnnotatedQueue() as q:
-        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
+        assert len(eqn.invars) == 3  # The rotation parameter and the two wires
+        assert jaxpr.jaxpr.invars == eqn.invars
 
-    assert len(q) == 1
-    assert qml.equal(q.queue[0], qml.PauliRot(2.5, "XY", (3, 4)))
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2.5, 3, 4)
+
+        assert len(q) == 1
+        qml.assert_equal(q.queue[0], qml.PauliRot(2.5, "XY", (3, 4)))
+
+    def test_GlobalPhase(self):
+        """Test that a global phase on no wires can be captured."""
+
+        def qfunc(phi):
+            return qml.GlobalPhase(phi)
+
+        jaxpr = jax.make_jaxpr(qfunc)(0.5)
+        assert len(jaxpr.eqns) == 1
+
+        assert jaxpr.eqns[0].primitive == qml.GlobalPhase._primitive
+        assert len(jaxpr.eqns[0].invars) == 1
+        assert jaxpr.eqns[0].params == {"n_wires": 0}
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.2)
+
+        assert len(q.queue) == 1
+        qml.assert_equal(q.queue[0], qml.GlobalPhase(1.2))
+
+    def test_identity_no_wires(self):
+        """Test that an identity on no wires can be captured."""
+
+        jaxpr = jax.make_jaxpr(qml.I)()
+        assert len(jaxpr.eqns) == 1
+
+        assert jaxpr.eqns[0].primitive == qml.I._primitive
+        assert len(jaxpr.eqns[0].invars) == 0
+        assert jaxpr.eqns[0].params == {"n_wires": 0}
+
+        with qml.queuing.AnnotatedQueue() as q:
+            jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+
+        assert len(q.queue) == 1
+        qml.assert_equal(q.queue[0], qml.I())
 
 
 class TestTemplates:
+
     def test_variable_wire_non_parametrized_template(self):
         """Test capturing a variable wire count, non-parametrized template like GroverOperator."""
 
@@ -232,23 +307,22 @@ class TestTemplates:
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
     def test_nested_template(self):
-        """Test capturing a template that contains a nested operation defined outside the qfunc."""
+        """Test capturing a template that depends on another operator."""
+
+        def qfunc(coeffs):
+            ops = [qml.X(0), qml.Z(0)]
+            H = qml.dot(coeffs, ops)
+            qml.TrotterProduct(H, time=2.4, order=2)
 
         coeffs = [0.25, 0.75]
-        ops = [qml.X(0), qml.Z(0)]
-        H = qml.dot(coeffs, ops)
 
-        def qfunc(Hi):
-            qml.TrotterProduct(Hi, time=2.4, order=2)
-
-        jaxpr = jax.make_jaxpr(qfunc)(H)
+        jaxpr = jax.make_jaxpr(qfunc)(coeffs)
 
         assert len(jaxpr.eqns) == 6
 
-        # due to flattening and unflattening H
         assert jaxpr.eqns[0].primitive == qml.X._primitive
-        assert jaxpr.eqns[1].primitive == qml.ops.SProd._primitive
-        assert jaxpr.eqns[2].primitive == qml.Z._primitive
+        assert jaxpr.eqns[1].primitive == qml.Z._primitive
+        assert jaxpr.eqns[2].primitive == qml.ops.SProd._primitive
         assert jaxpr.eqns[3].primitive == qml.ops.SProd._primitive
         assert jaxpr.eqns[4].primitive == qml.ops.Sum._primitive
         assert not any(isinstance(eqn.outvars[0], jax.core.DropVar) for eqn in jaxpr.eqns[:5])
@@ -263,6 +337,8 @@ class TestTemplates:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, coeffs[0], coeffs[1])
 
         assert len(q) == 1
+        ops = [qml.X(0), qml.Z(0)]
+        H = qml.dot(coeffs, ops)
         assert q.queue[0] == qml.TrotterProduct(H, time=2.4, order=2)
 
 
@@ -287,7 +363,7 @@ class TestOpmath:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
 
         assert len(q) == 1
-        assert qml.equal(q.queue[0], qml.adjoint(qml.X(0)))
+        qml.assert_equal(q.queue[0], qml.adjoint(qml.X(0)))
 
     def test_Controlled(self):
         """Test a nested control operation."""
@@ -307,14 +383,18 @@ class TestOpmath:
         assert eqn.invars[2].val == 4
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
-        assert eqn.params == {"control_values": [0, 1], "work_wires": None}
+        assert eqn.params == {
+            "control_values": [0, 1],
+            "work_wires": None,
+            "work_wire_type": "borrowed",
+        }
 
         with qml.queuing.AnnotatedQueue() as q:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3.4)
 
         assert len(q) == 1
         expected = qml.ctrl(qml.IsingXX(3.4, wires=(0, 1)), control=(3, 4), control_values=[0, 1])
-        assert qml.equal(q.queue[0], expected)
+        qml.assert_equal(q.queue[0], expected)
 
 
 class TestAbstractDunders:
@@ -338,7 +418,7 @@ class TestAbstractDunders:
         assert eqn.invars[0] == jaxpr.eqns[0].outvars[0]
         assert eqn.invars[1] == jaxpr.eqns[1].outvars[0]
 
-        assert eqn.params == {"grouping_type": None, "id": None, "method": "rlf"}
+        assert eqn.params == {"grouping_type": None, "id": None, "method": "lf"}
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
@@ -364,7 +444,6 @@ class TestAbstractDunders:
 
         assert isinstance(eqn.outvars[0].aval, AbstractOperator)
 
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_mul(self):
         """Test that the scalar multiplication dunder works."""
 

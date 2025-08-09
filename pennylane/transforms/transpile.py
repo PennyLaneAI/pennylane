@@ -3,18 +3,17 @@ Contains the transpiler transform.
 """
 
 from functools import partial
-from typing import Callable, List, Sequence, Union
 
 import networkx as nx
 
 import pennylane as qml
-from pennylane.operation import Tensor
-from pennylane.ops import Hamiltonian, LinearCombination
+from pennylane.ops import LinearCombination
 from pennylane.ops import __all__ as all_ops
 from pennylane.ops.qubit import SWAP
 from pennylane.queuing import QueuingManager
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
 def state_transposition(results, mps, new_wire_order, original_wire_order):
@@ -61,8 +60,8 @@ def _process_measurements(expanded_tape, device_wires, is_default_mixed):
 
 @transform
 def transpile(
-    tape: QuantumTape, coupling_map: Union[List, nx.Graph], device=None
-) -> (Sequence[QuantumTape], Callable):
+    tape: QuantumScript, coupling_map, device=None
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transpile a circuit according to a desired coupling map
 
     .. warning::
@@ -72,8 +71,8 @@ def transpile(
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum tape.
-        coupling_map (list[tuple(int, int)] or nx.Graph): Either a list of tuples(int, int) or an instance of
-            `networkx.Graph` specifying the couplings between different qubits.
+        coupling_map: Data specifying the couplings between different qubits. This data can be any format accepted by ``nx.to_networkx_graph()``,
+            currently including edge list, dict of dicts, dict of lists, NetworkX graph, 2D NumPy array, SciPy sparse matrix, or PyGraphviz graph.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
@@ -127,7 +126,7 @@ def transpile(
     """
     if device:
         device_wires = device.wires
-        is_default_mixed = getattr(device, "short_name", "") == "default.mixed"
+        is_default_mixed = device.name == "default.mixed"
     else:
         device_wires = None
         is_default_mixed = False
@@ -143,12 +142,9 @@ def transpile(
             f"Not all wires present in coupling map! wires: {wires}, coupling map: {coupling_graph.nodes}"
         )
 
-    if any(
-        isinstance(m.obs, (Hamiltonian, LinearCombination, Tensor, qml.ops.Prod))
-        for m in tape.measurements
-    ):
+    if any(isinstance(m.obs, (LinearCombination, qml.ops.Prod)) for m in tape.measurements):
         raise NotImplementedError(
-            "Measuring expectation values of tensor products, Prods, or Hamiltonians is not yet supported"
+            "Measuring expectation values of tensor products or Hamiltonians is not yet supported"
         )
 
     if any(len(op.wires) > 2 for op in tape.operations):
@@ -205,7 +201,9 @@ def transpile(
             # for the shortest path between the two qubits in the connectivity graph. We then move the q2 into the
             # neighbourhood of q1 via swap operations.
             source_wire, dest_wire = op.wires
-            # pylint:disable=too-many-function-args
+
+            # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+            # pylint: disable=too-many-function-args
             shortest_path = nx.algorithms.shortest_path(coupling_graph, source_wire, dest_wire)
             path_length = len(shortest_path) - 1
             wires_to_swap = [shortest_path[(i - 1) : (i + 1)] for i in range(path_length, 1, -1)]
@@ -225,7 +223,7 @@ def transpile(
             list_op_copy = [op.map_wires(wire_map) for op in list_op_copy]
             wire_order = [wire_map[w] for w in wire_order]
             measurements = [m.map_wires(wire_map) for m in measurements]
-    new_tape = type(tape)(gates, measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=gates, measurements=measurements)
 
     # note: no need for transposition with density matrix, so type must be `StateMP` but not `DensityMatrixMP`
     # pylint: disable=unidiomatic-typecheck

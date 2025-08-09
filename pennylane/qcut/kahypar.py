@@ -16,31 +16,32 @@ Functions for partitioning a graph using KaHyPar.
 """
 
 
-from collections.abc import Sequence as SequenceType
+from collections.abc import Sequence
 from itertools import compress
 from pathlib import Path
-from typing import Any, List, Sequence, Tuple, Union
+from typing import Any
 
 import numpy as np
 from networkx import MultiDiGraph
 
-import pennylane as qml
+from pennylane import math
 from pennylane.operation import Operation
 
 
+# pylint: disable=too-many-positional-arguments
 def kahypar_cut(
     graph: MultiDiGraph,
     num_fragments: int,
     imbalance: int = None,
-    edge_weights: List[Union[int, float]] = None,
-    node_weights: List[Union[int, float]] = None,
-    fragment_weights: List[Union[int, float]] = None,
+    edge_weights: None | list[int | float] = None,
+    node_weights: None | list[int | float] = None,
+    fragment_weights: None | list[int | float] = None,
     hyperwire_weight: int = 1,
     seed: int = None,
-    config_path: Union[str, Path] = None,
-    trial: int = None,
+    config_path: None | str | Path = None,
+    trial: None | int = None,
     verbose: bool = False,
-) -> List[Tuple[Operation, Operation, Any]]:
+) -> list[tuple[Operation, Any]]:
     """Calls `KaHyPar <https://kahypar.org/>`__ to partition a graph.
 
     .. warning::
@@ -141,7 +142,7 @@ def kahypar_cut(
 
     if isinstance(imbalance, float):
         context.setEpsilon(imbalance)
-    if isinstance(fragment_weights, SequenceType) and (len(fragment_weights) == num_fragments):
+    if isinstance(fragment_weights, Sequence) and (len(fragment_weights) == num_fragments):
         context.setCustomTargetBlockWeights(fragment_weights)
     if not verbose:
         context.suppressOutput(True)
@@ -168,7 +169,7 @@ def _graph_to_hmetis(
     graph: MultiDiGraph,
     hyperwire_weight: int = 0,
     edge_weights: Sequence[int] = None,
-) -> Tuple[List[int], List[int], List[Union[int, float]]]:
+) -> tuple[list[int], list[int], list[int | float]]:
     """Converts a ``MultiDiGraph`` into the
     `hMETIS hypergraph input format <http://glaros.dtc.umn.edu/gkhome/fetch/sw/hmetis/manual.pdf>`__
     conforming to KaHyPar's calling signature.
@@ -194,7 +195,7 @@ def _graph_to_hmetis(
     wires = {w for _, _, w in edges}
 
     adj_nodes = [nodes.index(v) for ops in graph.edges(keys=False) for v in ops]
-    edge_splits = qml.math.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
+    edge_splits = math.cumsum([0] + [len(e) for e in graph.edges(keys=False)]).tolist()
     edge_weights = (
         edge_weights if edge_weights is not None and len(edges) == len(edge_weights) else None
     )

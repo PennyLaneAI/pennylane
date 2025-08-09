@@ -15,13 +15,14 @@
 This submodule contains the discrete-variable quantum operations concerned
 with preparing a certain state on the qutrit device.
 """
-# pylint:disable=abstract-method,arguments-differ,protected-access,no-member
+# pylint: disable=arguments-differ
 import numpy as np
 
 from pennylane import math
-from pennylane.operation import AnyWires, StatePrepBase
+from pennylane.exceptions import WireError
+from pennylane.operation import StatePrepBase
 from pennylane.templates.state_preparations import QutritBasisStatePreparation
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 state_prep_ops = {"QutritBasisState"}
 
@@ -64,7 +65,6 @@ class QutritBasisState(StatePrepBase):
     [0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 0.+0.j 1.+0.j]
     """
 
-    num_wires = AnyWires
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -96,7 +96,7 @@ class QutritBasisState(StatePrepBase):
         return [QutritBasisStatePreparation(n, wires)]
 
     def state_vector(self, wire_order=None):
-        """Returns a state-vector of shape ``(3,) * num_wires``."""
+        """Returns a statevector of shape ``(3,) * num_wires``."""
         prep_vals = self.parameters[0]
         if any(i not in [0, 1, 2] for i in prep_vals):
             raise ValueError("QutritBasisState parameter must consist of 0, 1 or 2 integers.")

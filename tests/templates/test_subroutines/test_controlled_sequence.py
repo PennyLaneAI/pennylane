@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.wires import Wires
 
 # pylint: disable=unidiomatic-typecheck, cell-var-from-loop
@@ -31,6 +32,7 @@ def test_standard_validity():
 
 
 class TestInitialization:
+
     def test_id(self):
         """Tests that the id attribute can be set."""
         op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2], id="a")
@@ -57,6 +59,7 @@ class TestInitialization:
 
 
 class TestProperties:
+
     def test_hash(self):
         """Test that op.hash uniquely describes a ControlledSequence"""
 
@@ -97,6 +100,7 @@ class TestProperties:
 
 
 class TestMethods:
+
     def test_repr(self):
         """Test that the operator repr is as expected"""
         op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=[0, 1, 2])
@@ -129,7 +133,7 @@ class TestMethods:
 
         assert len(decomp) == len(control_wires)
         for i, op in enumerate(decomp):
-            assert qml.equal(op.base.base, base)
+            qml.assert_equal(op.base.base, base)
             assert isinstance(op, qml.ops.Pow)
             assert op.z == 2 ** (len(control_wires) - i - 1)
 
@@ -163,6 +167,12 @@ class TestMethods:
         for op1, op2 in zip(decomp, expected_decomp):
             assert op1 == op2
 
+    def test_decomposition_new(self):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.ControlledSequence(qml.RX(0.25, wires=3), control=["a", 1, "blue"])
+        for rule in qml.list_decomps(qml.ControlledSequence):
+            _test_decomposition_rule(op, rule)
+
 
 class TestIntegration:
     """Tests that the ControlledSequence is executable and differentiable in a QNode context"""
@@ -189,28 +199,36 @@ class TestIntegration:
         assert np.allclose(res, self.exp_result, atol=0.002)
 
     @pytest.mark.autograd
-    def test_qnode_autograd(self):
+    @pytest.mark.parametrize("shots", [None, 50000])
+    def test_qnode_autograd(self, shots, seed):
         """Test that the QNode executes with Autograd."""
 
-        dev = qml.device("default.qubit")
-        qnode = qml.QNode(self.circuit, dev, interface="autograd")
-
+        dev = qml.device("default.qubit", wires=4, shots=shots, seed=seed)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
         x = qml.numpy.array(self.x, requires_grad=True)
+
         res = qnode(x)
         assert qml.math.shape(res) == (16,)
         assert np.allclose(res, self.exp_result, atol=0.002)
 
+        res = qml.jacobian(qnode)(x)
+        assert np.shape(res) == (16,)
+        assert np.allclose(res, self.exp_jac, atol=0.005)
+
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
-    @pytest.mark.parametrize("shots", [None, 10000])
-    def test_qnode_jax(self, shots, use_jit):
+    @pytest.mark.parametrize("shots", [None, 50000])
+    def test_qnode_jax(self, shots, use_jit, seed):
         """Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
+
         import jax
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
+
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
         if use_jit:
@@ -230,13 +248,15 @@ class TestIntegration:
         assert np.allclose(jac, self.exp_jac, atol=0.006)
 
     @pytest.mark.torch
-    @pytest.mark.parametrize("shots", [None, 10000])
-    def test_qnode_torch(self, shots):
+    @pytest.mark.parametrize("shots", [None, 50000])
+    def test_qnode_torch(self, shots, seed):
         """Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
+
         import torch
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
+
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
@@ -247,17 +267,18 @@ class TestIntegration:
 
         jac = torch.autograd.functional.jacobian(qnode, x)
         assert qml.math.shape(jac) == (16,)
-        assert qml.math.allclose(jac, self.exp_jac, atol=0.006)
+        assert qml.math.allclose(jac, self.exp_jac, atol=0.005)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 10000])
     @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots):
+    def test_qnode_tf(self, shots, seed):
         """Test that the QNode executes and is differentiable with TensorFlow. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
+
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 

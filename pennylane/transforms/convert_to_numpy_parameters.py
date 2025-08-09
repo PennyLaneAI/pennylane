@@ -15,15 +15,14 @@
 This file contains preprocessings steps that may be called internally
 during execution.
 """
-from typing import Callable, Sequence, Tuple
 
 import pennylane as qml
 from pennylane import math
-from pennylane.tape import QuantumTape
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
 
 
-# pylint: disable=no-member
 def _convert_op_to_numpy_data(op: qml.operation.Operator) -> qml.operation.Operator:
     if math.get_interface(*op.data) == "numpy":
         return op
@@ -31,7 +30,6 @@ def _convert_op_to_numpy_data(op: qml.operation.Operator) -> qml.operation.Opera
     return qml.ops.functions.bind_new_parameters(op, math.unwrap(op.data))
 
 
-# pylint: disable=no-member
 def _convert_measurement_to_numpy_data(
     m: qml.measurements.MeasurementProcess,
 ) -> qml.measurements.MeasurementProcess:
@@ -46,28 +44,24 @@ def _convert_measurement_to_numpy_data(
     return type(m)(obs=new_obs)
 
 
-# pylint: disable=protected-access
 @transform
-def convert_to_numpy_parameters(tape: QuantumTape) -> Tuple[Sequence[QuantumTape], Callable]:
+def convert_to_numpy_parameters(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Transforms a circuit to one with purely numpy parameters.
 
     Args:
-        circuit (QuantumScript): a circuit with parameters of any interface
+        tape (QuantumScript): a circuit with parameters of any interface
 
     Returns:
-        tuple[List[QuantumTape], function]: The transformed circuits along with a dummy post-processing function.
+        tuple[List[QuantumScript], function]: The transformed circuits along with a dummy post-processing function.
 
-    .. seealso::
-
-        :class:`pennylane.tape.Unwrap` modifies a :class:`~.pennylane.tape.QuantumScript` in place instead of creating
-        a new class. It will also set all parameters on the circuit, not just ones that need to be unwrapped.
+    **Examples:**
 
     >>> ops = [qml.S(0), qml.RX(torch.tensor(0.1234), 0)]
     >>> measurements = [qml.state(), qml.expval(qml.Hermitian(torch.eye(2), 0))]
     >>> circuit = qml.tape.QuantumScript(ops, measurements)
     >>> [new_circuit], _ = convert_to_numpy_parameters(circuit)
     >>> new_circuit.circuit
-    [S(wires=[0]),
+    [S(0),
     RX(0.1234000027179718, wires=[0]),
     state(wires=[]),
     expval(Hermitian(array([[1., 0.],

@@ -15,9 +15,11 @@
 Tests for the ``adjoint_jacobian`` method of the :mod:`pennylane` :class:`QubitDevice` class.
 """
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 
 
 class TestAdjointJacobian:
@@ -26,7 +28,7 @@ class TestAdjointJacobian:
     @pytest.fixture
     def dev(self):
         """Fixture that creates a device with two wires."""
-        return qml.device("default.qubit.legacy", wires=2)
+        return DefaultQubitLegacy(wires=2)
 
     def test_not_expval(self, dev):
         """Test if a QuantumFunctionError is raised for a tape with measurements that are not
@@ -37,13 +39,13 @@ class TestAdjointJacobian:
             qml.var(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(qml.QuantumFunctionError, match="Adjoint differentiation method does"):
+        with pytest.raises(QuantumFunctionError, match="Adjoint differentiation method does"):
             dev.adjoint_jacobian(tape)
 
     def test_finite_shots_warns(self):
         """Tests warning raised when finite shots specified"""
 
-        dev = qml.device("default.qubit.legacy", wires=1, shots=10)
+        dev = DefaultQubitLegacy(wires=2, shots=10)
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.expval(qml.PauliZ(0))
@@ -51,25 +53,6 @@ class TestAdjointJacobian:
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
-        ):
-            dev.adjoint_jacobian(tape)
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_hamiltonian_error_legacy_opmath(self, dev):
-        """Test that error is raised for qml.Hamiltonian"""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.expval(
-                qml.Hamiltonian(
-                    [np.array(-0.05), np.array(0.17)],
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                )
-            )
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Adjoint differentiation method does not support Hamiltonian observables",
         ):
             dev.adjoint_jacobian(tape)
 
@@ -100,14 +83,14 @@ class TestAdjointJacobian:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(qml.QuantumFunctionError, match="The CRot operation is not"):
+        with pytest.raises(QuantumFunctionError, match="The CRot operation is not"):
             dev.adjoint_jacobian(tape)
 
     def test_trainable_hermitian_warns(self):
         """Test attempting to compute the gradient of a tape that obtains the
         expectation value of a Hermitian operator emits a warning if the
         parameters to Hermitian are trainable."""
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = DefaultQubitLegacy(wires=3)
 
         mx = qml.matrix(qml.PauliX(0) @ qml.PauliY(2))
         with qml.queuing.AnnotatedQueue() as q:
@@ -147,7 +130,7 @@ class TestAdjointJacobian:
     @pytest.mark.autograd
     @pytest.mark.parametrize("theta", np.linspace(-2 * np.pi, 2 * np.pi, 7))
     def test_Rot_gradient(self, theta, tol, dev):
-        """Tests that the device gradient of an arbitrary Euler-angle-parameterized gate is
+        """Tests that the device gradient of an arbitrary Euler-angle-parametrized gate is
         correct."""
         params = np.array([theta, theta**3, np.sqrt(2) * theta])
 
@@ -212,7 +195,7 @@ class TestAdjointJacobian:
 
     def test_multiple_rx_gradient(self, tol):
         """Tests that the gradient of multiple RX gates in a circuit yields the correct result."""
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = DefaultQubitLegacy(wires=3)
         params = np.array([np.pi, np.pi / 2, np.pi / 3])
 
         with qml.queuing.AnnotatedQueue() as q:
@@ -350,7 +333,7 @@ class TestAdjointJacobian:
     def test_gradient_of_tape_with_hermitian(self, tol):
         """Test that computing the gradient of a tape that obtains the
         expectation value of a Hermitian operator works correctly."""
-        dev = qml.device("default.qubit.legacy", wires=3)
+        dev = DefaultQubitLegacy(wires=3)
 
         a, b, c = [0.5, 0.3, -0.7]
 
@@ -443,7 +426,7 @@ class TestAdjointJacobian:
         """Test that a parametrized `QubitUnitary` is accounted for correctly
         when it is not trainable."""
 
-        dev = qml.device("default.qubit.legacy", wires=1)
+        dev = DefaultQubitLegacy(wires=1)
         par = np.array(0.6)
 
         def circuit(x):

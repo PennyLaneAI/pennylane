@@ -97,12 +97,42 @@ use them directly in a PennyLane circuits as follows:
 >>> print(circuit())
 -1.0791430411076344
 
-Dataset Structure
------------------
+Viewing Available Dataset Names
+-------------------------------
 
-You can call the 
+We can call the 
+:func:`~pennylane.data.list_data_names` function to get a snapshot of the names of the currently available datasets.
+This function returns a list of strings as shown below.
+
+>>> qml.data.list_data_names()
+["bars-and-stripes",
+ "downscaled-mnist",
+ "hamlib-max-3-sat",
+ "hamlib-maxcut",
+ "hamlib-travelling-salesperson-problem",
+ "hidden-manifold",
+ "hyperplanes",
+ "ketgpt",
+ "learning-dynamics-incoherently",
+ "linearly-separable",
+ "mnisq",
+ "mqt-bench",
+ "plus-minus",
+ "qchem",
+ "qspin",
+ "rydberggpt",
+ "two-curves"]
+
+Note that this example limits the results
+of the function calls for clarity and that as more data becomes available, the results of these
+function calls will change.
+
+Viewing Available Datasets
+--------------------------
+
+We can call the 
 :func:`~pennylane.data.list_datasets` function to get a snapshot of the currently available data.
-This function returns a nested dictionary as we show below. 
+This function returns a nested dictionary as shown below. 
 
 >>> available_data = qml.data.list_datasets()
 >>> available_data.keys()
@@ -150,7 +180,8 @@ We can then write this :class:`~pennylane.data.Dataset` to storage and read it a
 >>> read_dataset.energies
 array([-1.5, -0.5,  0.5,  1.5])
 
-:html:`<div class="summary-table">`
+For more details on reading and writing custom datasets, including metadata, please
+see the :mod:`~.data` module documentation.
 
 Quantum Datasets Functions and Classes
 --------------------------------------
@@ -160,8 +191,9 @@ Quantum Datasets Functions and Classes
 .. autosummary::
     :nosignatures:
 
-    ~pennylane.data.list_datasets
     ~pennylane.data.list_attributes
+    ~pennylane.data.list_data_names
+    ~pennylane.data.list_datasets
     ~pennylane.data.load
     ~pennylane.data.load_interactive
     ~pennylane.data.Dataset

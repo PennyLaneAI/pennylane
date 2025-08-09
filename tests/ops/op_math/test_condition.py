@@ -23,10 +23,14 @@ are located in the:
 files.
 """
 
+
+import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.ops.op_math.condition import ConditionalTransformError
+from pennylane.exceptions import ConditionalTransformError
+from pennylane.operation import Operator
+from pennylane.ops.op_math.condition import Conditional
 
 terminal_meas = [
     qml.probs(wires=[1, 0]),
@@ -41,7 +45,7 @@ terminal_meas = [
 
 @pytest.mark.parametrize("terminal_measurement", terminal_meas)
 class TestCond:
-    """Tests that verify that the cond transform works as expect."""
+    """Tests that the cond transform works as expect."""
 
     def test_cond_ops(self, terminal_measurement):
         """Test that qml.cond creates conditional operations as expected."""
@@ -62,20 +66,20 @@ class TestCond:
         target_wire = qml.wires.Wires(1)
 
         assert len(ops) == 4
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(ops[1], qml.ops.Conditional)
-        assert isinstance(ops[1].then_op, qml.PauliX)
-        assert ops[1].then_op.wires == target_wire
+        assert isinstance(ops[1].base, qml.PauliX)
+        assert ops[1].base.wires == target_wire
 
         assert isinstance(ops[2], qml.ops.Conditional)
-        assert isinstance(ops[2].then_op, qml.RY)
-        assert ops[2].then_op.wires == target_wire
-        assert ops[2].then_op.data == (r,)
+        assert isinstance(ops[2].base, qml.RY)
+        assert ops[2].base.wires == target_wire
+        assert ops[2].base.data == (r,)
 
         assert isinstance(ops[3], qml.ops.Conditional)
-        assert isinstance(ops[3].then_op, qml.PauliZ)
-        assert ops[3].then_op.wires == target_wire
+        assert isinstance(ops[3].base, qml.PauliZ)
+        assert ops[3].base.wires == target_wire
 
         assert len(tape.measurements) == 1
         assert tape.measurements[0] is terminal_measurement
@@ -127,24 +131,24 @@ class TestCond:
 
         assert len(ops) == 5
 
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(ops[1], qml.ops.Conditional)
-        assert isinstance(ops[1].then_op, qml.PauliX)
-        assert ops[1].then_op.wires == target_wire
+        assert isinstance(ops[1].base, qml.PauliX)
+        assert ops[1].base.wires == target_wire
 
         assert isinstance(ops[2], qml.ops.Conditional)
-        assert isinstance(ops[2].then_op, qml.RY)
-        assert ops[2].then_op.wires == target_wire
-        assert ops[2].then_op.data == (r,)
+        assert isinstance(ops[2].base, qml.RY)
+        assert ops[2].base.wires == target_wire
+        assert ops[2].base.data == (r,)
 
         assert isinstance(ops[3], qml.ops.Conditional)
-        assert isinstance(ops[3].then_op, qml.PauliZ)
-        assert ops[3].then_op.wires == target_wire
+        assert isinstance(ops[3].base, qml.PauliZ)
+        assert ops[3].base.wires == target_wire
 
         assert isinstance(ops[4], qml.ops.Conditional)
-        assert isinstance(ops[4].then_op, qml.PauliY)
-        assert ops[4].then_op.wires == target_wire
+        assert isinstance(ops[4].base, qml.PauliY)
+        assert ops[4].base.wires == target_wire
 
         # Check that: the measurement value is the same for true_fn conditional
         # ops
@@ -205,6 +209,26 @@ class TestAdditionalCond:
             m_0 = qml.measure(1)
             qml.cond(m_0, inp)()
 
+    def test_cond_error_for_mcms(self):
+        """Test that an error is raised if a mid-circuit measurement is applied inside
+        a Conditional"""
+
+        # raises error in true_fn
+        with pytest.raises(
+            ConditionalTransformError,
+            match="Only quantum functions that contain no measurements can be applied conditionally.",
+        ):
+            m_0 = qml.measure(1)
+            qml.cond(m_0, qml.measure)(0)
+
+        # raises error in false_fn
+        with pytest.raises(
+            ConditionalTransformError,
+            match="Only quantum functions that contain no measurements can be applied conditionally.",
+        ):
+            m_0 = qml.measure(1)
+            qml.cond(m_0, qml.X, qml.measure)(0)
+
     def test_map_wires(self):
         """Tests the cond.map_wires function."""
         with qml.queuing.AnnotatedQueue() as q:
@@ -214,7 +238,7 @@ class TestAdditionalCond:
         meas, cond_op = q.queue
         mapped_cond = cond_op.map_wires({0: "a", 1: "b"})
         assert mapped_cond.meas_val.measurements == [meas.map_wires({0: "a"})]
-        assert mapped_cond.then_op == qml.PauliX("b")
+        assert mapped_cond.base == qml.PauliX("b")
 
     @pytest.mark.parametrize(
         "op", [qml.RX(0.123, 0), qml.RX([0.123, 4.56], 0), qml.Rot(1.23, 4.56, 7.89, 0)]
@@ -262,17 +286,17 @@ class TestOtherTransforms:
         target_wire = qml.wires.Wires(1)
 
         assert len(ops) == 3
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(ops[1], qml.ops.Conditional)
-        assert isinstance(ops[1].then_op, qml.ops.op_math.Adjoint)
-        assert isinstance(ops[1].then_op.base, qml.RX)
-        assert ops[1].then_op.wires == target_wire
+        assert isinstance(ops[1].base, qml.ops.op_math.Adjoint)
+        assert isinstance(ops[1].base.base, qml.RX)
+        assert ops[1].base.wires == target_wire
 
         assert isinstance(ops[2], qml.ops.Conditional)
-        assert isinstance(ops[2].then_op, qml.RX)
-        assert ops[2].then_op.data == (r,)
-        assert ops[2].then_op.wires == target_wire
+        assert isinstance(ops[2].base, qml.RX)
+        assert ops[2].base.data == (r,)
+        assert ops[2].base.wires == target_wire
 
         assert len(tape.measurements) == 1
         assert tape.measurements[0] is terminal_measurement
@@ -291,15 +315,15 @@ class TestOtherTransforms:
         ops = tape.operations
 
         assert len(ops) == 3
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(ops[1], qml.ops.Conditional)
-        assert isinstance(ops[1].then_op, qml.ops.op_math.Controlled)
-        assert qml.equal(ops[1].then_op.base, qml.RX(r, wires=2))
+        assert isinstance(ops[1].base, qml.ops.op_math.Controlled)
+        qml.assert_equal(ops[1].base.base, qml.RX(r, wires=2))
 
         assert isinstance(ops[2], qml.ops.Conditional)
-        assert isinstance(ops[2].then_op, qml.ops.op_math.Controlled)
-        assert qml.equal(ops[2].then_op.base, qml.RY(r, wires=2))
+        assert isinstance(ops[2].base, qml.ops.op_math.Controlled)
+        qml.assert_equal(ops[2].base.base, qml.RY(r, wires=2))
 
         assert len(tape.measurements) == 1
         assert tape.measurements[0] is terminal_measurement
@@ -318,15 +342,15 @@ class TestOtherTransforms:
         ops = tape.operations
 
         assert len(ops) == 3
-        assert ops[0].return_type == qml.measurements.MidMeasure
+        assert isinstance(ops[0], qml.measurements.MidMeasureMP)
 
         assert isinstance(ops[1], qml.ops.op_math.Controlled)
         assert isinstance(ops[1].base, qml.ops.Conditional)
-        assert qml.equal(ops[1].base.then_op, qml.RX(1.234, wires=0))
+        qml.assert_equal(ops[1].base.base, qml.RX(1.234, wires=0))
 
         assert isinstance(ops[2], qml.ops.op_math.Controlled)
         assert isinstance(ops[2].base, qml.ops.Conditional)
-        assert qml.equal(ops[2].base.then_op, qml.RY(r, wires=0))
+        qml.assert_equal(ops[2].base.base, qml.RY(r, wires=0))
 
         assert len(tape.measurements) == 1
         assert tape.measurements[0] is terminal_measurement
@@ -362,3 +386,308 @@ class TestOtherTransforms:
         assert tape[1] == mp
         assert isinstance(tape[2], qml.ops.Conditional)
         assert tape[3] == terminal_measurement
+
+
+class TestProperties:
+    """Test Conditional properties."""
+
+    BASE_OP = [qml.RX(1.23, 0), qml.Rot(1.2, 2.3, 3.4, 0), qml.QubitUnitary([[0, 1], [1, 0]], 0)]
+
+    def test_data(self):
+        """Test base data can be get and set through Conditional class."""
+        x = np.array(1.234)
+        m = qml.measure("a")
+        base = qml.RX(x, wires="a")
+        cond_op = Conditional(m, base)
+
+        assert cond_op.data == (x,)
+
+        # update parameters through Conditional
+        x_new = np.array(2.3456)
+        cond_op.data = (x_new,)
+        assert base.data == (x_new,)
+        assert cond_op.data == (x_new,)
+
+        # update base data updates Conditional data
+        x_new2 = np.array(3.456)
+        base.data = (x_new2,)
+        assert cond_op.data == (x_new2,)
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_matrix(self, value):
+        """Test that Conditional defers has_matrix to base operator."""
+
+        # pylint:disable=too-few-public-methods
+        class DummyOp(Operator):
+            num_wires = 1
+            has_matrix = value
+
+        m = qml.measure(0)
+        cond_op = Conditional(m, DummyOp(1))
+
+        assert cond_op.has_matrix is value
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_adjoint(self, value):
+        """Test that Conditional defers has_adjoint to base operator."""
+
+        # pylint:disable=too-few-public-methods
+        class DummyOp(Operator):
+            num_wires = 1
+            has_adjoint = value
+
+        m = qml.measure(0)
+        cond_op = Conditional(m, DummyOp(1))
+
+        assert cond_op.has_adjoint is value
+
+    @pytest.mark.parametrize("value", (True, False))
+    def test_has_diagonalizing_gates(self, value):
+        """Test that Conditional defers has_adjoint to base operator."""
+
+        # pylint:disable=too-few-public-methods
+        class DummyOp(Operator):
+            num_wires = 1
+            has_diagonalizing_gates = value
+
+        m = qml.measure(0)
+        cond_op = Conditional(m, DummyOp(1))
+
+        assert cond_op.has_diagonalizing_gates is value
+
+    @pytest.mark.parametrize("base", BASE_OP)
+    def test_ndim_params(self, base):
+        """Test that Conditional defers to base ndim_params."""
+        m = qml.measure(0)
+        op = Conditional(m, base)
+        assert op.ndim_params == base.ndim_params
+
+    @pytest.mark.parametrize("base", BASE_OP)
+    def test_num_params(self, base):
+        """Test that Conditional defers to base num_params."""
+        m = qml.measure(0)
+        op = Conditional(m, base)
+        assert op.num_params == base.num_params
+
+
+class TestMethods:
+    """Test Conditional methods."""
+
+    def test_diagonalizing_gates(self):
+        """Test that Conditional defers to base diagonalizing_gates."""
+        base = qml.PauliX(0)
+        m = qml.measure(0)
+        op = Conditional(m, base)
+
+        assert op.diagonalizing_gates() == base.diagonalizing_gates()
+
+    def test_eigvals(self):
+        """Test that Conditional defers to base eigvals."""
+        base = qml.PauliX(0)
+        m = qml.measure(0)
+        op = Conditional(m, base)
+
+        assert qml.math.allclose(op.eigvals(), base.eigvals())
+
+    def test_matrix_value(self):
+        """Test that Conditional defers to base matrix."""
+        base = qml.PauliX(0)
+        m = qml.measure(0)
+        op = Conditional(m, base)
+        assert qml.math.allclose(op.matrix(), op.base.matrix())
+
+    def test_matrix_wire_oder(self):
+        """Test that `wire_order` in `matrix` method behaves as expected."""
+        m = qml.measure(0)
+        base = qml.RX(-4.432, wires=1)
+        op = Conditional(m, base)
+
+        method_order = op.matrix(wire_order=(1, 0))
+        function_order = qml.math.expand_matrix(op.matrix(), op.wires, (1, 0))
+
+        assert qml.math.allclose(method_order, function_order)
+
+    def test_adjoint(self):
+        """Test adjoint method for Conditional."""
+        base = qml.RX(np.pi / 2, 0)
+        m = qml.measure(0)
+        op = Conditional(m, base)
+        adj_op = op.adjoint()
+
+        assert isinstance(adj_op, Conditional)
+        assert adj_op.meas_val is op.meas_val
+        assert adj_op.base == base.adjoint()
+
+
+class TestPythonFallback:
+    """Test python fallback"""
+
+    def test_simple_if(self):
+        """Test a simple if statement"""
+
+        def f(x):
+            c = qml.cond(x > 1, np.sin)
+            assert c.true_fn is np.sin
+            assert c.condition is (x > 1)
+            return c(x)
+
+        assert np.allclose(f(1.5), np.sin(1.5))
+        assert f(0.5) is None
+
+    def test_simple_if_else(self):
+        """Test a simple if-else statement"""
+
+        def f(x):
+            c = qml.cond(x > 1, np.sin, np.cos)
+            assert c.false_fn is np.cos
+            return c(x)
+
+        assert np.allclose(f(1.5), np.sin(1.5))
+        assert np.allclose(f(0.5), np.cos(0.5))
+
+    def test_simple_if_elif_else(self):
+        """Test a simple if-elif-else statement"""
+
+        def f(x):
+            elifs = [(x >= -1, lambda y: y**2), (x > -10, lambda y: y**3)]
+            c = qml.cond(x > 1, np.sin, np.cos, elifs)
+            return c(x)
+
+        assert np.allclose(f(1.5), np.sin(1.5))
+        assert np.allclose(f(-0.5), (-0.5) ** 2)
+        assert np.allclose(f(-5), (-5) ** 3)
+        assert np.allclose(f(-10.5), np.cos(-10.5))
+
+    def test_simple_if_elif_else_order(self):
+        """Test a simple if-elif-else statement where the order of the elif
+        statements matter"""
+
+        def f(x):
+            elifs = [(x > -10, lambda y: y**3), (x >= -1, lambda y: y**2)]
+            c = qml.cond(x > 1, np.sin, np.cos, elifs)
+
+            for i, j in zip(c.elifs, elifs):
+                assert i[0] is j[0]
+                assert i[1] is j[1]
+
+            return c(x)
+
+        assert np.allclose(f(1.5), np.sin(1.5))
+        assert np.allclose(f(-0.5), (-0.5) ** 3)
+        assert np.allclose(f(-5), (-5) ** 3)
+        assert np.allclose(f(-10.5), np.cos(-10.5))
+
+    def test_decorator_syntax_if(self):
+        """test a decorator if statement"""
+
+        def f(x):
+            @qml.cond(x > 0)
+            def conditional(y):
+                return y**2
+
+            return conditional(x + 1)
+
+        assert np.allclose(f(0.5), (0.5 + 1) ** 2)
+        assert f(-0.5) is None
+
+    def test_decorator_syntax_if_else(self):
+        """test a decorator if-else statement"""
+
+        def f(x):
+            @qml.cond(x > 0)
+            def conditional(y):
+                return y**2
+
+            @conditional.otherwise
+            def conditional_false_fn(y):  # pylint: disable=unused-variable
+                return -y
+
+            return conditional(x + 1)
+
+        assert np.allclose(f(0.5), (0.5 + 1) ** 2)
+        assert np.allclose(f(-0.5), -(-0.5 + 1))
+
+    def test_decorator_syntax_if_elif_else(self):
+        """test a decorator if-elif-else statement"""
+
+        def f(x):
+            @qml.cond(x > 0)
+            def conditional(y):
+                return y**2
+
+            @conditional.else_if(x < -2)
+            def conditional_elif(y):  # pylint: disable=unused-variable
+                return y
+
+            @conditional.otherwise
+            def conditional_false_fn(y):  # pylint: disable=unused-variable
+                return -y
+
+            return conditional(x + 1)
+
+        assert np.allclose(f(0.5), (0.5 + 1) ** 2)
+        assert np.allclose(f(-0.5), -(-0.5 + 1))
+        assert np.allclose(f(-2.5), (-2.5 + 1))
+
+    def test_error_mcms_elif(self):
+        """Test that an error is raised if elifs are provided
+        when the conditional includes an MCM"""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            m = qml.measure(0)
+            qml.cond(m, qml.RX, elifs=[(~m, qml.RY)])
+            return qml.probs
+
+        with pytest.raises(ConditionalTransformError, match="'elif' branches are not supported"):
+            circuit(0.5)
+
+    def test_error_no_true_fn(self):
+        """Test that an error is raised if no true_fn is provided
+        when the conditional includes an MCM"""
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit(x):
+            qml.RX(x, wires=0)
+            m = qml.measure(0)
+
+            @qml.cond(m)
+            def conditional():
+                qml.RZ(x**2)
+
+            conditional()
+            return qml.probs
+
+        with pytest.raises(TypeError, match="cannot be used as a decorator"):
+            circuit(0.5)
+
+    def test_qnode(self):
+        """Test that qml.cond falls back to Python when used
+        within a QNode"""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x):
+            elifs = [(x > 1.4, lambda y, wires: qml.RY(y**2, wires=wires))]
+            c = qml.cond(x > 2.7, qml.RX, qml.RZ, elifs)
+            c(x, wires=0)
+            return qml.probs(wires=0)
+
+        tape = qml.workflow.construct_tape(circuit)(3)
+        ops = tape.operations
+        assert len(ops) == 1
+        assert ops[0].name == "RX"
+
+        tape = qml.workflow.construct_tape(circuit)(2)
+        ops = tape.operations
+        assert len(ops) == 1
+        assert ops[0].name == "RY"
+        assert np.allclose(ops[0].parameters[0], 2**2)
+
+        tape = qml.workflow.construct_tape(circuit)(1)
+        ops = tape.operations
+        assert len(ops) == 1
+        assert ops[0].name == "RZ"

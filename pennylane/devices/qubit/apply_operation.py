@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to apply an operation to a state vector."""
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument
 
 from functools import singledispatch
 from string import ascii_letters as alphabet
 
 import numpy as np
+import scipy as sp
 
 import pennylane as qml
 from pennylane import math
@@ -71,7 +72,13 @@ def apply_operation_einsum(op: qml.operation.Operator, state, is_state_batched: 
     Returns:
         array[complex]: output_state
     """
-    mat = op.matrix()
+    # We use this implicit casting strategy as autograd raises ComplexWarnings
+    # when backpropagating if casting explicitly. Some type of casting is needed
+    # to prevent ComplexWarnings with backpropagation with other interfaces
+    if qml.math.get_interface(state) == "tensorflow":
+        mat = qml.math.cast_like(op.matrix(), state)
+    else:
+        mat = op.matrix() + 0j
 
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
@@ -114,7 +121,14 @@ def apply_operation_tensordot(op: qml.operation.Operator, state, is_state_batche
     Returns:
         array[complex]: output_state
     """
-    mat = op.matrix()
+    # We use this implicit casting strategy as autograd raises ComplexWarnings
+    # when backpropagating if casting explicitly. Some type of casting is needed
+    # to prevent ComplexWarnings with backpropagation with other interfaces
+    if qml.math.get_interface(state) == "tensorflow":
+        mat = qml.math.cast_like(op.matrix(), state)
+    else:
+        mat = op.matrix() + 0j
+
     total_indices = len(state.shape) - is_state_batched
     num_indices = len(op.wires)
 
@@ -165,7 +179,19 @@ def apply_operation(
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
         **execution_kwargs (Optional[dict]): Optional keyword arguments needed for applying
-            some operations
+            some operations described below.
+
+    Keyword Arguments:
+        mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+        interface (str): The machine learning interface of the state
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots. ``None`` by default.
+        rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
+        tape_shots (Shots): the shots object of the tape
 
     Returns:
         ndarray: output state
@@ -206,9 +232,25 @@ def apply_operation(
     return _apply_operation_default(op, state, is_state_batched, debugger)
 
 
+def apply_operation_csr_matrix(op, state, is_state_batched: bool = False):
+    """The csr_matrix specialized version apply operation."""
+    # State is numpy array, should have been stored in tensor version
+    # remember the initial shape and recover in the end
+    if sp.sparse.issparse(state):
+        raise TypeError("State should not be sparse in default qubit pipeline")
+    original_shape = math.shape(state)
+    num_wires = len(original_shape) - int(is_state_batched)
+    full_state = math.reshape(state, [-1, 2**num_wires])  # expected: [batch_size, 2**num_wires]
+    state_opT = full_state @ op.sparse_matrix(wire_order=range(num_wires)).T
+    state_reshaped = math.reshape(state_opT, original_shape)
+    return state_reshaped
+
+
 def _apply_operation_default(op, state, is_state_batched, debugger):
     """The default behaviour of apply_operation, accessed through the standard dispatch
     of apply_operation, as well as conditionally in other dispatches."""
+    if op.has_sparse_matrix and not op.has_matrix:
+        return apply_operation_csr_matrix(op, state, is_state_batched=is_state_batched)
     if (
         len(op.wires) < EINSUM_OP_WIRECOUNT_PERF_THRESHOLD
         and math.ndim(state) < EINSUM_STATE_WIRECOUNT_PERF_THRESHOLD
@@ -233,6 +275,11 @@ def apply_conditional(
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
         mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+        interface (str): The machine learning interface of the state
+        rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
+        prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
+            the key to the JAX pseudo random number generator. Only for simulation using JAX.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
 
     Returns:
         ndarray: output state
@@ -248,7 +295,7 @@ def apply_conditional(
         return cond(
             op.meas_val.concretize(mid_measurements),
             lambda x: apply_operation(
-                op.then_op,
+                op.base,
                 x,
                 is_state_batched=is_state_batched,
                 debugger=debugger,
@@ -261,7 +308,7 @@ def apply_conditional(
         )
     if op.meas_val.concretize(mid_measurements):
         return apply_operation(
-            op.then_op,
+            op.base,
             state,
             is_state_batched=is_state_batched,
             debugger=debugger,
@@ -284,10 +331,13 @@ def apply_mid_measure(
         is_state_batched (bool): Boolean representing whether the state is batched or not
         debugger (_Debugger): The debugger to use
         mid_measurements (dict, None): Mid-circuit measurement dictionary mutated to record the sampled value
+        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+            postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
+            keep the same number of shots. ``None`` by default.
         rng (Optional[numpy.random._generator.Generator]): A NumPy random number generator.
         prng_key (Optional[jax.random.PRNGKey]): An optional ``jax.random.PRNGKey``. This is
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
-            If None, a ``numpy.random.default_rng`` will be for sampling.
+            If None, a ``numpy.random.default_rng`` will be used for sampling.
 
     Returns:
         ndarray: output state
@@ -295,24 +345,31 @@ def apply_mid_measure(
     mid_measurements = execution_kwargs.get("mid_measurements", None)
     rng = execution_kwargs.get("rng", None)
     prng_key = execution_kwargs.get("prng_key", None)
+    postselect_mode = execution_kwargs.get("postselect_mode", None)
+
     if is_state_batched:
         raise ValueError("MidMeasureMP cannot be applied to batched states.")
     wire = op.wires
-    axis = wire.toarray()[0]
-    slices = [slice(None)] * qml.math.ndim(state)
-    slices[axis] = 0
-    prob0 = qml.math.norm(state[tuple(slices)]) ** 2
     interface = qml.math.get_deep_interface(state)
-    if prng_key is not None:
-        # pylint: disable=import-outside-toplevel
-        from jax.random import binomial
 
-        def binomial_fn(n, p):
-            return binomial(prng_key, n, p).astype(int)
-
+    if postselect_mode == "fill-shots" and op.postselect is not None:
+        sample = op.postselect
     else:
-        binomial_fn = np.random.binomial if rng is None else rng.binomial
-    sample = binomial_fn(1, 1 - prob0)
+        axis = wire.toarray()[0]
+        slices = [slice(None)] * qml.math.ndim(state)
+        slices[axis] = 0
+        prob0 = qml.math.real(qml.math.norm(state[tuple(slices)])) ** 2
+
+        if prng_key is not None:
+            # pylint: disable=import-outside-toplevel
+            from jax.random import binomial
+
+            def binomial_fn(n, p):
+                return binomial(prng_key, n, p).astype(int)
+
+        else:
+            binomial_fn = np.random.binomial if rng is None else rng.binomial
+        sample = binomial_fn(1, 1 - prob0)
     mid_measurements[op] = sample
 
     # Using apply_operation(qml.QubitUnitary,...) instead of apply_operation(qml.Projector([sample], wire),...)
@@ -377,6 +434,73 @@ def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None
 
     # must be first state and then -1 because it breaks otherwise
     state1 = math.multiply(state[sl_1], -1)
+    return math.stack([state[sl_0], state1], axis=axis)
+
+
+@apply_operation.register
+def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply PhaseShift to state."""
+
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    axis = op.wires[0] + is_state_batched
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    params = math.cast(op.parameters[0], dtype=complex)
+    state0 = state[sl_0]
+    state1 = state[sl_1]
+    if op.batch_size is not None:
+        interface = math.get_interface(state)
+        if interface == "torch":
+            params = math.array(params, like=interface)
+        if is_state_batched:
+            params = math.reshape(params, (-1,) + (1,) * (n_dim - 2))
+        else:
+            axis = axis + 1
+            params = math.reshape(params, (-1,) + (1,) * (n_dim - 1))
+            state0 = math.expand_dims(state0, 0) + math.zeros_like(params)
+            state1 = math.expand_dims(state1, 0)
+    state1 = math.multiply(math.cast(state1, dtype=complex), math.exp(1.0j * params))
+    state = math.stack([state0, state1], axis=axis)
+    return state
+
+
+@apply_operation.register
+def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply T to state."""
+
+    axis = op.wires[0] + is_state_batched
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    state1 = math.multiply(math.cast(state[sl_1], dtype=complex), math.exp(0.25j * np.pi))
+    return math.stack([state[sl_0], state1], axis=axis)
+
+
+@apply_operation.register
+def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_):
+    """Apply S to state."""
+
+    axis = op.wires[0] + is_state_batched
+    n_dim = math.ndim(state)
+
+    if n_dim >= 9 and math.get_interface(state) == "tensorflow":
+        return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
+
+    sl_0 = _get_slice(0, axis, n_dim)
+    sl_1 = _get_slice(1, axis, n_dim)
+
+    state1 = math.multiply(math.cast(state[sl_1], dtype=complex), 1j)
     return math.stack([state[sl_0], state1], axis=axis)
 
 
@@ -500,19 +624,34 @@ def _apply_grover_without_matrix(state, op_wires, is_state_batched):
 
 
 @apply_operation.register
-def apply_snapshot(op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **_):
-    """Take a snapshot of the state"""
-    if debugger is not None and debugger.active:
-        measurement = op.hyperparameters["measurement"]
-        if measurement:
-            snapshot = qml.devices.qubit.measure(measurement, state)
-        else:
-            flat_shape = (math.shape(state)[0], -1) if is_state_batched else (-1,)
-            snapshot = math.cast(math.reshape(state, flat_shape), complex)
-        if op.tag:
-            debugger.snapshots[op.tag] = snapshot
-        else:
-            debugger.snapshots[len(debugger.snapshots)] = snapshot
+def apply_snapshot(
+    op: qml.Snapshot, state, is_state_batched: bool = False, debugger=None, **execution_kwargs
+):
+    """Take a snapshot of the state."""
+    if debugger is None or not debugger.active:
+        return state
+    measurement = op.hyperparameters["measurement"]
+    if op.hyperparameters["shots"] == "workflow":
+        shots = execution_kwargs.get("tape_shots")
+    else:
+        shots = op.hyperparameters["shots"]
+
+    if shots:
+        snapshot = qml.devices.qubit.measure_with_samples(
+            [measurement],
+            state,
+            shots,
+            is_state_batched,
+            execution_kwargs.get("rng"),
+            execution_kwargs.get("prng_key"),
+        )[0]
+    else:
+        snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)
+
+    if op.tag:
+        debugger.snapshots[op.tag] = snapshot
+    else:
+        debugger.snapshots[len(debugger.snapshots)] = snapshot
     return state
 
 
@@ -572,7 +711,7 @@ def _evolve_state_vector_under_parametrized_evolution(
     except ImportError as e:  # pragma: no cover
         raise ImportError(
             "Module jax is required for the ``ParametrizedEvolution`` class. "
-            "You can install jax via: pip install jax"
+            "You can install jax via: pip install jax~=0.6.0"
         ) from e
 
     if operation.data is None or operation.t is None:

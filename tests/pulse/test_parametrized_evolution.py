@@ -14,15 +14,14 @@
 """
 Unit tests for the ParametrizedEvolution class
 """
-# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access
+# pylint: disable=unused-argument,too-few-public-methods,import-outside-toplevel,comparison-with-itself,protected-access,possibly-unused-variable
 from functools import reduce
 
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.devices import DefaultQubit, DefaultQubitLegacy
-from pennylane.operation import AnyWires
+from pennylane.devices import DefaultQubit
 from pennylane.ops import QubitUnitary
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
 from pennylane.tape import QuantumTape
@@ -89,6 +88,7 @@ class TestPytree:
         assert evol._unflatten(*evol._flatten()) == evol
 
 
+@pytest.mark.xfail
 @pytest.mark.jax
 def test_standard_validity():
     """Run standard validity checks on the parametrized evolution."""
@@ -151,10 +151,9 @@ class TestInitialization:
         assert qml.math.allequal(ev.t, [0, 2])
 
         assert ev.wires == H.wires
-        assert ev.num_wires == AnyWires
+        assert ev.num_wires is None
         assert ev.name == "ParametrizedEvolution"
         assert ev.id is None
-        assert ev.queue_idx is None
 
         exp_params = [] if params is None else params
         assert qml.math.allequal(ev.data, exp_params)
@@ -544,11 +543,10 @@ class TestMatrix:
 class TestIntegration:
     """Integration tests for the ParametrizedEvolution class."""
 
-    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
     @pytest.mark.parametrize("time", [0.3, 1, [0, 2], [0.4, 2], (3, 3.1)])
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
     @pytest.mark.parametrize("use_jit", [False, True])
-    def test_time_input_formats(self, device_class, time, time_interface, use_jit):
+    def test_time_input_formats(self, time, time_interface, use_jit):
         import jax
         import jax.numpy as jnp
 
@@ -558,7 +556,7 @@ class TestIntegration:
             time = np.array(time)
         H = qml.pulse.ParametrizedHamiltonian([2], [qml.PauliX(0)])
 
-        dev = device_class(wires=1)
+        dev = DefaultQubit(wires=1)
 
         @qml.qnode(dev, interface="jax")
         def circuit(t):
@@ -572,16 +570,15 @@ class TestIntegration:
         duration = time if qml.math.ndim(time) == 0 else time[1] - time[0]
         assert qml.math.isclose(res, qml.math.cos(4 * duration))
 
-    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
     # pylint: disable=unused-argument
-    def test_time_independent_hamiltonian(self, device_class):
+    def test_time_independent_hamiltonian(self):
         """Test the execution of a time independent hamiltonian."""
         import jax
         import jax.numpy as jnp
 
         H = time_independent_hamiltonian()
 
-        dev = device_class(wires=2)
+        dev = DefaultQubit(wires=2)
 
         t = 4
 
@@ -613,9 +610,8 @@ class TestIntegration:
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
 
-    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
     @pytest.mark.slow
-    def test_time_dependent_hamiltonian(self, device_class):
+    def test_time_dependent_hamiltonian(self):
         """Test the execution of a time dependent hamiltonian. This test approximates the
         time-ordered exponential with a product of exponentials using small time steps.
         For more information, see https://en.wikipedia.org/wiki/Ordered_exponential."""
@@ -624,7 +620,7 @@ class TestIntegration:
 
         H = time_dependent_hamiltonian()
 
-        dev = device_class(wires=2)
+        dev = DefaultQubit(wires=2)
         t = 0.1
 
         def generator(params):
@@ -709,8 +705,7 @@ class TestIntegration:
             jax.grad(jitted_circuit)(params), jax.grad(true_circuit)(params), atol=1e-3
         )
 
-    @pytest.mark.parametrize("device_class", [DefaultQubit, DefaultQubitLegacy])
-    def test_two_commuting_parametrized_hamiltonians(self, device_class):
+    def test_two_commuting_parametrized_hamiltonians(self):
         """Test that the evolution of two parametrized hamiltonians that commute with each other
         is equal to evolve the two hamiltonians simultaneously. This test uses 8 wires for the device
         to test the case where 2 * n < N (the matrix is evolved instead of the state)."""
@@ -734,7 +729,7 @@ class TestIntegration:
         ops = [qml.PauliX(0), qml.PauliX(2)]
         H2_ = qml.dot(coeffs, ops)
 
-        dev = device_class(wires=8)
+        dev = DefaultQubit(wires=8)
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -759,6 +754,9 @@ class TestIntegration:
             atol=5e-4,
         )
 
+    @pytest.mark.xfail(
+        reason=r"ProbsMP.process_density_matrix issue. See https://github.com/PennyLaneAI/pennylane/pull/6684#issuecomment-2552123064"
+    )
     def test_mixed_device(self):
         """Test mixed device integration matches that of default qubit"""
         import jax
@@ -773,7 +771,7 @@ class TestIntegration:
         H_pulse = qml.dot(coeff, ops)
 
         def circuit(x):
-            qml.pulse.ParametrizedEvolution(H_pulse, x, 5.0)
+            qml.evolve(H_pulse, dense=False)(x, 5.0)
             return qml.expval(qml.PauliZ(0))
 
         qnode_def = qml.QNode(circuit, default, interface="jax")

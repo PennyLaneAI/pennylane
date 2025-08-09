@@ -18,6 +18,10 @@ import pytest
 
 import pennylane as qml
 
+jax = pytest.importorskip("jax")
+
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
+
 
 def test_no_attribute_available():
     """Test that if we try and access an attribute that doesn't exist, we get an attribute error."""

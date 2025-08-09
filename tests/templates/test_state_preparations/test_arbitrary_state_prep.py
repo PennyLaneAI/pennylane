@@ -79,7 +79,7 @@ class TestDecomposition:
         weights = np.array([0, 1], dtype=float)
 
         op = qml.ArbitraryStatePreparation(weights, wires=[0])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert queue[0].name == "PauliRot"
 
@@ -97,7 +97,7 @@ class TestDecomposition:
         weights = np.array([0, 1, 2, 3, 4, 5], dtype=float)
 
         op = qml.ArbitraryStatePreparation(weights, wires=[0, 1])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert queue[0].name == "PauliRot"
 
@@ -320,6 +320,32 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weights = jnp.array(np.random.random(size=(6,)))
+
+        dev = qml.device("default.qubit", wires=2)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

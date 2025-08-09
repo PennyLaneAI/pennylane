@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script for a qutrit mixed state device."""
-# pylint: disable=protected-access
+
 from numpy.random import default_rng
 
 import pennylane as qml
+from pennylane.math.interface_utils import get_canonical_interface_name
 from pennylane.typing import Result
 
 from .apply_operation import apply_operation
@@ -24,28 +25,8 @@ from .measure import measure
 from .sampling import measure_with_samples
 from .utils import QUDIT_DIM
 
-INTERFACE_TO_LIKE = {
-    # map interfaces known by autoray to themselves
-    None: None,
-    "numpy": "numpy",
-    "autograd": "autograd",
-    "jax": "jax",
-    "torch": "torch",
-    "tensorflow": "tensorflow",
-    # map non-standard interfaces to those known by autoray
-    "auto": None,
-    "scipy": "numpy",
-    "jax-jit": "jax",
-    "jax-python": "jax",
-    "JAX": "jax",
-    "pytorch": "torch",
-    "tf": "tensorflow",
-    "tensorflow-autograph": "tensorflow",
-    "tf-autograph": "tensorflow",
-}
 
-
-def get_final_state(circuit, debugger=None, interface=None):
+def get_final_state(circuit, debugger=None, interface=None, **kwargs):
     """
     Get the final state that results from executing the given quantum script.
 
@@ -67,12 +48,20 @@ def get_final_state(circuit, debugger=None, interface=None):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
+    interface = get_canonical_interface_name(interface)
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
     for op in circuit.operations[bool(prep) :]:
-        state = apply_operation(op, state, is_state_batched=is_state_batched, debugger=debugger)
+        state = apply_operation(
+            op,
+            state,
+            is_state_batched=is_state_batched,
+            debugger=debugger,
+            tape_shots=circuit.shots,
+            **kwargs,
+        )
 
         # new state is batched if i) the old state is batched, or ii) the new op adds a batch dim
         is_state_batched = is_state_batched or op.batch_size is not None
@@ -91,7 +80,9 @@ def get_final_state(circuit, debugger=None, interface=None):
     return state, is_state_batched
 
 
-def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=None) -> Result:
+def measure_final_state(  # pylint: disable=too-many-arguments
+    circuit, state, is_state_batched, rng=None, prng_key=None, readout_errors=None
+) -> Result:
     """
     Perform the measurements required by the circuit on the provided state.
 
@@ -108,6 +99,8 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
             the key to the JAX pseudo random number generator. Only for simulation using JAX.
             If None, the default ``sample_state`` function and a ``numpy.random.default_rng``
             will be for sampling.
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         Tuple[TensorLike]: The measurement results
@@ -117,11 +110,12 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
 
     if not circuit.shots:
         # analytic case
-
         if len(circuit.measurements) == 1:
-            return measure(circuit.measurements[0], state, is_state_batched)
+            return measure(circuit.measurements[0], state, is_state_batched, readout_errors)
 
-        return tuple(measure(mp, state, is_state_batched) for mp in circuit.measurements)
+        return tuple(
+            measure(mp, state, is_state_batched, readout_errors) for mp in circuit.measurements
+        )
 
     # finite-shot case
     rng = default_rng(rng)
@@ -133,6 +127,7 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
             is_state_batched=is_state_batched,
             rng=rng,
             prng_key=prng_key,
+            readout_errors=readout_errors,
         )
         for mp in circuit.measurements
     )
@@ -144,8 +139,13 @@ def measure_final_state(circuit, state, is_state_batched, rng=None, prng_key=Non
     return results
 
 
-def simulate(
-    circuit: qml.tape.QuantumScript, rng=None, prng_key=None, debugger=None, interface=None
+def simulate(  # pylint: disable=too-many-arguments
+    circuit: qml.tape.QuantumScript,
+    rng=None,
+    prng_key=None,
+    debugger=None,
+    interface=None,
+    readout_errors=None,
 ) -> Result:
     """Simulate a single quantum script.
 
@@ -161,6 +161,8 @@ def simulate(
             generated. Only for simulation using JAX.
         debugger (_Debugger): The debugger to use
         interface (str): The machine learning interface to create the initial state with
+        readout_errors (List[Callable]): List of channels to apply to each wire being measured
+        to simulate readout errors.
 
     Returns:
         tuple(TensorLike): The results of the simulation
@@ -175,5 +177,14 @@ def simulate(
     tensor([0.68117888, 0.        , 0.        , 0.31882112, 0.        , 0.        ], requires_grad=True))
 
     """
-    state, is_state_batched = get_final_state(circuit, debugger=debugger, interface=interface)
-    return measure_final_state(circuit, state, is_state_batched, rng=rng, prng_key=prng_key)
+    state, is_state_batched = get_final_state(
+        circuit, debugger=debugger, interface=interface, rng=rng, prng_key=prng_key
+    )
+    return measure_final_state(
+        circuit,
+        state,
+        is_state_batched,
+        rng=rng,
+        prng_key=prng_key,
+        readout_errors=readout_errors,
+    )

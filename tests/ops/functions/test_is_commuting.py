@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as np
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.functions.is_commuting import _check_mat_commutation, _get_target_name
 
 control_base_map_data = [
@@ -792,11 +793,6 @@ class TestCommutingFunction:
                 False,
             ),
             (
-                qml.operation.Tensor(qml.PauliX("a"), qml.PauliY("b"), qml.PauliZ("d")),
-                qml.operation.Tensor(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
-                False,
-            ),
-            (
                 qml.sum(qml.PauliZ("a"), qml.PauliY("b"), qml.PauliZ("d")),
                 qml.sum(qml.PauliX("a"), qml.PauliZ("c"), qml.PauliY("d")),
                 False,
@@ -825,17 +821,13 @@ class TestCommutingFunction:
                 qml.prod(qml.PauliX(0), qml.Hadamard(1), qml.Identity(2)),
                 qml.sum(qml.PauliX(0), qml.PauliY(2)),
             ),
-            (
-                qml.sum(qml.PauliX(0), qml.PauliY(2)),
-                qml.operation.Tensor(qml.PauliX(0), qml.Hadamard(1), qml.Identity(2)),
-            ),
             (qml.PauliX(2), qml.sum(qml.Hadamard(1), qml.prod(qml.PauliX(1), qml.Identity(2)))),
             (qml.prod(qml.PauliX(1), qml.PauliY(2)), qml.s_prod(0.5, qml.Hadamard(1))),
         ],
     )
     def test_non_pauli_word_ops_not_supported(self, pauli_word_1, pauli_word_2):
         """Ensure invalid inputs are handled properly when determining commutativity."""
-        with pytest.raises(qml.QuantumFunctionError):
+        with pytest.raises(QuantumFunctionError):
             qml.is_commuting(pauli_word_1, pauli_word_2)
 
     def test_operation_1_not_supported(self):
@@ -843,14 +835,15 @@ class TestCommutingFunction:
         rho = np.zeros((2**1, 2**1), dtype=np.complex128)
         rho[0, 0] = 1
         with pytest.raises(
-            qml.QuantumFunctionError, match="Operation QubitDensityMatrix not supported."
+            QuantumFunctionError,
+            match="Operation QubitDensityMatrix not supported.",
         ):
             qml.is_commuting(qml.QubitDensityMatrix(rho, wires=[0]), qml.PauliX(wires=0))
 
     def test_operation_2_not_supported(self):
         """Test that giving a non supported operation raises an error."""
 
-        with pytest.raises(qml.QuantumFunctionError, match="Operation PauliRot not supported."):
+        with pytest.raises(QuantumFunctionError, match="Operation PauliRot not supported."):
             qml.is_commuting(qml.PauliX(wires=0), qml.PauliRot(1, "X", wires=0))
 
     @pytest.mark.parametrize(
@@ -862,7 +855,7 @@ class TestCommutingFunction:
     def test_composite_arithmetic_ops_not_supported(self, op, name):
         """Test that giving a non supported operation raises an error."""
 
-        with pytest.raises(qml.QuantumFunctionError, match=f"Operation {name} not supported."):
+        with pytest.raises(QuantumFunctionError, match=f"Operation {name} not supported."):
             qml.is_commuting(qml.PauliX(wires=0), op)
 
     def test_non_commuting(self):

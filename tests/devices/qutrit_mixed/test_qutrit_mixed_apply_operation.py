@@ -17,6 +17,7 @@ from functools import reduce
 
 import numpy as np
 import pytest
+from dummy_debugger import Debugger
 from scipy.stats import unitary_group
 
 import pennylane as qml
@@ -74,7 +75,7 @@ def test_custom_operator_with_matrix(one_qutrit_state):
     assert qml.math.allclose(new_state, mat @ one_qutrit_state @ np.conj(mat).T)
 
 
-# TODO add tests for special cases as they are added
+# TODO: add tests for special cases [sc-79348]
 
 
 @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
@@ -83,13 +84,6 @@ def test_custom_operator_with_matrix(one_qutrit_state):
 )
 class TestSnapshot:
     """Test that apply_operation works for Snapshot ops"""
-
-    class Debugger:  # pylint: disable=too-few-public-methods
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
 
     @pytest.mark.usefixtures("two_qutrit_state")
     def test_no_debugger(
@@ -108,7 +102,7 @@ class TestSnapshot:
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         new_state = apply_operation(
             qml.Snapshot(), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
         )
@@ -125,7 +119,7 @@ class TestSnapshot:
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
 
-        debugger = self.Debugger()
+        debugger = Debugger()
         tag = "dense"
         new_state = apply_operation(
             qml.Snapshot(tag), initial_state, debugger=debugger, is_state_batched=len(shape) != 2
@@ -142,14 +136,29 @@ class TestSnapshot:
         """Test a snapshot with measurement throws NotImplementedError"""
         state = request.getfixturevalue(state)
         initial_state = math.asarray(state, like=ml_framework)
+        tag = "expected_value"
 
-        debugger = self.Debugger()
-        with pytest.raises(NotImplementedError):
-            _ = apply_operation(
-                qml.Snapshot(measurement=qml.expval(qml.GellMann(0, 1))),
-                initial_state,
-                debugger=debugger,
-                is_state_batched=len(shape) != 2,
+        debugger = Debugger()
+
+        new_state = apply_operation(
+            qml.Snapshot(tag, measurement=qml.expval(qml.GellMann(0, 1))),
+            initial_state,
+            debugger=debugger,
+            is_state_batched=len(shape) != 2,
+        )
+
+        assert new_state.shape == initial_state.shape
+        assert math.allclose(new_state, initial_state)
+
+        assert list(debugger.snapshots.keys()) == [tag]
+
+        if len(shape) == 2:
+            assert debugger.snapshots[tag].shape == ()
+            assert math.allclose(debugger.snapshots[tag], 0.018699118213231336)
+        else:
+            assert debugger.snapshots[tag].shape == (2,)
+            assert math.allclose(
+                debugger.snapshots[tag], [0.018699118213231336, 0.018699118213231336]
             )
 
 

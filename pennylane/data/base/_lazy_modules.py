@@ -1,8 +1,9 @@
 """Contains a lazy-loaded interface to the HDF5 module. For internal use only."""
 
 import importlib
+from collections.abc import Callable
 from types import ModuleType
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 _MISSING_MODULES_EXC = ImportError(
     "This feature requires the 'aiohttp', 'h5py' and 'fsspec' packages. "
@@ -16,9 +17,9 @@ class lazy_module:  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        module_name_or_module: Union[str, ModuleType],
-        import_exc: Optional[Exception] = None,
-        post_import_cb: Optional[Callable[[ModuleType], None]] = None,
+        module_name_or_module: str | ModuleType,
+        import_exc: Exception | None = None,
+        post_import_cb: Callable[[ModuleType], None] | None = None,
     ):
         """Creates a new top-level lazy module or initializes a nested one.
 

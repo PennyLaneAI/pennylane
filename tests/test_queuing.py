@@ -20,7 +20,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.queuing import AnnotatedQueue, QueuingError, QueuingManager, WrappedObj
+from pennylane.exceptions import QueuingError
+from pennylane.queuing import AnnotatedQueue, QueuingManager, WrappedObj
 
 
 # pylint: disable=use-implicit-booleaness-not-comparison, unnecessary-dunder-call
@@ -43,8 +44,7 @@ class TestStopRecording:
             res.extend(my_op())
             return qml.expval(qml.PauliZ(0))
 
-        my_circuit.construct([], {})
-        tape = my_circuit.qtape
+        tape = qml.workflow.construct_tape(my_circuit)()
 
         assert len(tape.operations) == 0
         assert len(res) == 3
@@ -61,8 +61,7 @@ class TestStopRecording:
             res.extend([op1, op2])
             return qml.expval(qml.PauliZ(0))
 
-        my_circuit.construct([], {})
-        tape = my_circuit.qtape
+        tape = qml.workflow.construct_tape(my_circuit)()
 
         assert len(tape.operations) == 1
         assert tape.operations[0] == res[1]
@@ -98,8 +97,7 @@ class TestStopRecording:
             my_op()
             return qml.state()
 
-        my_circuit.construct([], {})
-        tape = my_circuit.qtape
+        tape = qml.workflow.construct_tape(my_circuit)()
 
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "Hadamard"
@@ -117,7 +115,7 @@ class TestStopRecording:
         result = my_circuit()
         assert len(result) == 0
 
-        tape = my_circuit.qtape
+        tape = qml.workflow.construct_tape(my_circuit)()
         assert len(tape.operations) == 0
         assert len(tape.measurements) == 0
 
@@ -197,30 +195,6 @@ class TestAnnotatedQueue:
             ]
         assert q.queue == ops
 
-    def test_append_tensor_ops(self):
-        """Test that ops which are used as inputs to `Tensor`
-        are successfully added to the queue, as well as the `Tensor` object."""
-
-        with AnnotatedQueue() as q:
-            A = qml.PauliZ(0)
-            B = qml.PauliY(1)
-            tensor_op = qml.operation.Tensor(A, B)
-        assert q.queue == [tensor_op]
-        assert tensor_op.obs == [A, B]
-
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_append_tensor_ops_overloaded(self):
-        """Test that Tensor ops created using `@`
-        are successfully added to the queue, as well as the `Tensor` object."""
-
-        with AnnotatedQueue() as q:
-            A = qml.PauliZ(0)
-            B = qml.PauliY(1)
-            tensor_op = A @ B
-        assert q.queue == [tensor_op]
-        assert tensor_op.obs == [A, B]
-
-    @pytest.mark.usefixtures("use_new_opmath")
     def test_append_prod_ops_overloaded(self):
         """Test that Prod ops created using `@`
         are successfully added to the queue, as well as the `Prod` object."""
@@ -292,16 +266,6 @@ class TestAnnotatedQueue:
         q.update_info(B, inv=True)
         assert len(q.queue) == 1
 
-    def test_append_annotating_object(self):
-        """Test appending an object that writes annotations when queuing itself"""
-
-        with AnnotatedQueue() as q:
-            A = qml.PauliZ(0)
-            B = qml.PauliY(1)
-            tensor_op = qml.operation.Tensor(A, B)
-
-        assert q.queue == [tensor_op]
-
     def test_parallel_queues_are_isolated(self):
         """Tests that parallel queues do not queue each other's constituents."""
         q1 = AnnotatedQueue()
@@ -324,8 +288,6 @@ class TestAnnotatedQueue:
 
 test_observables = [
     qml.PauliZ(0) @ qml.PauliZ(1),
-    qml.operation.Tensor(qml.PauliZ(0), qml.PauliX(1)),
-    qml.operation.Tensor(qml.PauliZ(0), qml.PauliX(1)) @ qml.Hadamard(2),
     qml.Hamiltonian(
         [0.1, 0.2, 0.3], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliY(1), qml.Identity(2)]
     ),
@@ -451,15 +413,8 @@ class TestApplyOp:
                 op1 = qml.apply(5)
                 op2 = qml.apply(6, q1)
 
-            tape2 = qml.tape.QuantumScript.from_queue(q2)
-        tape1 = qml.tape.QuantumScript.from_queue(q1)
         assert q1.queue == [op2]
         assert q2.queue == [op1]
-
-        # note that tapes don't know how to process integers,
-        # so they are not included after queue processing
-        assert tape1.operations == []
-        assert tape2.operations == []
 
 
 class TestWrappedObj:
@@ -516,3 +471,13 @@ class TestWrappedObj:
         obj = Dummy()
         wo = WrappedObj(obj)
         assert wo.__repr__() == "Wrapped(test_repr)"
+
+
+def test_process_queue_error_if_not_operator_or_measurement():
+    """Test that a QueuingError is raised if process queue encounters an object that does not have a
+    _queue_category property
+    """
+    q = AnnotatedQueue()
+    q.append(1)
+    with pytest.raises(QueuingError, match="not an object that can be processed"):
+        qml.queuing.process_queue(q)

@@ -24,6 +24,7 @@ This module contains functions that act on operators and tapes.
     ~dot
     ~eigvals
     ~equal
+    ~assert_equal
     ~evolve
     ~generator
     ~is_commuting
@@ -42,7 +43,7 @@ from .bind_new_parameters import bind_new_parameters
 from .commutator import comm, commutator
 from .dot import dot
 from .eigvals import eigvals
-from .equal import equal
+from .equal import equal, assert_equal
 from .evolve import evolve
 from .generator import generator
 from .is_commuting import is_commuting

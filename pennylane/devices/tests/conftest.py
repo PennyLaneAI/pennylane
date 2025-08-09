@@ -20,6 +20,7 @@ import pytest
 from _pytest.runner import pytest_runtest_makereport as orig_pytest_runtest_makereport
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 
 # ==========================================================
 # pytest fixtures
@@ -35,9 +36,6 @@ N_SHOTS = 1e6
 # List of all devices that are included in PennyLane
 LIST_CORE_DEVICES = {
     "default.qubit",
-    "default.qubit.torch",
-    "default.qubit.tf",
-    "default.qubit.autograd",
 }
 
 
@@ -67,6 +65,18 @@ def init_state():
     return _init_state
 
 
+def get_legacy_capabilities(dev):
+    """Gets the capabilities dictionary of a device."""
+
+    if isinstance(dev, qml.devices.LegacyDeviceFacade):
+        return dev.target_device.capabilities()
+
+    if isinstance(dev, qml.devices.LegacyDevice):
+        return dev.capabilities()
+
+    return {}
+
+
 @pytest.fixture(scope="session")
 def skip_if():
     """Fixture to skip tests."""
@@ -74,7 +84,8 @@ def skip_if():
     def _skip_if(dev, capabilities):
         """Skip test if device has any of the given capabilities."""
 
-        dev_capabilities = dev.capabilities()
+        dev_capabilities = get_legacy_capabilities(dev)
+
         for capability, value in capabilities.items():
             # skip if capability not found, or if capability has specific value
             if capability not in dev_capabilities or dev_capabilities[capability] == value:
@@ -88,15 +99,11 @@ def skip_if():
 @pytest.fixture
 def validate_diff_method(device, diff_method, device_kwargs):
     """Skip tests if a device does not support a diff_method"""
+    if diff_method in {"parameter-shift", "hadamard"}:
+        return
     if diff_method == "backprop" and device_kwargs.get("shots") is not None:
         pytest.skip(reason="test should only be run in analytic mode")
     dev = device(1)
-    if isinstance(dev, qml.Device):
-        passthru_devices = dev.capabilities().get("passthru_devices")
-        if diff_method == "backprop" and passthru_devices is None:
-            pytest.skip(reason="device does not support backprop")
-        return
-
     config = qml.devices.ExecutionConfig(gradient_method=diff_method)
     if not dev.supports_derivatives(execution_config=config):
         pytest.skip(reason="device does not support diff_method")
@@ -114,19 +121,13 @@ def fixture_device(device_kwargs):
 
         try:
             dev = qml.device(**device_kwargs)
-        except qml.DeviceError:
+        except DeviceError:
             dev_name = device_kwargs["name"]
             # exit the tests if the device cannot be created
             pytest.exit(
                 f"Device {dev_name} cannot be created. To run the device tests on an external device, the "
                 f"plugin and all of its dependencies must be installed."
             )
-
-        if isinstance(dev, qml.Device):
-            capabilities = dev.capabilities()
-            if capabilities.get("model", None) != "qubit":
-                # exit the tests if device based on cv model (currently not supported)
-                pytest.exit("The device test suite currently only runs on qubit-based devices.")
 
         return dev
 
@@ -171,8 +172,6 @@ class StoreDictKeyPair(argparse.Action):
     Note that strings will be converted to ints and floats if possible.
 
     """
-
-    # pylint: disable=too-few-public-methods
 
     def __init__(self, option_strings, dest, nargs=None, **kwargs):
         self._nargs = nargs
@@ -231,17 +230,6 @@ def pytest_addoption(parser):
     )
 
 
-# pylint: disable=eval-used
-@pytest.fixture(scope="session", autouse=True)
-def disable_opmath_if_requested(request):
-    """Check the value of the --disable-opmath option and turn off
-    if True before running the tests"""
-    disable_opmath = request.config.getoption("--disable-opmath")
-    # value from yaml file is a string, convert to boolean
-    if eval(disable_opmath):
-        qml.operation.disable_new_opmath(warn=False)
-
-
 def pytest_generate_tests(metafunc):
     """Set up device_kwargs fixture from command line options.
 
@@ -289,7 +277,7 @@ def pytest_runtest_makereport(item, call):
             # Exclude failing test cases for unsupported operations/observables
             # and those using not implemented features
             if (
-                call.excinfo.type == qml.DeviceError
+                call.excinfo.type == DeviceError
                 and "supported" in str(call.excinfo.value)
                 or call.excinfo.type == NotImplementedError
             ):

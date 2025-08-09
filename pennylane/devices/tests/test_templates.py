@@ -27,21 +27,22 @@ from scipy.stats import norm
 
 import pennylane as qml
 from pennylane import math
+from pennylane.exceptions import DeviceError
 
 pytestmark = pytest.mark.skip_unsupported
 
 
 def check_op_supported(op, dev):
     """Skip test if device does not support an operation. Works with both device APIs"""
-    if isinstance(dev, qml.Device):
+    if isinstance(dev, qml.devices.LegacyDevice):
         if op.name not in dev.operations:
             pytest.skip("operation not supported.")
     else:
-        prog, _ = dev.preprocess()
+        prog = dev.preprocess_transforms()
         tape = qml.tape.QuantumScript([op])
         try:
             prog((tape,))
-        except qml.DeviceError:
+        except DeviceError:
             pytest.skip("operation not supported on the device")
 
 
@@ -225,20 +226,6 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
             [math.fidelity_statevector(circuit(), exp_state)], [1.0], atol=tol(dev.shots)
         )
 
-    def test_BasisStatePreparation(self, device, tol):
-        """Test the BasisStatePreparation template."""
-        dev = device(4)
-
-        @qml.qnode(dev)
-        def circuit(basis_state):
-            qml.BasisStatePreparation(basis_state, wires=range(4))
-            return [qml.expval(qml.Z(i)) for i in range(4)]
-
-        basis_state = [0, 1, 1, 0]
-        res = circuit(basis_state)
-        expected = [1.0, -1.0, -1.0, 1.0]
-        assert np.allclose(res, expected, atol=tol(dev.shots))
-
     @pytest.mark.xfail(reason="most devices do not support CV")
     def test_CVNeuralNetLayers(self, device):
         """Test the CVNeuralNetLayers template."""
@@ -415,26 +402,20 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_HilbertSchmidt(self, device, tol):
         """Test the HilbertSchmidt template."""
         dev = device(2)
-        u_tape = qml.tape.QuantumScript([qml.Hadamard(0)])
 
-        def v_function(params):
-            qml.RZ(params[0], wires=1)
+        V = qml.RZ(0, wires=1)
+        U = qml.Hadamard(0)
 
         @qml.qnode(dev)
-        def hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.HilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
-            return qml.probs(u_tape.wires + v_wires)
+        def hilbert_test(V, U):
+            qml.HilbertSchmidt(V, U)
+            return qml.probs()
 
-        def cost_hst(parameters, v_function, v_wires, u_tape):
+        def cost_hst(V, U):
             # pylint:disable=unsubscriptable-object
-            return (
-                1
-                - hilbert_test(
-                    v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape
-                )[0]
-            )
+            return 1 - hilbert_test(V, U)[0]
 
-        res = cost_hst([0], v_function=v_function, v_wires=[1], u_tape=u_tape)
+        res = cost_hst(V, U)
         expected = 1.0
         assert np.isclose(res, expected, atol=tol(dev.shots))
 
@@ -471,35 +452,30 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
     def test_LocalHilbertSchmidt(self, device, tol):
         """Test the LocalHilbertSchmidt template."""
         dev = device(4)
-        u_tape = qml.tape.QuantumScript([qml.CZ(wires=(0, 1))])
 
-        def v_function(params):
-            qml.RZ(params[0], wires=2)
-            qml.RZ(params[1], wires=3)
-            qml.CNOT(wires=[2, 3])
-            qml.RZ(params[2], wires=3)
-            qml.CNOT(wires=[2, 3])
+        U = qml.CZ(wires=(0, 1))
+
+        def V_function(params):
+            return [
+                qml.RZ(params[0], wires=2),
+                qml.RZ(params[1], wires=3),
+                qml.CNOT(wires=[2, 3]),
+                qml.RZ(params[2], wires=3),
+                qml.CNOT(wires=[2, 3]),
+            ]
 
         @qml.qnode(dev)
-        def local_hilbert_test(v_params, v_function, v_wires, u_tape):
-            qml.LocalHilbertSchmidt(v_params, v_function=v_function, v_wires=v_wires, u_tape=u_tape)
-            return qml.probs(u_tape.wires + v_wires)
+        def local_hilbert_test(V, U):
+            qml.LocalHilbertSchmidt(V, U)
+            return qml.probs()
 
-        def cost_lhst(parameters, v_function, v_wires, u_tape):
+        def cost_lhst(V, U):
             # pylint:disable=unsubscriptable-object
-            return (
-                1
-                - local_hilbert_test(
-                    v_params=parameters, v_function=v_function, v_wires=v_wires, u_tape=u_tape
-                )[0]
-            )
+            return 1 - local_hilbert_test(V, U)[0]
 
-        res = cost_lhst(
-            [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2],
-            v_function=v_function,
-            v_wires=[2, 3],
-            u_tape=u_tape,
-        )
+        v_params = [3 * np.pi / 2, 3 * np.pi / 2, np.pi / 2]
+        V = V_function(v_params)
+        res = cost_lhst(V, U)
         expected = 0.5
         assert np.isclose(res, expected, atol=tol(dev.shots))
 
@@ -692,7 +668,7 @@ class TestTemplates:  # pylint:disable=too-many-public-methods
         target_wires = range(m + 1)
         estimation_wires = range(m + 1, n + m + 1)
         dev = device(wires=n + m + 1)
-        check_op_supported(qml.ControlledQubitUnitary(np.eye(2), [1], [0]), dev)
+        check_op_supported(qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]), dev)
 
         @qml.qnode(dev)
         def circuit():

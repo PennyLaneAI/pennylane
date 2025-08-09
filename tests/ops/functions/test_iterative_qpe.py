@@ -23,27 +23,24 @@ import pennylane as qml
 class TestIQPE:
     """Test to check that the iterative quantum phase estimation function works as expected."""
 
+    @pytest.mark.parametrize("mcm_method", ["deferred", "tree-traversal"])
     @pytest.mark.parametrize("phi", (1.0, 2.0, 3.0))
-    def test_compare_qpe(self, phi):
+    def test_compare_qpe(self, mcm_method, phi):
         """Test to check that the results obtained are equivalent to those of QuantumPhaseEstimation"""
 
-        # TODO: When we have general statistics on measurements we can calculate it exactly with qml.probs
-        dev = qml.device("default.qubit", shots=10000000)
+        dev = qml.device("default.qubit")
 
-        @qml.defer_measurements
-        @qml.qnode(dev)
+        @qml.qnode(dev, mcm_method=mcm_method)
         def circuit_iterative():
             # Initial state
             qml.PauliX(wires=[0])
 
             # Iterative QPE
-            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
+            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), aux_wire=[1], iters=3)
 
-            return [qml.sample(op=meas) for meas in measurements]
+            return qml.probs(op=measurements)
 
-        sample_list = np.array(circuit_iterative())
-        sample_list = sample_list.T
-        output = qml.probs().process_samples(np.array(sample_list), wire_order=[0, 1, 2])
+        output = circuit_iterative()
 
         @qml.qnode(dev)
         def circuit_qpe():
@@ -168,7 +165,7 @@ class TestIQPE:
 
         dev = qml.device("default.qubit", shots=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, mcm_method="one-shot")
         def circuit():
             m = qml.iterative_qpe(qml.RZ(1.0, wires=[0]), [1], iters=iters)
             return [qml.sample(op=meas) for meas in m]
@@ -206,7 +203,7 @@ class TestIQPE:
             qml.PauliX(wires=[0])
 
             # Iterative QPE
-            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
+            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), aux_wire=[1], iters=3)
 
             return [qml.probs(op=i) for i in measurements]
 
@@ -235,8 +232,54 @@ class TestIQPE:
             qml.PauliX(wires=[0])
 
             # Iterative QPE
-            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), ancilla=[1], iters=3)
+            measurements = qml.iterative_qpe(qml.RZ(phi, wires=[0]), aux_wire=[1], iters=3)
 
             return [qml.expval(op=i) for i in measurements]
 
         assert np.allclose(circuit_qpe(), circuit_iterative())
+
+
+@pytest.mark.slow
+@pytest.mark.capture
+def test_capture_execution(seed):
+    """Test that iterative qpe can be captured and executed.
+
+    While this is a rather bad test:
+    * the captured jaxpr has too many classical instructions for
+    easy verification of its contents
+    * The captured jaxpr cannot be used with CollectOpsandMeas as it converts mcm integers to
+    measurement values, which are incompatible with the scatter operation used in
+    `measurements = measurements.at[iters - i - 1].set(m)`
+    * Evaluating jaxpr currently uses single-branch-statistics, which gives incorrect results for a
+    a single execution.
+
+
+    """
+    import jax
+
+    def f(x):
+        qml.X(0)
+        return qml.iterative_qpe(qml.RZ(x, wires=[0]), aux_wire=1, iters=3)
+
+    x = jax.numpy.array(2.0)
+
+    jaxpr = jax.make_jaxpr(f)(1.5)
+
+    dev = qml.device("default.qubit", wires=5, seed=seed)
+
+    # hack for single-branch statistics
+    samples = qml.math.vstack([dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x) for _ in range(5000)])
+    probs_capture = qml.probs(wires=(0, 1, 2)).process_samples(
+        samples, wire_order=qml.wires.Wires((0, 1, 2))
+    )
+
+    qml.capture.disable()
+
+    @qml.qnode(dev)
+    def normal_qnode(x):
+        meas = f(x)
+        return qml.probs(op=meas)
+
+    probs_normal = normal_qnode(x)
+
+    assert qml.math.allclose(probs_capture, probs_normal, atol=0.02)

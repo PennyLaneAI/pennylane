@@ -76,7 +76,7 @@ class TestDecomposition:
         weights = [np.random.random(shape) for shape in shapes]
 
         op = qml.CVNeuralNetLayers(*weights, wires=range(n_wires))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         i = 0
         for gate in tape.operations:
@@ -85,7 +85,7 @@ class TestDecomposition:
                 assert gate.wires.labels == tuple(expected_wires[i])
                 i = i + 1
             else:
-                for gate_inter in gate.expand().operations:
+                for gate_inter in gate.decomposition():
                     assert gate_inter.name == expected_names[i]
                     assert gate_inter.wires.labels == tuple(expected_wires[i])
                     i = i + 1
@@ -209,7 +209,6 @@ def circuit_decomposed(*weights):
 def test_adjoint():
     """Test that the adjoint method works"""
     dev = DummyDevice(wires=2)
-    np.random.seed(42)
 
     shapes = qml.CVNeuralNetLayers.shape(n_layers=1, n_wires=2)
     weights = [np.random.random(shape) for shape in shapes]
@@ -299,6 +298,34 @@ class TestInterfaces:
         grads2 = grad_fn2(*weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        shapes = expected_shapes(1, 2)
+        weights = [np.random.random(shape) for shape in shapes]
+        weights = [jnp.array(w) for w in weights]
+
+        dev = DummyDevice(wires=2)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(*weights)
+        res2 = circuit2(*weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(*weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(*weights)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

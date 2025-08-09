@@ -72,7 +72,7 @@ class TestDecomposition:
         op = qml.GateFabric(
             weights, wires=range(qubits), init_state=init_state, include_pi=include_pi
         )
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         # number of gates
         assert len(queue) == n_gates
@@ -837,6 +837,32 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert qml.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weights = jnp.array(np.random.random(size=(1, 1, 2)))
+
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

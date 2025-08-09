@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that a device gives the correct output for multiple measurement."""
-# pylint: disable=no-self-use,no-member,redefined-outer-name
+# pylint: disable=no-self-use
 import pytest
 
 import pennylane as qml
@@ -39,6 +39,9 @@ class TestIntegrationMultipleReturns:
         n_wires = 2
         dev = device(n_wires)
 
+        if hasattr(dev, "observables") and "Projector" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Projector observable.")
+
         obs1 = qml.Projector([0], wires=0)
         obs2 = qml.Z(1)
         func = qubit_ansatz
@@ -59,8 +62,12 @@ class TestIntegrationMultipleReturns:
 
     def test_multiple_var(self, device):
         """Return multiple vars."""
+
         n_wires = 2
         dev = device(n_wires)
+
+        if hasattr(dev, "observables") and "Projector" not in dev.observables:
+            pytest.skip("Skipped because device does not support the Projector observable.")
 
         obs1 = qml.Projector([0], wires=0)
         obs2 = qml.Z(1)

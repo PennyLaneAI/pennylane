@@ -19,7 +19,7 @@ Tests for :mod:`pennylane.data.base.dataset`.
 
 from numbers import Number
 from pathlib import Path
-from typing import ClassVar, Dict
+from typing import ClassVar
 
 import numpy as np
 import pytest
@@ -406,7 +406,7 @@ class TestDataset:
 
             x: int
             y: str = field(doc="y documentation")
-            jsonable: Dict[str, str] = field(DatasetJSON, doc="json data")
+            jsonable: dict[str, str] = field(DatasetJSON, doc="json data")
 
         ds = NewDataset(init_arg=3, x=1, y="abc", jsonable={"a": "b"})
 

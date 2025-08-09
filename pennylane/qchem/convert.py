@@ -14,15 +14,17 @@
 """
 This module contains the functions for converting an external operator to a Pennylane operator.
 """
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=too-many-function-args
+
 import warnings
 from itertools import product
 
 import numpy as np
 
-# pylint: disable= import-outside-toplevel,no-member,too-many-function-args
+# pylint: disable=import-outside-toplevel
 import pennylane as qml
-from pennylane.operation import Tensor, active_new_opmath
-from pennylane.pauli import pauli_sentence
 from pennylane.wires import Wires
 
 
@@ -58,23 +60,23 @@ def _process_wires(wires, n_wires=None):
 
     >>> # consec int wires if no wires mapping provided, ie. identity map: 0<->0, 1<->1, 2<->2
     >>> _process_wires(None, 3)
-    <Wires = [0, 1, 2]>
+    Wires([0, 1, 2])
 
     >>> # List as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
     >>> _process_wires(['w0','w1','w2'])
-    <Wires = ['w0', 'w1', 'w2']>
+    Wires(['w0', 'w1', 'w2'])
 
     >>> # Wires as mapping, qubit indices with wire label values: 0<->w0, 1<->w1, 2<->w2
     >>> _process_wires(Wires(['w0', 'w1', 'w2']))
-    <Wires = ['w0', 'w1', 'w2']>
+    Wires(['w0', 'w1', 'w2'])
 
     >>> # Dict as partial mapping, int qubits keys to wire label values: 0->w0, 1 unchanged, 2->w2
     >>> _process_wires({0:'w0',2:'w2'})
-    <Wires = ['w0', 1, 'w2']>
+    Wires(['w0', 1, 'w2'])
 
     >>> # Dict as mapping, wires label keys to consec int qubit values: w2->2, w0->0, w1->1
     >>> _process_wires({'w2':2, 'w0':0, 'w1':1})
-    <Wires = ['w0', 'w1', 'w2']>
+    Wires(['w0', 'w1', 'w2'])
     """
 
     # infer from wires, or assume 1 if wires is not of accepted types.
@@ -118,7 +120,7 @@ def _process_wires(wires, n_wires=None):
     return wires
 
 
-def _openfermion_to_pennylane(qubit_operator, wires=None):
+def _openfermion_to_pennylane(qubit_operator, wires=None, tol=1.0e-16):
     r"""Convert OpenFermion ``QubitOperator`` to a 2-tuple of coefficients and
     PennyLane Pauli observables.
 
@@ -131,6 +133,8 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
             corresponding to the qubit number equal to its index.
             For type dict, only int-keyed dict (for qubit-to-wire conversion) is accepted.
             If None, will use identity map (e.g. 0->0, 1->1, ...).
+        tol (float): whether to keep the imaginary part of the coefficients if they are smaller
+            than the provided tolerance.
 
     Returns:
         tuple[array[float], Iterable[pennylane.operation.Operator]]: coefficients and their
@@ -144,9 +148,6 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
     0.2 [Y0 Z2]
     >>> _openfermion_to_pennylane(q_op, wires=['w0','w1','w2','extra_wire'])
     (tensor([0.1, 0.2], requires_grad=False), [X('w0'), Y('w0') @ Z('w2')])
-
-    If the new op-math is active, the list of operators will be cast as :class:`~.Prod` instances instead of
-    :class:`~.Tensor` instances when appropriate.
     """
     n_wires = (
         1 + max(max(i for i, _ in t) if t else 1 for t in qubit_operator.terms)
@@ -163,10 +164,7 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
     def _get_op(term, wires):
         """A function to compute the PL operator associated with the term string."""
         if len(term) > 1:
-            if active_new_opmath():
-                return qml.prod(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
-
-            return Tensor(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
+            return qml.prod(*[xyz2pauli[op[1]](wires=wires[op[0]]) for op in term])
 
         if len(term) == 1:
             return xyz2pauli[term[0][1]](wires=wires[term[0][0]])
@@ -177,8 +175,12 @@ def _openfermion_to_pennylane(qubit_operator, wires=None):
         *[(coef, _get_op(term, wires)) for term, coef in qubit_operator.terms.items()]
         # example term: ((0,'X'), (2,'Z'), (3,'Y'))
     )
+    coeffs = np.array(coeffs)
 
-    return np.array(coeffs).real, list(ops)
+    if (np.abs(coeffs.imag) < tol).all():
+        coeffs = coeffs.real
+
+    return coeffs, list(ops)
 
 
 def _ps_to_coeff_term(ps, wire_order):
@@ -196,7 +198,7 @@ def _ps_to_coeff_term(ps, wire_order):
     return coeffs, ops_str
 
 
-def _pennylane_to_openfermion(coeffs, ops, wires=None):
+def _pennylane_to_openfermion(coeffs, ops, wires=None, tol=1.0e-16):
     r"""Convert a 2-tuple of complex coefficients and PennyLane operations to
     OpenFermion ``QubitOperator``.
 
@@ -210,7 +212,9 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
             For types Wires/list/tuple, each item in the iterable represents a wire label
             corresponding to the qubit number equal to its index.
             For type dict, only consecutive-int-valued dict (for wire-to-qubit conversion) is
-            accepted. If None, will map sorted wires from all `ops` to consecutive int.
+            accepted. If ``None``, the identity map (e.g., ``0->0, 1->1, ...``) will be used.
+        tol (float): whether to keep the imaginary part of the coefficients if they are smaller
+            than the provided tolerance.
 
     Returns:
         QubitOperator: an instance of OpenFermion's ``QubitOperator``.
@@ -219,8 +223,8 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
 
     >>> coeffs = np.array([0.1, 0.2, 0.3, 0.4])
     >>> ops = [
-    ...     qml.operation.Tensor(qml.X('w0')),
-    ...     qml.operation.Tensor(qml.Y('w0'), qml.Z('w2')),
+    ...     qml.prod(qml.X('w0')),
+    ...     qml.prod(qml.Y('w0'), qml.Z('w2')),
     ...     qml.sum(qml.Z('w0'), qml.s_prod(-0.5, qml.X('w0'))),
     ...     qml.prod(qml.X('w0'), qml.Z('w1')),
     ... ]
@@ -247,20 +251,16 @@ def _pennylane_to_openfermion(coeffs, ops, wires=None):
         if not set(all_wires).issubset(set(qubit_indexed_wires)):
             raise ValueError("Supplied `wires` does not cover all wires defined in `ops`.")
     else:
-        qubit_indexed_wires = all_wires
+        qubit_indexed_wires = qml.wires.Wires(range(max(all_wires) + 1))
+
+    coeffs = np.array(coeffs)
+    if (np.abs(coeffs.imag) < tol).all():
+        coeffs = coeffs.real
 
     q_op = openfermion.QubitOperator()
     for coeff, op in zip(coeffs, ops):
-        if isinstance(op, Tensor):
-            try:
-                ps = pauli_sentence(op)
-            except ValueError as e:
-                raise ValueError(
-                    f"Expected a Pennylane operator with a valid Pauli word representation, "
-                    f"but got {op}."
-                ) from e
 
-        elif (ps := op.pauli_rep) is None:
+        if (ps := op.pauli_rep) is None:
             raise ValueError(
                 f"Expected a Pennylane operator with a valid Pauli word representation, but got {op}."
             )
@@ -298,7 +298,9 @@ def _openfermion_pennylane_equivalent(
         (bool): True if equivalent
     """
     coeffs, ops = pennylane_qubit_operator.terms()
-    return openfermion_qubit_operator == _pennylane_to_openfermion(coeffs, ops, wires=wires)
+    return openfermion_qubit_operator == _pennylane_to_openfermion(
+        np.array(coeffs), ops, wires=wires
+    )
 
 
 def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e010):
@@ -327,21 +329,11 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
 
     **Example**
 
-    >>> assert qml.operation.active_new_opmath() == True
     >>> h_pl = import_operator(h_of, format='openfermion')
     >>> print(h_pl)
     (-0.0548 * X(0 @ X(1) @ Y(2) @ Y(3))) + (0.14297 * Z(0 @ Z(1)))
-
-    If the new op-math is deactivated, a :class:`~Hamiltonian` is returned instead.
-
-    >>> assert qml.operation.active_new_opmath() == False
-    >>> from openfermion import QubitOperator
-    >>> h_of = QubitOperator('X0 X1 Y2 Y3', -0.0548) + QubitOperator('Z0 Z1', 0.14297)
-    >>> h_pl = import_operator(h_of, format='openfermion')
-    >>> print(h_pl)
-    (0.14297) [Z0 Z1]
-    + (-0.0548) [X0 X1 Y2 Y3]
     """
+    format = format.strip().lower()
     if format not in ["openfermion"]:
         raise TypeError(f"Converter does not exist for {format} format.")
 
@@ -354,10 +346,7 @@ def import_operator(qubit_observable, format="openfermion", wires=None, tol=1e01
             f" {list(coeffs[np.iscomplex(coeffs)])}"
         )
 
-    if active_new_opmath():
-        return qml.dot(*_openfermion_to_pennylane(qubit_observable, wires=wires))
-
-    return qml.Hamiltonian(*_openfermion_to_pennylane(qubit_observable, wires=wires))
+    return qml.dot(*_openfermion_to_pennylane(qubit_observable, wires=wires))
 
 
 def _excitations(electrons, orbitals):
@@ -729,9 +718,9 @@ def _ucisd_state(cisd_solver, tol=1e-15):
     size_ab = size_a * size_b
 
     cumul = np.cumsum([0, 1, size_a, size_b, size_ab, size_aa, size_bb])
-    c0, c1a, c1b, c2ab, c2aa, c2bb = [
+    c0, c1a, c1b, c2ab, c2aa, c2bb = (
         cisdvec[cumul[idx] : cumul[idx + 1]] for idx in range(len(cumul) - 1)
-    ]
+    )
     c2ab = (
         c2ab.reshape(nelec_a, nelec_b, nvir_a, nvir_b)
         .transpose(0, 2, 1, 3)

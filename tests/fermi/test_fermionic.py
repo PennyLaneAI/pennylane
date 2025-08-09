@@ -17,19 +17,97 @@ from copy import copy, deepcopy
 
 import numpy as np
 import pytest
+from scipy import sparse
 
+import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.fermi.fermionic import FermiSentence, FermiWord, from_string
+from pennylane.fermi.fermionic import (
+    FermiA,
+    FermiC,
+    FermiSentence,
+    FermiWord,
+    _to_string,
+    from_string,
+)
 
 # pylint: disable=too-many-public-methods
 
 fw1 = FermiWord({(0, 0): "+", (1, 1): "-"})
+fw1_dag = FermiWord({(0, 1): "+", (1, 0): "-"})
+
 fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
+fw2_dag = FermiWord({(0, 0): "+", (1, 0): "-"})
+
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
+fw3_dag = FermiWord({(0, 4): "+", (1, 0): "-", (2, 3): "+", (3, 0): "-"})
+
 fw4 = FermiWord({})
+fw4_dag = FermiWord({})
+
 fw5 = FermiWord({(0, 10): "+", (1, 30): "-", (2, 0): "+", (3, 400): "-"})
+fw5_dag = FermiWord({(0, 400): "+", (1, 0): "-", (2, 30): "+", (3, 10): "-"})
+
 fw6 = FermiWord({(0, 10): "+", (1, 30): "+", (2, 0): "-", (3, 400): "-"})
+fw6_dag = FermiWord({(0, 400): "+", (1, 0): "+", (2, 30): "-", (3, 10): "-"})
+
 fw7 = FermiWord({(0, 10): "-", (1, 30): "+", (2, 0): "-", (3, 400): "+"})
+fw7_dag = FermiWord({(0, 400): "-", (1, 0): "+", (2, 30): "-", (3, 10): "+"})
+
+fw8 = FermiWord({(0, 0): "-", (1, 1): "+"})
+fw8c = FermiWord({(0, 1): "+", (1, 0): "-"})
+fw8cs = FermiSentence({fw8c: -1})
+
+fw9 = FermiWord({(0, 0): "-", (1, 1): "-"})
+fw9c = FermiWord({(0, 1): "-", (1, 0): "-"})
+fw9cs = FermiSentence({fw9c: -1})
+
+fw10 = FermiWord({(0, 0): "+", (1, 1): "+"})
+fw10c = FermiWord({(0, 1): "+", (1, 0): "+"})
+fw10cs = FermiSentence({fw10c: -1})
+
+fw11 = FermiWord({(0, 0): "-", (1, 0): "+"})
+fw11c = FermiWord({(0, 0): "+", (1, 0): "-"})
+fw11cs = 1 + FermiSentence({fw11c: -1})
+
+fw12 = FermiWord({(0, 0): "+", (1, 0): "+"})
+fw12c = FermiWord({(0, 0): "+", (1, 0): "+"})
+fw12cs = FermiSentence({fw12c: 1})
+
+fw13 = FermiWord({(0, 0): "-", (1, 0): "-"})
+fw13c = FermiWord({(0, 0): "-", (1, 0): "-"})
+fw13cs = FermiSentence({fw13c: 1})
+
+fw14 = FermiWord({(0, 0): "+", (1, 0): "-"})
+fw14c = FermiWord({(0, 0): "-", (1, 0): "+"})
+fw14cs = 1 + FermiSentence({fw14c: -1})
+
+fw15 = FermiWord({(0, 0): "-", (1, 1): "+", (2, 2): "+"})
+fw15c = FermiWord({(0, 1): "+", (1, 0): "-", (2, 2): "+"})
+fw15cs = FermiSentence({fw15c: -1})
+
+fw16 = FermiWord({(0, 0): "-", (1, 1): "+", (2, 2): "-"})
+fw16c = FermiWord({(0, 0): "-", (1, 2): "-", (2, 1): "+"})
+fw16cs = FermiSentence({fw16c: -1})
+
+fw17 = FermiWord({(0, 0): "-", (1, 0): "+", (2, 2): "-"})
+fw17c1 = FermiWord({(0, 2): "-"})
+fw17c2 = FermiWord({(0, 0): "+", (1, 0): "-", (2, 2): "-"})
+fw17cs = fw17c1 - fw17c2
+
+fw18 = FermiWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 3): "-"})
+fw18c = FermiWord({(0, 0): "+", (1, 3): "-", (2, 1): "+", (3, 2): "-"})
+fw18cs = FermiSentence({fw18c: 1})
+
+fw19 = FermiWord({(0, 0): "+", (1, 1): "+", (2, 2): "-", (3, 2): "+"})
+fw19c1 = FermiWord({(0, 0): "+", (1, 1): "+"})
+fw19c2 = FermiWord({(0, 2): "+", (1, 0): "+", (2, 1): "+", (3, 2): "-"})
+fw19cs = FermiSentence({fw19c1: 1, fw19c2: -1})
+
+fw20 = FermiWord({(0, 0): "-", (1, 0): "+", (2, 1): "-", (3, 0): "-", (4, 0): "+"})
+fw20c1 = FermiWord({(0, 0): "-", (1, 0): "+", (2, 1): "-"})
+fw20c2 = FermiWord({(0, 0): "+", (1, 1): "-", (2, 0): "-"})
+fw20c3 = FermiWord({(0, 0): "+", (1, 0): "-", (2, 0): "+", (3, 1): "-", (4, 0): "-"})
+fw20cs = fw20c1 + fw20c2 - fw20c3
 
 
 class TestFermiWord:
@@ -61,9 +139,9 @@ class TestFermiWord:
         fw_3 = FermiWord({(1, 1): "-", (0, 0): "+"})  # same as 1 but reordered
         fw_4 = FermiWord({(0, 0): "+", (1, 2): "-"})  # distinct from above
 
-        assert fw_1.__hash__() == fw_2.__hash__()
-        assert fw_1.__hash__() == fw_3.__hash__()
-        assert fw_1.__hash__() != fw_4.__hash__()
+        assert hash(fw_1) == hash(fw_2)
+        assert hash(fw_1) == hash(fw_3)
+        assert hash(fw_1) != hash(fw_4)
 
     @pytest.mark.parametrize("fw", (fw1, fw2, fw3, fw4))
     def test_copy(self, fw):
@@ -102,7 +180,7 @@ class TestFermiWord:
     def test_str(self, fw, str_rep):
         """Test __str__ and __repr__ methods"""
         assert str(fw) == str_rep
-        assert repr(fw) == str_rep
+        assert repr(fw) == f"FermiWord({fw.sorted_dic})"
 
     def test_pickling(self):
         """Check that FermiWords can be pickled and unpickled."""
@@ -123,6 +201,80 @@ class TestFermiWord:
         """Test that an error is raised if the operator orders are not correct."""
         with pytest.raises(ValueError, match="The operator indices must belong to the set"):
             FermiWord(operator)
+
+    def test_to_mat(self):
+        """Test that the matrix representation of FermiWord is correct."""
+
+        expected_mat = np.zeros((4, 4), dtype=complex)
+        expected_mat[2, 1] = 1.0
+
+        mat = fw1.to_mat()
+        assert np.allclose(mat, expected_mat)
+        assert isinstance(mat, np.ndarray)
+
+        mat = fw1.to_mat(format="csr")
+        assert np.allclose(mat.toarray(), expected_mat)
+        assert isinstance(mat, sparse.csr_matrix)
+
+    def test_to_mat_error(self):
+        """Test that an error is raised if the requested matrix dimension is smaller than the
+        dimension inferred from the largest orbital index.
+        """
+        with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 2"):
+            fw1.to_mat(n_orbitals=1)
+
+    tup_fw_shift = (
+        (fw8, 0, 1, fw8cs),
+        (fw9, 0, 1, fw9cs),
+        (fw10, 0, 1, fw10cs),
+        (fw11, 0, 1, fw11cs),
+        (fw12, 0, 1, fw12cs),
+        (fw13, 0, 1, fw13cs),
+        (fw14, 0, 1, fw14cs),
+        (fw15, 0, 1, fw15cs),
+        (fw16, 1, 2, fw16cs),
+        (fw17, 0, 1, fw17cs),
+        (fw8, 0, 0, FermiSentence({fw8: 1})),
+        (fw8, 1, 0, fw8cs),
+        (fw11, 1, 0, fw11cs),
+        (fw18, 3, 1, fw18cs),
+        (fw19, 3, 0, fw19cs),
+        (fw20, 4, 0, fw20cs),
+    )
+
+    @pytest.mark.parametrize("fw, i, j, fs", tup_fw_shift)
+    def test_shift_operator(self, fw, i, j, fs):
+        """Test that the shift_operator method correctly applies the anti-commutator relations."""
+        assert fw.shift_operator(i, j) == fs
+
+    def test_shift_operator_errors(self):
+        """Test that the shift_operator method correctly raises exceptions."""
+        with pytest.raises(TypeError, match="Positions must be integers."):
+            fw8.shift_operator(0.5, 1)
+
+        with pytest.raises(ValueError, match="Positions must be positive integers."):
+            fw8.shift_operator(-1, 0)
+
+        with pytest.raises(ValueError, match="Positions are out of range."):
+            fw8.shift_operator(1, 2)
+
+    tup_fw_dag = (
+        (fw1, fw1_dag),
+        (fw2, fw2_dag),
+        (fw3, fw3_dag),
+        (fw4, fw4_dag),
+        (fw5, fw5_dag),
+        (fw6, fw6_dag),
+        (fw7, fw7_dag),
+        (FermiA(0), FermiC(0)),
+        (FermiC(0), FermiA(0)),
+        (FermiA(1), FermiC(1)),
+        (FermiC(1), FermiA(1)),
+    )
+
+    @pytest.mark.parametrize("fw, fw_dag", tup_fw_dag)
+    def test_adjoint(self, fw, fw_dag):
+        assert fw.adjoint() == fw_dag
 
 
 class TestFermiWordArithmetic:
@@ -207,10 +359,7 @@ class TestFermiWordArithmetic:
         and return a FermiSentence"""
         assert number * fw == result
 
-    tup_fw_mult_error = (
-        (fw1, [1.5]),
-        (fw4, "string"),
-    )
+    tup_fw_mult_error = ((fw4, "string"),)
 
     @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
     def test_mul_error(self, fw, bad_type):
@@ -233,7 +382,7 @@ class TestFermiWordArithmetic:
     @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
     def test_radd_error(self, fw, bad_type):
         """Test __radd__ with unsupported type raises an error"""
-        with pytest.raises(TypeError, match=f"Cannot add a FermiWord to {type(bad_type)}"):
+        with pytest.raises(TypeError, match=f"Cannot add {type(bad_type)} to a FermiWord"):
             bad_type + fw  # pylint: disable=pointless-statement
 
     @pytest.mark.parametrize("fw, bad_type", tup_fw_mult_error)
@@ -435,12 +584,36 @@ class TestFermiWordArithmetic:
 
 
 fs1 = FermiSentence({fw1: 1.23, fw2: 4j, fw3: -0.5})
+fs1_dag = FermiSentence({fw1_dag: 1.23, fw2_dag: -4j, fw3_dag: -0.5})
+
 fs2 = FermiSentence({fw1: -1.23, fw2: -4j, fw3: 0.5})
+fs2_dag = FermiSentence({fw1_dag: -1.23, fw2_dag: 4j, fw3_dag: 0.5})
+
 fs1_hamiltonian = FermiSentence({fw1: 1.23, fw2: 4, fw3: -0.5})
+fs1_hamiltonian_dag = FermiSentence({fw1_dag: 1.23, fw2_dag: 4, fw3_dag: -0.5})
+
 fs2_hamiltonian = FermiSentence({fw1: -1.23, fw2: -4, fw3: 0.5})
+fs2_hamiltonian_dag = FermiSentence({fw1_dag: -1.23, fw2_dag: -4, fw3_dag: 0.5})
+
 fs3 = FermiSentence({fw3: -0.5, fw4: 1})
+fs3_dag = FermiSentence({fw3_dag: -0.5, fw4_dag: 1})
+
 fs4 = FermiSentence({fw4: 1})
+fs4_dag = FermiSentence({fw4_dag: 1})
+
 fs5 = FermiSentence({})
+fs5_dag = FermiSentence({})
+
+fs6 = FermiSentence({fw1: 1.2, fw2: 3.1})
+fs6_dag = FermiSentence({fw1_dag: 1.2, fw2_dag: 3.1})
+
+fs7 = FermiSentence(
+    {
+        FermiWord({(0, 0): "+", (1, 1): "-"}): 1.23,  # a+(0) a(1)
+        FermiWord({(0, 0): "+", (1, 0): "-"}): 4.0j,  # a+(0) a(0) = n(0) (number operator)
+        FermiWord({(0, 0): "+", (1, 2): "-", (2, 1): "+"}): -0.5,  # a+(0) a(2) a+(1)
+    }
+)
 
 fs1_x_fs2 = FermiSentence(  # fs1 * fs1, computed by hand
     {
@@ -503,6 +676,15 @@ fs1_x_fs2 = FermiSentence(  # fs1 * fs1, computed by hand
     }
 )
 
+fs8 = fw8 + fw9
+fs8c = fw8 + fw9cs
+
+fs9 = 1.3 * fw8 + (1.4 + 3.8j) * fw9
+fs9c = 1.3 * fw8 + (1.4 + 3.8j) * fw9cs
+
+fs10 = -1.3 * fw11 + 2.3 * fw9
+fs10c = -1.3 * fw11cs + 2.3 * fw9
+
 
 class TestFermiSentence:
     def test_missing(self):
@@ -548,7 +730,7 @@ class TestFermiSentence:
         """Test the string representation of the FermiSentence."""
         print(str(fs))
         assert str(fs) == str_rep
-        assert repr(fs) == str_rep
+        assert repr(fs) == f"FermiSentence({dict(fs)})"
 
     tup_fs_wires = (
         (fs1, {0, 1, 3, 4}),
@@ -598,6 +780,43 @@ class TestFermiSentence:
         serialization = pickle.dumps(fs)
         new_fs = pickle.loads(serialization)
         assert fs == new_fs
+
+    def test_to_mat(self):
+        """Test that the matrix representation of FermiSentence is correct."""
+        expected_mat = np.zeros((8, 8), dtype=complex)
+        expected_mat[4, 2] = 1.23 + 0j
+        expected_mat[5, 3] = 1.23 + 0j
+        for i in [4, 5, 6, 7]:
+            expected_mat[i, i] = 4.0j
+        expected_mat[6, 1] = 0.5 + 0j
+
+        mat = fs7.to_mat()
+        assert np.allclose(mat, expected_mat)
+
+        mat = fs7.to_mat(format="csr")
+        assert np.allclose(mat.toarray(), expected_mat)
+
+    def test_to_mat_error(self):
+        """Test that an error is raised if the requested matrix dimension is smaller than the
+        dimension inferred from the largest orbital index.
+        """
+        with pytest.raises(ValueError, match="n_orbitals cannot be smaller than 3"):
+            fs7.to_mat(n_orbitals=2)
+
+    fs_dag_tup = (
+        (fs1, fs1_dag),
+        (fs2, fs2_dag),
+        (fs3, fs3_dag),
+        (fs4, fs4_dag),
+        (fs5, fs5_dag),
+        (fs6, fs6_dag),
+        (fs1_hamiltonian, fs1_hamiltonian_dag),
+        (fs2_hamiltonian, fs2_hamiltonian_dag),
+    )
+
+    @pytest.mark.parametrize("fs, fs_dag", fs_dag_tup)
+    def test_adjoint(self, fs, fs_dag):
+        assert fs.adjoint() == fs_dag
 
 
 class TestFermiSentenceArithmetic:
@@ -925,10 +1144,7 @@ class TestFermiSentenceArithmetic:
         with pytest.raises(ValueError, match="The exponent must be a positive integer."):
             f1**pow  # pylint: disable=pointless-statement
 
-    TYPE_ERRORS = (
-        (fs1, [1.5]),
-        (fs4, "string"),
-    )
+    TYPE_ERRORS = ((fs4, "string"),)
 
     @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
     def test_add_error(self, fs, bad_type):
@@ -939,7 +1155,7 @@ class TestFermiSentenceArithmetic:
     @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
     def test_radd_error(self, fs, bad_type):
         """Test __radd__ with unsupported type raises an error"""
-        with pytest.raises(TypeError, match=f"Cannot add a FermiSentence to {type(bad_type)}."):
+        with pytest.raises(TypeError, match=f"Cannot add {type(bad_type)} to a FermiSentence."):
             bad_type + fs  # pylint: disable=pointless-statement
 
     @pytest.mark.parametrize("fs, bad_type", TYPE_ERRORS)
@@ -1006,6 +1222,42 @@ class TestFermiSentenceArithmetic:
     def test_from_string_error(self, string):
         with pytest.raises(ValueError, match="Invalid character encountered in string "):
             from_string(string)  # pylint: disable=pointless-statement
+
+    fw_string = (
+        (fw1, "0+ 1-"),
+        (fw2, "0+ 0-"),
+        (fw3, "0+ 3- 0+ 4-"),
+        (fw4, "I"),
+        (fw5, "10+ 30- 0+ 400-"),
+        (fw6, "10+ 30+ 0- 400-"),
+        (fw7, "10- 30+ 0- 400+"),
+    )
+
+    @pytest.mark.parametrize("f_op, string", fw_string)
+    def test_to_string(self, f_op, string):
+        """Test if _to_string returns the correct string in PennyLane format."""
+        assert _to_string(f_op) == string
+
+    fw_of_string = (
+        (fw1, "0^ 1"),
+        (fw2, "0^ 0"),
+        (fw3, "0^ 3 0^ 4"),
+        (fw4, "I"),
+        (fw5, "10^ 30 0^ 400"),
+        (fw6, "10^ 30^ 0 400"),
+        (fw7, "10 30^ 0 400^"),
+    )
+
+    @pytest.mark.parametrize("f_op, string", fw_of_string)
+    def test_to_string_of_format(self, f_op, string):
+        """Test if to_string returns the correct string in OpenFermion format."""
+        assert _to_string(f_op, of=True) == string
+
+    def test_to_string_type(self):
+        """Test if to_string throws error if wrong type is given."""
+        pl_op = qml.X(0)
+        with pytest.raises(ValueError, match=f"fermi_op must be a FermiWord, got: {type(pl_op)}"):
+            _to_string(pl_op)
 
     @pytest.mark.parametrize(
         "method_name", ("__add__", "__sub__", "__mul__", "__radd__", "__rsub__", "__rmul__")

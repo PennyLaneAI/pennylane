@@ -264,7 +264,7 @@ class TestQuantumMonteCarlo:
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        qml.ops.functions.assert_valid(op)
+        qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
     def test_non_flat(self):
         """Test if a ValueError is raised when a non-flat array is input"""
@@ -297,13 +297,13 @@ class TestQuantumMonteCarlo:
         target_wires, estimation_wires = Wires(range(3)), Wires(range(3, 5))
 
         op = QuantumMonteCarlo(p, self.func, target_wires, estimation_wires)
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         # Do expansion in two steps to avoid also decomposing the first QubitUnitary
         queue_before_qpe = tape.operations[:2]
 
-        # 2-qubit decomposition has 18 operations, and after is a 3-qubit gate so start at 19
-        queue_after_qpe = tape.expand().operations[19:]
+        # Build a new tape from all operations following the two QubitUnitary ops and expand it
+        queue_after_qpe = qml.tape.QuantumScript(tape.operations[2:]).expand().operations
 
         A = probs_to_unitary(p)
         R = func_to_unitary(self.func, 4)

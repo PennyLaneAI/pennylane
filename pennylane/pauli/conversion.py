@@ -17,31 +17,19 @@ Utility functions to convert between ``~.PauliSentence`` and other PennyLane ope
 from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
-from typing import Tuple, Union
 
 import pennylane as qml
-from pennylane.operation import Tensor
-from pennylane.ops import (
-    Hamiltonian,
-    Identity,
-    LinearCombination,
-    PauliX,
-    PauliY,
-    PauliZ,
-    Prod,
-    SProd,
-    Sum,
-)
+from pennylane.math.utils import is_abstract
+from pennylane.ops import Identity, LinearCombination, PauliX, PauliY, PauliZ, Prod, SProd, Sum
 from pennylane.ops.qubit.matrix_ops import _walsh_hadamard_transform
 
 from .pauli_arithmetic import I, PauliSentence, PauliWord, X, Y, Z, op_map
 from .utils import is_pauli_word
 
 
-# pylint: disable=too-many-branches
 def _generalized_pauli_decompose(
     matrix, hide_identity=False, wire_order=None, pauli=False, padding=False
-) -> Tuple[qml.typing.TensorLike, list]:
+) -> tuple[qml.typing.TensorLike, list]:
     r"""Decomposes any matrix into a linear combination of Pauli operators.
 
     This method converts any matrix to a weighted sum of Pauli words acting on :math:`n` qubits
@@ -206,15 +194,17 @@ def _generalized_pauli_decompose(
         ).T
         coefficient = term_mat[tuple(int("".join(map(str, x)), 2) for x in bit_array)]
 
-        if not qml.math.allclose(coefficient, 0):
-            observables = (
-                [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
-                if hide_identity and not all(t == I for t in pauli_rep)
-                else [(o, w) for w, o in zip(wire_order, pauli_rep)]
-            )
-            if observables:
-                coeffs.append(coefficient)
-                obs.append(observables)
+        if not is_abstract(matrix) and qml.math.allclose(coefficient, 0):
+            continue
+
+        observables = (
+            [(o, w) for w, o in zip(wire_order, pauli_rep) if o != I]
+            if hide_identity and not all(t == I for t in pauli_rep)
+            else [(o, w) for w, o in zip(wire_order, pauli_rep)]
+        )
+        if observables:
+            coeffs.append(coefficient)
+            obs.append(observables)
 
     coeffs = qml.math.stack(coeffs)
 
@@ -227,7 +217,7 @@ def _generalized_pauli_decompose(
 
 def pauli_decompose(
     H, hide_identity=False, wire_order=None, pauli=False, check_hermitian=True
-) -> Union[Hamiltonian, PauliSentence]:
+) -> LinearCombination | PauliSentence:
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:
@@ -240,8 +230,8 @@ def pauli_decompose(
         check_hermitian (bool): check if the provided matrix is Hermitian if ``True``.
 
     Returns:
-        Union[~.Hamiltonian, ~.PauliSentence]: the matrix decomposed as a linear combination
-        of Pauli operators, returned either as a :class:`~.Hamiltonian` or :class:`~.PauliSentence`
+        Union[~.LinearCombination, ~.PauliSentence]: the matrix decomposed as a linear combination
+        of Pauli operators, returned either as a :class:`~.ops.LinearCombination` or :class:`~.PauliSentence`
         instance.
 
     **Example:**
@@ -249,6 +239,8 @@ def pauli_decompose(
     We can use this function to compute the Pauli operator decomposition of an arbitrary Hermitian
     matrix:
 
+    >>> import pennylane as qml
+    >>> import numpy as np
     >>> A = np.array(
     ... [[-2, -2+1j, -2, -2], [-2-1j,  0,  0, -1], [-2,  0, -2, -1], [-2, -1, -1,  0]])
     >>> H = qml.pauli_decompose(A)
@@ -317,7 +309,7 @@ def pauli_decompose(
         if shape != (N, N):
             raise ValueError("The matrix should have shape (2**n, 2**n), for any qubit number n>=1")
 
-        if not qml.math.allclose(H, qml.math.conj(qml.math.transpose(H))):
+        if not is_abstract(H) and not qml.math.allclose(H, qml.math.conj(qml.math.transpose(H))):
             raise ValueError("The matrix is not Hermitian")
 
     coeffs, obs = _generalized_pauli_decompose(
@@ -391,18 +383,11 @@ def _(op: PauliZ):
     return PauliSentence({PauliWord({op.wires[0]: Z}): 1.0})
 
 
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=unused-argument
 @_pauli_sentence.register
-def _(op: Identity):  # pylint:disable=unused-argument
+def _(op: Identity):
     return PauliSentence({PauliWord({}): 1.0})
-
-
-@_pauli_sentence.register
-def _(op: Tensor):
-    if not is_pauli_word(op):
-        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
-    factors = (_pauli_sentence(factor) for factor in op.obs)
-    return reduce(lambda a, b: a @ b, factors)
 
 
 @_pauli_sentence.register
@@ -416,28 +401,6 @@ def _(op: SProd):
     ps = _pauli_sentence(op.base)
     for pw, coeff in ps.items():
         ps[pw] = coeff * op.scalar
-    return ps
-
-
-@_pauli_sentence.register(qml.ops.Hamiltonian)
-def _(op: qml.ops.Hamiltonian):
-    if not all(is_pauli_word(o) for o in op.ops):
-        raise ValueError(f"Op must be a linear combination of Pauli operators only, got: {op}")
-
-    def term_2_pauli_word(term):
-        if isinstance(term, Tensor):
-            pw = {obs.wires[0]: obs.name[-1] for obs in term.non_identity_obs}
-        elif isinstance(term, Identity):
-            pw = {}
-        else:
-            pw = dict([(term.wires[0], term.name[-1])])
-        return PauliWord(pw)
-
-    ps = PauliSentence()
-    for coeff, term in zip(*op.terms()):
-        sub_ps = PauliSentence({term_2_pauli_word(term): coeff})
-        ps += sub_ps
-
     return ps
 
 

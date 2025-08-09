@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit tests for the Snapshot operation."""
+
 import numpy as np
 
 # pylint: disable=protected-access
@@ -135,8 +136,8 @@ class TestBarrier:
             qml.ctrl(barrier, 2)()
             return qml.state()
 
-        circuit()
-        tape = circuit.tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
+        tape = qml.workflow.construct_tape(circuit)()
+        tape = tape.expand(stop_at=lambda op: op.name in ["Barrier", "PauliX", "CNOT"])
 
         assert tape.operations[1].name == "Barrier"
         assert tape.operations[4].name == "Barrier"
@@ -150,7 +151,7 @@ class TestBarrier:
         """Test that if `only_visual=True`, the operation simplifies to the identity."""
         op = qml.Barrier(wires="a", only_visual=True)
         simplified = op.simplify()
-        assert qml.equal(simplified, qml.Identity("a"))
+        qml.assert_equal(simplified, qml.Identity("a"))
 
     def test_simplify_only_visual_multiple_wires(self):
         """Test that if `only_visual=True`, the operation simplifies to a product of identities."""
@@ -158,18 +159,23 @@ class TestBarrier:
         simplified = op.simplify()
         assert isinstance(simplified, qml.ops.op_math.Prod)
         for i, op in enumerate(simplified.operands):
-            assert qml.equal(op, qml.Identity(i))
+            qml.assert_equal(op, qml.Identity(i))
 
     def test_simplify_only_visual_False(self):
         """Test that no simplification occurs if only_visual is False."""
         op = qml.Barrier(wires=(0, 1, 2, 3), only_visual=False)
         assert op.simplify() is op
 
-    def test_qml_matrix_fails(self):
+    def test_qml_matrix_gives_identity(self):
+        """Test that qml.matrix(op) gives an identity."""
+        op = qml.Barrier(0)
+        assert np.allclose(qml.matrix(op), np.eye(2))
+        op = qml.Barrier()
+        assert np.allclose(qml.matrix(op, wire_order=[0, 3]), np.eye(4))
+
+    def test_op_matrix_fails(self):
         """Test that qml.matrix(op) and op.matrix() both fail."""
         op = qml.Barrier(0)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            qml.matrix(op)
         with pytest.raises(qml.operation.MatrixUndefinedError):
             op.matrix()
 
@@ -199,45 +205,89 @@ class TestWireCut:
     def test_wires_empty_list_raises_error(self):
         """Test that the WireCut operator raises an error when instantiated with an empty list."""
         with pytest.raises(
-            ValueError, match="WireCut: wrong number of wires. At least one wire has to be given."
+            ValueError,
+            match="WireCut: wrong number of wires. At least one wire has to be provided.",
         ):
             qml.WireCut(wires=[])
 
-    def test_qml_matrix_fails(self):
+    def test_qml_matrix_gives_identity(self):
+        """Test that qml.matrix(op) gives an identity."""
+        op = qml.WireCut(0)
+        assert np.allclose(qml.matrix(op), np.eye(2))
+
+    def test_op_matrix_fails(self):
         """Test that qml.matrix(op) and op.matrix() both fail."""
         op = qml.WireCut(0)
-        with pytest.raises(qml.operation.MatrixUndefinedError):
-            qml.matrix(op)
         with pytest.raises(qml.operation.MatrixUndefinedError):
             op.matrix()
 
 
-def test_decomposition():
-    """Test the decomposition of the Snapshot operation."""
+class TestSnapshot:
+    """Unit tests for the snapshot class."""
 
-    assert Snapshot.compute_decomposition() == []
-    assert Snapshot().decomposition() == []
+    def test_decomposition(self):
+        """Test the decomposition of the Snapshot operation."""
 
+        assert Snapshot.compute_decomposition() == []
+        assert Snapshot().decomposition() == []
 
-def test_label_method():
-    """Test the label method for the Snapshot operation."""
-    assert Snapshot().label() == "|Snap|"
-    assert Snapshot("my_label").label() == "|Snap|"
+    def test_label_method(self):
+        """Test the label method for the Snapshot operation."""
+        assert Snapshot().label() == "|Snap|"
+        assert Snapshot("my_label").label() == "|Snap|"
 
+    def test_control(self):
+        """Test the _controlled method for the Snapshot operation."""
+        assert isinstance(Snapshot()._controlled(0), Snapshot)
+        assert Snapshot("my_label")._controlled(0).tag == Snapshot("my_label").tag
 
-def test_control():
-    """Test the _controlled method for the Snapshot operation."""
-    assert isinstance(Snapshot()._controlled(0), Snapshot)
-    assert Snapshot("my_label")._controlled(0).tag == Snapshot("my_label").tag
+    def test_adjoint(self):
+        """Test the adjoint method for the Snapshot operation."""
+        assert isinstance(Snapshot().adjoint(), Snapshot)
+        assert Snapshot("my_label").adjoint().tag == Snapshot("my_label").tag
 
+    def test_snapshot_no_empty_wire_list_error(self):
+        """Test that Snapshot does not raise an empty wire error."""
+        snapshot = qml.Snapshot()
+        assert isinstance(snapshot, qml.Snapshot)
 
-def test_adjoint():
-    """Test the adjoint method for the Snapshot operation."""
-    assert isinstance(Snapshot().adjoint(), Snapshot)
-    assert Snapshot("my_label").adjoint().tag == Snapshot("my_label").tag
+    def test_shots_none_for_no_measurement(self):
+        """Test that the shots become None if no measurement is provided."""
 
+        op = qml.Snapshot()
+        assert op.hyperparameters["shots"] == qml.measurements.Shots(None)
 
-def test_snapshot_no_empty_wire_list_error():
-    """Test that Snapshot does not raise an empty wire error."""
-    snapshot = qml.Snapshot()
-    assert isinstance(snapshot, qml.Snapshot)
+    @pytest.mark.parametrize(
+        "mp", (qml.expval(qml.Z(0)), qml.measurements.StateMP(wires=(2, 1, 0)))
+    )
+    def test_map_wires(self, mp):
+        """Test that the wires of the measurement are mapped"""
+        op = Snapshot(measurement=mp, tag="my tag")
+        wire_map = {0: "a", 1: "b"}
+        new_op = op.map_wires(wire_map)
+        target_mp = mp.map_wires(wire_map)
+        qml.assert_equal(target_mp, new_op.hyperparameters["measurement"])
+        assert new_op.tag == "my tag"
+
+    # pylint: disable=unused-argument
+    @pytest.mark.capture
+    @pytest.mark.parametrize("measurement", (None, "state"))
+    def test_capture_measurement(self, measurement):
+        """Test that a snapshot can be captured into plxpr."""
+
+        import jax
+
+        def f():
+            if measurement is None:
+                qml.Snapshot()
+            else:
+                qml.Snapshot(measurement=qml.state())
+
+        jaxpr = jax.make_jaxpr(f)()
+
+        if measurement is None:
+            assert jaxpr.eqns[0].primitive == qml.Snapshot._primitive
+        else:
+            assert jaxpr.eqns[0].primitive == qml.measurements.StateMP._wires_primitive
+            assert jaxpr.eqns[1].primitive == qml.Snapshot._primitive
+            assert jaxpr.eqns[1].invars[0] == jaxpr.eqns[0].outvars[0]

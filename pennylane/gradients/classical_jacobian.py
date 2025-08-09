@@ -17,7 +17,9 @@ Contains the classical Jacobian transform.
 # pylint: disable=import-outside-toplevel
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane._grad import jacobian
+from pennylane.workflow import construct_tape
 
 
 def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
@@ -113,7 +115,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
          - ``tuple(array)``
 
     [1] If there only is one trainable QNode argument, the tuple is unpacked to a
-    single ``array``, as is the case for :func:`.jacobian`.
+    single ``array``, as is the case for :func:`pennylane.jacobian`.
 
     [2] For JAX, ``argnum=None`` defaults to ``argnum=0`` in contrast to all other
     interfaces. This means that only the classical Jacobian with respect to the first
@@ -141,25 +143,24 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
         """Returns the trainable gate parameters for a given QNode input."""
         kwargs.pop("shots", None)
         kwargs.pop("argnums", None)
-        qnode.construct(args, kwargs)
-        tape = qnode.qtape
+        tape = construct_tape(qnode)(*args, **kwargs)
 
         if expand_fn is not None:
             tape = expand_fn(tape)
-        return qml.math.stack(tape.get_parameters(trainable_only=trainable_only))
+        return math.stack(tape.get_parameters(trainable_only=trainable_only))
 
     wrapper_argnum = argnum if argnum is not None else None
 
-    def qnode_wrapper(*args, **kwargs):  # pylint: disable=inconsistent-return-statements
+    def qnode_wrapper(*args, **kwargs):
         old_interface = qnode.interface
 
         if old_interface == "auto":
-            qnode.interface = qml.math.get_interface(*args, *list(kwargs.values()))
+            qnode.interface = math.get_interface(*args, *list(kwargs.values()))
 
         if qnode.interface == "autograd":
-            jac = qml.jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
+            jac = jacobian(classical_preprocessing, argnum=wrapper_argnum)(*args, **kwargs)
 
-        if qnode.interface == "torch":
+        elif qnode.interface == "torch":
             import torch
 
             def _jacobian(*args, **kwargs):  # pylint: disable=unused-argument
@@ -168,17 +169,17 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 torch_argnum = (
                     wrapper_argnum
                     if wrapper_argnum is not None
-                    else qml.math.get_trainable_indices(args)
+                    else math.get_trainable_indices(args)
                 )
                 if np.isscalar(torch_argnum):
                     jac = jac[torch_argnum]
                 else:
-                    jac = tuple((jac[idx] for idx in torch_argnum))
+                    jac = tuple(jac[idx] for idx in torch_argnum)
                 return jac
 
             jac = _jacobian(*args, **kwargs)
 
-        if qnode.interface in ["jax", "jax-jit"]:
+        elif qnode.interface in ["jax", "jax-jit"]:
             import jax
 
             argnum = 0 if wrapper_argnum is None else wrapper_argnum
@@ -188,7 +189,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
             jac = _jacobian(*args, **kwargs)
 
-        if qnode.interface == "tf":
+        elif qnode.interface == "tf":
             import tensorflow as tf
 
             def _jacobian(*args, **kwargs):
@@ -197,7 +198,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 elif wrapper_argnum is None:
                     sub_args = args
                 else:
-                    sub_args = tuple((args[i] for i in wrapper_argnum))
+                    sub_args = tuple(args[i] for i in wrapper_argnum)
 
                 with tf.GradientTape() as tape:
                     gate_params = classical_preprocessing(*args, **kwargs)
@@ -206,6 +207,9 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 return jac
 
             jac = _jacobian(*args, **kwargs)
+
+        else:
+            raise ValueError(f"Undifferentiable interface {qnode.interface}.")
 
         if old_interface == "auto":
             qnode.interface = "auto"

@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that the device uses a tracker properly if it is supported."""
-# pylint: disable=no-self-use,no-member
+# pylint: disable=no-self-use
 import pytest
 
 import pennylane as qml
+
+from .conftest import get_legacy_capabilities
 
 
 class TestTracker:
@@ -26,7 +28,9 @@ class TestTracker:
 
         dev = device(1)
 
-        if isinstance(dev, qml.Device) and not dev.capabilities().get("supports_tracker", False):
+        if isinstance(dev, qml.devices.LegacyDevice) and not get_legacy_capabilities(dev).get(
+            "supports_tracker", False
+        ):
             pytest.skip("Device does not support a tracker")
 
         assert isinstance(dev.tracker, qml.Tracker)
@@ -36,7 +40,9 @@ class TestTracker:
 
         dev = device(1)
 
-        if isinstance(dev, qml.Device) and not dev.capabilities().get("supports_tracker", False):
+        if isinstance(dev, qml.devices.LegacyDevice) and not get_legacy_capabilities(dev).get(
+            "supports_tracker", False
+        ):
             pytest.skip("Device does not support a tracker")
 
         @qml.qnode(dev, diff_method="parameter-shift")

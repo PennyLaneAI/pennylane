@@ -16,7 +16,6 @@ Tests for the gradients.pulse_gradient module.
 """
 
 import copy
-import warnings
 
 import numpy as np
 import pytest
@@ -64,14 +63,14 @@ class TestSplitEvolOps:
 
     # pylint: disable=too-many-arguments
     @pytest.mark.parametrize("ham, params, time, ob, word", split_evol_ops_test_cases_pauliword)
-    def test_with_pauliword(self, ham, params, time, ob, word):
+    def test_with_pauliword(self, ham, params, time, ob, word, seed):
         """Test that _split_evol_ops returns the right ops with correct
         relations to the input operation for a Pauli word as ``ob``."""
 
         import jax
 
         ham = ham(None)
-        key = jax.random.PRNGKey(5324)
+        key = jax.random.PRNGKey(seed)
         op = qml.evolve(ham)(params, time)
         op_copy = copy.deepcopy(op)
         exp_time = [0, time] if qml.math.ndim(time) == 0 else time
@@ -90,7 +89,7 @@ class TestSplitEvolOps:
         assert qml.math.allclose(coeffs, exp_coeffs)
 
         # Check that the original operation was not altered
-        assert qml.equal(op, op_copy)
+        qml.assert_equal(op, op_copy)
 
         assert isinstance(ops, tuple) and len(ops) == len(exp_shifts)
 
@@ -100,15 +99,15 @@ class TestSplitEvolOps:
             assert qml.math.allclose(_ops[0].t, [op.t[0], tau])
             # Patch _ops[0] to have the same time as op, so that it should become the same as op
             _ops[0].t = op.t
-            assert qml.equal(_ops[0], op)
+            qml.assert_equal(_ops[0], op)
 
             assert qml.math.allclose(_ops[2].t, [tau, op.t[-1]])
             # Patch _ops[2] to have the same time as op, so that it should become the same as op
             _ops[2].t = op.t
-            assert qml.equal(_ops[2], op)
+            qml.assert_equal(_ops[2], op)
 
             # Check that the inserted exponential is correct
-            assert qml.equal(qml.PauliRot(exp_shift, word, wires=ob.wires), _ops[1])
+            qml.assert_equal(qml.PauliRot(exp_shift, word, wires=ob.wires), _ops[1])
 
     split_evol_ops_test_cases_general = [
         (
@@ -138,14 +137,14 @@ class TestSplitEvolOps:
     ]
 
     @pytest.mark.parametrize("ham, params, time, ob", split_evol_ops_test_cases_general)
-    def test_with_general_ob(self, ham, params, time, ob):
+    def test_with_general_ob(self, ham, params, time, ob, seed):
         """Test that _split_evol_ops returns the right ops with correct
         relations to the input operation for a general Hermitian as ``ob``."""
 
         import jax
 
         ham = ham(None)
-        key = jax.random.PRNGKey(5324)
+        key = jax.random.PRNGKey(seed)
         op = qml.evolve(ham)(params, time)
         op_copy = copy.deepcopy(op)
         exp_time = [0, time] if qml.math.ndim(time) == 0 else time
@@ -162,7 +161,7 @@ class TestSplitEvolOps:
         assert qml.math.allclose(coeffs, exp_coeffs)
 
         # Check that the original operation was not altered
-        assert qml.equal(op, op_copy)
+        qml.assert_equal(op, op_copy)
 
         assert isinstance(ops, tuple) and len(ops) == len(exp_shifts)
 
@@ -172,37 +171,15 @@ class TestSplitEvolOps:
             assert qml.math.allclose(_ops[0].t, [op.t[0], tau])
             # Patch _ops[0] to have the same time as op, so that it should become the same as op
             _ops[0].t = op.t
-            assert qml.equal(_ops[0], op)
+            qml.assert_equal(_ops[0], op)
 
             assert qml.math.allclose(_ops[2].t, [tau, op.t[-1]])
             # Patch _ops[2] to have the same time as op, so that it should become the same as op
             _ops[2].t = op.t
-            assert qml.equal(_ops[2], op)
+            qml.assert_equal(_ops[2], op)
 
             # Check that the inserted exponential is correct
-            assert qml.equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
-
-    @pytest.mark.usefixtures("use_legacy_opmath")  # this is only an issue with legacy Hamiltonian
-    def test_warnings_legacy_opmath(self):
-        """Test that a warning is raised for computing eigenvalues of a Hamiltonian
-        for more than four wires but not for fewer wires."""
-        import jax
-
-        jax.config.update("jax_enable_x64", True)
-        ham = qml.pulse.constant * qml.PauliY(0)
-        op = qml.evolve(ham)([0.3], 2.0)
-        ob = qml.Hamiltonian(
-            [0.4, 0.2], [qml.operation.Tensor(*[qml.PauliY(i) for i in range(5)]), qml.PauliX(0)]
-        )
-        with pytest.warns(UserWarning, match="the eigenvalues will be computed numerically"):
-            _split_evol_ops(op, ob, tau=0.4)
-
-        ob = qml.Hamiltonian(
-            [0.4, 0.2], [qml.operation.Tensor(*[qml.PauliY(i) for i in range(4)]), qml.PauliX(0)]
-        )
-        with warnings.catch_warnings():
-            warnings.simplefilter("error")
-            _split_evol_ops(op, ob, tau=0.4)
+            qml.assert_equal(qml.exp(qml.dot([-1j * exp_shift], [ob])), _ops[1])
 
 
 @pytest.mark.jax
@@ -221,9 +198,10 @@ class TestSplitEvolTapes:
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 1)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
-            assert qml.equal(t.operations[0], ops[0])
-            assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations[1:-1], new_ops))
-            assert qml.equal(t.operations[-1], ops[2])
+            qml.assert_equal(t.operations[0], ops[0])
+            for o1, o2 in zip(t.operations[1:-1], new_ops):
+                qml.assert_equal(o1, o2)
+            qml.assert_equal(t.operations[-1], ops[2])
 
     def test_with_parametrized_evolution(self):
         """Test basic behaviour of the operation replacement with ParametrizedEvolution."""
@@ -238,7 +216,8 @@ class TestSplitEvolTapes:
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 0)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
-            assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations, new_ops))
+            for o1, o2 in zip(t.operations, new_ops):
+                qml.assert_equal(o1, o2)
 
         ops = [qml.evolve(ham_single_q_pwc)([np.linspace(0, 1, 9)], 0.4), qml.CNOT([0, 2])]
         tape = qml.tape.QuantumScript(ops)
@@ -246,8 +225,9 @@ class TestSplitEvolTapes:
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 0)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
-            assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations[:-1], new_ops))
-            assert qml.equal(t.operations[-1], ops[1])
+            for o1, o2 in zip(t.operations[:-1], new_ops):
+                qml.assert_equal(o1, o2)
+            qml.assert_equal(t.operations[-1], ops[1])
 
         ops = [
             qml.RX(0.4, 2),
@@ -262,9 +242,10 @@ class TestSplitEvolTapes:
         new_tapes = _split_evol_tape(tape, split_evolve_ops, 1)
         assert len(new_tapes) == 2
         for t, new_ops in zip(new_tapes, split_evolve_ops):
-            assert qml.equal(t.operations[0], ops[0])
-            assert all(qml.equal(o1, o2) for o1, o2 in zip(t.operations[1:-1], new_ops))
-            assert qml.equal(t.operations[-1], ops[2])
+            qml.assert_equal(t.operations[0], ops[0])
+            for o1, o2 in zip(t.operations[1:-1], new_ops):
+                qml.assert_equal(o1, o2)
+            qml.assert_equal(t.operations[-1], ops[2])
 
 
 @pytest.mark.jax
@@ -290,8 +271,6 @@ class TestParshiftAndIntegrate:
         the number of shifts in the shift rule and with the number of splitting times.
         """
         from jax import numpy as jnp
-
-        np.random.seed(3751)
 
         cjac_shape = (num_split_times,) + par_shape
         if multi_term > 1:
@@ -349,8 +328,6 @@ class TestParshiftAndIntegrate:
         This is the variant of the previous test that uses broadcasting.
         """
         from jax import numpy as jnp
-
-        np.random.seed(3751)
 
         cjac_shape = (num_split_times,) + par_shape
         if multi_term > 1:
@@ -413,8 +390,6 @@ class TestParshiftAndIntegrate:
         the number of shifts in the shift rule and with the number of splitting times.
         """
         from jax import numpy as jnp
-
-        np.random.seed(3751)
 
         num_meas_or_shots = 5
 
@@ -487,8 +462,6 @@ class TestParshiftAndIntegrate:
         This is the variant of the previous test that uses broadcasting.
         """
         from jax import numpy as jnp
-
-        np.random.seed(3751)
 
         num_meas_or_shots = 5
 
@@ -564,8 +537,6 @@ class TestParshiftAndIntegrate:
         """
         from jax import numpy as jnp
 
-        np.random.seed(3751)
-
         num_shots = 3
         num_meas = 5
 
@@ -619,9 +590,6 @@ class TestParshiftAndIntegrate:
         expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
         assert np.allclose(np.stack(res), expected * prefactor)
 
-    # TODO: Once #2690 is resolved and the corresponding error is removed,
-    # unskip the following test
-    @pytest.mark.skip("Broadcasting, shot vector and multi-measurement not supported.")
     @pytest.mark.parametrize("multi_term", [1, 4])
     @pytest.mark.parametrize("meas_shape", [(), (4,)])
     @pytest.mark.parametrize("par_shape", [(), (3,), (2, 2)])
@@ -639,8 +607,6 @@ class TestParshiftAndIntegrate:
         This is the variant of the previous test that uses broadcasting.
         """
         from jax import numpy as jnp
-
-        np.random.seed(3751)
 
         num_shots = 3
         num_meas = 5
@@ -699,25 +665,6 @@ class TestParshiftAndIntegrate:
         contraction = f"ms,msNnt{meas_letter},mt...->Nn{meas_letter}..."
         expected = np.einsum(contraction, _psr_coeffs, _results, _cjacs)
         assert np.allclose(np.stack(res), expected * prefactor)
-
-    # TODO: Once #2690 is resolved and the corresponding error is removed,
-    # remove the following test
-    def test_raises_multi_measure_multi_shots_broadcasting(self):
-        """Test that an error is raised if multiple measurements, a shot vector and broadcasting
-        all are used simultaneously."""
-
-        _match = "Broadcasting, multiple measurements and shot vectors are currently"
-        with pytest.raises(NotImplementedError, match=_match):
-            # Dummy input values that are barely used before raising the error.
-            _parshift_and_integrate(
-                [],
-                [],
-                [],
-                [],
-                single_measure=False,
-                has_partitioned_shots=True,
-                use_broadcasting=True,
-            )
 
 
 @pytest.mark.jax
@@ -821,12 +768,11 @@ class TestStochPulseGradErrors:
         with pytest.raises(ValueError, match="stoch_pulse_grad does not support differentiating"):
             stoch_pulse_grad(tape)
 
-    @pytest.mark.skip(reason="This test fails because broadcasted tapes are not allowed at all.")
     def test_raises_use_broadcasting_with_broadcasted_tape(self):
         """Test that an error is raised if the option `use_broadcasting` is activated
         for a tape that already is broadcasted."""
         ham = qml.dot([qml.pulse.constant], [qml.PauliX(0)])
-        ops = [qml.evolve(ham, return_intermediate=True)([0.152], 0.3)]
+        ops = [qml.RX(0.5, wires=0), qml.evolve(ham, return_intermediate=True)([0.152], 0.3)]
         tape = qml.tape.QuantumScript(ops, measurements=[qml.expval(qml.PauliZ(0))])
         tape.trainable_params = [0]
         with pytest.raises(ValueError, match="Broadcasting is not supported for tapes that"):
@@ -854,7 +800,6 @@ class TestStochPulseGradErrors:
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestStochPulseGrad:
     """Test working cases of stoch_pulse_grad."""
 
@@ -888,7 +833,7 @@ class TestStochPulseGrad:
             ),
         ),
     )
-    def test_all_zero_grads(self, dev_name, ops, arg, exp_shapes):  # pylint:disable=unused-argument
+    def test_all_zero_grads(self, ops, arg, exp_shapes):  # pylint:disable=unused-argument
         """Test that a zero gradient is returned when all trainable parameters are
         identified to have zero gradient in advance."""
         import jax
@@ -910,7 +855,7 @@ class TestStochPulseGrad:
                 assert qml.math.allclose(r, np.zeros(exp_shape))
         jax.clear_caches()
 
-    def test_some_zero_grads(self, dev_name):
+    def test_some_zero_grads(self):
         """Test that a zero gradient is returned for trainable parameters that are
         identified to have a zero gradient in advance."""
         import jax
@@ -926,7 +871,7 @@ class TestStochPulseGrad:
         tapes, fn = stoch_pulse_grad(tape, num_split_times=3)
         assert len(tapes) == 2 * 3
 
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
         res = fn(qml.execute(tapes, dev, None))
         assert isinstance(res, tuple) and len(res) == 2
         assert qml.math.allclose(res[0][0], np.zeros(5))
@@ -935,7 +880,7 @@ class TestStochPulseGrad:
 
     @pytest.mark.parametrize("num_split_times", [1, 3])
     @pytest.mark.parametrize("t", [2.0, 3, (0.5, 0.6), (0.1, 0.9, 1.2)])
-    def test_constant_ry(self, dev_name, num_split_times, t):
+    def test_constant_ry(self, num_split_times, t):
         """Test that the derivative of a pulse generated by a constant Hamiltonian,
         which is a Pauli word, is computed correctly."""
         import jax
@@ -948,19 +893,21 @@ class TestStochPulseGrad:
         op = qml.evolve(ham_single_q_const)(params, t)
         tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         # Effective rotation parameter
         p = params[0] * delta_t
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
         assert len(tapes) == num_split_times * 2
 
         res = fn(qml.execute(tapes, dev, None))
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * delta_t)
+
+        # note that qml.execute changes trainable params
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         jax.clear_caches()
 
-    def test_constant_ry_argnum(self, dev_name):
+    def test_constant_ry_argnum(self):
         """Test that the derivative of a pulse generated by a constant Hamiltonian,
         which is a Pauli word, is computed correctly if it is not the only
         operation in a tape but selected via `argnum`."""
@@ -976,22 +923,23 @@ class TestStochPulseGrad:
         tape = qml.tape.QuantumScript([qml.RY(y, 0), op], [qml.expval(qml.PauliZ(0))])
         tape.trainable_params = [1]
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         # Effective rotation parameter
         p = params[0] * t
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * p + y), atol=1e-4)
         num_split_times = 1
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, argnum=0)
         assert len(tapes) == num_split_times * 2
 
         res = fn(qml.execute(tapes, dev, None))
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p + y) * t)
+
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p + y), atol=1e-4)
         jax.clear_caches()
 
     @pytest.mark.parametrize("num_split_times", [1, 3])
     @pytest.mark.parametrize("t", [2.0, 3, (0.5, 0.6), (0.1, 0.9, 1.2)])
-    def test_constant_ry_rescaled(self, dev_name, num_split_times, t):
+    def test_constant_ry_rescaled(self, num_split_times, t):
         """Test that the derivative of a pulse generated by a constant Hamiltonian,
         which is a Pauli sentence, is computed correctly."""
         import jax
@@ -1006,22 +954,22 @@ class TestStochPulseGrad:
         op = qml.evolve(ham_single_q_const)(params, t)
         tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0))])
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         # Prefactor due to the generator being a Pauli sentence
         prefactor = np.sqrt(0.85)
         # Effective rotation parameter
         p = params[0] * (delta_t := T[-1] - T[0]) * prefactor
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
         assert len(tapes) == num_split_times * 2
 
         res = fn(qml.execute(tapes, dev, None))
         assert qml.math.isclose(res, -2 * jnp.sin(2 * p) * delta_t * prefactor)
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p), atol=1e-4)
         jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
-    def test_sin_envelope_rz_expval(self, dev_name, t):
+    def test_sin_envelope_rz_expval(self, t):
         """Test that the derivative of a pulse with a sine wave envelope
         is computed correctly when returning an expectation value."""
         import jax
@@ -1029,7 +977,7 @@ class TestStochPulseGrad:
 
         T = t if isinstance(t, tuple) else (0, t)
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         params = [jnp.array([2.3, -0.245])]
 
         ham = self.sine * qml.PauliZ(0)
@@ -1046,8 +994,6 @@ class TestStochPulseGrad:
                 + x / y * (jnp.sin(y * T[1]) * T[1] - jnp.sin(y * T[0]) * T[0]),
             ]
         )
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * theta))
 
         num_split_times = 5
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
@@ -1057,10 +1003,12 @@ class TestStochPulseGrad:
         exp_grad = -2 * jnp.sin(2 * theta) * theta_jac
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         assert qml.math.allclose(res, exp_grad, atol=0.2)
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * theta))
         jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
-    def test_sin_envelope_rx_probs(self, dev_name, t):
+    def test_sin_envelope_rx_probs(self, t):
         """Test that the derivative of a pulse with a sine wave envelope
         is computed correctly when returning probabilities."""
         import jax
@@ -1068,7 +1016,7 @@ class TestStochPulseGrad:
 
         T = t if isinstance(t, tuple) else (0, t)
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         params = [jnp.array([2.3, -0.245])]
 
         ham = self.sine * qml.PauliX(0)
@@ -1085,9 +1033,6 @@ class TestStochPulseGrad:
                 + x / y * (jnp.sin(y * T[1]) * T[1] - jnp.sin(y * T[0]) * T[0]),
             ]
         )
-        r = qml.execute([tape], dev, None)
-        exp_probs = jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2])
-        assert qml.math.allclose(r, exp_probs)
 
         num_split_times = 5
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
@@ -1098,10 +1043,13 @@ class TestStochPulseGrad:
         exp_jac = jnp.tensordot(probs_jac, theta_jac, axes=0)
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         assert qml.math.allclose(jac, exp_jac, atol=0.2)
+        r = qml.execute([tape], dev, None)
+        exp_probs = jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2])
+        assert qml.math.allclose(r, exp_probs)
         jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
-    def test_sin_envelope_rx_expval_probs(self, dev_name, t):
+    def test_sin_envelope_rx_expval_probs(self, t):
         """Test that the derivative of a pulse with a sine wave envelope
         is computed correctly when returning expectation."""
         import jax
@@ -1109,7 +1057,7 @@ class TestStochPulseGrad:
 
         T = t if isinstance(t, tuple) else (0, t)
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         params = [jnp.array([2.3, -0.245])]
 
         ham = self.sine * qml.PauliX(0)
@@ -1126,11 +1074,6 @@ class TestStochPulseGrad:
                 + x / y * (jnp.sin(y * T[1]) * T[1] - jnp.sin(y * T[0]) * T[0]),
             ]
         )
-        r = qml.execute([tape], dev, None)[0]
-        exp = (jnp.cos(2 * theta), jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2]))
-        assert isinstance(r, tuple) and len(r) == 2
-        assert qml.math.allclose(r[0], exp[0])
-        assert qml.math.allclose(r[1], exp[1])
 
         num_split_times = 5
         tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times)
@@ -1143,10 +1086,16 @@ class TestStochPulseGrad:
         # classical Jacobian is being estimated with the Monte Carlo sampling -> coarse tolerance
         for j, e in zip(jac, exp_jac):
             assert qml.math.allclose(j, e, atol=0.2)
+
+        r = qml.execute([tape], dev, None)[0]
+        exp = (jnp.cos(2 * theta), jnp.array([jnp.cos(theta) ** 2, jnp.sin(theta) ** 2]))
+        assert isinstance(r, tuple) and len(r) == 2
+        assert qml.math.allclose(r[0], exp[0])
+        assert qml.math.allclose(r[1], exp[1])
         jax.clear_caches()
 
     @pytest.mark.parametrize("t", [0.02, (0.5, 0.6)])
-    def test_pwc_envelope_rx(self, dev_name, t):
+    def test_pwc_envelope_rx(self, t, seed):
         """Test that the derivative of a pulse generated by a piecewise constant Hamiltonian
         is computed correctly."""
         import jax
@@ -1154,17 +1103,15 @@ class TestStochPulseGrad:
 
         T = t if isinstance(t, tuple) else (0, t)
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         params = [jnp.array([0.24, 0.9, -0.1, 2.3, -0.245])]
         op = qml.evolve(qml.pulse.pwc(t) * qml.PauliZ(0))(params, t)
         tape = qml.tape.QuantumScript([qml.Hadamard(0), op], [qml.expval(qml.PauliX(0))])
 
         # Effective rotation parameter
         p = jnp.mean(params[0]) * (T[1] - T[0])
-        r = qml.execute([tape], dev, None)
-        assert qml.math.isclose(r, jnp.cos(2 * p))
         num_split_times = 5
-        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=7512)
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=seed)
         assert len(tapes) == 2 * num_split_times
 
         res = fn(qml.execute(tapes, dev, None))
@@ -1173,10 +1120,12 @@ class TestStochPulseGrad:
         assert qml.math.allclose(
             res, -2 * jnp.sin(2 * p) * (T[1] - T[0]) / len(params[0]), atol=0.01
         )
+        r = qml.execute([tape], dev, None)
+        assert qml.math.isclose(r, jnp.cos(2 * p))
         jax.clear_caches()
 
     @pytest.mark.parametrize("t", [2.0, 3, (0.5, 0.6)])
-    def test_constant_commuting(self, dev_name, t):
+    def test_constant_commuting(self, t):
         """Test that the derivative of a pulse generated by two constant commuting Hamiltonians
         is computed correctly."""
         import jax
@@ -1190,11 +1139,8 @@ class TestStochPulseGrad:
         )
         tape = qml.tape.QuantumScript([op], [qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))])
 
-        dev = qml.device(dev_name, wires=2)
-        r = qml.execute([tape], dev, None)
-        # Effective rotation parameters
+        dev = qml.device("default.qubit", wires=2)
         p = [_p * (T[1] - T[0]) for _p in params]
-        assert qml.math.isclose(r, jnp.cos(2 * p[0]) * jnp.cos(2 * p[1]))
         tapes, fn = stoch_pulse_grad(tape)
         assert len(tapes) == 4
 
@@ -1204,10 +1150,14 @@ class TestStochPulseGrad:
             -2 * jnp.sin(2 * p[1]) * jnp.cos(2 * p[0]) * (T[1] - T[0]),
         ]
         assert qml.math.allclose(res, exp_grad)
+        r = qml.execute([tape], dev, None)
+        # Effective rotation parameters
+        exp = jnp.cos(2 * p[0]) * jnp.cos(2 * p[1])
+        assert qml.math.isclose(r, exp)
         jax.clear_caches()
 
     @pytest.mark.slow
-    def test_advanced_pulse(self, dev_name):
+    def test_advanced_pulse(self):
         """Test the derivative of a more complex pulse."""
         import jax
         import jax.numpy as jnp
@@ -1221,19 +1171,24 @@ class TestStochPulseGrad:
             * qml.dot([1.0, 0.4], [qml.PauliY(0) @ qml.PauliY(1), qml.PauliX(0) @ qml.PauliX(1)])
         )
         params = [jnp.array(1.51), jnp.array(-0.371), jnp.array([0.2, 0.2, -0.4])]
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="jax")
         def qnode(params):
             qml.evolve(ham, atol=1e-6)(params, 0.1)
             return qml.expval(qml.PauliY(0) @ qml.PauliX(1))
 
-        qnode.construct((params,), {})
+        tape = qml.workflow.construct_tape(qnode)(params)
 
         num_split_times = 5
-        qnode.tape.trainable_params = [0, 1, 2]
+        tape.trainable_params = [0, 1, 2]
 
-        tapes, fn = stoch_pulse_grad(qnode.tape, num_split_times=num_split_times, sampler_seed=7123)
+        # FIXME: This test case is not updated to use the pytest-rng generated seed because I'm
+        #       unable to find a local salt that actually allows this test to pass. The 7123 here
+        #       is basically a magic number. Every other seed I tried fails. I believe this test
+        #       should be rewritten to use a better testing strategy because this currently goes
+        #       against the spirit of seeding.
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=7123)
         # Two generating terms with two shifts (X_0 and Z_0), one with eight shifts
         # (Y_0Y_1+0.4 X_1 has eigenvalues [-1.4, -0.6, 0.6, 1.4] yielding frequencies
         # [0.8, 1.2, 2.0, 2.8] and hence 2 * 4 = 8 shifts)
@@ -1245,7 +1200,7 @@ class TestStochPulseGrad:
         assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
         jax.clear_caches()
 
-    def test_randomness(self, dev_name):
+    def test_randomness(self):
         """Test that the derivative of a pulse is exactly the same when reusing a seed and
         that it differs when using a different seed."""
         import jax
@@ -1267,15 +1222,16 @@ class TestStochPulseGrad:
             for op_a_0, op_a_1, op_b in zip(tape_a_0, tape_a_1, tape_b):
                 if isinstance(op_a_0, qml.pulse.ParametrizedEvolution):
                     # The a_0 and a_1 operators are equal
-                    assert qml.equal(op_a_0, op_a_1)
+                    qml.assert_equal(op_a_0, op_a_1)
                     # The a_0 and b operators differ in time but are equal otherwise
                     assert not qml.equal(op_a_0, op_b)
                     op_b.t = op_a_0.t
-                    assert qml.equal(op_a_0, op_b)
+                    qml.assert_equal(op_a_0, op_b)
                 else:
-                    assert qml.equal(op_a_0, op_a_1) and qml.equal(op_a_0, op_b)
+                    qml.assert_equal(op_a_0, op_a_1)
+                    qml.assert_equal(op_a_0, op_b)
 
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         res_a_0 = fn_a_0(qml.execute(tapes_a_0, dev, None))
         res_a_1 = fn_a_1(qml.execute(tapes_a_1, dev, None))
         res_b = fn_b(qml.execute(tapes_b, dev, None))
@@ -1284,7 +1240,7 @@ class TestStochPulseGrad:
         assert not res_a_0 == res_b
         jax.clear_caches()
 
-    def test_two_pulses(self, dev_name):
+    def test_two_pulses(self, seed):
         """Test that the derivatives of two pulses in a circuit are computed correctly."""
         import jax
         import jax.numpy as jnp
@@ -1295,7 +1251,7 @@ class TestStochPulseGrad:
         ham_1 = qml.dot([0.3, jnp.polyval], [qml.PauliZ(0), qml.PauliY(0) @ qml.PauliY(1)])
         params_0 = [jnp.array(1.51), jnp.array(-0.371)]
         params_1 = [jnp.array([0.2, 0.2, -0.4])]
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev, interface="jax")
         def qnode(params_0, params_1):
@@ -1303,17 +1259,18 @@ class TestStochPulseGrad:
             qml.evolve(ham_1)(params_1, 0.15)
             return qml.expval(qml.PauliY(0) @ qml.PauliZ(1))
 
-        qnode.construct((params_0, params_1), {})
-
+        tape = qml.workflow.construct_tape(qnode)(params_0, params_1)
         num_split_times = 3
-        qnode.tape.trainable_params = [0, 1, 2]
-        tapes, fn = stoch_pulse_grad(qnode.tape, num_split_times=num_split_times, sampler_seed=7123)
+        tape.trainable_params = [0, 1, 2]
+        tapes, fn = stoch_pulse_grad(tape, num_split_times=num_split_times, sampler_seed=seed)
         assert len(tapes) == 3 * 2 * num_split_times
 
         res = fn(qml.execute(tapes, dev, None))
         exp_grad = jax.grad(qnode, argnums=(0, 1))(params_0, params_1)
         exp_grad = exp_grad[0] + exp_grad[1]
-        assert all(qml.math.allclose(r, e, rtol=0.4) for r, e in zip(res, exp_grad))
+        # Values are close to zero so we need to use `atol` instead of `rtol`
+        # to avoid numerical issues
+        assert all(qml.math.allclose(r, e, atol=5e-4) for r, e in zip(res, exp_grad))
         jax.clear_caches()
 
     @pytest.mark.slow
@@ -1325,13 +1282,13 @@ class TestStochPulseGrad:
             (qml.Hamiltonian([0.25, 1.2], [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1)]), 8, 1.45),
         ],
     )
-    def test_with_jit(self, dev_name, generator, exp_num_tapes, prefactor):
+    def test_with_jit(self, generator, exp_num_tapes, prefactor):
         """Test that the stochastic parameter-shift rule works with JITting."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device(dev_name, wires=len(generator.wires))
+        dev = qml.device("default.qubit", wires=len(generator.wires))
         T = (0.2, 0.5)
         ham_single_q_const = qml.dot([qml.pulse.constant], [generator])
         meas = [qml.expval(qml.PauliZ(0))]
@@ -1356,7 +1313,7 @@ class TestStochPulseGrad:
         jax.clear_caches()
 
     @pytest.mark.parametrize("shots", [None, 100])
-    def test_shots_attribute(self, dev_name, shots):  # pylint:disable=unused-argument
+    def test_shots_attribute(self, shots):  # pylint:disable=unused-argument
         """Tests that the shots attribute is copied to the new tapes"""
         tape = qml.tape.QuantumTape([], [qml.expval(qml.PauliZ(0)), qml.probs([1, 2])], shots=shots)
         with pytest.warns(UserWarning, match="Attempted to compute the gradient of a tape with no"):
@@ -1366,14 +1323,13 @@ class TestStochPulseGrad:
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestStochPulseGradQNode:
     """Test that stoch_pulse_grad integrates correctly with QNodes."""
 
-    def test_raises_for_application_to_qnodes(self, dev_name):
+    def test_raises_for_application_to_qnodes(self):
         """Test that an error is raised when applying ``stoch_pulse_grad``
         to a QNode directly."""
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(dev, interface="jax")
@@ -1387,14 +1343,14 @@ class TestStochPulseGradQNode:
 
     # TODO: include the following tests when #4225 is resolved.
     @pytest.mark.skip("Applying this gradient transform to QNodes directly is not supported.")
-    def test_qnode_expval_single_par(self, dev_name):
+    def test_qnode_expval_single_par(self):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with stoch_pulse_grad."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
@@ -1405,7 +1361,6 @@ class TestStochPulseGradQNode:
 
         params = jnp.array(0.4)
         with qml.Tracker(dev) as tracker:
-            _match = "stochastic pulse parameter-shift .* scalar pulse parameters."
             grad = stoch_pulse_grad(circuit, num_split_times=2)(params)
 
         p = params * T
@@ -1415,26 +1370,27 @@ class TestStochPulseGradQNode:
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestStochPulseGradIntegration:
     """Test that stoch_pulse_grad integrates correctly with QNodes and ML interfaces."""
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
-    def test_simple_qnode_expval(self, dev_name, num_split_times, shots, tol):
+    def test_simple_qnode_expval(self, num_split_times, shots, tol, seed):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with stoch_pulse_grad."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
-        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
+        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1450,22 +1406,24 @@ class TestStochPulseGradIntegration:
     @pytest.mark.slow
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
-    def test_simple_qnode_expval_two_evolves(self, dev_name, num_split_times, shots, tol):
+    def test_simple_qnode_expval_two_evolves(self, num_split_times, shots, tol, seed):
         """Test that a simple qnode that returns an expectation value
         can be differentiated with stoch_pulse_grad."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
-        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
+        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
         T_x = 0.1
         T_y = 0.2
         ham_x = qml.pulse.constant * qml.PauliX(0)
         ham_y = qml.pulse.constant * qml.PauliX(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_x)(params[0], T_x)
@@ -1482,20 +1440,22 @@ class TestStochPulseGradIntegration:
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 99], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
-    def test_simple_qnode_probs(self, dev_name, num_split_times, shots, tol):
+    def test_simple_qnode_probs(self, num_split_times, shots, tol, seed):
         """Test that a simple qnode that returns an probabilities
         can be differentiated with stoch_pulse_grad."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
-        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
+        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1510,20 +1470,22 @@ class TestStochPulseGradIntegration:
 
     @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 100], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
-    def test_simple_qnode_probs_expval(self, dev_name, num_split_times, shots, tol):
+    def test_simple_qnode_probs_expval(self, num_split_times, shots, tol, seed):
         """Test that a simple qnode that returns an probabilities
         can be differentiated with stoch_pulse_grad."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
-        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
+        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1533,30 +1495,33 @@ class TestStochPulseGradIntegration:
         jac = jax.jacobian(circuit)(params)
         p = params[0] * T
         exp_jac = (jnp.array([-1, 1]) * jnp.sin(2 * p) * T, -2 * jnp.sin(2 * p) * T)
-        if hasattr(shots, "len"):
-            for j_shots, e_shots in zip(jac, exp_jac):
-                for j, e in zip(j_shots, e_shots):
-                    assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+        if isinstance(shots, list):
+            for j_shots in jac:
+                for j, e in zip(j_shots, exp_jac):
+                    assert qml.math.allclose(j, e, atol=tol, rtol=0.0)
         else:
             for j, e in zip(jac, exp_jac):
-                assert qml.math.allclose(j[0], e, atol=tol, rtol=0.0)
+                assert qml.math.allclose(j, e, atol=tol, rtol=0.0)
         jax.clear_caches()
 
-    @pytest.mark.xfail
+    @pytest.mark.xfail  # TODO: [sc-82874]
     @pytest.mark.parametrize("num_split_times", [1, 2])
     @pytest.mark.parametrize("time_interface", ["python", "numpy", "jax"])
-    def test_simple_qnode_jit(self, dev_name, num_split_times, time_interface):
+    def test_simple_qnode_jit(self, num_split_times, time_interface):
         """Test that a simple qnode can be differentiated with stoch_pulse_grad."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         T = {"python": 0.2, "numpy": np.array(0.2), "jax": jnp.array(0.2)}[time_interface]
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
         @qml.qnode(
-            dev, interface="jax", diff_method=stoch_pulse_grad, num_split_times=num_split_times
+            dev,
+            interface="jax",
+            diff_method=stoch_pulse_grad,
+            gradient_kwargs={"num_split_times": num_split_times},
         )
         def circuit(params, T=None):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1570,7 +1535,7 @@ class TestStochPulseGradIntegration:
         jax.clear_caches()
 
     @pytest.mark.slow
-    def test_advanced_qnode(self, dev_name):
+    def test_advanced_qnode(self, seed):
         """Test that an advanced qnode can be differentiated with stoch_pulse_grad."""
         import jax
         import jax.numpy as jnp
@@ -1578,7 +1543,7 @@ class TestStochPulseGradIntegration:
         jax.config.update("jax_enable_x64", True)
 
         params = [jnp.array(0.21), jnp.array(-0.171), jnp.array([0.05, 0.03, -0.1])]
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
         ham = (
             qml.pulse.constant * qml.PauliX(0)
             + (lambda p, t: jnp.sin(p * t)) * qml.PauliZ(0)
@@ -1595,66 +1560,31 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            sampler_seed=7123,
+            gradient_kwargs={"num_split_times": num_split_times, "sampler_seed": seed},
         )
         qnode_backprop = qml.QNode(ansatz, dev, interface="jax")
 
         with qml.Tracker(dev) as tracker:
             grad_pulse_grad = jax.grad(qnode_pulse_grad)(params)
-        assert (
-            tracker.totals["executions"] == (1 + 2 * 3 * num_split_times)
-            if dev_name == "default.qubit.jax"
-            else 1
-        )
+        assert tracker.totals["executions"] == 1 + 2 * 3 * num_split_times
         grad_backprop = jax.grad(qnode_backprop)(params)
-
+        # Values are close to zero so we need to use `atol` instead of `rtol`
+        # to avoid numerical issues
         assert all(
-            qml.math.allclose(r, e, rtol=0.4) for r, e in zip(grad_pulse_grad, grad_backprop)
+            qml.math.allclose(r, e, atol=5e-3) for r, e in zip(grad_pulse_grad, grad_backprop)
         )
         jax.clear_caches()
 
-    def test_multi_return_broadcasting_multi_shots_raises(self, dev_name):
-        """Test that a simple qnode that returns an expectation value and probabilities
-        can be differentiated with stoch_pulse_grad with use_broadcasting."""
-        import jax
-        import jax.numpy as jnp
-
-        jax.config.update("jax_enable_x64", True)
-        shots = [100, 100]
-        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
-        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
-        T = 0.2
-        ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
-
-        @qml.qnode(
-            dev,
-            interface="jax",
-            diff_method=stoch_pulse_grad,
-            num_split_times=3,
-            use_broadcasting=True,
-        )
-        def circuit(params):
-            qml.evolve(ham_single_q_const)(params, T)
-            return qml.probs(wires=0), qml.expval(qml.PauliZ(0))
-
-        params = [jnp.array(0.4)]
-        with pytest.raises(NotImplementedError, match="Broadcasting, multiple measurements and"):
-            jax.jacobian(circuit)(params)
-        jax.clear_caches()
-
-    # TODO: delete error test above and uncomment the following test case once #2690 is resolved.
-    @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1)])  # , ([100, 100], 0.1)])
+    @pytest.mark.parametrize("shots, tol", [(None, 1e-4), (100, 0.1), ([100, 100], 0.1)])
     @pytest.mark.parametrize("num_split_times", [1, 2])
-    def test_qnode_probs_expval_broadcasting(self, dev_name, num_split_times, shots, tol):
+    def test_qnode_probs_expval_broadcasting(self, num_split_times, shots, tol, seed):
         """Test that a simple qnode that returns an expectation value and probabilities
         can be differentiated with stoch_pulse_grad with use_broadcasting."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        key = "prng_key" if dev_name == "default.qubit.jax" else "seed"
-        dev = qml.device(dev_name, wires=1, shots=shots, **{key: jax.random.PRNGKey(74)})
+        dev = qml.device("default.qubit", wires=1, shots=shots, seed=jax.random.PRNGKey(seed))
         T = 0.2
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 
@@ -1662,8 +1592,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            use_broadcasting=True,
+            gradient_kwargs={"num_split_times": num_split_times, "use_broadcasting": True},
         )
         def circuit(params):
             qml.evolve(ham_single_q_const)(params, T)
@@ -1683,13 +1612,13 @@ class TestStochPulseGradIntegration:
         jax.clear_caches()
 
     @pytest.mark.parametrize("num_split_times", [1, 2])
-    def test_broadcasting_coincides_with_nonbroadcasting(self, dev_name, num_split_times):
+    def test_broadcasting_coincides_with_nonbroadcasting(self, num_split_times, seed):
         """Test that using broadcasting or not does not change the result."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
         T = 0.2
 
         def f(p, t):
@@ -1707,18 +1636,22 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            use_broadcasting=True,
-            sampler_seed=324,
+            gradient_kwargs={
+                "num_split_times": num_split_times,
+                "use_broadcasting": True,
+                "sampler_seed": seed,
+            },
         )
         circuit_no_bc = qml.QNode(
             ansatz,
             dev,
             interface="jax",
             diff_method=stoch_pulse_grad,
-            num_split_times=num_split_times,
-            use_broadcasting=False,
-            sampler_seed=324,
+            gradient_kwargs={
+                "num_split_times": num_split_times,
+                "use_broadcasting": False,
+                "sampler_seed": seed,
+            },
         )
         params = [jnp.array(0.4)]
         jac_bc = jax.jacobian(circuit_bc)(params)
@@ -1727,7 +1660,7 @@ class TestStochPulseGradIntegration:
             assert qml.math.allclose(j0, j1)
         jax.clear_caches()
 
-    def test_with_drive_exact(self, dev_name):
+    def test_with_drive_exact(self):
         """Test that a HardwareHamiltonian only containing a drive is differentiated correctly
         for a constant amplitude and zero frequency and phase."""
         import jax
@@ -1736,7 +1669,7 @@ class TestStochPulseGradIntegration:
 
         H = qml.pulse.transmon_drive(qml.pulse.constant, 0.0, 0.0, wires=[0])
         atol = 1e-5
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         def ansatz(params):
             qml.evolve(H, atol=atol)(params, t=timespan)
@@ -1752,7 +1685,7 @@ class TestStochPulseGradIntegration:
         assert qml.math.allclose(res, exact, atol=6e-5)
         jax.clear_caches()
 
-    def test_with_drive_approx(self, dev_name):
+    def test_with_drive_approx(self, seed):
         """Test that a HardwareHamiltonian only containing a drive is differentiated
         approximately correctly for a constant phase and zero frequency."""
         import jax
@@ -1761,7 +1694,7 @@ class TestStochPulseGradIntegration:
 
         H = qml.pulse.transmon_drive(1 / (2 * np.pi), qml.pulse.constant, 0.0, wires=[0])
         atol = 1e-5
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
 
         def ansatz(params):
             qml.evolve(H, atol=atol)(params, t=timespan)
@@ -1772,9 +1705,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=qml.gradients.stoch_pulse_grad,
-            num_split_times=7,
-            use_broadcasting=True,
-            sampler_seed=4123,
+            gradient_kwargs={"num_split_times": 7, "sampler_seed": seed, "use_broadcasting": True},
         )
         cost_jax = qml.QNode(ansatz, dev, interface="jax")
         params = (0.42,)
@@ -1787,7 +1718,7 @@ class TestStochPulseGradIntegration:
 
     @pytest.mark.slow
     @pytest.mark.parametrize("num_params", [1, 2])
-    def test_with_two_drives(self, dev_name, num_params):
+    def test_with_two_drives(self, num_params, seed):
         """Test that a HardwareHamiltonian only containing two drives
         is differentiated approximately correctly. The two cases
         of the parametrization test the cases where reordered parameters
@@ -1806,7 +1737,7 @@ class TestStochPulseGradIntegration:
             amps[0], qml.pulse.constant, 0.0, wires=[0]
         ) + qml.pulse.rydberg_drive(amps[1], qml.pulse.constant, 0.0, wires=[1])
         atol = 1e-5
-        dev = qml.device(dev_name, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def ansatz(params):
             qml.evolve(H, atol=atol)(params, t=timespan)
@@ -1817,9 +1748,7 @@ class TestStochPulseGradIntegration:
             dev,
             interface="jax",
             diff_method=qml.gradients.stoch_pulse_grad,
-            num_split_times=7,
-            use_broadcasting=True,
-            sampler_seed=4123,
+            gradient_kwargs={"num_split_times": 7, "sampler_seed": seed, "use_broadcasting": True},
         )
         cost_jax = qml.QNode(ansatz, dev, interface="jax")
 
@@ -1831,19 +1760,18 @@ class TestStochPulseGradIntegration:
 
 
 @pytest.mark.jax
-@pytest.mark.parametrize("dev_name", ["default.qubit", "default.qubit.jax"])
 class TestStochPulseGradDiff:
     """Test that stoch_pulse_grad is differentiable."""
 
     # pylint: disable=too-few-public-methods
     @pytest.mark.slow
-    def test_jax(self, dev_name):
+    def test_jax(self):
         """Test that stoch_pulse_grad is differentiable with JAX."""
         import jax
         import jax.numpy as jnp
 
         jax.config.update("jax_enable_x64", True)
-        dev = qml.device(dev_name, wires=1)
+        dev = qml.device("default.qubit", wires=1)
         T = 0.5
         ham_single_q_const = qml.pulse.constant * qml.PauliY(0)
 

@@ -14,8 +14,13 @@
 """
 This submodule contains frequently used loss and cost functions.
 """
+import warnings
+
+from pennylane import measurements
+
 # pylint: disable=too-many-arguments
-import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
+from pennylane.workflow.qnode import qnode
 
 
 class SquaredErrorLoss:
@@ -23,6 +28,11 @@ class SquaredErrorLoss:
 
     Combines an ansatz circuit with some target observables and calculates
     the squared error between their expectation values and a target.
+
+    .. warning::
+        This class is deprecated and will be removed in version v0.44.
+        Instead, this hybrid workflow can be accomplished with a function like
+        ``loss = lambda *args: (circuit(*args) - target)**2``.
 
     Args:
         ansatz (callable): The ansatz for the circuit before the final measurement step.
@@ -35,7 +45,7 @@ class SquaredErrorLoss:
             where ``params`` are the trainable weights of the variational circuit, and
             ``kwargs`` are any additional keyword arguments that need to be passed
             to the template.
-        observables (Iterable[.Observable]): observables to measure during the
+        observables (Iterable[.Operator]): observables to measure during the
             final step of each circuit
         device (Device, Sequence[Device]): Corresponding device(s) where the resulting
             function should be executed. This can either be a single device, or a list
@@ -87,6 +97,7 @@ class SquaredErrorLoss:
     :doc:`optimizer </introduction/interfaces>`.
     """
 
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         ansatz,
@@ -97,12 +108,19 @@ class SquaredErrorLoss:
         diff_method="best",
         **kwargs,
     ):
-        @qml.qnode(device, diff_method=diff_method, interface=interface, *kwargs)
-        def qnode(params, **circuit_kwargs):
-            ansatz(params, wires=device.wires, **circuit_kwargs)
-            return [getattr(qml, measure)(o) for o in observables]
+        warnings.warn(
+            "qml.qnn.cost.SquaredErrorLoss is deprecated and will be removed in version v0.44. "
+            "Instead, this hybrid workflow can be accomplished with a function like "
+            "`loss = lambda *args: (circuit(*args) - target)**2`.",
+            PennyLaneDeprecationWarning,
+        )
 
-        self.qnode = qnode
+        @qnode(device, diff_method=diff_method, interface=interface, *kwargs)
+        def qn(params, **circuit_kwargs):
+            ansatz(params, wires=device.wires, **circuit_kwargs)
+            return [getattr(measurements, measure)(o) for o in observables]
+
+        self.qnode = qn
 
     def loss(self, *args, target=None, **kwargs):
         r"""Calculates the squared error loss between the observables'

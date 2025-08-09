@@ -14,7 +14,7 @@
 r"""
 The default.qutrit device is PennyLane's standard qutrit-based device.
 
-It implements the :class:`~pennylane._device.Device` methods as well as some built-in
+It implements the :class:`~pennylane.devices._legacy_device.Device` methods as well as some built-in
 :mod:`qutrit operations <pennylane.ops.qutrit>`, and provides simple pure state
 simulation of qutrit-based quantum computing.
 """
@@ -23,13 +23,12 @@ import logging
 
 import numpy as np
 
-import pennylane as qml  # pylint: disable=unused-import
-from pennylane import DeviceError, QutritBasisState, QutritDevice
-from pennylane.devices.default_qubit_legacy import _get_slice
+import pennylane as qml
+from pennylane.exceptions import DeviceError, WireError
 from pennylane.logging import debug_logger, debug_logger_init
-from pennylane.wires import WireError
 
 from .._version import __version__
+from ._qutrit_device import QutritDevice
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -38,6 +37,35 @@ logger.addHandler(logging.NullHandler())
 tolerance = 1e-10
 
 OMEGA = qml.math.exp(2 * np.pi * 1j / 3)
+
+
+def _get_slice(index, axis, num_axes):
+    """Allows slicing along an arbitrary axis of an array or tensor.
+
+    Args:
+        index (int): the index to access
+        axis (int): the axis to slice into
+        num_axes (int): total number of axes
+
+    Returns:
+        tuple[slice or int]: a tuple that can be used to slice into an array or tensor
+
+    **Example:**
+
+    Accessing the 2 index along axis 1 of a 3-axis array:
+
+    >>> sl = _get_slice(2, 1, 3)
+    >>> sl
+    (slice(None, None, None), 2, slice(None, None, None))
+    >>> a = np.arange(27).reshape((3, 3, 3))
+    >>> a[sl]
+    array([[ 6,  7,  8],
+           [15, 16, 17],
+           [24, 25, 26]])
+    """
+    idx = [slice(None)] * num_axes
+    idx[axis] = index
+    return tuple(idx)
 
 
 # pylint: disable=too-many-arguments
@@ -134,7 +162,8 @@ class DefaultQutrit(QutritDevice):
         analytic=None,
     ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
-        self._debugger = None
+        # TODO: add support for snapshots
+        # self._debugger = None
 
         # Create the initial state. Internally, we store the
         # state as an array of dimension [3]*wires.
@@ -151,7 +180,7 @@ class DefaultQutrit(QutritDevice):
             "TSWAP": self._apply_tswap,
         }
 
-    @functools.lru_cache()
+    @functools.lru_cache
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
@@ -171,8 +200,10 @@ class DefaultQutrit(QutritDevice):
         wire_map = zip(wires, consecutive_wires)
         return dict(wire_map)
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=arguments-differ
     @debug_logger
-    def apply(self, operations, rotations=None, **kwargs):  # pylint: disable=arguments-differ
+    def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
 
         # apply the circuit operations
@@ -180,13 +211,13 @@ class DefaultQutrit(QutritDevice):
         # Operations are enumerated so that the order of operations can eventually be used
         # for correctly applying basis state / state vector / snapshot operations which will
         # be added later.
-        for i, operation in enumerate(operations):  # pylint: disable=unused-variable
-            if i > 0 and isinstance(operation, (QutritBasisState)):
+        for i, operation in enumerate(operations):
+            if i > 0 and isinstance(operation, qml.QutritBasisState):
                 raise DeviceError(
                     f"Operation {operation.name} cannot be used after other operations have already been applied "
                     f"on a {self.short_name} device."
                 )
-            if isinstance(operation, QutritBasisState):
+            if isinstance(operation, qml.QutritBasisState):
                 self._apply_basis_state(operation.parameters[0], operation.wires)
             else:
                 self._state = self._apply_operation(self._state, operation)
@@ -244,10 +275,7 @@ class DefaultQutrit(QutritDevice):
         if operation.name in self._apply_ops:  # pylint: disable=no-else-return
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.name](state, axes)
-        elif (
-            isinstance(operation, qml.ops.Adjoint)  # pylint: disable=no-member
-            and operation.base.name in self._apply_ops
-        ):
+        elif isinstance(operation, qml.ops.Adjoint) and operation.base.name in self._apply_ops:
             axes = self.wires.indices(wires)
             return self._apply_ops[operation.base.name](state, axes, inverse=True)
 

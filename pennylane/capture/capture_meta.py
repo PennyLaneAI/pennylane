@@ -16,12 +16,22 @@ Defines a metaclass for automatic integration of any ``Operator`` with plxpr pro
 
 See ``explanations.md`` for technical explanations of how this works.
 """
+from abc import ABCMeta
 from inspect import Signature, signature
 
 from .switches import enabled
 
 
-# pylint: disable=no-self-argument, too-few-public-methods
+def _stop_autograph(f):
+    """Stop the autograph interpretation of operators by making it so that ``f`` always
+    belongs to the pennylane namespace."""
+
+    def new_f(*args, **kwargs):
+        return f(*args, **kwargs)
+
+    return new_f
+
+
 class CaptureMeta(type):
     """A metatype that dispatches class creation to ``cls._primitve_bind_call`` instead
     of normal class creation.
@@ -31,14 +41,14 @@ class CaptureMeta(type):
 
     .. code-block::
 
+        qml.capture.enable()
+
         class AbstractMyObj(jax.core.AbstractValue):
             pass
 
-        jax.core.raise_to_shaped_mappings[AbstractMyObj] = lambda aval, _: aval
-
         class MyObj(metaclass=qml.capture.CaptureMeta):
 
-            primitive = jax.core.Primitive("MyObj")
+            primitive = jax.extend.core.Primitive("MyObj")
 
             @classmethod
             def _primitive_bind_call(cls, a):
@@ -75,6 +85,7 @@ class CaptureMeta(type):
             " gain integration with plxpr program capture."
         )
 
+    @_stop_autograph
     def __call__(cls, *args, **kwargs):
         # this method is called everytime we want to create an instance of the class.
         # default behavior uses __new__ then __init__
@@ -84,3 +95,8 @@ class CaptureMeta(type):
             # use bind to construct the class if we want class construction to add it to the jaxpr
             return cls._primitive_bind_call(*args, **kwargs)
         return type.__call__(cls, *args, **kwargs)
+
+
+# pylint: disable=abstract-method
+class ABCCaptureMeta(CaptureMeta, ABCMeta):
+    """A combination of the capture meta and ABCMeta"""

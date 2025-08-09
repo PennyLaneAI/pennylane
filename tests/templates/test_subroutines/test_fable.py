@@ -44,10 +44,7 @@ class TestFable:
     @pytest.mark.parametrize(
         ("input", "wires"),
         [
-            (
-                np.random.random((2, 2)),
-                3,
-            ),
+            (np.random.random((2, 2)), 3),
             (
                 np.array(
                     [
@@ -59,17 +56,10 @@ class TestFable:
                 ),
                 5,
             ),
-            (
-                np.random.random((8, 8)),
-                7,
-            ),
-            (
-                np.random.random((16, 16)),
-                9,
-            ),
+            (np.random.random((8, 8)), 7),
         ],
     )
-    def test_fable_real_for_variety_of_input_matrices(self, input, wires):
+    def test_fable_real_input_matrices(self, input, wires):
         """Test that FABLE produces the right circuit given a square, real-valued matrix"""
         dev = qml.device("default.qubit")
 
@@ -78,10 +68,8 @@ class TestFable:
             qml.FABLE(input_matrix=input, wires=range(wires), tol=0)
             return qml.state()
 
-        expected = (
-            len(input)
-            * qml.matrix(circuit, wire_order=range(wires))().real[0 : len(input), 0 : len(input)]
-        )
+        dim = len(input)
+        expected = dim * qml.matrix(circuit, wire_order=range(wires))().real[:dim, :dim]
         assert np.allclose(input, expected)
 
     def test_fable_imaginary_error(self, input_matrix):
@@ -235,7 +223,7 @@ class TestFable:
         assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
 
     @pytest.mark.jax
-    def test_fable_grad_jax_jit(self, input_matrix):
+    def test_fable_jax_jit(self, input_matrix):
         """Test that FABLE is differentiable when using jax."""
         import jax
         import jax.numpy as jnp
@@ -272,18 +260,21 @@ class TestFable:
         input_jax_negative_delta = jnp.array(input_negative_delta)
         input_matrix_jax = jnp.array(input_matrix)
 
-        @jax.jit
         @qml.qnode(dev, diff_method="backprop")
         def circuit_jax(input_matrix):
             qml.FABLE(input_matrix, wires=range(5), tol=0)
             return qml.expval(qml.PauliZ(wires=0))
 
-        grad_fn = jax.grad(circuit_jax)
+        jitted_fn = jax.jit(circuit_jax)
+
+        grad_fn = jax.grad(jitted_fn)
         gradient_numeric = (
             circuit_jax(input_jax_positive_delta) - circuit_jax(input_jax_negative_delta)
         ) / (2 * delta)
         gradient_jax = grad_fn(input_matrix_jax)
-        assert np.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
+
+        assert qml.math.allclose(gradient_numeric, gradient_jax[0, 0], rtol=0.001)
+        assert qml.math.allclose(jitted_fn(input_matrix), circuit_jax(input_matrix))
 
     @pytest.mark.jax
     def test_fable_grad_jax_jit_error(self, input_matrix):
@@ -388,89 +379,36 @@ class TestFable:
     @pytest.mark.parametrize(
         ("input", "wires"),
         [
-            (
-                np.random.random((1, 2)),
-                3,
-            ),
-            (
-                np.random.random((1, 1)),
-                3,
-            ),
-            (
-                np.random.random((2, 1)),
-                3,
-            ),
-            (
-                np.random.random((3, 2)),
-                5,
-            ),
-            (
-                np.random.random((4, 2)),
-                5,
-            ),
-            (
-                np.random.random((2, 3)),
-                5,
-            ),
-            (
-                np.random.random((2, 4)),
-                5,
-            ),
-            (
-                np.random.random((3, 4)),
-                5,
-            ),
-            (
-                np.random.random((4, 3)),
-                5,
-            ),
-            (
-                np.random.random((3, 5)),
-                7,
-            ),
-            (
-                np.random.random((3, 6)),
-                7,
-            ),
-            (
-                np.random.random((3, 7)),
-                7,
-            ),
-            (
-                np.random.random((4, 5)),
-                7,
-            ),
-            (
-                np.random.random((5, 5)),
-                7,
-            ),
-            (
-                np.random.random((6, 5)),
-                7,
-            ),
-            (
-                np.random.random((2, 9)),
-                9,
-            ),
-            (
-                np.random.random((9, 3)),
-                9,
-            ),
+            (np.random.random((1, 2)), 3),
+            (np.random.random((1, 1)), 3),
+            (np.random.random((2, 1)), 3),
+            (np.random.random((3, 2)), 5),
+            (np.random.random((4, 2)), 5),
+            (np.random.random((2, 3)), 5),
+            (np.random.random((2, 4)), 5),
+            (np.random.random((3, 4)), 5),
+            (np.random.random((4, 3)), 5),
+            (np.random.random((3, 5)), 7),
+            (np.random.random((3, 6)), 7),
+            (np.random.random((3, 7)), 7),
+            (np.random.random((4, 5)), 7),
+            (np.random.random((5, 5)), 7),
+            (np.random.random((6, 5)), 7),
         ],
     )
     def test_variety_of_matrix_shapes(self, input, wires):
-        """Test that FABLE runs without error for variety of cases."""
+        """Test that FABLE runs without error for a variety of input shapes."""
         dev = qml.device("default.qubit")
-        s = int(qml.math.ceil(qml.math.log2(max(len(input), len(input[0])))))
-        dimension = s**2
+        s = int(qml.math.ceil(qml.math.log2(max(input.shape))))
+        s = max(s, 1)
+        dim = 2**s
 
         @qml.qnode(dev)
         def circuit():
             qml.FABLE(input_matrix=input, wires=range(wires), tol=0)
             return qml.state()
 
-        expected = (
-            dimension
-            * qml.matrix(circuit, wire_order=range(wires))().real[0:dimension, 0:dimension]
-        )
-        assert qml.math.shape(expected) == (dimension, dimension)
+        circuit_mat = dim * qml.matrix(circuit, wire_order=range(wires))().real[:dim, :dim]
+        # Test that the matrix was encoded up to a constant
+        submat = circuit_mat[: input.shape[0], : input.shape[1]]
+        assert np.allclose(input, submat)

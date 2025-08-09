@@ -16,15 +16,16 @@ This module contains the qml.matrix function.
 """
 from functools import partial
 
-# pylint: disable=protected-access,too-many-branches
-from typing import Callable, Sequence, Union
-
 import pennylane as qml
 from pennylane import transform
+from pennylane.exceptions import MatrixUndefinedError, TransformError
 from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
-from pennylane.transforms import TransformError
-from pennylane.typing import TensorLike
+from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.typing import PostprocessingFn, TensorLike
+
+# pylint: disable=too-many-branches
 
 
 def catalyst_qjit(qnode):
@@ -32,8 +33,11 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
-def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
-    r"""The matrix representation of an operation or quantum circuit.
+def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorLike:
+    r"""The dense matrix representation of an operation or quantum circuit.
+
+    .. note::
+        This method always returns a dense matrix. For workflows with sparse objects, consider using :func:`~pennylane.operation.Operator.sparse_matrix`.
 
     Args:
         op (Operator or QNode or QuantumTape or Callable or PauliWord or PauliSentence): A quantum operator or quantum circuit.
@@ -195,11 +199,13 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
                 )
             return op.to_mat(wire_order=wire_order)
 
-        if isinstance(op, qml.tape.QuantumScript):
-            if wire_order is None and len(op.wires) > 1:
-                raise ValueError(
-                    "wire_order is required by qml.matrix() for tapes with more than one wire."
-                )
+        if isinstance(op, QuantumScript):
+            if wire_order is None:
+                error_base_str = "wire_order is required by qml.matrix() for tapes"
+                if len(op.wires) > 1:
+                    raise ValueError(error_base_str + " with more than one wire.")
+                if len(op.wires) == 0:
+                    raise ValueError(error_base_str + " without wires.")
 
         elif isinstance(op, qml.QNode):
             if wire_order is None and op.device.wires is None:
@@ -217,25 +223,30 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
 
         return _matrix_transform(op, wire_order=wire_order)
 
-    if isinstance(op, qml.operation.Tensor) and wire_order is not None:
-        op = 1.0 * op  # convert to a Hamiltonian
-
-    if isinstance(op, qml.ops.Hamiltonian):
-
-        return op.sparse_matrix(wire_order=wire_order).toarray()
-
-    try:
+    # Starting from now, op is an Operator
+    # Validate wire_order
+    if wire_order and not set(op.wires).issubset(wire_order):
+        raise TransformError(
+            f"Wires in circuit {list(op.wires)} are inconsistent with "
+            f"those in wire_order {list(wire_order)}"
+        )
+    if op.has_matrix:
         return op.matrix(wire_order=wire_order)
-    except:  # pylint: disable=bare-except
-        return matrix(op.expand(), wire_order=wire_order or op.wires)
+    if op.has_sparse_matrix:
+        return op.sparse_matrix(wire_order=wire_order).todense()
+    if op.has_decomposition:
+        with QueuingManager.stop_recording():
+            ops = op.decomposition()
+        return matrix(QuantumScript(ops), wire_order=wire_order or op.wires)
+    raise MatrixUndefinedError(
+        "Operator must define a matrix, sparse matrix, or decomposition for use with qml.matrix."
+    )
 
 
 @partial(transform, is_informative=True)
 def _matrix_transform(
-    tape: qml.tape.QuantumTape, wire_order=None, **kwargs
-) -> (Sequence[qml.tape.QuantumTape], Callable):
-    if not tape.wires:
-        raise qml.operation.MatrixUndefinedError
+    tape: QuantumScript, wire_order=None, **kwargs
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
     if wire_order and not set(tape.wires).issubset(wire_order):
         raise TransformError(

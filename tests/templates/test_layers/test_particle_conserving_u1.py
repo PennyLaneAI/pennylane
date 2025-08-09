@@ -90,7 +90,7 @@ class TestDecomposition:
         nm_wires += [wires[l : l + 2] for l in range(1, qubits - 1, 2)]
 
         op = qml.ParticleConservingU1(weights, wires, init_state=np.array([1, 1, 0, 0]))
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert gate_count == len(queue)
 
@@ -119,9 +119,9 @@ class TestDecomposition:
                     if exp_gate is qml.CRot:
                         if j < idx_CRot:
                             exp_params = [-phi, np.pi, phi]
-                        if j > idx_CRot:
+                        elif j > idx_CRot:
                             exp_params = [phi, np.pi, -phi]
-                        if j == idx_CRot:
+                        else:
                             exp_params = [0, 2 * theta, 0]
 
                         assert queue[idx].parameters == exp_params
@@ -358,6 +358,32 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weights = jnp.array(np.random.random(size=(1, 1, 2)))
+
+        dev = qml.device("default.qubit", wires=2)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

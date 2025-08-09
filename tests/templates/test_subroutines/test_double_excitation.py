@@ -203,7 +203,7 @@ class TestDecomposition:
         cnots = 16 * (len(wires1) - 1 + len(wires2) - 1 + 1)
         weight = np.pi / 3
         op = qml.FermionicDoubleExcitation(weight, wires1=wires1, wires2=wires2)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert len(queue) == sqg + cnots
 
@@ -322,6 +322,26 @@ class TestInterfaces:
 
         # check that the gradient is computed without error
         grad_fn(weight)
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        """Test the template compiles with JAX JIT."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weight = jnp.array(0.5)
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        assert qml.math.allclose(circuit(weight), circuit2(weight))
+
+        grad_fn = jax.grad(circuit)
+        grad_fn2 = jax.grad(circuit2)
+
+        assert qml.math.allclose(grad_fn(weight), grad_fn2(weight))
 
     @pytest.mark.tf
     def test_tf(self):

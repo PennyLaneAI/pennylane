@@ -15,12 +15,13 @@
 Contains the quantum_monte_carlo transform.
 """
 from copy import copy
-from typing import Callable, Sequence
 
 import pennylane as qml
 from pennylane import CZ, Hadamard, MultiControlledX, PauliX, adjoint
+from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.templates import QFT
 from pennylane.transforms.core import transform
+from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
 
@@ -81,8 +82,8 @@ def _apply_controlled_v(target_wire, control_wire):
 
 @transform
 def apply_controlled_Q(
-    tape: qml.tape.QuantumTape, wires, target_wire, control_wire, work_wires
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+    tape: QuantumScript, wires, target_wire, control_wire, work_wires
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Applies the transform that performs a controlled version of the :math:`\mathcal{Q}` unitary
     defined in `this <https://arxiv.org/abs/1805.00109>`__ paper.
 
@@ -144,14 +145,14 @@ def apply_controlled_Q(
         )
         updated_operations.extend(operations)
 
-    tape = type(tape)(updated_operations, tape.measurements, shots=tape.shots)
+    tape = tape.copy(operations=updated_operations)
     return [tape], lambda x: x[0]
 
 
 @transform
 def quantum_monte_carlo(
-    tape: qml.tape.QuantumTape, wires, target_wire, estimation_wires
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+    tape: QuantumScript, wires, target_wire, estimation_wires
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Applies the transform
     `quantum Monte Carlo estimation <https://arxiv.org/abs/1805.00109>`__ algorithm.
 
@@ -336,7 +337,7 @@ def quantum_monte_carlo(
         It is also possible to explore the resources required to perform the quantum Monte Carlo
         algorithm
 
-        >>> qml.specs(qmc, expansion_strategy="device")()
+        >>> qml.specs(qmc, level="device")()
         {'resources': Resources(
             num_wires=12,
             num_gates=31882,
@@ -348,7 +349,6 @@ def quantum_monte_carlo(
          'num_trainable_params': 15433,
          'num_device_wires': 12,
          'device_name': 'default.qubit',
-         'expansion_strategy': 'gradient',
          'gradient_options': {},
          'interface': 'auto',
          'diff_method': 'best',
@@ -384,5 +384,5 @@ def quantum_monte_carlo(
                 updated_operations.extend(tape_q.operations)
 
         updated_operations.append(adjoint(QFT(wires=estimation_wires), lazy=False))
-    updated_tape = type(tape)(updated_operations, tape.measurements, shots=tape.shots)
+    updated_tape = tape.copy(operations=updated_operations)
     return [updated_tape], lambda x: x[0]

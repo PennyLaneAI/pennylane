@@ -15,7 +15,8 @@
 Contains the switches to (de)activate the capturing mechanism, and a
 status reporting function on whether it is enabled or not.
 """
-from typing import Callable
+from collections.abc import Callable
+from contextlib import contextmanager
 
 has_jax = True
 try:
@@ -24,7 +25,7 @@ except ImportError:
     has_jax = False
 
 
-def _make_switches() -> [Callable[[], None], Callable[[], None], Callable[[], bool]]:
+def _make_switches() -> tuple[Callable[[], None], Callable[[], None], Callable[[], bool]]:
     r"""Create three functions, corresponding to an activation switch, a deactivation switch
     and a status query, in that order.
 
@@ -62,3 +63,22 @@ def _make_switches() -> [Callable[[], None], Callable[[], None], Callable[[], bo
 
 
 enable, disable, enabled = _make_switches()
+
+
+@contextmanager
+def pause():
+    """Temporarily stop program capture.
+
+    >>> def f():
+    ...     with qml.capture.pause():
+    ...         qml.X(0)
+    ...     return 2
+    >>> jax.make_jaxpr(f)()
+    { lambda ; . let  in (2,) }
+
+    """
+    disable()
+    try:
+        yield
+    finally:
+        enable()

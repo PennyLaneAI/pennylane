@@ -18,14 +18,13 @@ Unit tests for the :mod:`pennylane.plugin.DefaultQutrit` device.
 import math
 
 import pytest
-from flaky import flaky
 from gate_data import GELL_MANN, OMEGA, TADD, TCLOCK, TSHIFT, TSWAP
 from scipy.stats import unitary_group
 
 import pennylane as qml
-from pennylane import DeviceError
 from pennylane import numpy as np
-from pennylane.wires import WireError, Wires
+from pennylane.exceptions import DeviceError, WireError
+from pennylane.wires import Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
@@ -44,10 +43,7 @@ def test_analytic_deprecation():
     msg = "The analytic argument has been replaced by shots=None. "
     msg += "Please use shots=None instead of analytic=True."
 
-    with pytest.raises(
-        DeviceError,
-        match=msg,
-    ):
+    with pytest.raises(DeviceError, match=msg):
         qml.device("default.qutrit", wires=1, shots=1, analytic=True)
 
 
@@ -56,7 +52,8 @@ def test_dtype_errors():
     with pytest.raises(DeviceError, match="Real datatype must be a floating point type."):
         qml.device("default.qutrit", wires=1, r_dtype=np.complex128)
     with pytest.raises(
-        DeviceError, match="Complex datatype must be a complex floating point type."
+        DeviceError,
+        match="Complex datatype must be a complex floating point type.",
     ):
         qml.device("default.qutrit", wires=1, c_dtype=np.float64)
 
@@ -100,13 +97,17 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have no parameters."""
 
-        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.target_device._state = np.array(
+            input, dtype=qutrit_device_1_wire.C_DTYPE
+        )
         qutrit_device_1_wire.apply(
             [operation(wires=[0]) if subspace is None else operation(wires=[0], subspace=subspace)]
         )
 
-        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
-        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+        assert np.allclose(
+            qutrit_device_1_wire.target_device._state, np.array(expected_output), atol=tol, rtol=0
+        )
+        assert qutrit_device_1_wire.target_device._state.dtype == qutrit_device_1_wire.C_DTYPE
 
     @pytest.mark.parametrize("operation, expected_output, input, subspace", test_data_no_parameters)
     def test_apply_operation_single_wire_no_parameters_adjoint(
@@ -114,7 +115,9 @@ class TestApply:
     ):
         """Tests that applying an adjoint operation yields the expected output state for single wire
         operations that have no parameters."""
-        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.target_device._state = np.array(
+            input, dtype=qutrit_device_1_wire.C_DTYPE
+        )
         qutrit_device_1_wire.apply(
             [
                 (
@@ -125,8 +128,10 @@ class TestApply:
             ]
         )
 
-        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
-        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+        assert np.allclose(
+            qutrit_device_1_wire.target_device._state, np.array(expected_output), atol=tol, rtol=0
+        )
+        assert qutrit_device_1_wire.target_device._state.dtype == qutrit_device_1_wire.C_DTYPE
 
     test_data_two_wires_no_parameters = [
         (qml.TSWAP, [0, 1, 0, 0, 0, 0, 0, 0, 0], np.array([0, 0, 0, 1, 0, 0, 0, 0, 0]), None),
@@ -171,9 +176,9 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have no parameters."""
 
-        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
-            (3, 3)
-        )
+        qutrit_device_2_wires.target_device._state = np.array(
+            input, dtype=qutrit_device_2_wires.C_DTYPE
+        ).reshape((3, 3))
         qutrit_device_2_wires.apply(
             [
                 (
@@ -185,9 +190,12 @@ class TestApply:
         )
 
         assert np.allclose(
-            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qutrit_device_2_wires.target_device._state.flatten(),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
-        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
+        assert qutrit_device_2_wires.target_device._state.dtype == qutrit_device_2_wires.C_DTYPE
 
     @pytest.mark.parametrize(
         "operation,expected_output,input, subspace", all_two_wires_no_parameters
@@ -197,9 +205,9 @@ class TestApply:
     ):
         """Tests that applying an adjoint operation yields the expected output state for two wire
         operations that have no parameters."""
-        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
-            (3, 3)
-        )
+        qutrit_device_2_wires.target_device._state = np.array(
+            input, dtype=qutrit_device_2_wires.C_DTYPE
+        ).reshape((3, 3))
         qutrit_device_2_wires.apply(
             [
                 (
@@ -211,9 +219,12 @@ class TestApply:
         )
 
         assert np.allclose(
-            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qutrit_device_2_wires.target_device._state.flatten(),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
-        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
+        assert qutrit_device_2_wires.target_device._state.dtype == qutrit_device_2_wires.C_DTYPE
 
     # TODO: Add more data as parametric ops get added
     test_data_single_wire_with_parameters = [
@@ -256,13 +267,17 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for single wire
         operations that have parameters."""
 
-        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.target_device._state = np.array(
+            input, dtype=qutrit_device_1_wire.C_DTYPE
+        )
 
         kwargs = {} if subspace is None else {"subspace": subspace}
         qutrit_device_1_wire.apply([operation(*par, wires=[0], **kwargs)])
 
-        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
-        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+        assert np.allclose(
+            qutrit_device_1_wire.target_device._state, np.array(expected_output), atol=tol, rtol=0
+        )
+        assert qutrit_device_1_wire.target_device._state.dtype == qutrit_device_1_wire.C_DTYPE
 
     @pytest.mark.parametrize(
         "operation, expected_output, input, par, subspace", test_data_single_wire_with_parameters
@@ -273,13 +288,17 @@ class TestApply:
         """Tests that applying an adjoint operation yields the expected output state for single wire
         operations that have parameters."""
 
-        qutrit_device_1_wire._state = np.array(input, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.target_device._state = np.array(
+            input, dtype=qutrit_device_1_wire.C_DTYPE
+        )
 
         kwargs = {} if subspace is None else {"subspace": subspace}
         qutrit_device_1_wire.apply([qml.adjoint(operation(*par, wires=[0], **kwargs))])
 
-        assert np.allclose(qutrit_device_1_wire._state, np.array(expected_output), atol=tol, rtol=0)
-        assert qutrit_device_1_wire._state.dtype == qutrit_device_1_wire.C_DTYPE
+        assert np.allclose(
+            qutrit_device_1_wire.target_device._state, np.array(expected_output), atol=tol, rtol=0
+        )
+        assert qutrit_device_1_wire.target_device._state.dtype == qutrit_device_1_wire.C_DTYPE
 
     # TODO: Add more ops as parametric operations get added
     test_data_two_wires_with_parameters = [
@@ -310,15 +329,18 @@ class TestApply:
         """Tests that applying an operation yields the expected output state for two wire
         operations that have parameters."""
 
-        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
-            (3, 3)
-        )
+        qutrit_device_2_wires.target_device._state = np.array(
+            input, dtype=qutrit_device_2_wires.C_DTYPE
+        ).reshape((3, 3))
         qutrit_device_2_wires.apply([operation(*par, wires=[0, 1])])
 
         assert np.allclose(
-            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qutrit_device_2_wires.target_device._state.flatten(),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
-        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
+        assert qutrit_device_2_wires.target_device._state.dtype == qutrit_device_2_wires.C_DTYPE
 
     @pytest.mark.parametrize(
         "operation,expected_output,input,par", test_data_two_wires_with_parameters
@@ -329,21 +351,26 @@ class TestApply:
         """Tests that applying an adjoint operation yields the expected output state for two wire
         operations that have parameters."""
 
-        qutrit_device_2_wires._state = np.array(input, dtype=qutrit_device_2_wires.C_DTYPE).reshape(
-            (3, 3)
-        )
+        qutrit_device_2_wires.target_device._state = np.array(
+            input, dtype=qutrit_device_2_wires.C_DTYPE
+        ).reshape((3, 3))
         qutrit_device_2_wires.apply([qml.adjoint(operation(*par, wires=[0, 1]))])
 
         assert np.allclose(
-            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qutrit_device_2_wires.target_device._state.flatten(),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
-        assert qutrit_device_2_wires._state.dtype == qutrit_device_2_wires.C_DTYPE
+        assert qutrit_device_2_wires.target_device._state.dtype == qutrit_device_2_wires.C_DTYPE
 
     def test_apply_rotations_one_wire(self, qutrit_device_1_wire):
         """Tests that rotations are applied in correct order after operations"""
 
         state = [1, 0, 0]
-        qutrit_device_1_wire._state = np.array(state, dtype=qutrit_device_1_wire.C_DTYPE)
+        qutrit_device_1_wire.target_device._state = np.array(
+            state, dtype=qutrit_device_1_wire.C_DTYPE
+        )
 
         ops = [
             qml.adjoint(qml.QutritUnitary(TSHIFT, wires=0)),
@@ -356,7 +383,7 @@ class TestApply:
 
         qutrit_device_1_wire.apply(ops, rotations)
 
-        assert np.allclose(qutrit_device_1_wire._state.flatten(), state)
+        assert np.allclose(qutrit_device_1_wire.target_device._state.flatten(), state)
 
     @pytest.mark.parametrize(
         "operation,expected_output,par",
@@ -377,7 +404,10 @@ class TestApply:
         qutrit_device_2_wires.apply([operation(par, wires=[0, 1])])
 
         assert np.allclose(
-            qutrit_device_2_wires._state.flatten(), np.array(expected_output), atol=tol, rtol=0
+            qutrit_device_2_wires.target_device._state.flatten(),
+            np.array(expected_output),
+            atol=tol,
+            rtol=0,
         )
 
     def test_apply_errors_basis_state(self, qutrit_device_2_wires):
@@ -446,7 +476,7 @@ class TestExpval:
         )
 
         qutrit_device_1_wire.reset()
-        qutrit_device_1_wire._state = np.array(state).reshape([3])
+        qutrit_device_1_wire.target_device._state = np.array(state).reshape([3])
         qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
         res = qutrit_device_1_wire.expval(obs)
 
@@ -519,7 +549,7 @@ class TestExpval:
         obs = observable(np.array(mat), wires=[0, 1])
 
         qutrit_device_2_wires.reset()
-        qutrit_device_2_wires._state = np.array(state).reshape([3] * 2)
+        qutrit_device_2_wires.target_device._state = np.array(state).reshape([3] * 2)
         qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
         res = qutrit_device_2_wires.expval(obs)
         assert np.isclose(res, expected_output, atol=tol, rtol=0)
@@ -584,7 +614,7 @@ class TestVar:
         )
 
         qutrit_device_1_wire.reset()
-        qutrit_device_1_wire._state = np.array(state).reshape([3])
+        qutrit_device_1_wire.target_device._state = np.array(state).reshape([3])
         qutrit_device_1_wire.apply([], obs.diagonalizing_gates())
         res = qutrit_device_1_wire.var(obs)
 
@@ -647,7 +677,7 @@ class TestVar:
         obs = observable(np.array(mat), wires=[0, 1])
 
         qutrit_device_2_wires.reset()
-        qutrit_device_2_wires._state = np.array(state).reshape([3] * 2)
+        qutrit_device_2_wires.target_device._state = np.array(state).reshape([3] * 2)
         qutrit_device_2_wires.apply([], obs.diagonalizing_gates())
         res = qutrit_device_2_wires.var(obs)
 
@@ -672,6 +702,16 @@ class TestVar:
 class TestSample:
     """Tests that samples are properly calculated."""
 
+    def test_sample_dtype(self):
+        """Test that if the raw samples are requested, they are of dtype int."""
+
+        dev = qml.device("default.qutrit", wires=1, shots=10)
+
+        tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
+        res = dev.execute(tape)
+        assert qml.math.get_dtype_name(res)[0:3] == "int"
+        assert res.shape == (10,)
+
     def test_sample_dimensions(self):
         """Tests if the samples returned by the sample function have
         the correct dimensions
@@ -684,23 +724,23 @@ class TestSample:
 
         dev.apply([qml.QutritUnitary(TSHIFT, wires=0)])
 
-        dev.shots = 10
-        dev._wires_measured = {0}
-        dev._samples = dev.generate_samples()
+        dev.target_device.shots = 10
+        dev.target_device._wires_measured = {0}
+        dev.target_device._samples = dev.generate_samples()
         s1 = dev.sample(qml.THermitian(np.eye(3), wires=0))
         assert np.array_equal(s1.shape, (10,))
 
         dev.reset()
-        dev.shots = 12
-        dev._wires_measured = {1}
-        dev._samples = dev.generate_samples()
+        dev.target_device.shots = 12
+        dev.target_device._wires_measured = {1}
+        dev.target_device._samples = dev.generate_samples()
         s2 = dev.sample(qml.THermitian(np.eye(3), wires=1))
         assert np.array_equal(s2.shape, (12,))
 
         dev.reset()
-        dev.shots = 17
-        dev._wires_measured = {0, 1}
-        dev._samples = dev.generate_samples()
+        dev.target_device.shots = 17
+        dev.target_device._wires_measured = {0, 1}
+        dev.target_device._samples = dev.generate_samples()
         s3 = dev.sample(qml.THermitian(np.eye(3), wires=0) @ qml.THermitian(np.eye(3), wires=1))
         assert np.array_equal(s3.shape, (17,))
 
@@ -715,8 +755,8 @@ class TestSample:
         dev = qml.device("default.qutrit", wires=2, shots=1000)
 
         dev.apply([qml.QutritUnitary(TSHIFT, wires=0)])
-        dev._wires_measured = {0}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0}
+        dev.target_device._samples = dev.generate_samples()
 
         s1 = dev.sample(qml.THermitian(np.array([[1, 0, 0], [0, 1, 0], [0, 0, -1]]), wires=0))
 
@@ -733,7 +773,7 @@ class TestDefaultQutritIntegration:
         """Test that the device defines the right capabilities"""
 
         dev = qml.device("default.qutrit", wires=1)
-        cap = dev.capabilities()
+        cap = dev.target_device.capabilities()
         capabilities = {
             "model": "qutrit",
             "supports_finite_shots": True,
@@ -1042,8 +1082,8 @@ class TestTensorSample:
             obs.diagonalizing_gates(),
         )
 
-        dev._wires_measured = {0, 1}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0, 1}
+        dev.target_device._samples = dev.generate_samples()
         dev.sample(obs)
 
         state = np.array([[0, 0, 0, 0, 0, 1, 1, 0, 0]]) / np.sqrt(2)
@@ -1063,12 +1103,12 @@ class TestTensorSample:
         )
         assert np.allclose(var, expected, atol=tol_stochastic, rtol=0)
 
-    @flaky(max_runs=3)
     @pytest.mark.parametrize("index", list(range(1, 9)))
-    def test_hermitian(self, index, tol_stochastic):
+    def test_hermitian(self, index, tol_stochastic, seed):
         """Tests that sampling on a tensor product of Hermitian observables with another observable works
         correctly"""
 
+        np.random.seed(seed)
         dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
 
         A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
@@ -1085,8 +1125,8 @@ class TestTensorSample:
             obs.diagonalizing_gates(),
         )
 
-        dev._wires_measured = {0, 1}
-        dev._samples = dev.generate_samples()
+        dev.target_device._wires_measured = {0, 1}
+        dev.target_device._samples = dev.generate_samples()
         dev.sample(obs)
 
         s1 = obs.eigvals()
@@ -1142,7 +1182,7 @@ class TestProbabilityIntegration:
         self.analytic_counter = False
 
         dev = qml.device("default.qutrit", wires=2, shots=1000)
-        monkeypatch.setattr(dev, "analytic_probability", self.mock_analytic_counter)
+        monkeypatch.setattr(dev.target_device, "analytic_probability", self.mock_analytic_counter)
 
         # generate samples through `generate_samples` (using 'analytic_probability')
         dev.generate_samples()
@@ -1153,7 +1193,7 @@ class TestProbabilityIntegration:
     def test_stateless_analytic_return(self):
         """Test that analytic_probability returns None if device is stateless"""
         dev = qml.device("default.qutrit", wires=2)
-        dev._state = None
+        dev.target_device._state = None
 
         assert dev.analytic_probability() is None
 
@@ -1314,7 +1354,7 @@ class TestApplyOperationUnit:
             def compute_matrix(*params, **hyperparams):
                 return TSWAP
 
-        dev.operations.add("TestSwap")
+        dev.target_device.operations.add("TestSwap")
         op = TestSwap(wires=wires)
 
         assert op.name in dev.operations
@@ -1327,7 +1367,7 @@ class TestApplyOperationUnit:
             history.append((state, matrix, wires))
 
         with monkeypatch.context() as m:
-            m.setattr(dev, "_apply_unitary", mock_apply_tensordot)
+            m.setattr(dev.target_device, "_apply_unitary", mock_apply_tensordot)
 
             dev._apply_operation(test_state, op)
 
@@ -1368,12 +1408,14 @@ class TestApplyOperationUnit:
         with monkeypatch.context() as m:
             # Set the internal ops implementations dict
             m.setattr(
-                dev, "_apply_ops", {"QutritUnitary": lambda *args, **kwargs: expected_test_output}
+                dev.target_device,
+                "_apply_ops",
+                {"QutritUnitary": lambda *args, **kwargs: expected_test_output},
             )
 
             test_state = np.array([1, 0, 0])
             op = qml.QutritUnitary(TSHIFT, wires=0)
-            spy_unitary = mocker.spy(dev, "_apply_unitary")
+            spy_unitary = mocker.spy(dev.target_device, "_apply_unitary")
 
             res = dev._apply_operation(test_state, op)
             assert np.allclose(res, expected_test_output)
@@ -1435,7 +1477,6 @@ class TestQNodeIntegrationJax:
 
         expected = -np.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol, use_jit):
@@ -1627,7 +1668,6 @@ class TestQNodeIntegrationTF:
 
         expected = -np.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):
@@ -1808,7 +1848,6 @@ class TestQNodeIntegrationTorch:
 
         expected = -np.sin(p)
 
-        assert circuit.gradient_fn == "backprop"
         assert np.isclose(circuit(p), expected, atol=tol, rtol=0)
 
     def test_correct_state(self, tol):

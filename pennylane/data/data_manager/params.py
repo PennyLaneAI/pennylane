@@ -15,11 +15,10 @@
 Contains types and functions for dataset parameters.
 """
 
-
 import enum
-import typing
+from collections.abc import Iterable, Iterator, Mapping
 from functools import lru_cache
-from typing import Any, Dict, FrozenSet, Iterable, List, Tuple, Union
+from typing import Any, Union
 
 
 class ParamArg(enum.Enum):
@@ -34,7 +33,7 @@ class ParamArg(enum.Enum):
 
     @classmethod
     @lru_cache(maxsize=1)
-    def values(cls) -> FrozenSet[str]:
+    def values(cls) -> frozenset[str]:
         """Returns all values."""
         return frozenset(arg.value for arg in cls)
 
@@ -44,7 +43,7 @@ class ParamArg(enum.Enum):
         of its values."""
         return isinstance(val, ParamArg) or (isinstance(val, str) and val in cls.values())
 
-    def __str__(self) -> str:  # pylint: disable=invalid-str-returned
+    def __str__(self) -> str:
         return self.value
 
 
@@ -57,18 +56,18 @@ ParamName = str
 ParamVal = str
 
 
-class Description(typing.Mapping[ParamName, ParamVal]):
+class Description(Mapping[ParamName, ParamVal]):
     """An immutable and hashable dictionary that contains all the parameter
     values for a dataset."""
 
-    def __init__(self, params: typing.Iterable[Tuple[ParamName, ParamVal]]):
+    def __init__(self, params: Iterable[tuple[ParamName, ParamVal]]):
         self.__data = dict(params)
         self.__hash = None
 
     def __getitem__(self, __key: ParamName) -> ParamVal:
         return self.__data[__key]
 
-    def __iter__(self) -> typing.Iterator[ParamName]:
+    def __iter__(self) -> Iterator[ParamName]:
         return iter(self.__data)
 
     def __len__(self) -> int:
@@ -88,7 +87,7 @@ class Description(typing.Mapping[ParamName, ParamVal]):
 
 
 # pylint:disable=too-many-branches
-def format_param_args(param: ParamName, details: Any) -> Union[ParamArg, List[ParamVal]]:
+def format_param_args(param: ParamName, details: Any) -> ParamArg | list[ParamVal]:
     """Ensures each user-inputted parameter is a properly typed list.
     Also provides custom support for certain parameters."""
     if not isinstance(details, list):
@@ -127,9 +126,36 @@ def format_param_args(param: ParamName, details: Any) -> Union[ParamArg, List[Pa
     return details
 
 
-def format_params(**params: Any) -> Dict[ParamName, Union[ParamArg, ParamVal]]:
-    """Converts params to a dictionary whose keys are parameter names and
-    whose values are single ``ParamaterArg`` objects or lists of parameter values."""
-    return {
+def format_params(**params: Any) -> list[dict[str:ParamName, str : ParamArg | ParamVal]]:
+    """Converts params to a list of dictionaries whose values are parameter names and
+    single ``ParamaterArg`` objects or lists of parameter values."""
+
+    input_params = {
         param_name: format_param_args(param_name, param) for param_name, param in params.items()
     }
+    return [{"name": k, "values": v} for k, v in input_params.items()]
+
+
+def provide_defaults(
+    data_name: str, params: list[dict[str:ParamName, str : ParamArg | ParamVal]]
+) -> list[dict[str:ParamName, str : ParamArg | ParamVal]]:
+    """
+    Provides default parameters to the qchem and qspin query parameters if the parameter
+    names are missing from the provided ``params``.
+    """
+    param_names = [param["name"] for param in params]
+    if data_name == "qchem":
+        if "basis" not in param_names:
+            params.append({"default": True, "name": "basis"})
+        if "bondlength" not in param_names:
+            params.append({"default": True, "name": "bondlength"})
+
+    if data_name == "qspin":
+        if "periodicity" not in param_names:
+            params.append({"default": True, "name": "periodicity"})
+        if "lattice" not in param_names:
+            params.append({"default": True, "name": "lattice"})
+        if "layout" not in param_names:
+            params.append({"default": True, "name": "layout"})
+
+    return params

@@ -60,7 +60,7 @@ Operator to Operator functions
     ~pennylane.map_wires
     ~pennylane.dot
     ~pennylane.evolve
-    ~pennylane.iterative_qpe
+    ~pennylane.simplify
 
 These operator functions act on operators to produce new operators.
 
@@ -68,7 +68,7 @@ These operator functions act on operators to produce new operators.
 >>> op = qml.sum(qml.Hadamard(0), op)
 >>> op = qml.s_prod(1.2, op)
 >>> op
-1.2 * (Hadamard(wires=[0]) + X(0) @ Z(1))
+1.2 * (H(0) + X(0) @ Z(1))
 
 Operator to Other functions
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -80,7 +80,8 @@ Operator to Other functions
     ~pennylane.is_commuting
     ~pennylane.is_hermitian
     ~pennylane.is_unitary
-    ~pennylane.simplify
+    ~pennylane.iterative_qpe
+
 
 These operator functions act on operators and return other data types.
 All operator functions can be used on instantiated operators.
@@ -508,6 +509,8 @@ Qutrit noisy channels
 
     ~pennylane.QutritDepolarizingChannel
     ~pennylane.QutritAmplitudeDamping
+    ~pennylane.TritFlip
+    ~pennylane.QutritChannel
 
 :html:`</div>`
 

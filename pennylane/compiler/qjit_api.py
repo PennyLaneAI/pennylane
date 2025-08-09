@@ -13,13 +13,9 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
-from .compiler import (
-    AvailableCompilers,
-    CompileError,
-    _check_compiler_version,
-    active_compiler,
-    available,
-)
+from pennylane.exceptions import CompileError
+
+from .compiler import AvailableCompilers, _check_compiler_version, available
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg
@@ -39,14 +35,14 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
 
     .. note::
 
-        Catalyst supports compiling QNodes that use ``lightning.qubit``,
-        ``lightning.kokkos``, ``braket.local.qubit``, and ``braket.aws.qubit``
-        devices. It does not support ``default.qubit``.
+        Catalyst only supports the JAX interface and selected devices.
+        Supported backend devices for Catalyst include
+        ``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
+        but **not** ``default.qubit``.
 
-        Please see the :doc:`Catalyst documentation <catalyst:index>` for more details on
-        supported devices, operations, and measurements.
+        For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
-        CUDA Quantum supports ``softwareq.qpp``, ``nvidida.custatevec``, and ``nvidia.cutensornet``.
+        CUDA Quantum supports ``softwareq.qpp``, ``nvidia.custatevec``, and ``nvidia.cutensornet``.
 
     Args:
         fn (Callable): Hybrid (quantum-classical) function to compile
@@ -70,7 +66,7 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
             elements of this list are named sequences of MLIR passes to be executed. A ``None``
             value (the default) results in the execution of the default pipeline. This option is
             considered to be used by advanced users for low-level debugging purposes.
-        static_argnums(int or Seqence[Int]): an index or a sequence of indices that specifies the
+        static_argnums(int or Sequence[Int]): an index or a sequence of indices that specifies the
             positions of static arguments.
         abstracted_axes (Sequence[Sequence[str]] or Dict[int, str] or Sequence[Dict[int, str]]):
             An experimental option to specify dynamic tensor shapes.
@@ -299,173 +295,3 @@ def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keywo
     compilers = AvailableCompilers.names_entrypoints
     qjit_loader = compilers[compiler]["qjit"].load()
     return qjit_loader(fn=fn, *args, **kwargs)
-
-
-def while_loop(cond_fn):
-    """A :func:`~.qjit` compatible while-loop for PennyLane programs.
-
-    .. note::
-
-        This function only supports the Catalyst compiler. See
-        :func:`catalyst.while_loop` for more details.
-
-        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-        page for an overview of the differences between Catalyst and PennyLane.
-
-    This decorator provides a functional version of the traditional while
-    loop, similar to `jax.lax.while_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.while_loop.html>`__.
-    That is, any variables that are modified across iterations need to be provided as
-    inputs and outputs to the loop body function:
-
-    - Input arguments contain the value of a variable at the start of an
-      iteration
-
-    - Output arguments contain the value at the end of the iteration. The
-      outputs are then fed back as inputs to the next iteration.
-
-    The final iteration values are also returned from the
-    transformed function.
-
-    The semantics of ``while_loop`` are given by the following Python pseudo-code:
-
-    .. code-block:: python
-
-        def while_loop(cond_fn, body_fn, *args):
-            while cond_fn(*args):
-                args = body_fn(*args)
-            return args
-
-    Args:
-        cond_fn (Callable): the condition function in the while loop
-
-    Returns:
-        Callable: A wrapper around the while-loop function.
-
-    Raises:
-        CompileError: if the compiler is not installed
-
-    .. seealso:: :func:`~.for_loop`, :func:`~.qjit`
-
-    **Example**
-
-    .. code-block:: python
-
-        dev = qml.device("lightning.qubit", wires=1)
-
-        @qml.qjit
-        @qml.qnode(dev)
-        def circuit(x: float):
-
-            @qml.while_loop(lambda x: x < 2.0)
-            def loop_rx(x):
-                # perform some work and update (some of) the arguments
-                qml.RX(x, wires=0)
-                return x ** 2
-
-            # apply the while loop
-            final_x = loop_rx(x)
-
-            return qml.expval(qml.Z(0)), final_x
-
-    >>> circuit(1.6)
-    (array(-0.02919952), array(2.56))
-    """
-
-    if active_jit := active_compiler():
-        compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.while_loop(cond_fn)
-
-    raise CompileError("There is no active compiler package.")  # pragma: no cover
-
-
-def for_loop(lower_bound, upper_bound, step):
-    """A :func:`~.qjit` compatible for-loop for PennyLane programs.
-
-    .. note::
-
-        This function only supports the Catalyst compiler. See
-        :func:`catalyst.for_loop` for more details.
-
-        Please see the Catalyst :doc:`quickstart guide <catalyst:dev/quick_start>`,
-        as well as the :doc:`sharp bits and debugging tips <catalyst:dev/sharp_bits>`
-        page for an overview of the differences between Catalyst and PennyLane.
-
-    This decorator provides a functional version of the traditional
-    for-loop, similar to `jax.cond.fori_loop <https://jax.readthedocs.io/en/latest/_autosummary/jax.lax.fori_loop.html>`__.
-    That is, any variables that are modified across iterations need to be provided
-    as inputs/outputs to the loop body function:
-
-    - Input arguments contain the value of a variable at the start of an
-      iteration.
-
-    - output arguments contain the value at the end of the iteration. The
-      outputs are then fed back as inputs to the next iteration.
-
-    The final iteration values are also returned from the transformed
-    function.
-
-    The semantics of ``for_loop`` are given by the following Python pseudo-code:
-
-    .. code-block:: python
-
-        def for_loop(lower_bound, upper_bound, step, loop_fn, *args):
-            for i in range(lower_bound, upper_bound, step):
-                args = loop_fn(i, *args)
-            return args
-
-    Unlike ``jax.cond.fori_loop``, the step can be negative if it is known at tracing time
-    (i.e., constant). If a non-constant negative step is used, the loop will produce no iterations.
-
-    Args:
-        lower_bound (int): starting value of the iteration index
-        upper_bound (int): (exclusive) upper bound of the iteration index
-        step (int): increment applied to the iteration index at the end of each iteration
-
-    Returns:
-        Callable[[int, ...], ...]: A wrapper around the loop body function.
-        Note that the loop body function must always have the iteration index as its first
-        argument, which can be used arbitrarily inside the loop body. As the value of the index
-        across iterations is handled automatically by the provided loop bounds, it must not be
-        returned from the function.
-
-    Raises:
-        CompileError: if the compiler is not installed
-
-    .. seealso:: :func:`~.while_loop`, :func:`~.qjit`
-
-    **Example**
-
-
-    .. code-block:: python
-
-        dev = qml.device("lightning.qubit", wires=1)
-
-        @qml.qjit
-        @qml.qnode(dev)
-        def circuit(n: int, x: float):
-
-            @qml.for_loop(0, n, 1)
-            def loop_rx(i, x):
-                # perform some work and update (some of) the arguments
-                qml.RX(x, wires=0)
-
-                # update the value of x for the next iteration
-                return jnp.sin(x)
-
-            # apply the for loop
-            final_x = loop_rx(x)
-
-            return qml.expval(qml.Z(0)), final_x
-
-    >>> circuit(7, 1.6)
-    (array(0.97926626), array(0.55395718))
-    """
-
-    if active_jit := active_compiler():
-        compilers = AvailableCompilers.names_entrypoints
-        ops_loader = compilers[active_jit]["ops"].load()
-        return ops_loader.for_loop(lower_bound, upper_bound, step)
-
-    raise CompileError("There is no active compiler package.")  # pragma: no cover

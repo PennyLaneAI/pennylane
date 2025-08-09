@@ -1,4 +1,3 @@
-:orphan:
 
 # Release 0.27.0
 
@@ -196,7 +195,7 @@
   ```
 
   For a detailed breakdown of its implementation, check out the [Adaptive circuits for quantum chemistry
-  demo](https://pennylane.ai/qml/demos/tutorial_adaptive_circuits.html).
+  demo](https://pennylane.ai/qml/demos/tutorial_adaptive_circuits).
 
 <h4>Automatic interface detection 🧩</h4>
 

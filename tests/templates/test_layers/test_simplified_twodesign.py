@@ -64,7 +64,7 @@ class TestDecomposition:
         initial_layer = np.random.randn(n_wires)
 
         op = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for i, gate in enumerate(queue):
             assert gate.name == expected_names[i]
@@ -81,7 +81,7 @@ class TestDecomposition:
         weights = np.random.randn(*shape_weights)
 
         op = qml.SimplifiedTwoDesign(initial_layer, weights, wires=range(n_wires))
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         # test the device parameters
         for _ in range(n_layers):
@@ -283,6 +283,33 @@ class TestInterfaces:
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
         assert np.allclose(grads[1], grads2[1], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weights = jnp.array(np.random.random(size=(1, 2, 2)))
+        initial_weights = jnp.array(np.random.random(size=(3,)))
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(initial_weights, weights)
+        res2 = circuit2(initial_weights, weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(initial_weights, weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(initial_weights, weights)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

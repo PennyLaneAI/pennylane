@@ -195,40 +195,28 @@ H0 = qml.Hamiltonian([1.0, 1.0], [qml.PauliZ(0) @ qml.PauliZ(1), qml.PauliX(0) @
 
 shot_testing_combos = [
     # expval combinations
-    ([qml.expval(qml.PauliX(0))], 1, 10),
-    ([qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))], 2, 20),
+    ([qml.expval(qml.X(0))], 1, 10),
+    ([qml.expval(qml.X(0)), qml.expval(qml.Y(0))], 2, 20),
     # Hamiltonian test cases
-    ([qml.expval(qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)]))], 2, 20),
-    (
-        [qml.expval(qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliX(1)], grouping_type="qwc"))],
-        1,
-        10,
-    ),
-    (
-        [qml.expval(qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.PauliY(0)], grouping_type="qwc"))],
-        2,
-        20,
-    ),
+    ([qml.expval(qml.Hamiltonian([1, 0.5, 1], [qml.X(0), qml.Y(0), qml.X(1)]))], 2, 20),
+    ([qml.expval(qml.Hamiltonian([1, 1], [qml.X(0), qml.X(1)], grouping_type="qwc"))], 1, 10),
+    ([qml.expval(qml.Hamiltonian([1, 1], [qml.X(0), qml.Y(0)], grouping_type="qwc"))], 2, 20),
     # op arithmetic test cases
-    ([qml.expval(qml.sum(qml.PauliX(0), qml.PauliY(0)))], 2, 20),
-    ([qml.expval(qml.sum(qml.PauliX(0), qml.PauliX(0) @ qml.PauliX(1)))], 1, 10),
-    ([qml.expval(qml.sum(qml.PauliX(0), qml.Hadamard(0)))], 2, 20),
-    (
-        [qml.expval(qml.sum(qml.PauliX(0), qml.PauliY(1) @ qml.PauliX(1), grouping_type="qwc"))],
-        1,
-        10,
-    ),
+    ([qml.expval(qml.sum(qml.X(0), qml.Y(0)))], 2, 20),
+    ([qml.expval(qml.sum(qml.X(0), qml.X(0) @ qml.X(1)))], 1, 10),
+    ([qml.expval(qml.sum(qml.X(0), qml.Hadamard(0)))], 2, 20),
+    ([qml.expval(qml.sum(qml.X(0), qml.Y(1) @ qml.X(1), grouping_type="qwc"))], 1, 10),
     (
         [
-            qml.expval(qml.prod(qml.PauliX(0), qml.PauliX(1))),
-            qml.expval(qml.prod(qml.PauliX(1), qml.PauliX(2))),
+            qml.expval(qml.prod(qml.X(0), qml.X(1))),
+            qml.expval(qml.prod(qml.X(1), qml.X(2))),
         ],
         1,
         10,
     ),
     # computational basis measurements
     ([qml.probs(wires=(0, 1)), qml.sample(wires=(0, 1))], 1, 10),
-    ([qml.probs(wires=(0, 1)), qml.sample(wires=(0, 1)), qml.expval(qml.PauliX(0))], 2, 20),
+    ([qml.probs(wires=(0, 1)), qml.sample(wires=(0, 1)), qml.expval(qml.X(0))], 2, 20),
     # classical shadows
     ([qml.shadow_expval(H0)], 10, 10),
     ([qml.shadow_expval(H0), qml.probs(wires=(0, 1))], 11, 20),

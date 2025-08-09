@@ -130,20 +130,31 @@ class TestPowMethod:
         """
         # When raising to power == 1 mod 3
         with qml.queuing.AnnotatedQueue() as q:
-            op_pow_1 = op.pow(1 + offset)[0]
+            op_pow_1 = op.pow(1 + offset)
 
-        assert q.queue[0] is op_pow_1
-        assert qml.equal(op_pow_1, op)
+        assert len(q.queue) == 1
+        assert len(op_pow_1) == 1
+
+        assert q.queue[0] is op_pow_1[0]
+        qml.assert_equal(op_pow_1[0], op)
 
     @pytest.mark.parametrize("op", period_three_ops)
-    @pytest.mark.parametrize("offset", (0, 3))
+    @pytest.mark.parametrize("offset", (-6, -3, 0, 3, 6))
     def test_period_three_ops_pow_offset_2(self, op, offset):
-        """Tests that ops with a period ==3 raise a PowUndefinedError when raised
-        to a power that is 2+multiple of three."""
-
+        """Tests that ops with a period == 3 return two queued copies of themselves when
+        raised to a power that is 2+multiple of three.
+        """
         # When raising to power == 2 mod 3
-        with pytest.raises(qml.operation.PowUndefinedError):
-            op.pow(2 + offset)
+        with qml.queuing.AnnotatedQueue() as q:
+            op_pow_2 = op.pow(2 + offset)
+
+        assert len(q.queue) == 2
+        assert len(op_pow_2) == 2
+
+        assert q.queue[0] is op_pow_2[0]
+        assert q.queue[1] is op_pow_2[1]
+        qml.assert_equal(op_pow_2[0], op)
+        qml.assert_equal(op_pow_2[1], op)
 
     @pytest.mark.parametrize("op", period_three_ops + period_two_ops)
     def test_period_two_three_noninteger_power(self, op):
@@ -158,7 +169,7 @@ class TestPowMethod:
         integer powers"""
 
         assert len(op.pow(0 + offset)) == 0
-        assert qml.equal(op.pow(1 + offset)[0], op)
+        qml.assert_equal(op.pow(1 + offset)[0], op)
 
     @pytest.mark.parametrize("op", no_pow_method_ops)
     def test_no_pow_ops(self, op):
@@ -168,7 +179,7 @@ class TestPowMethod:
         assert len(op_pow) == 1
         assert op_pow[0].__class__ == op.__class__
 
-        pows = [0.1, 2, -2, -2.5]
+        pows = [0.1, -2.5]
 
         for pow in pows:
             with pytest.raises(qml.operation.PowUndefinedError):
@@ -237,5 +248,5 @@ def test_adjoint_method_involution(op):
     assert op.has_adjoint
 
     adj_op = op.adjoint()
-    assert qml.equal(adj_op, op)
+    qml.assert_equal(adj_op, op)
     assert adj_op is not op

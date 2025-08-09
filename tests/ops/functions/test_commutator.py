@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.operation import Operator
-from pennylane.ops import SProd, Sum
+from pennylane.ops import SProd
 from pennylane.pauli import PauliSentence, PauliWord
 
 X, Y, Z, Id = qml.PauliX, qml.PauliY, qml.PauliZ, qml.Identity
@@ -46,33 +46,6 @@ def _id(p):
     return p
 
 
-class TestLegacySupport:
-    """Test support for legacy operator classes like Tensor and Hamiltonian"""
-
-    def test_Hamiltonian_single(self):
-        """Test that Hamiltonians get transformed to new operator classes and return the correct result"""
-        H1 = qml.Hamiltonian([1.0], [qml.PauliX(0)])
-        H2 = qml.Hamiltonian([1.0], [qml.PauliY(0)])
-        res = qml.commutator(H1, H2)
-        true_res = qml.s_prod(2j, qml.PauliZ(0))
-        assert isinstance(res, SProd)
-        assert true_res == res
-
-    def test_Hamiltonian_sum(self):
-        """Test that Hamiltonians with Tensors and sums get transformed to new operator classes and return the correct result"""
-        H1 = qml.Hamiltonian([1.0], [qml.PauliX(0) @ qml.PauliX(1)])
-        H2 = qml.Hamiltonian([1.0], [qml.PauliY(0) + qml.PauliY(1)])
-        true_res = qml.sum(
-            qml.s_prod(2j, qml.PauliZ(0) @ qml.PauliX(1)),
-            qml.s_prod(2j, qml.PauliX(0) @ qml.PauliZ(1)),
-        )
-        res = qml.commutator(H1, H2).simplify()
-        assert isinstance(res, Sum)
-        assert qml.equal(
-            true_res, res
-        )  # issue https://github.com/PennyLaneAI/pennylane/issues/5060 as well as potential fix https://github.com/PennyLaneAI/pennylane/pull/5037
-
-
 def test_alias():
     """Test that the alias qml.comm() works as expected"""
     res1 = qml.comm(X0, Y0)
@@ -94,7 +67,7 @@ def test_no_recording_in_context():
         qml.PauliX(0)
         qml.PauliY(0)
 
-    assert qml.equal(tape, tape2)
+    qml.assert_equal(tape, tape2)
 
 
 def test_no_recording_in_context_with_pauli():
@@ -107,7 +80,7 @@ def test_no_recording_in_context_with_pauli():
     with qml.tape.QuantumTape() as tape2:
         qml.PauliX(0)
 
-    assert qml.equal(tape, tape2)
+    qml.assert_equal(tape, tape2)
 
 
 def test_recording_wanted():
@@ -123,7 +96,7 @@ def test_recording_wanted():
         qml.PauliY(0)
         qml.s_prod(2j, qml.PauliZ(0))
 
-    assert qml.equal(tape, tape2)
+    qml.assert_equal(tape, tape2)
 
 
 class TestcommPauli:

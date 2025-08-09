@@ -49,7 +49,8 @@ def test_standard_validity():
     """Check the operation using the assert_valid function."""
 
     op = qml.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
-    qml.ops.functions.assert_valid(op)
+
+    qml.ops.functions.assert_valid(op, skip_differentiation=True)
 
 
 class TestDecomposition:
@@ -59,10 +60,10 @@ class TestDecomposition:
         """Checks the queue for the default settings."""
 
         op = qml.AmplitudeEmbedding(features=FEATURES[0], wires=range(2))
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == 1
-        assert tape.operations[0].name == "StatePrep"
+        assert tape.operations[0].name == "MottonenStatePreparation"
         assert tape.batch_size is None
 
     def test_expansion_broadcasted(self):
@@ -70,10 +71,10 @@ class TestDecomposition:
 
         op = qml.AmplitudeEmbedding(features=BROADCASTED_FEATURES[0], wires=range(2))
         assert op.batch_size == 3
-        tape = op.expand()
+        tape = qml.tape.QuantumScript(op.decomposition())
 
         assert len(tape.operations) == 1
-        assert tape.operations[0].name == "StatePrep"
+        assert tape.operations[0].name == "MottonenStatePreparation"
         assert tape.batch_size == 3
 
     @pytest.mark.parametrize("normalize", (True, False))
@@ -185,7 +186,7 @@ class TestInputs:
             )
             return [qml.expval(qml.PauliZ(i)) for i in range(n_qubits)]
 
-        with pytest.raises(ValueError, match="Features must be a vector of norm"):
+        with pytest.raises(ValueError, match="The state must be a vector of norm 1.0"):
             circuit(x=not_nrmlzd)
 
     def test_throws_exception_if_features_wrong_shape(self):
@@ -199,7 +200,10 @@ class TestInputs:
             qml.AmplitudeEmbedding(features=x, wires=range(n_qubits))
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Features must be a one-dimensional (tensor|vector)"):
+        with pytest.raises(
+            ValueError,
+            match="State must be a one-dimensional tensor, or two-dimensional with batching;",
+        ):
             circuit(x=[[[1.0, 0.0], [0.0, 0.0]], [[1.0, 0.0], [0.0, 0.0]]])
 
     @pytest.mark.parametrize(
@@ -223,7 +227,7 @@ class TestInputs:
             )
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Features must be of length"):
+        with pytest.raises(ValueError, match="State must be of length"):
             circuit(x=inpt)
 
     @pytest.mark.parametrize("inpt", TOO_MANY_FEATURES + TOO_MANY_BROADCASTED_FEATURES)
@@ -239,7 +243,7 @@ class TestInputs:
             qml.AmplitudeEmbedding(features=x, wires=range(n_qubits), pad_with=0.0, normalize=False)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(ValueError, match="Features must be of length"):
+        with pytest.raises(ValueError, match="Input state must be of length"):
             circuit(x=inpt)
 
     def test_amplitude_embedding_tolerance_value(self):
@@ -302,14 +306,18 @@ def circuit_template(features, pad_with=None, normalize=False):
     return qml.state()
 
 
-def circuit_decomposed(features, pad_with=None):
+def circuit_decomposed(features, pad_with=None, normalize=False):
     """AmplitudeEmbedding circuit reexpressed as manual state preparation.
     This function expects the length of the features to match."""
     num_wires = 3 if pad_with is None else 4
+    if not isinstance(features, (list, tuple)):
+        features = qml.math.cast_like(features, 1.0) if "int" in str(features.dtype) else features
     if pad_with is not None:
         # and need to pad manually in order to double the size of the vector
         # from 8 (3 qubits) to 16 (4 qubits). Also, normalize
+        pad_with = qml.math.cast_like(pad_with, features)
         features = qml.math.hstack([features, qml.math.ones_like(features) * pad_with])
+    if pad_with is not None or normalize:
         shape = qml.math.shape(features)
         norm = qml.math.reshape(qml.math.linalg.norm(features, axis=-1), (*shape[:-1], 1))
         features = features / norm
@@ -394,10 +402,10 @@ class TestInterfaces:
         dev = qml.device("default.qubit")
 
         circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
-        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1])
+        circuit2 = qml.QNode(circuit_template, dev)
 
         res = circuit(features, pad_with, normalize)
-        res2 = circuit2(features, pad_with)
+        res2 = circuit2(features, pad_with, normalize)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
@@ -453,3 +461,155 @@ class TestInterfaces:
         res2 = circuit2(features, pad_with)
 
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+
+int_features = [
+    [10, 0, 2, 35, 0, 41, 56, 0],
+    [
+        [10, 0, 2, 35, 0, 41, 56, 0],
+        [10, 0, 2, 35, 0, 41, 56, 0],
+        [10, 0, 2, 35, 0, 41, 56, 0],
+    ],
+]
+
+
+@pytest.mark.parametrize("features", int_features)
+@pytest.mark.parametrize("pad_with", [None, 0.0, 0.1])
+@pytest.mark.parametrize("dtype", ["int8", "uint8", "int32", "float32", "int64", "float64"])
+class TestInterfaceDtypes:
+    """Unit tests to verify that AmplitudeEmbedding works correctly for features with all dtypes"""
+
+    @pytest.mark.autograd
+    def test_autograd(self, tol, features, pad_with, dtype):
+        """Tests autograd tensors."""
+
+        dtype = getattr(pnp, dtype)
+        features = pnp.array(features, dtype=dtype)
+
+        dev = qml.device("default.qubit")
+
+        circuit = qml.QNode(circuit_template, dev, interface="autograd")
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features, pad_with, normalize=True)
+        res2 = circuit2(features, pad_with, normalize=True)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax(self, tol, features, pad_with, dtype):
+        """Tests jax tensors."""
+        import jax.numpy as jnp
+
+        dtype = getattr(jnp, dtype)
+        features = jnp.array(features, dtype=dtype)
+
+        dev = qml.device("default.qubit")
+
+        circuit = qml.QNode(circuit_template, dev, interface="jax")
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features, pad_with, normalize=True)
+        res2 = circuit2(features, pad_with, normalize=True)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol, features, pad_with, dtype):
+        """Tests jax tensors with JIT compilation."""
+        import jax
+        import jax.numpy as jnp
+
+        dtype = getattr(jnp, dtype)
+        features = jnp.array(features, dtype=dtype)
+
+        dev = qml.device("default.qubit")
+
+        circuit = jax.jit(qml.QNode(circuit_template, dev, interface="jax"), static_argnums=[1, 2])
+        circuit2 = jax.jit(qml.QNode(circuit_decomposed, dev), static_argnums=[1, 2])
+
+        res = circuit(features, pad_with, normalize=True)
+        res2 = circuit2(features, pad_with, normalize=True)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_tf(self, tol, features, pad_with, dtype):
+        """Tests tensorflow tensors."""
+        import tensorflow as tf
+
+        dtype = getattr(tf, dtype)
+        features = tf.Variable(features, dtype=dtype)
+
+        dev = qml.device("default.qubit")
+
+        circuit = qml.QNode(circuit_template, dev, interface="tensorflow")
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features, pad_with, normalize=True)
+        res2 = circuit2(features, pad_with, normalize=True)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.tf
+    def test_tf_jit(self, tol, features, pad_with, dtype):
+        """Tests tensorflow tensors with JIT compilation."""
+        import tensorflow as tf
+
+        dtype = getattr(tf, dtype)
+        features = tf.Variable(features, dtype=dtype)
+
+        dev = qml.device("default.qubit")
+
+        circuit = tf.function(jit_compile=True)(
+            qml.QNode(circuit_template, dev, interface="tensorflow")
+        )
+        circuit2 = tf.function(jit_compile=True)(qml.QNode(circuit_decomposed, dev))
+
+        res = circuit(features, pad_with, normalize=True)
+        res2 = circuit2(features, pad_with, normalize=True)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+    @pytest.mark.torch
+    def test_torch(self, tol, features, pad_with, dtype):
+        """Tests Torch tensors."""
+        import torch
+
+        dtype = getattr(torch, dtype)
+        features = torch.tensor(features, dtype=dtype)
+
+        dev = qml.device("default.qubit")
+
+        circuit = qml.QNode(circuit_template, dev, interface="torch")
+        circuit2 = qml.QNode(circuit_decomposed, dev)
+
+        res = circuit(features, pad_with, normalize=True)
+        res2 = circuit2(features, pad_with, normalize=True)
+
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+
+@pytest.mark.jax
+@pytest.mark.parametrize("shots, atol", [(10000, 0.05), (None, 1e-8)])
+def test_jacobian_with_and_without_jit_has_same_output(shots, atol, seed):
+    """Test that the jacobian of AmplitudeEmbedding is the same with and without jit."""
+
+    import jax
+
+    dev = qml.device("default.qubit", shots=shots, seed=seed)
+
+    @qml.qnode(dev, diff_method="parameter-shift")
+    def circuit(coeffs):
+        qml.AmplitudeEmbedding(coeffs, normalize=True, wires=[0, 1])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(1))
+
+    params = jax.numpy.array([0.4, 0.5, 0.1, 0.3])
+    jac_fn = jax.jacobian(circuit)
+    jac_jit_fn = jax.jit(jac_fn)
+
+    jac = jac_fn(params)
+
+    jac_jit = jac_jit_fn(params)
+
+    assert qml.math.allclose(jac, jac_jit, atol=atol)

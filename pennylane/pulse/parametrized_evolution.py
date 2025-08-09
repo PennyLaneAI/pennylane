@@ -12,18 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=too-few-public-methods,function-redefined
 
 """
 This file contains the ``ParametrizedEvolution`` operator.
 """
 
 import warnings
-from typing import List, Sequence, Union
+from collections.abc import Sequence
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
 from pennylane.ops import functions
+from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 
 from .hardware_hamiltonian import HardwareHamiltonian
@@ -137,7 +137,9 @@ class ParametrizedEvolution(Operation):
 
         import jax
 
-        dev = qml.device("default.qubit.jax", wires=1)
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit", wires=1)
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(params):
@@ -146,10 +148,10 @@ class ParametrizedEvolution(Operation):
 
     >>> params = [1.2]
     >>> circuit(params)
-    Array(0.96632576, dtype=float32)
+    Array(0.96632722, dtype=float64)
 
     >>> jax.grad(circuit)(params)
-    [Array(2.3569832, dtype=float32)]
+    [Array(2.35694829, dtype=float64)]
 
     .. note::
         In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
@@ -223,7 +225,7 @@ class ParametrizedEvolution(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit.jax", wires=3)
+            dev = qml.device("default.qubit", wires=3)
 
             @qml.qnode(dev, interface="jax")
             def circuit1(params):
@@ -245,11 +247,11 @@ class ParametrizedEvolution(Operation):
 
         >>> params = jnp.array([1., 2., 3.])
         >>> circuit1(params)
-        Array(-0.01543971, dtype=float32)
+        Array(-0.01542578, dtype=float64)
 
         >>> params = jnp.concatenate([params, params])  # H1 + H2 requires 6 parameters!
         >>> circuit2(params)
-        Array(-0.78236955, dtype=float32)
+        Array(-0.78235162, dtype=float64)
 
         Here, ``circuit1`` is not executing the evolution of ``H1`` and ``H2`` simultaneously, but rather
         executing ``H1`` in the ``[0, 10]`` time window and then executing ``H2`` with the same time window,
@@ -268,10 +270,10 @@ class ParametrizedEvolution(Operation):
                 return qml.expval(qml.Z(0) @ qml.Z(1) @ qml.Z(2))
 
         >>> circuit(params)
-        Array(-0.78236955, dtype=float32)
+        Array(-0.78235162, dtype=float64)
         >>> jax.grad(circuit)(params)
-        Array([-4.8066125 ,  3.703827  , -1.3297377 , -2.406232  ,  0.6811726 ,
-            -0.52277344], dtype=float32)
+        Array([-4.80708632,  3.70323783, -1.32958799, -2.40642477,  0.68105214,
+            -0.52269657], dtype=float64)
 
         Given that we used the same time window (``[0, 10]``), the results are the same as before.
 
@@ -311,7 +313,7 @@ class ParametrizedEvolution(Operation):
 
         .. code-block:: python
 
-            dev = qml.device("default.qubit.jax", wires=1)
+            dev = qml.device("default.qubit", wires=1)
 
             @qml.qnode(dev, interface="jax")
             def circuit(param, time):
@@ -320,11 +322,11 @@ class ParametrizedEvolution(Operation):
 
         >>> circuit(param, time)
         Array([[1.        , 0.        ],
-               [0.9897738 , 0.01022595],
-               [0.9599043 , 0.04009585],
-               [0.9123617 , 0.08763832],
-               [0.84996957, 0.15003097],
-               [0.7761489 , 0.22385144]], dtype=float32)
+               [0.98977406, 0.01022594],
+               [0.95990416, 0.04009584],
+               [0.91236167, 0.08763833],
+               [0.84996865, 0.15003133],
+               [0.77614817, 0.22385181]], dtype=float64)
 
 
         **Computing complementary time evolution**
@@ -362,7 +364,6 @@ class ParametrizedEvolution(Operation):
     """
 
     _name = "ParametrizedEvolution"
-    num_wires = AnyWires
     grad_method = "A"
 
     # pylint: disable=too-many-arguments
@@ -371,14 +372,14 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t: Union[float, List[float]] = None,
+        t: float | list[float] = None,
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
         id=None,
         **odeint_kwargs,
     ):
-        if not all(op.has_matrix or isinstance(op, qml.ops.Hamiltonian) for op in H.ops):
+        if not all(op.has_matrix for op in H.ops):
             raise ValueError(
                 "All operators inside the parametrized hamiltonian must have a matrix defined."
             )
@@ -389,8 +390,8 @@ class ParametrizedEvolution(Operation):
             self.t = None
         else:
             if isinstance(t, (list, tuple)):
-                t = qml.math.stack(t)
-            self.t = qml.math.cast(qml.math.stack([0.0, t]) if qml.math.ndim(t) == 0 else t, float)
+                t = math.stack(t)
+            self.t = math.cast(math.stack([0.0, t]) if math.ndim(t) == 0 else t, float)
         if complementary and not return_intermediate:
             warnings.warn(
                 "The keyword argument complementary does not have any effect if "
@@ -417,7 +418,7 @@ class ParametrizedEvolution(Operation):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
+                "You can install jax via: pip install jax~=0.6.0"
             )
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
@@ -430,8 +431,8 @@ class ParametrizedEvolution(Operation):
         if dense is None:
             dense = self.dense
         odeint_kwargs = {**self.odeint_kwargs, **odeint_kwargs}
-        if qml.QueuingManager.recording():
-            qml.QueuingManager.remove(self)
+        if QueuingManager.recording():
+            QueuingManager.remove(self)
 
         return ParametrizedEvolution(
             H=self.H,
@@ -506,12 +507,11 @@ class ParametrizedEvolution(Operation):
     def has_matrix(self):
         return self._has_matrix
 
-    # pylint: disable=import-outside-toplevel
     def matrix(self, wire_order=None):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
+                "You can install jax via: pip install jax~=0.6.0"
             )
         if not self.has_matrix:
             raise ValueError(
@@ -532,12 +532,12 @@ class ParametrizedEvolution(Operation):
         mat = odeint(fun, y0, self.t, **self.odeint_kwargs)
         if self.hyperparameters["return_intermediate"] and self.hyperparameters["complementary"]:
             # Compute U(t_0, t_f)@U(t_0, t_i)^\dagger, where i indexes the first axis of mat
-            mat = qml.math.tensordot(mat[-1], qml.math.conj(mat), axes=[[1], [-1]])
+            mat = math.tensordot(mat[-1], math.conj(mat), axes=[[1], [-1]])
             # The previous line leaves the axis indexing the t_i as second, so we move it up
-            mat = qml.math.moveaxis(mat, 1, 0)
+            mat = math.moveaxis(mat, 1, 0)
         elif not self.hyperparameters["return_intermediate"]:
             mat = mat[-1]
-        return qml.math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
+        return math.expand_matrix(mat, wires=self.wires, wire_order=wire_order)
 
     def label(self, decimals=None, base_label=None, cache=None):
         r"""A customizable string representation of the operator.
@@ -581,15 +581,15 @@ class ParametrizedEvolution(Operation):
         params = self.parameters
         has_cache = cache and isinstance(cache.get("matrices", None), list)
 
-        if any(qml.math.ndim(p) for p in params) and not has_cache:
+        if any(math.ndim(p) for p in params) and not has_cache:
             return op_label
 
         def _format_number(x):
-            return format(qml.math.toarray(x), f".{decimals}f")
+            return format(math.toarray(x), f".{decimals}f")
 
         def _format_arraylike(x):
             for i, mat in enumerate(cache["matrices"]):
-                if qml.math.shape(x) == qml.math.shape(mat) and qml.math.allclose(x, mat):
+                if math.shape(x) == math.shape(mat) and math.allclose(x, mat):
                     return f"M{i}"
             mat_num = len(cache["matrices"])
             cache["matrices"].append(x)

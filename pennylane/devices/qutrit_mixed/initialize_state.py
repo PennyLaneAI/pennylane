@@ -13,7 +13,7 @@
 # limitations under the License.
 """Functions to prepare a qutrit mixed state."""
 
-from typing import Iterable, Union
+from collections.abc import Iterable
 
 import pennylane as qml
 from pennylane.operation import StatePrepBase
@@ -22,8 +22,8 @@ from .utils import QUDIT_DIM
 
 
 def create_initial_state(
-    wires: Union[qml.wires.Wires, Iterable],
-    prep_operation: StatePrepBase = None,
+    wires: qml.wires.Wires | Iterable,
+    prep_operation: StatePrepBase | None = None,
     like: str = None,
 ):
     r"""

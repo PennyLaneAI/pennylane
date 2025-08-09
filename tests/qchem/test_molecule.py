@@ -35,6 +35,18 @@ class TestMolecule:
         mol = qchem.Molecule(symbols, geometry)
         assert isinstance(mol, qchem.Molecule)
 
+    @pytest.mark.jax
+    def test_molecule_interface_warning(self):
+        r"""Test that the generated molecule object has the correct type."""
+        import jax
+
+        symbols = ["H", "F"]
+        geometry = np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]], requires_grad=False)
+        alpha = jax.numpy.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])
+
+        with pytest.warns(UserWarning, match="The parameters"):
+            qchem.Molecule(symbols, geometry, alpha=alpha)
+
     @pytest.mark.parametrize(
         ("symbols", "geometry"),
         [
@@ -49,7 +61,7 @@ class TestMolecule:
     @pytest.mark.parametrize(
         ("symbols", "geometry"),
         [
-            (["H", "Og"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
+            (["H", "Ox"], np.array([[0.0, 0.0, 0.0], [0.0, 0.0, 1.0]])),
         ],
     )
     def test_symbol_error(self, symbols, geometry):

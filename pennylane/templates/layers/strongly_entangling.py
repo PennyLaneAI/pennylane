@@ -14,9 +14,14 @@
 r"""
 Contains the StronglyEntanglingLayers template.
 """
+from pennylane import math
+from pennylane.control_flow import for_loop
+
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane.operation import Operation
+from pennylane.ops import CNOT, Rot
+from pennylane.ops.op_math import cond
+from pennylane.wires import Wires
 
 
 class StronglyEntanglingLayers(Operation):
@@ -72,7 +77,7 @@ class StronglyEntanglingLayers(Operation):
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(weights))
+        >>> print(qml.draw(circuit, level="device")(weights))
         0: ──Rot(0.68,0.98,0.48)─╭●───────╭X──Rot(0.94,0.22,0.70)─╭●────╭X────┤  <Z>
         1: ──Rot(0.91,0.19,0.15)─╰X─╭●────│───Rot(0.50,0.20,0.63)─│──╭●─│──╭X─┤
         2: ──Rot(0.91,0.68,0.96)────╰X─╭●─│───Rot(0.14,0.05,0.16)─╰X─│──╰●─│──┤
@@ -108,7 +113,7 @@ class StronglyEntanglingLayers(Operation):
 
         The resulting circuit is:
 
-        >>> print(qml.draw(circuit, expansion_strategy="device")(weights))
+        >>> print(qml.draw(circuit, level="device")(weights))
         0: ──Rot(0.99,0.17,0.12)─╭●────╭Z──Rot(0.02,0.94,0.57)──────────────────────╭●─╭Z───────┤  <Z>
         1: ──Rot(0.55,0.42,0.61)─│──╭●─│──╭Z────────────────────Rot(0.15,0.26,0.82)─│──╰●─╭Z────┤
         2: ──Rot(0.79,0.93,0.27)─╰Z─│──╰●─│─────────────────────Rot(0.73,0.01,0.44)─│─────╰●─╭Z─┤
@@ -130,11 +135,10 @@ class StronglyEntanglingLayers(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires, ranges=None, imprimitive=None, id=None):
-        shape = qml.math.shape(weights)[-3:]
+        shape = math.shape(weights)[-3:]
 
         if shape[1] != len(wires):
             raise ValueError(
@@ -162,7 +166,7 @@ class StronglyEntanglingLayers(Operation):
                         f"Ranges must not be zero nor divisible by the number of wires; got {r}"
                     )
 
-        self._hyperparameters = {"ranges": ranges, "imprimitive": imprimitive or qml.CNOT}
+        self._hyperparameters = {"ranges": ranges, "imprimitive": imprimitive or CNOT}
 
         super().__init__(weights, wires=wires, id=id)
 
@@ -200,14 +204,14 @@ class StronglyEntanglingLayers(Operation):
         CNOT(wires=['a', 'a']),
         CNOT(wires=['b', 'b'])]
         """
-        n_layers = qml.math.shape(weights)[-3]
-        wires = qml.wires.Wires(wires)
+        n_layers = math.shape(weights)[-3]
+        wires = Wires(wires)
         op_list = []
 
         for l in range(n_layers):
             for i in range(len(wires)):  # pylint: disable=consider-using-enumerate
                 op_list.append(
-                    qml.Rot(
+                    Rot(
                         weights[..., l, i, 0],
                         weights[..., l, i, 1],
                         weights[..., l, i, 2],
@@ -235,3 +239,43 @@ class StronglyEntanglingLayers(Operation):
         """
 
         return n_layers, n_wires, 3
+
+    # pylint:disable = no-value-for-parameter
+    @staticmethod
+    def compute_qfunc_decomposition(
+        weights, *wires, ranges, imprimitive
+    ):  # pylint: disable=arguments-differ
+        wires = math.array(wires, like="jax")
+        ranges = math.array(ranges, like="jax")
+
+        n_wires = len(wires)
+        n_layers = weights.shape[0]
+
+        @for_loop(n_layers)
+        def layers(l):
+
+            @for_loop(n_wires)
+            def rot_loop(i):
+                Rot(
+                    weights[l, i, 0],
+                    weights[l, i, 1],
+                    weights[l, i, 2],
+                    wires=wires[i],
+                )
+
+            def imprim_true():
+
+                @for_loop(n_wires)
+                def imprimitive_loop(i):
+                    act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
+                    imprimitive(wires=wires[act_on])
+
+                imprimitive_loop()
+
+            def imprim_false():
+                pass
+
+            rot_loop()
+            cond(n_wires > 1, imprim_true, imprim_false)()
+
+        layers()

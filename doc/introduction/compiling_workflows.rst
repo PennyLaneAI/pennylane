@@ -21,9 +21,10 @@ Installing compilers
 --------------------
 
 Currently, Catalyst must be installed separately, and only supports the JAX
-interface and select devices such as ``lightning.qubit``,
-``lightning.kokkos``, ``braket.local.qubit`` and ``braket.aws.qubit``. It
-does **not** support ``default.qubit``.
+interface and select devices. Supported backend devices for Catalyst include
+``lightning.qubit``, ``lightning.kokkos``, ``lightning.gpu``, and ``braket.aws.qubit``,
+but **not** ``default.qubit``.
+For a full list of supported devices, please see :doc:`catalyst:dev/devices`.
 
 On MacOS and Linux, Catalyst can be installed with ``pip``:
 
@@ -42,11 +43,13 @@ compile your hybrid workflows:
 
 .. code-block:: python
 
+    from functools import partial
     from jax import numpy as jnp
 
-    dev = qml.device("lightning.qubit", wires=2, shots=1000)
+    dev = qml.device("lightning.qubit", wires=2)
 
     @qml.qjit
+    @partial(qml.set_shots, shots=1000)
     @qml.qnode(dev)
     def circuit(params):
         qml.Hadamard(0)

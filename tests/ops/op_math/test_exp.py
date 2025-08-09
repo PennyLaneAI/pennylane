@@ -19,21 +19,20 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import (
-    AllWires,
-    AnyWires,
+from pennylane.exceptions import (
     DecompositionUndefinedError,
     GeneratorUndefinedError,
     ParameterFrequenciesUndefinedError,
+    PennyLaneDeprecationWarning,
 )
 from pennylane.ops.op_math import Evolution, Exp
+from pennylane.ops.op_math.exp import trotter_decomp
 
 
 @pytest.mark.parametrize("constructor", (qml.exp, Exp))
 class TestInitialization:
     """Test the initialization process and standard properties."""
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pauli_base(self, constructor):
         """Test initialization with no coeff and a simple base."""
         base = qml.PauliX("a")
@@ -415,33 +414,31 @@ class TestDecomposition:
         ):
             op.decomposition()
 
-    def test_non_pauli_word_base_no_decomposition(self):
+    @pytest.mark.parametrize("num_steps", [None, 100])
+    def test_non_pauli_word_base_no_decomposition(self, num_steps, recwarn):
         """Tests that the decomposition doesn't exist if the base is not a pauli word."""
-        op = Exp(qml.S(0), -0.5j, num_steps=100)
+        op = Exp(qml.S(0), -0.5j, num_steps=num_steps)
         assert not op.has_decomposition
         with pytest.raises(
             DecompositionUndefinedError,
-            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+            match=re.escape(f"The decomposition of the {op} operator is not defined."),
         ):
             op.decomposition()
 
-        op = Exp(2 * qml.S(0) + qml.PauliZ(1), -0.5j, num_steps=100)
+        op = Exp(2 * qml.S(0) + qml.PauliZ(1), -0.5j, num_steps=num_steps)
         assert not op.has_decomposition
         with pytest.raises(
             DecompositionUndefinedError,
-            match=re.escape(f"The decomposition of the {op} operator is not defined. "),
+            match=re.escape(f"The decomposition of the {op} operator is not defined."),
         ):
             op.decomposition()
 
-    @pytest.mark.usefixtures("use_legacy_opmath")
-    def test_nontensor_tensor_no_decomposition(self):
-        """Checks that accessing the decomposition throws an error if the base is a Tensor
-        object that is not a mathematical tensor"""
-        base_op = qml.PauliX(0) @ qml.PauliZ(0)
-        op = Exp(base_op, 1j)
-        assert not op.has_decomposition
-        with pytest.raises(DecompositionUndefinedError):
-            _ = op.decomposition()
+        if num_steps:
+            for w in recwarn:
+                assert w.category == PennyLaneDeprecationWarning
+                assert "Providing 'num_steps' to 'qml.evolve' and 'qml.exp' is deprecated" in str(
+                    w.message
+                )
 
     @pytest.mark.parametrize(
         "base, base_string",
@@ -457,27 +454,10 @@ class TestDecomposition:
 
         assert op.has_decomposition
         pr = op.decomposition()[0]
-        assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
-
-    @pytest.mark.parametrize(
-        "base, base_string",
-        (
-            (qml.operation.Tensor(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
-            (qml.operation.Tensor(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
-        ),
-    )
-    def test_decomposition_tensor_into_pauli_rot(self, base, base_string):
-        """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
-        theta = 3.21
-        op = Exp(base, -0.5j * theta)
-
-        assert op.has_decomposition
-        pr = op.decomposition()[0]
-        assert qml.equal(pr, qml.PauliRot(3.21, base_string, base.wires))
+        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
 
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_generator_decomposition(self, op_name, str_wires):
         """Check that Exp decomposes into a specific operator if ``base`` corresponds to the
         generator of that operator."""
@@ -497,11 +477,7 @@ class TestDecomposition:
 
         phi = 1.23
 
-        wires = (
-            [0, 1, 2]
-            if op_class.num_wires in {AnyWires, AllWires}
-            else list(range(op_class.num_wires))
-        )
+        wires = [0, 1, 2] if op_class.num_wires is None else list(range(op_class.num_wires))
         if str_wires:
             alphabet = ("a", "b", "c", "d", "e", "f", "g")
             wires = [alphabet[w] for w in wires]
@@ -528,25 +504,32 @@ class TestDecomposition:
             # cannot compare GlobalPhase and PauliRot with qml.equal
             assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
         else:
-            assert qml.equal(op, dec[0])
+            qml.assert_equal(op, dec[0])
 
     def test_trotter_is_used_if_num_steps_is_defined(self):
         """Test that the Suzuki-Trotter decomposition is used when ``num_steps`` is defined."""
         phi = 1.23
+        num_steps = 3
         op = qml.IsingXY(phi, wires=[0, 1])
-        exp = qml.evolve(op.generator(), coeff=-phi, num_steps=3)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Providing 'num_steps' to 'qml.evolve' and 'qml.exp' is deprecated",
+        ):
+            exp = qml.evolve(op.generator(), coeff=-phi, num_steps=num_steps)
+
         dec = exp.decomposition()
+        assert qml.math.allclose(
+            qml.matrix(qml.tape.QuantumScript(dec), wire_order=[0, 1]),
+            qml.matrix(exp, wire_order=[0, 1]),
+        )
+        new_phi = (-phi / 2) / num_steps
         expected_decomp = [
-            qml.IsingXX(phi / 3, wires=[0, 1]),
-            qml.IsingYY(phi / 3, wires=[0, 1]),
-            qml.IsingXX(phi / 3, wires=[0, 1]),
-            qml.IsingYY(phi / 3, wires=[0, 1]),
-            qml.IsingXX(phi / 3, wires=[0, 1]),
-            qml.IsingYY(phi / 3, wires=[0, 1]),
-        ]
+            qml.IsingXX(new_phi, wires=[0, 1]),
+            qml.IsingYY(new_phi, wires=[0, 1]),
+        ] * num_steps
         assert len(dec) == len(expected_decomp)
         for op1, op2 in zip(dec, expected_decomp):
-            qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     @pytest.mark.parametrize(
         ("time", "hamiltonian", "steps", "expected_queue"),
@@ -591,8 +574,9 @@ class TestDecomposition:
     def test_trotter_decomposition(self, time, hamiltonian, steps, expected_queue):
         """Tests that the sequence of gates implemented in the trotter decomposition is correct"""
 
-        op = qml.exp(hamiltonian, coeff=-1j * time, num_steps=steps)
-        queue = op.expand().operations
+        with pytest.warns(PennyLaneDeprecationWarning, match="Providing 'num_steps'"):
+            op = qml.exp(hamiltonian, coeff=-1j * time, num_steps=steps)
+        queue = op.decomposition()
 
         for expected_gate, gate in zip(expected_queue, queue):
             prep = [gate.parameters, gate.wires]
@@ -637,9 +621,73 @@ class TestDecomposition:
     )
     def test_decomposition_matrices(self, coeff, hamiltonian):
         """Test that the matrix of the decomposed gates is the same as the exponentiated matrix."""
-        op = qml.exp(hamiltonian, coeff, num_steps=100)
+        with pytest.warns(PennyLaneDeprecationWarning, match="Providing 'num_steps'"):
+            op = qml.exp(hamiltonian, coeff, num_steps=100)
         matrix = qml.prod(*op.decomposition()).matrix()
         assert qml.math.allclose(matrix, op.matrix())
+
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "coeff, hamiltonian",
+        [
+            (3j, qml.Hamiltonian([1, 2, 3], [qml.X(0), qml.Y(1), qml.Z(2)])),
+            (3, qml.Hamiltonian([1j, 2j, 3j], [qml.X(0), qml.Y(1), qml.Z(2)])),
+            (-1j, qml.Y(1) + 3 * qml.PauliX(0) @ qml.PauliZ(2)),
+            (-1, 1j * qml.PauliY(1) + 3j * qml.PauliX(0) @ qml.PauliZ(2)),
+            (0.3j, qml.Z(0) @ qml.Y(1)),
+            (0.3j, qml.Z(0)),
+        ],
+    )
+    def test_trotter_decomposition_integration_graph(self, coeff, hamiltonian):
+        """Tests that the trotter decomposition works in the new graph-based system."""
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="Providing 'num_steps'"):
+            op = qml.exp(hamiltonian, coeff, num_steps=100)
+        tape = qml.tape.QuantumScript([op])
+
+        [decomp_tape], _ = qml.transforms.decompose(tape, gate_set={"PauliRot"})
+        actual_matrix = qml.matrix(decomp_tape, wire_order=op.wires)
+        expected_matrix = qml.matrix(op, wire_order=op.wires)
+        assert qml.math.allclose(actual_matrix, expected_matrix)
+
+    def test_trotter_decomposition_condition(self):
+        """Tests the condition of the trotter decomposition rule."""
+
+        hamiltonian = qml.RX(0.5, wires=0)
+        with pytest.warns(PennyLaneDeprecationWarning, match="Providing 'num_steps'"):
+            op = qml.exp(hamiltonian, coeff=1.5, num_steps=100)
+        assert not trotter_decomp.is_applicable(**op.resource_params)
+
+        hamiltonian = qml.X(0)
+        op = qml.exp(hamiltonian, coeff=1.5)
+        assert not trotter_decomp.is_applicable(**op.resource_params)
+
+        hamiltonian = qml.X(0) + qml.RX(0.5, wires=1)
+        with pytest.warns(PennyLaneDeprecationWarning, match="Providing 'num_steps'"):
+            op = qml.exp(hamiltonian, coeff=1.5, num_steps=100)
+        assert not trotter_decomp.is_applicable(**op.resource_params)
+
+    @pytest.mark.integration
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    @pytest.mark.parametrize(
+        "coeff, hamiltonian",
+        [
+            (0.3j, qml.Z(0) @ qml.Y(1)),
+            (0.5, 0.1j * qml.Y(0) @ qml.I(1) @ qml.Z(2)),
+        ],
+    )
+    def test_pauli_decomposition_integration_graph(self, coeff, hamiltonian):
+        """Tests that the pauli decomposition works in the new graph-based system."""
+
+        op = qml.exp(hamiltonian, coeff)
+        tape = qml.tape.QuantumScript([op])
+
+        [decomp_tape], _ = qml.transforms.decompose(tape, gate_set={"PauliRot"})
+        assert len(decomp_tape) == 1
+        actual_matrix = qml.matrix(decomp_tape, wire_order=op.wires)
+        expected_matrix = qml.matrix(op, wire_order=op.wires)
+        assert qml.math.allclose(actual_matrix, expected_matrix)
 
 
 class TestMiscMethods:
@@ -651,22 +699,36 @@ class TestMiscMethods:
         assert repr(op) == "Exp(3 PauliX)"
 
     # pylint: disable=protected-access
-    @pytest.mark.parametrize("exp_type", (Exp, Evolution))
-    def test_flatten_unflatten(self, exp_type):
-        """Tests the _unflatten and _flatten methods."""
+    @pytest.mark.parametrize("op_class", [Exp, Evolution])
+    @pytest.mark.parametrize("num_steps", [None, 5])
+    def test_flatten_unflatten(self, op_class, num_steps, recwarn):
+        """Tests the _unflatten and _flatten methods for the Exp and Evolution operators."""
         base = qml.RX(1.2, wires=0)
-        op = exp_type(base, 2.5, num_steps=5)
+        op = op_class(base, 2.5, num_steps=num_steps)
 
         data, metadata = op._flatten()
         assert data[0] is base
         assert data[1] == 2.5
 
-        assert metadata == (5,)
-
-        assert hash(metadata)
+        if num_steps:
+            assert metadata == (num_steps,)
+            assert hash(metadata)
+            assert len(recwarn) == 1
+            assert recwarn[0].category == PennyLaneDeprecationWarning
+            assert "Providing 'num_steps'" in str(recwarn[0].message)
 
         new_op = type(op)._unflatten(*op._flatten())
-        assert qml.equal(new_op, op)
+        qml.assert_equal(new_op, op)
+
+    @pytest.mark.parametrize("op_class", [Exp, Evolution])
+    def test_num_steps_is_deprecated(self, op_class):
+        """Test that providing `num_steps` raises a deprecation warning."""
+        base = qml.RX(1.2, wires=0)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="Providing 'num_steps' to 'qml.evolve' and 'qml.exp' is deprecated",
+        ):
+            op_class(base, 2.5, num_steps=5)
 
     def test_repr_tensor(self):
         """Test the __repr__ method when the base is a tensor."""
@@ -680,14 +742,14 @@ class TestMiscMethods:
         base = qml.S(0) @ qml.PauliX(0)
         op = qml.ops.Exp(base, 3)  # pylint:disable=no-member
 
-        assert repr(op) == "Exp(3 S(wires=[0]) @ X(0))"
+        assert repr(op) == "Exp(3 S(0) @ X(0))"
 
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are the same as the base diagonalizing gates."""
         base = qml.PauliX(0)
         op = Exp(base, 1 + 2j)
         for op1, op2 in zip(base.diagonalizing_gates(), op.diagonalizing_gates()):
-            assert qml.equal(op1, op2)
+            qml.assert_equal(op1, op2)
 
     def test_pow(self):
         """Test the pow decomposition method."""
@@ -724,7 +786,7 @@ class TestMiscMethods:
 
         op = Exp(s_op, 3j)
         new_op = op.simplify()
-        assert qml.equal(new_op.base, qml.PauliX(0))
+        qml.assert_equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 6.0j
 
     def test_simplify(self):
@@ -733,8 +795,19 @@ class TestMiscMethods:
 
         op = Exp(orig_base, coeff=0.2)
         new_op = op.simplify()
-        assert qml.equal(new_op.base, qml.PauliX(0))
+        qml.assert_equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 0.2
+
+    def test_simplify_num_steps(self):
+        """Test that the number of Trotter steps is conserved after simplification"""
+        base = qml.Z(0) + 1.2 * qml.Z(1)
+
+        with pytest.warns(PennyLaneDeprecationWarning, match="Providing 'num_steps'"):
+            op = Exp(base, coeff=-1.2j, num_steps=2)
+        with pytest.warns(PennyLaneDeprecationWarning, match="Providing 'num_steps'"):
+            new_op = op.simplify()
+
+        assert new_op.num_steps == op.num_steps
 
     def test_simplify_s_prod(self):
         """Tests that when simplification of the base results in an SProd,
@@ -743,7 +816,7 @@ class TestMiscMethods:
         op = Exp(base, 3)
         new_op = op.simplify()
 
-        assert qml.equal(new_op.base, qml.PauliX(0))
+        qml.assert_equal(new_op.base, qml.PauliX(0))
         assert new_op.coeff == 12
         assert new_op is not op
 
@@ -752,7 +825,7 @@ class TestMiscMethods:
         op = Exp(qml.CNOT([0, 1]), 2)
         copied_op = copy.copy(op)
 
-        assert qml.equal(op.base, copied_op.base)
+        qml.assert_equal(op.base, copied_op.base)
         assert op.data == copied_op.data
         assert op.hyperparameters.keys() == copied_op.hyperparameters.keys()
 
@@ -785,6 +858,46 @@ class TestIntegration:
         res = circ(phi)
         assert qml.math.allclose(res, jnp.cos(phi))
         grad = jax.grad(circ)(phi)
+        assert qml.math.allclose(grad, -jnp.sin(phi))
+
+    @pytest.mark.catalyst
+    @pytest.mark.external
+    def test_catalyst_qnode(self):
+        """Test with Catalyst interface"""
+
+        pytest.importorskip("catalyst")
+
+        phi = 0.345
+
+        @qml.qjit
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def func(params):
+            qml.exp(qml.X(0), -0.5j * params)
+            return qml.expval(qml.Z(0))
+
+        res = func(phi)
+        assert qml.math.allclose(res, np.cos(phi))
+        grad = qml.grad(func)(phi)
+        assert qml.math.allclose(grad, -np.sin(phi))
+
+    @pytest.mark.jax
+    def test_jax_jit_qnode(self):
+        """Tests with jax.jit"""
+
+        import jax
+        from jax import numpy as jnp
+
+        phi = jnp.array(0.345)
+
+        @jax.jit
+        @qml.qnode(qml.device("lightning.qubit", wires=1))
+        def func(params):
+            qml.exp(qml.X(0), -0.5j * params)
+            return qml.expval(qml.Z(0))
+
+        res = func(phi)
+        assert qml.math.allclose(res, jnp.cos(phi))
+        grad = jax.grad(func)(phi)
         assert qml.math.allclose(grad, -jnp.sin(phi))
 
     @pytest.mark.tf
@@ -849,14 +962,16 @@ class TestIntegration:
         grad = qml.grad(circuit)(phi)
         assert qml.math.allclose(grad, -qml.numpy.sin(phi))
 
+    @pytest.mark.xfail  # related to #6333
     @pytest.mark.autograd
     def test_autograd_param_shift_qnode(self):
         """Test execution and gradient with pennylane numpy array."""
+
         phi = qml.numpy.array(1.2)
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, gradient_fn=qml.gradients.param_shift)
+        @qml.qnode(dev, diff_method=qml.gradients.param_shift)
         def circuit(phi):
             Exp(qml.PauliX(0), -0.5j * phi)
             return qml.expval(qml.PauliZ(0))
@@ -1058,4 +1173,6 @@ class TestDifferentiation:
 
         with pytest.warns(UserWarning):
             circuit(np.array(2.0), np.array(0.5))
-        assert circuit.tape.trainable_params == [0, 1]
+
+        tape = qml.workflow.construct_tape(circuit)(np.array(2.0), np.array(0.5))
+        assert tape.trainable_params == [0, 1]

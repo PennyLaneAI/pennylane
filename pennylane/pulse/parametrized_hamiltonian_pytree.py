@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Module containing the ``JaxParametrizedHamiltonian`` class."""
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, Optional, Tuple, Union
 
 import jax
 import jax.numpy as jnp
 from jax.experimental import sparse
 from jax.tree_util import register_pytree_node_class
-
-import pennylane as qml
 
 from .hardware_hamiltonian import HardwareHamiltonian
 from .parametrized_hamiltonian import ParametrizedHamiltonian
@@ -31,9 +29,9 @@ from .parametrized_hamiltonian import ParametrizedHamiltonian
 class ParametrizedHamiltonianPytree:
     """Jax pytree class that represents a ``ParametrizedHamiltonian``."""
 
-    mat_fixed: Optional[Union[jnp.ndarray, sparse.BCSR]]
-    mats_parametrized: Tuple[Union[jnp.ndarray, sparse.BCSR], ...]
-    coeffs_parametrized: Tuple[Callable]
+    mat_fixed: jnp.ndarray | sparse.BCSR | None
+    mats_parametrized: tuple[jnp.ndarray | sparse.BCSR, ...]
+    coeffs_parametrized: tuple[Callable]
     reorder_fn: Callable
 
     @staticmethod
@@ -52,12 +50,12 @@ class ParametrizedHamiltonianPytree:
         make_array = jnp.array if dense else sparse.BCSR.fromdense
 
         if len(H.ops_fixed) > 0:
-            mat_fixed = make_array(qml.matrix(H.H_fixed(), wire_order=wire_order))
+            mat_fixed = make_array(H.H_fixed().matrix(wire_order=wire_order))
         else:
             mat_fixed = None
 
         mats_parametrized = tuple(
-            make_array(qml.matrix(op, wire_order=wire_order)) for op in H.ops_parametrized
+            make_array(op.matrix(wire_order=wire_order)) for op in H.ops_parametrized
         )
 
         if isinstance(H, HardwareHamiltonian):
@@ -117,8 +115,8 @@ class ParametrizedHamiltonianPytree:
 class LazyDotPytree:
     """Jax pytree representing a lazy dot operation."""
 
-    coeffs: Tuple[complex, ...]
-    mats: Tuple[Union[jnp.ndarray, sparse.BCSR], ...]
+    coeffs: tuple[complex, ...]
+    mats: tuple[jnp.ndarray | sparse.BCSR, ...]
 
     @jax.jit
     def __matmul__(self, other):

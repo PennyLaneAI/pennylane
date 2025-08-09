@@ -13,12 +13,14 @@
 # limitations under the License.
 """This module contains the classes/functions specific for simulation of superconducting transmon hardware systems"""
 import warnings
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, List, Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.ops import X, Y
+from pennylane.ops.op_math import s_prod
 from pennylane.pulse import HardwareHamiltonian
 from pennylane.pulse.hardware_hamiltonian import HardwarePulse
 from pennylane.typing import TensorLike
@@ -29,19 +31,19 @@ from pennylane.wires import Wires
 # pylint: disable=unused-argument
 def a(wire, d=2):
     """creation operator"""
-    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(0.5j, qml.Y(wire))
+    return s_prod(0.5, X(wire)) + s_prod(0.5j, Y(wire))
 
 
 def ad(wire, d=2):
     """annihilation operator"""
-    return qml.s_prod(0.5, qml.X(wire)) + qml.s_prod(-0.5j, qml.Y(wire))
+    return s_prod(0.5, X(wire)) + s_prod(-0.5j, Y(wire))
 
 
 # pylint: disable=too-many-arguments
 def transmon_interaction(
-    qubit_freq: Union[float, list],
+    qubit_freq: float | list,
     connections: list,
-    coupling: Union[float, list],
+    coupling: float | list,
     wires: list,
     anharmonicity=None,
     d=2,
@@ -159,14 +161,14 @@ def transmon_interaction(
         anharmonicity = [0.0] * n_wires
 
     # TODO: make coefficients callable / trainable. Currently not supported
-    if callable(qubit_freq) or qml.math.ndim(qubit_freq) == 0:
+    if callable(qubit_freq) or math.ndim(qubit_freq) == 0:
         qubit_freq = [qubit_freq] * n_wires
     elif len(qubit_freq) != n_wires:
         raise ValueError(
             f"Number of qubit frequencies in {qubit_freq} does not match the provided wires = {wires}"
         )
 
-    if qml.math.ndim(coupling) == 0:
+    if math.ndim(coupling) == 0:
         coupling = [coupling] * len(connections)
     if len(coupling) != len(connections):
         raise ValueError(
@@ -225,17 +227,17 @@ class TransmonSettings:
 
     """
 
-    connections: List
-    qubit_freq: Union[float, Callable]
-    coupling: Union[list, TensorLike, Callable]
-    anharmonicity: Union[float, Callable]
+    connections: list
+    qubit_freq: float | Callable
+    coupling: list | TensorLike | Callable
+    anharmonicity: float | Callable
 
     def __eq__(self, other):
         return (
-            qml.math.all(self.connections == other.connections)
-            and qml.math.all(self.qubit_freq == other.qubit_freq)
-            and qml.math.all(self.coupling == other.coupling)
-            and qml.math.all(self.anharmonicity == other.anharmonicity)
+            math.all(self.connections == other.connections)
+            and math.all(self.qubit_freq == other.qubit_freq)
+            and math.all(self.coupling == other.coupling)
+            and math.all(self.anharmonicity == other.anharmonicity)
         )
 
     def __add__(self, other):
@@ -350,6 +352,10 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
 
     .. code-block:: python3
 
+        import jax
+
+        jax.config.update("jax_enable_x64", True)
+
         qubit_freqs = [5.1, 5., 5.3]
         connections = [[0, 1], [1, 2]]  # qubits 0 and 1 are coupled, as are 1 and 2
         g = [0.02, 0.05]
@@ -363,7 +369,7 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
         for q in range(3):
             H += qml.pulse.transmon_drive(amp, phase, freq, q)  # Parametrized drive for each qubit
 
-        dev = qml.device("default.qubit.jax", wires=range(3))
+        dev = qml.device("default.qubit", wires=range(3))
 
         @jax.jit
         @qml.qnode(dev, interface="jax")
@@ -402,9 +408,9 @@ def transmon_drive(amplitude, phase, freq, wires, d=2):
     # TODO: use creation and annihilation operators when introducing qutrits
     # Note that exp(-iw)a* + exp(iw)a = cos(w)X - sin(w)Y for a=1/2(X+iY)
     # We compute the `coeffs` and `observables` of the EM field
-    coeffs = [AmplitudeAndPhaseAndFreq(qml.math.sin, amplitude, phase, freq)]
+    coeffs = [AmplitudeAndPhaseAndFreq(math.sin, amplitude, phase, freq)]
 
-    drive_y_term = sum(qml.Y(wire) for wire in wires)
+    drive_y_term = sum(Y(wire) for wire in wires)
 
     observables = [drive_y_term]
 

@@ -15,12 +15,18 @@
 This module contains the qml.evolve function.
 """
 from functools import singledispatch
+from typing import overload
 
 from pennylane.operation import Operator
 from pennylane.ops import Evolution
 from pennylane.pulse import ParametrizedEvolution, ParametrizedHamiltonian
+from pennylane.typing import TensorLike
 
 
+@overload
+def evolve(op: ParametrizedHamiltonian, **kwargs) -> ParametrizedEvolution: ...
+@overload
+def evolve(op: Operator, coeff: TensorLike = 1, num_steps: int | None = None) -> Evolution: ...
 @singledispatch
 def evolve(*args, **kwargs):  # pylint: disable=unused-argument
     r"""This method is dispatched and its functionality depends on the type of the input ``op``.
@@ -39,11 +45,43 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         e^{-i x \bm{O}}
 
     Args:
-        op (.Operator): operator to evolve
+        op (.Operator): operator to evolve. This must be passed as a *positional* argument. Passing it as a *keyword* argument will result in an error.
         coeff (float): coefficient multiplying the exponentiated operator
+        num_steps (int): The number of steps used in the decomposition of the exponential operator,
+            also known as the Trotter number. Defaults to `None`. If this value is `None` and the Suzuki-Trotter
+            decomposition is needed, an error will be raised.
 
     Returns:
         .Evolution: evolution operator
+
+    .. warning::
+
+        Providing ``num_steps`` to ``qml.evolve`` is deprecated and will be removed in a future release.
+        Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
+        Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
+
+        As a concrete example, consider the following case:
+
+        >>> coeffs = [0.5, -0.6]
+        >>> ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
+        >>> H_flat = qml.dot(coeffs, ops)
+
+        Instead of computing the Suzuki-Trotter product approximation as:
+
+        >>> qml.evolve(H_flat, num_steps=2).decomposition()
+        [RX(0.5, wires=[0]),
+        PauliRot(-0.6, XY, wires=[0, 1]),
+        RX(0.5, wires=[0]),
+        PauliRot(-0.6, XY, wires=[0, 1])]
+
+        The same result can be obtained using :class:`~.TrotterProduct` as follows:
+
+        >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
+        >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
+        [RX(0.5, wires=[0]),
+        PauliRot(-0.6, XY, wires=[0, 1]),
+        RX(0.5, wires=[0]),
+        PauliRot(-0.6, XY, wires=[0, 1])]
 
     **Examples**
 
@@ -61,7 +99,7 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         </html>
 
     Args:
-        op (.ParametrizedHamiltonian): Hamiltonian to evolve
+        op (.ParametrizedHamiltonian): Hamiltonian to evolve. This must be passed as a *positional* argument.
 
     Returns:
         .ParametrizedEvolution: time evolution :math:`U(t_0, t_1)` of the Hamiltonian
@@ -129,7 +167,10 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
         import jax
 
-        dev = qml.device("default.qubit.jax", wires=4)
+        jax.config.update("jax_enable_x64", True)
+
+        dev = qml.device("default.qubit")
+
         @jax.jit
         @qml.qnode(dev, interface="jax")
         def circuit(params):
@@ -138,13 +179,13 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
 
     >>> params = [1., 2., 3., 4.]
     >>> circuit(params)
-    Array(0.8627419, dtype=float32)
+    Array(0.86231063, dtype=float64)
 
     >>> jax.grad(circuit)(params)
-    [Array(50.690746, dtype=float32),
-    Array(-6.296886e-05, dtype=float32),
-    Array(-6.3341584e-05, dtype=float32),
-    Array(-7.052516e-05, dtype=float32)]
+    [Array(50.391273, dtype=float64),
+    Array(-9.42415807e-05, dtype=float64),
+    Array(-0.0001049, dtype=float64),
+    Array(-0.00010601, dtype=float64)]
 
     .. note::
         In the example above, the decorator ``@jax.jit`` is used to compile this execution just-in-time. This means
@@ -152,6 +193,9 @@ def evolve(*args, **kwargs):  # pylint: disable=unused-argument
         will be significantly faster, see the jax docs on jitting. JIT-compiling is optional, and one can remove
         the decorator when only single executions are of interest.
     """
+    raise ValueError(
+        f"No dispatch rule for first argument of type {type(args[0])}. Options are Operator and ParametrizedHamiltonian"
+    )
 
 
 # pylint: disable=missing-docstring

@@ -42,7 +42,7 @@ The basic components of operators are the following:
 #. **The subsystems that the operator addresses** (:attr:`.Operator.wires`), which mathematically speaking defines the subspace that it acts on.
 
    >>> op.wires
-   <Wires = ['a']>
+   Wires(['a'])
 
 #. **Trainable parameters** (:attr:`.Operator.parameters`) that the map depends on, such as a rotation angle,
    which can be fed to the operator as tensor-like objects. For example, since we used jax arrays to
@@ -79,7 +79,7 @@ The basic components of operators are the following:
 
      >>> op = qml.PauliX(0)
      >>> op.diagonalizing_gates()
-     [Hadamard(wires=[0])]
+     [H(0)]
      >>> op.eigvals()
      [ 1 -1]
 
@@ -109,7 +109,7 @@ New operators can be created by applying arithmetic functions to operators, such
 multiplication, taking the adjoint, or controlling an operator. At the moment, such arithmetic is only implemented for
 specific subclasses.
 
-* Operators inheriting from :class:`~.Observable` support addition and scalar multiplication:
+* Operators inheriting from :class:`~.Operator` support addition and scalar multiplication:
 
   >>> op = qml.PauliX(0) + 0.1 * qml.PauliZ(0)
   >>> op.name
@@ -138,11 +138,6 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
 
 
     class FlipAndRotate(qml.operation.Operation):
-
-        # Define how many wires the operator acts on in total.
-        # In our case this may be one or two, which is why we
-        # use the AnyWires Enumeration to indicate a variable number.
-        num_wires = qml.operation.AnyWires
 
         # This attribute tells PennyLane what differentiation method to use. Here
         # we request parameter-shift (or "analytic") differentiation.
@@ -204,7 +199,7 @@ knows a native implementation for ``FlipAndRotate``). It also defines an adjoint
             # as the class differs from the standard `__init__` call signature of
             # (*data, wires=wires, **hyperparameters), the _unflatten method that
             # must be defined as well
-            # _unflatten recreates a opeartion from the serialized data and metadata of ``Operator._flatten``
+            # _unflatten recreates an operation from the serialized data and metadata of ``Operator._flatten``
             # copied_op = type(op)._unflatten(*op._flatten())
             wires = metadata[0]
             hyperparams = dict(metadata[1])
@@ -237,20 +232,14 @@ If the above operator omitted the ``_unflatten`` custom definition, it would rai
     The above exception was the direct cause of the following exception:
 
     AssertionError: FlipAndRotate._unflatten must be able to reproduce the original operation
-    from (0.1,) and (<Wires = ['q3', 'q1']>, (('do_flip', True),)). You may need to override
+    from (0.1,) and (Wires(['q3', 'q1']), (('do_flip', True),)). You may need to override
     either the _unflatten or _flatten method. 
     For local testing, try type(op)._unflatten(*op._flatten())
 
 
-The new gate can be used with PennyLane devices. Device support for an operation can be checked via
-``dev.stopping_condition(op)``.  If ``True``, then the device supports the operation.
+The new gate can be used with PennyLane devices.
 
-``DefaultQubitLegacy`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
-If the Operator doesn't have a matrix, the device then checks if the name of the Operator is explicitly specified in 
-:attr:`~DefaultQubitLegacy.operations` or :attr:`~DefaultQubitLegacy.observables`.
-
-Other devices that do not inherit from ``DefaultQubitLegacy`` only check if the name is explicitly specified in the ``operations``
-property.
+``DefaultQubit`` first checks if the operator has a matrix using the :attr:`~.Operator.has_matrix` property.
 
 - If the device registers support for an operation with the same name,
   PennyLane leaves the gate implementation up to the device. The device
@@ -300,7 +289,7 @@ Defining special properties of an operator
 ##########################################
 
 Apart from the main :class:`~.Operator` class, operators with special methods or representations
-are implemented as subclasses :class:`~.Operation`, :class:`~.Observable`, :class:`~.Channel`,
+are implemented as subclasses :class:`~.Operation`, :class:`~.Channel`,
 :class:`~.CVOperation` and :class:`~.CVObservable`.
 
 However, unlike many other frameworks, PennyLane does not use class

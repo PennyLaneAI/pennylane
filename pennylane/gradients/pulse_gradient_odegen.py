@@ -16,14 +16,16 @@ This module contains functions for computing the pulse generator
 parameter-shift gradient of pulse sequences in a qubit-based quantum tape.
 """
 from functools import partial
-from typing import Callable, Sequence
 
 import numpy as np
 
-import pennylane as qml
-from pennylane import transform
+from pennylane import math
+from pennylane.ops import PauliRot
 from pennylane.ops.qubit.special_unitary import _pauli_decompose, pauli_basis_strings
 from pennylane.pulse import ParametrizedEvolution
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms.core import transform
+from pennylane.typing import PostprocessingFn
 
 from .gradient_transform import (
     _all_zero_grad,
@@ -31,7 +33,7 @@ from .gradient_transform import (
     assert_no_state_returns,
     assert_no_trainable_tape_batching,
     assert_no_variance,
-    choose_trainable_params,
+    choose_trainable_param_indices,
     find_and_validate_gradient_methods,
     reorder_grads,
 )
@@ -47,7 +49,7 @@ except ImportError:
 
 def _one_parameter_generators(op):
     r"""Compute the effective generators :math:`\{\Omega_k\}` of one-parameter groups that
-    reproduce the partial derivatives of a parameterized evolution.
+    reproduce the partial derivatives of a parametrized evolution.
     In particular, compute :math:`U` and :math:`\partial U / \partial \theta_k`
     and recombine them into :math:`\Omega_k = U^\dagger \partial U / \partial \theta_k`
 
@@ -91,7 +93,7 @@ def _one_parameter_generators(op):
 
     # Compute the matrix of the pulse itself and conjugate it. Skip the transposition of the adjoint
     # The output has the shape (mat_dim, mat_dim)
-    U_dagger = qml.math.conj(_compute_matrix([qml.math.detach(d) for d in op.data]))
+    U_dagger = math.conj(_compute_matrix([math.detach(d) for d in op.data]))
 
     # Compute U^\dagger @ \partial U / \partial \theta_k
     # For each entry ``j`` in the tuple ``jac``,
@@ -99,9 +101,9 @@ def _one_parameter_generators(op):
     #    U_dagger, which we skipped above.
     # 2. After contraction, the axes are (mat_dim, mat_dim, *parameter_shape).
     # 3. Move the first two axis to the last two positions.
-    moveax = partial(qml.math.moveaxis, source=(0, 1), destination=(-2, -1))
+    moveax = partial(math.moveaxis, source=(0, 1), destination=(-2, -1))
     return tuple(
-        moveax(qml.math.tensordot(U_dagger, j_r + 1j * j_i, axes=[[0], [0]]))
+        moveax(math.tensordot(U_dagger, j_r + 1j * j_i, axes=[[0], [0]]))
         for j_r, j_i in zip(jac_real, jac_imag)
     )
 
@@ -132,7 +134,7 @@ def _one_parameter_paulirot_coeffs(generators, num_wires):
     # The generators are skew-Hermitian. Therefore _pauli_decompose will return a purely
     # imaginary tensor. Multiplying with 2i results in a real-valued tensor, which
     # we prefer over a complex-valued tensor with vanishing imaginary part
-    return tuple(qml.math.real(2j * _pauli_decompose(g, num_wires)) for g in generators)
+    return tuple(math.real(2j * _pauli_decompose(g, num_wires)) for g in generators)
 
 
 def _nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8):
@@ -150,7 +152,7 @@ def _nonzero_coeffs_and_words(coefficients, num_wires, atol=1e-8):
     new_coefficients = [[] for _ in coefficients]
     new_words = []
     for word, *coeffs in zip(words, *coefficients):
-        if all(qml.math.allclose(c, 0.0, atol=atol, rtol=0.0) for c in coeffs):
+        if all(math.allclose(c, 0.0, atol=atol, rtol=0.0) for c in coeffs):
             continue
         new_words.append(word)
         for new_coeffs, c in zip(new_coefficients, coeffs):
@@ -175,7 +177,7 @@ def _insert_op(tape, ops, op_idx):
     ops_pre = tape.operations[:op_idx]
     ops_post = tape.operations[op_idx:]
     return [
-        qml.tape.QuantumScript(ops_pre + [insert] + ops_post, tape.measurements, shots=tape.shots)
+        QuantumScript(ops_pre + [insert] + ops_post, tape.measurements, shots=tape.shots)
         for insert in ops
     ]
 
@@ -226,7 +228,7 @@ def _generate_tapes_and_coeffs(tape, idx, atol, cache):
     all_coeffs, pauli_words = _nonzero_coeffs_and_words(all_coeffs, num_wires, atol)
     # create PauliRot gates for each Pauli word (with a non-zero coefficient) and for both shifts
     pauli_rots = [
-        qml.PauliRot(angle, word, wires=op.wires)
+        PauliRot(angle, word, wires=op.wires)
         for word in pauli_words
         for angle in [np.pi / 2, -np.pi / 2]
     ]
@@ -262,20 +264,18 @@ def _parshift_and_contract(results, coeffs, single_measure, single_shot_entry):
     def _parshift_and_contract_single(res_list, coeffs):
         """Execute the standard parameter-shift rule on a list of results
         and contract with Pauli basis coefficients."""
-        psr_deriv = ((res := qml.math.stack(res_list))[::2] - res[1::2]) / 2
-        return qml.math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
+        psr_deriv = ((res := math.stack(res_list))[::2] - res[1::2]) / 2
+        return math.tensordot(psr_deriv, coeffs, axes=[[0], [0]])
 
     if single_measure and single_shot_entry:
         # single measurement and single shot entry
-        return _parshift_and_contract_single(results, qml.math.stack(coeffs))
+        return _parshift_and_contract_single(results, math.stack(coeffs))
     if single_measure or single_shot_entry:
         # single measurement or single shot entry, but not both
-        return tuple(
-            _parshift_and_contract_single(r, qml.math.stack(coeffs)) for r in zip(*results)
-        )
+        return tuple(_parshift_and_contract_single(r, math.stack(coeffs)) for r in zip(*results))
 
     return tuple(
-        tuple(_parshift_and_contract_single(_r, qml.math.stack(coeffs)) for _r in zip(*r))
+        tuple(_parshift_and_contract_single(_r, math.stack(coeffs)) for _r in zip(*r))
         for r in zip(*results)
     )
 
@@ -325,7 +325,7 @@ def _expval_pulse_odegen(tape, argnum, atol):
     gradient_tapes = []
     tape_params = tape.get_parameters()
     for idx, param in enumerate(tape_params):
-        shape = qml.math.shape(param)
+        shape = math.shape(param)
 
         if idx not in argnum:
             # Trainable parameters that are de-selected by ``argnum`` receive a vanishing
@@ -401,8 +401,8 @@ def _expval_pulse_odegen(tape, argnum, atol):
 
 @partial(transform, final_transform=True)
 def pulse_odegen(
-    tape: qml.tape.QuantumTape, argnum=None, atol=1e-7
-) -> (Sequence[qml.tape.QuantumTape], Callable):
+    tape: QuantumScript, argnum=None, atol=1e-7
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Transform a circuit to compute the pulse generator parameter-shift gradient of pulses
     in a pulse program with respect to their inputs.
     This method combines automatic differentiation of few-qubit operations with
@@ -459,7 +459,7 @@ def pulse_odegen(
 
     **Example**
 
-    Consider the parameterized Hamiltonian
+    Consider the parametrized Hamiltonian
     :math:`\theta_0 Y_{0}+f(\boldsymbol{\theta_1}, t) Y_{1} + \theta_2 Z_{0}X_{1}`
     with parameters :math:`\theta_0 = \frac{1}{5}`,
     :math:`\boldsymbol{\theta_1}=\left(\frac{3}{5}, \frac{1}{5}\right)^{T}` and
@@ -484,7 +484,7 @@ def pulse_odegen(
 
     .. code-block:: python
 
-        dev = qml.device("default.qubit.jax")
+        dev = qml.device("default.qubit")
 
         @qml.qnode(dev, interface="jax", diff_method=qml.gradients.pulse_odegen)
         def circuit(params):
@@ -503,9 +503,9 @@ def pulse_odegen(
     Alternatively, we may apply the transform to the tape of the pulse program, obtaining
     the tapes with inserted ``PauliRot`` gates together with the post-processing function:
 
-    >>> circuit.construct((params,), {}) # Build the tape of the circuit.
-    >>> circuit.tape.trainable_params = [0, 1, 2]
-    >>> tapes, fun = qml.gradients.pulse_odegen(circuit.tape, argnum=[0, 1, 2])
+    >>> tape = qml.workflow.construct_tape(circuit)(params) # Build the tape of the circuit.
+    >>> tape.trainable_params = [0, 1, 2]
+    >>> tapes, fun = qml.gradients.pulse_odegen(tape, argnum=[0, 1, 2])
     >>> len(tapes)
     12
 
@@ -688,8 +688,8 @@ def pulse_odegen(
     if argnum is None and not tape.trainable_params:
         return _no_trainable_grad(tape)
 
-    trainable_params = choose_trainable_params(tape, argnum)
-    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params)
+    trainable_params_indices = choose_trainable_param_indices(tape, argnum)
+    diff_methods = find_and_validate_gradient_methods(tape, "analytic", trainable_params_indices)
 
     if all(g == "0" for g in diff_methods.values()):
         return _all_zero_grad(tape)

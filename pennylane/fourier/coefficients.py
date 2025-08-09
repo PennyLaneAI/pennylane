@@ -256,9 +256,11 @@ def _coefficients_no_filter(f, degree, use_broadcasting):
             nvec = (*nvec, n_ranges[-1])
             sampling_point = [s * n for s, n in zip(spacing, nvec)]
         else:
+            # sampling_point = np.squeeze(spacing * np.array(nvec))
             sampling_point = spacing * np.array(nvec)
         # fill discretized function array with value of f at inpts
-        f_discrete[nvec] = f(sampling_point)
+        f_out = f(sampling_point)
+        f_discrete[nvec] = f_out if use_broadcasting else np.squeeze(f_out)
 
     coeffs = np.fft.fftn(f_discrete) / f_discrete.size
 

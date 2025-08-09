@@ -30,7 +30,7 @@ typically encountered in PennyLane. It requires separate installation, see
 `jax.readthedocs.io <https://jax.readthedocs.io/en/latest/>`_.
 
 For a demonstration of the basic pulse functionality in PennyLane and running a ctrl-VQE example, see our demo on
-`differentiable pulse programming <https://pennylane.ai/qml/demos/tutorial_pulse_programming101.html>`_.
+`differentiable pulse programming <demos/tutorial_pulse_programming101>`__.
 
 Overview
 --------
@@ -85,7 +85,7 @@ with constant operators :math:`H_j` and scalar functions :math:`f_j(v_j, t)` tha
 parameters :math:`p` and time :math:`t`.
 
 Defining a :class:`~.ParametrizedHamiltonian` requires coefficients and operators, where some of the coefficients
-are callables. The callables defining the parameterized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
+are callables. The callables defining the parametrized coefficients must have the call signature ``(p, t)``, where ``p`` can be a ``float``,
 ``list`` or ``jnp.array``. These functions should be defined using ``jax.numpy`` rather than ``numpy`` where relevant.
 
 .. code-block:: python
@@ -236,7 +236,9 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 
     import jax
 
-    dev = qml.device("default.qubit.jax", wires=1)
+    jax.config.update("jax_enable_x64", True)
+
+    dev = qml.device("default.qubit", wires=1)
 
     @jax.jit
     @qml.qnode(dev, interface="jax")
@@ -246,10 +248,10 @@ Now we can execute the evolution of this Hamiltonian in a QNode and compute its 
 
 >>> params = [1.2]
 >>> circuit(params)
-Array(0.96632576, dtype=float32)
+Array(0.96632722, dtype=float64)
 
 >>> jax.grad(circuit)(params)
-[Array(2.3569832, dtype=float32)]
+[Array(2.35694829, dtype=float64)]
 
 We can use the decorator ``jax.jit`` to compile this execution just-in-time. This means the first execution
 will typically take a little longer with the benefit that all following executions will be significantly faster.

@@ -427,412 +427,7 @@ FERMI_OPS_COMPLEX = [
     ),
 ]
 
-with qml.operation.disable_new_opmath_cm():
-    FERMI_WORDS_AND_OPS_LEGACY = [
-        (
-            FermiWord({(0, 0): "+"}),
-            1,
-            # trivial case of a creation operator with one qubit, 0^ -> (X_0 - iY_0) / 2 : Same as Jordan-Wigner
-            ([0.5, -0.5j], [qml.PauliX(0), qml.PauliY(0)]),
-        ),
-        (
-            FermiWord({(0, 0): "-"}),
-            1,
-            # trivial case of an annihilation operator with one qubit , 0 -> (X_0 + iY_0) / 2 : Same as Jordan-Wigner
-            ([(0.5 + 0j), (0.0 + 0.5j)], [qml.PauliX(0), qml.PauliY(0)]),
-        ),
-        (
-            FermiWord({(0, 0): "+"}),
-            2,
-            # trivial case of a creation operator with two qubits, 0^ -> (X_0 @ X_1 - iY_0 @ X_1) / 2
-            ([0.5, -0.5j], [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(0) @ qml.PauliX(1)]),
-        ),
-        (
-            FermiWord({(0, 0): "-"}),
-            2,
-            # trivial case of an annihilation operator with two qubits , 0 -> (X_0 @ X_1 + iY_0 @ X_1) / 2
-            (
-                [(0.5 + 0j), (0.0 + 0.5j)],
-                [qml.PauliX(0) @ qml.PauliX(1), qml.PauliY(0) @ qml.PauliX(1)],
-            ),
-        ),
-        (
-            FermiWord({(0, 0): "+", (1, 0): "-"}),
-            4,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('0^ 0'), parity_code(n_qubits)) for n_qubits = 4
-            # reformatted the original openfermion output: (0.5+0j) [] + (-0.5+0j) [Z0]
-            ([(0.5 + 0j), (-0.5 + 0j)], [qml.Identity(0), qml.PauliZ(0)]),
-        ),
-        (
-            FermiWord({(0, 0): "-", (1, 0): "+"}),
-            4,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('0 0^'), parity_code(n_qubits)) for n_qubits = 4
-            # reformatted the original openfermion output: (0.5+0j) [] + (0.5+0j) [Z0]
-            ([(0.5 + 0j), (0.5 + 0j)], [qml.Identity(0), qml.PauliZ(0)]),
-        ),
-        (
-            FermiWord({(0, 0): "-", (1, 1): "+"}),
-            4,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('0 1^'), parity_code(n_qubits)) for n_qubits = 4
-            # reformatted the original openfermion output:
-            # (-0.25+0j) [X0] +
-            # 0.25 [X0 Z1] +
-            # (-0-0.25j) [Y0] +
-            # 0.25j [Y0 Z1]
-            (
-                [(-0.25 + 0j), 0.25, (-0 - 0.25j), (0.25j)],
-                [
-                    qml.PauliX(0),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliY(0),
-                    qml.PauliY(0) @ qml.PauliZ(1),
-                ],
-            ),
-        ),
-        (
-            FermiWord({(0, 3): "+", (1, 0): "-"}),
-            4,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('3^ 0'), parity_code(n_qubits)) for n_qubits = 4
-            # reformatted the original openfermion output
-            # (-0.25+0j) [X0 X1 Z3] +
-            # 0.25j [X0 Y1 Z2] +
-            # -0.25j [Y0 X1 Z3] +
-            # (-0.25+0j) [Y0 Y1 Z2]
-            (
-                [(-0.25 + 0j), 0.25j, (-0 - 0.25j), -0.25],
-                [
-                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliZ(3),
-                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2),
-                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliZ(3),
-                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliZ(2),
-                ],
-            ),
-        ),
-        (
-            FermiWord({(0, 5): "+", (1, 5): "-", (2, 5): "+", (3, 5): "-"}),
-            6,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('5^ 5 5^ 5'), parity_code(n_qubits)) with 6 qubits
-            (
-                [(0.5 + 0j), (-0.5 + 0j)],
-                [qml.Identity(0), qml.PauliZ(4) @ qml.PauliZ(5)],
-            ),
-        ),
-        (
-            FermiWord({(0, 3): "+", (1, 3): "-", (2, 3): "+", (3, 1): "-"}),
-            6,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('3^ 3 3^ 1'), parity_code(n_qubits)) with 6 qubits
-            # (-0.25+0j) [Z0 X1 Z3] +
-            # 0.25j [Z0 Y1 Z2] +
-            # (0.25+0j) [X1 Z2] +
-            # -0.25j [Y1 Z3]
-            (
-                [-0.25, 0.25j, -0.25j, 0.25],
-                [
-                    qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(3),
-                    qml.PauliZ(0) @ qml.PauliY(1) @ qml.PauliZ(2),
-                    qml.PauliY(1) @ qml.PauliZ(3),
-                    qml.PauliX(1) @ qml.PauliZ(2),
-                ],
-            ),
-        ),
-        (
-            FermiWord({(0, 1): "+", (1, 0): "-", (2, 1): "+", (3, 1): "-"}),
-            6,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('1^ 0 1^ 1'), parity_code(n_qubits)) with 6 qubits
-            ([0], [qml.Identity(0)]),
-        ),
-    ]
 
-    FERMI_OPS_COMPLEX_LEGACY = [
-        (
-            FermiWord({(0, 2): "-", (1, 0): "+", (2, 3): "+"}),
-            4,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('2 0^ 3^'), parity_code(n_qubits)) for n_qubits = 4
-            # reformatted the original openfermion output
-            # (0.125+0j) [X0 X1 X2 X3] +
-            # 0.125j [X0 X1 Y2 X3] +
-            # (0.125+0j) [X0 Y1 X2 Y3] +
-            # 0.125j [X0 Y1 Y2 Y3] +
-            # -0.125j [Y0 X1 X2 X3] +
-            # (0.125+0j) [Y0 X1 Y2 X3] +
-            # -0.125j [Y0 Y1 X2 Y3] +
-            # (0.125+0j) [Y0 Y1 Y2 Y3]
-            (
-                [0.125, 0.125j, 0.125 + 0j, 0.125j, -0.125j, 0.125 + 0j, -0.125j, 0.125],
-                [
-                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
-                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
-                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
-                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
-                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliX(2) @ qml.PauliX(3),
-                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliY(2) @ qml.PauliX(3),
-                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliX(2) @ qml.PauliY(3),
-                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliY(2) @ qml.PauliY(3),
-                ],
-            ),
-        ),
-        (
-            FermiWord({(0, 0): "-", (1, 3): "+"}),
-            4,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('0 3^'), parity_code(n_qubits)) for n_qubits = 4
-            # reformatted the original openfermion output
-            # (0.25+0j) [X0 X1 Z3] +
-            # -0.25j [X0 Y1 Z2] +
-            # 0.25j [Y0 X1 Z3] +
-            # (0.25+0j) [Y0 Y1 Z2]
-            (
-                [0.25, -0.25j, 0.25j, 0.25],
-                [
-                    qml.PauliX(0) @ qml.PauliX(1) @ qml.PauliZ(3),
-                    qml.PauliX(0) @ qml.PauliY(1) @ qml.PauliZ(2),
-                    qml.PauliY(0) @ qml.PauliX(1) @ qml.PauliZ(3),
-                    qml.PauliY(0) @ qml.PauliY(1) @ qml.PauliZ(2),
-                ],
-            ),
-        ),
-        (
-            FermiWord({(0, 3): "+", (1, 1): "+", (2, 3): "-", (3, 1): "-"}),
-            6,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('3^ 1^ 3 1'), parity_code(n_qubits)) with 6 qubits
-            # -0.25 [] +
-            # 0.25 [Z0 Z1] +
-            # -0.25 [Z0 Z2 Z3] +
-            # 0.25 [Z1 Z2 Z3]
-            # reformatted the original openfermion output
-            (
-                [(-0.25 + 0j), (0.25 + 0j), (-0.25 + 0j), (0.25 + 0j)],
-                [
-                    qml.Identity(0),
-                    qml.PauliZ(0) @ qml.PauliZ(1),
-                    qml.PauliZ(0) @ qml.PauliZ(2) @ qml.PauliZ(3),
-                    qml.PauliZ(1) @ qml.PauliZ(2) @ qml.PauliZ(3),
-                ],
-            ),
-        ),
-        (
-            FermiWord({(0, 1): "+", (1, 4): "-", (2, 3): "-", (3, 4): "+"}),
-            6,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('1^ 4 3 4^'), parity_code(n_qubits)) with 6 qubits
-            # reformatted the original openfermion output
-            # (0.125+0j) [Z0 X1 Z3] +
-            # (0.125+0j) [Z0 X1 Z3 Z4] +
-            # 0.125j [Z0 Y1 Z2] +
-            # 0.125j [Z0 Y1 Z2 Z4] +
-            # (-0.125+0j) [X1 Z2] +
-            # (-0.125+0j) [X1 Z2 Z4] +
-            # -0.125j [Y1 Z3] +
-            # -0.125j [Y1 Z3 Z4]
-            (
-                [0.125, 0.125, 0.125j, 0.125j, -0.125, -0.125, -0.125j, -0.125j],
-                [
-                    qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(3),
-                    qml.PauliZ(0) @ qml.PauliX(1) @ qml.PauliZ(3) @ qml.PauliZ(4),
-                    qml.PauliZ(0) @ qml.PauliY(1) @ qml.PauliZ(2),
-                    qml.PauliZ(0) @ qml.PauliY(1) @ qml.PauliZ(2) @ qml.PauliZ(4),
-                    qml.PauliX(1) @ qml.PauliZ(2),
-                    qml.PauliX(1) @ qml.PauliZ(2) @ qml.PauliZ(4),
-                    qml.PauliY(1) @ qml.PauliZ(3),
-                    qml.PauliY(1) @ qml.PauliZ(3) @ qml.PauliZ(4),
-                ],
-            ),
-        ),
-        (
-            FermiWord({(0, 3): "+", (1, 1): "-", (2, 3): "+", (3, 1): "-"}),
-            6,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('3^ 1 3^ 1'), parity_code(n_qubits)) with 6 qubits
-            ([0], [qml.Identity(3)]),
-        ),
-        (
-            FermiWord({(0, 1): "+", (1, 0): "+", (2, 4): "-", (3, 5): "-"}),
-            6,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('1^ 0^ 4 5'), parity_code(n_qubits)) with 6 qubits
-            # (0.0625+0j) [X0 Z1 X4] +
-            # (0.0625+0j) [X0 Z1 X4 Z5] +
-            # 0.0625j [X0 Z1 Y4] +
-            # 0.0625j [X0 Z1 Y4 Z5] +
-            # (0.0625+0j) [X0 X4] +
-            # (0.0625+0j) [X0 X4 Z5] +
-            # 0.0625j [X0 Y4] +
-            # 0.0625j [X0 Y4 Z5] +
-            # -0.0625j [Y0 Z1 X4] +
-            # -0.0625j [Y0 Z1 X4 Z5] +
-            # (0.0625+0j) [Y0 Z1 Y4] +
-            # (0.0625+0j) [Y0 Z1 Y4 Z5] +
-            # -0.0625j [Y0 X4] +
-            # -0.0625j [Y0 X4 Z5] +
-            # (0.0625+0j) [Y0 Y4] +
-            # (0.0625+0j) [Y0 Y4 Z5]
-            (
-                [
-                    0.0625,
-                    0.0625,
-                    0.0625j,
-                    0.0625j,
-                    0.0625,
-                    0.0625,
-                    0.0625j,
-                    0.0625j,
-                    -0.0625j,
-                    -0.0625j,
-                    0.0625,
-                    0.0625,
-                    -0.0625j,
-                    -0.0625j,
-                    0.0625,
-                    0.0625,
-                ],
-                [
-                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliX(4),
-                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(4),
-                    qml.PauliX(0) @ qml.PauliZ(1) @ qml.PauliY(4) @ qml.PauliZ(5),
-                    qml.PauliX(0) @ qml.PauliX(4),
-                    qml.PauliX(0) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliX(0) @ qml.PauliY(4),
-                    qml.PauliX(0) @ qml.PauliY(4) @ qml.PauliZ(5),
-                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(4),
-                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliY(4),
-                    qml.PauliY(0) @ qml.PauliZ(1) @ qml.PauliY(4) @ qml.PauliZ(5),
-                    qml.PauliY(0) @ qml.PauliX(4),
-                    qml.PauliY(0) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliY(0) @ qml.PauliY(4),
-                    qml.PauliY(0) @ qml.PauliY(4) @ qml.PauliZ(5),
-                ],
-            ),
-        ),
-        (
-            FermiWord({(0, 1): "-", (1, 0): "+"}),
-            4,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('1 0^'), parity_code(n_qubits)) for n_qubits = 4
-            # reformatted the original openfermion output:
-            # -0.25 [X0] +
-            # 0.25 [X0 Z1] +
-            # 0.25j [Y0] +
-            # (-0-0.25j) [Y0 Z1]
-            (
-                [(-0.25 + 0j), 0.25, 0.25j, (-0 - 0.25j)],
-                [
-                    qml.PauliX(0),
-                    qml.PauliX(0) @ qml.PauliZ(1),
-                    qml.PauliY(0),
-                    qml.PauliY(0) @ qml.PauliZ(1),
-                ],
-            ),
-        ),
-        (
-            FermiWord(
-                {(0, 1): "+", (1, 1): "-", (2, 3): "+", (3, 4): "-", (4, 2): "+", (5, 5): "-"}
-            ),
-            6,
-            # obtained with openfermion using: binary_code_transform(FermionOperator('1^ 1 3^ 4 2^ 5'), parity_code(n_qubits)) with 6 qubits
-            # (0.03125+0j) [Z0 Z1 X2 X4] +
-            # (0.03125+0j) [Z0 Z1 X2 X4 Z5] +
-            # 0.03125j [Z0 Z1 X2 Y4] +
-            # 0.03125j [Z0 Z1 X2 Y4 Z5] +
-            # -0.03125j [Z0 Z1 Y2 X4] +
-            # -0.03125j [Z0 Z1 Y2 X4 Z5] +
-            # (0.03125+0j) [Z0 Z1 Y2 Y4] +
-            # (0.03125+0j) [Z0 Z1 Y2 Y4 Z5] +
-            # (0.03125+0j) [Z0 X2 Z3 X4] +
-            # (0.03125+0j) [Z0 X2 Z3 X4 Z5] +
-            # 0.03125j [Z0 X2 Z3 Y4] +
-            # 0.03125j [Z0 X2 Z3 Y4 Z5] +
-            # -0.03125j [Z0 Y2 Z3 X4] +
-            # -0.03125j [Z0 Y2 Z3 X4 Z5] +
-            # (0.03125+0j) [Z0 Y2 Z3 Y4] +
-            # (0.03125+0j) [Z0 Y2 Z3 Y4 Z5] +
-            # (-0.03125+0j) [Z1 X2 Z3 X4] +
-            # (-0.03125+0j) [Z1 X2 Z3 X4 Z5] +
-            # -0.03125j [Z1 X2 Z3 Y4] +
-            # -0.03125j [Z1 X2 Z3 Y4 Z5] +
-            # 0.03125j [Z1 Y2 Z3 X4] +
-            # 0.03125j [Z1 Y2 Z3 X4 Z5] +
-            # (-0.03125+0j) [Z1 Y2 Z3 Y4] +
-            # (-0.03125+0j) [Z1 Y2 Z3 Y4 Z5] +
-            # (-0.03125+0j) [X2 X4] +
-            # (-0.03125+0j) [X2 X4 Z5] +
-            # -0.03125j [X2 Y4] +
-            # -0.03125j [X2 Y4 Z5] +
-            # 0.03125j [Y2 X4] +
-            # 0.03125j [Y2 X4 Z5] +
-            # (-0.03125+0j) [Y2 Y4] +
-            # (-0.03125+0j) [Y2 Y4 Z5]
-            (
-                [
-                    0.03125,
-                    0.03125,
-                    0.03125j,
-                    0.03125j,
-                    -0.03125j,
-                    -0.03125j,
-                    0.03125,
-                    0.03125,
-                    0.03125,
-                    0.03125,
-                    0.03125j,
-                    0.03125j,
-                    -0.03125j,
-                    -0.03125j,
-                    0.03125,
-                    0.03125,
-                    -0.03125,
-                    -0.03125,
-                    -0.03125j,
-                    -0.03125j,
-                    0.03125j,
-                    0.03125j,
-                    -0.03125,
-                    -0.03125,
-                    -0.03125,
-                    -0.03125,
-                    -0.03125j,
-                    -0.03125j,
-                    0.03125j,
-                    0.03125j,
-                    -0.03125,
-                    -0.03125,
-                ],
-                [
-                    qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliX(4),
-                    qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliY(4),
-                    qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliY(4) @ qml.PauliZ(5),
-                    qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliX(4),
-                    qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliY(4),
-                    qml.PauliZ(0) @ qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliY(4) @ qml.PauliZ(5),
-                    qml.PauliZ(0) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliX(4),
-                    qml.PauliZ(0) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliZ(0) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliY(4),
-                    qml.PauliZ(0) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliY(4) @ qml.PauliZ(5),
-                    qml.PauliZ(0) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliX(4),
-                    qml.PauliZ(0) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliZ(0) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliY(4),
-                    qml.PauliZ(0) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliY(4) @ qml.PauliZ(5),
-                    qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliX(4),
-                    qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliY(4),
-                    qml.PauliZ(1) @ qml.PauliX(2) @ qml.PauliZ(3) @ qml.PauliY(4) @ qml.PauliZ(5),
-                    qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliX(4),
-                    qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliY(4),
-                    qml.PauliZ(1) @ qml.PauliY(2) @ qml.PauliZ(3) @ qml.PauliY(4) @ qml.PauliZ(5),
-                    qml.PauliX(2) @ qml.PauliX(4),
-                    qml.PauliX(2) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliX(2) @ qml.PauliY(4),
-                    qml.PauliX(2) @ qml.PauliY(4) @ qml.PauliZ(5),
-                    qml.PauliY(2) @ qml.PauliX(4),
-                    qml.PauliY(2) @ qml.PauliX(4) @ qml.PauliZ(5),
-                    qml.PauliY(2) @ qml.PauliY(4),
-                    qml.PauliY(2) @ qml.PauliY(4) @ qml.PauliZ(5),
-                ],
-            ),
-        ),
-    ]
-
-
-@pytest.mark.usefixtures("use_new_opmath")
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS + FERMI_OPS_COMPLEX)
 def test_bravyi_kitaev_fermi_word_ps(fermionic_op, n_qubits, result):
     """Test that the parity_transform function returns the correct qubit operator."""
@@ -847,24 +442,6 @@ def test_bravyi_kitaev_fermi_word_ps(fermionic_op, n_qubits, result):
     assert qubit_op == expected_op
 
 
-@pytest.mark.usefixtures("use_legacy_opmath")
-@pytest.mark.parametrize(
-    "fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS_LEGACY + FERMI_OPS_COMPLEX_LEGACY
-)
-def test_bravyi_kitaev_fermi_word_ps_legacy(fermionic_op, n_qubits, result):
-    """Test that the parity_transform function returns the correct qubit operator."""
-    # convert FermiWord to PauliSentence and simplify
-    qubit_op = bravyi_kitaev(fermionic_op, n_qubits, ps=True)
-    qubit_op.simplify()
-
-    # get expected op as PauliSentence and simplify
-    expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
-    expected_op.simplify()
-
-    assert qubit_op == expected_op
-
-
-@pytest.mark.usefixtures("use_new_opmath")
 @pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS)
 def test_bravyi_kitaev_fermi_word_operation(fermionic_op, n_qubits, result):
     wires = fermionic_op.wires or [0]
@@ -874,25 +451,12 @@ def test_bravyi_kitaev_fermi_word_operation(fermionic_op, n_qubits, result):
     expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
     expected_op = expected_op.operation(wires)
 
-    assert qml.equal(qubit_op.simplify(), expected_op.simplify())
-
-
-@pytest.mark.usefixtures("use_legacy_opmath")
-@pytest.mark.parametrize("fermionic_op, n_qubits, result", FERMI_WORDS_AND_OPS_LEGACY)
-def test_bravyi_kitaev_fermi_word_operation_legacy(fermionic_op, n_qubits, result):
-    wires = fermionic_op.wires or [0]
-
-    qubit_op = bravyi_kitaev(fermionic_op, n_qubits)
-
-    expected_op = pauli_sentence(qml.Hamiltonian(result[0], result[1]))
-    expected_op = expected_op.operation(wires)
-
-    assert qml.equal(qubit_op.simplify(), expected_op.simplify())
+    qml.assert_equal(qubit_op.simplify(), expected_op.simplify())
 
 
 def test_bravyi_kitaev_for_identity():
     """Test that the bravyi_kitaev function returns the correct qubit operator for Identity."""
-    assert qml.equal(bravyi_kitaev(FermiWord({}), 2), qml.Identity(0))
+    qml.assert_equal(bravyi_kitaev(FermiWord({}), 2), qml.Identity(0))
 
 
 def test_bravyi_kitaev_for_identity_ps():
@@ -912,7 +476,7 @@ def test_bravyi_kitaev_for_identity_ps():
     ),
 )
 def test_bravyi_kitaev_for_null_operator_fermi_word_ps(operator):
-    """Test that the parity_tranform function works when the result is 0"""
+    """Test that the parity_transform function works when the result is 0"""
     # in PauliSentence return format, returns None
     assert bravyi_kitaev(operator, 4, ps=True).simplify() is None
 
@@ -929,6 +493,7 @@ fw2 = FermiWord({(0, 0): "+", (1, 0): "-"})
 fw3 = FermiWord({(0, 0): "+", (1, 3): "-", (2, 0): "+", (3, 4): "-"})
 fw4 = FermiWord({})
 fw5 = FermiWord({(0, 3): "+", (1, 2): "-"})
+fw6 = FermiWord({(0, 1): "+", (1, 4): "-"})
 
 
 def test_empty_fermi_sentence():
@@ -958,7 +523,7 @@ def test_fermi_sentence_identity():
     assert ps_op == ps
 
     result = ps.operation(wire_order=[0])
-    assert qml.equal(qubit_op.simplify(), result.simplify())
+    qml.assert_equal(qubit_op.simplify(), result.simplify())
 
 
 FERMI_AND_PAULI_SENTENCES = [
@@ -1012,6 +577,36 @@ FERMI_AND_PAULI_SENTENCES = [
             }
         ),
     ),
+    (
+        FermiSentence({fw6: 1, fw2: 2}),
+        5,
+        PauliSentence(
+            {
+                PauliWord({0: "I"}): 1.0,
+                PauliWord({0: "Z"}): -1.0,
+                PauliWord({0: "Z", 1: "X", 3: "Y", 4: "X"}): -0.25j,
+                PauliWord({0: "Z", 1: "X", 3: "Y", 4: "Y"}): 0.25,
+                PauliWord({1: "Y", 3: "Y", 4: "X"}): -0.25,
+                PauliWord({1: "Y", 3: "Y", 4: "Y"}): -0.25j,
+            }
+        ),
+    ),
+    (
+        FermiSentence({fw5: 1, fw6: 1}),
+        5,
+        PauliSentence(
+            {
+                PauliWord({0: "Z", 1: "X", 3: "Y", 4: "X"}): -0.25j,
+                PauliWord({0: "Z", 1: "X", 3: "Y", 4: "Y"}): 0.25,
+                PauliWord({1: "Y", 3: "Y", 4: "X"}): -0.25,
+                PauliWord({1: "Y", 3: "Y", 4: "Y"}): -0.25j,
+                PauliWord({1: "Z", 2: "X", 3: "Z"}): -0.25,
+                PauliWord({1: "Z", 2: "Y", 3: "Z"}): -0.25j,
+                PauliWord({2: "X"}): 0.25,
+                PauliWord({2: "Y"}): 0.25j,
+            }
+        ),
+    ),
 ]
 
 
@@ -1030,7 +625,7 @@ def test_bravyi_kitaev_for_fermi_sentence_operation(fermionic_op, n_qubits, resu
     qubit_op = bravyi_kitaev(fermionic_op, n_qubits)
     result = result.operation(wires)
 
-    assert qml.equal(qubit_op.simplify(), result.simplify())
+    qml.assert_equal(qubit_op.simplify(), result.simplify())
 
 
 WIRE_MAP_FOR_FERMI_SENTENCE = [

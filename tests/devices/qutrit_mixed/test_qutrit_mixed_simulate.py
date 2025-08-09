@@ -14,6 +14,7 @@
 """Unit tests for simulate in devices/qutrit_mixed."""
 import numpy as np
 import pytest
+from dummy_debugger import Debugger
 from flaky import flaky
 
 import pennylane as qml
@@ -300,13 +301,13 @@ class TestBroadcasting:
         assert len(res) == 2
         assert np.allclose(res, expected)
 
-    def test_broadcasted_op_sample(self, subspace):
+    def test_broadcasted_op_sample(self, subspace, seed):
         """Test that simulate works for sample measurements
         when an operation has broadcasted parameters"""
         x = np.array([0.8, 1.0, 1.2, 1.4])
 
         qs = self.get_quantum_script(x, subspace, shots=qml.measurements.Shots(10000))
-        res = simulate(qs, rng=123)
+        res = simulate(qs, rng=seed)
 
         expected = self.get_expectation_values(x, subspace)
         assert isinstance(res, tuple)
@@ -314,7 +315,7 @@ class TestBroadcasting:
         assert np.allclose(res, expected, atol=0.05)
 
         state, is_state_batched = get_final_state(qs)
-        res = measure_final_state(qs, state, is_state_batched, rng=123)
+        res = measure_final_state(qs, state, is_state_batched, rng=seed)
 
         assert np.allclose(state, self.get_expected_state(x, subspace))
         assert is_state_batched
@@ -393,13 +394,6 @@ class TestStatePadding:
 class TestDebugger:
     """Tests that the debugger works for a simple circuit"""
 
-    class Debugger:
-        """A dummy debugger class"""
-
-        def __init__(self):
-            self.active = True
-            self.snapshots = {}
-
     basis_state = np.array([[1.0, 0, 0], [0, 0, 0], [0, 0, 0]])
 
     @staticmethod
@@ -418,7 +412,7 @@ class TestDebugger:
         """Test debugger with numpy"""
         phi = np.array(0.397)
         qs = self.get_debugger_quantum_script(phi, subspace)
-        debugger = self.Debugger()
+        debugger = Debugger()
         result = simulate(qs, debugger=debugger)
 
         assert isinstance(result, tuple)
@@ -437,7 +431,7 @@ class TestDebugger:
     def test_debugger_autograd(self, subspace):
         """Tests debugger with autograd"""
         phi = qml.numpy.array(-0.52)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             qs = self.get_debugger_quantum_script(x, subspace)
@@ -459,7 +453,7 @@ class TestDebugger:
         import jax
 
         phi = jax.numpy.array(0.678)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             qs = self.get_debugger_quantum_script(x, subspace)
@@ -481,7 +475,7 @@ class TestDebugger:
         import torch
 
         phi = torch.tensor(-0.526, requires_grad=True)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         def f(x):
             qs = self.get_debugger_quantum_script(x, subspace)
@@ -507,7 +501,7 @@ class TestDebugger:
         import tensorflow as tf
 
         phi = tf.Variable(4.873)
-        debugger = self.Debugger()
+        debugger = Debugger()
 
         qs = self.get_debugger_quantum_script(phi, subspace)
         result = simulate(qs, debugger=debugger)

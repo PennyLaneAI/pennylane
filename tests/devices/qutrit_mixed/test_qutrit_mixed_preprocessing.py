@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for qutrit mixed device preprocessing."""
+import warnings
+
 import numpy as np
 import pytest
 
@@ -22,6 +24,7 @@ from pennylane.devices.default_qutrit_mixed import (
     observable_stopping_condition,
     stopping_condition,
 )
+from pennylane.exceptions import DeviceError
 
 
 class NoMatOp(qml.operation.Operation):
@@ -56,7 +59,7 @@ class TestPreprocessing:
         dev = DefaultQutritMixed()
 
         config = ExecutionConfig(device_options={"bla": "val"})
-        with pytest.raises(qml.DeviceError, match="device option bla"):
+        with pytest.raises(DeviceError, match="device option bla"):
             dev.preprocess(config)
 
     def test_chooses_best_gradient_method(self):
@@ -65,7 +68,7 @@ class TestPreprocessing:
 
         config = ExecutionConfig(gradient_method="best")
 
-        _, new_config = dev.preprocess(config)
+        new_config = dev.setup_execution_config(config)
 
         assert new_config.gradient_method == "backprop"
         assert not new_config.use_device_gradient
@@ -76,18 +79,18 @@ class TestPreprocessing:
         dev = DefaultQutritMixed(wires=3)
 
         circuit_valid_0 = qml.tape.QuantumScript([qml.TShift(0)])
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         circuits, _ = program([circuit_valid_0])
         assert circuits[0].circuit == circuit_valid_0.circuit
 
         circuit_valid_1 = qml.tape.QuantumScript([qml.TShift(1)])
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         circuits, _ = program([circuit_valid_0, circuit_valid_1])
         assert circuits[0].circuit == circuit_valid_0.circuit
         assert circuits[1].circuit == circuit_valid_1.circuit
 
         invalid_circuit = qml.tape.QuantumScript([qml.TShift(4)])
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
 
         with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
             program([invalid_circuit])
@@ -109,13 +112,13 @@ class TestPreprocessing:
         original_mp = mp_fn()
         exp_z = qml.expval(qml.GellMann(0, 3))
         qs = qml.tape.QuantumScript([qml.THadamard(0)], [original_mp, exp_z], shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         tapes, _ = program([qs])
         assert len(tapes) == 1
         tape = tapes[0]
         assert tape.operations == qs.operations
         assert tape.measurements != qs.measurements
-        assert qml.equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
+        qml.assert_equal(tape.measurements[0], mp_cls(wires=[0, 1, 2]))
         assert tape.measurements[1] is exp_z
 
     @pytest.mark.parametrize(
@@ -126,6 +129,8 @@ class TestPreprocessing:
             (qml.Snapshot(), True),
             (qml.TRX(1.1, 0), True),
             (qml.QutritDepolarizingChannel(0.4, 0), True),
+            (qml.QutritAmplitudeDamping(0.1, 0.2, 0.12, 0), True),
+            (qml.TritFlip(0.4, 0.1, 0.02, 0), True),
         ],
     )
     def test_accepted_operator(self, op, expected):
@@ -140,7 +145,6 @@ class TestPreprocessing:
             (qml.QutritDepolarizingChannel(0.4, 0), False),
             (qml.GellMann(0, 1), True),
             (qml.Snapshot(), False),
-            (qml.operation.Tensor(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
             (qml.ops.op_math.SProd(1.2, qml.GellMann(0, 1)), True),
             (qml.sum(qml.ops.op_math.SProd(1.2, qml.GellMann(0, 1)), qml.GellMann(1, 3)), True),
             (qml.ops.op_math.Prod(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
@@ -162,7 +166,7 @@ class TestPreprocessingIntegration:
         tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
         device = DefaultQutritMixed()
 
-        program, _ = device.preprocess()
+        program = device.preprocess_transforms()
         tapes, _ = program([tape])
 
         assert len(tapes) == 1
@@ -176,7 +180,7 @@ class TestPreprocessingIntegration:
         tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
         device = DefaultQutritMixed()
 
-        program, _ = device.preprocess()
+        program = device.preprocess_transforms()
         tapes, _ = program([tape])
 
         assert len(tapes) == 1
@@ -192,13 +196,13 @@ class TestPreprocessingIntegration:
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        program, _ = DefaultQutritMixed().preprocess()
+        program = DefaultQutritMixed().preprocess_transforms()
         res_tapes, batch_fn = program(tapes)
 
         assert len(res_tapes) == 2
         for res_tape, measurement in zip(res_tapes, measurements):
             for op, expected_op in zip(res_tape.operations, ops):
-                assert qml.equal(op, expected_op)
+                qml.assert_equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
@@ -221,7 +225,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for i, t in enumerate(res_tapes):
             for op, exp in zip(t.circuit, expected + measurements[i]):
-                assert qml.equal(op, exp)
+                qml.assert_equal(op, exp)
 
         val = (("a", "b"), "c", "d")
         assert batch_fn(val) == (("a", "b"), "c")
@@ -236,7 +240,7 @@ class TestPreprocessingIntegration:
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        program, _ = DefaultQutritMixed().preprocess()
+        program = DefaultQutritMixed().preprocess_transforms()
         res_tapes, batch_fn = program(tapes)
         expected_ops = [
             qml.THadamard(0),
@@ -248,7 +252,7 @@ class TestPreprocessingIntegration:
         assert len(res_tapes) == 2
         for res_tape, measurement in zip(res_tapes, measurements):
             for op, expected_op in zip(res_tape.operations, expected_ops):
-                assert qml.equal(op, expected_op)
+                qml.assert_equal(op, expected_op)
             assert res_tape.measurements == [measurement]
 
         val = ([[1, 2], [3, 4]], [[5, 6], [7, 8]])
@@ -264,6 +268,50 @@ class TestPreprocessingIntegration:
             qml.tape.QuantumScript(ops=ops, measurements=measurements[1]),
         ]
 
-        program, _ = DefaultQutritMixed().preprocess()
-        with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
+        program = DefaultQutritMixed().preprocess_transforms()
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
+
+    @pytest.mark.parametrize(
+        "relaxations,misclassifications,req_warn",
+        [
+            [(0.1, 0.2, 0.3), None, True],
+            [None, (0.1, 0.2, 0.3), True],
+            [(0.1, 0.2, 0.3), (0.1, 0.2, 0.3), True],
+            [None, None, False],
+        ],
+    )
+    @pytest.mark.parametrize(
+        "measurements",
+        [
+            [qml.state()],
+            [qml.density_matrix(0)],
+            [qml.state(), qml.density_matrix([1, 2])],
+            [qml.state(), qml.expval(qml.GellMann(1))],
+        ],
+    )
+    def test_preprocess_warns_measurement_error_state(
+        self, relaxations, misclassifications, req_warn, measurements
+    ):
+        """Test that preprocess raises a warning if there is an analytic state measurement and
+        measurement error."""
+        tapes = [
+            qml.tape.QuantumScript(ops=[], measurements=measurements),
+            qml.tape.QuantumScript(
+                ops=[qml.THadamard(0), qml.TRZ(0.123, wires=1)], measurements=measurements
+            ),
+        ]
+        device = DefaultQutritMixed(
+            readout_relaxation_probs=relaxations, readout_misclassification_probs=misclassifications
+        )
+        program = device.preprocess_transforms()
+
+        with warnings.catch_warnings(record=True) as warning:
+            program(tapes)
+            if req_warn:
+                assert len(warning) != 0
+                for warn in list(warning):
+                    print(type(warn.message))
+                    assert "is not affected by readout error" in warn.message.args[0]
+            else:
+                assert len(warning) == 0

@@ -20,7 +20,7 @@ from functools import partial
 import pytest
 
 import pennylane as qml
-from pennylane import numpy as np
+from pennylane import numpy as pnp
 from pennylane.drawer import draw
 
 
@@ -85,6 +85,17 @@ class TestLabelling:
         assert split_str[0][:2] == "0:"
         assert split_str[1][:2] == "a:"
 
+    def test_hiding_labels(self):
+        """Test that printing wire labels can be skipped with show_wire_labels=False."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circ():
+            return qml.expval(qml.Z(0) @ qml.X(1))
+
+        split_str = draw(circ, show_wire_labels=False)().split("\n")
+        assert split_str[0].startswith("─")
+        assert split_str[1].startswith("─")
+
 
 class TestDecimals:
     """Test the decimals keyword argument."""
@@ -128,7 +139,7 @@ class TestDecimals:
         """Test numpy parameters display as normal numbers."""
 
         expected = "    0: ──RX(1.00)─┤  <Z>\n    a: ──RY(2.00)─┤     \n1.234: ──RZ(3.00)─┤     "
-        assert draw(circuit)(np.array(1), np.array(2), np.array(3)) == expected
+        assert draw(circuit)(pnp.array(1), pnp.array(2), pnp.array(3)) == expected
 
     @pytest.mark.torch
     def test_torch_parameters(self):
@@ -174,8 +185,8 @@ class TestMatrixParameters:
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit():
             qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
-            qml.QubitUnitary(np.eye(2), wires=0)
-            return qml.expval(qml.Hermitian(np.eye(2), wires=0))
+            qml.QubitUnitary(pnp.eye(2), wires=0)
+            return qml.expval(qml.Hermitian(pnp.eye(2), wires=0))
 
         expected1 = "0: ─╭|Ψ⟩──U(M0)─┤  <𝓗(M0)>\n1: ─╰|Ψ⟩────────┤         "
 
@@ -196,9 +207,9 @@ class TestMatrixParameters:
         @qml.qnode(qml.device("default.qubit", wires=2))
         def matrices_circuit(x):
             qml.StatePrep([1.0, 0.0, 0.0, 0.0], wires=(0, 1))
-            qml.QubitUnitary(np.eye(2, requires_grad=False), wires=0)
+            qml.QubitUnitary(pnp.eye(2, requires_grad=False), wires=0)
             qml.RX(x, wires=1)
-            return qml.expval(qml.Hermitian(np.eye(2, requires_grad=False), wires=1))
+            return qml.expval(qml.Hermitian(pnp.eye(2, requires_grad=False), wires=1))
 
         expected1 = (
             "0: ─╭|Ψ⟩──U(M0)────┤         \n"
@@ -207,7 +218,7 @@ class TestMatrixParameters:
             "1: ─╰|Ψ⟩──RX(0.80)─┤  <𝓗(M0)>\n\n"
             "M0 = \n[[1. 0.]\n [0. 1.]]"
         )
-        output = draw(matrices_circuit)(np.array(1.0, requires_grad=True))
+        output = draw(matrices_circuit, level="gradient")(pnp.array(1.0, requires_grad=True))
         assert output == expected1
 
         expected2 = (
@@ -216,7 +227,7 @@ class TestMatrixParameters:
             "0: ─╭|Ψ⟩──U(M0)────┤         \n"
             "1: ─╰|Ψ⟩──RX(0.80)─┤  <𝓗(M0)>"
         )
-        output = draw(matrices_circuit, show_matrices=False)(np.array(1.0, requires_grad=True))
+        output = draw(matrices_circuit, show_matrices=False)(pnp.array(1.0, requires_grad=True))
         assert output == expected2
 
 
@@ -233,9 +244,12 @@ class TestMaxLength:
             return qml.expval(qml.PauliZ(0))
 
         out = draw(long_circuit)()
+
         assert 95 <= max(len(s) for s in out.split("\n")) <= 100
 
-    @pytest.mark.parametrize("ml", [10, 15, 20])
+    # We choose values of max_length that allow us to include continuation dots
+    # when the circuit is partitioned
+    @pytest.mark.parametrize("ml", [25, 50, 75])
     def test_setting_max_length(self, ml):
         """Test that setting a maximal length works as expected."""
 
@@ -246,6 +260,7 @@ class TestMaxLength:
             return [qml.expval(qml.PauliZ(0)) for _ in range(4)]
 
         out = draw(long_circuit, max_length=ml)()
+
         assert max(len(s) for s in out.split("\n")) <= ml
 
 
@@ -343,10 +358,16 @@ class TestMidCircuitMeasurements:
         assert drawing == expected_drawing
 
     @pytest.mark.parametrize(
-        "op", [qml.GlobalPhase(0.1), qml.Identity(), qml.Snapshot(), qml.Barrier()]
+        "op, grouped",
+        [
+            (qml.GlobalPhase(0.1), True),
+            (qml.Identity(), True),
+            (qml.Snapshot(), False),
+            (qml.Barrier(), False),
+        ],
     )
     @pytest.mark.parametrize("decimals", [None, 2])
-    def test_draw_all_wire_ops(self, op, decimals):
+    def test_draw_all_wire_ops(self, op, grouped, decimals):
         """Test that operators acting on all wires are drawn correctly"""
 
         def func():
@@ -361,9 +382,14 @@ class TestMidCircuitMeasurements:
         # end of the drawing depends on the length of each individual line
         drawing = qml.draw(func, decimals=decimals)().strip()
         label = op.label(decimals=decimals).replace("\n", "")
-        expected_drawing = (
-            f"0: ──X──┤↗├──X──{label}─┤  <Z>\n1: ──X───║───║──{label}─┤     \n         ╚═══╝"
-        )
+        if grouped:
+            expected_drawing = (
+                f"0: ──X──┤↗├──X─╭{label}─┤  <Z>\n1: ──X───║───║─╰{label}─┤     \n         ╚═══╝"
+            )
+        else:
+            expected_drawing = (
+                f"0: ──X──┤↗├──X──{label}─┤  <Z>\n1: ──X───║───║──{label}─┤     \n         ╚═══╝"
+            )
 
         assert drawing == expected_drawing
 
@@ -404,7 +430,7 @@ class TestMidCircuitMeasurements:
             qml.MultiRZ(0.5, [0, 2])
             return qml.expval(qml.PauliZ(2))
 
-        drawing = qml.draw(circ)(np.array([np.pi, 3.124, 0.456]))
+        drawing = qml.draw(circ)(pnp.array([pnp.pi, 3.124, 0.456]))
         expected_drawing = (
             "0: ──RX(3.14)──┤↗│  │0⟩─╭●─────────────────────╭MultiRZ(0.50)─┤     \n"
             "1: ──RX(3.12)──┤↗├──────│─────────────╭●───────│──────────────┤     \n"
@@ -423,7 +449,7 @@ class TestMidCircuitMeasurements:
             m0 = qml.measure(0)
             qml.cond(m0, qml.PauliX)(wires=1)
 
-        drawing = qml.draw(circ)(np.pi)
+        drawing = qml.draw(circ)(pnp.pi)
         expected_drawing = (
             "0: ──RX(3.14)──┤↗├────┤  \n1: ─────────────║───X─┤  \n                ╚═══╝    "
         )
@@ -440,7 +466,7 @@ class TestMidCircuitMeasurements:
             qml.RY(theta, 2)
             qml.cond(m0, qml.CNOT)(wires=[1, 0])
 
-        drawing = qml.draw(circ)(np.pi, np.pi / 2)
+        drawing = qml.draw(circ)(pnp.pi, pnp.pi / 2)
         expected_drawing = (
             "0: ──RX(3.14)──┤↗├───────────╭X─┤  \n"
             "1: ─────────────║────────────╰●─┤  \n"
@@ -564,16 +590,14 @@ class TestMidCircuitMeasurements:
             "1: ──RX(0.50)───║─────────┤↗├─├●─────┤↗├────├●─────║─├●────────────────────┤ │     \n"
             "2: ─────────────║──────────║──├●──Z───║──╭X─├○─────║─│───────────────────H─┤ ╰<Z@Z>\n"
             "3: ─────────────║──────────║──╰○──║───║──╰●─╰SWAP──║─╰●──┤↗₀├──RX(1.23)──║─┤       \n"
-            "                ╚══════════║═══╬══║═══║══════╝     ║      ║    ║         ║         \n"
-            "                           ╚═══╩══╩═══║════════════╬══════║════║═════════╣         \n"
-            "                                      ╚════════════╝      ║    ║         ║         \n"
-            "                                                          ╚════╩═════════╝         "
+            "                ╚══════════║═══╬══║═══║══════╝     ║      ╚════╩═════════╣         \n"
+            "                           ╚═══╩══╩═══║════════════╬═════════════════════╝         \n"
+            "                                      ╚════════════╝                               "
         )
-
         assert drawing == expected_drawing
 
     def test_single_meas_multi_cond_split_lines(self):
-        """Test that a circuit is when multiple lines are needed and the measurement
+        """Test that a circuit is drawn correctly when multiple lines are needed and the measurement
         and condition are on different lines."""
 
         def circ():
@@ -586,12 +610,12 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(circ, max_length=25)()
         expected_drawing = (
-            "0: ──┤↗├──RX(0.00)\n"
-            "1: ───║───RX(0.12)\n"
+            "0: ──┤↗├──RX(0.00) ···\n"
+            "1: ───║───RX(0.12) ···\n"
             "      ╚═══╩═══════\n\n"
-            "───RX(0.00)─┤  <Z>\n"
-            "───RX(0.12)─┤     \n"
-            "═══╝              "
+            "0: ··· ──RX(0.00)─┤  <Z>\n"
+            "1: ··· ──RX(0.12)─┤     \n"
+            "       ══╝              "
         )
 
         assert drawing == expected_drawing
@@ -608,14 +632,14 @@ class TestMidCircuitMeasurements:
             qml.cond(m0, qml.PauliX)(1)
             return qml.expval(qml.PauliZ(0))
 
-        drawing = qml.draw(circ, max_length=25)()
+        drawing = qml.draw(circ, max_length=27)()
         expected_drawing = (
-            "0: ──RX(0.00)──RX(0.00)\n"
-            "1: ────────────────────\n"
+            "0: ──RX(0.00)──RX(0.00) ···\n"
+            "1: ──────────────────── ···\n"
             "                       \n\n"
-            "───┤↗├───────┤  <Z>\n"
-            "────║───X──X─┤     \n"
-            "    ╚═══╩══╝       "
+            "0: ··· ──┤↗├───────┤  <Z>\n"
+            "1: ··· ───║───X──X─┤     \n"
+            "          ╚═══╩══╝       "
         )
 
         assert drawing == expected_drawing
@@ -634,12 +658,12 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(circ, max_length=25)()
         expected_drawing = (
-            "0: ──┤↗├──RX(0.00)───\n"
-            "1: ───║───RX(0.12)──X\n"
+            "0: ──┤↗├──RX(0.00)─── ···\n"
+            "1: ───║───RX(0.12)──X ···\n"
             "      ╚═══╩═════════╝\n\n"
-            "────────────┤  <Z>\n"
-            "───RX(0.00)─┤     \n"
-            "                  "
+            "0: ··· ───────────┤  <Z>\n"
+            "1: ··· ──RX(0.00)─┤     \n"
+            "                        "
         )
 
         assert drawing == expected_drawing
@@ -660,18 +684,18 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(circ, max_length=30)()
         expected_drawing = (
-            "0: ──RX(0.50)──┤↗├────────\n"
-            "1: ──RX(0.50)───║───┤↗├─╭●\n"
-            "2: ─────────────║────║──╰X\n"
+            "0: ──RX(0.50)──┤↗├──────── ···\n"
+            "1: ──RX(0.50)───║───┤↗├─╭● ···\n"
+            "2: ─────────────║────║──╰X ···\n"
             "                ╚════║════\n"
             "                     ╚════\n"
             "                          \n\n"
-            "─────────────────┤  <Z>\n"
-            "────────RZ(1.23)─┤     \n"
-            "───┤↗├──║────────┤     \n"
-            "════║═══╣              \n"
-            "════║═══╣              \n"
-            "    ╚═══╝              "
+            "0: ··· ────────────────┤  <Z>\n"
+            "1: ··· ───────RZ(1.23)─┤     \n"
+            "2: ··· ──┤↗├──║────────┤     \n"
+            "       ═══║═══╣              \n"
+            "       ═══║═══╣              \n"
+            "          ╚═══╝              "
         )
 
         assert drawing == expected_drawing
@@ -706,22 +730,20 @@ class TestMidCircuitMeasurements:
 
         drawing = qml.draw(circ, max_length=60)()
         expected_drawing = (
-            "0: ──RX(0.50)──┤↗₁│  │0⟩──────╭X────────────╭SWAP──Y─╭X\n"
-            "1: ──RX(0.50)───║─────────┤↗├─├●─────┤↗├────├●─────║─├●\n"
-            "2: ─────────────║──────────║──├●──Z───║──╭X─├○─────║─│─\n"
-            "3: ─────────────║──────────║──╰○──║───║──╰●─╰SWAP──║─╰●\n"
+            "0: ──RX(0.50)──┤↗₁│  │0⟩──────╭X────────────╭SWAP──Y─╭X ···\n"
+            "1: ──RX(0.50)───║─────────┤↗├─├●─────┤↗├────├●─────║─├● ···\n"
+            "2: ─────────────║──────────║──├●──Z───║──╭X─├○─────║─│─ ···\n"
+            "3: ─────────────║──────────║──╰○──║───║──╰●─╰SWAP──║─╰● ···\n"
             "                ╚══════════║═══╬══║═══║══════╝     ║   \n"
             "                           ╚═══╩══╩═══║════════════╬═══\n"
-            "                                      ╚════════════╝   \n"
-            "                                                       \n\n"
-            "─────────────────────┤ ╭<Z@Z>\n"
-            "─────────────────────┤ │     \n"
-            "───────────────────H─┤ ╰<Z@Z>\n"
-            "───┤↗₀├──RX(1.23)──║─┤       \n"
-            "    ║    ║         ║         \n"
-            "════║════║═════════╣         \n"
-            "    ║    ║         ║         \n"
-            "    ╚════╩═════════╝         "
+            "                                      ╚════════════╝   \n\n"
+            "0: ··· ────────────────────┤ ╭<Z@Z>\n"
+            "1: ··· ────────────────────┤ │     \n"
+            "2: ··· ──────────────────H─┤ ╰<Z@Z>\n"
+            "3: ··· ──┤↗₀├──RX(1.23)──║─┤       \n"
+            "          ╚════╩═════════╣         \n"
+            "       ══════════════════╝         \n"
+            "                                   "
         )
 
         assert drawing == expected_drawing
@@ -877,6 +899,90 @@ class TestMidCircuitMeasurements:
         assert drawing == expected_drawing
 
 
+class TestLevelExpansionStrategy:
+    @pytest.fixture
+    def transforms_circuit(self):
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
+        def circ(weights, order):
+            qml.RandomLayers(weights, wires=(0, 1))
+            qml.Permute(order, wires=(0, 1, 2))
+            qml.PauliX(0)
+            qml.PauliX(0)
+            qml.RX(0.1, wires=0)
+            qml.RX(-0.1, wires=0)
+            return qml.expval(qml.PauliX(0))
+
+        return circ
+
+    @pytest.mark.parametrize(
+        "var1,var2,expected",
+        [
+            (
+                0,
+                "top",
+                "0: ─╭RandomLayers(M0)─╭Permute──X──X──RX(0.10)──RX(-0.10)─┤  <X>\n"
+                "1: ─╰RandomLayers(M0)─├Permute────────────────────────────┤     \n"
+                "2: ───────────────────╰Permute────────────────────────────┤     ",
+            ),
+            (
+                2,
+                "user",
+                "0: ─╭RandomLayers(M0)─╭Permute─┤  <X>\n"
+                "1: ─╰RandomLayers(M0)─├Permute─┤     \n"
+                "2: ───────────────────╰Permute─┤     ",
+            ),
+            (
+                3,
+                "gradient",
+                "0: ──RY(1.00)──╭Permute─┤  <X>\n"
+                "1: ──RX(20.00)─├Permute─┤     \n"
+                "2: ────────────╰Permute─┤     ",
+            ),
+            (
+                8,
+                "device",
+                "0: ──RY(1.00)──╭SWAP─┤  <X>\n"
+                "1: ──RX(20.00)─│─────┤     \n"
+                "2: ────────────╰SWAP─┤     ",
+            ),
+        ],
+    )
+    def test_equivalent_levels(self, transforms_circuit, var1, var2, expected):
+        order = [2, 1, 0]
+        weights = pnp.array([[1.0, 20]])
+
+        out1 = qml.draw(transforms_circuit, level=var1, show_matrices=False)(weights, order)
+        out2 = qml.draw(transforms_circuit, level=var2, show_matrices=False)(weights, order)
+
+        assert out1 == out2 == expected
+
+    def test_draw_at_level_1(self, transforms_circuit):
+        """Test that at level one the first transform has been applied, cancelling inverses."""
+
+        order = [2, 1, 0]
+        weights = pnp.array([[1.0, 20]])
+
+        out = qml.draw(transforms_circuit, level=1, show_matrices=False)(weights, order)
+
+        expected = (
+            "0: ─╭RandomLayers(M0)─╭Permute──RX(0.10)──RX(-0.10)─┤  <X>\n"
+            "1: ─╰RandomLayers(M0)─├Permute──────────────────────┤     \n"
+            "2: ───────────────────╰Permute──────────────────────┤     "
+        )
+        assert out == expected
+
+    def test_draw_with_qfunc_warns_with_level(self):
+        """Test that draw warns the user about level being ignored."""
+
+        def qfunc():
+            qml.PauliZ(0)
+
+        with pytest.warns(UserWarning, match="the level argument is ignored"):
+            qml.draw(qfunc, level=None)
+
+
 def test_draw_batch_transform():
     """Test that drawing a batch transform works correctly."""
 
@@ -888,62 +994,10 @@ def test_draw_batch_transform():
         return qml.expval(qml.PauliZ(0))
 
     expected = "0: ──H──RX(0.8)─┤  <Z>\n\n0: ──H──RX(0.4)─┤  <Z>"
-    assert draw(circ, decimals=1)(np.array(0.6, requires_grad=True)) == expected
+    assert draw(circ, decimals=1)(pnp.array(0.6, requires_grad=True)) == expected
 
 
-@pytest.mark.skip("Nested tapes are being deprecated")
-def test_nested_tapes():
-    """Test nested tapes inside the qnode."""
-
-    @qml.qnode(qml.device("default.qubit", wires=1))
-    def circ():
-        with qml.queuing.AnnotatedQueue():
-            qml.PauliX(0)
-            with qml.queuing.AnnotatedQueue():
-                qml.PauliY(0)
-        with qml.queuing.AnnotatedQueue():
-            qml.PauliZ(0)
-            with qml.queuing.AnnotatedQueue():
-                qml.PauliX(0)
-        return qml.expval(qml.PauliZ(0))
-
-    expected = (
-        "0: ──Tape:0──Tape:1─┤  <Z>\n\n"
-        "Tape:0\n0: ──X──Tape:2─┤  \n\n"
-        "Tape:2\n0: ──Y─┤  \n\n"
-        "Tape:1\n0: ──Z──Tape:3─┤  \n\n"
-        "Tape:3\n0: ──X─┤  "
-    )
-
-    assert draw(circ)() == expected
-
-
-@pytest.mark.parametrize(
-    "device",
-    [qml.device("default.qubit.legacy", wires=2), qml.devices.DefaultQubit(wires=2)],
-)
-def test_expansion_strategy(device):
-    """Test expansion strategy keyword modifies tape expansion."""
-
-    H = qml.PauliX(0) + qml.PauliZ(1) + 0.5 * qml.PauliX(0) @ qml.PauliX(1)
-
-    @qml.qnode(device)
-    def circ(t):
-        qml.ApproxTimeEvolution(H, t, 2)
-        return qml.probs(wires=0)
-
-    expected_gradient = "0: ─╭ApproxTimeEvolution─┤  Probs\n1: ─╰ApproxTimeEvolution─┤       "
-    assert draw(circ, expansion_strategy="gradient", decimals=None)(0.5) == expected_gradient
-
-    expected_device = "0: ──RX─╭RXX──RX─╭RXX─┤  Probs\n1: ──RZ─╰RXX──RZ─╰RXX─┤       "
-    assert draw(circ, expansion_strategy="device", decimals=None)(0.5) == expected_device
-
-
-@pytest.mark.parametrize(
-    "device",
-    [qml.device("default.qubit.legacy", wires=2), qml.device("default.qubit", wires=2)],
-)
-def test_applied_transforms(device):
+def test_applied_transforms():
     """Test that any transforms applied to the qnode are included in the output."""
 
     @qml.transform
@@ -952,7 +1006,7 @@ def test_applied_transforms(device):
         return (new_tape,), lambda res: res[0]
 
     @just_pauli_x
-    @qml.qnode(device)
+    @qml.qnode(qml.device("default.qubit", wires=2))
     def my_circuit(x):
         qml.RX(x, wires=0)
         qml.SWAP(wires=(0, 1))
@@ -981,16 +1035,6 @@ def test_draw_with_qfunc_with_measurements():
         return qml.expval(qml.PauliZ(1))
 
     assert qml.draw(qfunc)(1.1) == "0: ──RX(1.10)─╭●─┤     \n1: ───────────╰X─┤  <Z>"
-
-
-def test_draw_with_qfunc_warns_with_expansion_strategy():
-    """Test that draw warns the user about expansion_strategy being ignored."""
-
-    def qfunc():
-        qml.PauliZ(0)
-
-    with pytest.warns(UserWarning, match="the expansion_strategy argument is ignored"):
-        _ = qml.draw(qfunc, expansion_strategy="gradient")
 
 
 @pytest.mark.parametrize("use_qnode", [True, False])

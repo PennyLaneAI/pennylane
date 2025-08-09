@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @qml.prod
@@ -80,6 +81,19 @@ def test_decomposition(op, expected):
     """Test that the decomposition of the Reflection operator is correct"""
     decomp = op.decomposition()
     assert decomp == expected
+
+
+@pytest.mark.parametrize(
+    ("op"),
+    [
+        qml.Reflection(qml.Hadamard(wires=0), 0.5, reflection_wires=[0]),
+        qml.Reflection(qml.QFT(wires=[0, 1]), 0.5),
+    ],
+)
+def test_decomposition_new(op):
+    """Tests the decomposition rule implemented with the new system."""
+    for rule in qml.list_decomps(qml.Reflection):
+        _test_decomposition_rule(op, rule)
 
 
 def test_default_values():
@@ -162,29 +176,40 @@ class TestIntegration:
         assert res.shape == (8,)
         assert np.allclose(res, self.exp_result, atol=0.002)
 
+    # NOTE: the finite shot test of the results has a 3% chance to fail
+    # due to the random nature of the sampling. Hence we just pin the salt
     @pytest.mark.autograd
-    def test_qnode_autograd(self):
+    @pytest.mark.parametrize("shots", [None, 50000])
+    def test_qnode_autograd(self, shots, seed):
         """Test that the QNode executes with Autograd."""
 
-        dev = qml.device("default.qubit")
-        qnode = qml.QNode(self.circuit, dev, interface="autograd")
+        dev = qml.device("default.qubit", shots=shots, wires=3, seed=seed)
+        diff_method = "backprop" if shots is None else "parameter-shift"
+        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
 
         x = qml.numpy.array(self.x, requires_grad=True)
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
-        assert np.allclose(res, self.exp_result, atol=0.002)
+
+        assert np.allclose(res, self.exp_result, atol=0.005)
+
+        res = qml.jacobian(qnode)(x)
+        assert np.shape(res) == (8,)
+
+        assert np.allclose(res, self.exp_jac, atol=0.005)
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", [False, True])
     @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_jax(self, shots, use_jit):
+    def test_qnode_jax(self, shots, use_jit, seed):
         """Test that the QNode executes and is differentiable with JAX. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import jax
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
+
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
         if use_jit:
@@ -193,6 +218,7 @@ class TestIntegration:
         x = jax.numpy.array(self.x)
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
+
         assert np.allclose(res, self.exp_result, atol=0.005)
 
         jac_fn = jax.jacobian(qnode)
@@ -201,37 +227,42 @@ class TestIntegration:
 
         jac = jac_fn(x)
         assert jac.shape == (8,)
-        assert np.allclose(jac, self.exp_jac, atol=0.006)
+
+        assert np.allclose(jac, self.exp_jac, atol=0.005)
 
     @pytest.mark.torch
     @pytest.mark.parametrize("shots", [None, 50000])
-    def test_qnode_torch(self, shots):
+    def test_qnode_torch(self, shots, seed):
         """Test that the QNode executes and is differentiable with Torch. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
+
         import torch
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
+
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
         assert qml.math.shape(res) == (8,)
-        assert qml.math.allclose(res, self.exp_result, atol=0.002)
+
+        assert qml.math.allclose(res, self.exp_result, atol=0.005)
 
         jac = torch.autograd.functional.jacobian(qnode, x)
         assert qml.math.shape(jac) == (8,)
-        assert qml.math.allclose(jac, self.exp_jac, atol=0.006)
+
+        assert qml.math.allclose(jac, self.exp_jac, atol=0.005)
 
     @pytest.mark.tf
     @pytest.mark.parametrize("shots", [None, 50000])
     @pytest.mark.xfail(reason="tf gradient doesn't seem to be working, returns ()")
-    def test_qnode_tf(self, shots):
+    def test_qnode_tf(self, shots, seed):
         """Test that the QNode executes and is differentiable with TensorFlow. The shots
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", shots=shots, seed=10)
+        dev = qml.device("default.qubit", shots=shots, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
         qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
 

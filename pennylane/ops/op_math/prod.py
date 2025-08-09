@@ -16,26 +16,26 @@ This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
 import itertools
-import warnings
+from collections import Counter
 from copy import copy
-from functools import reduce, wraps
+from functools import reduce
 from itertools import combinations
-from typing import List, Tuple, Union
+from typing import Union
 
 from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.capture.autograph import wraps
+from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
 from pennylane.ops.qubit.non_parametric_ops import PauliX, PauliY, PauliZ
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires
 
-from .composite import CompositeOp
+from .composite import CompositeOp, handle_recursion_error
 
 MAX_NUM_WIRES_KRON_PRODUCT = 9
 """The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
@@ -56,7 +56,8 @@ def prod(*ops, id=None, lazy=True):
 
     Keyword Args:
         id (str or None): id for the product operator. Default is None.
-        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
+            of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
@@ -98,8 +99,10 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op = prod(qfunc)(1.1)
     >>> prod_op
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
+
+
+    Notice how the order in the output appears reversed. However, this is correct because the operators are applied from right to left.
     """
-    ops = tuple(convert_to_opmath(op) for op in ops)
     if len(ops) == 1:
         if isinstance(ops[0], qml.operation.Operator):
             return ops[0]
@@ -187,7 +190,7 @@ class Prod(CompositeOp):
                  0.        +0.j        ,  0.        +0.j        ]])
 
         The Prod operation can be used inside a `qnode` as an operation which,
-        if parameterized, can be differentiated.
+        if parametrized, can be differentiated.
 
         .. code-block:: python
 
@@ -205,7 +208,7 @@ class Prod(CompositeOp):
         tensor(-0.9424888, requires_grad=True)
 
         The Prod operation can also be measured as an observable.
-        If the circuit is parameterized, then we can also differentiate through the
+        If the circuit is parametrized, then we can also differentiate through the
         product observable.
 
         .. code-block:: python
@@ -230,8 +233,17 @@ class Prod(CompositeOp):
 
     """
 
+    resource_keys = frozenset({"resources"})
+
+    @property
+    @handle_recursion_error
+    def resource_params(self):
+        resources = dict(Counter(qml.resource_rep(type(op), **op.resource_params) for op in self))
+        return {"resources": resources}
+
     _op_symbol = "@"
-    _math_op = math.prod
+    _math_op = staticmethod(math.prod)
+    grad_method = None
 
     @property
     def is_hermitian(self):
@@ -246,51 +258,10 @@ class Prod(CompositeOp):
                 return False
         return all(op.is_hermitian for op in self)
 
-    @property
-    def overlapping_ops(self) -> List[Tuple[Wires, List[Operator]]]:
-        """Groups all operands of the composite operator that act on overlapping wires taking
-        into account operator commutivity.
-
-        Returns:
-            List[List[Operator]]: List of lists of operators that act on overlapping wires. All the
-            inner lists commute with each other.
-        """
-        if self._overlapping_ops is None:
-            overlapping_ops = []  # [(wires, [ops])]
-            for op in self:
-                op_idx = False
-                ops = [op]
-                wires = op.wires
-                for idx, (old_wires, old_ops) in reversed(list(enumerate(overlapping_ops))):
-                    if any(wire in old_wires for wire in wires):
-                        ops = old_ops + ops
-                        wires = old_wires + wires
-                        op_idx = idx
-                        old_wires, old_ops = overlapping_ops.pop(idx)
-                if op_idx is not False:
-                    overlapping_ops.insert(op_idx, (wires, ops))
-                else:
-                    overlapping_ops += [(wires, ops)]
-
-            self._overlapping_ops = [overlapping_op[1] for overlapping_op in overlapping_ops]
-
-        return self._overlapping_ops
-
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_decomposition(self):
         return True
-
-    @property
-    def obs(self):
-        r"""Access the operands of a ``Prod`` instance"""
-        # This is temporary property to smoothen the transition to the new operator arithmetic system.
-        # In particular, the __matmul__ (@ python operator) method between operators now generates Prod instead of Tensor instances.
-        warnings.warn(
-            "Accessing the terms of a tensor product operator via op.obs is deprecated, please use op.operands instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self.operands
 
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
@@ -303,21 +274,16 @@ class Prod(CompositeOp):
             return [qml.apply(op) for op in self[::-1]]
         return list(self[::-1])
 
+    @handle_recursion_error
     def matrix(self, wire_order=None):
         """Representation of the operator as a matrix in the computational basis."""
         if self.pauli_rep:
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
 
-        mats: List[TensorLike] = []
-        batched: List[bool] = []  # batched[i] tells if mats[i] is batched or not
+        mats: list[TensorLike] = []
+        batched: list[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
-            gen = (
-                (
-                    (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix()),
-                    op.wires,
-                )
-                for op in ops
-            )
+            gen = ((op.matrix(), op.wires) for op in ops)
 
             reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
 
@@ -339,9 +305,10 @@ class Prod(CompositeOp):
             )
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
-    def sparse_matrix(self, wire_order=None):
+    @handle_recursion_error
+    def sparse_matrix(self, wire_order=None, format="csr"):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
 
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             gen = ((op.sparse_matrix(), op.wires) for op in self)
@@ -350,13 +317,21 @@ class Prod(CompositeOp):
 
             wire_order = wire_order or self.wires
 
-            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order).asformat(
+                format
+            )
         mats = (op.sparse_matrix() for op in self)
         full_mat = reduce(sparse_kron, mats)
-        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order).asformat(format)
+
+    @property
+    @handle_recursion_error
+    def has_sparse_matrix(self):
+        return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     # pylint: disable=protected-access
     @property
+    @handle_recursion_error
     def _queue_category(self):
         """Used for sorting objects into their respective lists in `QuantumTape` objects.
         This property is a temporary solution that should not exist long-term and should not be
@@ -379,17 +354,13 @@ class Prod(CompositeOp):
     def adjoint(self):
         return Prod(*(qml.adjoint(factor) for factor in self[::-1]))
 
-    @property
-    def arithmetic_depth(self) -> int:
-        return 1 + max(factor.arithmetic_depth for factor in self)
-
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
         if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
-            return reduce(lambda a, b: a @ b, operand_pauli_reps)
+            return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
         return None
 
-    def _simplify_factors(self, factors: Tuple[Operator]) -> Tuple[complex, Operator]:
+    def _simplify_factors(self, factors: tuple[Operator]) -> tuple[complex, Operator]:
         """Reduces the depth of nested factors and groups identical factors.
 
         Returns:
@@ -404,6 +375,7 @@ class Prod(CompositeOp):
         new_factors.remove_factors(wires=self.wires)
         return new_factors.global_phase, new_factors.factors
 
+    @handle_recursion_error
     def simplify(self) -> Union["Prod", Sum]:
         r"""
         Transforms any nested Prod instance into the form :math:`\sum c_i O_i` where
@@ -431,7 +403,7 @@ class Prod(CompositeOp):
         return op if global_phase == 1 else qml.s_prod(global_phase, op).simplify()
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> List[Operator]:
+    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """Insertion sort algorithm that sorts a list of product factors by their wire indices, taking
         into account the operator commutivity.
 
@@ -458,6 +430,7 @@ class Prod(CompositeOp):
 
         return op_list
 
+    @handle_recursion_error
     def terms(self):
         r"""Representation of the operator as a linear combination of other operators.
 
@@ -504,35 +477,19 @@ class Prod(CompositeOp):
                 ops.append(factor)
         return coeffs, ops
 
-    @property
-    def coeffs(self):
-        r"""
-        Scalar coefficients of the operator when flattened out.
 
-        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
+def _prod_resources(resources):
+    return resources
 
-        .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
-        warnings.warn(
-            "Prod.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        coeffs, _ = self.terms()
-        return coeffs
 
-    @property
-    def ops(self):
-        r"""
-        Operator terms without scalar coefficients of the operator when flattened out.
+# pylint: disable=unused-argument
+@qml.register_resources(_prod_resources)
+def _prod_decomp(*_, wires=None, operands):
+    for op in reversed(operands):
+        op._unflatten(*op._flatten())  # pylint: disable=protected-access
 
-        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
 
-        .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
-        warnings.warn(
-            "Prod.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        _, ops = self.terms()
-        return ops
+qml.add_decomps(Prod, _prod_decomp)
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
@@ -625,7 +582,7 @@ class _ProductFactorsGrouping:
                 self._add_non_pauli_factor(factor=factor, wires=wires)
                 self._remove_pauli_factors(wires=wires)
 
-    def _add_pauli_factor(self, factor: Operator, wires: List[int]):
+    def _add_pauli_factor(self, factor: Operator, wires: list[int]):
         """Adds the given Pauli operator to the temporary ``self._pauli_factors`` dictionary. If
         there was another Pauli operator acting on the same wire, the two operators are grouped
         together using the ``self._pauli_mult`` dictionary.
@@ -641,7 +598,7 @@ class _ProductFactorsGrouping:
         coeff, new_word = self._pauli_mult[old_word][op2_name]
         self._pauli_factors[wire] = old_coeff * coeff, new_word
 
-    def _add_non_pauli_factor(self, factor: Operator, wires: List[int]):
+    def _add_non_pauli_factor(self, factor: Operator, wires: list[int]):
         """Adds the given non-Pauli factor to the temporary ``self._non_pauli_factors`` dictionary.
         If there alerady exists an identical operator in the dictionary, the two are grouped
         together.
@@ -673,7 +630,7 @@ class _ProductFactorsGrouping:
             self._remove_non_pauli_factors(wires=wires)
             self._non_pauli_factors[wires] = [op_hash, copy(exponent), factor]
 
-    def _remove_non_pauli_factors(self, wires: List[int]):
+    def _remove_non_pauli_factors(self, wires: list[int]):
         """Remove all factors from the ``self._non_pauli_factors`` dictionary that act on the given
         wires and add them to the ``self._factors`` tuple.
 
@@ -693,7 +650,7 @@ class _ProductFactorsGrouping:
                     if not isinstance(op, qml.Identity):
                         self._factors += ((op,),)
 
-    def _remove_pauli_factors(self, wires: List[int]):
+    def _remove_pauli_factors(self, wires: list[int]):
         """Remove all Pauli factors from the ``self._pauli_factors`` dictionary that act on the
         given wires and add them to the ``self._factors`` tuple.
 
@@ -707,9 +664,9 @@ class _ProductFactorsGrouping:
             if pauli_word != "Identity":
                 pauli_op = self._paulis[pauli_word](wire)
                 self._factors += ((pauli_op,),)
-                self.global_phase *= pauli_coeff
+            self.global_phase *= pauli_coeff
 
-    def remove_factors(self, wires: List[int]):
+    def remove_factors(self, wires: list[int]):
         """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``
         dictionaries that act on the given wires and add them to the ``self._factors`` tuple.
 

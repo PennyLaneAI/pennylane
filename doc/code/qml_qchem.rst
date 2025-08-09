@@ -4,16 +4,27 @@ qml.qchem
 Overview
 --------
 
+.. currentmodule:: pennylane.qchem
+
 The quantum chemistry module provides the functionality to perform Hartree-Fock calculations
 and construct observables such as molecular Hamiltonians as well as dipole moment, spin and particle
-number observables.
+number observables. It also includes functionalities to convert to and from Openfermion's 
+`QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__ and 
+`FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__.
+
+.. note::
+
+    The function :func:`~pennylane.math.decomposition.givens_decomposition` has been moved to the
+    :mod:`~pennylane.math` module. The function is still available in the
+    :mod:`~pennylane.qchem` module for backward compatibility, but it is recommended to import it
+    from the new location in future code.
 
 .. currentmodule:: pennylane.qchem
 
 .. automodapi:: pennylane.qchem
     :no-heading:
     :include-all-objects:
-    :skip: taper, symmetry_generators, paulix_ops, import_operator
+    :skip: taper, symmetry_generators, paulix_ops, import_operator, givens_decomposition
 
 Differentiable Hartree-Fock
 ---------------------------
@@ -63,27 +74,13 @@ We then construct the Hamiltonian.
     hamiltonian, qubits = qml.qchem.molecular_hamiltonian(molecule, args=args)
 
 >>> print(hamiltonian)
-  (-0.35968235922631075) [I0]
-+ (-0.11496335836166222) [Z2]
-+ (-0.11496335836166222) [Z3]
-+ (0.13082414303722753) [Z1]
-+ (0.13082414303722759) [Z0]
-+ (0.1031689825163302) [Z0 Z2]
-+ (0.1031689825163302) [Z1 Z3]
-+ (0.15329959994281844) [Z0 Z3]
-+ (0.15329959994281844) [Z1 Z2]
-+ (0.15405495855815063) [Z0 Z1]
-+ (0.1609686663987323) [Z2 Z3]
-+ (-0.05013061742648825) [Y0 Y1 X2 X3]
-+ (-0.05013061742648825) [X0 X1 Y2 Y3]
-+ (0.05013061742648825) [Y0 X1 X2 Y3]
-+ (0.05013061742648825) [X0 Y1 Y2 X3]
+-0.3596823592263396 * I(0) + 0.1308241430372839 * Z(0) + -0.11496335836158356 * Z(2)+ 0.10316898251630022 * (Z(0) @ Z(2)) + 0.1308241430372839 * Z(1) + 0.15405495855812648 * (Z(0) @ Z(1)) + 0.050130617426473734 * (Y(0) @ X(1) @ X(2) @ Y(3)) + -0.050130617426473734 * (Y(0) @ Y(1) @ X(2) @ X(3)) + -0.050130617426473734 * (X(0) @ X(1) @ Y(2) @ Y(3)) + 0.050130617426473734 * (X(0) @ Y(1) @ Y(2) @ X(3)) + -0.11496335836158356 * Z(3) + 0.15329959994277395 * (Z(0) @ Z(3)) + 0.10316898251630022 * (Z(1) @ Z(3)) + 0.15329959994277395 * (Z(1) @ Z(2)) + 0.16096866639866414 * (Z(2) @ Z(3))
 
 The generated Hamiltonian can be used in a circuit where the molecular geometry, the basis set
 parameters, and the circuit parameters are optimized simultaneously. Further information about
 molecular geometry optimization with PennyLane is provided in this
 `paper <https://arxiv.org/abs/2106.13840>`__ and this
-`demo <https://pennylane.ai/qml/demos/tutorial_mol_geo_opt.html>`__.
+`demo <https://pennylane.ai/qml/demos/tutorial_mol_geo_opt>`__.
 
 .. code-block:: python3
 

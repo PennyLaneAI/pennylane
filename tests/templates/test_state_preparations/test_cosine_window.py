@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.wires import WireError
+from pennylane.exceptions import WireError
 
 
 def test_standard_validity():
@@ -38,7 +38,7 @@ class TestDecomposition:
         """Test that the correct gates are applied."""
 
         op = qml.CosineWindow(wires=[0])
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         assert queue[0].name == "Hadamard"
         assert queue[1].name == "RZ"
@@ -137,3 +137,25 @@ class TestStateVector:
         expected_10 = qml.CosineWindow([0, 1]).state_vector(wire_order=[1, 0])
         expected = np.stack([expected_10, np.zeros_like(expected_10)])
         assert np.allclose(res, expected)
+
+
+class TestInterfaces:
+    """Test that the template works with different interfaces"""
+
+    @pytest.mark.jax
+    def test_jax_jit(self):
+        """Test that the template correctly compiles with JAX JIT   ."""
+        import jax
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.CosineWindow(wires=[0, 1])
+            return qml.probs(wires=[0, 1])
+
+        circuit2 = jax.jit(circuit)
+
+        res = circuit()
+        res2 = circuit2()
+        assert qml.math.allclose(res, res2, atol=1e-6, rtol=0)

@@ -29,8 +29,6 @@ class TestInitializeState:
     class DefaultPrep(StatePrepBase):
         """A dummy class that assumes it was given a state vector."""
 
-        num_wires = qml.operation.AllWires
-
         def state_vector(self, wire_order=None):
             return self.parameters[0]
 
@@ -66,7 +64,7 @@ class TestInitializeState:
         state = create_initial_state([0, 1, 2], prep_operation=prep_op)
         assert state[1, 2, 0, 1, 2, 0] == 1
         state[1, 2, 0, 1, 2, 0] = 0  # set to zero to make test below simple
-        assert qml.math.allequal(state, np.zeros(([3] * 6)))
+        assert qml.math.allequal(state, np.zeros([3] * 6))
 
     @pytest.mark.parametrize("wires", [(0, 1), qml.wires.Wires([0, 1])])
     def test_create_initial_state_wires(self, wires):

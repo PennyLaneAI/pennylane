@@ -6,24 +6,36 @@ Dependencies
 
 PennyLane requires the following libraries be installed:
 
-* `Python <http://python.org/>`_ >= 3.9
+* `Python <http://python.org/>`_ >= 3.10
 
 The following Python packages are hard dependencies, and will automatically
 be installed alongside PennyLane:
 
-* `numpy <http://numpy.org/>`_ >= 1.13.3
-* `scipy <http://scipy.org/>`_ >= 1.0.0
-* `NetworkX <https://networkx.github.io/>`_ >= 1.0.0
+* `numpy <http://numpy.org/>`_
+* `scipy <http://scipy.org/>`_
+* `NetworkX <https://networkx.github.io/>`_
+* `rustworkx <https://github.com/Qiskit/rustworkx>`_ >= 0.14.0
 * `autograd <https://github.com/HIPS/autograd>`_
-* `toml <https://github.com/uiri/toml>`_
+* `tomlkit <https://github.com/python-poetry/tomlkit>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
-* `semantic-version <https://github.com/rbarrois/python-semanticversion>`_ >= 2.7
 * `autoray <https://github.com/jcmgray/autoray>`__ >= 0.6.11
+* `cachetools <https://github.com/tkem/cachetools>`_
+* `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.42
+* `requests <https://github.com/psf/requests>`_
+* `typing_extensions <https://github.com/python/typing_extensions>`_
 * `packaging <https://github.com/pypa/packaging>`_
+* `diastatic-malt <https://github.com/PennyLaneAI/diastatic-malt>`_
 
 The following Python packages are optional:
 
 * `openfermionpyscf <https://github.com/quantumlib/OpenFermion-PySCF>`_, for the non-differentiable backend of the ``qml.qchem`` module
+* ``matplotlib``: for ``qml.draw_mpl`` and associated code
+* ``quimb``: for the ``default.tensor`` device
+* ``pyzx``: for ``qml.transforms.to_zx`` and ``qml.transforms.from_zx``
+* ``stim``: for ``default.clifford``
+* ``openqasm3`` and ``antlr3_python3_runtime``: for ``qml.from_qasm3``
+* ``kahypar`` and ``opt_einsum`` for ``qcut``
+* ``cvxopt``for ``qml.kernels.closest_psd_matrix``
 
 If you currently do not have Python 3 installed, we recommend
 `Anaconda for Python 3 <https://www.anaconda.com/download/>`_, a distributed version
@@ -37,11 +49,11 @@ Interface dependencies
 For development of the TensorFlow, PyTorch, and JAX interfaces, there are additional
 requirements which must be installed manually:
 
-* **JAX interface**: ``jax > 0.2.0`` and ``jaxlib``
+* **JAX interface**: ``jax`` and ``jaxlib`` == 0.6.0
 
-* **PyTorch interface**: ``pytorch >= 1.1``
+* **PyTorch interface**: ``pytorch``
 
-* **TensorFlow interface**: ``tensorflow >= 2.3``
+* **TensorFlow interface**: ``tensorflow`` < 2.17
 
 
 Installation
@@ -67,62 +79,10 @@ importing PennyLane in Python.
     requires ``pip install -e .`` to be re-run in the plugin repository
     for the changes to take effect.
 
-Apart from the core packages needed to run PennyLane. Some extra packages need
+Apart from the core packages needed to run PennyLane, some extra packages need
 to be installed for several development processes, such as linting, testing, and
 pre-commit quality checks. Those can be installed easily via ``pip``:
 
 .. code-block:: bash
 
     pip install -r requirements-dev.txt
-
-Docker
-------
-
-Build a PennyLane Docker image
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-**Docker** support exists for building using **CPU** and **GPU** (Nvidia CUDA 11.1+) images.
-
-.. note::
-
-    Docker builds using "make" will work on Linux and MacOS only. For MS Windows
-    you can use `WSL <https://docs.microsoft.com/en-us/windows/wsl/install-win10>`__.
-    They are currently not supported on the Apple M1 chip (ARM64).
-
-
-Build a basic PennyLane image
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- To build a basic PennyLane image without any additional interfaces (Torch,
-  TensorFlow, or Jax) or **plugins** (qiskit, amazon-braket, cirq, forest), run
-  the following:
-
-  .. code-block:: bash
-
-    make -f docker/Makefile build-base
-
-Build a PennyLane image with a specific interface
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- To build a PennyLane image using a specific **interface** (Torch, TensorFlow or Jax), run the following:
-
-  .. code-block:: bash
-
-    make -f docker/Makefile build-interface interface-name=tensorflow
-
-- To build a PennyLane image using a specific interface (Torch, TensorFlow or
-  Jax) with GPU support, run the following:
-
-  .. code-block:: bash
-
-    make -f docker/Makefile build-interface-gpu interface-name=tensorflow
-
-Build a PennyLane image with a plugin
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-- To build a PennyLane image using a specific plugin (qiskit, amazon-braket,
-  cirq, forest, etc), run the following:
-
-  .. code-block:: bash
-
-    make -f docker/Makefile build-plugin plugin-name=qiskit

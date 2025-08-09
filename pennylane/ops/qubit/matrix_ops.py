@@ -17,21 +17,35 @@ accept a hermitian or an unitary matrix as a parameter.
 """
 # pylint:disable=arguments-differ
 import warnings
-from itertools import product
 
 import numpy as np
+import scipy as sp
 from scipy.linalg import fractional_matrix_power
+from scipy.sparse import csr_matrix
 
 import pennylane as qml
+from pennylane import math
 from pennylane import numpy as pnp
-from pennylane.math import cast, conj, eye, norm, sqrt, sqrt_matrix, transpose, zeros
-from pennylane.operation import AnyWires, DecompositionUndefinedError, Operation
-from pennylane.wires import Wires
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition.symbolic_decomposition import is_integer
+from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.operation import FlatPytree, Operation
+from pennylane.ops.op_math.decompositions.unitary_decompositions import (
+    multi_qubit_decomp_rule,
+    rot_decomp_rule,
+    two_qubit_decomp_rule,
+    xyx_decomp_rule,
+    xzx_decomp_rule,
+    zxz_decomp_rule,
+    zyz_decomp_rule,
+)
+from pennylane.typing import TensorLike
+from pennylane.wires import Wires, WiresLike
 
 _walsh_hadamard_matrix = np.array([[1, 1], [1, -1]]) / 2
 
 
-def _walsh_hadamard_transform(D, n=None):
+def _walsh_hadamard_transform(D: TensorLike, n: int | None = None):
     r"""Compute the Walsh–Hadamard Transform of a one-dimensional array.
 
     Args:
@@ -76,6 +90,13 @@ class QubitUnitary(Operation):
     r"""QubitUnitary(U, wires)
     Apply an arbitrary unitary matrix with a dimension that is a power of two.
 
+    .. warning::
+
+        The sparse matrix representation of QubitUnitary is still under development. Currently,
+        we only support a limited set of interfaces that preserve the sparsity of the matrix,
+        including :func:`~.adjoint`, :func:`~.pow`, and :meth:`~.QubitUnitary.compute_sparse_matrix`.
+        Differentiability is not supported for sparse matrices.
+
     **Details:**
 
     * Number of wires: Any (the operation can act on any number of wires)
@@ -84,7 +105,7 @@ class QubitUnitary(Operation):
     * Gradient recipe: None
 
     Args:
-        U (array[complex]): square unitary matrix
+        U (array[complex] or csr_matrix): square unitary matrix
         wires (Sequence[int] or int): the wire(s) the operation acts on
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
@@ -105,21 +126,24 @@ class QubitUnitary(Operation):
     0.0
     """
 
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
-
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
+    resource_keys = {"num_wires"}
+
     grad_method = None
     """Gradient computation method."""
 
     def __init__(
-        self, U, wires, id=None, unitary_check=False
-    ):  # pylint: disable=too-many-arguments
+        self,
+        U: TensorLike | csr_matrix,
+        wires: WiresLike,
+        id: str | None = None,
+        unitary_check: bool = False,
+    ):
         wires = Wires(wires)
         U_shape = qml.math.shape(U)
         dim = 2 ** len(wires)
@@ -129,19 +153,17 @@ class QubitUnitary(Operation):
         if len(U_shape) not in {2, 3} or U_shape[-2:] != (dim, dim):
             raise ValueError(
                 f"Input unitary must be of shape {(dim, dim)} or (batch_size, {dim}, {dim}) "
-                f"to act on {len(wires)} wires."
+                f"to act on {len(wires)} wires. Got shape {U_shape} instead."
             )
+
+        # If the matrix is sparse, we need to convert it to a csr_matrix
+        self._issparse = sp.sparse.issparse(U)
+        if self._issparse:
+            U = U.tocsr()
 
         # Check for unitarity; due to variable precision across the different ML frameworks,
         # here we issue a warning to check the operation, instead of raising an error outright.
-        if unitary_check and not (
-            qml.math.is_abstract(U)
-            or qml.math.allclose(
-                qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
-                qml.math.eye(dim),
-                atol=1e-6,
-            )
-        ):
+        if unitary_check and not self._unitary_check(U, dim):
             warnings.warn(
                 f"Operator {U}\n may not be unitary. "
                 "Verify unitarity of operation, or use a datatype with increased precision.",
@@ -151,7 +173,23 @@ class QubitUnitary(Operation):
         super().__init__(U, wires=wires, id=id)
 
     @staticmethod
-    def compute_matrix(U):  # pylint: disable=arguments-differ
+    def _unitary_check(U, dim):
+        if isinstance(U, csr_matrix):
+            U_dagger = U.conjugate().transpose()
+            identity = sp.sparse.eye(dim, format="csr")
+            return sp.sparse.linalg.norm(U @ U_dagger - identity) < 1e-10
+        return qml.math.allclose(
+            qml.math.einsum("...ij,...kj->...ik", U, qml.math.conj(U)),
+            qml.math.eye(dim),
+            atol=1e-6,
+        )
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
+
+    @staticmethod
+    def compute_matrix(U: TensorLike):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -172,19 +210,43 @@ class QubitUnitary(Operation):
         [[0.98877108+0.j, 0.-0.14943813j],
         [0.-0.14943813j, 0.98877108+0.j]]
         """
+        if sp.sparse.issparse(U):
+            raise qml.operation.MatrixUndefinedError(
+                "U is sparse matrix. Use sparse_matrix method instead."
+            )
         return U
 
     @staticmethod
-    def compute_decomposition(U, wires):
+    def compute_sparse_matrix(U: TensorLike, format="csr"):  # pylint: disable=arguments-differ
+        r"""Representation of the operator as a sparse matrix.
+
+        Args:
+            U (tensor_like): unitary matrix
+
+        Returns:
+            csr_matrix: sparse matrix representation
+
+        **Example**
+
+        >>> U = np.array([[0.98877108+0.j, 0.-0.14943813j], [0.-0.14943813j, 0.98877108+0.j]])
+        >>> qml.QubitUnitary.compute_sparse_matrix(U)
+        <2x2 sparse matrix of type '<class 'numpy.complex128'>'
+            with 2 stored elements in Compressed Sparse Row format>
+        """
+        if sp.sparse.issparse(U):
+            return U.asformat(format)
+        raise qml.operation.SparseMatrixUndefinedError(
+            "U is a dense matrix. Use matrix method instead"
+        )
+
+    @staticmethod
+    def compute_decomposition(U: TensorLike, wires: WiresLike):
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        A decomposition is only defined for matrices that act on either one or two wires. For more
-        than two wires, this method raises a ``DecompositionUndefined``.
-
-        See :func:`~.transforms.one_qubit_decomposition` and :func:`~.ops.two_qubit_decomposition`
-        for more information on how the decompositions are computed.
+        See :func:`~.ops.one_qubit_decomposition`, :func:`~.ops.two_qubit_decomposition`
+        and :func:`~.ops.multi_qubit_decomposition` for more information on how the decompositions are computed.
 
         .. seealso:: :meth:`~.QubitUnitary.decomposition`.
 
@@ -210,7 +272,7 @@ class QubitUnitary(Operation):
         shape_without_batch_dim = shape[1:] if is_batched else shape
 
         if shape_without_batch_dim == (2, 2):
-            return qml.ops.one_qubit_decomposition(U, Wires(wires)[0])
+            return qml.ops.one_qubit_decomposition(U, Wires(wires)[0], return_global_phase=True)
 
         if shape_without_batch_dim == (4, 4):
             # TODO[dwierichs]: Implement decomposition of broadcasted unitary
@@ -218,21 +280,46 @@ class QubitUnitary(Operation):
                 raise DecompositionUndefinedError(
                     "The decomposition of a two-qubit QubitUnitary does not support broadcasting."
                 )
+            if sp.sparse.issparse(U):
+                raise DecompositionUndefinedError(
+                    "The decomposition of a two-qubit sparse QubitUnitary is undefined."
+                )
 
             return qml.ops.two_qubit_decomposition(U, Wires(wires))
 
-        return super(QubitUnitary, QubitUnitary).compute_decomposition(U, wires=wires)
+        return qml.ops.op_math.decompositions.multi_qubit_decomposition(U, Wires(wires))
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
-    def has_decomposition(self):
-        return len(self.wires) < 3
+    def has_sparse_matrix(self) -> bool:
+        return self._issparse
 
-    def adjoint(self):
-        U = self.matrix()
-        return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self) -> bool:
+        return not self._issparse
 
-    def pow(self, z):
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_decomposition(self) -> bool:
+        # We are unable to decompose sparse matrices larger than 1 qubit.
+        return self.has_matrix or len(self.wires) == 1
+
+    def adjoint(self) -> "QubitUnitary":
+        if self.has_matrix:
+            U = self.matrix()
+            return QubitUnitary(qml.math.moveaxis(qml.math.conj(U), -2, -1), wires=self.wires)
+        U = self.sparse_matrix()
+        adjoint_sp_mat = U.conjugate().transpose()
+        # Note: it is necessary to explicitly cast back to csr, or it will become csc.
+        return QubitUnitary(adjoint_sp_mat, wires=self.wires)
+
+    def pow(self, z: int | float):
+        if self.has_sparse_matrix:
+            mat = self.sparse_matrix()
+            pow_mat = sp.sparse.linalg.matrix_power(mat, z)
+            return [QubitUnitary(pow_mat, wires=self.wires)]
+
         mat = self.matrix()
         if isinstance(z, int) and qml.math.get_deep_interface(mat) != "tensorflow":
             pow_mat = qml.math.linalg.matrix_power(mat, z)
@@ -243,10 +330,83 @@ class QubitUnitary(Operation):
         return [QubitUnitary(pow_mat, wires=self.wires)]
 
     def _controlled(self, wire):
-        return qml.ControlledQubitUnitary(*self.parameters, control_wires=wire, wires=self.wires)
+        return qml.ControlledQubitUnitary(*self.parameters, wires=wire + self.wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ) -> str:
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
+
+
+add_decomps(
+    QubitUnitary,
+    zyz_decomp_rule,
+    zxz_decomp_rule,
+    xzx_decomp_rule,
+    xyx_decomp_rule,
+    rot_decomp_rule,
+    two_qubit_decomp_rule,
+    multi_qubit_decomp_rule,
+)
+
+
+def _qubit_unitary_resource(base_class, base_params, **_):
+    return {resource_rep(base_class, **base_params): 1}
+
+
+@register_resources(_qubit_unitary_resource)
+def _adjoint_qubit_unitary(U, wires, **_):
+    U = (
+        U.conjugate().transpose()
+        if sp.sparse.issparse(U)
+        else qml.math.moveaxis(qml.math.conj(U), -2, -1)
+    )
+    QubitUnitary(U, wires=wires)
+
+
+add_decomps("Adjoint(QubitUnitary)", _adjoint_qubit_unitary)
+
+
+def _matrix_pow(U, z):
+    if sp.sparse.issparse(U):
+        return sp.sparse.linalg.matrix_power(U, z)
+    if is_integer(z) and qml.math.get_deep_interface(U) != "tensorflow":
+        return qml.math.linalg.matrix_power(U, z)
+    return qml.math.convert_like(fractional_matrix_power(U, z), U)
+
+
+@register_resources(_qubit_unitary_resource)
+def _pow_qubit_unitary(U, wires, z, **_):
+    QubitUnitary(_matrix_pow(U, z), wires=wires)
+
+
+add_decomps("Pow(QubitUnitary)", _pow_qubit_unitary)
+
+
+# pylint: disable=unused-argument
+def _controlled_qubit_unitary_resource(base_class, base_params, **kwargs):
+    return {
+        resource_rep(
+            qml.ControlledQubitUnitary, num_target_wires=base_params["num_wires"], **kwargs
+        ): 1,
+    }
+
+
+@register_resources(_controlled_qubit_unitary_resource)
+def _controlled_qubit_unitary(U, wires, control_values, work_wires, work_wire_type, **__):
+    qml.ControlledQubitUnitary(
+        U,
+        wires,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+
+
+add_decomps("C(QubitUnitary)", _controlled_qubit_unitary)
 
 
 class DiagonalQubitUnitary(Operation):
@@ -265,9 +425,6 @@ class DiagonalQubitUnitary(Operation):
         wires (Sequence[int] or int): the wire(s) the operation acts on
     """
 
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
-
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
@@ -277,8 +434,14 @@ class DiagonalQubitUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
+    resource_keys = {"num_wires"}
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
+
     @staticmethod
-    def compute_matrix(D):  # pylint: disable=arguments-differ
+    def compute_matrix(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Representation of the operator as a canonical matrix in the computational basis (static method).
 
         The canonical matrix is the textbook matrix representation that does not consider wires.
@@ -312,7 +475,7 @@ class DiagonalQubitUnitary(Operation):
         return qml.math.diag(D)
 
     @staticmethod
-    def compute_eigvals(D):  # pylint: disable=arguments-differ
+    def compute_eigvals(D: TensorLike) -> TensorLike:  # pylint: disable=arguments-differ
         r"""Eigenvalues of the operator in the computational basis (static method).
 
         If :attr:`diagonalizing_gates` are specified and implement a unitary :math:`U^{\dagger}`,
@@ -348,13 +511,13 @@ class DiagonalQubitUnitary(Operation):
         return D
 
     @staticmethod
-    def compute_decomposition(D, wires):
+    def compute_decomposition(D: TensorLike, wires: WiresLike) -> list["qml.operation.Operator"]:
         r"""Representation of the operator as a product of other operators (static method).
 
         .. math:: O = O_1 O_2 \dots O_n.
 
-        ``DiagonalQubitUnitary`` decomposes into :class:`~.QubitUnitary`, :class:`~.RZ`,
-        :class:`~.IsingZZ`, and/or :class:`~.MultiRZ` depending on the number of wires.
+        ``DiagonalQubitUnitary`` decomposes into :class:`~.DiagonalQubitUnitary`, :class:`~.SelectPauliRot`,
+        :class:`~.RZ`, and/or :class:`~.GlobalPhase` depending on the number of wires.
 
         .. note::
 
@@ -370,65 +533,152 @@ class DiagonalQubitUnitary(Operation):
         Returns:
             list[Operator]: decomposition into lower level operations
 
+        Implements Theorem 7 of `Shende et al. <https://arxiv.org/abs/quant-ph/0406176>`__.
+        Decomposing a ``DiagonalQubitUnitary`` on :math:`n` wires (:math:`n>1`) yields a
+        uniformly-controlled :math:`R_Z` gate, or :class:`~.SelectPauliRot` gate, as well as a
+        ``DiagonalQubitUnitary`` on :math:`n-1` wires. For :math:`n=1` wires, the decomposition
+        yields a :class:`~.RZ` gate and a :class:`~.GlobalPhase`.
+        Resolving this recursion relationship, one would obtain :math:`n-1` ``SelectPauliRot``
+        gates with :math:`n, n-1, \dots, 1` controls each, a single ``RZ`` gate, and
+        a ``GlobalPhase``.
+
         **Example:**
 
         >>> diag = np.exp(1j * np.array([0.4, 2.1, 0.5, 1.8]))
         >>> qml.DiagonalQubitUnitary.compute_decomposition(diag, wires=[0, 1])
-        [QubitUnitary(array([[0.36235775+0.93203909j, 0.        +0.j        ],
-         [0.        +0.j        , 0.36235775+0.93203909j]]), wires=[0]),
-         RZ(1.5000000000000002, wires=[1]),
-         RZ(-0.10000000000000003, wires=[0]),
-         IsingZZ(0.2, wires=[0, 1])]
+        [DiagonalQubitUnitary(array([0.31532236+0.94898462j, 0.40848744+0.91276394j]), wires=[0]),
+        SelectPauliRot(array([1.7, 1.3]), wires=[0, 1])]
+
+        .. details::
+            :title: Finding the parameters
+
+            Theorem 7 referenced above only tells us the structure of the circuit, but not the
+            parameters for the ``SelectPauliRot`` and ``DiagonalQubitUnitary`` in the decomposition.
+            In the following, we will only write out the diagonals of all gates.
+            Consider a ``DiagonalQubitUnitary`` on :math:`n` qubits that we want to decompose:
+
+            .. math::
+
+                D(\theta) = (\exp(i\theta_0), \exp(i\theta_1), \dots,
+                \exp(i\theta_{N-2}), \exp(i\theta_{N-1})).
+
+            Here, :math:`N=2^n` is the Hilbert space dimension for :math:`n` qubits, which is
+            the same as the number of parameters in :math:`D`.
+
+            A ``SelectPauliRot`` gate using ``RZ`` rotations, or multiplexed ``RZ`` rotation, using
+            the first :math:`n-1` qubits as controls and the last qubit as target, takes the form
+
+            .. math::
+
+                UCR_Z(\phi) = (\exp(-\frac{i}{2}\phi_0), \exp(\frac{i}{2}\phi_0), \dots,
+                \exp(-\frac{i}{2}\phi_{N/2-1}), \exp(\frac{i}{2}\phi_{N/2-1})),
+
+            i.e., it moves the phase of neighbouring pairs of computational basis states by
+            the same amount, but in opposite direction. There are :math:`N/2` parameters
+            in this gate.
+            Similarly, a ``DiagonalQubitUnitary`` acting on the first :math:`n-1` qubits only (the
+            ones that were controls for ``SelectPauliRot``) takes the form
+
+            .. math::
+
+                D'(\theta') = (\exp(i\theta'_0), \exp(i\theta'_0), \dots,
+                \exp(i\theta'_{N/2-1}), \exp(i\theta'_{N/2-1})).
+
+            That is, :math:`D'` moves the phase of neighbouring pairs of basis states by the same
+            amount and in the same direction. It, too, has :math:`N/2` parameters.
+            Now, we see that we can compute the rotation angles, or phases, :math:`\phi` and
+            :math:`\theta'` quite easily from the original :math:`\theta`:
+
+            .. math::
+
+                (\exp(i\theta_{2i}), \exp(i\theta_{2i+1})) &=
+                (\exp(-\frac{i}{2}\phi_i)\exp(i\theta'_i), \exp(\frac{i}{2}\phi_i)\exp(i\theta'_i))\\
+                \Rightarrow \qquad \theta'_i &=\frac{1}{2}(\theta_{2i}+\theta_{2i+1})\\
+                \phi_i &=\theta_{2i+1}-\theta_{2i}.
+
+            So the phases for the new gates arise simply as difference and average of the
+            odd-indexed and even-indexed phases.
 
         """
-        n = len(wires)
+        angles = qml.math.angle(D)
+        diff = angles[..., 1::2] - angles[..., ::2]
+        mean = (angles[..., ::2] + angles[..., 1::2]) / 2
+        if len(wires) == 1:
+            return [  # Squeeze away non-broadcasting axis (there is just one angle for RZ/GPhase
+                qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires),
+                qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires),
+            ]
+        return [  # Note that we use the first qubits as control, the reference uses the last qubits
+            qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1]),
+            qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1]),
+        ]
 
-        # Cast the diagonal into a complex dtype so that the logarithm works as expected
-        D_casted = qml.math.cast(D, "complex128")
-
-        phases = qml.math.real(qml.math.log(D_casted) * (-1j))
-        coeffs = _walsh_hadamard_transform(phases, n).T
-        global_phase = qml.math.exp(1j * coeffs[0])
-        # For all other gates, there is a prefactor -1/2 to be compensated.
-        coeffs = coeffs * (-2.0)
-
-        # TODO: Replace the following by a GlobalPhase gate.
-        ops = [QubitUnitary(qml.math.tensordot(global_phase, qml.math.eye(2), axes=0), wires[0])]
-        for wire0 in range(n):
-            # Single PauliZ generators correspond to the coeffs at powers of two
-            ops.append(qml.RZ(coeffs[1 << wire0], wires[n - 1 - wire0]))
-            # Double PauliZ generators correspond to the coeffs at the sum of two powers of two
-            ops.extend(
-                qml.IsingZZ(
-                    coeffs[(1 << wire0) + (1 << wire1)],
-                    [wires[n - 1 - wire0], wires[n - 1 - wire1]],
-                )
-                for wire1 in range(wire0)
-            )
-
-        # Add all multi RZ gates that are not generated by single or double PauliZ generators
-        ops.extend(
-            qml.MultiRZ(c, [wires[k] for k in np.where(term)[0]])
-            for c, term in zip(coeffs, product((0, 1), repeat=n))
-            if sum(term) > 2
-        )
-        return ops
-
-    def adjoint(self):
+    def adjoint(self) -> "DiagonalQubitUnitary":
         return DiagonalQubitUnitary(qml.math.conj(self.parameters[0]), wires=self.wires)
 
-    def pow(self, z):
+    def pow(self, z) -> list["DiagonalQubitUnitary"]:
         cast_data = qml.math.cast(self.data[0], np.complex128)
         return [DiagonalQubitUnitary(cast_data**z, wires=self.wires)]
 
-    def _controlled(self, control):
+    def _controlled(self, control: WiresLike):
         return DiagonalQubitUnitary(
             qml.math.hstack([np.ones_like(self.parameters[0]), self.parameters[0]]),
             wires=control + self.wires,
         )
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ):
         return super().label(decimals=decimals, base_label=base_label or "U", cache=cache)
+
+
+def _diagonal_qu_resource(num_wires):  # pylint: disable=unused-argument
+    if num_wires == 1:
+        return {qml.RZ: 1, qml.GlobalPhase: 1}
+    return {
+        resource_rep(DiagonalQubitUnitary, num_wires=num_wires - 1): 1,
+        resource_rep(qml.SelectPauliRot, num_wires=num_wires, rot_axis="Z"): 1,
+    }
+
+
+@register_resources(_diagonal_qu_resource)
+def _diagonal_qu_decomp(D, wires):
+    angles = qml.math.angle(D)
+    diff = angles[..., 1::2] - angles[..., ::2]
+    mean = (angles[..., ::2] + angles[..., 1::2]) / 2
+    if len(wires) == 1:
+        qml.GlobalPhase(-qml.math.squeeze(mean, axis=-1), wires=wires)
+        qml.RZ(qml.math.squeeze(diff, axis=-1), wires=wires)
+    else:
+        qml.DiagonalQubitUnitary(np.exp(1j * mean), wires=wires[:-1])
+        qml.SelectPauliRot(diff, control_wires=wires[:-1], target_wire=wires[-1])
+
+
+add_decomps(DiagonalQubitUnitary, _diagonal_qu_decomp)
+
+
+def _diagonal_qubit_unitary_resource(base_class, base_params, **_):
+    return {resource_rep(base_class, **base_params): 1}
+
+
+@register_resources(_diagonal_qubit_unitary_resource)
+def _adjoint_diagonal_unitary(U, wires, **_):
+    U = qml.math.conj(U)
+    DiagonalQubitUnitary(U, wires=wires)
+
+
+add_decomps("Adjoint(DiagonalQubitUnitary)", _adjoint_diagonal_unitary)
+
+
+@register_resources(_diagonal_qubit_unitary_resource)
+def _pow_diagonal_unitary(U, wires, z, **_):
+    DiagonalQubitUnitary(qml.math.cast(U, np.complex128) ** z, wires=wires)
+
+
+add_decomps("Pow(DiagonalQubitUnitary)", _pow_diagonal_unitary)
 
 
 class BlockEncode(Operation):
@@ -507,16 +757,13 @@ class BlockEncode(Operation):
     num_params = 1
     """int: Number of trainable parameters that the operator depends on."""
 
-    num_wires = AnyWires
-    """int: Number of wires that the operator acts on."""
-
     ndim_params = (2,)
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, A, wires, id=None):
+    def __init__(self, A: TensorLike, wires: WiresLike, id: str | None = None):
         wires = Wires(wires)
         shape_a = qml.math.shape(A)
         if shape_a == () or all(x == 1 for x in shape_a):
@@ -530,8 +777,8 @@ class BlockEncode(Operation):
                 shape_a = qml.math.shape(A)
 
             normalization = qml.math.maximum(
-                norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
-                norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
+                math.norm(A @ qml.math.transpose(qml.math.conj(A)), ord=pnp.inf),
+                math.norm(qml.math.transpose(qml.math.conj(A)) @ A, ord=pnp.inf),
             )
             subspace = (*shape_a, 2 ** len(wires))
 
@@ -550,7 +797,21 @@ class BlockEncode(Operation):
         self.hyperparameters["norm"] = normalization
         self.hyperparameters["subspace"] = subspace
 
-    def _flatten(self):
+        self._issparse = sp.sparse.issparse(A)
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_sparse_matrix(self) -> bool:
+        """bool: Whether the operator has a sparse matrix representation."""
+        return self._issparse
+
+    # pylint: disable=arguments-renamed, invalid-overridden-method
+    @property
+    def has_matrix(self) -> bool:
+        """bool: Whether the operator has a sparse matrix representation."""
+        return not self._issparse
+
+    def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, ())
 
     @staticmethod
@@ -583,47 +844,81 @@ class BlockEncode(Operation):
                [-0.07621992,  0.89117368, -0.2       , -0.4       ]])
         """
         A = params[0]
-        n, m, k = hyperparams["subspace"]
-        shape_a = qml.math.shape(A)
-
-        def _stack(lst, h=False, like=None):
-            if like == "tensorflow":
-                axis = 1 if h else 0
-                return qml.math.concat(lst, like=like, axis=axis)
-            return qml.math.hstack(lst) if h else qml.math.vstack(lst)
-
-        interface = qml.math.get_interface(A)
-
-        if qml.math.sum(shape_a) <= 2:
-            col1 = _stack([A, sqrt(1 - A * conj(A))], like=interface)
-            col2 = _stack([sqrt(1 - A * conj(A)), -conj(A)], like=interface)
-            u = _stack([col1, col2], h=True, like=interface)
-        else:
-            d1, d2 = shape_a
-            col1 = _stack(
-                [A, sqrt_matrix(cast(eye(d2, like=A), A.dtype) - qml.math.transpose(conj(A)) @ A)],
-                like=interface,
+        subspace = hyperparams["subspace"]
+        if sp.sparse.issparse(A):
+            raise qml.operation.MatrixUndefinedError(
+                "The operator was initialized with a sparse matrix. Use sparse_matrix instead."
             )
-            col2 = _stack(
-                [
-                    sqrt_matrix(cast(eye(d1, like=A), A.dtype) - A @ transpose(conj(A))),
-                    -transpose(conj(A)),
-                ],
-                like=interface,
-            )
-            u = _stack([col1, col2], h=True, like=interface)
+        return _process_blockencode(A, subspace)
 
-        if n + m < k:
-            r = k - (n + m)
-            col1 = _stack([u, zeros((r, n + m), like=A)], like=interface)
-            col2 = _stack([zeros((n + m, r), like=A), eye(r, like=A)], like=interface)
-            u = _stack([col1, col2], h=True, like=interface)
+    @staticmethod
+    def compute_sparse_matrix(*params, **hyperparams):
+        A = params[0]
+        subspace = hyperparams["subspace"]
+        if sp.sparse.issparse(A):
+            return _process_blockencode(A, subspace)
+        raise qml.operation.SparseMatrixUndefinedError(
+            "The operator is initialized with a dense matrix, use the matrix method instead."
+        )
 
-        return u
-
-    def adjoint(self):
+    def adjoint(self) -> "BlockEncode":
         A = self.parameters[0]
         return BlockEncode(qml.math.transpose(qml.math.conj(A)), wires=self.wires)
 
-    def label(self, decimals=None, base_label=None, cache=None):
+    def label(
+        self,
+        decimals: int | None = None,
+        base_label: str | None = None,
+        cache: dict | None = None,
+    ):
         return super().label(decimals=decimals, base_label=base_label or "BlockEncode", cache=cache)
+
+
+def _process_blockencode(A, subspace):
+    """
+    Process the BlockEncode operation.
+    """
+    n, m, k = subspace
+    shape_a = qml.math.shape(A)
+
+    sqrtm = math.sqrt_matrix_sparse if sp.sparse.issparse(A) else math.sqrt_matrix
+
+    def _stack(lst, h=False, like=None):
+        if like == "tensorflow":
+            axis = 1 if h else 0
+            return qml.math.concat(lst, like=like, axis=axis)
+        return qml.math.hstack(lst) if h else qml.math.vstack(lst)
+
+    interface = qml.math.get_interface(A)
+
+    if qml.math.sum(shape_a) <= 2:
+        col1 = _stack([A, math.sqrt(1 - A * math.conj(A))], like=interface)
+        col2 = _stack([math.sqrt(1 - A * math.conj(A)), -math.conj(A)], like=interface)
+        u = _stack([col1, col2], h=True, like=interface)
+    else:
+        d1, d2 = shape_a
+        col1 = _stack(
+            [
+                A,
+                sqrtm(
+                    math.cast(math.eye(d2, like=A), A.dtype) - qml.math.transpose(math.conj(A)) @ A
+                ),
+            ],
+            like=interface,
+        )
+        col2 = _stack(
+            [
+                sqrtm(math.cast(math.eye(d1, like=A), A.dtype) - A @ math.transpose(math.conj(A))),
+                -math.transpose(math.conj(A)),
+            ],
+            like=interface,
+        )
+        u = _stack([col1, col2], h=True, like=interface)
+
+    if n + m < k:
+        r = k - (n + m)
+        col1 = _stack([u, math.zeros((r, n + m), like=A)], like=interface)
+        col2 = _stack([math.zeros((n + m, r), like=A), math.eye(r, like=A)], like=interface)
+        u = _stack([col1, col2], h=True, like=interface)
+
+    return u

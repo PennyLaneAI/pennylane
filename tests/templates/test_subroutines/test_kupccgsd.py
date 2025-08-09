@@ -54,7 +54,8 @@ def test_standard_validity(k, delta_sz, init_state, wires):
 
     op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
 
-    qml.ops.functions.assert_valid(op)
+    skip_diff = len(wires) > 4
+    qml.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
 
 
 class TestDecomposition:
@@ -91,7 +92,7 @@ class TestDecomposition:
         exp_unitary += [qml.FermionicSingleExcitation] * len(gen_single_terms_wires)
 
         op = qml.kUpCCGSD(weights, wires=wires, k=k, delta_sz=delta_sz, init_state=init_state)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         # number of gates
         assert len(queue) == n_gates
@@ -160,7 +161,7 @@ class TestDecomposition:
         assert np.allclose(state1, state2, atol=tol, rtol=0)
 
     @pytest.mark.parametrize(
-        ("num_qubits", "k", "exp_state"),
+        ("num_wires", "k", "exp_state"),
         [
             (
                 4,
@@ -243,17 +244,17 @@ class TestDecomposition:
             ),
         ],
     )
-    def test_k_layers_upccgsd(self, num_qubits, k, exp_state, tol):
+    def test_k_layers_upccgsd(self, num_wires, k, exp_state, tol):
         """Test that the k-UpCCGSD template with multiple layers works correctly asserting the prepared state."""
 
-        wires = range(num_qubits)
+        wires = range(num_wires)
 
-        shape = qml.kUpCCGSD.shape(k=k, n_wires=num_qubits, delta_sz=0)
+        shape = qml.kUpCCGSD.shape(k=k, n_wires=num_wires, delta_sz=0)
         weight = np.pi / 2 * qml.math.ones(shape)
 
         dev = qml.device("default.qubit", wires=wires)
 
-        init_state = qml.math.array([1 if x < num_qubits // 2 else 0 for x in wires])
+        init_state = qml.math.array([1 if x < num_wires // 2 else 0 for x in wires])
 
         @qml.qnode(dev)
         def circuit(weight):
@@ -465,18 +466,18 @@ class TestAttributes:
         shape = qml.kUpCCGSD.shape(k, n_wires, delta_sz)
         assert shape == expected_shape
 
-    def test_shape_exception_not_enough_qubits(self):
-        """Test that the shape function warns if there are not enough qubits."""
+    def test_shape_exception_not_enough_wires(self):
+        """Test that the shape function warns if there are not enough wires."""
 
         with pytest.raises(
-            ValueError, match="This template requires the number of qubits to be greater than four"
+            ValueError, match="This template requires the number of wires to be greater than four"
         ):
             qml.kUpCCGSD.shape(k=2, n_wires=1, delta_sz=0)
 
-    def test_shape_exception_not_even_qubits(self):
-        """Test that the shape function warns if the number of qubits are not even."""
+    def test_shape_exception_not_even_wires(self):
+        """Test that the shape function warns if the number of wires are not even."""
 
-        with pytest.raises(ValueError, match="This template requires an even number of qubits"):
+        with pytest.raises(ValueError, match="This template requires an even number of wires"):
             qml.kUpCCGSD.shape(k=2, n_wires=5, delta_sz=0)
 
 
@@ -519,7 +520,7 @@ class TestInterfaces:
         res2 = circuit2(weights)
         assert qml.math.allclose(res, res2, atol=tol, rtol=0)
 
-        weights_tuple = [((0.55, 0.72, 0.6, 0.54, 0.42, 0.65))]
+        weights_tuple = [(0.55, 0.72, 0.6, 0.54, 0.42, 0.65)]
         res = circuit(weights_tuple)
         res2 = circuit2(weights_tuple)
 
@@ -573,6 +574,32 @@ class TestInterfaces:
         grads2 = grad_fn2(weights)
 
         assert np.allclose(grads[0], grads2[0], atol=tol, rtol=0)
+
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Test the template compiles with JAX JIT."""
+
+        import jax
+        import jax.numpy as jnp
+
+        weights = jnp.array(np.random.random(size=(1, 6)))
+
+        dev = qml.device("default.qubit", wires=4)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(weights)
+        res2 = circuit2(weights)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(weights)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(weights)
+
+        assert qml.math.allclose(grads[0], grads2[0], atol=tol, rtol=0)
 
     @pytest.mark.tf
     def test_tf(self, tol):

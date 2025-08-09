@@ -13,6 +13,8 @@
 # limitations under the License.
 """Tests for null.qubit."""
 
+import json
+import os
 from collections import defaultdict as dd
 
 import numpy as np
@@ -26,8 +28,6 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     StateMeasurement,
 )
-
-np.random.seed(0)
 
 
 def test_name():
@@ -63,6 +63,90 @@ def test_debugger_attribute():
     assert dev._debugger is None
 
 
+def test_resource_tracking_attribute():
+    """Test NullQubit track_resources attribute"""
+    # pylint: disable=protected-access
+    assert NullQubit()._track_resources is False
+    dev = NullQubit(track_resources=True)
+    assert dev._track_resources is True
+
+    def small_circ(params):
+        qml.X(0)
+        qml.H(0)
+
+        qml.Barrier()
+
+        # Add a more complex operation to check that the innermost operation is counted
+        op = qml.T(0)
+        op = qml.adjoint(op)
+        op = qml.ctrl(op, control=1, control_values=[1])
+
+        qml.ctrl(qml.S(0), control=[1, 2], control_values=[1, 1])
+
+        qml.CNOT([0, 1])
+        qml.Barrier()
+
+        qml.ctrl(qml.IsingXX(0, [0, 1]), control=2, control_values=[1])
+        qml.adjoint(qml.S(0))
+
+        qml.RX(params[0], wires=0)
+        qml.RX(params[0] * 2, wires=1)
+
+        qml.QubitUnitary([[1, 0], [0, 1]], wires=0)
+        qml.ControlledQubitUnitary([[1, 0], [0, 1]], wires=[0, 1, 2], control_values=[1, 1])
+
+        return qml.expval(qml.PauliZ(0))
+
+    qnode = qml.QNode(small_circ, dev, diff_method="backprop")
+
+    inputs = qml.numpy.array([0.5])
+
+    def check_outputs():
+        written_files = list(
+            filter(
+                lambda fname: fname.startswith(qml.devices.null_qubit.RESOURCES_FNAME_PREFIX),
+                os.listdir(os.getcwd()),
+            )
+        )
+
+        assert len(written_files) == 1
+        resources_fname = written_files[0]
+
+        assert os.path.exists(resources_fname)
+
+        with open(resources_fname, encoding="utf-8") as f:
+            stats = f.read()
+
+        os.remove(resources_fname)
+
+        assert stats == json.dumps(
+            {
+                "num_wires": 3,
+                "num_gates": 11,
+                "gate_types": {
+                    "PauliX": 1,
+                    "Hadamard": 1,
+                    "C(Adj(T))": 1,
+                    "2C(S)": 1,
+                    "CNOT": 1,
+                    "C(IsingXX)": 1,
+                    "Adj(S)": 1,
+                    "RX": 2,
+                    "QubitUnitary": 1,
+                    "ControlledQubitUnitary": 1,
+                },
+            }
+        )
+
+    # Check ordinary forward computation
+    qnode(inputs)
+    check_outputs()
+
+    # Check backpropagation
+    assert qml.grad(qnode)(inputs) == 0
+    check_outputs()
+
+
 @pytest.mark.parametrize("shots", (None, 10))
 def test_supports_operator_without_decomp(shots):
     """Test that null.qubit automatically supports any operation without a decomposition."""
@@ -74,7 +158,7 @@ def test_supports_operator_without_decomp(shots):
     tape = qml.tape.QuantumScript([MyOp(wires=(0, 1))], [qml.expval(qml.Z(0))], shots=shots)
     dev = NullQubit()
 
-    program, _ = dev.preprocess()
+    program = dev.preprocess_transforms()
     batch, _ = program((tape,))
 
     assert isinstance(batch[0][0], MyOp)
@@ -169,7 +253,7 @@ class TestSupportsDerivatives:
         """Test that null.qubit interprets 'adjoint' as device derivatives."""
         dev = NullQubit()
         config = ExecutionConfig(gradient_method="adjoint")
-        _, config = dev.preprocess(config)
+        config = dev.setup_execution_config(config)
         assert config.gradient_method == "device"
         assert dev.supports_derivatives(config) is True
         assert dev.supports_jvp(config) is True
@@ -249,7 +333,7 @@ class TestBasicCircuit:
             qs = qml.tape.QuantumScript(
                 [qml.RX(x, wires=0)], [qml.expval(qml.PauliY(0)), qml.expval(qml.PauliZ(0))]
             )
-            return dev.execute(qs, ExecutionConfig(interface="torch"))
+            return dev.execute(qs, ExecutionConfig(interface="torch", gradient_method="backprop"))
 
         expected = np.zeros(2)
         assert np.array_equal(f(phi), expected)
@@ -282,6 +366,8 @@ class TestBasicCircuit:
         """Test that even if no interface parameters are given, result is correct."""
         dev = NullQubit()
 
+        import tensorflow as tf
+
         @qml.qnode(dev, interface="tf")
         def circuit(p):
             op(p, wires=[0])
@@ -289,7 +375,8 @@ class TestBasicCircuit:
 
         res = circuit(param)
         assert qml.math.get_interface(res) == "tensorflow"
-        assert res == qml.math.asarray(0.0, like="tensorflow")
+        # float64 due to float64 input variables
+        assert qml.math.allclose(res, tf.Variable(0.0, dtype=tf.float64))  # input variables float64
 
     def test_basis_state_wire_order(self):
         """Test that the wire order is correct with a basis state if the tape wires have a non standard order."""
@@ -408,7 +495,7 @@ class TestSampleMeasurements:
     @pytest.mark.parametrize("shots", shots_data)
     def test_multi_measurement_shot_vector(self, shots):
         """Test a simple circuit containing multiple measurements for shot vectors"""
-        # TODO: resume from here
+
         x, y = np.array(0.732), np.array(0.488)
         shots = qml.measurements.Shots(shots)
         qs = qml.tape.QuantumScript(
@@ -468,13 +555,11 @@ class TestSampleMeasurements:
 
         dev = NullQubit()
         result = dev.execute(qs)
-        print(result)
 
-        assert (
-            result == tuple([{"00": s, "01": 0, "10": 0, "11": 0}] * 2 for s in qs.shots)
-            if all_outcomes
-            else tuple([{"00": s}] * 2 for s in qs.shots)
-        )
+        if all_outcomes:
+            assert result == tuple(({"00": s, "01": 0, "10": 0, "11": 0},) * 2 for s in qs.shots)
+        else:
+            assert result == tuple(({"00": s},) * 2 for s in qs.shots)
 
     @pytest.mark.parametrize("all_outcomes", [False, True])
     def test_counts_obs(self, all_outcomes):
@@ -502,11 +587,10 @@ class TestSampleMeasurements:
 
         dev = NullQubit()
         result = dev.execute(qs)
-        print(result)
         assert (
-            result == tuple([{-1: s, 1: 0}] * 2 for s in qs.shots)
+            result == tuple(({-1: s, 1: 0},) * 2 for s in qs.shots)
             if all_outcomes
-            else tuple([{-1: s}] * 2 for s in qs.shots)
+            else tuple(({-1: s},) * 2 for s in qs.shots)
         )
 
 
@@ -532,7 +616,7 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        config = ExecutionConfig(interface=qml.math.get_interface(phi))
+        config = ExecutionConfig(interface=qml.math.get_interface(phi), gradient_method="backprop")
         return dev.execute((qs1, qs2), config)
 
     @staticmethod
@@ -554,7 +638,10 @@ class TestExecutingBatches:
 
         ops = [qml.Hadamard(0), qml.IsingXX(phi, wires=(0, 1))]
         qs2 = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1))])
-        return NullQubit().execute((qs1, qs2))
+        config = qml.devices.ExecutionConfig(
+            gradient_method="backprop", interface=qml.math.get_interface(phi)
+        )
+        return NullQubit().execute((qs1, qs2), execution_config=config)
 
     @staticmethod
     def assert_results(results):
@@ -657,9 +744,7 @@ class TestSumOfTermsDifferentiability:
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
-        if style == "hamiltonian":
-            H = H.pauli_rep.hamiltonian()
-        elif style == "hermitian":
+        if style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         config = ExecutionConfig(interface=qml.math.get_interface(scale))
@@ -673,11 +758,8 @@ class TestSumOfTermsDifferentiability:
         t1 = 2.5 * qml.prod(*(qml.PauliZ(i) for i in range(n_wires)))
         t2 = 6.2 * qml.prod(*(qml.PauliY(i) for i in range(n_wires)))
         H = t1 + t2
-        if style == "hamiltonian":
-            H = H.pauli_rep.hamiltonian()
-        elif style == "hermitian":
+        if style == "hermitian":
             H = qml.Hermitian(H.matrix(), wires=H.wires)
-        qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         qs = qml.tape.QuantumScript(ops, [qml.expval(H)])
         return NullQubit().execute(qs)
 
@@ -690,7 +772,7 @@ class TestSumOfTermsDifferentiability:
         return 2.5 * qml.math.prod(cosines) + 6.2 * qml.math.prod(sines)
 
     @pytest.mark.autograd
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_autograd_backprop(self, style):
         """Test that backpropagation derivatives work in autograd with hamiltonians and large sums."""
         dev = NullQubit()
@@ -700,7 +782,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.jax
     @pytest.mark.parametrize("use_jit", (True, False))
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_jax_backprop(self, style, use_jit):
         """Test that backpropagation derivatives work with jax with hamiltonians and large sums."""
         import jax
@@ -713,7 +795,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.xfail(reason="torch backprop does not work")
     @pytest.mark.torch
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_torch_backprop(self, style):
         """Test that backpropagation derivatives work with torch with hamiltonians and large sums."""
         import torch
@@ -729,7 +811,7 @@ class TestSumOfTermsDifferentiability:
 
     @pytest.mark.xfail(reason="tf can't track derivatives")
     @pytest.mark.tf
-    @pytest.mark.parametrize("style", ("sum", "hamiltonian", "hermitian"))
+    @pytest.mark.parametrize("style", ("sum", "hermitian"))
     def test_tf_backprop(self, style):
         """Test that backpropagation derivatives work with tensorflow with hamiltonians and large sums."""
         import tensorflow as tf
@@ -747,43 +829,42 @@ class TestSumOfTermsDifferentiability:
         assert g1 == 0
 
 
+@pytest.mark.parametrize("config", [None, ExecutionConfig(gradient_method="device")])
 class TestDeviceDifferentiation:
     """Tests device differentiation integration with NullQubit."""
 
-    ec = ExecutionConfig(gradient_method="device")
-
-    def test_derivatives_single_circuit(self):
+    def test_derivatives_single_circuit(self, config):
         """Tests derivatives with a single circuit."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
-        config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
         actual_grad = dev.compute_derivatives(qs, config)
         assert isinstance(actual_grad, np.ndarray)
         assert actual_grad.shape == ()  # pylint: disable=no-member
         assert actual_grad == 0
 
-        actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, self.ec)
+        actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, config)
         assert actual_val == 0
         assert actual_grad == 0
 
-    def test_derivatives_list_with_single_circuit(self):
+    def test_derivatives_list_with_single_circuit(self, config):
         """Tests a basic example with a batch containing a single circuit."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
-        actual_grad = dev.compute_derivatives([qs], self.ec)
+
+        transform_program = dev.preprocess_transforms(config)
+        [qs], _ = transform_program((qs,))
+        actual_grad = dev.compute_derivatives([qs], config)
         assert actual_grad == (np.array(0.0),)
 
-        actual_val, actual_grad = dev.execute_and_compute_derivatives([qs], self.ec)
+        actual_val, actual_grad = dev.execute_and_compute_derivatives([qs], config)
         assert actual_val == (np.array(0.0),)
         assert actual_grad == (np.array(0.0),)
 
-    def test_derivatives_many_tapes_many_results(self):
+    def test_derivatives_many_tapes_many_results(self, config):
         """Tests a basic example with a batch of circuits of varying return shapes."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
@@ -791,10 +872,10 @@ class TestDeviceDifferentiation:
         multi_meas = qml.tape.QuantumScript(
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
-        actual_grad = dev.compute_derivatives([single_meas, multi_meas], self.ec)
+        actual_grad = dev.compute_derivatives([single_meas, multi_meas], config)
         assert actual_grad == (0.0, (0.0, 0.0))
 
-    def test_derivatives_integration(self):
+    def test_derivatives_integration(self, config):
         """Tests the expected workflow done by a calling method."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
@@ -803,53 +884,50 @@ class TestDeviceDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
 
-        program, new_ec = dev.preprocess(self.ec)
+        program, new_ec = dev.preprocess(config)
         circuits, _ = program([single_meas, multi_meas])
         actual_grad = dev.compute_derivatives(circuits, new_ec)
 
-        assert new_ec.use_device_gradient
-        assert new_ec.grad_on_execution
+        if config and config.gradient_method == "device":
+            assert new_ec.use_device_gradient
+            assert new_ec.grad_on_execution
 
         assert actual_grad == (0.0, (0.0, 0.0))
 
-    def test_jvps_single_circuit(self):
+    def test_jvps_single_circuit(self, config):
         """Tests jvps with a single circuit."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
         tangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
-        config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
-
-        actual_grad = dev.compute_jvp(qs, tangent, self.ec)
+        actual_grad = dev.compute_jvp(qs, tangent, config)
         assert isinstance(actual_grad, np.ndarray)
         assert actual_grad.shape == ()  # pylint: disable=no-member
         assert actual_grad == 0.0
 
-        actual_val_and_grad = dev.execute_and_compute_jvp(qs, tangent, self.ec)
+        actual_val_and_grad = dev.execute_and_compute_jvp(qs, tangent, config)
         assert actual_val_and_grad == (0, 0)
 
-    def test_jvps_list_with_single_circuit(self):
+    def test_jvps_list_with_single_circuit(self, config):
         """Tests a basic example with a batch containing a single circuit."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
         tangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
-        config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
-
-        actual_grad = dev.compute_jvp([qs], [tangent], self.ec)
+        actual_grad = dev.compute_jvp([qs], [tangent], config)
         assert actual_grad == (np.array(0.0),)
 
-        actual_val, actual_grad = dev.execute_and_compute_jvp([qs], [tangent], self.ec)
+        actual_val, actual_grad = dev.execute_and_compute_jvp([qs], [tangent], config)
         assert actual_val == (np.array(0.0),)
         assert actual_grad == (np.array(0.0),)
 
-    def test_jvps_many_tapes_many_results(self):
+    def test_jvps_many_tapes_many_results(self, config):
         """Tests a basic example with a batch of circuits of varying return shapes."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
@@ -859,16 +937,16 @@ class TestDeviceDifferentiation:
         )
         tangents = [(0.456,), (0.789,)]
 
-        actual_grad = dev.compute_jvp([single_meas, multi_meas], tangents, self.ec)
+        actual_grad = dev.compute_jvp([single_meas, multi_meas], tangents, config)
         assert actual_grad == (0.0, (0.0, 0.0))
 
         actual_val, actual_grad = dev.execute_and_compute_jvp(
-            [single_meas, multi_meas], tangents, self.ec
+            [single_meas, multi_meas], tangents, config
         )
         assert actual_val == (0.0, (0.0, 0.0))
         assert actual_grad == (0.0, (0.0, 0.0))
 
-    def test_jvps_integration(self):
+    def test_jvps_integration(self, config):
         """Tests the expected workflow done by a calling method."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
@@ -879,48 +957,48 @@ class TestDeviceDifferentiation:
         )
         tangents = [(0.456,), (0.789,)]
         circuits = [single_meas, multi_meas]
-        program, new_ec = dev.preprocess(self.ec)
+        program, new_ec = dev.preprocess(config)
         circuits, _ = program(circuits)
         actual_grad = dev.compute_jvp(circuits, tangents, new_ec)
 
-        assert new_ec.use_device_gradient
-        assert new_ec.grad_on_execution
+        if config and config.gradient_method == "device":
+            assert new_ec.use_device_gradient
+            assert new_ec.grad_on_execution
+
         assert actual_grad == (0.0, (0.0, 0.0))
 
-    def test_vjps_single_circuit(self):
+    def test_vjps_single_circuit(self, config):
         """Tests vjps with a single circuit."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
         cotangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
-        actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
+        actual_grad = dev.compute_vjp(qs, cotangent, config)
         assert actual_grad == (0.0,)
 
-        actual_val_and_grad = dev.execute_and_compute_vjp(qs, cotangent, self.ec)
+        actual_val_and_grad = dev.execute_and_compute_vjp(qs, cotangent, config)
         assert actual_val_and_grad == ((0.0,), (0.0,))
 
-    def test_vjps_list_with_single_circuit(self):
+    def test_vjps_list_with_single_circuit(self, config):
         """Tests a basic example with a batch containing a single circuit."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
         cotangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-        config = ExecutionConfig(gradient_method="device")
-        [qs], _ = dev.preprocess(config)[0]((qs,))
+        [qs], _ = dev.preprocess_transforms(config)((qs,))
 
-        actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
+        actual_grad = dev.compute_vjp([qs], [cotangent], config)
         assert actual_grad == ((0.0,),)
 
-        actual_val, actual_grad = dev.execute_and_compute_vjp([qs], [cotangent], self.ec)
+        actual_val, actual_grad = dev.execute_and_compute_vjp([qs], [cotangent], config)
         assert actual_val == ((0.0,),)
         assert actual_grad == ((0.0,),)
 
-    def test_vjps_many_tapes_many_results(self):
+    def test_vjps_many_tapes_many_results(self, config):
         """Tests a basic example with a batch of circuits of varying return shapes."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
@@ -930,17 +1008,16 @@ class TestDeviceDifferentiation:
         )
         cotangents = [(0.456,), (0.789, 0.123)]
 
-        actual_grad = dev.compute_vjp([single_meas, multi_meas], cotangents, self.ec)
-        print(actual_grad)
+        actual_grad = dev.compute_vjp([single_meas, multi_meas], cotangents, config)
         assert actual_grad == ((0.0,), (0.0,))
 
         actual_val, actual_grad = dev.execute_and_compute_vjp(
-            [single_meas, multi_meas], cotangents, self.ec
+            [single_meas, multi_meas], cotangents, config
         )
         assert actual_val == (0.0, (0.0, 0.0))
         assert actual_grad == ((0.0,), (0.0,))
 
-    def test_vjps_integration(self):
+    def test_vjps_integration(self, config):
         """Tests the expected workflow done by a calling method."""
         dev = NullQubit()
         x = np.array(np.pi / 7)
@@ -951,14 +1028,15 @@ class TestDeviceDifferentiation:
         )
         cotangents = [(0.456,), (0.789, 0.123)]
         circuits = [single_meas, multi_meas]
-        program, new_ec = dev.preprocess(self.ec)
+        program, new_ec = dev.preprocess(config)
         circuits, _ = program(circuits)
 
         actual_grad = dev.compute_vjp(circuits, cotangents, new_ec)
 
-        assert new_ec.use_device_gradient
-        assert new_ec.grad_on_execution
-        print(actual_grad)
+        if config and config.gradient_method == "device":
+            assert new_ec.use_device_gradient
+            assert new_ec.grad_on_execution
+
         assert actual_grad == ((0.0,), (0.0,))
 
 
@@ -977,12 +1055,12 @@ class TestClassicalShadows:
         assert np.array_equal(res, np.zeros((2, 100, n_qubits)))
         assert res.dtype == np.int8
 
-    def test_expval(self):
+    def test_expval(self, seed):
         """Test that shadow expval measurements work as expected"""
         dev = NullQubit()
 
         ops = [qml.Hadamard(0), qml.Hadamard(1)]
-        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=200)]
+        meas = [qml.shadow_expval(qml.PauliX(0) @ qml.PauliX(1), seed=seed)]
         qs = qml.tape.QuantumScript(ops, meas, shots=1000)
         assert dev.execute(qs) == np.array(0.0)
 
@@ -1136,12 +1214,12 @@ class TestIntegration:
     @pytest.mark.parametrize(
         "diff_method", ["device", "adjoint", "backprop", "finite-diff", "parameter-shift"]
     )
-    def test_expected_shape_all_methods(self, diff_method):
+    def test_expected_shape_all_methods(self, diff_method, seed):
         """Test that the gradient shape is as expected with all diff methods."""
         n_wires = 4
 
         shape = qml.StronglyEntanglingLayers.shape(n_layers=5, n_wires=n_wires)
-        rng = np.random.default_rng(seed=1239594)
+        rng = np.random.default_rng(seed=seed)
         params = qml.numpy.array(rng.random(shape))
         dev = qml.device("null.qubit")
 
@@ -1278,3 +1356,42 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
     res = qml.QNode(circuit, nq)(x)
     target = qml.QNode(circuit, dq)(x)
     assert qml.math.shape(res) == qml.math.shape(target)
+
+
+# pylint: disable=unused-argument
+@pytest.mark.capture
+def test_execute_plxpr():
+    """Test that null.qubit can execute plxpr."""
+
+    import jax
+
+    def f(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0)), qml.probs(), 4, qml.var(qml.X(0)), qml.state()
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+
+    dev = qml.device("null.qubit", wires=4)
+    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
+    assert qml.math.allclose(res[0], 0)
+    assert qml.math.allclose(res[1], jax.numpy.zeros(2**4))
+    assert qml.math.allclose(res[2], 0)  # other values are still just zero
+    assert qml.math.allclose(res[3], 0)
+    assert qml.math.allclose(res[4], jax.numpy.zeros(2**4, dtype=complex))
+
+
+@pytest.mark.capture
+def test_execute_plxpr_shots():
+    import jax
+
+    def f(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0)), 5, qml.sample(wires=(0, 1))
+
+    jaxpr = jax.make_jaxpr(f)(0.5)
+
+    dev = qml.device("null.qubit", wires=4, shots=50)
+    res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
+    assert qml.math.allclose(res[0], 0)
+    assert qml.math.allclose(res[1], 0)
+    assert qml.math.allclose(res[2], jax.numpy.zeros((50, 2)))

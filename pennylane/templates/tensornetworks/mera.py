@@ -15,13 +15,18 @@
 Contains the MERA template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
+
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=no-member, unused-argument
 import warnings
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
+from pennylane.queuing import QueuingManager, apply
+from pennylane.tape import make_qscript
 
 
 def compute_indices(wires, n_block_wires):
@@ -51,7 +56,7 @@ def compute_indices(wires, n_block_wires):
             f"got n_block_wires = {n_block_wires} and number of wires = {n_wires}"
         )
 
-    if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
+    if not np.log2(n_wires / n_block_wires).is_integer():
         warnings.warn(
             f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
         )
@@ -160,7 +165,7 @@ class MERA(Operation):
 
         It may be necessary to reorder the wires to see the MERA architecture clearly:
 
-        >>> print(qml.draw(circuit, expansion_strategy='device', wire_order=[2,0,1,3])(template_weights))
+        >>> print(qml.draw(circuit, level='device', wire_order=[2,0,1,3])(template_weights))
         2: ───────────────╭●──RY(0.10)──╭X──RY(-0.30)───────────────┤
         0: ─╭X──RY(-0.30)─│─────────────╰●──RY(0.10)──╭●──RY(0.10)──┤
         1: ─╰●──RY(0.10)──│─────────────╭X──RY(-0.30)─╰X──RY(-0.30)─┤  <Z>
@@ -168,7 +173,6 @@ class MERA(Operation):
 
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     @property
@@ -206,7 +210,7 @@ class MERA(Operation):
     ):
         ind_gates = compute_indices(wires, n_block_wires)
         n_wires = len(wires)
-        shape = qml.math.shape(template_weights)  # (n_params_block, n_blocks)
+        shape = math.shape(template_weights)  # (n_params_block, n_blocks)
         n_blocks = int(2 ** (np.floor(np.log2(n_wires / n_block_wires)) + 2) - 3)
 
         if shape == ():
@@ -227,9 +231,7 @@ class MERA(Operation):
         super().__init__(template_weights, wires=wires, id=id)
 
     @staticmethod
-    def compute_decomposition(
-        weights, wires, block, ind_gates
-    ):  # pylint: disable=arguments-differ,unused-argument
+    def compute_decomposition(weights, wires, block, ind_gates):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -246,7 +248,7 @@ class MERA(Operation):
             list[.Operator]: decomposition of the operator
         """
         op_list = []
-        block_gen = qml.tape.make_qscript(block)
+        block_gen = make_qscript(block)
         if block.__code__.co_argcount > 2:
             for idx, w in enumerate(ind_gates):
                 op_list += block_gen(*weights[idx], wires=w)
@@ -257,7 +259,7 @@ class MERA(Operation):
             for w in ind_gates:
                 op_list += block_gen(wires=w)
 
-        return [qml.apply(op) for op in op_list] if qml.QueuingManager.recording() else op_list
+        return [apply(op) for op in op_list] if QueuingManager.recording() else op_list
 
     @staticmethod
     def get_n_blocks(wires, n_block_wires):
@@ -270,7 +272,7 @@ class MERA(Operation):
         """
 
         n_wires = len(wires)
-        if not np.log2(n_wires / n_block_wires).is_integer():  # pylint:disable=no-member
+        if not np.log2(n_wires / n_block_wires).is_integer():
             warnings.warn(
                 f"The number of wires should be n_block_wires times 2^n; got n_wires/n_block_wires = {n_wires/n_block_wires}"
             )

@@ -15,23 +15,23 @@
 This file contains the definition of the dot function, which computes the dot product between
 a vector and a list of operators.
 """
-# pylint: disable=too-many-branches
+
 from collections import defaultdict
-from typing import Callable, Sequence, Union
+from collections.abc import Callable, Sequence
 
 import pennylane as qml
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse import ParametrizedHamiltonian
 
 
 def dot(
-    coeffs: Sequence[Union[float, Callable]],
-    ops: Sequence[Union[Operator, PauliWord, PauliSentence]],
+    coeffs: Sequence[float | Callable],
+    ops: Sequence[Operator | PauliWord | PauliSentence],
     pauli=False,
     grouping_type=None,
-    method="rlf",
-) -> Union[Operator, ParametrizedHamiltonian, PauliSentence]:
+    method="lf",
+) -> Operator | ParametrizedHamiltonian | PauliSentence:
     r"""Returns the dot product between the ``coeffs`` vector and the ``ops`` list of operators.
 
     This function returns the following linear combination: :math:`\sum_{k} c_k O_k`, where
@@ -48,9 +48,10 @@ def dot(
         grouping_type (str): The type of binary relation between Pauli words used to compute
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``. Note that if
             ``pauli=True``, the grouping will be ignored.
-        method (str): The graph coloring heuristic to use in solving minimum clique cover for
-            grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-            First). This keyword argument is ignored if ``grouping_type`` is ``None``.
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for
+            grouping, which can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
+            ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
+            This keyword argument is ignored if ``grouping_type`` is ``None``. Defaults to ``'lf'`` if no method is provided.
 
     Raises:
         ValueError: if the number of coefficients and operators does not match or if they are empty
@@ -128,8 +129,10 @@ def dot(
         ((2,), (0, 1))
 
         ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
-        ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, see
-        :ref:`Pauli Graph Colouring<graph_colouring>` and :func:`~pennylane.pauli.group_observables`.
+        ``method`` can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
+        ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
+        To see more details about how these affect grouping, see :ref:`Pauli Graph Colouring<graph_colouring>` and
+        :func:`~pennylane.pauli.compute_partition_indices`.
     """
 
     for t in (Operator, PauliWord, PauliSentence):
@@ -138,10 +141,12 @@ def dot(
                 f"ops must be an Iterable of {t.__name__}'s, not a {t.__name__} itself."
             )
 
-    if len(coeffs) != len(ops):
-        raise ValueError("Number of coefficients and operators does not match.")
-    if len(coeffs) == 0 and len(ops) == 0:
-        raise ValueError("Cannot compute the dot product of an empty sequence.")
+    # tensorflow variables have no len
+    if qml.math.get_interface(coeffs) != "tensorflow":
+        if len(coeffs) != len(ops):
+            raise ValueError("Number of coefficients and operators does not match.")
+        if len(coeffs) == 0 and len(ops) == 0:
+            raise ValueError("Cannot compute the dot product of an empty sequence.")
 
     for t in (Operator, PauliWord, PauliSentence):
         if isinstance(ops, t):
@@ -164,10 +169,10 @@ def dot(
     # Convert possible PauliWord and PauliSentence instances to operation
     ops = [op.operation() if isinstance(op, (PauliWord, PauliSentence)) else op for op in ops]
 
-    # When casting a Hamiltonian to a Sum, we also cast its inner Tensors to Prods
-    ops = (convert_to_opmath(op) for op in ops)
-
-    operands = [op if coeff == 1 else qml.s_prod(coeff, op) for coeff, op in zip(coeffs, ops)]
+    operands = [
+        op if (not qml.math.is_abstract(coeff) and coeff == 1) else qml.s_prod(coeff, op)
+        for coeff, op in zip(coeffs, ops)
+    ]
     return (
         operands[0]
         if len(operands) == 1
@@ -178,7 +183,7 @@ def dot(
 def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
     """Compute dot when operators are a mix of pennylane operators, PauliWord and PauliSentence by turning them all into a PauliSentence instance.
     Returns a PauliSentence instance"""
-    pauli_words = defaultdict(lambda: 0)
+    pauli_words = defaultdict(int)
     for coeff, op in zip(coeffs, ops):
         sentence = qml.pauli.pauli_sentence(op)
         for pw in sentence:
@@ -187,6 +192,6 @@ def _dot_with_ops_and_paulis(coeffs: Sequence[float], ops: Sequence[Operator]):
     return qml.pauli.PauliSentence(pauli_words)
 
 
-def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[Union[PauliWord, PauliSentence]]):
+def _dot_pure_paulis(coeffs: Sequence[float], ops: Sequence[PauliWord | PauliSentence]):
     """Faster computation of dot when all ops are PauliSentences or PauliWords"""
     return sum((c * op for c, op in zip(coeffs[1:], ops[1:])), start=coeffs[0] * ops[0])

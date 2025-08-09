@@ -19,6 +19,7 @@ from functools import partial, reduce
 from warnings import catch_warnings
 
 import pytest
+import scipy as sp
 from gate_data import CNOT, H, I
 from gate_data import Rotx as RX
 from gate_data import Roty as RY
@@ -49,6 +50,41 @@ one_qubit_one_parameter = [qml.RX, qml.RY, qml.RZ, qml.PhaseShift]
 
 
 class TestSingleOperation:
+
+    def test_unsupported_operator(self):
+        """Test that an error is raised when the operator is not supported, that means,
+        it is an operator without matrix, sparse matrix or decomposition defined."""
+
+        class CustomOp(qml.operation.Operation):
+            has_matrix = False
+            has_sparse_matrix = False
+            has_decomposition = False
+
+            num_params = 1
+            num_wires = 1
+
+            def __init__(self, param, wires):
+                super().__init__(param, wires=wires)
+
+        dummy_op = CustomOp(0.5, wires=0)
+        with pytest.raises(
+            qml.operation.MatrixUndefinedError,
+            match="Operator must define a matrix, sparse matrix, or decomposition",
+        ):
+            qml.matrix(dummy_op)
+
+    @pytest.mark.parametrize("op_class", [qml.QubitUnitary])
+    @pytest.mark.parametrize("n_wires", [1, 2, 3])
+    def test_sparse_operators_supported(self, op_class, n_wires):
+        """Test that sparse operators are supported and directly output as dense."""
+        matrix = X
+        for _ in range(n_wires - 1):
+            matrix = np.kron(matrix, X)
+        X_csr = sp.sparse.csr_matrix(matrix)
+        op = op_class(X_csr, wires=range(n_wires))
+        res = qml.matrix(op)
+        assert np.allclose(res, matrix, atol=0, rtol=0)
+
     @pytest.mark.parametrize("op_class", one_qubit_no_parameter)
     def test_non_parametric_instantiated(self, op_class):
         """Verify that the matrices of non-parametric one qubit gates is correct
@@ -182,6 +218,25 @@ class TestSingleOperation:
         )
 
         assert np.allclose(mat, expected)
+
+    def test_empty_decomposition(self):
+        """Test the matrix of a single operation that has an empty list as decomposition."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def node():
+            qml.Snapshot("tag")
+            return qml.expval(qml.Z(0))
+
+        mats = [
+            qml.matrix(qml.Snapshot(), wire_order=[0, 1]),  # op without wires
+            qml.matrix(qml.Barrier(1), wire_order=[0, 1]),  # op with wires w/ wire_order
+            qml.matrix(qml.Barrier([0, 1])),  # op with wires w/o wire_order
+            qml.matrix((lambda *_: qml.Barrier(1) and None), wire_order=[0, 1])(),  # qfunc
+            qml.matrix(node)(),  # qnode
+        ]
+        assert all(np.allclose(mat, np.eye(4)) for mat in mats)
 
 
 class TestMultipleOperations:
@@ -417,6 +472,11 @@ class TestCustomWireOrdering:
         op = 1.5 * op1 + 0.5 * op2
         assert qml.math.allclose(qml.matrix(ps, wire_order), qml.matrix(op, wire_order))
 
+    def test_empty_tape_with_wire_order(self):
+        """Test that an empty tape's matrix can be computed if wire_order is specified."""
+        qs = qml.tape.QuantumScript()
+        assert np.allclose(qml.matrix(qs, wire_order=[0, 2]), np.eye(4))
+
 
 pw1 = PauliWord({0: "X", 1: "Z"})
 pw2 = PauliWord({0: "Y", 1: "Z"})
@@ -506,7 +566,9 @@ class TestTemplates:
 
         weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         op = CustomOp(weights, wires=[0, 1])
-        res = qml.matrix(op)
+        with qml.queuing.AnnotatedQueue() as q_test:
+            res = qml.matrix(op)
+        assert len(q_test) == 0  # Test that no operators were leaked
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
         with qml.queuing.AnnotatedQueue() as q:
@@ -533,7 +595,10 @@ class TestTemplates:
 
         weights = np.array([[[0.1, 0.2, 0.3], [0.1, 0.2, 0.3]]])
         x = 0.54
-        res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
+        with qml.queuing.AnnotatedQueue() as q_test:
+            res = qml.matrix(circuit, wire_order=[0, 1])(weights, x)
+
+        assert len(q_test) == 0  # Test that no operators were leaked
 
         op = qml.StronglyEntanglingLayers(weights, wires=[0, 1])
 
@@ -664,7 +729,7 @@ class TestInterfaces:
     def test_catalyst(self):
         """Test with Catalyst interface"""
 
-        import catalyst
+        catalyst = pytest.importorskip("catalyst")
 
         dev = qml.device("lightning.qubit", wires=1)
 
@@ -840,9 +905,10 @@ class TestWireOrderErrors:
         with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(ps)
 
-    def test_error_tape(self):
+    @pytest.mark.parametrize("ops", [[qml.PauliX(1), qml.PauliX(0)], []])
+    def test_error_tape_multiple_wires(self, ops):
         """Test that an error is raised when calling qml.matrix without wire_order on a tape."""
-        qs = qml.tape.QuantumScript([qml.PauliX(1), qml.PauliX(0)])
+        qs = qml.tape.QuantumScript(ops)
         with pytest.raises(ValueError, match=r"wire_order is required"):
             _ = qml.matrix(qs)
 

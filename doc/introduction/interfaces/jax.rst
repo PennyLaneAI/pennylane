@@ -54,7 +54,7 @@ a JAX-capable QNode in PennyLane. Simply specify the ``interface='jax'`` keyword
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit.jax', wires=2)
+    dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='jax')
     def circuit1(phi, theta):
@@ -85,7 +85,7 @@ For example:
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit.jax', wires=2)
+    dev = qml.device('default.qubit', wires=2)
 
     @qml.qnode(dev, interface='jax')
     def circuit3(phi, theta):
@@ -119,7 +119,7 @@ the ``@jax.jit`` decorator can be directly applied to the QNode.
 
 .. code-block:: python
 
-    dev = qml.device('default.qubit.jax', wires=2)
+    dev = qml.device('default.qubit', wires=2)
 
     @jax.jit  # QNode calls will now be jitted, and should run faster.
     @qml.qnode(dev, interface='jax')
@@ -168,6 +168,7 @@ Example:
 .. code-block:: python
 
     import jax
+    from functools import partial
     import pennylane as qml
 
 
@@ -176,9 +177,9 @@ Example:
 
         # Device construction should happen inside a `jax.jit` decorated
         # method when using a PRNGKey.
-        dev = qml.device('default.qubit.jax', wires=2, prng_key=key, shots=100)
+        dev = qml.device('default.qubit', wires=2, seed=key)
 
-
+        @partial(qml.set_shots, shots=100)
         @qml.qnode(dev, interface='jax', diff_method=None)
         def circuit(phi, theta):
             qml.RX(phi[0], wires=0)
@@ -217,12 +218,14 @@ used to optimize a QNode that is transformed by ``jax.jit``:
     import pennylane as qml
     import jax
     import jaxopt
+    from functools import partial
 
     jax.config.update("jax_enable_x64", True)
 
-    dev = qml.device("default.qubit", wires=1, shots=None)
+    dev = qml.device("default.qubit", wires=1)
 
     @jax.jit
+    @partial(qml.set_shots, shots=None)
     @qml.qnode(dev, interface="jax")
     def energy(a):
         qml.RX(a, wires=0)
@@ -245,12 +248,14 @@ QNode:
     from jax import numpy as jnp
     import jax
     import optax
+    from functools import partial
 
     learning_rate = 0.15
 
-    dev = qml.device("default.qubit", wires=1, shots=None)
+    dev = qml.device("default.qubit", wires=1)
 
     @jax.jit
+    @partial(qml.set_shots, shots=None)
     @qml.qnode(dev, interface="jax")
     def energy(a):
         qml.RX(a, wires=0)

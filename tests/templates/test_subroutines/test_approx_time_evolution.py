@@ -44,7 +44,7 @@ def test_flatten_unflatten():
     assert hash(metadata)
 
     new_op = type(op)._unflatten(*op._flatten())
-    assert qml.equal(op, new_op)
+    qml.assert_equal(op, new_op)
     assert new_op is not op
 
 
@@ -116,10 +116,10 @@ class TestDecomposition:
         """Tests that the sequence of gates implemented in the ApproxTimeEvolution template is correct"""
 
         op = qml.ApproxTimeEvolution(hamiltonian, time, steps)
-        queue = op.expand().operations
+        queue = op.decomposition()
 
         for expected_gate, gate in zip(expected_queue, queue):
-            assert qml.equal(expected_gate, gate)
+            qml.assert_equal(expected_gate, gate)
 
     @pytest.mark.parametrize(
         ("time", "hamiltonian", "steps", "expectation"),
@@ -348,6 +348,32 @@ class TestInterfaces:
 
         assert np.allclose(grads, grads2, atol=tol, rtol=0)
 
+    @pytest.mark.jax
+    def test_jax_jit(self, tol):
+        """Tests jit within the jax interface."""
+
+        import jax
+        import jax.numpy as jnp
+
+        time = jnp.array(0.5)
+
+        dev = qml.device("default.qubit", wires=3)
+
+        circuit = qml.QNode(circuit_template, dev)
+        circuit2 = jax.jit(circuit)
+
+        res = circuit(time)
+        res2 = circuit2(time)
+        assert qml.math.allclose(res, res2, atol=tol, rtol=0)
+
+        grad_fn = jax.grad(circuit)
+        grads = grad_fn(time)
+
+        grad_fn2 = jax.grad(circuit2)
+        grads2 = grad_fn2(time)
+
+        assert qml.math.allclose(grads, grads2, atol=tol, rtol=0)
+
     @pytest.mark.tf
     def test_tf(self, tol):
         """Tests the tf interface."""
@@ -432,8 +458,8 @@ def test_trainable_hamiltonian(dev_name, diff_method):
         if diff_method is qml.gradients.param_shift and dev_name != "default.qubit":
             tape = dev.expand_fn(tape)
             return qml.execute([tape], dev, diff_method)[0]
-        program, _ = dev.preprocess()
-        return qml.execute([tape], dev, gradient_fn=diff_method, transform_program=program)[0]
+        program = dev.preprocess_transforms()
+        return qml.execute([tape], dev, diff_method=diff_method, transform_program=program)[0]
 
     t = pnp.array(0.54, requires_grad=True)
     coeffs = pnp.array([-0.6, 2.0], requires_grad=True)

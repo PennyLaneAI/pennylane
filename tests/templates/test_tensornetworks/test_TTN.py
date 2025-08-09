@@ -53,7 +53,7 @@ def test_flatten_unflatten_methods():
     assert hash(metadata)
 
     new_op = qml.TTN._unflatten(*op._flatten())
-    assert qml.equal(new_op, op)
+    qml.assert_equal(new_op, op)
     assert new_op._name == "TTN"  # make sure acutally initialized
     assert new_op is not op
 
@@ -420,3 +420,43 @@ class TestTemplateOutputs:
 
         manual_result = circuit_manual()
         assert np.isclose(template_result, manual_result)
+
+    @pytest.mark.parametrize(
+        (
+            "block",
+            "n_params_block",
+            "wires",
+            "n_block_wires",
+            "template_weights",
+        ),
+        [
+            (
+                circuit2_block,
+                2,
+                [0, 1, 2, 3],
+                2,
+                [[0.1, 0.2], [-0.2, 0.3], [0.3, 0.4]],
+            ),
+            (
+                circuit3_block,
+                3,
+                [1, 2, 3, 4],
+                2,
+                [[0.1, 0.2, 0.3], [0.2, 0.3, -0.4], [0.5, 0.2, 0.3]],
+            ),
+        ],
+    )
+    @pytest.mark.jax
+    def test_jax_jit(self, block, n_params_block, wires, n_block_wires, template_weights):
+        import jax
+
+        dev = qml.device("default.qubit", wires=wires)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.TTN(wires, n_block_wires, block, n_params_block, template_weights)
+            return qml.expval(qml.PauliX(wires=wires[-1]))
+
+        jit_circuit = jax.jit(circuit)
+
+        assert qml.math.allclose(circuit(), jit_circuit())
