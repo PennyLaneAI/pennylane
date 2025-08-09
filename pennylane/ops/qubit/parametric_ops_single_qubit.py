@@ -780,7 +780,7 @@ add_decomps("Pow(PhaseShift)", pow_rotation)
 
 
 def _controlled_phaseshift_condition(*_, num_control_wires, num_work_wires, work_wire_type, **__):
-    return num_control_wires == 1 or (num_work_wires > 0 and work_wire_type == "clean")
+    return num_control_wires == 1 or (num_work_wires > 0 and work_wire_type == "zeroed")
 
 
 def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
