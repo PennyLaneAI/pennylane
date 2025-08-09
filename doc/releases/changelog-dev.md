@@ -199,6 +199,8 @@
 
 * The default implementation of `Device.setup_execution_config` now choses `"device"` as the default mcm method if it is available as specified by the device TOML file.
   [(#7968)](https://github.com/PennyLaneAI/pennylane/pull/7968)
+* New `SparseFragment` and `SparseState` classes have been created that allow to use sparse matrices for the Hamiltonian Fragments when estimating the Trotter error.
+  [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
 
 <h4>Resource-efficient decompositions 🔎</h4>
 
@@ -573,6 +575,7 @@ Simone Gasperini,
 David Ittah,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
+Pablo Antonio Moreno Casares
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
