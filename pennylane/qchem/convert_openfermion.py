@@ -16,9 +16,7 @@ This module contains the functions for converting between OpenFermion and PennyL
 """
 
 from functools import singledispatch
-from typing import Union
 
-# pylint: disable= import-outside-toplevel,no-member,unused-import
 import pennylane as qml
 from pennylane import numpy as np
 from pennylane.fermi.fermionic import FermiSentence, FermiWord
@@ -29,7 +27,7 @@ from pennylane.qchem.convert import _openfermion_to_pennylane, _pennylane_to_ope
 def _import_of():
     """Import openfermion."""
     try:
-        # pylint: disable=import-outside-toplevel, unused-import, multiple-imports
+        # pylint: disable=import-outside-toplevel
         import openfermion
     except ImportError as Error:
         raise ImportError(
@@ -56,7 +54,7 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
         tol (float): Tolerance for discarding negligible coefficients.
 
     Returns:
-        Union[FermiWord, FermiSentence, LinearCombination]: PennyLane operator.
+        Union[~.FermiWord, ~.FermiSentence, LinearCombination]: PennyLane operator.
 
     **Example**
 
@@ -106,14 +104,14 @@ def from_openfermion(openfermion_op, wires=None, tol=1e-16):
 
 
 def to_openfermion(
-    pennylane_op: Union[Sum, LinearCombination, FermiWord, FermiSentence], wires=None, tol=1.0e-16
+    pennylane_op: Sum | LinearCombination | FermiWord | FermiSentence, wires=None, tol=1.0e-16
 ):
     r"""Convert a PennyLane operator to OpenFermion
     `QubitOperator <https://quantumai.google/reference/python/openfermion/ops/QubitOperator>`__ or
     `FermionOperator <https://quantumai.google/reference/python/openfermion/ops/FermionOperator>`__.
 
     Args:
-        pennylane_op (~ops.op_math.Sum, ~ops.op_math.LinearCombination, FermiWord, FermiSentence):
+        pennylane_op (~ops.op_math.Sum, ~ops.op_math.LinearCombination, ~.FermiWord, ~.FermiSentence):
             PennyLane operator
         wires (dict): Custom wire mapping used to convert a PennyLane qubit operator
             to the external operator.
@@ -126,9 +124,9 @@ def to_openfermion(
     **Example**
 
     >>> import pennylane as qml
-    >>> w1 = qml.fermi.FermiWord({(0, 0) : '+', (1, 1) : '-'})
-    >>> w2 = qml.fermi.FermiWord({(0, 1) : '+', (1, 2) : '-'})
-    >>> fermi_s = qml.fermi.FermiSentence({w1 : 1.2, w2: 3.1})
+    >>> w1 = qml.FermiWord({(0, 0) : '+', (1, 1) : '-'})
+    >>> w2 = qml.FermiWord({(0, 1) : '+', (1, 2) : '-'})
+    >>> fermi_s = qml.FermiSentence({w1 : 1.2, w2: 3.1})
     >>> of_fermi_op = qml.to_openfermion(fermi_s)
     >>> of_fermi_op
     1.2 [0^ 1] +
@@ -158,9 +156,11 @@ def _(pl_op: Sum, wires=None, tol=1.0e-16):
     return _pennylane_to_openfermion(np.array(coeffs), ops, wires=wires, tol=tol)
 
 
-# pylint: disable=unused-argument, protected-access
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=unused-argument
 @_to_openfermion_dispatch.register
 def _(ops: FermiWord, wires=None, tol=1.0e-16):
+    # pylint: disable=protected-access
     openfermion = _import_of()
 
     if wires:

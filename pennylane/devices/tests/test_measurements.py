@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests that the different measurement types work correctly on a device."""
-# pylint: disable=no-self-use,pointless-statement, no-member
+# pylint: disable=no-self-use,no-member
 import pytest
 from flaky import flaky
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import DeviceError
 from pennylane.measurements import (
     ClassicalShadowMP,
     MeasurementTransform,
@@ -28,6 +29,8 @@ from pennylane.measurements import (
     StateMP,
 )
 from pennylane.wires import Wires
+
+from .conftest import get_legacy_capabilities
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -51,7 +54,6 @@ obs = {
         qml.Projector(np.array([0, 1]), wires=[0]),
     ],
     "SparseHamiltonian": qml.SparseHamiltonian(csr_matrix(np.eye(8)), wires=[0, 1, 2]),
-    "Hamiltonian": qml.Hamiltonian([1, 1], [qml.Z(0), qml.X(0)]),
     "Prod": qml.prod(qml.X(0), qml.Z(1)),
     "SProd": qml.s_prod(0.1, qml.Z(0)),
     "Sum": qml.sum(qml.s_prod(0.1, qml.Z(0)), qml.prod(qml.X(0), qml.Z(1))),
@@ -140,9 +142,8 @@ class TestSupportedObservables:
         This test is skipped for devices that do not support tensor observables."""
         device_kwargs["wires"] = 2
         dev = qml.device(**device_kwargs)
-        supports_tensor = isinstance(dev, qml.devices.Device) or (
-            "supports_tensor_observables" in dev.capabilities()
-            and dev.capabilities()["supports_tensor_observables"]
+        supports_tensor = isinstance(dev, qml.devices.Device) or get_legacy_capabilities(dev).get(
+            "supports_tensor_observables", False
         )
         if not supports_tensor:
             pytest.skip("Device does not support tensor observables.")
@@ -160,9 +161,7 @@ class TestSupportedObservables:
 class TestHamiltonianSupport:
     """Separate test to ensure that the device can differentiate Hamiltonian observables."""
 
-    @pytest.mark.parametrize("ham_constructor", [qml.ops.Hamiltonian, qml.ops.LinearCombination])
-    @pytest.mark.filterwarnings("ignore::pennylane.PennyLaneDeprecationWarning")
-    def test_hamiltonian_diff(self, ham_constructor, device_kwargs, tol):
+    def test_hamiltonian_diff(self, device_kwargs, tol):
         """Tests a simple VQE gradient using parameter-shift rules."""
 
         device_kwargs["wires"] = 1
@@ -175,7 +174,7 @@ class TestHamiltonianSupport:
             qml.RX(param, wires=0)
             qml.RY(param, wires=0)
             return qml.expval(
-                ham_constructor(
+                qml.Hamiltonian(
                     coeffs,
                     [qml.X(0), qml.Z(0)],
                 )
@@ -1733,7 +1732,7 @@ class TestSampleMeasurement:
             qml.X(0)
             return MyMeasurement(wires=[0]), MyMeasurement(wires=[1])
 
-        with pytest.raises((ValueError, qml.DeviceError)):
+        with pytest.raises((ValueError, DeviceError)):
             circuit()
 
     def test_method_overriden_by_device(self, device):
@@ -1777,6 +1776,9 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return 1
 
+            def process_density_matrix(self, density_matrix, wire_order):
+                return 1
+
         @qml.qnode(dev)
         def circuit():
             qml.X(0)
@@ -1798,6 +1800,9 @@ class TestStateMeasurement:
             def process_state(self, state, wire_order):
                 return 1
 
+            def process_density_matrix(self, density_matrix, wire_order):
+                return 1
+
         @qml.qnode(dev)
         def circuit():
             qml.X(0)
@@ -1809,7 +1814,7 @@ class TestStateMeasurement:
                 match="MyMeasurement with finite shots; the returned state information is analytic",
             )
             if isinstance(dev, qml.devices.LegacyDevice)
-            else pytest.raises(qml.DeviceError, match="not accepted with finite shots")
+            else pytest.raises(DeviceError, match="not accepted with finite shots")
         ):
             circuit()
 
@@ -1849,8 +1854,8 @@ class TestCustomMeasurement:
         if isinstance(dev, qml.devices.Device):
             tape = qml.tape.QuantumScript([], [MyMeasurement()])
             try:
-                dev.preprocess()[0]((tape,))
-            except qml.DeviceError:
+                dev.preprocess_transforms()((tape,))
+            except DeviceError:
                 pytest.xfail("Device does not support custom measurement transforms.")
 
         @qml.qnode(dev)

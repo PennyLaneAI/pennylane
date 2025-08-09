@@ -16,8 +16,8 @@ Contains the ``Interferometer`` template.
 """
 from itertools import product
 
-import pennylane as qml
-from pennylane.operation import AnyWires, CVOperation
+from pennylane import math
+from pennylane.operation import CVOperation
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.ops import Beamsplitter, Rotation
@@ -159,7 +159,6 @@ class Interferometer(CVOperation):
             ──╰BS(0.20,0.00)──R(0.62)─┤
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(
@@ -177,15 +176,15 @@ class Interferometer(CVOperation):
         n_wires = len(wires)
         shape_theta_phi = n_wires * (n_wires - 1) // 2
 
-        shape = qml.math.shape(theta)
+        shape = math.shape(theta)
         if shape != (shape_theta_phi,):
             raise ValueError(f"Theta must be of shape {(shape_theta_phi,)}; got {shape}.")
 
-        shape = qml.math.shape(phi)
+        shape = math.shape(phi)
         if shape != (shape_theta_phi,):
             raise ValueError(f"Phi must be of shape {(shape_theta_phi,)}; got {shape}.")
 
-        shape_varphi = qml.math.shape(varphi)
+        shape_varphi = math.shape(varphi)
         if shape_varphi != (n_wires,):
             raise ValueError(f"Varphi must be of shape {(n_wires,)}; got {shape_varphi}.")
 
@@ -265,7 +264,7 @@ class Interferometer(CVOperation):
                 raise ValueError(f"did not recognize mesh {mesh}")
 
             # apply the final local phase shifts to all modes
-            for i in range(qml.math.shape(varphi)[0]):
+            for i in range(math.shape(varphi)[0]):
                 act_on = wires[i]
                 op_list.append(Rotation(varphi[i], wires=act_on))
 

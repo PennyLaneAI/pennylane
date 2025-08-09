@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as qnp
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.math import allclose, isclose
 from pennylane.templates.subroutines.qdrift import _sample_decomposition
 
@@ -31,7 +32,10 @@ test_hamiltonians = (
     ),
     (
         [1.23, -0.45j],
-        [qml.s_prod(0.1, qml.PauliX(0)), qml.prod(qml.PauliX(0), qml.PauliZ(1))],
+        [
+            qml.s_prod(0.1, qml.PauliX(0)),
+            qml.prod(qml.PauliZ(0), qml.PauliX(1)),
+        ],  #  Here we chose such hamiltonian to have non-commutability
     ),  # op arith
     (
         [1, -0.5, 0.5],
@@ -101,9 +105,7 @@ class TestInitialization:
     def test_error_type(self, hamiltonian, raise_error):
         """Test an error is raised of an incorrect type is passed"""
         if raise_error:
-            with pytest.raises(
-                TypeError, match="The given operator must be a PennyLane ~.Hamiltonian or ~.Sum"
-            ):
+            with pytest.raises(TypeError, match="The given operator must be a PennyLane ~.Sum"):
                 qml.QDrift(hamiltonian, time=1.23)
         else:
             try:
@@ -142,7 +144,7 @@ class TestDecomposition:
             assert term.base in ops  # sample from ops
             assert term.coeff == (s * normalization * time * 1j / n)  # with this exponent
 
-    @pytest.mark.parametrize("coeffs", ([0.99, 0.01], [0.5 + 0.49j, -0.01j]))
+    @pytest.mark.parametrize("coeffs", ([0.999, 0.001], [0.5 + 0.499j, -0.001j]))
     def test_private_sample_statistics(self, coeffs, seed):
         """Test the private function samples from the right distribution"""
         ops = [qml.PauliX(0), qml.PauliZ(1)]
@@ -178,7 +180,7 @@ class TestDecomposition:
 class TestIntegration:
     """Test that the QDrift template integrates well with the rest of PennyLane"""
 
-    @pytest.mark.local_salt(8)
+    @pytest.mark.local_salt(3)
     @pytest.mark.parametrize("n", (1, 2, 3))
     @pytest.mark.parametrize("time", (0.5, 1, 2))
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
@@ -201,15 +203,14 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=wires) for op in expected_decomp],
+                [qml.matrix(op, wire_order=wires) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
         state = circ()
 
-        assert allclose(expected_state, state)
+        assert allclose(state, expected_state)
 
-    @pytest.mark.local_salt(8)
     @pytest.mark.autograd
     @pytest.mark.parametrize("coeffs, ops", test_hamiltonians)
     def test_execution_autograd(self, coeffs, ops, seed):
@@ -233,7 +234,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -263,7 +264,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -293,7 +294,7 @@ class TestIntegration:
         expected_state = tf.linalg.matvec(
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             ),
             initial_state,
         )
@@ -323,7 +324,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -355,7 +356,7 @@ class TestIntegration:
         expected_state = (
             reduce(
                 lambda x, y: x @ y,
-                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp],
+                [qml.matrix(op, wire_order=[0, 1]) for op in expected_decomp[::-1]],
             )
             @ initial_state
         )
@@ -379,7 +380,7 @@ class TestIntegration:
             return qml.expval(qml.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             qml.grad(circ)(time, coeffs)
 
     @pytest.mark.torch
@@ -400,7 +401,7 @@ class TestIntegration:
             return qml.expval(qml.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             res_circ = circ(time, coeffs)
             res_circ.backward()
 
@@ -425,7 +426,7 @@ class TestIntegration:
             return qml.expval(qml.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             with tf.GradientTape() as tape:
                 result = circ(time, coeffs)
             tape.gradient(result, coeffs)
@@ -449,7 +450,7 @@ class TestIntegration:
             return qml.expval(qml.Hadamard(0))
 
         msg = "The QDrift template currently doesn't support differentiation through the coefficients of the input Hamiltonian."
-        with pytest.raises(qml.QuantumFunctionError, match=msg):
+        with pytest.raises(QuantumFunctionError, match=msg):
             jax.grad(circ, argnums=[1])(time, coeffs)
 
     @pytest.mark.autograd
@@ -615,6 +616,6 @@ def test_error_func(h, time, n, expected_error):
 
 def test_error_func_type_error():
     """Test that an error is raised if the wrong type is passed for hamiltonian"""
-    msg = "The given operator must be a PennyLane ~.Hamiltonian or ~.Sum"
+    msg = "The given operator must be a PennyLane ~.Sum"
     with pytest.raises(TypeError, match=msg):
         qml.QDrift.error(qml.PauliX(0), time=1.23, n=10)

@@ -17,9 +17,12 @@ Contains the CommutingEvolution template.
 # pylint: disable-msg=too-many-arguments,import-outside-toplevel
 import copy
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
+from pennylane import math
+from pennylane.operation import Operation
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
+
+from .approx_time_evolution import ApproxTimeEvolution
 
 
 class CommutingEvolution(Operation):
@@ -106,7 +109,6 @@ class CommutingEvolution(Operation):
         0.6536436208636115
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def _flatten(self):
@@ -123,7 +125,7 @@ class CommutingEvolution(Operation):
         return cls(data[1], data[0], frequencies=metadata[0], shifts=metadata[1])
 
     def __init__(self, hamiltonian, time, frequencies=None, shifts=None, id=None):
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel,too-many-positional-arguments
         from pennylane.gradients.general_shift_rules import generate_shift_rule
 
         if getattr(hamiltonian, "pauli_rep", None) is None:
@@ -131,10 +133,10 @@ class CommutingEvolution(Operation):
                 f"hamiltonian must be a linear combination of pauli words. Got {hamiltonian}"
             )
 
-        trainable_hamiltonian = qml.operation.is_trainable(hamiltonian)
+        trainable_hamiltonian = any(math.requires_grad(d) for d in hamiltonian.data)
         if frequencies is not None and not trainable_hamiltonian:
             c, s = generate_shift_rule(frequencies, shifts).T
-            recipe = qml.math.stack([c, qml.math.ones_like(c), s]).T
+            recipe = math.stack([c, math.ones_like(c), s]).T
             self.grad_recipe = (recipe,) + (None,) * len(hamiltonian.data)
             self.grad_method = "A"
 
@@ -150,20 +152,22 @@ class CommutingEvolution(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["hamiltonian"] = qml.map_wires(
-            new_op._hyperparameters["hamiltonian"], wire_map
+        new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
+            wire_map
         )
         return new_op
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=QueuingManager):
         context.remove(self.hyperparameters["hamiltonian"])
         context.append(self)
         return self
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
     @staticmethod
     def compute_decomposition(
         time, *_, wires, hamiltonian, **__
-    ):  # pylint: disable=arguments-differ,unused-argument
+    ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
         .. math:: O = O_1 O_2 \dots O_n.
@@ -184,7 +188,7 @@ class CommutingEvolution(Operation):
             list[.Operator]: decomposition of the operator
         """
         # uses standard PauliRot decomposition through ApproxTimeEvolution.
-        return [qml.ApproxTimeEvolution(hamiltonian, time, 1)]
+        return [ApproxTimeEvolution(hamiltonian, time, 1)]
 
     def adjoint(self):
         hamiltonian = self.hyperparameters["hamiltonian"]

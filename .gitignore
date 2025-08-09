@@ -9,6 +9,8 @@ qit.egg-info
 *.ipynb_checkpoints
 *.egg-info*
 .coverage*
+!.coveragerc
+!pennylane/labs/.coveragerc
 coverage_html_report/*
 notebooks/*
 .pytest_cache/*

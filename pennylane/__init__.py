@@ -15,29 +15,51 @@
 This is the top level module from which all basic functions and classes of
 PennyLane can be directly imported.
 """
+import warnings
 
-
+from pennylane import exceptions
 from pennylane.boolean_fn import BooleanFn
-import pennylane.numpy
+from pennylane import numpy
 from pennylane.queuing import QueuingManager, apply
 
-import pennylane.capture
-import pennylane.kernels
-import pennylane.math
-import pennylane.operation
-import pennylane.qnn
-import pennylane.templates
-import pennylane.pauli
-from pennylane.pauli import pauli_decompose, lie_closure, structure_constants, center
+from pennylane import compiler
+from pennylane.compiler import qjit
+from pennylane import capture
+from pennylane import control_flow
+from pennylane.control_flow import for_loop, while_loop
+from pennylane import kernels
+from pennylane import math
+from pennylane import operation
+from pennylane import allocation
+from pennylane import decomposition
+from pennylane.decomposition import (
+    register_resources,
+    register_condition,
+    add_decomps,
+    list_decomps,
+    resource_rep,
+)
+from pennylane import templates
+from pennylane import pauli
+from pennylane.pauli import pauli_decompose
 from pennylane.resource import specs
-import pennylane.resource
-import pennylane.qchem
+from pennylane import resource
+from pennylane import qchem
 from pennylane.fermi import (
     FermiC,
     FermiA,
+    FermiWord,
+    FermiSentence,
     jordan_wigner,
     parity_transform,
     bravyi_kitaev,
+)
+from pennylane.bose import (
+    BoseSentence,
+    BoseWord,
+    binary_mapping,
+    unary_mapping,
+    christiansen_mapping,
 )
 from pennylane.qchem import (
     taper,
@@ -53,10 +75,7 @@ from pennylane._version import __version__
 from pennylane.about import about
 from pennylane.circuit_graph import CircuitGraph
 from pennylane.configuration import Configuration
-from pennylane.drawer import draw, draw_mpl
-from pennylane.tracker import Tracker
 from pennylane.registers import registers
-from pennylane.io import *
 from pennylane.measurements import (
     counts,
     density_matrix,
@@ -74,7 +93,8 @@ from pennylane.measurements import (
 )
 from pennylane.ops import *
 from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
-from pennylane.templates import broadcast, layer
+from pennylane.ops import LinearCombination as Hamiltonian
+from pennylane.templates import layer
 from pennylane.templates.embeddings import *
 from pennylane.templates.layers import *
 from pennylane.templates.tensornetworks import *
@@ -82,7 +102,22 @@ from pennylane.templates.swapnetworks import *
 from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
-from pennylane.workflow import QNode, qnode, execute
+from pennylane.workflow import QNode, qnode, execute, set_shots
+from pennylane import workflow
+from pennylane.io import (
+    from_pyquil,
+    from_qasm,
+    to_openqasm,
+    from_qiskit,
+    from_qiskit_noise,
+    from_qiskit_op,
+    from_quil,
+    from_quil_file,
+    FromBloq,
+    bloq_registers,
+    from_qasm3,
+    to_bloq,
+)
 from pennylane.transforms import (
     transform,
     batch_params,
@@ -97,7 +132,15 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
+)
+from pennylane.noise import (
     add_noise,
+    insert,
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
 )
 from pennylane.ops.functions import (
     dot,
@@ -128,81 +171,55 @@ from pennylane.debugging import (
 )
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
-import pennylane.pulse
+from pennylane import pulse
 
-import pennylane.fourier
+from pennylane import fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
-import pennylane.gradients  # pylint:disable=wrong-import-order
-import pennylane.qinfo
+from pennylane import gradients  # pylint:disable=wrong-import-order
+from pennylane.drawer import draw, draw_mpl
 
 # pylint:disable=wrong-import-order
-import pennylane.logging  # pylint:disable=wrong-import-order
+from pennylane import logging  # pylint:disable=wrong-import-order
 
-from pennylane.compiler import qjit, while_loop, for_loop
-import pennylane.compiler
+from pennylane import data
 
-import pennylane.data
-
-import pennylane.noise
+from pennylane import noise
 from pennylane.noise import NoiseModel
 
+from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
-import pennylane.spin
+from pennylane import spin
+
+from pennylane import liealg
+from pennylane.liealg import lie_closure, structure_constants, center
+from pennylane import qnn
+
+from importlib.metadata import version as _metadata_version
+from importlib.util import find_spec as _find_spec
+from packaging.version import Version as _Version
+
+if _find_spec("jax") is not None:
+    if (jax_version := _Version(_metadata_version("jax"))) > _Version("0.6.2"):  # pragma: no cover
+        warnings.warn(
+            "PennyLane is not yet compatible with JAX versions > 0.6.2. "
+            f"You have version {jax_version} installed. "
+            "Please downgrade JAX to 0.6.2 to avoid runtime errors using "
+            "python -m pip install jax~=0.6.0 jaxlib~=0.6.0",
+            RuntimeWarning,
+        )
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
 
-class DeviceError(Exception):
-    """Exception raised when it encounters an illegal operation in the quantum circuit."""
-
-
-class QuantumFunctionError(Exception):
-    """Exception raised when an illegal operation is defined in a quantum function."""
-
-
-class PennyLaneDeprecationWarning(UserWarning):
-    """Warning raised when a PennyLane feature is being deprecated."""
-
-
-del globals()["Hamiltonian"]
-
-
 def __getattr__(name):
-    if name == "Hamiltonian":
-        if pennylane.operation.active_new_opmath():
-            return pennylane.ops.LinearCombination
-        return pennylane.ops.Hamiltonian
 
     if name == "plugin_devices":
-        return pennylane.devices.device_constructor.plugin_devices
+        # pylint: disable=import-outside-toplevel
+        from pennylane.devices.device_constructor import plugin_devices
 
-    from warnings import warn  # pylint: disable=import-outside-toplevel
-
-    if name == "QubitDevice":
-        warn(
-            "QubitDevice will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.QubitDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._qubit_device.QubitDevice  # pylint:disable=protected-access
-
-    if name == "QutritDevice":
-        warn(
-            "QutritDevice will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.QutritDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._qutrit_device.QutritDevice  # pylint:disable=protected-access
-
-    if name == "Device":
-        warn(
-            "Device will no longer be accessible top level. Please access "
-            "the class as pennylane.devices.LegacyDevice",
-            PennyLaneDeprecationWarning,
-        )
-        return pennylane.devices._legacy_device.Device  # pylint:disable=protected-access
+        return plugin_devices
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 

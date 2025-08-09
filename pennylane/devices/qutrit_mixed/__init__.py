@@ -26,6 +26,7 @@ at your own discretion.
     apply_operation
     measure
     measure_with_samples
+    sample_probs
     sample_state
     simulate
 """

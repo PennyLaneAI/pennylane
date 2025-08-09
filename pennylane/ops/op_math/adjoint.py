@@ -14,16 +14,16 @@
 """
 This submodule defines the symbolic operation that indicates the adjoint of an operator.
 """
-from functools import lru_cache, partial, wraps
-from typing import Callable, overload
+from collections.abc import Callable
+from functools import lru_cache, partial
+from typing import overload
 
 import pennylane as qml
-from pennylane.capture.capture_diff import create_non_jvp_primitive
+from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
 from pennylane.math import conj, moveaxis, transpose
-from pennylane.operation import Observable, Operation, Operator
+from pennylane.operation import Operation, Operator
 from pennylane.queuing import QueuingManager
-from pennylane.tape import make_qscript
 
 from .symbolicop import SymbolicOp
 
@@ -191,19 +191,22 @@ def create_adjoint_op(fn, lazy):
 def _get_adjoint_qfunc_prim():
     """See capture/explanations.md : Higher Order primitives for more information on this code."""
     # if capture is enabled, jax should be installed
-    import jax  # pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
+    from pennylane.capture.custom_primitives import QmlPrimitive
 
-    adjoint_prim = create_non_jvp_primitive()("adjoint_transform")
+    adjoint_prim = QmlPrimitive("adjoint_transform")
     adjoint_prim.multiple_results = True
+    adjoint_prim.prim_type = "higher_order"
 
     @adjoint_prim.def_impl
     def _(*args, jaxpr, lazy, n_consts):
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+
         consts = args[:n_consts]
         args = args[n_consts:]
-        with qml.queuing.AnnotatedQueue() as q:
-            jax.core.eval_jaxpr(jaxpr, consts, *args)
-        ops, _ = qml.queuing.process_queue(q)
-        for op in reversed(ops):
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr, consts, *args)
+        for op in reversed(collector.state["ops"]):
             adjoint(op, lazy=lazy)
         return []
 
@@ -223,9 +226,16 @@ def _capture_adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
 
     @wraps(qfunc)
     def new_qfunc(*args, **kwargs):
-        jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs))(*args)
+        abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
+        jaxpr = jax.make_jaxpr(partial(qfunc, **kwargs), abstracted_axes=abstracted_axes)(*args)
+        flat_args = jax.tree_util.tree_leaves(args)
         adjoint_prim.bind(
-            *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+            *jaxpr.consts,
+            *abstract_shapes,
+            *flat_args,
+            jaxpr=jaxpr.jaxpr,
+            lazy=lazy,
+            n_consts=len(jaxpr.consts),
         )
 
     return new_qfunc
@@ -235,7 +245,11 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # default adjoint transform when capture is not enabled.
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
-        qscript = make_qscript(qfunc)(*args, **kwargs)
+        qscript = qml.tape.make_qscript(qfunc)(*args, **kwargs)
+
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+
         if lazy:
             adjoint_ops = [Adjoint(op) for op in reversed(qscript.operations)]
         else:
@@ -256,7 +270,6 @@ def _single_op_eager(op: Operator, update_queue: bool = False) -> Operator:
     return Adjoint(op)
 
 
-# pylint: disable=too-many-public-methods
 class Adjoint(SymbolicOp):
     """
     The Adjoint of an operator.
@@ -298,18 +311,9 @@ class Adjoint(SymbolicOp):
         >>> op.grad_method
         'A'
 
-        If the base class is an ``Observable`` instead, the ``Adjoint`` will be an ``Observable`` as
-        well.
-
-        >>> op = Adjoint(1.0 * qml.X(0))
-        >>> isinstance(op, qml.operation.Observable)
-        True
-        >>> isinstance(op, qml.operation.Operation)
-        False
-        >>> Adjoint(qml.X(0)) @ qml.Y(1)
-        (Adjoint(X(0))) @ Y(1)
-
     """
+
+    resource_keys = {"base_class", "base_params"}
 
     def _flatten(self):
         return (self.base,), tuple()
@@ -318,34 +322,36 @@ class Adjoint(SymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0])
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     def __new__(cls, base=None, id=None):
         """Returns an uninitialized type with the necessary mixins.
 
         If the ``base`` is an ``Operation``, this will return an instance of ``AdjointOperation``.
-        If ``Observable`` but not ``Operation``, it will be ``AdjointObs``.
-        And if both, it will be an instance of ``AdjointOpObs``.
 
         """
 
         if isinstance(base, Operation):
-            if isinstance(base, Observable):
-                return object.__new__(AdjointOpObs)
-
             # not an observable
             return object.__new__(AdjointOperation)
-
-        if isinstance(base, Observable):
-            return object.__new__(AdjointObs)
 
         return object.__new__(Adjoint)
 
     def __init__(self, base=None, id=None):
         self._name = f"Adjoint({base.name})"
         super().__init__(base, id=id)
+        if self.base.pauli_rep:
+            pr = {pw: qml.math.conjugate(coeff) for pw, coeff in self.base.pauli_rep.items()}
+            self._pauli_rep = qml.pauli.PauliSentence(pr)
+        else:
+            self._pauli_rep = None
 
     def __repr__(self):
         return f"Adjoint({self.base})"
+
+    @property
+    def resource_params(self) -> dict:
+        return {"base_class": type(self.base), "base_params": self.base.resource_params}
 
     @property
     def ndim_params(self):
@@ -360,11 +366,7 @@ class Adjoint(SymbolicOp):
         )
 
     def matrix(self, wire_order=None):
-        if isinstance(self.base, qml.ops.Hamiltonian):
-            base_matrix = qml.matrix(self.base, wire_order=wire_order)
-        else:
-            base_matrix = self.base.matrix(wire_order=wire_order)
-
+        base_matrix = self.base.matrix(wire_order=wire_order)
         return moveaxis(conj(base_matrix), -2, -1)
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
@@ -372,7 +374,6 @@ class Adjoint(SymbolicOp):
     def has_sparse_matrix(self) -> bool:
         return self.base.has_sparse_matrix
 
-    # pylint: disable=arguments-differ
     def sparse_matrix(self, wire_order=None, format="csr"):
         base_matrix = self.base.sparse_matrix(wire_order=wire_order)
         return transpose(conj(base_matrix)).asformat(format=format)
@@ -409,13 +410,12 @@ class Adjoint(SymbolicOp):
         return self.base.queue()
 
     def simplify(self):
-        base = self.base.simplify()
-        if self.base.has_adjoint:
-            return base.adjoint().simplify()
-        return Adjoint(base=base.simplify())
+        base = self.base if qml.capture.enabled() else self.base.simplify()
+        if base.has_adjoint:
+            return base.adjoint() if qml.capture.enabled() else base.adjoint().simplify()
+        return Adjoint(base=base)
 
 
-# pylint: disable=no-member
 class AdjointOperation(Adjoint, Operation):
     """This mixin class is dynamically added to an ``Adjoint`` instance if the provided base class
     is an ``Operation``.
@@ -437,7 +437,6 @@ class AdjointOperation(Adjoint, Operation):
     def name(self):
         return self._name
 
-    # pylint: disable=missing-function-docstring
     @property
     def basis(self):
         return self.base.basis
@@ -472,16 +471,4 @@ class AdjointOperation(Adjoint, Operation):
         return -1 * self.base.generator()
 
 
-class AdjointObs(Adjoint, Observable):
-    """A child of :class:`~.Adjoint` that also inherits from :class:`~.Observable`."""
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)
-
-
-# pylint: disable=too-many-ancestors
-class AdjointOpObs(AdjointOperation, Observable):
-    """A child of :class:`~.AdjointOperation` that also inherits from :class:`~.Observable."""
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)
+AdjointOperation._primitive = Adjoint._primitive  # pylint: disable=protected-access

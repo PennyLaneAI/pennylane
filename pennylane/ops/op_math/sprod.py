@@ -15,12 +15,12 @@
 This file contains the implementation of the SProd class which contains logic for
 computing the scalar product of operations.
 """
-from copy import copy
-from typing import Union
+
 
 import pennylane as qml
 import pennylane.math as qnp
-from pennylane.operation import Operator, TermsUndefinedError, convert_to_opmath
+from pennylane.exceptions import TermsUndefinedError
+from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sum import Sum
 from pennylane.queuing import QueuingManager
@@ -73,7 +73,6 @@ def s_prod(scalar, operator, lazy=True, id=None):
     array([[ 0., 2.],
            [ 2., 0.]])
     """
-    operator = convert_to_opmath(operator)
     if lazy or not isinstance(operator, SProd):
         return SProd(scalar, operator, id=id)
 
@@ -139,9 +138,7 @@ class SProd(ScalarSymbolicOp):
     def _unflatten(cls, data, _):
         return cls(data[0], data[1])
 
-    def __init__(
-        self, scalar: Union[int, float, complex], base: Operator, id=None, _pauli_rep=None
-    ):
+    def __init__(self, scalar: qml.typing.TensorLike, base: Operator, id=None, _pauli_rep=None):
         super().__init__(base=base, scalar=scalar, id=id)
 
         if _pauli_rep:
@@ -149,7 +146,6 @@ class SProd(ScalarSymbolicOp):
         elif (base_pauli_rep := getattr(self.base, "pauli_rep", None)) and (
             self.batch_size is None
         ):
-            scalar = copy(self.scalar)
 
             pr = {pw: qnp.dot(coeff, scalar) for pw, coeff in base_pauli_rep.items()}
             self._pauli_rep = qml.pauli.PauliSentence(pr)
@@ -254,7 +250,7 @@ class SProd(ScalarSymbolicOp):
         return self.scalar * base_eigs
 
     @handle_recursion_error
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order=None, format="csr"):
         """Computes, by default, a `scipy.sparse.csr_matrix` representation of this Tensor.
 
         This is useful for larger qubit numbers, where the dense matrix becomes very large, while
@@ -268,10 +264,10 @@ class SProd(ScalarSymbolicOp):
             :class:`scipy.sparse._csr.csr_matrix`: sparse matrix representation
         """
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
         mat = self.base.sparse_matrix(wire_order=wire_order).multiply(self.scalar)
         mat.eliminate_zeros()
-        return mat
+        return mat.asformat(format)
 
     @property
     @handle_recursion_error
@@ -282,7 +278,7 @@ class SProd(ScalarSymbolicOp):
     @handle_recursion_error
     def has_matrix(self):
         """Bool: Whether or not the Operator returns a defined matrix."""
-        return isinstance(self.base, qml.ops.Hamiltonian) or self.base.has_matrix
+        return self.base.has_matrix
 
     @staticmethod
     @handle_recursion_error

@@ -33,8 +33,8 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
     * :math:`m`: the momentum
 
     Args:
-        stepsize (float): user-defined hyperparameter :math:`\eta`
-        momentum (float): user-defined hyperparameter :math:`m`
+        stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
+        momentum (float): the user-defined hyperparameter :math:`m` (default value: 0.9).
 
     .. note::
 
@@ -45,7 +45,7 @@ class NesterovMomentumOptimizer(MomentumOptimizer):
     def compute_grad(
         self, objective_fn, args, kwargs, grad_fn=None
     ):  # pylint: disable=arguments-renamed
-        r"""Compute the gradient of the objective function at at the shifted point :math:`(x -
+        r"""Compute the gradient of the objective function at the shifted point :math:`(x -
         m\times\text{accumulation})` and return it along with the objective function forward pass
         (if available).
 

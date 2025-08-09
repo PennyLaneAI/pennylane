@@ -24,6 +24,7 @@ from pennylane.devices.default_qutrit_mixed import (
     observable_stopping_condition,
     stopping_condition,
 )
+from pennylane.exceptions import DeviceError
 
 
 class NoMatOp(qml.operation.Operation):
@@ -58,7 +59,7 @@ class TestPreprocessing:
         dev = DefaultQutritMixed()
 
         config = ExecutionConfig(device_options={"bla": "val"})
-        with pytest.raises(qml.DeviceError, match="device option bla"):
+        with pytest.raises(DeviceError, match="device option bla"):
             dev.preprocess(config)
 
     def test_chooses_best_gradient_method(self):
@@ -67,7 +68,7 @@ class TestPreprocessing:
 
         config = ExecutionConfig(gradient_method="best")
 
-        _, new_config = dev.preprocess(config)
+        new_config = dev.setup_execution_config(config)
 
         assert new_config.gradient_method == "backprop"
         assert not new_config.use_device_gradient
@@ -78,18 +79,18 @@ class TestPreprocessing:
         dev = DefaultQutritMixed(wires=3)
 
         circuit_valid_0 = qml.tape.QuantumScript([qml.TShift(0)])
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         circuits, _ = program([circuit_valid_0])
         assert circuits[0].circuit == circuit_valid_0.circuit
 
         circuit_valid_1 = qml.tape.QuantumScript([qml.TShift(1)])
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         circuits, _ = program([circuit_valid_0, circuit_valid_1])
         assert circuits[0].circuit == circuit_valid_0.circuit
         assert circuits[1].circuit == circuit_valid_1.circuit
 
         invalid_circuit = qml.tape.QuantumScript([qml.TShift(4)])
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
 
         with pytest.raises(qml.wires.WireError, match=r"Cannot run circuit\(s\) on"):
             program([invalid_circuit])
@@ -111,7 +112,7 @@ class TestPreprocessing:
         original_mp = mp_fn()
         exp_z = qml.expval(qml.GellMann(0, 3))
         qs = qml.tape.QuantumScript([qml.THadamard(0)], [original_mp, exp_z], shots=shots)
-        program, _ = dev.preprocess()
+        program = dev.preprocess_transforms()
         tapes, _ = program([qs])
         assert len(tapes) == 1
         tape = tapes[0]
@@ -144,7 +145,6 @@ class TestPreprocessing:
             (qml.QutritDepolarizingChannel(0.4, 0), False),
             (qml.GellMann(0, 1), True),
             (qml.Snapshot(), False),
-            (qml.operation.Tensor(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
             (qml.ops.op_math.SProd(1.2, qml.GellMann(0, 1)), True),
             (qml.sum(qml.ops.op_math.SProd(1.2, qml.GellMann(0, 1)), qml.GellMann(1, 3)), True),
             (qml.ops.op_math.Prod(qml.GellMann(0, 1), qml.GellMann(3, 3)), True),
@@ -166,7 +166,7 @@ class TestPreprocessingIntegration:
         tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
         device = DefaultQutritMixed()
 
-        program, _ = device.preprocess()
+        program = device.preprocess_transforms()
         tapes, _ = program([tape])
 
         assert len(tapes) == 1
@@ -180,7 +180,7 @@ class TestPreprocessingIntegration:
         tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
         device = DefaultQutritMixed()
 
-        program, _ = device.preprocess()
+        program = device.preprocess_transforms()
         tapes, _ = program([tape])
 
         assert len(tapes) == 1
@@ -196,7 +196,7 @@ class TestPreprocessingIntegration:
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        program, _ = DefaultQutritMixed().preprocess()
+        program = DefaultQutritMixed().preprocess_transforms()
         res_tapes, batch_fn = program(tapes)
 
         assert len(res_tapes) == 2
@@ -240,7 +240,7 @@ class TestPreprocessingIntegration:
             qml.tape.QuantumScript(ops=ops, measurements=[measurements[1]]),
         ]
 
-        program, _ = DefaultQutritMixed().preprocess()
+        program = DefaultQutritMixed().preprocess_transforms()
         res_tapes, batch_fn = program(tapes)
         expected_ops = [
             qml.THadamard(0),
@@ -268,8 +268,8 @@ class TestPreprocessingIntegration:
             qml.tape.QuantumScript(ops=ops, measurements=measurements[1]),
         ]
 
-        program, _ = DefaultQutritMixed().preprocess()
-        with pytest.raises(qml.DeviceError, match="Operator NoMatNoDecompOp"):
+        program = DefaultQutritMixed().preprocess_transforms()
+        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
             program(tapes)
 
     @pytest.mark.parametrize(
@@ -304,7 +304,7 @@ class TestPreprocessingIntegration:
         device = DefaultQutritMixed(
             readout_relaxation_probs=relaxations, readout_misclassification_probs=misclassifications
         )
-        program, _ = device.preprocess()
+        program = device.preprocess_transforms()
 
         with warnings.catch_warnings(record=True) as warning:
             program(tapes)

@@ -76,7 +76,6 @@ class TestIntegrationShadows:
     """Integration tests for classical shadows class"""
 
     @pytest.mark.parametrize("shadow", shadows)
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_pauli_string_expval(self, shadow):
         """Testing the output of expectation values match those of exact evaluation"""
 
@@ -100,11 +99,8 @@ class TestIntegrationShadows:
 
     @pytest.mark.parametrize("H", Hs)
     @pytest.mark.parametrize("shadow", shadows)
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_expval_input_types(self, shadow, H):
         """Test ClassicalShadow.expval can handle different inputs"""
-        if not qml.operation.active_new_opmath():
-            H = qml.operation.convert_to_legacy_H(H)
         assert qml.math.allclose(shadow.expval(H, k=2), 1.0, atol=1e-1)
 
     def test_reconstruct_bell_state(self):
@@ -349,12 +345,7 @@ class TestExpvalEstimation:
 
         H = qml.Hadamard(0) @ qml.Hadamard(2)
 
-        msg = (
-            "Observable must have a valid pauli representation"
-            if qml.operation.active_new_opmath()
-            else "Observable must be a linear combination of Pauli observables"
-        )
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="Observable must have a valid pauli representation"):
             shadow.expval(H, k=10)
 
     def test_non_pauli_error_no_pauli_rep(self):
@@ -365,11 +356,7 @@ class TestExpvalEstimation:
 
         H = qml.Hadamard(0) @ qml.Hadamard(2)
 
-        legacy_msg = "Observable must be a linear combination of Pauli observables"
-        new_opmath_msg = "Observable must have a valid pauli representation."
-        msg = new_opmath_msg if qml.operation.active_new_opmath() else legacy_msg
-
-        with pytest.raises(ValueError, match=msg):
+        with pytest.raises(ValueError, match="Observable must have a valid pauli representation."):
             shadow.expval(H, k=10)
 
 

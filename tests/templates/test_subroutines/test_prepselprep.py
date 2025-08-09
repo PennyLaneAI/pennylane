@@ -101,6 +101,17 @@ def prepselprep_circuit(lcu, control):
     return qml.state()
 
 
+a_set_of_lcus = [
+    qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
+    qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
+    qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
+    0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2),
+    qml.Z(2) + qml.X(1) @ qml.X(2),
+    qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]),
+    qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
+]
+
+
 class TestPrepSelPrep:
     """Test the correctness of the decomposition"""
 
@@ -264,20 +275,9 @@ class TestPrepSelPrep:
         op = qml.PrepSelPrep(lcu, control=0)
         op_copy = copy.copy(op)
 
-        assert qml.equal(op, op_copy)
+        qml.assert_equal(op, op_copy)
 
-    @pytest.mark.parametrize(
-        ("lcu"),
-        [
-            qml.ops.LinearCombination([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-            qml.dot([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-            qml.Hamiltonian([0.25, 0.75], [qml.Z(2), qml.X(1) @ qml.X(2)]),
-            0.25 * qml.Z(2) - 0.75 * qml.X(1) @ qml.X(2),
-            qml.Z(2) + qml.X(1) @ qml.X(2),
-            qml.ops.LinearCombination([-0.25, 0.75j], [qml.Z(3), qml.X(2) @ qml.X(3)]),
-            qml.ops.LinearCombination([-0.25 + 0.1j, 0.75j], [qml.Z(4), qml.X(4) @ qml.X(5)]),
-        ],
-    )
+    @pytest.mark.parametrize("lcu", a_set_of_lcus)
     def test_flatten_unflatten(self, lcu):
         """Test that the class can be correctly flattened and unflattened"""
 
@@ -304,6 +304,101 @@ class TestPrepSelPrep:
         assert op.wires == new_op.wires
         assert op.target_wires == new_op.target_wires
         assert op is not new_op
+
+    @pytest.mark.parametrize("lcu", a_set_of_lcus)
+    def test_label(self, lcu):
+        """Test the custom label method of PrepSelPrep."""
+        op = qml.PrepSelPrep(lcu, control=0)
+        op_with_id = qml.PrepSelPrep(lcu, control=0, id="myID")
+
+        # Default
+        assert op.label() == "PrepSelPrep"
+        assert op_with_id.label() == 'PrepSelPrep("myID")'
+
+        # decimals do not affect label
+        assert op.label(decimals=3) == "PrepSelPrep"
+        assert op_with_id.label(decimals=3) == 'PrepSelPrep("myID")'
+
+        # use different base label
+        assert op.label(base_label="U(A)") == "U(A)"
+        assert op_with_id.label(base_label="U(A)") == 'U(A)("myID")'
+
+        # use cache without matrices
+        assert op.label(cache={}) == "PrepSelPrep"
+        assert op_with_id.label(cache={}) == 'PrepSelPrep("myID")'
+
+        # use cache with empty matrices
+        assert op.label(cache={"matrices": []}) == "PrepSelPrep(M0)"
+        assert op_with_id.label(cache={"matrices": []}) == 'PrepSelPrep(M0,"myID")'
+
+        # use cache with non-empty matrices
+        assert op.label(cache={"matrices": [0.1]}) == "PrepSelPrep(M1)"
+        assert op_with_id.label(cache={"matrices": [0.1, 0.6]}) == 'PrepSelPrep(M2,"myID")'
+
+        # use cache with same matrix existing
+        c = qml.math.array(op.coeffs)
+        assert op.label(cache={"matrices": [0.1, c]}) == "PrepSelPrep(M1)"
+        assert op_with_id.label(cache={"matrices": [c, 0.1, 0.6]}) == 'PrepSelPrep(M0,"myID")'
+
+    def test_resources(self):
+        """Test the registered resources."""
+
+        assert qml.PrepSelPrep.resource_keys == frozenset({"num_control", "op_reps"})
+
+        ops = [qml.X(0), qml.X(1), qml.X(0) @ qml.Y(1)]
+        lcu = qml.dot([1, 2, 3], ops)
+        op = qml.PrepSelPrep(lcu, (3, 4))
+
+        op_reps = (
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.ops.Prod, **ops[-1].resource_params),
+        )
+        assert op.resource_params == {"num_control": 2, "op_reps": op_reps}
+
+    def test_decomposition_new_structure(self):
+        """Test that the decomposition is registered into the new pipeline."""
+
+        ops = [qml.X(0), qml.X(1), qml.X(0) @ qml.Y(1)]
+        grep = qml.resource_rep(qml.GlobalPhase)
+        xrep = qml.resource_rep(qml.X)
+        yrep = qml.resource_rep(qml.Y)
+        prodrep = qml.resource_rep(qml.ops.Prod, resources={xrep: 1, yrep: 1})
+        op_reps = (
+            qml.resource_rep(qml.ops.Prod, resources={grep: 1, xrep: 1}),
+            qml.resource_rep(qml.ops.Prod, resources={grep: 1, xrep: 1}),
+            qml.resource_rep(qml.ops.Prod, resources={grep: 1, prodrep: 1}),
+        )
+        lcu = qml.dot([1, 4, 9], ops)
+        op = qml.PrepSelPrep(lcu, (3, 4))
+
+        decomp = qml.list_decomps(qml.PrepSelPrep)[0]
+
+        resource_obj = decomp.compute_resources(**op.resource_params)
+        assert resource_obj.num_gates == 3
+
+        expected_counts = {
+            qml.resource_rep(qml.Select, op_reps=op_reps, num_control_wires=2): 1,
+            qml.resource_rep(qml.StatePrep, num_wires=2): 1,
+            qml.resource_rep(
+                qml.ops.Adjoint, base_class=qml.StatePrep, base_params={"num_wires": 2}
+            ): 1,
+        }
+        assert resource_obj.gate_counts == expected_counts
+
+        decomp = qml.list_decomps(qml.PrepSelPrep)[0]
+
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(*op.data, wires=op.wires, **op.hyperparameters)
+
+        q = q.queue
+
+        phase_ops = [qml.prod(op, qml.GlobalPhase(0, wires=op.wires)) for op in ops]
+
+        prep = qml.StatePrep(np.array([1, 2, 3]), normalize=True, pad_with=0, wires=(3, 4))
+        qml.assert_equal(q[0], prep)
+        qml.assert_equal(q[1], qml.Select(phase_ops, (3, 4)))
+        qml.assert_equal(q[2], qml.adjoint(prep))
 
 
 def test_control_in_ops():

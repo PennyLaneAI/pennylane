@@ -14,7 +14,7 @@
 """
 This module contains the :class:`Device` abstract base class.
 """
-# pylint: disable=too-many-format-args, use-maxsplit-arg, protected-access
+# pylint: disable=use-maxsplit-arg,protected-access
 import abc
 import types
 import warnings
@@ -25,21 +25,24 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.measurements import (
-    Expectation,
+    ExpectationMP,
     MeasurementProcess,
     MidMeasureMP,
-    Probability,
-    Sample,
+    ProbabilityMP,
+    SampleMP,
     ShadowExpvalMP,
-    State,
-    Variance,
+    StateMP,
+    VarianceMP,
 )
-from pennylane.operation import Observable, Operation, Operator, StatePrepBase, Tensor
-from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.operation import Operation, Operator, StatePrepBase
+from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
+
+from .tracker import Tracker
 
 
 def _local_tape_expand(tape, depth, stop_at):
@@ -93,7 +96,6 @@ def _local_tape_expand(tape, depth, stop_at):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
@@ -103,9 +105,9 @@ class _LegacyMeta(abc.ABCMeta):
     checking the instance of a device against a Legacy device type.
 
     To illustrate, if "dev" is of type LegacyDeviceFacade, and a user is
-    checking "isinstance(dev, qml.devices.DefaultMixed)", the overridden
+    checking "isinstance(dev, qml.devices.DefaultQutrit)", the overridden
     "__instancecheck__" will look behind the facade, and will evaluate instead
-    "isinstance(dev.target_device, qml.devices.DefaultMixed)"
+    "isinstance(dev.target_device, qml.devices.DefaultQutrit)"
     """
 
     def __instancecheck__(cls, instance):
@@ -142,7 +144,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 "The analytic argument has been replaced by shots=None. "
                 "Please use shots=None instead of analytic=True."
             )
-            raise qml.DeviceError(msg)
+            raise DeviceError(msg)
 
         if not isinstance(wires, Iterable):
             # interpret wires as the number of consecutive wires
@@ -156,7 +158,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         self._obs_queue = None
         self._parameters = None
 
-        self.tracker = qml.Tracker()
+        self.tracker = Tracker()
         self.custom_expand_fn = None
 
     def __repr__(self):
@@ -270,7 +272,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         elif isinstance(shots, int):
             # device is in sampling mode (unbatched)
             if shots < 1:
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"The specified number of shots needs to be at least 1. Got {shots}."
                 )
 
@@ -284,7 +286,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             self._raw_shot_sequence = shots
 
         else:
-            raise qml.DeviceError(
+            raise DeviceError(
                 "Shots must be a single non-negative integer or a sequence of non-negative integers."
             )
 
@@ -374,7 +376,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         return Wires(ordered_subset_lst)
 
-    @lru_cache()
+    @lru_cache
     def map_wires(self, wires):
         """Map the wire labels of wires using this device's wire map.
 
@@ -424,7 +426,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         Args:
             queue (Iterable[~.operation.Operation]): operations to execute on the device
-            observables (Iterable[~.operation.Observable]): observables to measure and return
+            observables (Iterable[~.operation.Operator]): observables to measure and return
             parameters (dict[int, list[ParameterDependency]]): Mapping from free parameter index to the list of
                 :class:`Operations <pennylane.operation.Operation>` (in the queue) that depend on it.
 
@@ -433,7 +435,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 internally, otherwise convert it into array[float]. Default: False.
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             array[float]: measured value(s)
@@ -465,28 +467,24 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
             for mp in observables:
                 obs = mp.obs if isinstance(mp, MeasurementProcess) and mp.obs is not None else mp
-                if isinstance(obs, Tensor):
-                    wires = [ob.wires for ob in obs.obs]
+
+                if isinstance(mp, ExpectationMP):
+                    results.append(self.expval(obs.name, obs.wires, obs.parameters))
+
+                elif isinstance(mp, VarianceMP):
+                    results.append(self.var(obs.name, obs.wires, obs.parameters))
+
+                elif isinstance(mp, SampleMP):
+                    results.append(np.array(self.sample(obs.name, obs.wires, obs.parameters)))
+
+                elif isinstance(mp, ProbabilityMP):
+                    results.append(list(self.probability(wires=obs.wires).values()))
+
+                elif isinstance(mp, StateMP):
+                    raise QuantumFunctionError("Returning the state is not supported")
+
                 else:
-                    wires = obs.wires
-
-                if mp.return_type is Expectation:
-                    results.append(self.expval(obs.name, wires, obs.parameters))
-
-                elif mp.return_type is Variance:
-                    results.append(self.var(obs.name, wires, obs.parameters))
-
-                elif mp.return_type is Sample:
-                    results.append(np.array(self.sample(obs.name, wires, obs.parameters)))
-
-                elif mp.return_type is Probability:
-                    results.append(list(self.probability(wires=wires).values()))
-
-                elif mp.return_type is State:
-                    raise qml.QuantumFunctionError("Returning the state is not supported")
-
-                elif mp.return_type is not None:
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         f"Unsupported return type specified for observable {obs.name}"
                     )
 
@@ -505,9 +503,9 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
             # Ensures that a combination with sample does not put
             # expvals and vars in superfluous arrays
-            if all(mp.return_type is Sample for mp in observables):
+            if all(isinstance(mp, SampleMP) for mp in observables):
                 return self._asarray(results)
-            if any(mp.return_type is Sample for mp in observables):
+            if any(isinstance(mp, SampleMP) for mp in observables):
                 return self._asarray(results, dtype="object")
 
             return self._asarray(results)
@@ -666,7 +664,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             .QuantumTape: The expanded/decomposed circuit, such that the device
             will natively support all operations.
         """
-        # pylint: disable=protected-access
+
         if max_expansion == 0:
             return circuit
 
@@ -680,7 +678,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         )
         obs_on_same_wire = len(circuit.obs_sharing_wires) > 0 or comp_basis_sampled_multi_measure
         obs_on_same_wire &= not any(
-            isinstance(o, (Hamiltonian, LinearCombination)) for o in circuit.obs_sharing_wires
+            isinstance(o, LinearCombination) for o in circuit.obs_sharing_wires
         )
         ops_not_supported = not all(self.stopping_condition(op) for op in circuit.operations)
 
@@ -753,11 +751,11 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         is_analytic_or_shadow = not finite_shots or has_shadow
         all_obs_usable = self._all_multi_term_obs_supported(circuit)
         exists_multi_term_obs = any(
-            isinstance(m.obs, (Hamiltonian, Sum, Prod, SProd)) for m in circuit.measurements
+            isinstance(m.obs, (Sum, Prod, SProd)) for m in circuit.measurements
         )
         has_overlapping_wires = len(circuit.obs_sharing_wires) > 0
         single_hamiltonian = len(circuit.measurements) == 1 and isinstance(
-            circuit.measurements[0].obs, (Hamiltonian, Sum)
+            circuit.measurements[0].obs, Sum
         )
         single_hamiltonian_with_grouping_known = (
             single_hamiltonian and circuit.measurements[0].obs.grouping_indices is not None
@@ -779,10 +777,10 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         elif single_hamiltonian_with_grouping_known:
 
             # Use qwc grouping if the circuit contains a single measurement of a
-            # Hamiltonian/Sum with grouping indices already calculated.
+            # Sum with grouping indices already calculated.
             circuits, processing_fn = qml.transforms.split_non_commuting(circuit, "qwc")
 
-        elif any(isinstance(m.obs, (Hamiltonian, LinearCombination)) for m in circuit.measurements):
+        elif any(isinstance(m.obs, LinearCombination) for m in circuit.measurements):
 
             # Otherwise, use wire-based grouping if the circuit contains a Hamiltonian
             # that is potentially very large.
@@ -817,11 +815,13 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 # Some measurements are not observable based.
                 continue
 
-            if mp.obs.name == "LinearCombination" and not self.supports_observable("Hamiltonian"):
+            if mp.obs.name == "LinearCombination" and not (
+                self.supports_observable("Hamiltonian")
+                or self.supports_observable("LinearCombination")
+            ):
                 return False
 
             if mp.obs.name in (
-                "Hamiltonian",
                 "Sum",
                 "Prod",
                 "SProd",
@@ -859,7 +859,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             ValueError: if outside of the execution context
 
         Returns:
-            list[~.operation.Observable]
+            list[~.operation.Operator]
         """
         if self._obs_queue is None:
             raise ValueError(
@@ -912,7 +912,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         """
 
         # pylint: disable=no-self-use
-        class MockContext:  # pylint: disable=too-few-public-methods
+        class MockContext:
             """Mock class as a default for the with statement in execute()."""
 
             def __enter__(self):
@@ -952,18 +952,18 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             observable (type or str): observable to be checked
 
         Raises:
-            ValueError: if `observable` is not a :class:`~.Observable` class or string
+            ValueError: if `observable` is not a :class:`~.Operator` class or string
 
         Returns:
             bool: ``True`` iff supplied observable is supported
         """
-        if isinstance(observable, type) and issubclass(observable, Observable):
+        if isinstance(observable, type) and issubclass(observable, Operator):
             return observable.__name__ in self.observables
         if isinstance(observable, str):
             return observable in self.observables
 
         raise ValueError(
-            "The given observable must either be a pennylane.Observable class or a string."
+            "The given observable must either be a pennylane.operation.Operator class or a string."
         )
 
     def check_validity(self, queue, observables):
@@ -972,7 +972,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
         Args:
             queue (Iterable[~.operation.Operation]): quantum operation objects which are intended
                 to be applied on the device
-            observables (Iterable[~.operation.Observable]): observables which are intended
+            observables (Iterable[~.operation.Operator]): observables which are intended
                 to be evaluated on the device
 
         Raises:
@@ -986,7 +986,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
             if isinstance(o, MidMeasureMP) and not self.capabilities().get(
                 "supports_mid_measure", False
             ):
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"Mid-circuit measurements are not natively supported on device {self.short_name}. "
                     "Apply the @qml.defer_measurements decorator to your quantum function to "
                     "simulate the application of mid-circuit measurements on this device."
@@ -996,7 +996,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 raise ValueError(f"Postselection is not supported on the {self.name} device.")
 
             if not self.stopping_condition(o):
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"Gate {operation_name} not supported on device {self.short_name}"
                 )
 
@@ -1006,35 +1006,17 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 if o is None:
                     continue
 
-            if isinstance(o, Tensor):
-                # TODO: update when all capabilities keys changed to "supports_tensor_observables"
-                supports_tensor = self.capabilities().get(
-                    "supports_tensor_observables", False
-                ) or self.capabilities().get("tensor_observables", False)
-                if not supports_tensor:
-                    raise qml.DeviceError(
-                        f"Tensor observables not supported on device {self.short_name}"
-                    )
-
-                for i in o.obs:
-                    if not self.supports_observable(i.name):
-                        raise qml.DeviceError(
-                            f"Observable {i.name} not supported on device {self.short_name}"
-                        )
-
-            elif isinstance(o, qml.ops.Prod):
+            if isinstance(o, qml.ops.Prod):
 
                 supports_prod = self.supports_observable(o.name)
                 if not supports_prod:
-                    raise qml.DeviceError(
-                        f"Observable Prod not supported on device {self.short_name}"
-                    )
+                    raise DeviceError(f"Observable Prod not supported on device {self.short_name}")
 
                 simplified_op = o.simplify()
                 if isinstance(simplified_op, qml.ops.Prod):
                     for i in o.simplify().operands:
                         if not self.supports_observable(i.name):
-                            raise qml.DeviceError(
+                            raise DeviceError(
                                 f"Observable {i.name} not supported on device {self.short_name}"
                             )
 
@@ -1042,7 +1024,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
                 observable_name = o.name
 
                 if not self.supports_observable(observable_name):
-                    raise qml.DeviceError(
+                    raise DeviceError(
                         f"Observable {observable_name} not supported on device {self.short_name}"
                     )
 

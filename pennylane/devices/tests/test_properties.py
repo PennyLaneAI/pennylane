@@ -17,6 +17,9 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as pnp
+from pennylane.exceptions import QuantumFunctionError
+
+from .conftest import get_legacy_capabilities
 
 try:
     import tensorflow as tf
@@ -113,7 +116,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
         assert isinstance(cap, dict)
 
     def test_model_is_defined_valid_and_correct(self, device_kwargs):
@@ -122,7 +125,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
         assert "model" in cap
         assert cap["model"] in ["qubit", "cv"]
 
@@ -149,7 +152,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
 
         if "passthru_interface" not in cap:
             pytest.skip("No passthru_interface capability specified by device.")
@@ -200,7 +203,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
 
         if "supports_tensor_observables" not in cap:
             pytest.skip("No supports_tensor_observables capability specified by device.")
@@ -217,7 +220,7 @@ class TestCapabilities:
         if cap["supports_tensor_observables"]:
             circuit()
         else:
-            with pytest.raises(qml.QuantumFunctionError):
+            with pytest.raises(QuantumFunctionError):
                 circuit()
 
     def test_returns_state(self, device_kwargs):
@@ -226,7 +229,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
 
         @qml.qnode(dev)
         def circuit():
@@ -236,7 +239,7 @@ class TestCapabilities:
         if not cap.get("returns_state"):
             # If the device is not defined to return state then the
             # access_state method should raise
-            with pytest.raises(qml.QuantumFunctionError):
+            with pytest.raises(QuantumFunctionError):
                 dev.access_state()
 
             try:
@@ -263,7 +266,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
 
         if "returns_probs" not in cap:
             pytest.skip("No returns_probs capability specified by device.")
@@ -290,7 +293,7 @@ class TestCapabilities:
         dev = qml.device(**device_kwargs)
         if isinstance(dev, qml.devices.Device):
             pytest.skip("test is old interface specific.")
-        cap = dev.capabilities()
+        cap = get_legacy_capabilities(dev)
 
         assert "supports_broadcasting" in cap
 
@@ -321,4 +324,4 @@ class TestCapabilities:
                 assert pnp.array(dev.access_state()).shape == orig_shape
 
         assert pnp.ndim(res) == 2
-        assert res.shape[0] == 3  # pylint:disable=unsubscriptable-object
+        assert res.shape[0] == 3

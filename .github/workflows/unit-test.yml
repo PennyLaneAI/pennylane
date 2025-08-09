@@ -22,6 +22,11 @@ on:
         description: Name of the artifact file that will contain the coverage file for codevoc
         required: true
         type: string
+      uv_version:
+        description: The version of uv (docs.astral.sh/uv/) to use to install dependencies
+        required: false
+        type: string
+        default: 0.6.5
       job_runner_name:
         description: The name of the runner to use for the job
         required: false
@@ -36,7 +41,7 @@ on:
         description: The version of Python to use in order to run unit tests
         required: false
         type: string
-        default: '3.10'
+        default: '3.11'
       pytest_test_directory:
         description: The directory where the PennyLane tests are that should be run by PyTest
         required: false
@@ -77,11 +82,20 @@ on:
         required: false
         type: string
         default: ''
-      disable_new_opmath:
-        description: Whether to disable the new op_math or not when running the tests
+      additional_os_packages:
+        description: Additional packages to install. Values will be passed to apt-get install {value}
         required: false
         type: string
-        default: "False"
+        default: ''	
+      pytest_xml_file_path:
+        description: Path to pytest xml file. This is used to upload pytest results to the analytics service. An empty string will not generate an xml file.
+        required: false
+        type: string
+        default: ''
+
+env:
+  UV_SYSTEM_PYTHON: 1
+  TEST_REPORTS_DIR: .github/test-reports
 
 jobs:
   test:
@@ -96,19 +110,40 @@ jobs:
           fetch-depth: ${{ inputs.checkout_fetch_depth }}
           repository: PennyLaneAI/pennylane
       
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: ${{ inputs.uv_version }}
+          enable-cache: true
+          cache-dependency-glob: 'requirements-*.txt'
+      
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '${{ inputs.python_version }}'
-      
+
+      - name: Install additional os packages
+        if: inputs.additional_os_packages != ''
+        env:
+          ADDITIONAL_OS_PACKAGES: ${{ inputs.additional_os_packages }}
+        run: |
+          while IFS= read -r line; do
+            if [ ! -z "$line" ]; then
+                echo ''
+                echo "Now installing -> sudo apt-get install -y $line"
+                echo ''
+                
+                sudo apt-get install -y $line
+            fi
+          done <<< "$ADDITIONAL_OS_PACKAGES"
+
       - name: Upgrade PIP and install wheel
-        run: pip install --upgrade pip && pip install wheel --upgrade
+        run: uv pip install --upgrade pip wheel setuptools>=75.8.1
       
       - name: Install PennyLane dependencies
         run: |
-          pip install -r requirements-ci.txt --upgrade
-          pip install -r requirements-dev.txt --upgrade
-      
+          uv pip install -r requirements-ci.txt -r requirements-dev.txt --upgrade
+
       - name: Install additional PIP packages (Pre-PennyLane)
         shell: bash
         if: inputs.additional_pip_packages != ''
@@ -118,19 +153,19 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing -> pip install $line"
+                echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                pip install $line
+                uv pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
-      
+
       - name: Install PennyLane
         shell: bash
         run: |
-          python setup.py bdist_wheel
-          pip install dist/PennyLane*.whl
-      
+          uv build --wheel  
+          uv pip install dist/pennylane*.whl
+
       - name: Install additional PIP packages (Post PennyLane Install)
         shell: bash
         if: inputs.additional_pip_packages_post != ''
@@ -140,12 +175,15 @@ jobs:
           while IFS= read -r line; do
             if [ ! -z "$line" ]; then
                 echo ''
-                echo "Now installing -> pip install $line"
+                echo "Now installing -> uv pip install $line"
                 echo ''
                 
-                pip install $line
+                uv pip install $line
             fi
           done <<< "$ADDITIONAL_PIP_PACKAGES"
+
+      - name: Create test reports directory
+        run: mkdir -p ${{ env.TEST_REPORTS_DIR }}
 
       - name: Set PyTest Args
         id: pytest_args
@@ -154,24 +192,23 @@ jobs:
           PYTEST_PARALLELISE_ARGS: -n auto
           PYTEST_ADDITIONAL_ARGS: ${{ inputs.pytest_additional_args }}
           PYTEST_DURATIONS_ARGS: ${{ inputs.pytest_durations_file_path != '' && format('--durations-path="{0}" --store-durations --clean-durations', inputs.pytest_durations_file_path) || '' }}
+          PYTEST_XML_ARGS: ${{ inputs.pytest_xml_file_path != '' && format('--junit-xml="{0}/{1}"', env.TEST_REPORTS_DIR, inputs.pytest_xml_file_path) || '' }}
         run: |
-          echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS" >> $GITHUB_OUTPUT
+          echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_XML_ARGS" >> $GITHUB_OUTPUT
 
       - name: Run PennyLane Unit Tests
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
-          COV_CORE_SOURCE: pennylane
-          COV_CORE_CONFIG: .coveragerc
           COV_CORE_DATAFILE: .coverage.eager
           TF_USE_LEGACY_KERAS: "1"  # sets to use tf-keras (Keras2) instead of keras (Keras3) when running TF tests
         # Calling PyTest by invoking Python first as that adds the current directory to sys.path
-        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }} --disable-opmath=${{ inputs.disable_new_opmath }}
-      
+        run: python -m pytest ${{ inputs.pytest_test_directory }} ${{ steps.pytest_args.outputs.args }} ${{ env.PYTEST_MARKER }}
+
       - name: Freeze dependencies
         shell: bash
         if: inputs.requirements_file != ''
-        run: pip freeze | grep -v "file:///" | sed 's/\(pennylane[-_]lightning==[0-9\.]\+\)\.dev[0-9]\+/\1/gI' > ${{ inputs.requirements_file }}
-  
+        run: pip freeze | grep -v "file:///" > ${{ inputs.requirements_file }}
+
       - name: Upload frozen requirements
         if: inputs.requirements_file != ''
         uses: actions/upload-artifact@v4
@@ -187,6 +224,14 @@ jobs:
           path: ${{ inputs.pytest_durations_file_path }}
           include-hidden-files: true
 
+      - name: Upload Test Report Failures as artifact
+        if: (failure() || cancelled()) && inputs.pytest_xml_file_path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ inputs.job_name }}
+          path: ${{ env.TEST_REPORTS_DIR }}/${{ inputs.pytest_xml_file_path }}
+          include-hidden-files: true
+
       - name: Adjust coverage file for Codecov
         run: bash <(sed -i 's/filename=\"/filename=\"pennylane\//g' coverage.xml)
 
@@ -195,3 +240,6 @@ jobs:
         with:
           name: ${{ inputs.coverage_artifact_name }}
           path: coverage.xml
+
+      - name: Minimize uv cache
+        run: uv cache prune --ci

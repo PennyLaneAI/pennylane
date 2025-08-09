@@ -30,11 +30,19 @@ The following frameworks are currently supported:
 * TensorFlow
 * PyTorch
 * JAX
+
 """
 import autoray as ar
 
 from .is_independent import is_independent
-from .matrix_manipulation import expand_matrix, reduce_matrices, get_batch_size
+from .matrix_manipulation import (
+    expand_matrix,
+    expand_vector,
+    reduce_matrices,
+    get_batch_size,
+    convert_to_su2,
+    convert_to_su4,
+)
 from .multi_dispatch import (
     add,
     array,
@@ -50,7 +58,6 @@ from .multi_dispatch import (
     gammainc,
     get_trainable_indices,
     iscomplex,
-    jax_argnums_to_tape_trainable,
     kron,
     matmul,
     multi_dispatch,
@@ -77,11 +84,13 @@ from .quantum import (
     reduce_statevector,
     relative_entropy,
     sqrt_matrix,
+    sqrt_matrix_sparse,
     vn_entropy,
     vn_entanglement_entropy,
     max_entropy,
     min_entropy,
     trace_distance,
+    choi_matrix,
 )
 from .fidelity import fidelity, fidelity_statevector
 from .utils import (
@@ -90,14 +99,35 @@ from .utils import (
     cast,
     cast_like,
     convert_like,
+    in_backprop,
+    requires_grad,
+    is_abstract,
+    binary_finite_reduced_row_echelon,
+)
+from .interface_utils import (
+    get_canonical_interface_name,
+    SupportedInterfaceUserInput,
+    SUPPORTED_INTERFACE_NAMES,
     get_deep_interface,
     get_interface,
-    in_backprop,
-    is_abstract,
-    requires_grad,
+    Interface,
+    InterfaceLike,
 )
+from .grad import grad, jacobian
+from . import decomposition
 
 sum = ar.numpy.sum
+conj = ar.numpy.conj
+transpose = ar.numpy.transpose
+sqrt = ar.numpy.sqrt
+zeros = ar.numpy.zeros
+moveaxis = ar.numpy.moveaxis
+mean = ar.numpy.mean
+round = ar.numpy.round
+shape = ar.numpy.shape
+flatten = ar.numpy.flatten
+reshape = ar.numpy.reshape
+multiply = ar.numpy.multiply
 toarray = ar.numpy.to_numpy
 T = ar.numpy.transpose
 
@@ -145,6 +175,8 @@ __all__ = [
     "cast_like",
     "concatenate",
     "convert_like",
+    "convert_to_su2",
+    "convert_to_su4",
     "cov_matrix",
     "detach",
     "diag",
@@ -152,33 +184,48 @@ __all__ = [
     "dot",
     "einsum",
     "expand_matrix",
+    "expand_vector",
     "expectation_value",
+    "expm",
     "eye",
     "fidelity",
     "fidelity_statevector",
     "frobenius_inner_product",
+    "gammainc",
     "get_dtype_name",
     "get_interface",
+    "get_batch_size",
+    "get_canonical_interface_name",
     "get_deep_interface",
     "get_trainable_indices",
+    "grad",
     "in_backprop",
     "is_abstract",
     "is_independent",
     "iscomplex",
+    "jacobian",
+    "kron",
+    "Interface",
+    "matmul",
     "marginal_prob",
     "max_entropy",
     "min_entropy",
     "multi_dispatch",
     "mutual_info",
+    "norm",
     "ones_like",
     "partial_trace",
     "purity",
     "reduce_dm",
+    "reduce_matrices",
     "reduce_statevector",
+    "binary_finite_reduced_row_echelon",
     "relative_entropy",
     "requires_grad",
-    "sqrt_matrix",
+    "scatter",
     "scatter_element_add",
+    "set_index",
+    "sqrt_matrix",
     "stack",
     "svd",
     "tensordot",
@@ -187,4 +234,5 @@ __all__ = [
     "vn_entropy",
     "vn_entanglement_entropy",
     "where",
+    "choi_matrix",
 ]

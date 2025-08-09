@@ -20,25 +20,25 @@ simulation of a qubit-based quantum circuit architecture.
 """
 import functools
 import itertools
-from string import ascii_letters as ABC
+from string import ascii_letters
 
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import coo_matrix, csr_matrix
 
 import pennylane as qml
 from pennylane import BasisState, Snapshot, StatePrep
 from pennylane._version import __version__
 from pennylane.devices._qubit_device import QubitDevice
 from pennylane.devices.qubit import measure
+from pennylane.exceptions import DeviceError, WireError
 from pennylane.measurements import ExpectationMP
 from pennylane.operation import Operation
 from pennylane.ops import Sum
 from pennylane.ops.qubit.attributes import diagonal_in_z_basis
 from pennylane.pulse import ParametrizedEvolution
 from pennylane.typing import TensorLike
-from pennylane.wires import WireError
 
-ABC_ARRAY = np.array(list(ABC))
+ascii_letter_arr = np.array(list(ascii_letters))
 
 # tolerance for numerical errors
 tolerance = 1e-10
@@ -75,7 +75,7 @@ def _get_slice(index, axis, num_axes):
     return tuple(idx)
 
 
-# pylint: disable=unused-argument, too-many-arguments
+# pylint: disable=unused-argument, too-many-arguments, too-many-instance-attributes
 class DefaultQubitLegacy(QubitDevice):
     r"""Default qubit device for PennyLane.
 
@@ -115,7 +115,6 @@ class DefaultQubitLegacy(QubitDevice):
         "Snapshot",
         "BasisState",
         "StatePrep",
-        "QubitStateVector",
         "QubitUnitary",
         "ControlledQubitUnitary",
         "BlockEncode",
@@ -204,7 +203,14 @@ class DefaultQubitLegacy(QubitDevice):
     }
 
     def __init__(
-        self, wires, *, r_dtype=np.float64, c_dtype=np.complex128, shots=None, analytic=None
+        self,
+        wires,
+        *,
+        r_dtype=np.float64,
+        c_dtype=np.complex128,
+        shots=None,
+        analytic=None,
+        seed=None,
     ):
         super().__init__(wires, shots, r_dtype=r_dtype, c_dtype=c_dtype, analytic=analytic)
         self._debugger = None
@@ -227,6 +233,13 @@ class DefaultQubitLegacy(QubitDevice):
             "CZ": self._apply_cz,
             "Toffoli": self._apply_toffoli,
         }
+        self._seed = seed
+        # Counter for sampling calls to ensure different seeds each time
+        # This gets reset only during true device initialization, not during
+        # intermediate resets (like in classical shadow protocol)
+        self._sample_call_count = 0
+        # Flag to track if this is a fresh execution context
+        self._fresh_execution = True
 
     @property
     def stopping_condition(self):
@@ -243,7 +256,7 @@ class DefaultQubitLegacy(QubitDevice):
 
         return qml.BooleanFn(accepts_obj)
 
-    @functools.lru_cache()
+    @functools.lru_cache
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects
@@ -273,6 +286,15 @@ class DefaultQubitLegacy(QubitDevice):
 
         return None
 
+    def execute(self, circuit, **kwargs):
+        """Execute a quantum circuit and return the results.
+
+        This method marks the start of a fresh execution for reproducibility."""
+        # Mark as fresh execution for proper seed counter reset
+        self._fresh_execution = True
+        result = super().execute(circuit, **kwargs)
+        return result
+
     # pylint: disable=arguments-differ
     def apply(self, operations, rotations=None, **kwargs):
         rotations = rotations or []
@@ -280,7 +302,7 @@ class DefaultQubitLegacy(QubitDevice):
         # apply the circuit operations
         for i, operation in enumerate(operations):
             if i > 0 and isinstance(operation, (StatePrep, BasisState)):
-                raise qml.DeviceError(
+                raise DeviceError(
                     f"Operation {operation.name} cannot be used after other Operations have already been applied "
                     f"on a {self.short_name} device."
                 )
@@ -604,7 +626,7 @@ class DefaultQubitLegacy(QubitDevice):
         # intercept other Hamiltonians
         # TODO: Ideally, this logic should not live in the Device, but be moved
         # to a component that can be re-used by devices as needed.
-        if observable.name not in ("Hamiltonian", "SparseHamiltonian", "LinearCombination"):
+        if observable.name not in ("SparseHamiltonian", "LinearCombination"):
             return super().expval(observable, shot_range=shot_range, bin_size=bin_size)
 
         assert self.shots is None, f"{observable.name} must be used with shots=None"
@@ -613,7 +635,7 @@ class DefaultQubitLegacy(QubitDevice):
         backprop_mode = (
             not isinstance(self.state, np.ndarray)
             or any(not isinstance(d, (float, np.ndarray)) for d in observable.data)
-        ) and observable.name in ["Hamiltonian", "LinearCombination"]
+        ) and observable.name == "LinearCombination"
 
         if backprop_mode:
             # TODO[dwierichs]: This branch is not adapted to broadcasting yet
@@ -636,7 +658,8 @@ class DefaultQubitLegacy(QubitDevice):
             # that the user provided.
             for op, coeff in zip(observable.ops, observable.data):
                 # extract a scipy.sparse.coo_matrix representation of this Pauli word
-                coo = qml.operation.Tensor(op).sparse_matrix(wire_order=self.wires, format="coo")
+                sparse_mat = qml.prod(op).sparse_matrix(wire_order=self.wires)
+                coo = coo_matrix(sparse_mat)
                 Hmat = qml.math.cast(qml.math.convert_like(coo.data, self.state), self.C_DTYPE)
 
                 product = (
@@ -888,13 +911,13 @@ class DefaultQubitLegacy(QubitDevice):
         mat = self._cast(self._reshape(mat, shape), dtype=self.C_DTYPE)
 
         # Tensor indices of the quantum state
-        state_indices = ABC[: self.num_wires]
+        state_indices = ascii_letters[: self.num_wires]
 
         # Indices of the quantum state affected by this operation
-        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
+        affected_indices = "".join(ascii_letter_arr[list(device_wires)].tolist())
 
         # All affected indices will be summed over, so we need the same number of new indices
-        new_indices = ABC[self.num_wires : self.num_wires + len(device_wires)]
+        new_indices = ascii_letters[self.num_wires : self.num_wires + len(device_wires)]
 
         # The new indices of the state are given by the old ones with the affected indices
         # replaced by the new_indices
@@ -936,8 +959,8 @@ class DefaultQubitLegacy(QubitDevice):
             shape.insert(0, batch_size)
         phases = self._cast(self._reshape(phases, shape), dtype=self.C_DTYPE)
 
-        state_indices = ABC[: self.num_wires]
-        affected_indices = "".join(ABC_ARRAY[list(device_wires)].tolist())
+        state_indices = ascii_letters[: self.num_wires]
+        affected_indices = "".join(ascii_letter_arr[list(device_wires)].tolist())
 
         einsum_indices = f"...{affected_indices},...{state_indices}->...{state_indices}"
         return self._einsum(einsum_indices, phases, state)
@@ -949,6 +972,10 @@ class DefaultQubitLegacy(QubitDevice):
         # init the state vector to |00..0>
         self._state = self._create_basis_state(0)
         self._pre_rotated_state = self._state
+        # Reset the sample call counter only on fresh executions for reproducibility
+        if getattr(self, "_fresh_execution", True):
+            self._sample_call_count = 0
+            self._fresh_execution = False
 
     def analytic_probability(self, wires=None):
         if self._state is None:
@@ -963,132 +990,64 @@ class DefaultQubitLegacy(QubitDevice):
         imag_state = self._imag(flat_state)
         return self.marginal_prob(real_state**2 + imag_state**2, wires)
 
-    def classical_shadow(self, obs, circuit):
-        """
-        Returns the measured bits and recipes in the classical shadow protocol.
-
-        The protocol is described in detail in the `classical shadows paper <https://arxiv.org/abs/2002.08953>`_.
-        This measurement process returns the randomized Pauli measurements (the ``recipes``)
-        that are performed for each qubit and snapshot as an integer:
-
-        - 0 for Pauli X,
-        - 1 for Pauli Y, and
-        - 2 for Pauli Z.
-
-        It also returns the measurement results (the ``bits``); 0 if the 1 eigenvalue
-        is sampled, and 1 if the -1 eigenvalue is sampled.
-
-        The device shots are used to specify the number of snapshots. If ``T`` is the number
-        of shots and ``n`` is the number of qubits, then both the measured bits and the
-        Pauli measurements have shape ``(T, n)``.
-
-        This implementation leverages vectorization and offers a significant speed-up over
-        the generic implementation.
-
-        .. Note::
-
-            This method internally calls ``np.einsum`` which supports at most 52 indices,
-            thus the classical shadow measurement for this device supports at most 52
-            qubits.
-
-        .. seealso:: :func:`~pennylane.classical_shadow`
-
-        Args:
-            obs (~.pennylane.measurements.ClassicalShadowMP): The classical shadow measurement process
-            circuit (~.tape.QuantumTape): The quantum tape that is being executed
-
-        Returns:
-            tensor_like[int]: A tensor with shape ``(2, T, n)``, where the first row represents
-            the measured bits and the second represents the recipes used.
-        """
-        wires = obs.wires
-        seed = obs.seed
-
-        n_qubits = len(wires)
-        n_snapshots = self.shots
-        device_qubits = len(self.wires)
-        mapped_wires = np.array(self.map_wires(wires))
-
-        # seed the random measurement generation so that recipes
-        # are the same for different executions with the same seed
-        rng = np.random.RandomState(seed)
-        recipes = rng.randint(0, 3, size=(n_snapshots, n_qubits))
-
-        obs_list = self._stack(
-            [
-                qml.X.compute_matrix(),
-                qml.Y.compute_matrix(),
-                qml.Z.compute_matrix(),
-            ]
-        )
-        uni_list = self._stack(
-            [
-                qml.Hadamard.compute_matrix(),
-                qml.Hadamard.compute_matrix() @ qml.RZ.compute_matrix(-np.pi / 2),
-                qml.Identity.compute_matrix(),
-            ]
-        )
-        obs = obs_list[recipes]
-        uni = uni_list[recipes]
-
-        # There's a significant speedup if we use the following iterative
-        # process to perform the randomized Pauli measurements:
-        #   1. Randomly generate Pauli observables for all snapshots for
-        #      a single qubit (e.g. the first qubit).
-        #   2. Compute the expectation of each Pauli observable on the first
-        #      qubit by tracing out all other qubits.
-        #   3. Sample the first qubit based on each Pauli expectation.
-        #   4. For all snapshots, determine the collapsed state of the remaining
-        #      qubits based on the sample result.
-        #   4. Repeat iteratively until no qubits are remaining.
-        #
-        # Observe that after the first iteration, the second qubit will become the
-        # "first" qubit in the process. The advantage to this approach as opposed to
-        # simulataneously computing the Pauli expectations for each qubit is that
-        # the partial traces are computed over iteratively smaller subsystems, leading
-        # to a significant speed-up.
-
-        # transpose the state so that the measured wires appear first
-        unmeasured_wires = [i for i in range(len(self.wires)) if i not in mapped_wires]
-        transposed_state = np.transpose(self._state, axes=mapped_wires.tolist() + unmeasured_wires)
-
-        outcomes = np.zeros((n_snapshots, n_qubits))
-        stacked_state = self._stack([transposed_state for _ in range(n_snapshots)])
-
-        for i in range(n_qubits):
-            # trace out every qubit except the first
-            first_qubit_state = self._einsum(
-                f"{ABC[device_qubits - i + 1]}{ABC[:device_qubits - i]},{ABC[device_qubits - i + 1]}{ABC[device_qubits - i]}{ABC[1:device_qubits - i]}"
-                f"->{ABC[device_qubits - i + 1]}a{ABC[device_qubits - i]}",
-                stacked_state,
-                self._conj(stacked_state),
-            )
-
-            # sample the observables on the first qubit
-            probs = (self._einsum("abc,acb->a", first_qubit_state, obs[:, i]) + 1) / 2
-            samples = np.random.uniform(0, 1, size=probs.shape) > probs
-            outcomes[:, i] = samples
-
-            # collapse the state of the remaining qubits; the next qubit in line
-            # becomes the first qubit for the next iteration
-            rotated_state = self._einsum("ab...,acb->ac...", stacked_state, uni[:, i])
-            stacked_state = rotated_state[np.arange(n_snapshots), self._cast(samples, np.int8)]
-
-            # re-normalize the collapsed state
-            norms = np.sqrt(
-                np.sum(
-                    np.abs(stacked_state) ** 2, tuple(range(1, device_qubits - i)), keepdims=True
-                )
-            )
-            stacked_state /= norms
-
-        return self._cast(self._stack([outcomes, recipes]), dtype=np.int8)
-
     def _get_diagonalizing_gates(self, circuit: qml.tape.QuantumScript) -> list[Operation]:
         meas_filtered = [
             m
             for m in circuit.measurements
-            if m.obs is None
-            or not isinstance(m.obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination))
+            if m.obs is None or not isinstance(m.obs, qml.ops.LinearCombination)
         ]
         return super()._get_diagonalizing_gates(qml.tape.QuantumScript(measurements=meas_filtered))
+
+    def sample_basis_states(self, number_of_states, state_probability):
+        """Sample from the computational basis states based on the state
+        probability.
+
+        This is an auxiliary method to the generate_samples method.
+
+        Args:
+            number_of_states (int): the number of basis states to sample from
+            state_probability (array[float]): the computational basis probability vector
+
+        Returns:
+            array[int]: the sampled basis states
+        """
+        if self.shots is None:
+            raise ValueError(
+                "The number of shots has to be explicitly set on the device "
+                "when using sample-based measurements."
+            )
+        seed = self._seed or np.random.randint(0, 2**31)
+
+        # Create a locally rolling seed by using deterministic context properties
+        # Use only deterministic properties for reproducibility across executions
+        context_variation = hash((len(state_probability), tuple(state_probability.shape))) % (2**16)
+        effective_seed = (seed + self._sample_call_count + context_variation) % (2**31)
+        self._sample_call_count += 1
+
+        shots = self.shots
+        rng = np.random.default_rng(effective_seed)
+
+        basis_states = np.arange(number_of_states)
+        # pylint:disable = import-outside-toplevel
+        if (
+            qml.math.is_abstract(state_probability)
+            and qml.math.get_interface(state_probability) == "jax"
+        ):
+            import jax
+
+            key = jax.random.PRNGKey(seed)
+            if jax.numpy.ndim(state_probability) == 2:
+                return jax.numpy.array(
+                    [
+                        jax.random.choice(key, basis_states, shape=(shots,), p=prob)
+                        for prob in state_probability
+                    ]
+                )
+            return jax.random.choice(key, basis_states, shape=(shots,), p=state_probability)
+
+        state_probs = qml.math.unwrap(state_probability)
+        if self._ndim(state_probability) == 2:
+            # np.random.choice does not support broadcasting as needed here.
+            return np.array([rng.choice(basis_states, shots, p=prob) for prob in state_probs])
+
+        return rng.choice(basis_states, shots, p=state_probs)

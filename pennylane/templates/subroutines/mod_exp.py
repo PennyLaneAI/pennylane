@@ -16,8 +16,12 @@ Contains the ModExp template.
 """
 import numpy as np
 
-import pennylane as qml
+from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import Operation
+from pennylane.wires import Wires, WiresLike
+
+from .controlled_sequence import ControlledSequence
+from .multiplier import Multiplier
 
 
 class ModExp(Operation):
@@ -49,7 +53,7 @@ class ModExp(Operation):
         mod (int): the modulo for performing the exponentiation. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the exponentiation. If
             :math:`mod=2^{\text{len(output_wires)}}`, the number of auxiliary wires must be ``len(output_wires)``. Otherwise
-            ``len(output_wires) + 2`` auxiliary wires are needed.
+            ``len(output_wires) + 2`` auxiliary wires are needed. Defaults to empty tuple.
 
     **Example**
 
@@ -65,7 +69,8 @@ class ModExp(Operation):
         output_wires = [2, 3, 4]
         work_wires = [5, 6, 7, 8, 9]
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
+        @partial(qml.set_shots, shots=1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires = x_wires)
@@ -111,13 +116,16 @@ class ModExp(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_x_wires", "num_output_wires", "mod", "num_work_wires"}
+
     def __init__(
-        self, x_wires, output_wires, base, mod=None, work_wires=None, id=None
-    ):  # pylint: disable=too-many-arguments
+        self, x_wires: WiresLike, output_wires, base, mod=None, work_wires: WiresLike = (), id=None
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
-        output_wires = qml.wires.Wires(output_wires)
+        output_wires = Wires(output_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
-        if work_wires is None:
+        if len(work_wires) == 0:
             raise ValueError("Work wires must be specified for ModExp")
 
         if mod is None:
@@ -130,7 +138,7 @@ class ModExp(Operation):
         else:
             if len(work_wires) < len(output_wires):
                 raise ValueError("ModExp needs as many work_wires as output_wires.")
-        if work_wires is not None:
+        if len(work_wires) != 0:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if any(wire in work_wires for wire in output_wires):
@@ -145,12 +153,21 @@ class ModExp(Operation):
 
         wire_keys = ["x_wires", "output_wires", "work_wires"]
         for key in wire_keys:
-            self.hyperparameters[key] = qml.wires.Wires(locals()[key])
+            self.hyperparameters[key] = Wires(locals()[key])
         all_wires = sum(self.hyperparameters[key] for key in wire_keys)
         base = base % mod
         self.hyperparameters["base"] = base
         self.hyperparameters["mod"] = mod
         super().__init__(wires=all_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "num_output_wires": len(self.hyperparameters["output_wires"]),
+            "mod": self.hyperparameters["mod"],
+            "num_work_wires": len(self.hyperparameters["work_wires"]),
+        }
 
     @property
     def num_params(self):
@@ -188,7 +205,7 @@ class ModExp(Operation):
             + self.hyperparameters["work_wires"]
         )
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
 
         return self.compute_decomposition(**self.hyperparameters)
 
@@ -198,7 +215,7 @@ class ModExp(Operation):
 
     @staticmethod
     def compute_decomposition(
-        x_wires, output_wires, base, mod, work_wires
+        x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -222,8 +239,31 @@ class ModExp(Operation):
         # TODO: Cancel the QFTs of consecutive Multipliers
         op_list = []
         op_list.append(
-            qml.ControlledSequence(
-                qml.Multiplier(base, output_wires, mod, work_wires), control=x_wires
-            )
+            ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)
         )
         return op_list
+
+
+def _mod_exp_decomposition_resources(num_x_wires, num_output_wires, mod, num_work_wires) -> dict:
+    return {
+        resource_rep(
+            ControlledSequence,
+            base_class=Multiplier,
+            base_params={
+                "num_x_wires": num_output_wires,
+                "num_work_wires": num_work_wires,
+                "mod": mod,
+            },
+            num_control_wires=num_x_wires,
+        ): 1,
+    }
+
+
+@register_resources(_mod_exp_decomposition_resources)
+def _mod_exp_decomposition(
+    x_wires, output_wires: WiresLike, base, mod, work_wires: WiresLike, **__
+):
+    ControlledSequence(Multiplier(base, output_wires, mod, work_wires), control=x_wires)
+
+
+add_decomps(ModExp, _mod_exp_decomposition)

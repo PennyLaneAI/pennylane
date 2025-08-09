@@ -572,12 +572,12 @@ class TestTorchLayer:  # pylint: disable=too-many-public-methods
 
         x = torch.ones(n_qubits)
 
-        layer.construct((x,), {})
+        tape = qml.workflow.construct_tape(layer)(x)
 
-        assert layer.tape is not None
+        assert tape is not None
         assert (
-            len(layer.tape.get_parameters(trainable_only=False))
-            == len(layer.tape.get_parameters(trainable_only=True)) + 1
+            len(tape.get_parameters(trainable_only=False))
+            == len(tape.get_parameters(trainable_only=True)) + 1
         )
 
 
@@ -635,7 +635,7 @@ def test_qnode_interface_not_mutated(interface):
     assert (
         qlayer.qnode.interface
         == circuit.interface
-        == qml.workflow.execution.INTERFACE_MAP[interface]
+        == qml.math.get_canonical_interface_name(interface).value
     )
 
 
@@ -711,9 +711,9 @@ class TestTorchLayerIntegration:
         state_dict = module.state_dict()
         dict_keys = set(state_dict.keys())
 
-        clayer_weights = set(f"clayer{i + 1}.weight" for i in range(3))
-        clayer_biases = set(f"clayer{i + 1}.bias" for i in range(3))
-        qlayer_params = set(f"qlayer{i + 1}.w{j + 1}" for i in range(2) for j in range(len(w)))
+        clayer_weights = {f"clayer{i + 1}.weight" for i in range(3)}
+        clayer_biases = {f"clayer{i + 1}.bias" for i in range(3)}
+        qlayer_params = {f"qlayer{i + 1}.w{j + 1}" for i in range(2) for j in range(len(w))}
 
         all_params = clayer_weights | clayer_biases | qlayer_params
 
@@ -960,7 +960,6 @@ def test_specs():
     assert info["resources"] == expected_resources
 
     assert info["num_observables"] == 2
-    assert info["num_diagonalizing_gates"] == 0
     assert info["num_device_wires"] == 3
     assert info["num_tape_wires"] == 2
     assert info["num_trainable_params"] == 2

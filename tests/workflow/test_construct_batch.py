@@ -19,8 +19,10 @@ from functools import partial
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.transforms.core.transform_dispatcher import TransformContainer
 from pennylane.transforms.core.transform_program import TransformProgram
 from pennylane.workflow import construct_batch, get_transform_program
@@ -64,15 +66,25 @@ class TestTransformProgramGetter:
         with pytest.raises(ValueError, match=r"level bah not recognized."):
             get_transform_program(circuit, level="bah")
 
-    def test_get_transform_program_gradient_fn_transform(self):
-        """Tests for the transform program when the gradient_fn is a transform."""
+    def test_bad_other_key(self):
+        """Test a value error is raised if a bad, unrecognized key is provided."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            return qml.state()
+
+        with pytest.raises(ValueError, match=r"not recognized."):
+            get_transform_program(circuit, level=["bah"])
+
+    def test_get_transform_program_diff_method_transform(self):
+        """Tests for the transform program when the diff_method is a transform."""
 
         dev = qml.device("default.qubit", wires=4)
 
         @partial(qml.transforms.compile, num_passes=2)
         @partial(qml.transforms.merge_rotations, atol=1e-5)
         @qml.transforms.cancel_inverses
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=2)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs={"shifts": 2})
         def circuit():
             return qml.expval(qml.PauliZ(0))
 
@@ -102,21 +114,25 @@ class TestTransformProgramGetter:
         p_dev = get_transform_program(circuit, level="device")
         assert isinstance(p_grad, TransformProgram)
         p_default = get_transform_program(circuit)
-        p_none = get_transform_program(circuit, None)
         assert p_dev == p_default
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="`level=None` is deprecated",
+        ):
+            p_none = get_transform_program(circuit, None)
         assert p_none == p_dev
         assert len(p_dev) == 9
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
-        assert p_dev == p_grad + dev.preprocess(config)[0]
+        assert p_dev == p_grad + dev.preprocess_transforms(config)
 
         # slicing
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
         assert len(p_sliced) == 3
         assert p_sliced[0].transform == qml.compile.transform
-        assert p_sliced[1].transform == qml.devices.preprocess.validate_device_wires.transform
+        assert p_sliced[1].transform == qml.devices.preprocess.mid_circuit_measurements.transform
         assert p_sliced[2].transform == qml.devices.preprocess.decompose.transform
 
-    def test_gradient_fn_device_gradient(self):
+    def test_diff_method_device_gradient(self):
         """Test that if level="gradient" but the gradient does not have preprocessing, the program is strictly user transforms."""
 
         @qml.transforms.cancel_inverses
@@ -147,7 +163,7 @@ class TestTransformProgramGetter:
             gradient_method="adjoint",
             use_device_jacobian_product=False,
         )
-        dev_program = dev.preprocess(config)[0]
+        dev_program = dev.preprocess_transforms(config)
 
         expected = TransformProgram()
         expected.add_transform(qml.transforms.split_non_commuting)
@@ -157,7 +173,7 @@ class TestTransformProgramGetter:
     def test_get_transform_program_legacy_device_interface(self):
         """Test the contents of the transform program with the legacy device interface."""
 
-        dev = qml.device("default.mixed", wires=5)
+        dev = DefaultQubitLegacy(wires=5)
 
         @qml.transforms.merge_rotations
         @qml.qnode(dev, diff_method="backprop")
@@ -172,7 +188,7 @@ class TestTransformProgramGetter:
 
         m2 = TransformContainer(qml.devices.legacy_facade.legacy_device_batch_transform)
         assert program[1].transform == m2.transform.transform
-        assert program[1].kwargs["device"] == dev.target_device
+        assert program[1].kwargs["device"] == dev
 
         # a little hard to check the contents of a expand_fn transform
         # this is the best proxy I can find
@@ -203,7 +219,9 @@ class TestTransformProgramGetter:
 
         dev_program = get_transform_program(circuit, level="device")
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
-        assert len(dev_program) == 4 + len(circuit.device.preprocess(config)[0])  # currently 8
+        assert len(dev_program) == 4 + len(
+            circuit.device.preprocess_transforms(config)
+        )  # currently 8
         assert dev_program[-1].transform == qml.metric_tensor.transform
 
         full_program = get_transform_program(circuit)
@@ -313,14 +331,13 @@ class TestConstructBatch:
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
-    @pytest.mark.parametrize("level", ("device", None))
-    def test_device_transforms(self, level):
+    def test_device_transforms(self):
         """Test that all device transforms can be run with the device keyword."""
 
         weights = np.array([[1.0, 2.0]])
         order = [2, 1, 0]
 
-        batch, fn = construct_batch(circuit1, level=level)(weights, order)
+        batch, fn = construct_batch(circuit1, level="device")(weights, order)
 
         expected = qml.tape.QuantumScript(
             [qml.RY(1, 0), qml.RX(2, 1), qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))]
@@ -329,19 +346,18 @@ class TestConstructBatch:
         assert len(batch) == 1
         assert fn(("a",)) == ("a",)
 
-    @pytest.mark.parametrize("level", ("device", None))
-    def test_device_transforms_legacy_interface(self, level):
+    def test_device_transforms_legacy_interface(self):
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
-        @qml.qnode(qml.device("default.mixed", wires=2, shots=50))
+        @qml.qnode(DefaultQubitLegacy(wires=2, shots=50))
         def circuit(order):
             qml.Permute(order, wires=(0, 1, 2))
             qml.X(0)
             qml.X(0)
             return [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliY(0))]
 
-        batch, fn = qml.workflow.construct_batch(circuit, level=level)((2, 1, 0))
+        batch, fn = qml.workflow.construct_batch(circuit, level="device")((2, 1, 0))
 
         expected0 = qml.tape.QuantumScript(
             [qml.SWAP((0, 2))], [qml.expval(qml.PauliX(0))], shots=50
@@ -355,8 +371,21 @@ class TestConstructBatch:
 
         assert fn((1.0, 2.0)) == ((1.0, 2.0),)
 
+    def test_level_none_deprecated(self):
+        """Test that level=None raises a deprecation warning."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit():
+            return qml.state()
+
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="`level=None` is deprecated",
+        ):
+            construct_batch(circuit, level=None)
+
     def test_final_transform(self):
-        """Test that the final transform is included when level=None."""
+        """Test that the final transform is included when level="device"."""
 
         @qml.gradients.param_shift
         @qml.transforms.merge_rotations
@@ -366,7 +395,7 @@ class TestConstructBatch:
             qml.RX(x, 0)
             return qml.expval(qml.PauliZ(0))
 
-        batch, fn = construct_batch(circuit, level=None)(0.5)
+        batch, fn = construct_batch(circuit, level="device")(0.5)
         assert len(batch) == 2
         expected0 = qml.tape.QuantumScript(
             [qml.RX(1.0 + np.pi / 2, 0)], [qml.expval(qml.PauliZ(0))]
@@ -385,7 +414,8 @@ class TestConstructBatch:
         """Test a user transform that creates multiple tapes."""
 
         @qml.transforms.split_non_commuting
-        @qml.qnode(qml.device("default.qubit", shots=10))
+        @partial(qml.set_shots, shots=10)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             qml.S(0)
             return qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
@@ -429,20 +459,42 @@ class TestConstructBatch:
     def test_qfunc_with_shots_arg(self):
         """Test that the tape uses device shots only when qfunc has a shots kwarg"""
 
-        dev = qml.device("default.qubit", shots=100)
+        dev = qml.device("default.qubit")
 
         with pytest.warns(UserWarning, match="Detected 'shots' as an argument"):
 
+            @partial(qml.set_shots, shots=100)
             @qml.qnode(dev)
             def circuit(shots):
                 for _ in range(shots):
                     qml.S(0)
                 return qml.expval(qml.PauliZ(0))
 
-        batch, fn = construct_batch(circuit, level=None)(shots=2)
+        with pytest.warns(
+            UserWarning, match="Both 'shots=' parameter and 'set_shots' transform are specified"
+        ):
+            batch, fn = construct_batch(circuit, level="device")(shots=2)
+
         assert len(batch) == 1
         expected = qml.tape.QuantumScript(
             [qml.S(0), qml.S(0)], [qml.expval(qml.PauliZ(0))], shots=100
         )
         qml.assert_equal(batch[0], expected)
         assert fn(("a",)) == ("a",)
+
+    @pytest.mark.parametrize(
+        "mcm_method, expected_op",
+        [("deferred", qml.CNOT), ("tree-traversal", qml.measurements.MidMeasureMP)],
+    )
+    def test_mcm_method(self, mcm_method, expected_op):
+        """Test that the tape is constructed using the mcm_method specified on the QNode"""
+
+        @qml.qnode(qml.device("default.qubit"), mcm_method=mcm_method)
+        def circuit():
+            qml.measure(0)
+            return qml.expval(qml.Z(0))
+
+        (tape,), _ = qml.workflow.construct_batch(circuit, level="device")()
+
+        assert len(tape.operations) == 1
+        assert isinstance(tape.operations[0], expected_op)

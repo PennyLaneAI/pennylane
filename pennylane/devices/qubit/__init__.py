@@ -25,8 +25,8 @@ at your own discretion.
     apply_operation
     measure
     measure_with_samples
-    sample_state
     sample_probs
+    sample_state
     simulate
     adjoint_jacobian
     adjoint_jvp

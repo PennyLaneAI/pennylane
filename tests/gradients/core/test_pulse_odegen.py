@@ -1016,12 +1016,13 @@ class TestPulseOdegenTape:
         op = qml.evolve(H)([x], t=t)
         tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))], shots=shots)
 
-        val = qml.execute([tape], dev)
         theta = integral_of_polyval(x, t)
-        assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
         _tapes, fn = pulse_odegen(tape)
         assert len(_tapes) == 2
+
+        val = qml.execute([tape], dev)
+        assert qml.math.allclose(val, jnp.cos(2 * theta), atol=tol)
 
         grad = fn(qml.execute(_tapes, dev))
         par_jac = jax.jacobian(integral_of_polyval)(x, t)
@@ -1056,9 +1057,8 @@ class TestPulseOdegenTape:
             qml.evolve(H)(par, t=t)
             return qml.expval(Z(0))
 
-        circuit.construct(([x, y],), {})
         # TODO: remove once #2155 is resolved
-        tape_with_shots = circuit.tape.copy()
+        tape_with_shots = qml.workflow.construct_tape(circuit)([x, y])
         tape_with_shots.trainable_params = [0, 1]
         tape_with_shots._shots = qml.measurements.Shots(shots)  # pylint:disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1])
@@ -1091,9 +1091,7 @@ class TestPulseOdegenTape:
         op = qml.evolve(H)([x, y], t=t)
         tape = qml.tape.QuantumScript([op], [qml.expval(Z(0))])
 
-        val = qml.execute([tape], dev)
         theta = integral_of_polyval(x, t) + y * (t[1] - t[0])
-        assert qml.math.allclose(val, jnp.cos(2 * theta))
 
         # Argnum=[0] or 0
         par_jac_0 = jax.jacobian(integral_of_polyval)(x, t)
@@ -1105,6 +1103,9 @@ class TestPulseOdegenTape:
 
         _tapes, fn = pulse_odegen(tape, argnum=argnum)
         assert len(_tapes) == 2
+
+        val = qml.execute([tape], dev)
+        assert qml.math.allclose(val, jnp.cos(2 * theta))
 
         grad = fn(qml.execute(_tapes, dev))
         assert isinstance(grad, tuple) and len(grad) == 2
@@ -1139,9 +1140,8 @@ class TestPulseOdegenTape:
             qml.evolve(H1)(par[1:], t=t)
             return qml.expval(Z(0))
 
-        circuit.construct(([x, y, z],), {})
         # TODO: remove once #2155 is resolved
-        tape_with_shots = circuit.tape.copy()
+        tape_with_shots = qml.workflow.construct_tape(circuit)([x, y, z])
         tape_with_shots.trainable_params = [0, 1, 2]
         tape_with_shots._shots = qml.measurements.Shots(shots)  # pylint:disable=protected-access
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1, 2])

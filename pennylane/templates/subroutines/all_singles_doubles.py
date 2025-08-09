@@ -19,9 +19,9 @@ import copy
 
 import numpy as np
 
-import pennylane as qml
-from pennylane.operation import AnyWires, Operation
-from pennylane.ops import BasisState
+from pennylane import math
+from pennylane.operation import Operation
+from pennylane.ops import BasisState, DoubleExcitation, SingleExcitation
 from pennylane.wires import Wires
 
 
@@ -116,7 +116,6 @@ class AllSinglesDoubles(Operation):
             circuit(params, hf_state, singles=singles, doubles=doubles)
     """
 
-    num_wires = AnyWires
     grad_method = None
 
     def __init__(self, weights, wires, hf_state, singles=None, doubles=None, id=None):
@@ -139,7 +138,7 @@ class AllSinglesDoubles(Operation):
                         f"Expected entries of 'singles' to be of size 2; got {s_wires} of length {len(s_wires)}"
                     )
 
-        weights_shape = qml.math.shape(weights)
+        weights_shape = math.shape(weights)
         exp_shape = self.shape(singles, doubles)
         if weights_shape != exp_shape:
             raise ValueError(f"'weights' tensor must be of shape {exp_shape}; got {weights_shape}.")
@@ -203,10 +202,10 @@ class AllSinglesDoubles(Operation):
         op_list.append(BasisState(hf_state, wires=wires))
 
         for i, d_wires in enumerate(doubles):
-            op_list.append(qml.DoubleExcitation(weights[len(singles) + i], wires=d_wires))
+            op_list.append(DoubleExcitation(weights[len(singles) + i], wires=d_wires))
 
         for j, s_wires in enumerate(singles):
-            op_list.append(qml.SingleExcitation(weights[j], wires=s_wires))
+            op_list.append(SingleExcitation(weights[j], wires=s_wires))
 
         return op_list
 
@@ -223,15 +222,15 @@ class AllSinglesDoubles(Operation):
         Returns:
             tuple(int): shape of the tensor containing the circuit parameters
         """
-        if singles is None or not singles:
-            if doubles is None or not doubles:
-                raise ValueError(
-                    f"'singles' and 'doubles' lists can not be both empty;"
-                    f" got singles = {singles}, doubles = {doubles}"
-                )
-            if doubles is not None:
-                shape_ = (len(doubles),)
-        elif doubles is None:
+        if not singles and not doubles:
+            raise ValueError(
+                f"'singles' and 'doubles' lists can not be both empty;"
+                f" got singles = {singles}, doubles = {doubles}"
+            )
+
+        if not singles:
+            shape_ = (len(doubles),)
+        elif not doubles:
             shape_ = (len(singles),)
         else:
             shape_ = (len(singles) + len(doubles),)

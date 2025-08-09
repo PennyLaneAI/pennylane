@@ -24,9 +24,9 @@ from scipy.linalg import expm
 from scipy.sparse import csr_matrix
 
 import pennylane as qml
-from pennylane.qchem import givens_decomposition
+from pennylane.exceptions import DeviceError, WireError
+from pennylane.math.decomposition import givens_decomposition
 from pennylane.typing import TensorLike
-from pennylane.wires import WireError
 
 quimb = pytest.importorskip("quimb")
 
@@ -65,7 +65,7 @@ operations_list = {
     "CPhaseShift10": qml.CPhaseShift10(1.234, wires=[0, 1]),
     "QubitUnitary": qml.QubitUnitary(np.eye(2), wires=[0]),
     "SpecialUnitary": qml.SpecialUnitary(np.array([0.2, -0.1, 2.3]), wires=1),
-    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), control_wires=[1], wires=[0]),
+    "ControlledQubitUnitary": qml.ControlledQubitUnitary(np.eye(2), wires=[1, 0]),
     "MultiControlledX": qml.MultiControlledX(wires=[1, 2, 0]),
     "IntegerComparator": qml.IntegerComparator(1, geq=True, wires=[0, 1, 2]),
     "RX": qml.RX(1.234, wires=[0]),
@@ -179,7 +179,7 @@ def test_kwargs_mps(max_bond_dim, cutoff):
 
     dev = qml.device("default.tensor", method=method, max_bond_dim=max_bond_dim, cutoff=cutoff)
 
-    _, config = dev.preprocess()
+    config = dev.setup_execution_config()
     assert config.device_options["method"] == method
     assert config.device_options["max_bond_dim"] == max_bond_dim
     assert config.device_options["cutoff"] == cutoff
@@ -192,7 +192,7 @@ def test_kwargs_tn():
     method = "tn"
     dev = qml.device("default.tensor", method=method)
 
-    _, config = dev.preprocess()
+    config = dev.setup_execution_config()
     assert config.device_options["method"] == method
     assert config.device_options["contract"] == "auto-split-gate"
 
@@ -283,7 +283,7 @@ def test_passing_shots_None():
 def test_passing_finite_shots_error():
     """Test that an error is raised if finite shots are passed on initialization."""
 
-    with pytest.raises(qml.DeviceError, match=r"only supports analytic simulations"):
+    with pytest.raises(DeviceError, match=r"only supports analytic simulations"):
         qml.device("default.tensor", shots=10)
 
 
@@ -499,8 +499,8 @@ def test_wire_order_dense_vector(method, num_orbitals):
     dev = qml.device("default.tensor", wires=int(2 * num_orbitals + 1), method=method)
     qubits = dev.wires.tolist()
 
-    wave_fun = np.random.random((2 ** (2 * num_orbitals))) + 1j * np.random.random(
-        (2 ** (2 * num_orbitals))
+    wave_fun = np.random.random(2 ** (2 * num_orbitals)) + 1j * np.random.random(
+        2 ** (2 * num_orbitals)
     )
     wave_fun = wave_fun / np.linalg.norm(wave_fun)
 
@@ -537,9 +537,7 @@ class TestMCMs:
 
         mcm_config = qml.devices.MCMConfig(mcm_method=mcm_method)
         config = qml.devices.ExecutionConfig(mcm_config=mcm_config)
-        with pytest.raises(
-            qml.DeviceError, match=r"only supports the deferred measurement principle."
-        ):
+        with pytest.raises(DeviceError, match=r"only supports the deferred measurement principle."):
             qml.device("default.tensor").preprocess(config)
 
     def test_simple_mcm_present(self):

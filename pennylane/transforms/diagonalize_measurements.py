@@ -17,7 +17,7 @@ from copy import copy
 from functools import singledispatch
 
 import pennylane as qml
-from pennylane.operation import Tensor
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops import CompositeOp, LinearCombination, SymbolicOp
 from pennylane.pauli import diagonalize_qwc_pauli_words
 from pennylane.tape.tape import (
@@ -26,7 +26,7 @@ from pennylane.tape.tape import (
 )
 from pennylane.transforms.core import transform
 
-# pylint: disable=protected-access
+# pylint: disable=unused-argument
 
 _default_supported_obs = (qml.Z, qml.Identity)
 
@@ -47,7 +47,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
     Args:
         tape (QNode or QuantumScript or Callable): The quantum circuit to modify the measurements of.
-        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
+        supported_base_obs (Optional, Iterable(Operator)): A list of supported base observable classes.
             Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
             Z and Identity are always treated as supported, regardless of input. If no list is provided,
             the transform will diagonalize everything into the Z basis. If a list is provided, only
@@ -57,10 +57,17 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     .. note::
-        This transform will raise an error if it encounters non-commuting terms. To avoid non-commuting terms in
-        circuit measurements, the :func:`split_non_commuting <pennylane.transforms.split_non_commuting>` transform
-        can be applied.
+        An error will be raised if non-commuting terms are encountered. To avoid non-commuting
+        terms in circuit measurements, the :func:`split_non_commuting <pennylane.transforms.split_non_commuting>`
+        transform can be applied.
 
+        This transform will diagonalize what it can, i.e., ``qml.X``, ``qml.Y``, ``qml.Z``,
+        ``qml.Hadamard``, ``qml.Identity``, or a linear combination of them. Any unrecognized
+        observable will not raise an error, deferring to the device's validation for supported
+        measurements later on. Lastly, if ``diagonalize_measurements`` produces additional gates
+        that the device does not support, the :func:`~pennylane.devices.preprocess.decompose`
+        transform should be applied to ensure that the additional gates are decomposed to those
+        that the device supports.
 
     **Examples:**
 
@@ -84,25 +91,38 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
     measurements to be in the Z basis, so the original circuit
 
     >>> print(qml.draw(circuit, level=0)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)─┤ ╭<X@Z> ╭Var[(0.50*Y)+X]
+    0: ──RY(0.79)─┤ ╭<X@Z> ╭Var[𝓗(0.50)]
     1: ──RX(0.79)─┤ ╰<X@Z> │
-    2: ───────────┤        ╰Var[(0.50*Y)+X]
+    2: ───────────┤        ╰Var[𝓗(0.50)]
 
     becomes
 
     >>> print(qml.draw(circuit)([np.pi/4, np.pi/4]))
-    0: ──RY(0.79)──H────┤ ╭<Z@Z> ╭Var[(0.50*Z)+Z]
+    0: ──RY(0.79)──H────┤ ╭<Z@Z> ╭Var[𝓗(0.50)]
     1: ──RX(0.79)───────┤ ╰<Z@Z> │
-    2: ──Z─────────S──H─┤        ╰Var[(0.50*Z)+Z]
+    2: ──Z─────────S──H─┤        ╰Var[𝓗(0.50)]
 
     >>> circuit([np.pi/4, np.pi/4])
-    (tensor(0.5, requires_grad=True), tensor(0.75, requires_grad=True))
+    (0.5, 0.75)
 
     .. details::
         :title: Usage Details
 
-        The transform diagonalizes observables from the local Pauli basis only, i.e. it diagonalizes X, Y, Z,
-        and Hadamard.
+        The transform diagonalizes observables from the local Pauli basis only, i.e. it diagonalizes
+        X, Y, Z, and Hadamard. Any other observable will be unaffected:
+
+        .. code-block:: python3
+
+            measurements = [
+                qml.expval(qml.X(0) + qml.Hermitian([[1, 0], [0, 1]], wires=[1]))
+            ]
+            tape = qml.tape.QuantumScript(measurements=measurements)
+            tapes, processsing_fn = diagonalize_measurements(tape)
+
+        >>> tapes[0].operations
+        [H(0)]
+        >>> tapes[0].measurements
+        [expval(Z(0) + Hermitian(array([[1, 0], [0, 1]]), wires=[1]))]
 
         The transform can also diagonalize only a subset of these operators. By default, the only
         supported base observable is Z. What if a backend device can handle
@@ -159,7 +179,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
             diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(
                 tape, to_eigvals=to_eigvals
             )
-        except qml.QuantumFunctionError:
+        except QuantumFunctionError:
             # the pauli_rep based method sometimes fails unnecessarily -
             # if it fails, fall back on the less efficient method (which may also fail)
             diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
@@ -173,12 +193,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
 
     new_operations = tape.operations + diagonalizing_gates
 
-    new_tape = type(tape)(
-        ops=new_operations,
-        measurements=new_measurements,
-        shots=tape.shots,
-        trainable_params=tape.trainable_params,
-    )
+    new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
 
     return (new_tape,), null_postprocessing
 
@@ -221,7 +236,7 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
 
     Args:
         tape: the observable to be diagonalized
-        supported_base_obs (Optional, Iterable(Observable)): A list of supported base observable classes.
+        supported_base_obs (Optional, Iterable(Operator)): A list of supported base observable classes.
             Allowed observables are ``qml.X``, ``qml.Y``, ``qml.Z``, ``qml.Hadamard`` and ``qml.Identity``.
             Z and Identity are always treated as supported, regardless of input. If no list is provided,
             the transform will diagonalize everything into the Z basis. If a list is provided, only
@@ -249,7 +264,7 @@ def _diagonalize_subset_of_pauli_obs(tape, supported_base_obs, to_eigvals=False)
             wires_sampled_in_computational_basis.extend(list(m.wires))
 
     _visited_obs = (
-        set(qml.Z(w) for w in wires_sampled_in_computational_basis),
+        {qml.Z(w) for w in wires_sampled_in_computational_basis},
         set(wires_sampled_in_computational_basis),
     )  # tracks which observables and wires are already used and shouldn't be diagonalized
     diagonalizing_gates = []
@@ -281,9 +296,7 @@ def _change_obs_to_Z(observable):
 
 @_change_obs_to_Z.register
 def _change_symbolic_op(observable: SymbolicOp):
-    diagonalizing_gates, [new_base] = diagonalize_qwc_pauli_words(
-        [observable.base],
-    )
+    diagonalizing_gates, [new_base] = diagonalize_qwc_pauli_words([observable.base])
 
     params, hyperparams = observable.parameters, observable.hyperparameters
     hyperparams = copy(hyperparams)
@@ -295,34 +308,10 @@ def _change_symbolic_op(observable: SymbolicOp):
 
 
 @_change_obs_to_Z.register
-def _change_tensor(observable: Tensor):
-    diagonalizing_gates, new_obs = diagonalize_qwc_pauli_words(
-        observable.obs,
-    )
-
-    new_observable = Tensor(*new_obs)
-
-    return diagonalizing_gates, new_observable
-
-
-@_change_obs_to_Z.register
-def _change_hamiltonian(observable: qml.ops.Hamiltonian):
-    diagonalizing_gates, new_ops = diagonalize_qwc_pauli_words(
-        observable.ops,
-    )
-
-    new_observable = qml.ops.Hamiltonian(observable.coeffs, new_ops)
-
-    return diagonalizing_gates, new_observable
-
-
-@_change_obs_to_Z.register
 def _change_linear_combination(observable: LinearCombination):
     coeffs, obs = observable.terms()
 
-    diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(
-        obs,
-    )
+    diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(obs)
 
     new_observable = LinearCombination(coeffs, new_operands)
 
@@ -331,9 +320,7 @@ def _change_linear_combination(observable: LinearCombination):
 
 @_change_obs_to_Z.register
 def _change_composite_op(observable: CompositeOp):
-    diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(
-        observable.operands,
-    )
+    diagonalizing_gates, new_operands = diagonalize_qwc_pauli_words(observable.operands)
 
     new_observable = observable.__class__(*new_operands)
 
@@ -408,7 +395,7 @@ def _diagonalize_observable(
         _visited_obs = (set(), set())
 
     if not isinstance(observable, (qml.X, qml.Y, qml.Z, qml.Hadamard, qml.Identity)):
-        return _diagonalize_compound_observable(
+        return _diagonalize_non_basic_observable(
             observable, _visited_obs, supported_base_obs=supported_base_obs
         )
 
@@ -442,19 +429,23 @@ def _get_obs_and_gates(obs_list, _visited_obs, supported_base_obs=_default_suppo
 
 
 @singledispatch
-def _diagonalize_compound_observable(
+def _diagonalize_non_basic_observable(
     observable, _visited_obs, supported_base_obs=_default_supported_obs
 ):
-    """Takes an observable consisting of multiple other observables, and changes all
+    """Takes an observable other than X, Y, Z, H, and I, and diagonalize it.
+
+    For composite observables consisting of multiple other observables, it changes all
     unsupported obs to the measurement basis. Applies diagonalizing gates if changing
-    the basis of an observable whose diagonalizing gates have not already been applied."""
+    the basis of an observable whose diagonalizing gates have not already been applied.
+    For other observables, simply skips and returns the observable as is.
 
-    raise NotImplementedError(
-        f"Unable to convert observable of type {type(observable)} to the measurement basis"
-    )
+    """
+    _visited_obs[0].add(observable)
+    _visited_obs[1].add(observable.wires[0])
+    return [], observable, _visited_obs
 
 
-@_diagonalize_compound_observable.register
+@_diagonalize_non_basic_observable.register
 def _diagonalize_symbolic_op(
     observable: SymbolicOp, _visited_obs, supported_base_obs=_default_supported_obs
 ):
@@ -471,35 +462,7 @@ def _diagonalize_symbolic_op(
     return diagonalizing_gates, new_observable, _visited_obs
 
 
-@_diagonalize_compound_observable.register
-def _diagonalize_tensor(
-    observable: Tensor, _visited_obs, supported_base_obs=_default_supported_obs
-):
-    diagonalizing_gates, new_obs, _visited_obs = _get_obs_and_gates(
-        observable.obs, _visited_obs, supported_base_obs
-    )
-
-    new_observable = Tensor(*new_obs)
-
-    return diagonalizing_gates, new_observable, _visited_obs
-
-
-@_diagonalize_compound_observable.register
-def _diagonalize_hamiltonian(
-    observable: qml.ops.Hamiltonian,
-    _visited_obs,
-    supported_base_obs=_default_supported_obs,
-):
-    diagonalizing_gates, new_ops, _visited_obs = _get_obs_and_gates(
-        observable.ops, _visited_obs, supported_base_obs
-    )
-
-    new_observable = qml.ops.Hamiltonian(observable.coeffs, new_ops)
-
-    return diagonalizing_gates, new_observable, _visited_obs
-
-
-@_diagonalize_compound_observable.register
+@_diagonalize_non_basic_observable.register
 def _diagonalize_linear_combination(
     observable: LinearCombination, _visited_obs, supported_base_obs=_default_supported_obs
 ):
@@ -515,7 +478,7 @@ def _diagonalize_linear_combination(
     return diagonalizing_gates, new_observable, _visited_obs
 
 
-@_diagonalize_compound_observable.register
+@_diagonalize_non_basic_observable.register
 def _diagonalize_composite_op(
     observable: CompositeOp, _visited_obs, supported_base_obs=_default_supported_obs
 ):

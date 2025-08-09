@@ -16,6 +16,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.ops.op_math import Evolution, Exp
 
 
@@ -71,15 +72,6 @@ class TestEvolution:
         U = Evolution(qml.PauliX(0), 3)
         assert U.generator() == -1 * U.base
 
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_num_params_for_parametric_base_legacy_opmath(self):
-        base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
-        op = Evolution(base_op, 1.23)
-
-        assert base_op.num_params == 2
-        assert op.num_params == 1
-
-    @pytest.mark.usefixtures("new_opmath_only")
     def test_num_params_for_parametric_base(self):
         base_op = 0.5 * qml.PauliY(0) + qml.PauliZ(0) @ qml.PauliX(1)
         op = Evolution(base_op, 1.23)
@@ -123,7 +115,7 @@ class TestEvolution:
         base = qml.S(0) @ qml.X(0)
         op = Evolution(base, 3)
 
-        assert repr(op) == "Evolution(-3j S(wires=[0]) @ X(0))"
+        assert repr(op) == "Evolution(-3j S(0) @ X(0))"
 
     @pytest.mark.parametrize(
         "op,decimals,expected",
@@ -212,9 +204,7 @@ class TestEvolution:
         """Tests that an error is raised if the generator is not hermitian."""
         op = Evolution(qml.RX(np.pi / 3, 0), 1)
 
-        with pytest.raises(
-            qml.QuantumFunctionError, match="of operation Evolution is not hermitian"
-        ):
+        with pytest.raises(QuantumFunctionError, match="of operation Evolution is not hermitian"):
             qml.generator(op)
 
     def test_generator_undefined_error(self):

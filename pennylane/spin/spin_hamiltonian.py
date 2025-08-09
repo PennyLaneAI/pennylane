@@ -15,13 +15,14 @@
 This file contains functions to create spin Hamiltonians.
 """
 
-import pennylane as qml
-from pennylane import I, X, Y, Z, math
+from pennylane import math, qchem
 from pennylane.fermi import FermiWord
+from pennylane.ops import X, Y, Z
+from pennylane.ops.identity import I
 
 from .lattice import Lattice, generate_lattice
 
-# pylint: disable=too-many-arguments, too-many-branches
+# pylint: disable=too-many-arguments
 
 
 def transverse_ising(
@@ -49,8 +50,9 @@ def transverse_ising(
             ``(num_spins,  num_spins)``, where ``num_spins`` is the total number of spins. Default
             value is 1.0.
         h (float): Value of external magnetic field. Default is 1.0.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -81,7 +83,7 @@ def transverse_ising(
         coupling = [coupling]
     coupling = math.asarray(coupling)
 
-    hamiltonian = 0.0 * qml.I(0)
+    hamiltonian = 0.0 * I(0)
 
     if coupling.shape not in [(neighbour_order,), (lattice.n_sites, lattice.n_sites)]:
         raise ValueError(
@@ -123,8 +125,9 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
         coupling (tensor_like[float]): Coupling between spins. It can be an
             array of shape ``(neighbour_order, 3)`` or
             ``(3, num_spins, num_spins)``, where ``num_spins`` is the total number of spins.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
 
@@ -166,7 +169,7 @@ def heisenberg(lattice, n_cells, coupling=None, boundary_condition=False, neighb
             f"The coupling parameter shape should be equal to ({neighbour_order},3) or (3,{lattice.n_sites},{lattice.n_sites})"
         )
 
-    hamiltonian = 0.0 * qml.I(0)
+    hamiltonian = 0.0 * I(0)
     if coupling.shape == (neighbour_order, 3):
         for edge in lattice.edges:
             i, j, order = edge
@@ -222,8 +225,9 @@ def fermi_hubbard(
             number of spins. Default value is 1.0.
         coulomb (float or tensor_like[float]): Coulomb interaction between spins. It can be a constant or an
             array of length equal to the number of spins.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
@@ -304,12 +308,13 @@ def fermi_hubbard(
 
     hamiltonian = hopping_ham + int_term
 
+    mapping = mapping.strip().lower()
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"The '{mapping}' transformation is not available."
             f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'"
         )
-    qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
+    qubit_ham = qchem.qubit_observable(hamiltonian, mapping=mapping)
 
     return qubit_ham.simplify()
 
@@ -330,7 +335,7 @@ def emery(
 
     .. math::
         \begin{align*}
-          \hat{H} & = -\sum_{\langle i,j \rangle, t \sigma} c_{i\sigma}^{\dagger}c_{j\sigma}
+          \hat{H} & = - t \sum_{\langle i,j \rangle, \sigma} c_{i\sigma}^{\dagger}c_{j\sigma}
           + U \sum_{i} n_{i \uparrow} n_{i\downarrow} + V \sum_{<i,j>} (n_{i \uparrow} +
           n_{i \downarrow})(n_{j \uparrow} + n_{j \downarrow})\ ,
         \end{align*}
@@ -352,13 +357,14 @@ def emery(
             a square matrix of shape ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
         coulomb (float or tensor_like[float]): Coulomb interaction between spins. It can be a number or an
-            array of length equal to the number of spins.
+            array of length equal to the number of spins. Default value is 1.0.
         intersite_coupling (float or tensor_like[float]): Interaction strength between spins on
             neighbouring sites. It can be a number, an array with length equal to ``neighbour_order`` or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
         neighbour_order (int): Specifies the interaction level for neighbors within the lattice.
             Default is 1, indicating nearest neighbours.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
@@ -468,12 +474,13 @@ def emery(
 
     hamiltonian = hopping_term + coulomb_term + intersite_term
 
+    mapping = mapping.strip().lower()
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"The '{mapping}' transformation is not available."
             f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
         )
-    qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
+    qubit_ham = qchem.qubit_observable(hamiltonian, mapping=mapping)
 
     return qubit_ham.simplify()
 
@@ -525,8 +532,9 @@ def haldane(
         phi (float or tensor_like[float]): Phase factor in the system. It can be a number, or
             a square matrix of size ``(n_sites, n_sites)``, where ``n_sites`` is the total
             number of sites. Default value is 1.0.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
         mapping (str): Specifies the fermion-to-qubit mapping. Input values can be
             ``'jordan_wigner'``, ``'parity'`` or ``'bravyi_kitaev'``.
 
@@ -608,12 +616,13 @@ def haldane(
                     math.exp(-1j * phi_term) * FermiWord({(0, s2): "+", (1, s1): "-"})
                 )
 
+    mapping = mapping.strip().lower()
     if mapping not in ["jordan_wigner", "parity", "bravyi_kitaev"]:
         raise ValueError(
             f"The '{mapping}' transformation is not available."
             f"Please set mapping to 'jordan_wigner', 'parity', or 'bravyi_kitaev'."
         )
-    qubit_ham = qml.qchem.qubit_observable(hamiltonian, mapping=mapping)
+    qubit_ham = qchem.qubit_observable(hamiltonian, mapping=mapping)
 
     return qubit_ham.simplify()
 
@@ -634,7 +643,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
     neighbouring spins. The parameters :math:`K_X`, :math:`K_Y`, :math:`K_Z` are the coupling
     constants defined for the Hamiltonian, where :math:`X`, :math:`Y`, :math:`Z` represent the set
     of edges in the Honeycomb lattice between spins :math:`i` and :math:`j` with real-space bond
-    directions :math:`[0, 1], [\frac{\sqrt{3}}{2}, \frac{1}{2}], \frac{\sqrt{3}}{2}, -\frac{1}{2}]`,
+    directions :math:`[0, 1], [\frac{\sqrt{3}}{2}, \frac{1}{2}], [\frac{\sqrt{3}}{2}, -\frac{1}{2}]`,
     respectively.
 
     Args:
@@ -642,8 +651,9 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
         coupling (tensor_like[float]): Coupling between spins. It can be an array of length 3 defining
             :math:`K_X`, :math:`K_Y`, :math:`K_Z` coupling constants. Default value is 1.0 for each
             coupling constant.
-        boundary_condition (bool or list[bool]): Defines boundary conditions for different lattice
-            axes. Default is ``False`` indicating open boundary condition.
+        boundary_condition (bool or list[bool]): Specifies whether or not to enforce periodic
+            boundary conditions for the different lattice axes.  Default is ``False`` indicating
+            open boundary condition.
 
     Raises:
        ValueError: if ``coupling`` doesn't have correct dimensions.
@@ -692,7 +702,7 @@ def kitaev(n_cells, coupling=None, boundary_condition=False):
         custom_edges=custom_edges,
     )
     opmap = {"X": X, "Y": Y, "Z": Z}
-    hamiltonian = 0.0 * qml.I(0)
+    hamiltonian = 0.0 * I(0)
     for edge in lattice.edges:
         v1, v2 = edge[0:2]
         op1, op2 = edge[2][0]
@@ -706,7 +716,7 @@ def spin_hamiltonian(lattice):
     r"""Generates a spin Hamiltonian for a custom :class:`~pennylane.spin.Lattice` object.
 
     Args:
-        lattice (Lattice): custom lattice defined with custom_edges
+        lattice (Lattice): custom lattice defined with ``custom_edges``
 
     Raises:
         ValueError: if the provided Lattice does not have ``custom_edges`` defined with operators
@@ -747,7 +757,7 @@ def spin_hamiltonian(lattice):
         )
 
     opmap = {"I": I, "X": X, "Y": Y, "Z": Z}
-    hamiltonian = 0.0 * qml.I(0)
+    hamiltonian = 0.0 * I(0)
     for edge in lattice.edges:
         v1, v2 = edge[0:2]
         op1, op2 = edge[2][0]

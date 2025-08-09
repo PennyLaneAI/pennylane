@@ -17,15 +17,16 @@ created in pennylane.
 
 It has a jax dependency and should be located in a standard import path.
 """
-from pennylane.compiler.qjit_api import _get_for_loop_qfunc_prim, _get_while_loop_qfunc_prim
+from pennylane._grad import _get_grad_prim, _get_jacobian_prim
+from pennylane.control_flow.for_loop import _get_for_loop_qfunc_prim
+from pennylane.control_flow.while_loop import _get_while_loop_qfunc_prim
+from pennylane.measurements.capture_measurements import _get_abstract_measurement
+from pennylane.measurements.mid_measure import _create_mid_measure_primitive
+from pennylane.operation import _get_abstract_operator
 from pennylane.ops.op_math.adjoint import _get_adjoint_qfunc_prim
 from pennylane.ops.op_math.condition import _get_cond_qfunc_prim
 from pennylane.ops.op_math.controlled import _get_ctrl_qfunc_prim
-
-from .capture_diff import _get_grad_prim, _get_jacobian_prim
-from .capture_measurements import _get_abstract_measurement
-from .capture_operators import _get_abstract_operator
-from .capture_qnode import _get_qnode_prim
+from pennylane.workflow._capture_qnode import qnode_prim
 
 AbstractOperator = _get_abstract_operator()
 AbstractMeasurement = _get_abstract_measurement()
@@ -33,11 +34,10 @@ adjoint_transform_prim = _get_adjoint_qfunc_prim()
 ctrl_transform_prim = _get_ctrl_qfunc_prim()
 grad_prim = _get_grad_prim()
 jacobian_prim = _get_jacobian_prim()
-qnode_prim = _get_qnode_prim()
 cond_prim = _get_cond_qfunc_prim()
 for_loop_prim = _get_for_loop_qfunc_prim()
 while_loop_prim = _get_while_loop_qfunc_prim()
-
+measure_prim = _create_mid_measure_primitive()
 
 __all__ = [
     "AbstractOperator",
@@ -50,4 +50,5 @@ __all__ = [
     "cond_prim",
     "for_loop_prim",
     "while_loop_prim",
+    "measure_prim",
 ]

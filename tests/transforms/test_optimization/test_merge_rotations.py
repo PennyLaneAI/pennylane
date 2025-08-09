@@ -16,6 +16,7 @@ Unit tests for the optimization transform ``merge_rotations``.
 """
 # pylint: disable=too-many-arguments
 
+
 import pytest
 from utils import compare_operation_lists
 
@@ -53,6 +54,17 @@ class TestMergeRotations:
         for op_obtained, op_expected in zip(ops, expected_ops):
             assert op_obtained.name == op_expected.name
             assert np.allclose(op_obtained.parameters, op_expected.parameters)
+
+    def test_rot_gate_cancel(self):
+        """Test that two rotation gates get merged to the identity operator (cancel)."""
+
+        def qfunc():
+            qml.Rot(-1, 0, 1, wires=0)
+            qml.Rot(-1, 0, 1, wires=0)
+
+        transformed_qfunc = merge_rotations(qfunc)
+        ops = qml.tape.make_qscript(transformed_qfunc)().operations
+        assert not ops
 
     @pytest.mark.parametrize(
         ("theta_1", "theta_2", "expected_ops"),
@@ -328,7 +340,8 @@ class TestMergeRotationsInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.torch
@@ -355,7 +368,8 @@ class TestMergeRotationsInterfaces:
         assert qml.math.allclose(original_input.grad, transformed_input.grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.tf
@@ -387,7 +401,8 @@ class TestMergeRotationsInterfaces:
         assert qml.math.allclose(original_grad, transformed_grad)
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(transformed_input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
@@ -410,7 +425,8 @@ class TestMergeRotationsInterfaces:
         )
 
         # Check operation list
-        ops = transformed_qnode.qtape.operations
+        tape = qml.workflow.construct_tape(transformed_qnode)(input)
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     @pytest.mark.jax
@@ -507,8 +523,8 @@ class TestTransformDispatch:
             merge_rotations(qfunc_circuit)(a)
             return qml.expval(qml.PauliX(0) @ qml.PauliX(2))
 
-        new_circuit([0.1, 0.2, 0.3, 0.4])
-        ops = new_circuit.tape.operations
+        tape = qml.workflow.construct_tape(new_circuit)([0.1, 0.2, 0.3, 0.4])
+        ops = tape.operations
         compare_operation_lists(ops, expected_op_list, expected_wires_list)
 
     def test_qnode(self):

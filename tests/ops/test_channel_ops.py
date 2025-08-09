@@ -22,8 +22,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.exceptions import WireError
 from pennylane.ops import channel
-from pennylane.wires import WireError
 
 X = np.array([[0, 1], [1, 0]])
 Y = np.array([[0, -1j], [1j, 0]])
@@ -433,7 +433,8 @@ class TestPhaseFlip:
         expected_K1 = np.sqrt(p) * Z
         assert np.allclose(op(p, wires=0).kraus_matrices()[1], expected_K1, atol=tol, rtol=0)
 
-    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7))
+    # TODO: bring back angle 0 when the bug fixed https://github.com/PennyLaneAI/pennylane/pull/6684#issuecomment-2552123064
+    @pytest.mark.parametrize("angle", np.linspace(0, 2 * np.pi, 7)[1:])
     def test_grad_phaseflip(self, angle):
         """Test that analytical gradient is computed correctly for different states. Channel
         grad recipes are independent of channel parameter"""
@@ -741,7 +742,7 @@ class TestPauliError:
     EXPECTED_MESSAGES = [
         "The number of operators must match the number of wires",
         "p must be in the interval \\[0,1\\]",
-        "The specified operators need to be either of 'X', 'Y' or 'Z'",
+        "The specified operators need to be either of 'I', 'X', 'Y' or 'Z'.",
         "Wires must be unique",
     ]
 
@@ -782,8 +783,8 @@ class TestPauliError:
 
         assert np.allclose(c.kraus_matrices(), expected_Ks, atol=tol, rtol=0)
 
-    OPERATORS = ["X", "XY", "ZX"]
-    WIRES = [[1], [0, 1], [3, 1]]
+    OPERATORS = ["X", "XY", "ZX", "ZI"]
+    WIRES = [[1], [0, 1], [3, 1], [1, 0]]
     EXPECTED_KS = [
         [
             np.sqrt(0.5) * np.eye(2),
@@ -816,6 +817,18 @@ class TestPauliError:
                 ]
             ),
         ],
+        [
+            np.sqrt(0.5) * np.eye(4),
+            np.sqrt(0.5)
+            * np.array(
+                [
+                    [1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, -1.0, 0.0],
+                    [0.0, 0.0, 0.0, -1.0],
+                ]
+            ),
+        ],
     ]
 
     @pytest.mark.parametrize(
@@ -836,9 +849,13 @@ class TestPauliError:
             -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.eye(4),
             1 / (2 * qml.math.sqrt(p)) * (qml.math.diag([1j, -1j, 1j, -1j])[::-1]),
         ],
+        "ZI": lambda p: [
+            -1 / (2 * qml.math.sqrt(1 - p)) * qml.math.eye(4),
+            1 / (2 * qml.math.sqrt(p)) * (qml.math.diag([1, 1, -1, -1])),
+        ],
     }
 
-    @pytest.mark.parametrize("ops", ["X", "XY"])
+    @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.autograd
     def test_kraus_jac_autograd(self, ops):
         p = pnp.array(0.43, requires_grad=True)
@@ -859,7 +876,7 @@ class TestPauliError:
         jac = jac_fn_real(p) + 1j * jac_fn_imag(p)
         assert qml.math.allclose(jac, self.expected_jac_fn[ops](p))
 
-    @pytest.mark.parametrize("ops", ["X", "XY"])
+    @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.torch
     def test_kraus_jac_torch(self, ops):
         import torch
@@ -883,7 +900,7 @@ class TestPauliError:
             jac_real + 1j * jac_imag, self.expected_jac_fn[ops](p.detach().numpy())
         )
 
-    @pytest.mark.parametrize("ops", ["X", "XY"])
+    @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.tf
     def test_kraus_jac_tf(self, ops):
         import tensorflow as tf
@@ -895,7 +912,7 @@ class TestPauliError:
         jac = tape.jacobian(out, p)
         assert qml.math.allclose(jac, self.expected_jac_fn[ops](p))
 
-    @pytest.mark.parametrize("ops", ["X", "XY"])
+    @pytest.mark.parametrize("ops", ["X", "XY", "ZI"])
     @pytest.mark.jax
     def test_kraus_jac_jax(self, ops):
         import jax

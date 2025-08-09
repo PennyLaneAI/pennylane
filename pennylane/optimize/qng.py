@@ -12,22 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Quantum natural gradient optimizer"""
-import pennylane as qml
+import numbers
+from collections.abc import Iterable
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
+from pennylane import math
 from pennylane import numpy as pnp
-from pennylane.utils import _flatten, unflatten
+from pennylane.gradients.metric_tensor import metric_tensor
+from pennylane.wires import Wires
+from pennylane.workflow import QNode
 
 from .gradient_descent import GradientDescentOptimizer
 
 
 def _reshape_and_regularize(tensor, lam):
-    shape = qml.math.shape(tensor)
-    size = 1 if shape == () else qml.math.prod(shape[: len(shape) // 2])
-    tensor = qml.math.reshape(tensor, (size, size))
+    shape = math.shape(tensor)
+    size = 1 if shape == () else math.prod(shape[: len(shape) // 2])
+    tensor = math.reshape(tensor, (size, size))
     # Add regularization
-    tensor += lam * qml.math.eye(size, like=tensor)
+    tensor += lam * math.eye(size, like=tensor)
     return tensor
 
 
@@ -100,6 +102,22 @@ class QNGOptimizer(GradientDescentOptimizer):
         * For multi-QNode models, we don't know what geometry is appropriate
           if a parameter is shared amongst several QNodes.
 
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
+
+            - If ``None``, the full metric tensor is computed.
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
+
+        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
+            to be applied at each optimization step (default value: 0).
+
     **Examples:**
 
     For VQE/VQE-like problems, the objective function for the optimizer can be
@@ -141,24 +159,10 @@ class QNGOptimizer(GradientDescentOptimizer):
 
     .. seealso::
 
-        See the :doc:`quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`
+        See the `quantum natural gradient example <demo:demos/tutorial_quantum_natural_gradient>`_
         for more details on the Fubini-Study metric tensor and this optimization class.
 
-    Keyword Args:
-        stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
-        approx (str): Which approximation of the metric tensor to compute.
-
-            - If ``None``, the full metric tensor is computed
-
-            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
-              the number of evaluated circuits significantly.
-
-            - If ``"diag"``, only the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources
-              (compared to ``"block-diag"``).
-
-        lam=0 (float): metric tensor regularization :math:`G_{ij}+\lambda I`
-            to be applied at each optimization step
+        See :class:`~.QNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation.
     """
 
     def __init__(self, stepsize=0.01, approx="block-diag", lam=0):
@@ -196,7 +200,7 @@ class QNGOptimizer(GradientDescentOptimizer):
             prior to the step
         """
         # pylint: disable=arguments-differ
-        if not isinstance(qnode, qml.QNode) and metric_tensor_fn is None:
+        if not isinstance(qnode, QNode) and metric_tensor_fn is None:
             raise ValueError(
                 "The objective function must be encoded as a single QNode for the natural gradient "
                 "to be automatically computed. Otherwise, metric_tensor_fn must be explicitly "
@@ -205,7 +209,7 @@ class QNGOptimizer(GradientDescentOptimizer):
 
         if recompute_tensor or self.metric_tensor is None:
             if metric_tensor_fn is None:
-                metric_tensor_fn = qml.metric_tensor(qnode, approx=self.approx)
+                metric_tensor_fn = metric_tensor(qnode, approx=self.approx)
 
             mt = metric_tensor_fn(*args, **kwargs)
             if isinstance(mt, tuple):
@@ -277,11 +281,88 @@ class QNGOptimizer(GradientDescentOptimizer):
         trained_index = 0
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                grad_flat = pnp.array(list(_flatten(grad[trained_index])))
+                grad_flat = pnp.array(list(_flatten_np(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                update = pnp.linalg.solve(mt[trained_index], grad_flat)
-                args_new[index] = arg - self.stepsize * unflatten(update, grad[trained_index])
+                update = pnp.linalg.pinv(mt[trained_index]) @ grad_flat
+                args_new[index] = arg - self.stepsize * _unflatten_np(update, grad[trained_index])
 
                 trained_index += 1
 
         return tuple(args_new)
+
+
+def _flatten_np(x):
+    """Iterate recursively through an arbitrarily nested structure in depth-first order.
+
+    See also :func:`_unflatten`.
+
+    Args:
+        x (array, Iterable, Any): each element of an array or an Iterable may itself be any of these types
+
+    Yields:
+        Any: elements of x in depth-first order
+    """
+    if isinstance(x, pnp.ndarray):
+        yield from _flatten_np(
+            x.flat
+        )  # should we allow object arrays? or just "yield from x.flat"?
+    elif isinstance(x, Wires):
+        # Reursive calls to flatten `Wires` will cause infinite recursion (`Wires` atoms are `Wires`).
+        # Since Wires are always flat, just yield.
+        yield from x
+    elif isinstance(x, Iterable) and not isinstance(x, (str, bytes)):
+        for item in x:
+            yield from _flatten_np(item)
+    else:
+        yield x
+
+
+def _unflatten_np_dispatch(flat, model):
+    """Restores an arbitrary nested structure to a flattened iterable.
+
+    See also :func:`_flatten`.
+
+    Args:
+        flat (array): 1D array of items
+        model (array, Iterable, Number): model nested structure
+
+    Raises:
+        TypeError: if ``model`` contains an object of unsupported type
+
+    Returns:
+        Union[array, list, Any], array: first elements of flat arranged into the nested
+        structure of model, unused elements of flat
+    """
+    if isinstance(model, (numbers.Number, str)):
+        return flat[0], flat[1:]
+
+    if isinstance(model, pnp.ndarray):
+        idx = model.size
+        res = pnp.array(flat)[:idx].reshape(model.shape)
+        return res, flat[idx:]
+
+    if isinstance(model, Iterable):
+        res = []
+        for x in model:
+            val, flat = _unflatten_np_dispatch(flat, x)
+            res.append(val)
+        return res, flat
+
+    raise TypeError(f"Unsupported type in the model: {type(model)}")
+
+
+def _unflatten_np(flat, model):
+    """Wrapper for :func:`_unflatten`.
+
+    Args:
+        flat (array): 1D array of items
+        model (array, Iterable, Number): model nested structure
+
+    Raises:
+        ValueError: if ``flat`` has more elements than ``model``
+    """
+    # pylint:disable=len-as-condition
+    res, tail = _unflatten_np_dispatch(pnp.asarray(flat), model)
+    if len(tail) != 0:
+        raise ValueError("Flattened iterable has more elements than the model.")
+    return res

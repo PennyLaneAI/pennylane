@@ -99,10 +99,6 @@ state. In contrast to embeddings that can in principle be used anywhere in a cir
 state preparation is typically used as the first operation.
 
 .. gallery-item::
-    :description: :doc:`BasisStatePreparation <../code/api/pennylane.BasisStatePreparation>`
-    :figure: _static/templates/state_preparations/basis.png
-
-.. gallery-item::
     :description: :doc:`QutritBasisStatePreparation <../code/api/pennylane.QutritBasisStatePreparation>`
     :figure: _static/templates/state_preparations/basis_qutrit.png
 
@@ -117,6 +113,16 @@ state preparation is typically used as the first operation.
 .. gallery-item::
     :description: :doc:`CosineWindow <../code/api/pennylane.CosineWindow>`
     :figure: _static/templates/state_preparations/thumbnail_cosine_window.png
+
+.. gallery-item::
+    :description: :doc:`QROMStatePreparation <../code/api/pennylane.QROMStatePreparation>`
+    :figure: _static/templates/state_preparations/thumbnail_qrom.png
+
+.. gallery-item::
+    :description: :doc:`MPSPrep <../code/api/pennylane.MPSPrep>`
+    :figure: _static/templates/tensornetworks/MPS_template.png
+
+
 
 .. raw:: html
 
@@ -137,6 +143,10 @@ as addition, multiplication and exponentiation.
 .. gallery-item::
     :description: :doc:`Adder <../code/api/pennylane.Adder>`
     :figure: _static/templates/arithmetic/adder.png
+
+.. gallery-item::
+    :description: :doc:`SemiAdder <../code/api/pennylane.SemiAdder>`
+    :figure: _static/templates/arithmetic/semiadder.png
 
 .. gallery-item::
     :description: :doc:`OutAdder <../code/api/pennylane.OutAdder>`
@@ -331,8 +341,12 @@ Other useful templates which do not belong to the previous categories can be fou
     :figure: _static/templates/subroutines/qsvt.png
 
 .. gallery-item::
+    :description: :doc:`GQSP<../code/api/pennylane.GQSP>`
+    :figure: _static/templates/subroutines/gqsp.png
+
+.. gallery-item::
     :description: :doc:`Select<../code/api/pennylane.Select>`
-    :figure: _static/templates/subroutines/select.png
+    :figure: _static/templates/subroutines/select_cropped.png
 
 .. gallery-item::
     :description: :doc:`ControlledSequence<../code/api/pennylane.ControlledSequence>`
@@ -354,60 +368,20 @@ Other useful templates which do not belong to the previous categories can be fou
     :description: :doc:`PrepSelPrep <../code/api/pennylane.PrepSelPrep>`
     :figure: _static/templates/prepselprep/prepselprep.png
 
+.. gallery-item::
+    :description: :doc:`SelectPauliRot <../code/api/pennylane.SelectPauliRot>`
+    :figure: _static/templates/subroutines/select_pauli_rot_cropped.png
+
+.. gallery-item::
+    :description: :doc:`TemporaryAND <../code/api/pennylane.TemporaryAND>`
+    :figure: _static/templates/subroutines/temporary_and.png
+
 .. raw:: html
 
         <div style='clear:both'></div>
 
 .. _intro_ref_temp_constr:
 
-Broadcasting function
----------------------
-
-PennyLane offers a broadcasting function to easily construct templates: :func:`~.broadcast`
-takes either quantum gates or templates and applies them to wires in a specific pattern.
-
-.. warning::
-
-    While the broadcasting function can make template construction very convenient, it
-    adds an overhead and is therefore not recommended when speed is a major concern.
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Single) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_single.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Double) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_double.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Double Odd) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_double_odd.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Chain) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_chain.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Ring) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_ring.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Pyramid) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_pyramid.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (All-to-All) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_alltoall.png
-
-.. gallery-item::
-    :description: :doc:`Broadcast (Custom) <../code/api/pennylane.broadcast>`
-    :figure: _static/templates/broadcast_custom.png
-
-.. raw:: html
-
-        <div style='clear:both'></div>
-
-.. _intro_ref_temp_init:
 
 Parameter initializations
 -------------------------

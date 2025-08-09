@@ -20,7 +20,10 @@ import pdb
 import sys
 from contextlib import contextmanager
 
-import pennylane as qml
+from pennylane.devices.preprocess import validate_device_wires
+from pennylane.measurements import expval, probs, state
+from pennylane.queuing import QueuingManager
+from pennylane.tape import QuantumScript
 
 
 class PLDB(pdb.Pdb):
@@ -54,7 +57,7 @@ class PLDB(pdb.Pdb):
             TypeError: breakpoints not supported on this device
         """
 
-        if not qml.queuing.QueuingManager.recording() or not cls.has_active_dev():
+        if not QueuingManager.recording() or not cls.has_active_dev():
             raise RuntimeError("Can't call breakpoint outside of a qnode execution.")
 
         if cls.get_active_device().name not in ("default.qubit", "lightning.qubit"):
@@ -105,9 +108,7 @@ class PLDB(pdb.Pdb):
 
         valid_batch = batch_tapes
         if dev.wires:
-            valid_batch = qml.devices.preprocess.validate_device_wires(
-                batch_tapes, wires=dev.wires
-            )[0]
+            valid_batch = validate_device_wires(batch_tapes, wires=dev.wires)[0]
 
         program, new_config = dev.preprocess()
         new_batch, fn = program(valid_batch)
@@ -278,8 +279,8 @@ def debug_state():
         0.        -0.40797128j, 0.        -0.40797128j])
 
     """
-    with qml.queuing.QueuingManager.stop_recording():
-        m = qml.state()
+    with QueuingManager.stop_recording():
+        m = state()
 
     return _measure(m)
 
@@ -337,10 +338,10 @@ def debug_expval(op):
         0.33423772712450256
     """
 
-    qml.queuing.QueuingManager.active_context().remove(op)  # ensure we didn't accidentally queue op
+    QueuingManager.active_context().remove(op)  # ensure we didn't accidentally queue op
 
-    with qml.queuing.QueuingManager.stop_recording():
-        m = qml.expval(op)
+    with QueuingManager.stop_recording():
+        m = expval(op)
 
     return _measure(m)
 
@@ -354,7 +355,7 @@ def debug_probs(wires=None, op=None):
 
     Args:
         wires (Union[Iterable, int, str, list]): the wires the operation acts on
-        op (Union[Observable, MeasurementValue]): observable (with a ``diagonalizing_gates``
+        op (Union[Operator, MeasurementValue]): an observable (with a ``diagonalizing_gates``
             attribute) that rotates the computational basis, or a  ``MeasurementValue``
             corresponding to mid-circuit measurements.
 
@@ -402,12 +403,10 @@ def debug_probs(wires=None, op=None):
 
     """
     if op:
-        qml.queuing.QueuingManager.active_context().remove(
-            op
-        )  # ensure we didn't accidentally queue op
+        QueuingManager.active_context().remove(op)  # ensure we didn't accidentally queue op
 
-    with qml.queuing.QueuingManager.stop_recording():
-        m = qml.probs(wires, op)
+    with QueuingManager.stop_recording():
+        m = probs(wires, op)
 
     return _measure(m)
 
@@ -421,11 +420,11 @@ def _measure(measurement):
     Returns:
         tuple(complex): results from the measurement
     """
-    active_queue = qml.queuing.QueuingManager.active_context()
+    active_queue = QueuingManager.active_context()
     copied_queue = copy.deepcopy(active_queue)
 
     copied_queue.append(measurement)
-    qtape = qml.tape.QuantumScript.from_queue(copied_queue)
+    qtape = QuantumScript.from_queue(copied_queue)
     return PLDB._execute((qtape,))  # pylint: disable=protected-access
 
 
@@ -471,5 +470,5 @@ def debug_tape():
         1: ──H──╰X─┤
 
     """
-    active_queue = qml.queuing.QueuingManager.active_context()
-    return qml.tape.QuantumScript.from_queue(active_queue)
+    active_queue = QueuingManager.active_context()
+    return QuantumScript.from_queue(active_queue)

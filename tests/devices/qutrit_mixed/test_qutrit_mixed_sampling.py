@@ -42,7 +42,6 @@ TWO_QUTRITS = 2
 THREE_QUTRITS = 3
 
 MISMATCH_ERROR = "a and p must have same size"
-MISMATCH_ERROR_JAX = "p must be None or match the shape of a"
 
 ml_frameworks_list = [
     "numpy",
@@ -373,7 +372,7 @@ class TestMeasureWithSamples:
             qml.sample(qml.GellMann(0, 1) @ qml.GellMann(1, 1)), state, shots=shots
         )
         assert results_gel_1s.shape == (shots.total_shots,)
-        assert results_gel_1s.dtype == np.float64 if qml.operation.active_new_opmath() else np.int64
+        assert results_gel_1s.dtype == np.float64
         assert sorted(np.unique(results_gel_1s)) == [-1, 0, 1]
 
     @flaky
@@ -640,7 +639,7 @@ class TestBroadcastingPRNG:
 
         for r in res:
             assert r.shape == expected.shape
-            assert np.allclose(r, expected, atol=0.02)
+            assert np.allclose(r, expected, atol=0.03)
 
 
 @pytest.mark.parametrize(
@@ -654,12 +653,8 @@ class TestHamiltonianSamples:
     """Test that the measure_with_samples function works as expected for
     Hamiltonian and Sum observables"""
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_hamiltonian_expval(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables"""
-
-        if not qml.operation.active_new_opmath():
-            obs = qml.operation.convert_to_legacy_H(obs)
 
         shots = qml.measurements.Shots(10000)
         x, y = np.array(0.67), np.array(0.95)
@@ -674,12 +669,8 @@ class TestHamiltonianSamples:
         assert isinstance(res, np.float64)
         assert np.allclose(res, expected, atol=APPROX_ATOL)
 
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
     def test_hamiltonian_expval_shot_vector(self, obs, seed):
         """Test that sampling works well for Hamiltonian and Sum observables with a shot vector"""
-
-        if not qml.operation.active_new_opmath():
-            obs = qml.operation.convert_to_legacy_H(obs)
 
         shots = qml.measurements.Shots((10000, 100000))
         x, y = np.array(0.67), np.array(0.95)
@@ -856,7 +847,7 @@ class TestSampleProbsJax:
         is_state_batched = False
         state_len = 1
 
-        with pytest.raises(ValueError, match=MISMATCH_ERROR_JAX):
+        with pytest.raises(ValueError):  # error msg determined by jax, not us
             _sample_probs_jax(
                 probs, self.shots, num_wires, is_state_batched, self.jax_key, state_len
             )

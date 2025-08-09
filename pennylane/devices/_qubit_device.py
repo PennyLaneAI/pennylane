@@ -18,7 +18,7 @@ This module contains the :class:`QubitDevice` abstract base class.
 
 # For now, arguments may be different from the signatures provided in Device
 # e.g. instead of expval(self, observable, wires, par) have expval(self, observable)
-# pylint: disable=arguments-differ, abstract-method, no-value-for-parameter,too-many-instance-attributes,too-many-branches, no-member, bad-option-value, arguments-renamed
+# pylint: disable=arguments-differ,too-many-branches,no-member,bad-option-value,arguments-renamed
 # pylint: disable=too-many-arguments
 import abc
 import inspect
@@ -26,11 +26,11 @@ import itertools
 import logging
 import warnings
 from collections import defaultdict
-from typing import Union
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.math import multiply as qmlmul
 from pennylane.math import sum as qmlsum
 from pennylane.measurements import (
@@ -157,7 +157,7 @@ class QubitDevice(Device):
         "Prod",
     }
 
-    measurement_map = defaultdict(lambda: "")  # e.g. {SampleMP: "sample"}
+    measurement_map = defaultdict(str)  # e.g. {SampleMP: "sample"}
     """Mapping used to override the logic of measurement processes. The dictionary maps a
     measurement class to a string containing the name of a device's method that overrides the
     measurement process. The method defined by the device should have the following arguments:
@@ -184,9 +184,9 @@ class QubitDevice(Device):
         super().__init__(wires=wires, shots=shots, analytic=analytic)
 
         if "float" not in str(r_dtype):
-            raise qml.DeviceError("Real datatype must be a floating point type.")
+            raise DeviceError("Real datatype must be a floating point type.")
         if "complex" not in str(c_dtype):
-            raise qml.DeviceError("Complex datatype must be a complex floating point type.")
+            raise DeviceError("Complex datatype must be a complex floating point type.")
 
         self.C_DTYPE = c_dtype
         self.R_DTYPE = r_dtype
@@ -235,7 +235,7 @@ class QubitDevice(Device):
             circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             array[float]: measured value(s)
@@ -256,12 +256,7 @@ class QubitDevice(Device):
         has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
         if has_mcm and "mid_measurements" not in kwargs:
             results = []
-            aux_circ = qml.tape.QuantumScript(
-                circuit.operations,
-                circuit.measurements,
-                shots=[1],
-                trainable_params=circuit.trainable_params,
-            )
+            aux_circ = circuit.copy(shots=[1])
             # Some devices like Lightning-Kokkos use `self.shots` to update `_samples`,
             # and hence we update `self.shots` temporarily for this loop
             shots_copy = self.shots
@@ -351,7 +346,7 @@ class QubitDevice(Device):
             circuit (~.tape.QuantumTape): circuit to execute on the device
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if the observable is not supported
 
         Returns:
             tuple: statistics for each shot item from the shot vector
@@ -368,7 +363,7 @@ class QubitDevice(Device):
             r = self.statistics(circuit, shot_range=[s1, s2], bin_size=shot_tuple.shots)
 
             # This will likely be required:
-            # if qml.math.get_interface(*r) == "jax":  # pylint: disable=protected-access
+            # if qml.math.get_interface(*r) == "jax":
             #     r = r[0]
 
             if single_measurement:
@@ -547,7 +542,7 @@ class QubitDevice(Device):
 
     def _measure(
         self,
-        measurement: Union[SampleMeasurement, StateMeasurement],
+        measurement: SampleMeasurement | StateMeasurement,
         shot_range=None,
         bin_size=None,
     ):
@@ -604,7 +599,7 @@ class QubitDevice(Device):
                 provided, the entire shot range is treated as a single bin.
 
         Raises:
-            QuantumFunctionError: if the value of :attr:`~.Observable.return_type` is not supported
+            QuantumFunctionError: if a measurement is not supported
 
         Returns:
             Union[float, List[float]]: the corresponding statistics
@@ -639,7 +634,7 @@ class QubitDevice(Device):
         results = []
 
         for m in measurements:
-            # TODO: Remove this when all overriden measurements support the `MeasurementProcess` class
+            # TODO: Remove this when all overridden measurements support the `MeasurementProcess` class
             if isinstance(m.mv, list):
                 # MeasurementProcess stores information needed for processing if terminal measurement
                 # uses a list of mid-circuit measurement values
@@ -647,7 +642,7 @@ class QubitDevice(Device):
             else:
                 obs = m.obs or m.mv
                 obs = m if obs is None else obs
-            # Check if there is an overriden version of the measurement process
+            # Check if there is an overridden version of the measurement process
             if method := getattr(self, self.measurement_map[type(m)], False):
                 if isinstance(m, MeasurementTransform):
                     result = method(tape=circuit)
@@ -682,7 +677,7 @@ class QubitDevice(Device):
                     self.apply([qml.adjoint(g, lazy=False) for g in reversed(diagonalizing_gates)])
             elif isinstance(m, StateMP):
                 if len(measurements) > 1:
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         "The state or density matrix cannot be returned in combination "
                         "with other return types"
                     )
@@ -702,7 +697,7 @@ class QubitDevice(Device):
 
             elif isinstance(m, VnEntropyMP):
                 if self.wires.labels != tuple(range(self.num_wires)):
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         "Returning the Von Neumann entropy is not supported when using custom wire labels"
                     )
 
@@ -722,7 +717,7 @@ class QubitDevice(Device):
 
             elif isinstance(m, MutualInfoMP):
                 if self.wires.labels != tuple(range(self.num_wires)):
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         "Returning the mutual information is not supported when using custom wire labels"
                     )
 
@@ -743,7 +738,7 @@ class QubitDevice(Device):
 
             elif isinstance(m, ClassicalShadowMP):
                 if len(measurements) > 1:
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         "Classical shadows cannot be returned in combination "
                         "with other return types"
                     )
@@ -751,7 +746,7 @@ class QubitDevice(Device):
 
             elif isinstance(m, ShadowExpvalMP):
                 if len(measurements) > 1:
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         "Classical shadows cannot be returned in combination "
                         "with other return types"
                     )
@@ -763,13 +758,11 @@ class QubitDevice(Device):
             elif isinstance(m, (SampleMeasurement, StateMeasurement)):
                 result = self._measure(m, shot_range=shot_range, bin_size=bin_size)
 
-            elif m.return_type is not None:
+            else:
                 name = obs.name if isinstance(obs, qml.operation.Operator) else type(obs).__name__
-                raise qml.QuantumFunctionError(
+                raise QuantumFunctionError(
                     f"Unsupported return type specified for observable {name}"
                 )
-            else:
-                result = None
 
             # 2. Post-process statistics results (if need be)
             if isinstance(
@@ -819,14 +812,12 @@ class QubitDevice(Device):
             array or tensor: the state or the density matrix of the device
         """
         if not self.capabilities().get("returns_state"):
-            raise qml.QuantumFunctionError(
-                "The current device is not capable of returning the state"
-            )
+            raise QuantumFunctionError("The current device is not capable of returning the state")
 
         state = getattr(self, "state", None)
 
         if state is None:
-            raise qml.QuantumFunctionError("The state is not available in the current device")
+            raise QuantumFunctionError("The state is not available in the current device")
 
         if wires:
             density_matrix = self.density_matrix(wires)
@@ -870,7 +861,7 @@ class QubitDevice(Device):
             array[int]: the sampled basis states
         """
         if self.shots is None:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "The number of shots has to be explicitly set on the device "
                 "when using sample-based measurements."
             )
@@ -1010,7 +1001,10 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
+        except (
+            QuantumFunctionError,
+            NotImplementedError,
+        ) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the Von Neumman entropy with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1037,7 +1031,10 @@ class QubitDevice(Device):
         """
         try:
             state = self.density_matrix(wires=self.wires)
-        except (qml.QuantumFunctionError, NotImplementedError) as e:  # pragma: no cover
+        except (
+            QuantumFunctionError,
+            NotImplementedError,
+        ) as e:  # pragma: no cover
             raise NotImplementedError(
                 f"Cannot compute the mutual information with device {self.name} that is not capable of returning the "
                 f"state. "
@@ -1330,7 +1327,7 @@ class QubitDevice(Device):
             array[float]: array of the resulting marginal probabilities.
         """
         dim = 2**self.num_wires
-        batch_size = self._get_batch_size(prob, (dim,), dim)  # pylint: disable=assignment-from-none
+        batch_size = self._get_batch_size(prob, (dim,), dim)
 
         if wires is None:
             # no need to marginalize
@@ -1435,8 +1432,7 @@ class QubitDevice(Device):
         """Groups the samples into a dictionary showing number of occurences for
         each possible outcome.
 
-        The format of the dictionary depends on mp.return_type, which is set when
-        calling measurements.counts by setting the kwarg all_outcomes (bool). By default,
+        The format of the dictionary depends on whether the MeasurementProcess CountsMP returns all counts or not. By default,
         the dictionary will only contain the observed outcomes. Optionally (all_outcomes=True)
         the dictionary will instead contain all possible outcomes, with a count of 0
         for those not observed. See example.
@@ -1515,7 +1511,7 @@ class QubitDevice(Device):
         """Return samples of an observable.
 
         Args:
-            observable (Observable): the observable to sample
+            observable (Operator): the observable to sample
             shot_range (tuple[int]): 2-tuple of integers specifying the range of samples
                 to use. If not specified, all samples are used.
             bin_size (int): Divides the shot range into bins of size ``bin_size``, and
@@ -1610,9 +1606,7 @@ class QubitDevice(Device):
             else samples.reshape((bin_size, -1))
         )
 
-    def adjoint_jacobian(
-        self, tape: QuantumScript, starting_state=None, use_device_state=False
-    ):  # pylint: disable=too-many-statements
+    def adjoint_jacobian(self, tape: QuantumScript, starting_state=None, use_device_state=False):
         """Implements the adjoint method outlined in
         `Jones and Gacon <https://arxiv.org/abs/2009.02823>`__ to differentiate an input tape.
 
@@ -1630,7 +1624,7 @@ class QubitDevice(Device):
             * Cannot differentiate with respect to state-prep operations.
 
             * Does not work for parametrized observables like
-              :class:`~.Hamiltonian` or :class:`~.Hermitian`.
+              :class:`~.ops.LinearCombination` or :class:`~.Hermitian`.
 
         Args:
             tape (.QuantumTape): circuit that the function takes the gradient of
@@ -1651,7 +1645,7 @@ class QubitDevice(Device):
                 or contains a multi-parameter operation aside from :class:`~.Rot`
         """
         if tape.batch_size is not None:
-            raise qml.QuantumFunctionError(
+            raise QuantumFunctionError(
                 "Parameter broadcasting is not supported with adjoint differentiation"
             )
 
@@ -1662,18 +1656,18 @@ class QubitDevice(Device):
 
         for m in tape.measurements:
             if not isinstance(m, ExpectationMP):
-                raise qml.QuantumFunctionError(
+                raise QuantumFunctionError(
                     "Adjoint differentiation method does not support"
                     f" measurement {m.__class__.__name__}"
                 )
 
             if not m.obs.has_matrix:
-                raise qml.QuantumFunctionError(
+                raise QuantumFunctionError(
                     "Adjoint differentiation method does not support Hamiltonian observables."
-                )
+                )  # pragma: no cover
 
         if self.shot_vector is not None:
-            raise qml.QuantumFunctionError("Adjoint does not support shot vectors.")
+            raise QuantumFunctionError("Adjoint does not support shot vectors.")
 
         if self.shots is not None:
             warnings.warn(
@@ -1700,18 +1694,18 @@ class QubitDevice(Device):
         for op in reversed(tape.operations):
             if op.num_params > 1:
                 if not isinstance(op, qml.Rot):
-                    raise qml.QuantumFunctionError(
+                    raise QuantumFunctionError(
                         f"The {op.name} operation is not supported using "
                         'the "adjoint" differentiation method'
                     )
                 ops = op.decomposition()
                 expanded_ops.extend(reversed(ops))
-            elif op.name not in ("StatePrep", "QubitStateVector", "BasisState", "Snapshot"):
+            elif op.name not in ("StatePrep", "BasisState", "Snapshot"):
                 expanded_ops.append(op)
 
         trainable_params = []
         for k in tape.trainable_params:
-            # pylint: disable=protected-access
+
             mp_or_op = tape[tape.par_info[k]["op_idx"]]
             if isinstance(mp_or_op, MeasurementProcess):
                 warnings.warn(

@@ -14,7 +14,7 @@
 """
 This submodule defines a base class for composite operations.
 """
-# pylint: disable=too-many-instance-attributes,invalid-sequence-index
+# pylint: disable=invalid-sequence-index
 import abc
 import copy
 from collections.abc import Callable
@@ -88,6 +88,7 @@ class CompositeOp(Operator):
         self._pauli_rep = self._build_pauli_rep() if _pauli_rep is None else _pauli_rep
         self.queue()
         self._batch_size = _UNSET_BATCH_SIZE
+        self._hyperparameters = {"operands": operands}
 
     @handle_recursion_error
     def _check_batching(self):
@@ -100,6 +101,8 @@ class CompositeOp(Operator):
         self._batch_size = batch_sizes.pop() if batch_sizes else None
 
     def __repr__(self):
+        if len(self) == 0:
+            return f"{type(self).__name__}()"
         return f" {self._op_symbol} ".join(
             [f"({op})" if op.arithmetic_depth > 0 else f"{op}" for op in self]
         )
@@ -177,7 +180,7 @@ class CompositeOp(Operator):
     @property
     @handle_recursion_error
     def has_matrix(self):
-        return all(op.has_matrix or isinstance(op, qml.ops.Hamiltonian) for op in self)
+        return all(op.has_matrix for op in self)
 
     @handle_recursion_error
     def eigvals(self):
@@ -193,12 +196,12 @@ class CompositeOp(Operator):
         for ops in self.overlapping_ops:
             if len(ops) == 1:
                 eigvals.append(
-                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                    math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
                 )
             else:
                 tmp_composite = self.__class__(*ops)
                 eigvals.append(
-                    qml.utils.expand_vector(
+                    math.expand_vector(
                         tmp_composite.eigendecomposition["eigval"],
                         list(tmp_composite.wires),
                         list(self.wires),

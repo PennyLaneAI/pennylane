@@ -15,21 +15,21 @@
 The null.qubit device is a no-op device, useful for resource estimation, and for
 benchmarking PennyLane's auxiliary functionality outside direct circuit evaluations.
 """
-# pylint:disable=unused-argument
+
 
 import inspect
+import json
 import logging
+import time
+from collections import defaultdict
 from dataclasses import replace
-from functools import singledispatch
+from functools import lru_cache, singledispatch
 from numbers import Number
-from typing import Optional, Union
 
 import numpy as np
 
 from pennylane import math
-from pennylane.devices.execution_config import ExecutionConfig
 from pennylane.devices.modifiers import simulator_tracking, single_tape_support
-from pennylane.devices.qubit.simulate import INTERFACE_TO_LIKE
 from pennylane.measurements import (
     ClassicalShadowMP,
     CountsMP,
@@ -39,37 +39,47 @@ from pennylane.measurements import (
     ProbabilityMP,
     StateMP,
 )
+from pennylane.ops.op_math import Adjoint, Controlled, ControlledOp
 from pennylane.tape import QuantumScriptOrBatch
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
 from . import DefaultQubit, Device
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .preprocess import decompose
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+RESOURCES_FNAME_PREFIX = "__pennylane_resources_data_"
+
 
 @singledispatch
 def zero_measurement(
-    mp: MeasurementProcess, num_device_wires, shots: Optional[int], batch_size: int, interface: str
+    mp: MeasurementProcess, num_device_wires, shots: int | None, batch_size: int, interface: str
 ):
     """Create all-zero results for various measurement processes."""
     return _zero_measurement(mp, num_device_wires, shots, batch_size, interface)
 
 
 def _zero_measurement(
-    mp: MeasurementProcess, num_device_wires: int, shots: Optional[int], batch_size, interface
+    mp: MeasurementProcess, num_device_wires: int, shots: int | None, batch_size, interface
 ):
     shape = mp.shape(shots, num_device_wires)
     if batch_size is not None:
         shape = (batch_size,) + shape
+    if "jax" not in interface:
+        return _cached_zero_return(shape, interface, mp.numeric_type)
     return math.zeros(shape, like=interface, dtype=mp.numeric_type)
 
 
+@lru_cache(maxsize=128)
+def _cached_zero_return(shape, interface, dtype):
+    return math.zeros(shape, like=interface, dtype=dtype)
+
+
 @zero_measurement.register
-def _(mp: ClassicalShadowMP, num_device_wires, shots: Optional[int], batch_size, interface):
+def _(mp: ClassicalShadowMP, num_device_wires, shots: int | None, batch_size, interface):
     if batch_size is not None:
         # shapes = [(batch_size,) + shape for shape in shapes]
         raise ValueError(
@@ -107,9 +117,9 @@ zero_measurement.register(DensityMatrixMP)(_zero_measurement)
 @zero_measurement.register(StateMP)
 @zero_measurement.register(ProbabilityMP)
 def _(
-    mp: Union[StateMP, ProbabilityMP],
+    mp: StateMP | ProbabilityMP,
     num_device_wires: int,
-    shots: Optional[int],
+    shots: int | None,
     batch_size,
     interface,
 ):
@@ -120,8 +130,51 @@ def _(
     return math.asarray(state, like=interface)
 
 
-def _interface(config: ExecutionConfig) -> str:
-    return INTERFACE_TO_LIKE[config.interface] if config.gradient_method == "backprop" else "numpy"
+def _interface(config: ExecutionConfig):
+    return config.interface.get_like() if config.gradient_method == "backprop" else "numpy"
+
+
+def _simulate_resource_use(circuit, outfile):
+    num_wires = len(circuit.wires)
+    gate_types = defaultdict(int)
+
+    for op in circuit.operations:
+        controls = 0
+        adj = False
+
+        while hasattr(op, "base"):
+            if type(op) in (Controlled, ControlledOp):
+                # Don't check this with `isinstance` to avoid unrolling ops like CNOT
+                controls += len(op.control_wires)
+            elif isinstance(op, Adjoint):
+                adj = not adj
+            else:
+                break  # Certain gates have "base" but shouldn't be broken down (like CNOT)
+            # NOTE: Pow, Exp, Add, etc. intentionally not handled to be compatible with Catalyst
+            op = op.base
+
+        # Barrier is not a gate and takes no resources, so we skip it
+        if op.name == "Barrier":
+            # (this confuses codecov, despite being tested)
+            continue  # pragma: no cover
+
+        name = op.name
+        if adj:
+            name = f"Adj({name})"
+        if controls:
+            name = f"{controls if controls > 1 else ''}C({name})"
+
+        gate_types[name] += 1
+    # NOTE: For now, this information is being printed to match the behaviour of catalyst resource tracking.
+    #  In the future it may be better to return this information in a more structured way.
+    json.dump(
+        {
+            "num_wires": num_wires,
+            "num_gates": sum(gate_types.values()),
+            "gate_types": gate_types,
+        },
+        outfile,
+    )
 
 
 @simulator_tracking
@@ -136,6 +189,10 @@ class NullQubit(Device):
             (``['aux_wire', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
+        track_resources (bool): If True, track the number of resources used by the device and save them to a JSON file.
+            The filename will match ``__pennylane_resources_data_*.json`` where the wildcard (asterisk) is replaced by
+            the timestamp of when execution began in nanoseconds since Unix EPOCH. This argument is experimental and
+            subject to change.
 
     **Example:**
 
@@ -182,8 +239,8 @@ class NullQubit(Device):
             circuit(params)
 
     >>> tracker.history["resources"][0]
-    wires: 100
-    gates: 10000
+    num_wires: 100
+    num_gates: 10000
     depth: 502
     shots: Shots(total=None)
     gate_types:
@@ -220,13 +277,24 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    def __init__(self, wires=None, shots=None) -> None:
+    def __init__(self, wires=None, shots=None, track_resources=False) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
+        self._track_resources = track_resources
+
+        # this is required by Catalyst to toggle the tracker at runtime
+        self.device_kwargs = {"track_resources": track_resources}
 
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
         results = []
+
+        if self._track_resources:
+            timestamp = int(time.time() * 1e9)  # nanoseconds since epoch
+            resources_fname = f"{RESOURCES_FNAME_PREFIX}{timestamp}.json"
+            with open(resources_fname, "x", encoding="utf-8") as f:
+                _simulate_resource_use(circuit, f)
+
         for s in circuit.shots or [None]:
             r = tuple(
                 zero_measurement(mp, num_device_wires, s, circuit.batch_size, interface)
@@ -278,9 +346,12 @@ class NullQubit(Device):
 
     # pylint: disable=cell-var-from-loop
     def preprocess(
-        self, execution_config=DefaultExecutionConfig
+        self, execution_config: ExecutionConfig | None = None
     ) -> tuple[TransformProgram, ExecutionConfig]:
-        program, _ = DefaultQubit.preprocess(self, execution_config)
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
+        program = DefaultQubit.preprocess_transforms(self, execution_config)
         for t in program:
             if t.transform == decompose.transform:
                 original_stopping_condition = t.kwargs["stopping_condition"]
@@ -319,8 +390,10 @@ class NullQubit(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+        execution_config: ExecutionConfig | None = None,
+    ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         if logger.isEnabledFor(logging.DEBUG):  # pragma: no cover
             logger.debug(
                 """Entry with args=(circuits=%s) called by=%s""",
@@ -355,15 +428,19 @@ class NullQubit(Device):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         jacs = tuple(self._derivatives(c, _interface(execution_config)) for c in circuits)
 
@@ -373,16 +450,20 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_jvp(
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         jvps = tuple(self._jvp(c, _interface(execution_config)) for c in circuits)
 
@@ -392,16 +473,38 @@ class NullQubit(Device):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
 
     def execute_and_compute_vjp(
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         results = tuple(self._simulate(c, _interface(execution_config)) for c in circuits)
         vjps = tuple(self._vjp(c, _interface(execution_config)) for c in circuits)
         return results, vjps
+
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=unused-argument
+    def eval_jaxpr(
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args, execution_config=None
+    ) -> list:
+        from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
+            AbstractMeasurement,
+        )
+
+        def zeros_like(var):
+            if isinstance(var.aval, AbstractMeasurement):
+                shots = self.shots.total_shots
+                s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
+                return math.zeros(s, dtype=dtype, like="jax")
+            return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
+
+        return [zeros_like(var) for var in jaxpr.outvars]

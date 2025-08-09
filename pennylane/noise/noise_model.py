@@ -15,7 +15,7 @@
 
 import inspect
 
-import pennylane as qml
+from pennylane.boolean_fn import BooleanFn
 
 
 class NoiseModel:
@@ -43,7 +43,7 @@ class NoiseModel:
           a callable object built via :ref:`constructor functions <intro_boolean_fn>` in
           the ``qml.noise`` module, or their bitwise combination.
         - The definition of ``noise_fn(Union[op, mp], **kwargs)`` should have the operations
-          in the same the order in which they are to be queued for an operation ``op`` or
+          in the same order in which they are to be queued for an operation ``op`` or
           measurement process ``mp``, whenever the corresponding ``conditional`` evaluates
           to ``True``.
         - Each ``conditional`` in ``meas_map`` is evaluated on each measurement process in
@@ -166,7 +166,7 @@ class NoiseModel:
     def check_model(model: dict) -> None:
         """Method to validate a ``{conditional -> noise_fn}`` map for constructing a noise model."""
         for condition, noise in model.items():
-            if not isinstance(condition, qml.BooleanFn):
+            if not isinstance(condition, BooleanFn):
                 raise ValueError(
                     f"{condition} must be a boolean conditional, i.e., an instance of "
                     "BooleanFn or one of its subclasses."

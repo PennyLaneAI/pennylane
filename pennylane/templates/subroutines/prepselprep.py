@@ -14,25 +14,33 @@
 """
 Contains the PrepSelPrep template.
 """
-# pylint: disable=arguments-differ,import-outside-toplevel,too-many-arguments
+# pylint: disable=arguments-differ
 import copy
 
-import pennylane as qml
+from pennylane import math
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
+from pennylane.ops import GlobalPhase, LinearCombination, Prod, StatePrep, adjoint, prod
+from pennylane.templates.embeddings import AmplitudeEmbedding
+from pennylane.wires import Wires
+
+from .select import Select
 
 
 def _get_new_terms(lcu):
     """Compute a new sum of unitaries with positive coefficients"""
     coeffs, ops = lcu.terms()
-    coeffs = qml.math.stack(coeffs)
-    angles = qml.math.angle(coeffs)
-    new_ops = []
+    coeffs = math.stack(coeffs)
+    angles = math.angle(coeffs)
+    # The following will produce a nested `Prod` object for a `Prod` object in`ops`
+    new_ops = [prod(op, GlobalPhase(-angle, wires=op.wires)) for angle, op in zip(angles, ops)]
 
-    for angle, op in zip(angles, ops):
-        new_op = op @ qml.GlobalPhase(-angle, wires=op.wires)
-        new_ops.append(new_op)
-
-    return qml.math.abs(coeffs), new_ops
+    return math.abs(coeffs), new_ops
 
 
 class PrepSelPrep(Operation):
@@ -71,24 +79,31 @@ class PrepSelPrep(Operation):
      [ 0.75  0.25]]
     """
 
+    resource_keys = frozenset({"num_control", "op_reps"})
+
+    @property
+    def resource_params(self):
+        ops = self.lcu.terms()[1]
+        op_reps = tuple(resource_rep(type(op), **op.resource_params) for op in ops)
+        return {"op_reps": op_reps, "num_control": len(self.control)}
+
     grad_method = None
 
     def __init__(self, lcu, control=None, id=None):
 
         coeffs, ops = lcu.terms()
-        control = qml.wires.Wires(control)
-        self.hyperparameters["lcu"] = qml.ops.LinearCombination(coeffs, ops)
+        control = Wires(control)
+        self.hyperparameters["lcu"] = LinearCombination(coeffs, ops)
         self.hyperparameters["coeffs"] = coeffs
         self.hyperparameters["ops"] = ops
         self.hyperparameters["control"] = control
 
         if any(
-            control_wire in qml.wires.Wires.all_wires([op.wires for op in ops])
-            for control_wire in control
+            control_wire in Wires.all_wires([op.wires for op in ops]) for control_wire in control
         ):
             raise ValueError("Control wires should be different from operation wires.")
 
-        target_wires = qml.wires.Wires.all_wires([op.wires for op in ops])
+        target_wires = Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
@@ -107,25 +122,39 @@ class PrepSelPrep(Operation):
     def map_wires(self, wire_map: dict) -> "PrepSelPrep":
         new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
         new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
-        new_lcu = qml.ops.LinearCombination(self.hyperparameters["coeffs"], new_ops)
+        new_lcu = LinearCombination(self.hyperparameters["coeffs"], new_ops)
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
         return self.compute_decomposition(self.lcu, self.control)
+
+    def label(self, decimals=None, base_label=None, cache=None) -> str:
+        op_label = base_label or self.__class__.__name__
+        if cache is None or not isinstance(cache.get("matrices", None), list):
+            return op_label if self._id is None else f'{op_label}("{self._id}")'
+
+        coeffs = math.array(self.coeffs)
+        shape = math.shape(coeffs)
+        for i, mat in enumerate(cache["matrices"]):
+            if shape == math.shape(mat) and math.allclose(coeffs, mat):
+                str_wo_id = f"{op_label}(M{i})"
+                break
+        else:
+            mat_num = len(cache["matrices"])
+            cache["matrices"].append(coeffs)
+            str_wo_id = f"{op_label}(M{mat_num})"
+
+        return str_wo_id if self._id is None else f'{str_wo_id[:-1]},"{self._id}")'
 
     @staticmethod
     def compute_decomposition(lcu, control):
         coeffs, ops = _get_new_terms(lcu)
 
         decomp_ops = [
-            qml.AmplitudeEmbedding(
-                qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
-            ),
-            qml.Select(ops, control),
-            qml.adjoint(
-                qml.AmplitudeEmbedding(
-                    qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control
-                )
+            AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control),
+            Select(ops, control),
+            adjoint(
+                AmplitudeEmbedding(math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
             ),
         ]
 
@@ -185,3 +214,27 @@ class PrepSelPrep(Operation):
     def wires(self):
         """All wires involved in the operation."""
         return self.hyperparameters["control"] + self.hyperparameters["target_wires"]
+
+
+def _prepselprep_resources(op_reps, num_control):
+    prod_reps = tuple(
+        resource_rep(Prod, resources={resource_rep(GlobalPhase): 1, rep: 1}) for rep in op_reps
+    )
+    return {
+        resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control): 1,
+        resource_rep(StatePrep, num_wires=num_control): 1,
+        adjoint_resource_rep(StatePrep, base_params={"num_wires": num_control}): 1,
+    }
+
+
+# pylint: disable=unused-argument, too-many-arguments
+@register_resources(_prepselprep_resources)
+def _prepselprep_decomp(*_, wires, lcu, coeffs, ops, control, target_wires):
+    coeffs, ops = _get_new_terms(lcu)
+    sqrt_coeffs = math.sqrt(coeffs)
+    StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control)
+    Select(ops, control)
+    adjoint(StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control))
+
+
+add_decomps(PrepSelPrep, _prepselprep_decomp)

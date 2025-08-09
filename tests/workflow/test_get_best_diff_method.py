@@ -55,7 +55,7 @@ class CustomDeviceWithDiffMethod(qml.devices.Device):
 class TestValidation:
     """Tests for QNode creation and validation"""
 
-    @pytest.mark.autograd
+    @pytest.mark.jax
     def test_best_method_is_device(self):
         """Test that the method for determining the best diff method
         for a device that is a child of qml.devices.Device and has a
@@ -63,7 +63,7 @@ class TestValidation:
 
         dev = CustomDeviceWithDiffMethod()
         qn_jax = qml.QNode(dummyfunc, dev, "jax")
-        qn_none = qml.QNode(dummyfunc, dev, None)
+        qn_none = qml.QNode(dummyfunc, dev)
 
         res = get_best_diff_method(qn_jax)()
         assert res == "device"
@@ -71,6 +71,7 @@ class TestValidation:
         res = get_best_diff_method(qn_none)()
         assert res == "device"
 
+    @pytest.mark.all_interfaces
     @pytest.mark.parametrize("interface", ["jax", "tensorflow", "torch", "autograd"])
     def test_best_method_is_backprop(self, interface):
         """Test that the method for determining the best diff method
@@ -109,3 +110,20 @@ class TestValidation:
 
         res = get_best_diff_method(qn)(0.5)
         assert res == "parameter-shift"
+
+    def test_best_method_with_transforms(self):
+        """Test that transforms and execution parameters affect the supported differentiation method."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        x = qml.numpy.array(0.5)
+
+        original_method = get_best_diff_method(circuit)(x)
+        metric_tensor_method = get_best_diff_method(qml.metric_tensor(circuit))(x)
+
+        assert original_method == "adjoint"
+
+        assert metric_tensor_method == "parameter-shift"

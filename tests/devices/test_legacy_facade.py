@@ -28,6 +28,7 @@ from pennylane.devices.legacy_facade import (
     legacy_device_batch_transform,
     legacy_device_expand_fn,
 )
+from pennylane.exceptions import DeviceError
 
 
 class DummyDevice(qml.devices.LegacyDevice):
@@ -56,7 +57,7 @@ class DummyDevice(qml.devices.LegacyDevice):
 
 def test_double_facade_raises_error():
     """Test that a RuntimeError is raised if a facaded device is passed to constructor"""
-    dev = qml.device("default.mixed", wires=1)
+    dev = qml.device("default.qutrit", wires=1)
 
     with pytest.raises(RuntimeError, match="already-facaded device can not be wrapped"):
         qml.devices.LegacyDeviceFacade(dev)
@@ -72,7 +73,7 @@ def test_error_if_not_legacy_device():
 
 def test_copy():
     """Test that copy works correctly"""
-    dev = qml.device("default.mixed", wires=1)
+    dev = qml.device("default.qutrit", wires=1)
 
     for copied_devs in (copy.copy(dev), copy.deepcopy(dev)):
         assert copied_devs is not dev
@@ -121,22 +122,28 @@ def test_debugger():
     assert qml.math.allclose(res["execution_results"], 0)
 
 
-def test_shot_distribution():
+@pytest.mark.parametrize(
+    "execution_config",
+    (None, ExecutionConfig(gradient_keyword_arguments={"method": "new_gradient"})),
+)
+def test_shot_distribution(execution_config):
     """Test that different numbers of shots in a batch all get executed."""
 
     class DummyJacobianDevice(DummyDevice):
 
         _capabilities = {"provides_jacobian": True}
 
-        def adjoint_jacobian(self, circuit):  # pylint: disable=unused-argument
+        def new_gradient(self, circuit):  # pylint: disable=unused-argument
             return 0
+
+        def jacobian(self, circuit):  # pylint: disable=unused-argument
+            return 1
 
     dev = LegacyDeviceFacade(DummyJacobianDevice())
 
     tape1 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=5)
     tape2 = qml.tape.QuantumScript([], [qml.expval(qml.Z(0))], shots=100)
 
-    execution_config = ExecutionConfig(gradient_keyword_arguments={"method": "adjoint_jacobian"})
     with dev.tracker:
         dev.execute((tape1, tape2))
     assert dev.tracker.history["shots"] == [5, 100]
@@ -163,7 +170,7 @@ def test_legacy_device_expand_fn():
         [qml.X(0), qml.CNOT((0, 1)), qml.RX(0.5, 0), qml.CNOT((0, 1))], [qml.state()]
     )
     (new_tape,), fn = legacy_device_expand_fn(tape, device=DummyDevice())
-    assert qml.equal(new_tape, expected)
+    qml.assert_equal(new_tape, expected)
     assert fn(("A",)) == "A"
 
 
@@ -173,8 +180,8 @@ def test_legacy_device_batch_transform():
     tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0) + qml.Y(0))])
     (tape1, tape2), fn = legacy_device_batch_transform(tape, device=DummyDevice())
 
-    assert qml.equal(tape1, qml.tape.QuantumScript([], [qml.expval(qml.X(0))]))
-    assert qml.equal(tape2, qml.tape.QuantumScript([], [qml.expval(qml.Y(0))]))
+    qml.assert_equal(tape1, qml.tape.QuantumScript([], [qml.expval(qml.X(0))]))
+    qml.assert_equal(tape2, qml.tape.QuantumScript([], [qml.expval(qml.Y(0))]))
     assert fn((1.0, 2.0)) == np.array(3.0)
 
 
@@ -215,7 +222,7 @@ def test_preprocessing_program():
     """Test the population of the preprocessing program."""
 
     dev = DummyDevice(wires=(0, 1))
-    program, _ = LegacyDeviceFacade(dev).preprocess()
+    program = LegacyDeviceFacade(dev).preprocess_transforms()
 
     assert (
         program[0].transform == legacy_device_batch_transform.transform
@@ -252,7 +259,7 @@ def test_preprocessing_program_supports_mid_measure():
         _capabilities = {"supports_mid_measure": True}
 
     dev = MidMeasureDev()
-    program, _ = LegacyDeviceFacade(dev).preprocess()
+    program = LegacyDeviceFacade(dev).preprocess_transforms()
     assert qml.defer_measurements not in program
 
 
@@ -292,13 +299,13 @@ class TestGradientSupport:
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="device"))
         assert not dev.supports_derivatives(ExecutionConfig(gradient_method="param_shift"))
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="device"))
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="adjoint"))
 
-        with pytest.raises(qml.DeviceError):
+        with pytest.raises(DeviceError):
             dev.preprocess(ExecutionConfig(gradient_method="backprop"))
 
     def test_adjoint_support(self):
@@ -372,7 +379,7 @@ class TestGradientSupport:
         assert dev._validate_device_method(qml.tape.QuantumScript())
 
         config = qml.devices.ExecutionConfig(gradient_method="best")
-        _, processed_config = dev.preprocess(config)
+        processed_config = dev.setup_execution_config(config)
         assert processed_config.use_device_gradient is True
         assert processed_config.grad_on_execution is True
 
@@ -404,4 +411,4 @@ class TestGradientSupport:
         assert dev.supports_derivatives(qml.devices.ExecutionConfig(gradient_method="backprop"))
 
         config = qml.devices.ExecutionConfig(gradient_method="backprop", use_device_gradient=True)
-        assert dev.preprocess(config)[1] is config  # unchanged
+        assert dev.setup_execution_config(config) is config  # unchanged

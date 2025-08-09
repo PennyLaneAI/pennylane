@@ -18,11 +18,11 @@ import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from functools import partial
-from typing import Optional, Union
 
 import numpy as np
 
 import pennylane as qml
+from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.ops import _qutrit__channel__ops__ as channels
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
@@ -31,7 +31,7 @@ from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .default_qutrit import DefaultQutrit
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
@@ -55,11 +55,9 @@ observables = {
 
 def observable_stopping_condition(obs: qml.operation.Operator) -> bool:
     """Specifies whether an observable is accepted by DefaultQutritMixed."""
-    if isinstance(obs, qml.operation.Tensor):
-        return all(observable_stopping_condition(observable) for observable in obs.obs)
     if obs.name in {"Prod", "Sum"}:
         return all(observable_stopping_condition(observable) for observable in obs.operands)
-    if obs.name in {"LinearCombination", "Hamiltonian"}:
+    if obs.name == "LinearCombination":
         return all(observable_stopping_condition(observable) for observable in obs.terms()[1])
     if obs.name == "SProd":
         return observable_stopping_condition(obs.base)
@@ -127,14 +125,14 @@ def get_readout_errors(readout_relaxation_probs, readout_misclassification_probs
             with qml.queuing.QueuingManager.stop_recording():
                 qml.QutritAmplitudeDamping(*readout_relaxation_probs, wires=0)
         except Exception as e:
-            raise qml.DeviceError("Applying damping readout error results in error:\n" + str(e))
+            raise DeviceError("Applying damping readout error results in error.") from e
         measure_funcs.append(partial(qml.QutritAmplitudeDamping, *readout_relaxation_probs))
     if readout_misclassification_probs is not None:
         try:
             with qml.queuing.QueuingManager.stop_recording():
                 qml.TritFlip(*readout_misclassification_probs, wires=0)
         except Exception as e:
-            raise qml.DeviceError("Applying trit flip readout error results in error:\n" + str(e))
+            raise DeviceError("Applying trit flip readout error results in error.") from e
         measure_funcs.append(partial(qml.TritFlip, *readout_misclassification_probs))
 
     return None if len(measure_funcs) == 0 else measure_funcs
@@ -289,8 +287,8 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -320,7 +318,7 @@ class DefaultQutritMixed(Device):
         updated_values = {}
         for option in execution_config.device_options:
             if option not in self._device_options:
-                raise qml.DeviceError(f"device option {option} not present on {self}")
+                raise DeviceError(f"device option {option} not present on {self}")
 
         if execution_config.gradient_method == "best":
             updated_values["gradient_method"] = "backprop"
@@ -336,7 +334,7 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def preprocess(
         self,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device
         configuration.
@@ -357,6 +355,8 @@ class DefaultQutritMixed(Device):
         * Supports any qutrit channel that provides Kraus matrices
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
@@ -386,8 +386,10 @@ class DefaultQutritMixed(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+        execution_config: ExecutionConfig | None = None,
+    ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}

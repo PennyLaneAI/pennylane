@@ -20,19 +20,12 @@ import pytest
 
 import pennylane as qml
 
-pytestmark = pytest.mark.jax
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
+jnp = pytest.importorskip("jax.numpy")
 
 from pennylane.capture.primitives import while_loop_prim  # pylint: disable=wrong-import-position
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    """Enable and disable the PennyLane JAX capture context manager."""
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 class TestCaptureWhileLoop:
@@ -89,16 +82,28 @@ class TestCaptureWhileLoop:
         assert np.allclose(res_arr1_jxpr, expected), f"Expected {expected}, but got {res_arr1_jxpr}"
         assert np.allclose(res_idx, res_idx_jxpr) and res_idx_jxpr == 10
 
+    def test_error_during_body_fn(self):
+        """Test that an error in the body function is reraised."""
+
+        @qml.while_loop(lambda i: i < 5)
+        def w(i):
+            raise ValueError("my random error")
+
+        with pytest.raises(ValueError, match="my random error"):
+            _ = jax.make_jaxpr(w)(0)
+
 
 class TestCaptureCircuitsWhileLoop:
     """Tests for capturing for while loops into jaxpr in the context of quantum circuits."""
 
-    def test_while_loop_capture(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_while_loop_capture(self, autograph):
         """Test that a while loop is correctly captured into a jaxpr."""
-
+        if autograph:
+            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=autograph)
         def circuit():
 
             @qml.while_loop(lambda i: i < 3)
@@ -119,12 +124,14 @@ class TestCaptureCircuitsWhileLoop:
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
     @pytest.mark.parametrize("arg, expected", [(1.2, -0.16852022), (1.6, 0.598211352)])
-    def test_circuit_args(self, arg, expected):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_circuit_args(self, arg, expected, autograph):
         """Test that a while loop with arguments is correctly captured into a jaxpr."""
-
+        if autograph:
+            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=autograph)
         def circuit(arg):
 
             qml.Hadamard(wires=0)
@@ -175,12 +182,14 @@ class TestCaptureCircuitsWhileLoop:
     @pytest.mark.parametrize(
         "upper_bound, arg, expected", [(3, 0.5, 0.00223126), (2, 12, 0.2653001)]
     )
-    def test_while_loop_nested(self, upper_bound, arg, expected):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_while_loop_nested(self, upper_bound, arg, expected, autograph):
         """Test that a nested while loop is correctly captured into a jaxpr."""
-
+        if autograph:
+            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=autograph)
         def circuit(upper_bound, arg):
 
             # while loop with dynamic bounds
@@ -219,6 +228,7 @@ class TestCaptureCircuitsWhileLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(res_ev_jxpr, expected), f"Expected {expected}, but got {res_ev_jxpr}"
 
+    @pytest.mark.xfail(strict=False)  # mcms only sometimes give the right answer
     @pytest.mark.parametrize("upper_bound, arg", [(3, 0.5), (2, 12)])
     def test_while_and_for_loop_nested(self, upper_bound, arg):
         """Test that a nested while and for loop is correctly captured into a jaxpr."""
@@ -256,11 +266,15 @@ class TestCaptureCircuitsWhileLoop:
         res_ev_jxpr = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *args)
         assert np.allclose(result, res_ev_jxpr), f"Expected {result}, but got {res_ev_jxpr}"
 
-    def test_while_loop_grad(self):
+    @pytest.mark.parametrize("autograph", [True, False])
+    def test_while_loop_grad(self, autograph):
         """Test simple while-loop primitive with gradient."""
         from pennylane.capture.primitives import grad_prim
 
-        @qml.qnode(qml.device("default.qubit", wires=2))
+        if autograph:
+            pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
+
+        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
         def inner_func(x):
 
             @qml.while_loop(lambda i: i < 3)
@@ -308,3 +322,165 @@ def test_pytree_input_output():
     out = f(x0)
     assert list(out.keys()) == ["x"]
     assert qml.math.allclose(out["x"], 10)
+
+
+@pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+class TestCaptureWhileLoopDynamicShapes:
+
+    def test_while_loop_dynamic_shape_array(self):
+        """Test while loop can accept arrays with dynamic shapes."""
+
+        def f(x):
+            @qml.while_loop(lambda res: jnp.sum(res) < 10)
+            def g(res):
+                return res + res
+
+            return g(x)
+
+        jaxpr = jax.make_jaxpr(f, abstracted_axes=("a",))(jnp.arange(2))
+
+        [dynamic_shape, output] = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3, jnp.arange(3))
+        expected = jnp.array([0, 4, 8])
+        assert qml.math.allclose(dynamic_shape, 3)
+        assert jnp.allclose(output, expected)
+
+    def test_while_loop_dynamic_array_creation(self):
+        """Test that while loop can handle creating dynamic arrays."""
+
+        @qml.while_loop(lambda s: s < 9)
+        def f(s):
+            a = jnp.ones(s + 1, dtype=int)
+            return jnp.sum(a)
+
+        def w():
+            return f(3)
+
+        jaxpr = jax.make_jaxpr(w)()
+        [r] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
+        assert qml.math.allclose(r, 9)  # value that stops iteration
+
+    def test_error_if_resizing_when_forbidden(self):
+        """Test that a useful error is raised if the shape pattern changes with
+        allow_array_resizing=False"""
+
+        @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=False)
+        def f(a, b):
+            return jnp.ones(a.shape[0] + b.shape[0]), 2 * b
+
+        def w(i0):
+            a0, b0 = jnp.ones(i0), jnp.ones(i0)
+            return f(a0, b0)
+
+        with pytest.raises(ValueError, match="Detected dynamically shaped arrays being resized"):
+            jax.make_jaxpr(w)(1)
+
+    def test_error_if_combining_independent_shapes(self):
+        """Test that a useful error is raised if two arrays with dynamic shapes are combined."""
+
+        @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=True)
+        def f(a, b):
+            return a * b, 2 * b
+
+        def w(i0):
+            a0, b0 = jnp.ones(i0), jnp.ones(i0)
+            return f(a0, b0)
+
+        with pytest.raises(
+            ValueError, match="attempt to combine arrays with two different dynamic shapes."
+        ):
+            jax.make_jaxpr(w)(2)
+
+    def test_array_initialized_with_size_of_other_arg(self):
+        """Test that one argument can have a shape that matches another argument, but
+        can be resized independently of that arg."""
+
+        @qml.while_loop(lambda i, a: i < 5)
+        def f(i, a):
+            return i + 1, 2 * a
+
+        def w(i0):
+            return f(i0, jnp.ones(i0))
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        [a_size, final_i, final_a] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        assert qml.math.allclose(a_size, 2)  # what it was initialized with
+        assert qml.math.allclose(final_i, 5)  # loop condition
+        assert qml.math.allclose(final_a, jnp.ones(2) * 2**3)  # 2**(5-2)
+
+    @pytest.mark.parametrize("allow_array_resizing", (True, False, "auto"))
+    def test_error_if_combine_with_dynamic_closure_var(self, allow_array_resizing):
+        """Test that if a broadcasting error is raised when a dynamically shaped closure variable
+        is present, the error mentions it may be due to the closure variable with a dynamic shape.
+        """
+
+        def w(i0):
+            c = jnp.arange(i0)
+
+            @qml.while_loop(lambda a: jnp.sum(a) < 10, allow_array_resizing=allow_array_resizing)
+            def f(a):
+                return c * a
+
+            return f(jnp.arange(i0))
+
+        with pytest.raises(ValueError, match="due to a closure variable with a dynamic shape"):
+            jax.make_jaxpr(w)(3)
+
+    @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
+    def test_loop_with_argument_combining(self, allow_array_resizing):
+        """Test that arguments with dynamic shapes can be combined if allow_array_resizing=auto or False."""
+
+        @qml.while_loop(lambda a, b: jnp.sum(a) < 20, allow_array_resizing=allow_array_resizing)
+        def f(a, b):
+            return a + b, b + 1
+
+        def w(i0):
+            a0, b0 = jnp.ones(i0), jnp.ones(i0)
+            return f(a0, b0)
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        [dynamic_shape, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 2)
+        assert qml.math.allclose(dynamic_shape, 2)  # the initial size
+        assert qml.math.allclose(a, jnp.array([11, 11]))  # 11 + 11 > 20 , 11 = 1 + 1+ 2 + 3+ 4
+        assert qml.math.allclose(b, jnp.array([5, 5]))
+
+    @pytest.mark.parametrize("allow_array_resizing", ("auto", False))
+    def test_loop_args_resized_together(self, allow_array_resizing):
+        """Test that arrays can be resized as long as they are resized together."""
+
+        @qml.while_loop(lambda a, b: jnp.sum(a) < 10, allow_array_resizing=allow_array_resizing)
+        def f(x, y):
+            x = jnp.ones(x.shape[0] + y.shape[0])
+            return x, 2 * x
+
+        def workflow(i0):
+            x0 = jnp.ones(i0)
+            y0 = jnp.ones(i0)
+            return f(x0, y0)
+
+        jaxpr = jax.make_jaxpr(workflow)(2)
+        [dynamic_shape, x, y] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1)
+        assert qml.math.allclose(dynamic_shape, 16)
+        x_expected = jnp.ones(16)
+        assert qml.math.allclose(x, x_expected)
+        assert qml.math.allclose(y, 2 * x_expected)
+
+    @pytest.mark.parametrize("allow_array_resizing", ("auto", True))
+    def test_independent_resizing(self, allow_array_resizing):
+        """Test that two arrays can be resized independently of each other."""
+
+        @qml.while_loop(
+            lambda a, b: jax.numpy.sum(a) < 10, allow_array_resizing=allow_array_resizing
+        )
+        def f(a, b):
+            return jnp.ones(a.shape[0] + b.shape[0]), b + 1
+
+        def w(i0):
+            return f(jnp.zeros(i0), jnp.zeros(i0))
+
+        jaxpr = jax.make_jaxpr(w)(2)
+        [shape1, shape2, a, b] = qml.capture.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 3)
+        assert jnp.allclose(shape1, 12)
+        assert jnp.allclose(shape2, 3)
+        expected = jnp.ones(12)
+        assert jnp.allclose(a, expected)
+        assert jnp.allclose(b, jnp.array([3, 3, 3]))

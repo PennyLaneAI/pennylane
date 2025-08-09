@@ -16,15 +16,15 @@ Unit tests for the composite operator class of qubit operations
 """
 import inspect
 
-# pylint:disable=protected-access
+# pylint:disable=protected-access, use-implicit-booleaness-not-comparison
 from copy import copy
 
 import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.operation import DecompositionUndefinedError
-from pennylane.ops.op_math import CompositeOp, Prod, SProd, Sum
+from pennylane.exceptions import DecompositionUndefinedError
+from pennylane.ops.op_math import CompositeOp
 from pennylane.wires import Wires
 
 ops = (
@@ -213,27 +213,6 @@ class TestConstruction:
         op = ValidOp(*self.simple_operands)
         assert op._build_pauli_rep() == qml.pauli.PauliSentence({})
 
-    def test_tensor_and_hamiltonian_converted(self):
-        """Test that Tensor and Hamiltonian instances get converted to Prod and Sum."""
-        operands = [
-            qml.Hamiltonian(
-                [1.1, 2.2], [qml.PauliZ(0), qml.operation.Tensor(qml.PauliX(0), qml.PauliZ(1))]
-            ),
-            qml.prod(qml.PauliX(0), qml.PauliZ(1)),
-            qml.operation.Tensor(qml.PauliX(2), qml.PauliZ(3)),
-        ]
-        op = qml.sum(*operands)
-        assert isinstance(op[0], Sum)
-        assert isinstance(op[0][1], SProd)
-        assert isinstance(op[0][1].base, Prod)
-        assert op[1] is operands[1]
-        assert isinstance(op[2], Prod)
-        assert op.operands == (
-            qml.dot([1.1, 2.2], [qml.PauliZ(0), qml.prod(qml.PauliX(0), qml.PauliZ(1))]),
-            operands[1],
-            qml.prod(qml.PauliX(2), qml.PauliZ(3)),
-        )
-
 
 @pytest.mark.parametrize("math_op", [qml.prod, qml.sum])
 def test_no_recursion_error_raised(math_op):
@@ -272,7 +251,7 @@ def _assert_method_no_recursion_error(instance, method_name):
         getattr(instance, method_name)()
     except Exception as e:  # pylint: disable=broad-except
         assert not isinstance(e, RecursionError)
-        if isinstance(e, RuntimeError):
+        if isinstance(e, RuntimeError) and not isinstance(e, NotImplementedError):
             assert "This is likely due to nesting too many levels" in str(e)
 
 
@@ -282,7 +261,7 @@ def _assert_property_no_recursion_error(instance, property_name):
         getattr(instance, property_name)
     except Exception as e:  # pylint: disable=broad-except
         assert not isinstance(e, RecursionError)
-        if isinstance(e, RuntimeError):
+        if isinstance(e, RuntimeError) and not isinstance(e, NotImplementedError):
             assert "This is likely due to nesting too many levels" in str(e)
 
 
@@ -299,6 +278,11 @@ def _is_method_with_no_argument(method):
 
 class TestMscMethods:
     """Test dunder and other visualizing methods."""
+
+    def test_empty_repr(self):
+        """Test __repr__ on an empty composite op."""
+        op = ValidOp()
+        assert repr(op) == "ValidOp()"
 
     @pytest.mark.parametrize("ops_lst, op_rep", tuple((i, j) for i, j in zip(ops, ops_rep)))
     def test_repr(self, ops_lst, op_rep):
@@ -429,15 +413,9 @@ class TestProperties:
                 qml.prod(qml.PauliX(4), qml.PauliY(3), qml.PauliZ(8)),
             ],
         ]
-
-        # TODO: Use qml.equal when supported for nested operators
-
         for list_op1, list_op2 in zip(overlapping_ops, valid_op.overlapping_ops):
             for op1, op2 in zip(list_op1, list_op2):
-                assert op1.name == op2.name
-                assert op1.wires == op2.wires
-                assert op1.data == op2.data
-                assert op1.arithmetic_depth == op2.arithmetic_depth
+                qml.assert_equal(op1, op2)
 
     def test_overlapping_ops_private_attribute(self):
         """Test that the private `_overlapping_ops` attribute gets updated after a call to

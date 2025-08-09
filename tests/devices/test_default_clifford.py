@@ -23,6 +23,7 @@ from dummy_debugger import Debugger
 
 import pennylane as qml
 from pennylane.devices.default_clifford import _pl_op_to_stim
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 
 stim = pytest.importorskip("stim")
 
@@ -86,6 +87,14 @@ def test_expectation_clifford(circuit, expec_op):
     qnode_clfrd = qml.QNode(circuit_fn, dev_c)
     qnode_qubit = qml.QNode(circuit_fn, dev_q)
     assert np.allclose(qnode_clfrd(), qnode_qubit())
+
+
+def test_execution_with_no_execution_config():
+    """Test execution of a tape with no execution config."""
+    dev = qml.device("default.clifford")
+    qs = qml.tape.QuantumScript([qml.X(0)], [qml.expval(qml.PauliZ(0))])
+    result = dev.execute(qs)
+    assert qml.math.allclose(result, -1.0)
 
 
 @pytest.mark.parametrize("circuit", [circuit_1])
@@ -218,10 +227,10 @@ def test_meas_expval(shots, ops, seed):
         qml.sum(qml.PauliZ(0), qml.s_prod(2.0, qml.PauliY(1))),
     ],
 )
-def test_meas_var(shots, ops):
+def test_meas_var(shots, ops, seed):
     """Test that variance measurements with `default.clifford` is possible
     and agrees with `default.qubit`."""
-    dev_c = qml.device("default.clifford", shots=shots)
+    dev_c = qml.device("default.clifford", shots=shots, seed=seed)
     dev_q = qml.device("default.qubit")
 
     def circuit_fn():
@@ -256,7 +265,6 @@ def test_meas_samples(circuit, shots):
     assert qml.math.shape(samples[2]) == (shots,)
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("tableau", [True, False])
 @pytest.mark.parametrize("shots", [None, 50000])
 @pytest.mark.parametrize(
@@ -485,9 +493,9 @@ def test_max_worker_clifford():
     )
     tapes = (qscript, qscript)
 
-    _, conf_d = dev_c.preprocess()
+    conf_d = dev_c.setup_execution_config()
     res_c = dev_c.execute(tapes, conf_d)
-    _, conf_q = dev_q.preprocess()
+    conf_q = dev_q.setup_execution_config()
     res_q = dev_q.execute(tapes, conf_q)
     assert np.allclose(res_q, res_c)
 
@@ -505,9 +513,9 @@ def test_tracker():
     tapes = tuple([qscript])
 
     with qml.Tracker(dev_c) as tracker:
-        _, conf_d = dev_c.preprocess()
+        conf_d = dev_c.setup_execution_config()
         res_c = dev_c.execute(tapes, conf_d)
-        _, conf_q = dev_q.preprocess()
+        conf_q = dev_q.setup_execution_config()
         res_q = dev_q.execute(tapes, conf_q)
         assert np.allclose(res_q, res_c)
 
@@ -600,9 +608,9 @@ def test_grad_error(circuit):
         return qml.expval(qml.PauliZ(0))
 
     qnode_clfrd = qml.QNode(circuit_fn, dev_c)
-    qnode_clfrd()
+    tape = qml.workflow.construct_tape(qnode_clfrd)()
 
-    conf_c, tape_c = dev_c.preprocess()[1], qnode_clfrd.tape
+    conf_c, tape_c = dev_c.setup_execution_config(), tape
 
     with pytest.raises(
         NotImplementedError,
@@ -639,7 +647,7 @@ def test_meas_error():
         return qml.probs(op=qml.Hermitian(Amat + Amat.conj().T, wires=[0, 1]))
 
     with pytest.raises(
-        qml.QuantumFunctionError,
+        QuantumFunctionError,
         match="Hermitian is not supported for rotating probabilities on default.clifford.",
     ):
         circuit_herm()
@@ -659,7 +667,7 @@ def test_clifford_error(check):
         return qml.state()
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match=r"Operator RX\(1.0, wires=\[0\]\) not supported with default.clifford and does not provide a decomposition",
     ):
         circuit()
@@ -675,7 +683,7 @@ def test_meas_error_noisy():
         return qml.expval(qml.PauliZ(0))
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match="Channel not supported on default.clifford without finite shots.",
     ):
         circ_1()
@@ -687,7 +695,7 @@ def test_meas_error_noisy():
         return qml.expval(qml.PauliZ(0))
 
     with pytest.raises(
-        qml.DeviceError,
+        DeviceError,
         match=r"Operator AmplitudeDamping\(0.2, wires=\[0\]\) not supported with default.clifford",
     ):
         circ_2()

@@ -11,14 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Contains a function to extract a single tape from a QNode
+"""Contains a function to extract a single tape from a QNode"""
+from __future__ import annotations
 
-"""
+from typing import TYPE_CHECKING
 
-import pennylane as qml
+from .construct_batch import construct_batch
+
+if TYPE_CHECKING:
+    from .qnode import QNode
 
 
-def construct_tape(qnode, level="user"):
+def construct_tape(qnode: QNode, level: str | int | slice | None = "user"):
     """Constructs the tape for a designated stage in the transform program.
 
     Args:
@@ -36,7 +40,7 @@ def construct_tape(qnode, level="user"):
         tape (QuantumScript): a quantum circuit.
 
     Raises:
-        ValueError: if the `level` argument corresponds to more than one tape.
+        ValueError: if the ``level`` argument corresponds to more than one tape.
 
     .. seealso:: :func:`pennylane.workflow.get_transform_program` to inspect the contents of the transform program for a specified level.
 
@@ -44,7 +48,8 @@ def construct_tape(qnode, level="user"):
 
     .. code-block:: python
 
-        @qml.qnode(qml.device("default.qubit", shots=10))
+        @partial(qml.set_shots, shots=10)
+        @qml.qnode(qml.device("default.qubit"))
         def circuit(x):
             qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0,1))
             qml.RX(x, wires=0)
@@ -68,7 +73,7 @@ def construct_tape(qnode, level="user"):
 
     def wrapper(*args, **kwargs):
 
-        batch, _ = qml.workflow.construct_batch(qnode, level)(*args, **kwargs)
+        batch, _ = construct_batch(qnode, level)(*args, **kwargs)
 
         if len(batch) > 1:
             raise ValueError(

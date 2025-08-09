@@ -13,9 +13,12 @@
 # limitations under the License.
 """Code for resource estimation"""
 import inspect
-from typing import Any, Callable, Literal, Union
+from collections.abc import Callable
+from typing import Any, Literal
 
 import pennylane as qml
+
+from .resource import specs_from_tape
 
 
 def _get_absolute_import_path(fn):
@@ -23,8 +26,10 @@ def _get_absolute_import_path(fn):
 
 
 def specs(
-    qnode, level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient"
-) -> Callable[..., Union[list[dict[str, Any]], dict[str, Any]]]:
+    qnode,
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
+    compute_depth: bool = True,
+) -> Callable[..., list[dict[str, Any]] | dict[str, Any]]:
     r"""Resource information about a quantum circuit.
 
     This transform converts a QNode into a callable that provides resource information
@@ -37,6 +42,7 @@ def specs(
         level (None, str, int, slice): An indication of what transforms to apply before computing the resource information.
             Check :func:`~.workflow.get_transform_program` for more information on the allowed values and usage details of
             this argument.
+        compute_depth (bool): Whether to compute the depth of the circuit. If ``False``, the depth will not be included in the returned information.
 
     Returns:
         A function that has the same argument signature as ``qnode``. This function
@@ -46,27 +52,27 @@ def specs(
 
     .. code-block:: python3
 
-        from pennylane import numpy as np
+        from pennylane import numpy as pnp
 
-        x = np.array([0.1, 0.2])
-        hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
+        dev = qml.device("default.qubit", wires=2)
+        x = pnp.array([0.1, 0.2])
+        Hamiltonian = qml.dot([1.0, 0.5], [qml.X(0), qml.Y(0)])
+        gradient_kwargs = {"shifts": pnp.pi / 4}
 
-        dev = qml.device('default.qubit', wires=2)
-        @qml.qnode(dev, diff_method="parameter-shift", shifts=np.pi / 4)
+        @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs=gradient_kwargs)
         def circuit(x, add_ry=True):
             qml.RX(x[0], wires=0)
             qml.CNOT(wires=(0,1))
-            qml.TrotterProduct(hamiltonian, time=1.0, n=4, order=2)
+            qml.TrotterProduct(Hamiltonian, time=1.0, n=4, order=2)
             if add_ry:
                 qml.RY(x[1], wires=1)
-            qml.TrotterProduct(hamiltonian, time=1.0, n=4, order=4)
+            qml.TrotterProduct(Hamiltonian, time=1.0, n=4, order=4)
             return qml.probs(wires=(0,1))
 
     >>> qml.specs(circuit)(x, add_ry=False)
     {'resources': Resources(num_wires=2, num_gates=98, gate_types=defaultdict(<class 'int'>, {'RX': 1, 'CNOT': 1, 'Exp': 96}), gate_sizes=defaultdict(<class 'int'>, {1: 97, 2: 1}), depth=98, shots=Shots(total_shots=None, shot_vector=())),
     'errors': {'SpectralNormError': SpectralNormError(0.42998560822421455)},
     'num_observables': 1,
-    'num_diagonalizing_gates': 0,
     'num_trainable_params': 1,
     'num_device_wires': 2,
     'num_tape_wires': 2,
@@ -86,12 +92,15 @@ def specs(
 
         .. code-block:: python3
 
+            dev = qml.device("default.qubit")
+            gradient_kwargs = {"shifts": pnp.pi / 4}
+
             @qml.transforms.merge_rotations
             @qml.transforms.undo_swaps
             @qml.transforms.cancel_inverses
-            @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs=gradient_kwargs)
             def circuit(x):
-                qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
+                qml.RandomLayers(pnp.array([[1.0, 2.0]]), wires=(0, 1))
                 qml.RX(x, wires=0)
                 qml.RX(-x, wires=0)
                 qml.SWAP((0, 1))
@@ -99,12 +108,12 @@ def specs(
                 qml.X(0)
                 return qml.expval(qml.X(0) + qml.Y(1))
 
-        First, we can check the resource information of the ``QNode`` without any modifications. Note that ``level=top`` would
+        First, we can check the resource information of the QNode without any modifications. Note that ``level=top`` would
         return the same results:
 
         >>> print(qml.specs(circuit, level=0)(0.1)["resources"])
-        wires: 2
-        gates: 6
+        num_wires: 2
+        num_gates: 6
         depth: 6
         shots: Shots(total=None)
         gate_types:
@@ -114,9 +123,9 @@ def specs(
 
         We then check the resources after applying all transforms:
 
-        >>> print(qml.specs(circuit, level=None)(0.1)["resources"])
-        wires: 2
-        gates: 2
+        >>> print(qml.specs(circuit, level="device")(0.1)["resources"])
+        num_wires: 2
+        num_gates: 2
         depth: 1
         shots: Shots(total=None)
         gate_types:
@@ -127,8 +136,8 @@ def specs(
         We can also notice that ``SWAP`` and ``PauliX`` are not present in the circuit if we set ``level=2``:
 
         >>> print(qml.specs(circuit, level=2)(0.1)["resources"])
-        wires: 2
-        gates: 3
+        num_wires: 2
+        num_gates: 3
         depth: 3
         shots: Shots(total=None)
         gate_types:
@@ -143,18 +152,20 @@ def specs(
 
         However, if we apply all transforms, ``RandomLayers`` is decomposed into an ``RY`` and an ``RX``, giving us two trainable objects:
 
-        >>> qml.specs(circuit, level=None)(0.1)["num_trainable_params"]
+        >>> qml.specs(circuit, level="device")(0.1)["num_trainable_params"]
         2
 
-        If a ``QNode`` with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, a dictionary
+        If a QNode with a tape-splitting transform is supplied to the function, with the transform included in the desired transforms, a dictionary
         is returned for each resulting tape:
 
         .. code-block:: python3
 
+            dev = qml.device("default.qubit")
             H = qml.Hamiltonian([0.2, -0.543], [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Y(2)])
+            gradient_kwargs = {"shifts": pnp.pi / 4}
 
             @qml.transforms.split_non_commuting
-            @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift", shifts=np.pi / 4)
+            @qml.qnode(dev, diff_method="parameter-shift", gradient_kwargs=gradient_kwargs)
             def circuit():
                 qml.RandomLayers(qml.numpy.array([[1.0, 2.0]]), wires=(0, 1))
                 return qml.expval(H)
@@ -163,13 +174,12 @@ def specs(
         2
     """
 
-    def specs_qnode(*args, **kwargs) -> Union[list[dict], dict]:
+    def specs_qnode(*args, **kwargs) -> list[dict] | dict:
         """Returns information on the structure and makeup of provided QNode.
 
         Dictionary keys:
             * ``"num_operations"`` number of operations in the qnode
             * ``"num_observables"`` number of observables in the qnode
-            * ``"num_diagonalizing_gates"`` number of diagonalizing gates required for execution of the qnode
             * ``"resources"``: a :class:`~.resource.Resources` object containing resource quantities used by the qnode
             * ``"errors"``: combined algorithmic errors from the quantum operations executed by the qnode
             * ``"num_used_wires"``: number of wires used by the circuit
@@ -195,13 +205,7 @@ def specs(
 
         for tape in batch:
 
-            program = qml.workflow.get_transform_program(qnode, level=level)
-            (diag_tape,), _ = program((qml.tape.QuantumScript(tape.diagonalizing_gates, []),))
-
-            info = tape.specs.copy()
-
-            info["num_diagonalizing_gates"] = len(diag_tape.operations)
-
+            info = specs_from_tape(tape, compute_depth)
             info["num_device_wires"] = len(qnode.device.wires or tape.wires)
             info["num_tape_wires"] = tape.num_wires
             info["device_name"] = qnode.device.name
@@ -214,12 +218,8 @@ def specs(
                 else qnode.diff_method
             )
 
-            gradient_fn = qml.QNode.get_gradient_fn(
-                qnode.device,
-                qnode.interface,
-                qnode.diff_method,
-                tape=tape,
-            )[0]
+            config = qml.workflow.construct_execution_config(qnode)(*args, **kwargs)
+            gradient_fn = config.gradient_method
             if isinstance(gradient_fn, qml.transforms.core.TransformDispatcher):
                 info["gradient_fn"] = _get_absolute_import_path(gradient_fn)
 

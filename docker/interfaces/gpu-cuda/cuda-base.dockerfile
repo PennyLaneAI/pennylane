@@ -42,7 +42,7 @@ COPY  . .
 RUN git submodule update --init --recursive \
     && pip install wheel \
     && pip install -r requirements.txt \
-    && python3 setup.py install \
+    && python3 -m pip install . \
     && pip install -r requirements-dev.txt \
     && make test
 

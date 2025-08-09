@@ -14,22 +14,19 @@
 """
 This module contains the base quantum tape.
 """
-# pylint: disable=too-many-instance-attributes,protected-access,too-many-branches,too-many-public-methods, too-many-arguments
+# pylint: disable=protected-access
 import copy
 from collections.abc import Sequence
 from threading import RLock
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import CountsMP, MeasurementProcess, ProbabilityMP, SampleMP
-from pennylane.operation import DecompositionUndefinedError, Operator, StatePrepBase
+from pennylane.operation import Operator, StatePrepBase
 from pennylane.pytrees import register_pytree
 from pennylane.queuing import AnnotatedQueue, QueuingManager, process_queue
 
 from .qscript import QuantumScript
-
-
-class TapeError(ValueError):
-    """An error raised with a quantum tape."""
 
 
 def _err_msg_for_some_meas_not_qwc(measurements):
@@ -78,9 +75,10 @@ def _validate_computational_basis_sampling(tape):
         with (
             QueuingManager.stop_recording()
         ):  # stop recording operations - the constructed operator is just aux
-            prod_op = qml.ops.Prod if qml.operation.active_new_opmath() else qml.operation.Tensor
             pauliz_for_cb_obs = (
-                qml.Z(all_wires) if len(all_wires) == 1 else prod_op(*[qml.Z(w) for w in all_wires])
+                qml.Z(all_wires)
+                if len(all_wires) == 1
+                else qml.ops.Prod(*[qml.Z(w) for w in all_wires])
             )
 
         for obs in non_comp_basis_sampling_obs:
@@ -88,7 +86,7 @@ def _validate_computational_basis_sampling(tape):
             if obs.obs is not None and not qml.pauli.utils.are_pauli_words_qwc(
                 [obs.obs, pauliz_for_cb_obs]
             ):
-                raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
+                raise QuantumFunctionError(_err_msg_for_some_meas_not_qwc(measurements))
 
 
 def rotations_and_diagonal_measurements(tape):
@@ -103,7 +101,7 @@ def rotations_and_diagonal_measurements(tape):
             rotations, diag_obs = qml.pauli.diagonalize_qwc_pauli_words(tape.obs_sharing_wires)
         except (TypeError, ValueError) as e:
             if any(isinstance(m, (ProbabilityMP, SampleMP, CountsMP)) for m in tape.measurements):
-                raise qml.QuantumFunctionError(
+                raise QuantumFunctionError(
                     "Only observables that are qubit-wise commuting "
                     "Pauli words can be returned on the same wire.\n"
                     "Try removing all probability, sample and counts measurements "
@@ -111,7 +109,7 @@ def rotations_and_diagonal_measurements(tape):
                     "for each non-commuting observable."
                 ) from e
 
-            raise qml.QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
+            raise QuantumFunctionError(_err_msg_for_some_meas_not_qwc(tape.measurements)) from e
 
         measurements = copy.copy(tape.measurements)
 
@@ -228,7 +226,7 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
         >>> tape = qml.tape.QuantumScript([], [qml.expval(qml.X(0))])
         >>> expand_tape(tape, expand_measurements=True).circuit
-        [Hadamard(wires=[0]), expval(eigvals=[ 1. -1.], wires=[0])]
+        [H(0), expval(eigvals=[ 1. -1.], wires=[0])]
 
 
     """
@@ -272,15 +270,12 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
                     new_queue.append(obj)
                     continue
             elif isinstance(obj, qml.measurements.MeasurementProcess):
-                # Object is an operation; query it for its expansion
-                try:
-                    obj = obj.expand()
-                except DecompositionUndefinedError:
-                    # Object does not define an expansion; treat this as
-                    # a stopping condition.
+                if obj.obs is not None and obj.obs.has_diagonalizing_gates:
+                    new_mp = type(obj)(eigvals=obj.obs.eigvals(), wires=obj.obs.wires)
+                    obj = QuantumScript(obj.obs.diagonalizing_gates(), [new_mp])
+                else:
                     new_queue.append(obj)
                     continue
-
             # recursively expand out the newly created tape
             expanded_tape = expand_tape(obj, stop_at=stop_at, depth=depth - 1)
 
@@ -293,7 +288,6 @@ def expand_tape(tape, depth=1, stop_at=None, expand_measurements=False):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
@@ -342,11 +336,9 @@ def expand_tape_state_prep(tape, skip_first=True):
 
     # Update circuit info
     new_tape._batch_size = tape._batch_size
-    new_tape._output_dim = tape._output_dim
     return new_tape
 
 
-# pylint: disable=too-many-public-methods
 class QuantumTape(QuantumScript, AnnotatedQueue):
     r"""A quantum tape recorder, that records and stores variational quantum programs.
 
@@ -372,11 +364,11 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
 
     Tapes can be constructed by directly providing operations and measurements:
 
-    >>> ops = [qml.BasisState([1,0], wires=0), qml.S(0), qml.T(1)]
+    >>> ops = [qml.BasisState([1, 0], wires=[0, 1]), qml.S(0), qml.T(1)]
     >>> measurements = [qml.state()]
     >>> tape = qml.tape.QuantumTape(ops, measurements)
     >>> tape.circuit
-    [BasisState([1, 0], wires=[0]), S(wires=[0]), T(wires=[1]), state(wires=[])]
+    [BasisState(array([1, 0]), wires=[0, 1]), S(0), T(1), state(wires=[])]
 
     They can also be populated into a recording tape via queuing.
 
@@ -418,7 +410,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     >>> tape.num_params
     3
 
-    The existing circuit is overriden upon exiting a recording context.
+    The existing circuit is overridden upon exiting a recording context.
 
     Iterating over the quantum circuit can be done by iterating over the tape
     object:
@@ -447,7 +439,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     device via the :func:`~.pennylane.execute` function:
 
     >>> dev = qml.device("default.qubit", wires=[0, 'a'])
-    >>> qml.execute([tape], dev, gradient_fn=None)
+    >>> qml.execute([tape], dev, diff_method=None)
     [array([0.77750694])]
 
     A new tape can be created by passing new parameters along with the indices
@@ -482,9 +474,7 @@ class QuantumTape(QuantumScript, AnnotatedQueue):
     _lock = RLock()
     """threading.RLock: Used to synchronize appending to/popping from global QueueingContext."""
 
-    def __init__(
-        self, ops=None, measurements=None, shots=None, trainable_params=None
-    ):  # pylint: disable=too-many-arguments
+    def __init__(self, ops=None, measurements=None, shots=None, trainable_params=None):
         AnnotatedQueue.__init__(self)
         QuantumScript.__init__(self, ops, measurements, shots, trainable_params=trainable_params)
 

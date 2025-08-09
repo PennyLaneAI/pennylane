@@ -14,9 +14,19 @@
 """
 Contains the OutMultiplier template.
 """
-
-import pennylane as qml
+from pennylane.decomposition import (
+    add_decomps,
+    adjoint_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
+from pennylane.ops import adjoint
+from pennylane.wires import Wires, WiresLike
+
+from .controlled_sequence import ControlledSequence
+from .phase_adder import PhaseAdder
+from .qft import QFT
 
 
 class OutMultiplier(Operation):
@@ -44,7 +54,7 @@ class OutMultiplier(Operation):
         mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
         work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
             work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
-            should be provided. Defaults to ``None``.
+            should be provided. Defaults to empty tuple.
 
     **Example**
 
@@ -62,7 +72,8 @@ class OutMultiplier(Operation):
         output_wires = [6, 7, 8, 9]
         work_wires = [5, 10]
 
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
+        @partial(qml.set_shots, shots=1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
@@ -109,7 +120,8 @@ class OutMultiplier(Operation):
             output_wires = [6, 7, 8, 9]
             work_wires = [5, 10]
 
-            dev = qml.device("default.qubit", shots=1)
+            dev = qml.device("default.qubit")
+            @partial(qml.set_shots, shots=1)
             @qml.qnode(dev)
             def circuit():
                 qml.BasisEmbedding(x, wires=x_wires)
@@ -128,7 +140,7 @@ class OutMultiplier(Operation):
 
         The fourth set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation.
 
-        - If :math:`mod = 2^{\text{len(output_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=None``. This is the case by default.
+        - If :math:`mod = 2^{\text{len(output_wires)}}`, there will be no need for ``work_wires``, hence ``work_wires=()``. This is the case by default.
 
         - If :math:`mod \neq 2^{\text{len(output_wires)}}`, two ``work_wires`` have to be provided.
 
@@ -138,15 +150,24 @@ class OutMultiplier(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_output_wires", "num_x_wires", "num_y_wires", "mod"}
+
     def __init__(
-        self, x_wires, y_wires, output_wires, mod=None, work_wires=None, id=None
-    ):  # pylint: disable=too-many-arguments
+        self,
+        x_wires: WiresLike,
+        y_wires: WiresLike,
+        output_wires: WiresLike,
+        mod=None,
+        work_wires: WiresLike = (),
+        id=None,
+    ):  # pylint: disable=too-many-arguments,too-many-positional-arguments
 
-        x_wires = qml.wires.Wires(x_wires)
-        y_wires = qml.wires.Wires(y_wires)
-        output_wires = qml.wires.Wires(output_wires)
+        x_wires = Wires(x_wires)
+        y_wires = Wires(y_wires)
+        output_wires = Wires(output_wires)
+        work_wires = Wires(() if work_wires is None else work_wires)
 
-        num_work_wires = 0 if work_wires is None else len(work_wires)
+        num_work_wires = len(work_wires)
 
         if mod is None:
             mod = 2 ** len(output_wires)
@@ -160,7 +181,7 @@ class OutMultiplier(Operation):
                 f"with len(output_wires)={len(output_wires)} is {2 ** len(output_wires)}, but received {mod}."
             )
 
-        if work_wires is not None:
+        if len(work_wires) != 0:
             if any(wire in work_wires for wire in x_wires):
                 raise ValueError("None of the wires in work_wires should be included in x_wires.")
             if any(wire in work_wires for wire in y_wires):
@@ -177,17 +198,26 @@ class OutMultiplier(Operation):
         wires_name = ["x_wires", "y_wires", "output_wires"]
         self.hyperparameters["work_wires"] = work_wires
 
-        if work_wires is not None:
+        if len(work_wires) != 0:
             wires_list.append(work_wires)
             wires_name.append("work_wires")
 
         for name, wires in zip(wires_name, wires_list):
-            self.hyperparameters[name] = qml.wires.Wires(wires)
+            self.hyperparameters[name] = Wires(wires)
         self.hyperparameters["mod"] = mod
 
         # pylint: disable=consider-using-generator
         all_wires = sum([self.hyperparameters[name] for name in wires_name], start=[])
         super().__init__(wires=all_wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_output_wires": len(self.hyperparameters["output_wires"]),
+            "num_x_wires": len(self.hyperparameters["x_wires"]),
+            "num_y_wires": len(self.hyperparameters["y_wires"]),
+            "mod": self.hyperparameters["mod"],
+        }
 
     @property
     def num_params(self):
@@ -216,7 +246,7 @@ class OutMultiplier(Operation):
             new_dict["work_wires"],
         )
 
-    def decomposition(self):  # pylint: disable=arguments-differ
+    def decomposition(self):
         return self.compute_decomposition(**self.hyperparameters)
 
     @classmethod
@@ -225,7 +255,7 @@ class OutMultiplier(Operation):
 
     @staticmethod
     def compute_decomposition(
-        x_wires, y_wires, output_wires, mod, work_wires
+        x_wires: WiresLike, y_wires: WiresLike, output_wires: WiresLike, mod, work_wires: WiresLike
     ):  # pylint: disable=arguments-differ
         r"""Representation of the operator as a product of other operators.
 
@@ -236,7 +266,7 @@ class OutMultiplier(Operation):
             mod (int): the modulo for performing the multiplication. If not provided, it will be set to its maximum value, :math:`2^{\text{len(output_wires)}}`
             work_wires (Sequence[int]): the auxiliary wires to use for the multiplication. The
                 work wires are not needed if :math:`mod=2^{\text{len(output_wires)}}`, otherwise two work wires
-                should be provided. Defaults to ``None``.
+                should be provided.
 
         Returns:
             list[.Operator]: Decomposition of the operator
@@ -254,16 +284,68 @@ class OutMultiplier(Operation):
             work_wire = work_wires[1:]
         else:
             qft_output_wires = output_wires
-            work_wire = None
-        op_list.append(qml.QFT(wires=qft_output_wires))
+            work_wire = ()
+        op_list.append(QFT(wires=qft_output_wires))
         op_list.append(
-            qml.ControlledSequence(
-                qml.ControlledSequence(
-                    qml.PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
+            ControlledSequence(
+                ControlledSequence(
+                    PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires
                 ),
                 control=y_wires,
             )
         )
-        op_list.append(qml.adjoint(qml.QFT)(wires=qft_output_wires))
+        op_list.append(adjoint(QFT)(wires=qft_output_wires))
 
         return op_list
+
+
+def _out_multiplier_decomposition_resources(
+    num_output_wires, num_x_wires, num_y_wires, mod
+) -> dict:
+
+    if mod != 2**num_output_wires:
+        qft_wires = num_output_wires + 1
+    else:
+        qft_wires = num_output_wires
+
+    return {
+        resource_rep(QFT, num_wires=qft_wires): 1,
+        resource_rep(
+            ControlledSequence,
+            base_class=ControlledSequence,
+            base_params={
+                "base_class": PhaseAdder,
+                "base_params": {"num_x_wires": qft_wires, "mod": mod},
+                "num_control_wires": num_x_wires,
+            },
+            num_control_wires=num_y_wires,
+        ): 1,
+        adjoint_resource_rep(QFT, {"num_wires": qft_wires}): 1,
+    }
+
+
+# pylint: disable=no-value-for-parameter
+@register_resources(_out_multiplier_decomposition_resources)
+def _out_multiplier_decomposition(
+    x_wires: WiresLike,
+    y_wires: WiresLike,
+    output_wires: WiresLike,
+    mod,
+    work_wires: WiresLike,
+    **__,
+):
+    if mod != 2 ** len(output_wires):
+        qft_output_wires = work_wires[:1] + output_wires
+        work_wire = work_wires[1:]
+    else:
+        qft_output_wires = output_wires
+        work_wire = ()
+    QFT(wires=qft_output_wires)
+    ControlledSequence(
+        ControlledSequence(PhaseAdder(1, qft_output_wires, mod, work_wire), control=x_wires),
+        control=y_wires,
+    )
+    adjoint(QFT(wires=qft_output_wires))
+
+
+add_decomps(OutMultiplier, _out_multiplier_decomposition)

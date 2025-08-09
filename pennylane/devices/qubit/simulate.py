@@ -15,15 +15,17 @@
 import logging
 
 # pylint: disable=protected-access
+# TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+# pylint: disable=unused-argument
 from collections import Counter
 from functools import partial, singledispatch
-from typing import Optional
 
 import numpy as np
 from numpy.random import default_rng
 
 import pennylane as qml
 from pennylane.logging import debug_logger
+from pennylane.math.interface_utils import get_canonical_interface_name
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -43,26 +45,6 @@ from .sampling import jax_random_split, measure_with_samples
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
-
-INTERFACE_TO_LIKE = {
-    # map interfaces known by autoray to themselves
-    None: None,
-    "numpy": "numpy",
-    "autograd": "autograd",
-    "jax": "jax",
-    "torch": "torch",
-    "tensorflow": "tensorflow",
-    # map non-standard interfaces to those known by autoray
-    "auto": None,
-    "scipy": "numpy",
-    "jax-jit": "jax",
-    "jax-python": "jax",
-    "JAX": "jax",
-    "pytorch": "torch",
-    "tf": "tensorflow",
-    "tensorflow-autograph": "tensorflow",
-    "tf-autograph": "tensorflow",
-}
 
 
 class TreeTraversalStack:
@@ -196,7 +178,8 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         prep = circuit[0]
 
-    state = create_initial_state(sorted(circuit.op_wires), prep, like=INTERFACE_TO_LIKE[interface])
+    interface = get_canonical_interface_name(interface)
+    state = create_initial_state(sorted(circuit.op_wires), prep, like=interface.get_like())
 
     # initial state is batched only if the state preparation (if it exists) is batched
     is_state_batched = bool(prep and prep.batch_size is not None)
@@ -233,7 +216,6 @@ def get_final_state(circuit, debugger=None, **execution_kwargs):
     return state, is_state_batched
 
 
-# pylint: disable=too-many-arguments
 @debug_logger
 def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) -> Result:
     """
@@ -300,7 +282,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
 def simulate(
     circuit: qml.tape.QuantumScript,
     debugger=None,
-    state_cache: Optional[dict] = None,
+    state_cache: dict | None = None,
     **execution_kwargs,
 ) -> Result:
     """Simulate a single quantum script.
@@ -340,6 +322,7 @@ def simulate(
     tensor([0.68117888, 0.        , 0.31882112, 0.        ], requires_grad=True))
 
     """
+    circuit = circuit.copy()
     prng_key = execution_kwargs.pop("prng_key", None)
     circuit = circuit.map_to_standard_wires()
 
@@ -349,11 +332,7 @@ def simulate(
             return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
 
         results = []
-        aux_circ = qml.tape.QuantumScript(
-            circuit.operations,
-            circuit.measurements,
-            shots=[1],
-        )
+        aux_circ = circuit.copy(shots=[1])
         keys = jax_random_split(prng_key, num=circuit.shots.total_shots)
         if qml.math.get_deep_interface(circuit.data) == "jax" and prng_key is not None:
             # pylint: disable=import-outside-toplevel
@@ -426,11 +405,7 @@ def simulate_tree_mcm(
         keys = jax_random_split(prng_key, num=circuit.shots.num_copies)
         results = []
         for k, s in zip(keys, circuit.shots):
-            aux_circuit = qml.tape.QuantumScript(
-                circuit.operations,
-                circuit.measurements,
-                shots=s,
-            )
+            aux_circuit = circuit.copy(shots=s)
             results.append(simulate_tree_mcm(aux_circuit, debugger, prng_key=k, **execution_kwargs))
         return tuple(results)
 
@@ -563,12 +538,9 @@ def simulate_tree_mcm(
                 initial_state = stack.states[0]
             else:
                 initial_state = branch_state(stack.states[depth], mcm_current[depth], mcms[depth])
-            circtmp = qml.tape.QuantumScript(
-                circuits[depth].operations,
-                circuits[depth].measurements,
-                qml.measurements.shots.Shots(shots),
-            )
-            circtmp = prepend_state_prep(circtmp, initial_state, interface, circuit.wires)
+            circtmp = circuits[depth].copy(shots=qml.measurements.shots.Shots(shots))
+
+            circtmp = prepend_state_prep(circtmp, initial_state, interface, sorted(circuit.wires))
             state, is_state_batched = get_final_state(
                 circtmp,
                 debugger=debugger,
@@ -654,9 +626,7 @@ def split_circuit_at_mcms(circuit):
         new_measurements = (
             [qml.sample(wires=op.wires)] if circuit.shots else [qml.probs(wires=op.wires)]
         )
-        circuits.append(
-            qml.tape.QuantumScript(new_operations, new_measurements, shots=circuit.shots)
-        )
+        circuits.append(circuit.copy(operations=new_operations, measurements=new_measurements))
         first = last + 1
 
     last_circuit_operations = circuit.operations[first:]
@@ -683,17 +653,13 @@ def prepend_state_prep(circuit, state, interface, wires):
     of the original circuit (which included all wires)."""
     if len(circuit) > 0 and isinstance(circuit[0], qml.operation.StatePrepBase):
         return circuit
-    state = (
-        create_initial_state(wires, None, like=INTERFACE_TO_LIKE[interface])
-        if state is None
-        else state
-    )
-    return qml.tape.QuantumScript(
-        [qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)]
-        + circuit.operations,
-        circuit.measurements,
-        shots=circuit.shots,
-    )
+
+    interface = get_canonical_interface_name(interface)
+    state = create_initial_state(wires, None, like=interface.get_like()) if state is None else state
+    new_ops = [
+        qml.StatePrep(qml.math.ravel(state), wires=wires, validate_norm=False)
+    ] + circuit.operations
+    return circuit.copy(operations=new_ops)
 
 
 def insert_mcms(circuit, results, mid_measurements):
@@ -899,7 +865,7 @@ def combine_measurements(terminal_measurements, results, mcm_samples):
 
 
 @singledispatch
-def combine_measurements_core(original_measurement, measures):  # pylint: disable=unused-argument
+def combine_measurements_core(original_measurement, measures):
     """Returns the combined measurement value of a given type."""
     raise TypeError(
         f"Native mid-circuit measurement mode does not support {type(original_measurement).__name__}"
@@ -907,7 +873,7 @@ def combine_measurements_core(original_measurement, measures):  # pylint: disabl
 
 
 @combine_measurements_core.register
-def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: CountsMP, measures):
     """The counts are accumulated using a ``Counter`` object."""
     keys = list(measures.keys())
     new_counts = Counter()
@@ -919,7 +885,7 @@ def _(original_measurement: CountsMP, measures):  # pylint: disable=unused-argum
 
 
 @combine_measurements_core.register
-def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: ExpectationMP, measures):
     """The expectation value of two branches is a weighted sum of expectation values."""
     cum_value = 0
     total_counts = 0
@@ -932,7 +898,7 @@ def _(original_measurement: ExpectationMP, measures):  # pylint: disable=unused-
 
 
 @combine_measurements_core.register
-def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: ProbabilityMP, measures):
     """The combined probability of two branches is a weighted sum of the probabilities. Note the implementation is the same as for ``ExpectationMP``."""
     cum_value = 0
     total_counts = 0
@@ -945,7 +911,7 @@ def _(original_measurement: ProbabilityMP, measures):  # pylint: disable=unused-
 
 
 @combine_measurements_core.register
-def _(original_measurement: SampleMP, measures):  # pylint: disable=unused-argument
+def _(original_measurement: SampleMP, measures):
     """The combined samples of two branches is obtained by concatenating the sample of each branch."""
     new_sample = tuple(
         qml.math.atleast_1d(m[1]) for m in measures.values() if m[0] and not m[1] is tuple()

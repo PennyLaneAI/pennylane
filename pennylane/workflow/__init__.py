@@ -23,24 +23,12 @@ Execution functions and utilities
     :toctree: api
 
     ~execute
-    ~workflow.set_shots
     ~workflow.construct_tape
     ~workflow.construct_batch
+    ~workflow.construct_execution_config
     ~workflow.get_transform_program
     ~workflow.get_best_diff_method
-
-Supported interfaces
-~~~~~~~~~~~~~~~~~~~~
-
-.. autosummary::
-    :toctree: api
-
-    ~workflow.interfaces.autograd
-    ~workflow.interfaces.jax
-    ~workflow.interfaces.jax_jit
-    ~workflow.interfaces.tensorflow
-    ~workflow.interfaces.tensorflow_autograph
-    ~workflow.interfaces.torch
+    ~workflow.set_shots
 
 Jacobian Product Calculation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -56,10 +44,19 @@ Jacobian Product Calculation
 .. include:: ../../pennylane/workflow/return_types_spec.rst
 
 """
-from .get_best_diff_method import get_best_diff_method
-from .get_gradient_fn import _get_gradient_fn
 from .construct_batch import construct_batch, get_transform_program
 from .construct_tape import construct_tape
-from .execution import INTERFACE_MAP, SUPPORTED_INTERFACE_NAMES, execute
+from .construct_execution_config import construct_execution_config
+from .execution import execute
+from .get_best_diff_method import get_best_diff_method
 from .qnode import QNode, qnode
+from .resolution import (
+    _resolve_execution_config,
+    _resolve_mcm_config,
+    _resolve_diff_method,
+    _resolve_interface,
+)
 from .set_shots import set_shots
+from ._cache_transform import _cache_transform
+from ._setup_transform_program import _setup_transform_program
+from .run import run

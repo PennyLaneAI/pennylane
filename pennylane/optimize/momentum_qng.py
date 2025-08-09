@@ -13,12 +13,10 @@
 # limitations under the License.
 """Quantum natural gradient optimizer with momentum"""
 
-# pylint: disable=too-many-branches
-# pylint: disable=too-many-arguments
-from pennylane import numpy as pnp
-from pennylane.utils import _flatten, unflatten
 
-from .qng import QNGOptimizer
+from pennylane import numpy as pnp
+
+from .qng import QNGOptimizer, _flatten_np, _unflatten_np
 
 
 class MomentumQNGOptimizer(QNGOptimizer):
@@ -32,7 +30,7 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
     We are grateful to David Wierichs for his generous help with the multi-argument variant of the ``MomentumQNGOptimizer`` class.
 
-    ``MomentumQNGOptimizer`` is a subclass of the ``QNGOptimizer`` class and requires one additional
+    ``MomentumQNGOptimizer`` is a subclass of ``QNGOptimizer`` that requires one additional
     hyperparameter (the momentum coefficient) :math:`0 \leq \rho < 1`, the default value being :math:`\rho=0.9`. For :math:`\rho=0` Momentum-QNG
     reduces to the basic QNG.
     In this way, the parameter update rule in Momentum-QNG reads:
@@ -45,8 +43,22 @@ class MomentumQNGOptimizer(QNGOptimizer):
     is an expectation value of some observable measured on the variational
     quantum circuit :math:`U(x^{(t)})`.
 
-    For details on quantum natural gradient, see :class:`~.pennylane.QNGOptimizer`.
-    Also, see :class:`~.pennylane.MomentumOptimizer` for a first-order optimizer with momentum.
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta` (default value: 0.01).
+        momentum (float): the user-defined hyperparameter :math:`\rho` (default value: 0.9).
+        approx (str): approximation method for the metric tensor (default value: "block-diag").
+
+            - If ``None``, the full metric tensor is computed.
+
+            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
+              the number of evaluated circuits significantly.
+
+            - If ``"diag"``, only the diagonal approximation is computed, slightly
+              reducing the classical overhead but not the quantum resources
+              (compared to ``"block-diag"``).
+
+        lam (float): metric tensor regularization :math:`G_{ij}+\lambda I`
+            to be applied at each optimization step (default value: 0).
 
     **Examples:**
 
@@ -78,31 +90,20 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
     .. seealso::
 
+        For details on quantum natural gradient, see :class:`~.pennylane.QNGOptimizer`.
+        See :class:`~.pennylane.MomentumOptimizer` for a first-order optimizer with momentum.
         Also see the examples from the reference above, benchmarking the Momentum-QNG optimizer
         against the basic QNG, Momentum and Adam:
+
         - `QAOA <https://github.com/borbysh/Momentum-QNG/blob/main/QAOA_depth4.ipynb>`__
         - `VQE <https://github.com/borbysh/Momentum-QNG/blob/main/portfolio_optimization.ipynb>`__
 
-    Keyword Args:
-        stepsize=0.01 (float): the user-defined hyperparameter :math:`\eta`
-        momentum=0.9 (float): the user-defined hyperparameter :math:`\rho`
-        approx (str): Which approximation of the metric tensor to compute.
+        See :class:`~.MomentumQNGOptimizerQJIT` for an Optax-like and ``jax.jit``/``qml.qjit``-compatible implementation.
 
-            - If ``None``, the full metric tensor is computed
-
-            - If ``"block-diag"``, the block-diagonal approximation is computed, reducing
-              the number of evaluated circuits significantly.
-
-            - If ``"diag"``, only the diagonal approximation is computed, slightly
-              reducing the classical overhead but not the quantum resources
-              (compared to ``"block-diag"``).
-
-        lam=0 (float): metric tensor regularization :math:`G_{ij}+\lambda I`
-            to be applied at each optimization step
     """
 
     def __init__(self, stepsize=0.01, momentum=0.9, approx="block-diag", lam=0):
-        super().__init__(stepsize)
+        super().__init__(stepsize, approx, lam)
         self.momentum = momentum
         self.accumulation = None
 
@@ -131,12 +132,12 @@ class MomentumQNGOptimizer(QNGOptimizer):
 
         for index, arg in enumerate(args):
             if getattr(arg, "requires_grad", False):
-                grad_flat = pnp.array(list(_flatten(grad[trained_index])))
+                grad_flat = pnp.array(list(_flatten_np(grad[trained_index])))
                 # self.metric_tensor has already been reshaped to 2D, matching flat gradient.
-                qng_update = pnp.linalg.solve(metric_tensor[trained_index], grad_flat)
+                qng_update = pnp.linalg.pinv(metric_tensor[trained_index]) @ grad_flat
 
                 self.accumulation[trained_index] *= self.momentum
-                self.accumulation[trained_index] += self.stepsize * unflatten(
+                self.accumulation[trained_index] += self.stepsize * _unflatten_np(
                     qng_update, grad[trained_index]
                 )
                 args_new[index] = arg - self.accumulation[trained_index]

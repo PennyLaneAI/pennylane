@@ -222,12 +222,24 @@ eig_h2o.append([-0.67873019, -0.45673019, -0.45673019])
     ),
     [
         (h2, x_h2, 0, None, None, "jordan_wigner", coeffs_h2, ops_h2),
-        (h2, x_h2, 0, None, None, "parity", coeffs_h2_parity, ops_h2_parity),
+        pytest.param(
+            h2,
+            x_h2,
+            0,
+            None,
+            None,
+            "parity",
+            coeffs_h2_parity,
+            ops_h2_parity,
+            marks=pytest.mark.xfail(
+                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue https://github.com/quantumlib/OpenFermion/issues/1097 for more details.",
+                strict=True,
+            ),
+        ),
         (h3p, x_h3p, 1, None, None, "jordan_wigner", coeffs_h3p, ops_h3p),
         (h2o, x_h2o, 0, 2, 2, "bravyi_kitaev", coeffs_h2o, ops_h2o),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_openfermion_molecular_dipole(
     symbols, geometry, charge, active_el, active_orb, mapping, coeffs, ops, tol, tmpdir
 ):
@@ -252,15 +264,6 @@ def test_openfermion_molecular_dipole(
         assert np.allclose(calc_coeffs, exp_coeffs, **tol)
 
         r_ops = ops[i]
-        if not qml.operation.active_new_opmath():
-            r_ops = [
-                (
-                    qml.operation.Tensor(*obs.simplify())
-                    if isinstance(obs.simplify(), (qml.ops.op_math.Prod))
-                    else obs.simplify()
-                )
-                for obs in ops[i]
-            ]
 
         assert all(isinstance(o1, o2.__class__) for o1, o2 in zip(d_ops, r_ops))
         for o1, o2 in zip(d_ops, r_ops):
@@ -284,7 +287,6 @@ def test_openfermion_molecular_dipole(
         (h2o, x_h2o, 0, 2, 2, "bravyi_kitaev", eig_h2o),
     ],
 )
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 def test_differentiable_molecular_dipole(
     symbols, geometry, charge, active_el, active_orb, mapping, eig_ref, tmpdir
 ):
@@ -309,7 +311,6 @@ def test_differentiable_molecular_dipole(
         assert np.allclose(np.sort(eig), np.sort(eig_ref[idx]))
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize(
     ("wiremap"),
     [
@@ -365,10 +366,7 @@ def test_molecular_dipole_error():
 @pytest.mark.parametrize(
     ("method", "args"),
     [
-        (
-            "openfermion",
-            None,
-        ),
+        ("openfermion", None),
         (
             "dhf",
             None,
@@ -379,7 +377,7 @@ def test_molecular_dipole_error():
         ),
     ],
 )
-@pytest.mark.usefixtures("skip_if_no_openfermion_support", "use_legacy_and_new_opmath")
+@pytest.mark.usefixtures("skip_if_no_openfermion_support")
 def test_real_dipole(method, args, tmpdir):
     r"""Test that the generated operator has real coefficients."""
 

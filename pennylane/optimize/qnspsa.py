@@ -16,8 +16,11 @@ import warnings
 
 from scipy.linalg import sqrtm
 
-import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.measurements import probs
+from pennylane.ops import adjoint
+from pennylane.tape import QuantumScript
+from pennylane.workflow import construct_tape, execute
 
 
 class QNSPSAOptimizer:
@@ -77,7 +80,22 @@ class QNSPSAOptimizer:
         "Simultaneous Perturbation Stochastic Approximation of the Quantum Fisher Information."
         `Quantum, 5, 567 <https://quantum-journal.org/papers/q-2021-10-20-567/>`_, 2021.
 
-    You can also find a walkthrough of the implementation in this `tutorial <https://pennylane.ai/qml/demos/qnspsa>`_.
+    You can also find a walkthrough of the implementation in this `tutorial <demos/qnspsa>`__.
+
+    Args:
+        stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default value: 1e-3).
+        regularization (float): regularization term :math:`\beta` to the Fubini-Study metric tensor
+            for numerical stability (default value: 1e-3).
+        finite_diff_step (float): step size :math:`\epsilon` to compute the finite difference
+            gradient and the Fubini-Study metric tensor (default value: 1e-2).
+        resamplings (int): the number of samples to average for each parameter update (default value: 1).
+        blocking (boolean): when set to be True, the optimizer only accepts updates that lead to a
+            loss value no larger than the loss value before update, plus a tolerance. The tolerance
+            is set with the hyperparameter ``history_length``. The ``blocking`` option is
+            observed to help the optimizer to converge significantly faster (default value: True).
+        history_length (int): when ``blocking`` is True, the tolerance is set to be the average of
+            the cost values in the last ``history_length`` steps (default value: 5).
+        seed (int): seed for the random sampling (default value: None).
 
     **Examples:**
 
@@ -107,25 +125,11 @@ class QNSPSAOptimizer:
     Step 30: cost = 0.0910
     Step 40: cost = -0.9369
     Step 50: cost = -0.9984
-
-    Keyword Args:
-        stepsize (float): the user-defined hyperparameter :math:`\eta` for learning rate (default: 1e-3)
-        regularization (float): regularization term :math:`\beta` to the Fubini-Study metric tensor
-            for numerical stability (default: 1e-3)
-        finite_diff_step (float): step size :math:`\epsilon` to compute the finite difference
-            gradient and the Fubini-Study metric tensor (default: 1e-2)
-        resamplings (int): the number of samples to average for each parameter update (default: 1)
-        blocking (boolean): when set to be True, the optimizer only accepts updates that lead to a
-            loss value no larger than the loss value before update, plus a tolerance. The tolerance
-            is set with the hyperparameter ``history_length``. The ``blocking`` option is
-            observed to help the optimizer to converge significantly faster (default: True)
-        history_length (int): when ``blocking`` is True, the tolerance is set to be the average of
-            the cost values in the last ``history_length`` steps (default: 5)
-        seed (int): seed for the random sampling (default: None)
     """
 
     # pylint: disable=too-many-arguments
     # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-positional-arguments
     def __init__(
         self,
         stepsize=1e-3,
@@ -221,20 +225,8 @@ class QNSPSAOptimizer:
             all_grad_dirs.append(grad_dirs)
             all_tensor_dirs.append(tensor_dirs)
 
-        if isinstance(cost.device, qml.devices.Device):
-            program, config = cost.device.preprocess()
-
-            raw_results = qml.execute(
-                all_grad_tapes + all_metric_tapes,
-                cost.device,
-                None,
-                transform_program=program,
-                config=config,
-            )
-        else:
-            raw_results = qml.execute(
-                all_grad_tapes + all_metric_tapes, cost.device, None
-            )  # pragma: no cover
+        # nosemgrep
+        raw_results = execute(all_grad_tapes + all_metric_tapes, cost.device)
         grads = [
             self._post_process_grad(raw_results[2 * i : 2 * i + 2], all_grad_dirs[i])
             for i in range(self.resamplings)
@@ -325,8 +317,8 @@ class QNSPSAOptimizer:
         params_vec = pnp.concatenate([param.reshape(-1) for param in params])
         grad_vec = pnp.concatenate([grad.reshape(-1) for grad in gradient])
 
-        new_params_vec = pnp.linalg.solve(
-            self.metric_tensor,
+        new_params_vec = pnp.matmul(
+            pnp.linalg.pinv(self.metric_tensor),
             (-self.stepsize * grad_vec + pnp.matmul(self.metric_tensor, params_vec)),
         )
         # reshape single-vector new_params_vec into new_params, to match the input params
@@ -369,10 +361,10 @@ class QNSPSAOptimizer:
             args_plus[index] = arg + self.finite_diff_step * direction
             args_minus[index] = arg - self.finite_diff_step * direction
 
-        cost.construct(args_plus, kwargs)
-        tape_plus = cost.tape.copy(copy_operations=True)
-        cost.construct(args_minus, kwargs)
-        tape_minus = cost.tape.copy(copy_operations=True)
+        tape = construct_tape(cost)(*args_plus, **kwargs)
+        tape_plus = tape.copy(copy_operations=True)
+        tape = construct_tape(cost)(*args_minus, **kwargs)
+        tape_minus = tape.copy(copy_operations=True)
         return [tape_plus, tape_minus], dirs
 
     def _update_tensor(self, tensor_raw):
@@ -424,27 +416,28 @@ class QNSPSAOptimizer:
         op_forward = self._get_operations(cost, args1, kwargs)
         op_inv = self._get_operations(cost, args2, kwargs)
 
-        new_ops = op_forward + [qml.adjoint(op) for op in reversed(op_inv)]
-        return qml.tape.QuantumScript(new_ops, [qml.probs(wires=cost.tape.wires.labels)])
+        new_ops = op_forward + [adjoint(op) for op in reversed(op_inv)]
+        tape = construct_tape(cost)(*args1, **kwargs)
+        return QuantumScript(new_ops, [probs(wires=tape.wires.labels)])
 
     @staticmethod
     def _get_operations(cost, args, kwargs):
-        cost.construct(args, kwargs)
-        return cost.tape.operations
+        tape = construct_tape(cost)(*args, **kwargs)
+        return tape.operations
 
     def _apply_blocking(self, cost, args, kwargs, params_next):
-        cost.construct(args, kwargs)
-        tape_loss_curr = cost.tape.copy(copy_operations=True)
+        tape = construct_tape(cost)(*args, **kwargs)
+        tape_loss_curr = tape.copy(copy_operations=True)
 
         if not isinstance(params_next, list):
             params_next = [params_next]
 
-        cost.construct(params_next, kwargs)
-        tape_loss_next = cost.tape.copy(copy_operations=True)
+        tape = construct_tape(cost)(*params_next, **kwargs)
+        tape_loss_next = tape.copy(copy_operations=True)
 
-        program, _ = cost.device.preprocess()
+        program = cost.device.preprocess_transforms()
 
-        loss_curr, loss_next = qml.execute(
+        loss_curr, loss_next = execute(
             [tape_loss_curr, tape_loss_next], cost.device, None, transform_program=program
         )
 

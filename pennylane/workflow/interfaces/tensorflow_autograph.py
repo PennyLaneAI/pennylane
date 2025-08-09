@@ -15,7 +15,7 @@
 This module contains functions for adding the TensorFlow Autograph interface
 to a PennyLane Device class.
 """
-# pylint: disable=too-many-arguments,too-many-branches,too-many-statements
+# pylint: disable=too-many-arguments,too-many-statements
 from functools import reduce
 
 import numpy as np
@@ -101,7 +101,7 @@ def execute(
 
     Args:
         tapes (Sequence[.QuantumTape]): batch of tapes to execute
-        device (pennylane.Device): Device to use to execute the batch of tapes.
+        device (pennylane.devices.Device): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
         execute_fn (callable): The execution function used to execute the tapes
@@ -202,7 +202,7 @@ def execute(
         return res + jacs + output_sizes
 
     @tf.custom_gradient
-    def _execute(*all_params):  # pylint:disable=unused-argument
+    def _execute(*all_params):
         res = tf.numpy_function(func=_forward, inp=all_params, Tout=output_types)
         output_sizes = res[-total_measurements * num_shot_copies :]
 

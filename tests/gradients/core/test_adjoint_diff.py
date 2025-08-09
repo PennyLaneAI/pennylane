@@ -19,6 +19,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 
 
 class TestAdjointJacobian:
@@ -38,7 +39,7 @@ class TestAdjointJacobian:
             qml.var(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(qml.QuantumFunctionError, match="Adjoint differentiation method does"):
+        with pytest.raises(QuantumFunctionError, match="Adjoint differentiation method does"):
             dev.adjoint_jacobian(tape)
 
     def test_finite_shots_warns(self):
@@ -52,25 +53,6 @@ class TestAdjointJacobian:
         tape = qml.tape.QuantumScript.from_queue(q)
         with pytest.warns(
             UserWarning, match="Requested adjoint differentiation to be computed with finite shots."
-        ):
-            dev.adjoint_jacobian(tape)
-
-    @pytest.mark.usefixtures("legacy_opmath_only")
-    def test_hamiltonian_error_legacy_opmath(self, dev):
-        """Test that error is raised for qml.Hamiltonian"""
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.expval(
-                qml.Hamiltonian(
-                    [np.array(-0.05), np.array(0.17)],
-                    [qml.PauliX(0), qml.PauliZ(0)],
-                )
-            )
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(
-            qml.QuantumFunctionError,
-            match="Adjoint differentiation method does not support Hamiltonian observables",
         ):
             dev.adjoint_jacobian(tape)
 
@@ -101,7 +83,7 @@ class TestAdjointJacobian:
             qml.expval(qml.PauliZ(0))
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        with pytest.raises(qml.QuantumFunctionError, match="The CRot operation is not"):
+        with pytest.raises(QuantumFunctionError, match="The CRot operation is not"):
             dev.adjoint_jacobian(tape)
 
     def test_trainable_hermitian_warns(self):

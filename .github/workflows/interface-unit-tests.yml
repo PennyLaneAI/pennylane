@@ -12,6 +12,12 @@ on:
       codecov_token:
         description: The codecov token to use when uploading coverage files
         required: true
+      test_report_server_endpoint_url:
+        description: The endpoint URL for the test report collection server
+        required: false
+      test_report_server_api_key:
+        description: The API key for the test results collection server
+        required: false
     inputs:
       branch:
         description: The PennyLane branch to checkout and run unit tests for
@@ -31,7 +37,7 @@ on:
         description: PyTest Coverage flags to pass to all jobs
         required: false
         type: string
-        default: --cov=pennylane --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
+        default: --cov-config=.coveragerc --cov=pennylane --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native
       pytest_additional_args:
         description: Additional arguments to pass to pytest
         required: false
@@ -42,7 +48,7 @@ on:
           Indicate if a lightened version of the CI should be run instead of the entire suite.
 
           The lightened version of the CI includes the following changes:
-          - Only Python 3.10 is tested against, instead of 3.10, 3.11, 3.12
+          - Only Python 3.11 is tested against, instead of 3.11, 3.12, 3.13
         required: false
         type: boolean
         default: false
@@ -54,11 +60,6 @@ on:
         required: false
         type: string
         default: ''
-      disable_new_opmath:
-        description: Whether to disable the new op_math or not when running the tests
-        required: false
-        type: string
-        default: "False"
       additional_python_packages:
         description: Additional Python packages to install separated by a space
         required: false
@@ -76,6 +77,14 @@ on:
         required: false
         type: boolean
         default: false
+      python_warning_level:
+        description: Sets the default Python warning level as defined by https://docs.python.org/3/using/cmdline.html#envvar-PYTHONWARNINGS
+        required: false
+        type: string
+        default: 'default'
+env:
+  ACTIONS_RUNNER_DEBUG: true
+  ACTIONS_STEP_DEBUG: true
 
 jobs:
   determine_runner:
@@ -85,6 +94,34 @@ jobs:
     with:
       default_runner: ubuntu-latest
       force_large_runner: ${{ inputs.use_large_runner }}
+
+  warnings-as-errors-setup:
+    needs:
+      - determine_runner
+    
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    steps:
+      - name: Set fail-fast for WAE
+        id: mat_fail_fast
+        run: |
+          echo "fail_fast=${{ contains(inputs.python_warning_level, 'default') && 'default' || 'error' }}" >> $GITHUB_OUTPUT
+
+      - name: Set pytest arguments for setting warnings level
+        id: pytest_warning_flags
+        env:
+          PYTEST_WARNING_ARGS: -W "${{ inputs.python_warning_level }}" --continue-on-collection-errors
+        run: |
+          if [ "${{ inputs.python_warning_level }}" != "default" ]; then
+            echo "Setting pytest warning flags"
+            echo "pytest_warning_args=$PYTEST_WARNING_ARGS" >> $GITHUB_OUTPUT
+          else
+            echo "No pytest warning flags needed"
+            echo "pytest_warning_args=" >> $GITHUB_OUTPUT
+          fi
+
+    outputs:
+      fail_fast: ${{ steps.mat_fail_fast.outputs.fail_fast }}
+      pytest_warning_args: ${{ steps.pytest_warning_flags.outputs.pytest_warning_args }}
 
   setup-ci-load:
     needs:
@@ -103,23 +140,31 @@ jobs:
           then
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.10"]
+            "default": ["3.11"]
+          }
+          EOF
+          elif [ "${{ inputs.python_warning_level }}" == "error" ];
+          then
+            cat >python_versions.json <<-EOF
+          {
+            "default": ["3.11"]
           }
           EOF
           else
             cat >python_versions.json <<-EOF
           {
-            "default": ["3.10", "3.11", "3.12"],
-            "torch-tests": ["3.10", "3.12"],
-            "tf-tests": ["3.10", "3.12"],
-            "jax-tests": ["3.10", "3.12"],
-            "all-interfaces-tests": ["3.10"],
-            "external-libraries-tests": ["3.10"],
-            "qcut-tests": ["3.10"],
-            "qchem-tests": ["3.10"],
-            "gradients-tests": ["3.10"],
-            "data-tests": ["3.10"],
-            "device-tests": ["3.10"]
+            "default": ["3.11", "3.12", "3.13"],
+            "torch-tests": ["3.11", "3.13"],
+            "tf-tests": ["3.11", "3.12"],
+            "jax-tests": ["3.11", "3.13"],
+            "capture-jax-tests": ["3.11", "3.13"],
+            "all-interfaces-tests": ["3.11"],
+            "external-libraries-tests": ["3.11"],
+            "qcut-tests": ["3.11"],
+            "qchem-tests": ["3.11"],
+            "gradients-tests": ["3.11"],
+            "data-tests": ["3.11", "3.13"],
+            "device-tests": ["3.11"]
           }
           EOF
           fi
@@ -182,44 +227,18 @@ jobs:
   default-dependency-versions:
     needs:
       - determine_runner
-    
-    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
-    
-    steps:
-      - name: Default JAX Version
-        id: jax
-        run: echo "version=0.4.28" >> $GITHUB_OUTPUT
-      
-      - name: Default Tensorflow Version
-        id: tensorflow
-        run: echo "version=2.16.0" >> $GITHUB_OUTPUT
-      
-      - name: Default PyTorch Version
-        id: pytorch
-        run: echo "version=2.3.0" >> $GITHUB_OUTPUT
-      
-      - name: Nightly Catalyst Version
-        id: catalyst
-        run: echo "nightly=--extra-index-url https://test.pypi.org/simple/ PennyLane-Catalyst --pre" >> $GITHUB_OUTPUT
-      
-      - name: PennyLane-Lightning Latest Version
-        id: pennylane-lightning
-        run: echo "latest=-i https://test.pypi.org/simple/ PennyLane-Lightning --pre --upgrade" >> $GITHUB_OUTPUT
-    
-    outputs:
-      jax-version: jax==${{ steps.jax.outputs.version }} jaxlib==${{ steps.jax.outputs.version }}
-      tensorflow-version: tensorflow~=${{ steps.tensorflow.outputs.version }} tf-keras~=${{ steps.tensorflow.outputs.version }}
-      pytorch-version: torch==${{ steps.pytorch.outputs.version }} -f https://download.pytorch.org/whl/torch_stable.html
-      catalyst-nightly: ${{ steps.catalyst.outputs.nightly }}
-      pennylane-lightning-latest: ${{ steps.pennylane-lightning.outputs.latest }}
-
+    uses: ./.github/workflows/interface-dependency-versions.yml
+    with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
 
   torch-tests:
     needs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).torch-tests
@@ -243,10 +262,11 @@ jobs:
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}torch-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       pytest_markers: torch and not qcut and not finite-diff and not param-shift
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'torch.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   autograd-tests:
@@ -254,7 +274,9 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).autograd-tests
@@ -277,8 +299,9 @@ jobs:
       additional_pip_packages: ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}autograd-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       pytest_markers: autograd and not qcut and not finite-diff and not param-shift
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   tf-tests:
@@ -286,7 +309,9 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).tf-tests
@@ -313,18 +338,19 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: tf and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --splits 3 --group ${{ matrix.group }}
+      pytest_additional_args: --splits 3 --group ${{ matrix.group }} ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_durations_file_path: '.github/durations/tf_tests_durations.json'
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}tf-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'tf.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
-
 
   jax-tests:
     needs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).jax-tests
@@ -350,11 +376,51 @@ jobs:
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_markers: jax and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --dist=loadscope --splits 4 --group ${{ matrix.group }}
+      pytest_markers: jax and not qcut and not finite-diff and not param-shift and not capture
+      pytest_additional_args: --dist=loadscope --splits 4 --group ${{ matrix.group }} ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_durations_file_path: '.github/durations/jax_tests_durations.json'
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}jax-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'jax.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
+
+  capture-jax-tests:
+    needs:
+      - setup-ci-load
+      - determine_runner
+      - default-dependency-versions
+      - warnings-as-errors-setup
+    strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
+      max-parallel: >-
+        ${{
+           fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).capture-jax-tests
+           || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
+         }}
+      matrix:
+        python-version: >-
+          ${{
+            fromJSON(needs.setup-ci-load.outputs.python-version).capture-jax-tests
+            || fromJSON(needs.setup-ci-load.outputs.python-version).default
+           }}
+    if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'capture-jax-tests') }}
+    uses: ./.github/workflows/unit-test.yml
+    with:
+      job_runner_name: ${{ needs.determine_runner.outputs.runner_group }}
+      job_name: ${{ inputs.job_name_prefix }}capture-jax-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}
+      branch: ${{ inputs.branch }}
+      coverage_artifact_name: core-interfaces-coverage-capture-jax-${{ matrix.python-version }}-${{ matrix.group }}
+      python_version: ${{ matrix.python-version }}
+      additional_pip_packages: |
+        ${{ needs.default-dependency-versions.outputs.catalyst-jax-version }}
+        ${{ inputs.additional_python_packages }}
+      additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
+      pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_markers: capture and not qcut and not finite-diff and not param-shift
+      pytest_additional_args: --dist=loadscope ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_durations_file_path: '.github/durations/capture_jax_tests_durations.json'
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}capture-jax-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+      requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'capture_jax.txt' || '' }}
+
+
 
 
   core-tests:
@@ -362,7 +428,9 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).core-tests
@@ -387,10 +455,10 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: core and not qcut and not finite-diff and not param-shift
-      pytest_additional_args: --splits 6 --group ${{ matrix.group }}
+      pytest_additional_args: --splits 6 --group ${{ matrix.group }} ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_durations_file_path: '.github/durations/core_tests_durations.json'
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}core-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'core.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   all-interfaces-tests:
@@ -398,7 +466,9 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).all-interfaces-tests
@@ -426,8 +496,9 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: all_interfaces
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}all-interfaces-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'all_interfaces.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   external-libraries-tests:
@@ -435,7 +506,9 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).external-libraries-tests
@@ -457,21 +530,17 @@ jobs:
       python_version: ${{ matrix.python-version }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: external
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        pyzx matplotlib stim quimb mitiq pennylane-qiskit ply
+        pyzx matplotlib stim quimb mitiq ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime xdsl==0.46 filecheck
         ${{ needs.default-dependency-versions.outputs.jax-version }}
+        git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
-        ${{ inputs.additional_python_packages }}
-      
-      # This is required during the release process when the latest released version of
-      # catalyst requires the latest version of pennylane that is about to be released.
-      # Installing catalyst after pennylane to make sure that the latest catalyst is used.
-      additional_pip_packages_post: |
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
-        ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
+        ${{ inputs.additional_python_packages }}
 
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   qcut-tests:
@@ -479,7 +548,9 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qcut-tests
@@ -501,15 +572,16 @@ jobs:
       python_version: ${{ matrix.python-version }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qcut
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}qcut-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        kahypar==1.1.7 
+        kahypar==1.3.5 
         opt_einsum
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
         ${{ needs.default-dependency-versions.outputs.pytorch-version }}
         ${{ inputs.additional_python_packages }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   qchem-tests:
@@ -517,7 +589,9 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).qchem-tests
@@ -537,21 +611,23 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: qchem-coverage
       python_version: ${{ matrix.python-version }}
-      
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: qchem
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}qchem-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        openfermionpyscf basis-set-exchange
+        openfermionpyscf basis-set-exchange geometric scikit-learn
         ${{ inputs.additional_python_packages }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
   gradients-tests:
     needs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).gradients-tests
@@ -574,6 +650,8 @@ jobs:
       branch: ${{ inputs.branch }}
       coverage_artifact_name: gradients-${{ matrix.config.suite }}-coverage
       python_version: ${{ matrix.python-version }}
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}gradients-tests (${{ matrix.config.suite }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         ${{ needs.default-dependency-versions.outputs.tensorflow-version }}
@@ -582,7 +660,6 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
       pytest_markers: ${{ matrix.config.suite }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   data-tests:
@@ -590,7 +667,9 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).data-tests
@@ -612,11 +691,12 @@ jobs:
       python_version: ${{ matrix.python-version }}
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
+      pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_markers: data
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}data-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
         h5py
         ${{ inputs.additional_python_packages }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
 
 
   device-tests:
@@ -624,7 +704,9 @@ jobs:
       - setup-ci-load
       - determine_runner
       - default-dependency-versions
+      - warnings-as-errors-setup
     strategy:
+      fail-fast: ${{ needs.warnings-as-errors-setup.outputs.fail_fast == 'default' }}
       max-parallel: >-
         ${{
            fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).device-tests
@@ -659,18 +741,17 @@ jobs:
       additional_pip_packages_post: ${{ needs.default-dependency-versions.outputs.pennylane-lightning-latest }}
       pytest_test_directory: pennylane/devices/tests
       pytest_coverage_flags: ${{ inputs.pytest_coverage_flags }}
-      pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }}
-      disable_new_opmath: ${{ inputs.disable_new_opmath }}
-
-
-  upload-to-codecov:
+      pytest_additional_args: --device=${{ matrix.config.device }} --shots=${{ matrix.config.shots }} ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
+      pytest_xml_file_path: '${{ inputs.job_name_prefix }}device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+  
+  all-tests-passed:
     runs-on: ubuntu-latest
-
     needs:
       - torch-tests
       - autograd-tests
       - tf-tests
       - jax-tests
+      - capture-jax-tests
       - core-tests
       - all-interfaces-tests
       - external-libraries-tests
@@ -679,14 +760,30 @@ jobs:
       - gradients-tests
       - data-tests
       - device-tests
+    
+    # Run this job even if any dependencies were skipped
+    # but do not run if any dependencies failed or were cancelled
+    if: >-
+      ${{
+        always() &&
+        !contains(needs.*.result, 'failure') &&
+        !contains(needs.*.result, 'cancelled')
+       }}
 
-    # Run this even if any of the above jobs are skipped but not if any of the jobs failed
+    steps:
+      - name: Block until all test jobs are complete
+        run: echo "All test jobs completed successfully."
+
+  upload-to-codecov:
+    runs-on: ubuntu-latest
+    needs: all-tests-passed
+
+    # Run this if and only if the "all-test-passed" job succeeded
     if: >-
       ${{
         always() &&
         inputs.upload_to_codecov == true &&
-        !contains(needs.*.result, 'failure') &&
-        !contains(needs.*.result, 'cancelled')
+        needs.all-tests-passed.result == 'success'
        }}
 
     steps:
@@ -696,7 +793,7 @@ jobs:
         with:
           ref: ${{ inputs.branch }}
 
-      - name: Down Coverage Artifacts
+      - name: Download Coverage Artifacts
         uses: actions/download-artifact@v4
 
       - name: Upload to Codecov
@@ -704,3 +801,60 @@ jobs:
         with:
           token: ${{ secrets.codecov_token }}
           fail_ci_if_error: true  # upload errors should be caught early
+
+  upload-reports:
+    needs:
+      - setup-ci-load
+      - determine_runner
+      - torch-tests
+      - autograd-tests
+      - tf-tests
+      - jax-tests
+      - capture-jax-tests
+      - core-tests
+      - all-interfaces-tests
+      - external-libraries-tests
+      - qcut-tests
+      - qchem-tests
+      - gradients-tests
+      - data-tests
+      - device-tests
+
+    # Run this if any of the test jobs failed or were cancelled
+    if: >-
+      ${{
+        always() &&
+        (contains(join(needs.*.result, ','), 'failure') ||
+         contains(join(needs.*.conclusion, ','), 'failure') ||
+         contains(join(needs.*.status, ','), 'failure') ||
+         contains(join(needs.*.result, ','), 'cancelled') ||
+         contains(join(needs.*.conclusion, ','), 'cancelled') ||
+         contains(join(needs.*.status, ','), 'cancelled'))
+      }}
+
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-report-*
+          path: .github/test-reports
+          merge-multiple: true
+
+      - name: Upload Test Failure Reports
+        env:
+          PENNYLANE_OSS_SERVER_ENDPOINT_URL: ${{ secrets.test_report_server_endpoint_url }}
+          PENNYLANE_OSS_SERVER_API_KEY: ${{ secrets.test_report_server_api_key }}
+        run: |
+          python -m pip install -r .github/workflows/scripts/upload_reports/requirements.txt
+
+          python .github/workflows/scripts/upload_reports/upload.py \
+            --commit-sha "${{ github.sha }}" \
+            --branch "${{ inputs.branch }}" \
+            --workflow-id "${{ github.run_id }}" \
+            --workspace-path "${{ github.workspace }}"

@@ -343,9 +343,7 @@ def test_data_is_tuple():
 def create_op_instance(c, str_wires=False):
     """Given an Operator class, create an instance of it."""
     n_wires = c.num_wires
-    if n_wires == qml.operation.AllWires:
-        n_wires = 0
-    elif n_wires == qml.operation.AnyWires:
+    if n_wires is None:
         n_wires = 1
 
     wires = qml.wires.Wires(range(n_wires))
@@ -381,6 +379,9 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
     if class_to_validate.__module__[14:20] == "qutrit":
         pytest.xfail(reason="qutrit ops fail matrix validation")
 
+    if class_to_validate.__module__[10:14] == "ftqc":
+        pytest.skip(reason="skip tests for ftqc ops")
+
     # If you defined a new Operator and this call to `create_op_instance` failed, it might
     # be the fault of the test and not your Operator. Please do one of the following things:
     #   1. Update your Operator to meet PL standards so it passes
@@ -402,11 +403,7 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
 def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
     valid_instance, kwargs = valid_instance_and_kwargs
-    if valid_instance.name == "Hamiltonian":
-        with qml.operation.disable_new_opmath_cm(warn=False):
-            assert_valid(valid_instance, **kwargs)
-    else:
-        assert_valid(valid_instance, **kwargs)
+    assert_valid(valid_instance, **kwargs)
 
 
 @pytest.mark.jax

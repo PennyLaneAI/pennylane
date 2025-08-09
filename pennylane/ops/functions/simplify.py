@@ -14,9 +14,11 @@
 """
 This module contains the qml.simplify function.
 """
+from __future__ import annotations
+
 from collections.abc import Callable
 from copy import copy
-from typing import Union
+from typing import TYPE_CHECKING
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
@@ -24,10 +26,12 @@ from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn
-from pennylane.workflow import QNode
+
+if TYPE_CHECKING:
+    from pennylane.workflow import QNode
 
 
-def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Callable]):
+def simplify(input: Operator | MeasurementProcess | QuantumScript | QNode | Callable):
     """Simplifies an operator, tape, qnode or quantum function by reducing its arithmetic depth
     or number of rotation parameters.
 
@@ -81,7 +85,8 @@ def simplify(input: Union[Operator, MeasurementProcess, QuantumScript, QNode, Ca
     ...     return qml.probs(wires=0)
     >>> circuit()
     tensor([0.64596329, 0.35403671], requires_grad=True)
-    >>> list(circuit.tape)
+    >>> tape = qml.workflow.construct_tape(circuit)()
+    >>> list(tape)
     [RZ(11.566370614359172, wires=[0]) @ RY(11.566370614359172, wires=[0]) @ RX(11.566370614359172, wires=[0]),
      probs(wires=[0])]
     """
@@ -105,7 +110,7 @@ def _simplify_transform(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
         new_operations = [op.simplify() for op in tape.operations]
         new_measurements = [m.simplify() for m in tape.measurements]
 
-    new_tape = type(tape)(new_operations, new_measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
 
     def null_processing_fn(res):
         return res[0]

@@ -46,10 +46,10 @@ PARAMETRIZED_QCHEM_OPERATIONS = [
 
 
 class TestParameterFrequencies:
-    @pytest.mark.usefixtures("use_legacy_and_new_opmath")
+
     @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
     def test_parameter_frequencies_match_generator(self, op, tol):
-        if not qml.operation.has_gen(op):
+        if not op.has_generator:
             pytest.skip(f"Operation {op.name} does not have a generator defined to test against.")
 
         gen = op.generator()
@@ -80,32 +80,11 @@ class TestDecomposition:
         control and target wires.)"""
         decomp1 = qml.SingleExcitationPlus(phi, wires=[0, 1]).decomposition()
         decomp2 = qml.SingleExcitationPlus.compute_decomposition(phi, wires=[0, 1])
-
+        exp = SingleExcitationPlus(phi)
         for decomp in [decomp1, decomp2]:
-            mats = []
-            for i in reversed(decomp):
-                if i.wires.tolist() == [0]:
-                    mats.append(np.kron(i.matrix(), np.eye(2)))
-                elif i.wires.tolist() == [1]:
-                    mats.append(np.kron(np.eye(2), i.matrix()))
-                elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                    new_mat = np.array(
-                        [
-                            [1, 0, 0, 0],
-                            [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                            [0, 0, 1, 0],
-                            [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                        ]
-                    )
+            decomp_mat = qml.matrix(qml.tape.QuantumScript(decomp), wire_order=[0, 1])
 
-                    mats.append(new_mat)
-                else:
-                    mats.append(i.matrix())
-
-            decomposed_matrix = np.linalg.multi_dot(mats)
-            exp = SingleExcitationPlus(phi)
-
-            assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomp_mat, exp)
 
     @pytest.mark.parametrize("phi", [-0.1, 0.2, 0.5])
     def test_single_excitation_minus_decomp(self, phi):
@@ -117,32 +96,11 @@ class TestDecomposition:
         control and target wires.)"""
         decomp1 = qml.SingleExcitationMinus(phi, wires=[0, 1]).decomposition()
         decomp2 = qml.SingleExcitationMinus.compute_decomposition(phi, wires=[0, 1])
-
+        exp = SingleExcitationMinus(phi)
         for decomp in [decomp1, decomp2]:
-            mats = []
-            for i in reversed(decomp):
-                if i.wires.tolist() == [0]:
-                    mats.append(np.kron(i.matrix(), np.eye(2)))
-                elif i.wires.tolist() == [1]:
-                    mats.append(np.kron(np.eye(2), i.matrix()))
-                elif i.wires.tolist() == [1, 0] and isinstance(i, qml.CRY):
-                    new_mat = np.array(
-                        [
-                            [1, 0, 0, 0],
-                            [0, np.cos(phi / 2), 0, -np.sin(phi / 2)],
-                            [0, 0, 1, 0],
-                            [0, np.sin(phi / 2), 0, np.cos(phi / 2)],
-                        ]
-                    )
+            decomp_mat = qml.matrix(qml.tape.QuantumScript(decomp), wire_order=[0, 1])
 
-                    mats.append(new_mat)
-                else:
-                    mats.append(i.matrix())
-
-            decomposed_matrix = np.linalg.multi_dot(mats)
-            exp = SingleExcitationMinus(phi)
-
-            assert np.allclose(decomposed_matrix, exp)
+            assert np.allclose(decomp_mat, exp)
 
 
 class TestSingleExcitation:
@@ -1234,12 +1192,10 @@ def test_label_method(op, label1, label2, label3):
     assert op.label(decimals=0) == label3
 
 
-@pytest.mark.usefixtures("use_legacy_and_new_opmath")
 @pytest.mark.parametrize("op", PARAMETRIZED_QCHEM_OPERATIONS)
 def test_generators(op):
     """Check that the type of the generator returned by the qchem ops is
-    the same as the type pointed to by qml.Hamiltonian (either Hamiltonian
-    or LinearCombiantion) for both legacy and new opmath"""
+    the same as the type pointed to by LinearCombiantion"""
     if isinstance(op, (qml.ops.DoubleExcitationPlus, qml.ops.DoubleExcitationMinus)):
         pytest.skip(reason="Operator has SparseHamiltonian generator instead")
 

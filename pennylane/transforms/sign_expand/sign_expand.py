@@ -12,7 +12,7 @@
 """
 Contains the sign (and xi) decomposition tape transform, implementation of ideas from arXiv:2207.09479
 """
-# pylint: disable=protected-access
+
 import json
 from os import path
 
@@ -68,7 +68,7 @@ def evolve_under(ops, coeffs, time, controls):
     Evolves under the given Hamiltonian deconstructed into its Pauli words
 
     Args:
-        ops (List[Observables]): List of Pauli words that comprise the Hamiltonian
+        ops (List[Operator): List of Pauli words that comprise the Hamiltonian
         coeffs (List[int]): List of the respective coefficients of the Pauliwords of the Hamiltonian
         time (float): At what time to evaluate these Pauliwords
     """
@@ -186,7 +186,7 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
 
         operations = tape.operations + added_operations
 
-        if tape.measurements[0].return_type == qml.measurements.Expectation:
+        if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
             measurements = [qml.expval(-1 * qml.Z(controls[0]))]
         else:
             measurements = [qml.var(qml.Z(controls[0]))]
@@ -198,7 +198,7 @@ def construct_sgn_circuit(  # pylint: disable=too-many-arguments
 
 
 @transform
-def sign_expand(  # pylint: disable=too-many-arguments
+def sign_expand(
     tape: QuantumScript, circuit=False, J=10, delta=0.0, controls=("Hadamard", "Target")
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""
@@ -301,7 +301,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     """
     path_str = path.dirname(__file__)
-    with open(path_str + "/sign_expand_data.json", "r", encoding="utf-8") as f:
+    with open(path_str + "/sign_expand_data.json", encoding="utf-8") as f:
         data = json.load(f)
     phis = list(filter(lambda data: data["delta"] == delta and data["order"] == J, data))[0][
         "opt_params"
@@ -310,12 +310,12 @@ def sign_expand(  # pylint: disable=too-many-arguments
     hamiltonian = tape.measurements[0].obs
     wires = hamiltonian.wires
 
-    # TODO qml.utils.sparse_hamiltonian at the moment does not allow autograd to push gradients through
     if (
-        not isinstance(hamiltonian, (qml.ops.Hamiltonian, qml.ops.LinearCombination))
+        not isinstance(hamiltonian, qml.ops.LinearCombination)
         or len(tape.measurements) > 1
-        or tape.measurements[0].return_type
-        not in [qml.measurements.Expectation, qml.measurements.Variance]
+        or not isinstance(
+            tape.measurements[0], (qml.measurements.ExpectationMP, qml.measurements.VarianceMP)
+        )
     ):
         raise ValueError(
             "Passed tape must end in `qml.expval(H)` or 'qml.var(H)', where H is of type `qml.Hamiltonian`"
@@ -329,14 +329,14 @@ def sign_expand(  # pylint: disable=too-many-arguments
 
     if circuit:
         tapes = construct_sgn_circuit(hamiltonian, tape, mus, times, phis, controls)
-        if tape.measurements[0].return_type == qml.measurements.Expectation:
-            # pylint: disable=function-redefined
+        if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
+
             def processing_fn(res):
                 products = [a * b for a, b in zip(res, dEs)]
                 return qml.math.sum(products)
 
         else:
-            # pylint: disable=function-redefined
+
             def processing_fn(res):
                 products = [a * b for a, b in zip(res, dEs)]
                 return qml.math.sum(products) * len(products)
@@ -346,7 +346,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     # make one tape per observable
     tapes = []
     for proj in projs:
-        if tape.measurements[0].return_type == qml.measurements.Expectation:
+        if isinstance(tape.measurements[0], qml.measurements.ExpectationMP):
             measurements = [qml.expval(qml.Hermitian(proj, wires=wires))]
         else:
             measurements = [qml.var(qml.Hermitian(proj, wires=wires))]
@@ -359,7 +359,7 @@ def sign_expand(  # pylint: disable=too-many-arguments
     def processing_fn(res):
         return (
             qml.math.sum(res)
-            if tape.measurements[0].return_type == qml.measurements.Expectation
+            if isinstance(tape.measurements[0], qml.measurements.ExpectationMP)
             else qml.math.sum(res) * len(res)
         )
 

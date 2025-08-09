@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Functions to sample a state."""
-from typing import Union
+
 
 import numpy as np
 
@@ -25,7 +25,7 @@ from pennylane.measurements import (
     ShadowExpvalMP,
     Shots,
 )
-from pennylane.ops import Hamiltonian, LinearCombination, Prod, SProd, Sum
+from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.typing import TensorLike
 
 from .apply_operation import apply_operation
@@ -42,7 +42,7 @@ def jax_random_split(prng_key, num: int = 2):
     return split(prng_key, num=num)
 
 
-def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]]):
+def _group_measurements(mps: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP]):
     """
     Group the measurements such that:
       - measurements with pauli observables pairwise-commute in each group
@@ -79,9 +79,11 @@ def _group_measurements(mps: list[Union[SampleMeasurement, ClassicalShadowMP, Sh
             mp_other_obs_indices.append([i])
     if mp_pauli_obs:
         i_to_pauli_mp = dict(mp_pauli_obs)
-        _, group_indices = qml.pauli.group_observables(
-            [mp.obs for mp in i_to_pauli_mp.values()], list(i_to_pauli_mp.keys())
+        part_indices = qml.pauli.compute_partition_indices(
+            [mp.obs for mp in i_to_pauli_mp.values()]
         )
+        coeffs = list(i_to_pauli_mp.keys())
+        group_indices = [[coeffs[idx] for idx in group] for group in part_indices]
         mp_pauli_groups = []
         for indices in group_indices:
             mp_group = [i_to_pauli_mp[i] for i in indices]
@@ -141,7 +143,6 @@ def _get_num_executions_for_sum(obs):
     return len(op_groups)
 
 
-# pylint: disable=no-member
 def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int]:
     """Get the total number of qpu executions and shots.
 
@@ -158,7 +159,7 @@ def get_num_shots_and_executions(tape: qml.tape.QuantumScript) -> tuple[int, int
     num_shots = 0
     for group in groups:
         if isinstance(group[0], ExpectationMP) and isinstance(
-            group[0].obs, (qml.ops.Hamiltonian, qml.ops.LinearCombination)
+            group[0].obs, qml.ops.LinearCombination
         ):
             H_executions = _get_num_executions_for_expval_H(group[0].obs)
             num_executions += H_executions
@@ -203,7 +204,7 @@ def _apply_diagonalizing_gates(
 
 # pylint:disable = too-many-arguments
 def measure_with_samples(
-    measurements: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
+    measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -238,9 +239,7 @@ def measure_with_samples(
     groups, indices = _group_measurements(mps)
     all_res = []
     for group in groups:
-        if isinstance(group[0], ExpectationMP) and isinstance(
-            group[0].obs, (Hamiltonian, LinearCombination)
-        ):
+        if isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, LinearCombination):
             measure_fn = _measure_hamiltonian_with_samples
         elif isinstance(group[0], ExpectationMP) and isinstance(group[0].obs, Sum):
             measure_fn = _measure_sum_with_samples
@@ -330,7 +329,7 @@ def _measure_with_samples_diagonalizing_gates(
             prng_key=prng_key,
         )
     except ValueError as e:
-        if str(e) != "probabilities contain NaN":
+        if "probabilities contain nan" not in str(e).lower():
             raise e
         samples = qml.math.full((shots.total_shots, len(wires)), 0)
 
@@ -346,7 +345,7 @@ def _measure_with_samples_diagonalizing_gates(
 
 
 def _measure_classical_shadow(
-    mp: list[Union[ClassicalShadowMP, ShadowExpvalMP]],
+    mp: list[ClassicalShadowMP | ShadowExpvalMP],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -580,6 +579,6 @@ def _sample_probs_jax(probs, shots, num_wires, is_state_batched, prng_key=None, 
         _, key = jax_random_split(prng_key)
         samples = jax.random.choice(key, basis_states, shape=(shots,), p=probs)
 
-    powers_of_two = 1 << jnp.arange(num_wires, dtype=jnp.int64)[::-1]
+    powers_of_two = 1 << jnp.arange(num_wires, dtype=int)[::-1]
     states_sampled_base_ten = samples[..., None] & powers_of_two
-    return (states_sampled_base_ten > 0).astype(jnp.int64)
+    return (states_sampled_base_ten > 0).astype(int)

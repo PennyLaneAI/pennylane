@@ -14,13 +14,15 @@
 """Tests that a device gives the same output as the default device."""
 import numpy as np
 
-# pylint: disable=no-self-use,no-member
+# pylint: disable=no-self-use
 import pytest
 from flaky import flaky
 
 import pennylane as qml
 from pennylane import numpy as pnp  # Import from PennyLane to mirror the standard approach in demos
 from pennylane.templates.layers import RandomLayers
+
+from .conftest import get_legacy_capabilities
 
 pytestmark = pytest.mark.skip_unsupported
 
@@ -147,9 +149,8 @@ class TestComparison:
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
 
-        supports_tensor = isinstance(dev, qml.devices.Device) or (
-            "supports_tensor_observables" in dev.capabilities()
-            and dev.capabilities()["supports_tensor_observables"]
+        supports_tensor = isinstance(dev, qml.devices.Device) or get_legacy_capabilities(dev).get(
+            "supports_tensor_observables", False
         )
 
         if not supports_tensor:
@@ -186,9 +187,8 @@ class TestComparison:
         if dev.name == dev_def.name:
             pytest.skip("Device is default.qubit.")
 
-        supports_tensor = isinstance(dev, qml.devices.Device) or (
-            "supports_tensor_observables" in dev.capabilities()
-            and dev.capabilities()["supports_tensor_observables"]
+        supports_tensor = isinstance(dev, qml.devices.Device) or get_legacy_capabilities(dev).get(
+            "supports_tensor_observables", False
         )
 
         if not supports_tensor:
@@ -252,6 +252,8 @@ class TestComparison:
 
         layers = 3
         rng = pnp.random.default_rng(1967)
+        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+        # pylint: disable=no-member
         gates_per_layers = [rng.permutation(gates).numpy() for _ in range(layers)]
 
         def circuit():

@@ -15,8 +15,10 @@
 # pylint: disable=no-member
 
 import pytest
+import rustworkx as rx
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import (
     TransformContainer,
@@ -25,6 +27,7 @@ from pennylane.transforms.core import (
     transform,
 )
 from pennylane.transforms.core.transform_program import (
+    CotransformCache,
     _apply_postprocessing_stack,
     _batch_postprocessing,
     null_postprocessing,
@@ -311,12 +314,8 @@ class TestTransformProgramDunders:
 
     def test_equality(self):
         """Tests that we can compare TransformProgram objects with the '==' and '!=' operators."""
-        t1 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
-        )
-        t2 = TransformContainer(
-            qml.transforms.compile.transform, kwargs={"num_passes": 2, "expand_depth": 1}
-        )
+        t1 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
+        t2 = TransformContainer(qml.transforms.compile.transform, kwargs={"num_passes": 2})
         t3 = TransformContainer(
             qml.transforms.transpile.transform, kwargs={"coupling_map": [(0, 1), (1, 2)]}
         )
@@ -569,6 +568,54 @@ class TestTransformProgram:
             transform_program.push_back(transform2)
 
 
+class TestClassicalCotransfroms:
+    """Test for handling the classical cotransform component."""
+
+    def test_classical_cotransform_caching(self):
+        """Tests for setting the classical cotransform."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def f(*_, **__):
+            return qml.state()
+
+        program1 = TransformProgram()  # no hybrid transforms
+        assert program1.cotransform_cache is None
+        program1.set_classical_component(f, (1,), {"a": 2})
+        assert program1.cotransform_cache is None
+
+        hybrid_t = TransformContainer(
+            qml.gradients.param_shift, (), {"hybrid": True}, classical_cotransform=lambda *args: 0
+        )
+        program2 = TransformProgram((hybrid_t,))
+        program2.set_classical_component(f, (1,), {"a": 2})
+        assert program2.cotransform_cache == CotransformCache(f, (1,), {"a": 2})
+
+        program3 = program1 + program2
+        assert program3.cotransform_cache == CotransformCache(f, (1,), {"a": 2})
+
+        program4 = program2 + program1
+        assert program4.cotransform_cache == CotransformCache(f, (1,), {"a": 2})
+
+        with pytest.raises(ValueError, match=r"programs with cotransform caches"):
+            _ = program2 + program2
+
+    @pytest.mark.parametrize("arg", (0.5, rx.PyGraph()))
+    def test_error_on_numpy_qnode(self, arg):
+        """Test an error is raised if there are no trainable parameters for a hybrid program."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def circuit(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
+
+        circuit = qml.gradients.param_shift(circuit, hybrid=True)
+        circuit.transform_program.set_classical_component(circuit, (arg,), {})
+
+        tape = qml.tape.QuantumScript([], [])
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters"):
+            circuit.transform_program((tape,))
+
+
 class TestTransformProgramCall:
     """Tests for calling a TransformProgram on a batch of quantum tapes."""
 
@@ -762,6 +809,101 @@ class TestTransformProgramCall:
 
         dummy_results = (1, 2, 3, 4, 5, 1, 1, 1, 1, 1)
         assert fn(dummy_results) == (3, 12, 5)
+
+    @pytest.mark.capture
+    def test_call_jaxpr_empty(self):
+        """Test that calling an empty TransformProgram with jaxpr returns untransformed ClosedJaxpr."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        program = TransformProgram()
+        const = jax.numpy.array(3.5)
+
+        def f(x, n):
+            qml.IsingXX(x, [0, 1])
+
+            @qml.for_loop(n)
+            def loop_fn(i):
+                qml.Hadamard(i)
+                qml.RX(const, i)
+
+            loop_fn()
+            return qml.expval(qml.Z(0))
+
+        jaxpr = jax.make_jaxpr(f)(1.5, 5)
+        transformed_jaxpr = program(jaxpr.jaxpr, jaxpr.consts, 1.5, 5)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
+        assert transformed_jaxpr.consts == jaxpr.consts
+
+        for eqn1, eqn2 in zip(jaxpr.eqns, transformed_jaxpr.eqns, strict=True):
+            assert eqn1.primitive == eqn2.primitive
+            # Jaxpr equality is based on identity and so since they were constructed
+            # seperately, they will not be equal (hence the string check)
+            assert str(eqn1.params) == str(eqn2.params)
+
+    @pytest.mark.capture
+    def test_call_jaxpr_single_transform(self):
+        """Test that calling a TransformProgram with a single transform with jaxpr works correctly."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        program = TransformProgram()
+        program.add_transform(qml.transforms.cancel_inverses)
+
+        def f():
+            qml.H(0)
+            qml.X(1)
+            qml.H(0)
+            qml.X(1)
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(f)()
+        transformed_jaxpr = program(jaxpr.jaxpr, jaxpr.consts)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
+        assert transformed_jaxpr.consts == jaxpr.consts
+
+        assert len(transformed_jaxpr.eqns) == 2
+        # pylint: disable=protected-access
+        assert transformed_jaxpr.eqns[0].primitive == qml.PauliZ._primitive
+        assert transformed_jaxpr.eqns[1].primitive == qml.measurements.ExpectationMP._obs_primitive
+
+    @pytest.mark.capture
+    def test_call_jaxpr_multiple_transforms(self):
+        """Test that calling a TransformProgram with multiple transforms with jaxpr works correctly."""
+        # pylint: disable=import-outside-toplevel
+        import jax
+
+        program = TransformProgram()
+        program.add_transform(qml.transforms.cancel_inverses)
+        program.add_transform(qml.transforms.defer_measurements, num_wires=3)
+        program.add_transform(
+            qml.transforms.decompose,
+            gate_set=lambda op: op.name != "IsingXX",
+        )
+
+        def f():
+            qml.H(0)
+            qml.H(0)
+            qml.measure(1)
+            qml.IsingXX(0.5, wires=[0, 1])
+            return qml.expval(qml.PauliZ(0))
+
+        jaxpr = jax.make_jaxpr(f)()
+        transformed_jaxpr = program(jaxpr.jaxpr, jaxpr.consts)
+        assert isinstance(transformed_jaxpr, jax.extend.core.ClosedJaxpr)
+
+        # pylint: disable=protected-access
+        isingxx_decomp = [qml.CNOT(wires=[0, 1]), qml.RX(0.5, wires=[0]), qml.CNOT(wires=[0, 1])]
+        expected_primitives = [
+            qml.CNOT._primitive,
+            *[op._primitive for op in isingxx_decomp],
+            qml.PauliZ._primitive,
+            qml.measurements.ExpectationMP._obs_primitive,
+        ]
+        for eqn, expected_primitive in zip(
+            transformed_jaxpr.eqns, expected_primitives, strict=True
+        ):
+            assert eqn.primitive == expected_primitive
 
 
 class TestTransformProgramIntegration:

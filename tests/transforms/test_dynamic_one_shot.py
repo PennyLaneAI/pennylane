@@ -14,12 +14,13 @@
 """
 Tests for the transform implementing the deferred measurement principle.
 """
-# pylint: disable=too-few-public-methods, too-many-arguments
 
 import numpy as np
 import pytest
+from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import (
     CountsMP,
     ExpectationMP,
@@ -29,9 +30,33 @@ from pennylane.measurements import (
     SampleMP,
 )
 from pennylane.transforms.dynamic_one_shot import (
+    _supports_one_shot,
     fill_in_value,
+    gather_non_mcm,
+    get_legacy_capabilities,
     parse_native_mid_circuit_measurements,
 )
+
+# pylint: disable=too-few-public-methods, too-many-arguments
+
+
+def test_gather_non_mcm_unsupported_measurement():
+    """Test that gather_non_mcm raises an error on supported measurements."""
+
+    with pytest.raises(TypeError, match="does not support"):
+        gather_non_mcm(qml.state(), np.array([0, 0]), np.array([True, True]))
+
+
+def test_get_legacy_capability():
+    dev = DefaultQubitLegacy(wires=[0], shots=1)
+    dev = qml.devices.LegacyDeviceFacade(dev)
+    caps = get_legacy_capabilities(dev)
+    assert caps["model"] == "qubit"
+    assert not "supports_mid_measure" in caps
+    assert not _supports_one_shot(dev)
+
+    dev2 = qml.devices.DefaultMixed(wires=[0], shots=1)
+    assert not _supports_one_shot(dev2)
 
 
 @pytest.mark.parametrize(
@@ -55,7 +80,10 @@ def test_postselection_error_with_wrong_device():
     """Test that an error is raised when a device does not support native execution."""
     dev = qml.device("default.mixed", wires=2)
 
-    with pytest.raises(TypeError, match="does not support mid-circuit measurements natively"):
+    with pytest.raises(
+        TypeError,
+        match="does not support mid-circuit measurements and/or one-shot execution mode natively",
+    ):
 
         @qml.dynamic_one_shot
         @qml.qnode(dev)
@@ -80,6 +108,26 @@ def test_postselect_mode(postselect_mode, mocker):
     res = f(np.pi / 2)
     spy.assert_called_once()
 
+    if postselect_mode == "hw-like":
+        assert len(res) < shots
+    else:
+        assert len(res) == shots
+    assert np.all(res != np.iinfo(np.int32).min)
+
+
+@pytest.mark.parametrize("postselect_mode", ["hw-like", "fill-shots"])
+def test_postselect_mode_transform(postselect_mode):
+    """Test that invalid shots are discarded if requested"""
+    shots = 100
+    dev = qml.device("default.qubit", shots=shots)
+
+    @qml.qnode(dev, mcm_method="one-shot", postselect_mode=postselect_mode)
+    def f(x):
+        qml.RX(x, 0)
+        _ = qml.measure(0, postselect=1)
+        return qml.sample(wires=[0, 1])
+
+    res = f(np.pi / 2)
     if postselect_mode == "hw-like":
         assert len(res) < shots
     else:
@@ -129,7 +177,7 @@ def test_unsupported_shots():
     tape = qml.tape.QuantumScript([MidMeasureMP(0)], [qml.probs(wires=0)], shots=None)
 
     with pytest.raises(
-        qml.QuantumFunctionError,
+        QuantumFunctionError,
         match="dynamic_one_shot is only supported with finite shots.",
     ):
         _, _ = qml.dynamic_one_shot(tape)

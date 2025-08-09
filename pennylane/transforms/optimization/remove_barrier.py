@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Transform for removing the Barrier gate from quantum circuits."""
-# pylint: disable=too-many-branches
+
 
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
@@ -79,7 +79,7 @@ def remove_barrier(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     """
     operations = filter(lambda op: op.name != "Barrier", tape.operations)
-    new_tape = type(tape)(operations, tape.measurements, shots=tape.shots)
+    new_tape = tape.copy(operations=operations)
 
     def null_postprocessing(results):
         """A postprocesing function returned by a transform that only converts the batch of results

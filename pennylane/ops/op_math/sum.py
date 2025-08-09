@@ -15,23 +15,22 @@
 This file contains the implementation of the Sum class which contains logic for
 computing the sum of operations.
 """
-# pylint: disable=too-many-arguments,too-many-instance-attributes,protected-access
+
 
 import itertools
-import warnings
 from collections import Counter
 from collections.abc import Iterable
 from copy import copy
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.operation import Operator
 from pennylane.queuing import QueuingManager
 
 from .composite import CompositeOp, handle_recursion_error
 
 
-def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
+def sum(*summands, grouping_type=None, method="lf", id=None, lazy=True):
     r"""Construct an operator which is the sum of the given operators.
 
     Args:
@@ -44,8 +43,8 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
         grouping_type (str): The type of binary relation between Pauli words used to compute
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover for
-            grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-            First). This keyword argument is ignored if ``grouping_type`` is ``None``.
+            grouping. It can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
+            or ``'gis'`` (Greedy Independent Set). This keyword argument is ignored if ``grouping_type`` is ``None``.
 
     Returns:
         ~ops.op_math.Sum: The operator representing the sum of summands.
@@ -100,10 +99,10 @@ def sum(*summands, grouping_type=None, method="rlf", id=None, lazy=True):
         ((2,), (0, 1))
 
         ``grouping_type`` can be ``"qwc"`` (qubit-wise commuting), ``"commuting"``, or ``"anticommuting"``, and
-        ``method`` can be ``"rlf"`` or ``"lf"``. To see more details about how these affect grouping, see
-        :ref:`Pauli Graph Colouring<graph_colouring>` and :func:`~pennylane.pauli.group_observables`.
+        ``method`` can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
+        or ``'gis'`` (Greedy Independent Set). To see more details about how these affect grouping, see
+        :ref:`Pauli Graph Colouring<graph_colouring>` and :func:`~pennylane.pauli.compute_partition_indices`.
     """
-    summands = tuple(convert_to_opmath(op) for op in summands)
     if lazy:
         return Sum(*summands, grouping_type=grouping_type, method=method, id=id)
 
@@ -130,8 +129,8 @@ class Sum(CompositeOp):
         grouping_type (str): The type of binary relation between Pauli words used to compute
             the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
         method (str): The graph colouring heuristic to use in solving minimum clique cover for
-            grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-            First). This keyword argument is ignored if ``grouping_type`` is ``None``.
+            grouping, which can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
+            or ``'gis'`` (Greedy Independent Set). This keyword argument is ignored if ``grouping_type`` is ``None``.
         id (str or None): id for the sum operator. Default is None.
 
     .. note::
@@ -208,7 +207,7 @@ class Sum(CompositeOp):
     """
 
     _op_symbol = "+"
-    _math_op = math.sum
+    _math_op = staticmethod(math.sum)
     grad_method = "A"
 
     def _flatten(self):
@@ -222,7 +221,7 @@ class Sum(CompositeOp):
         self,
         *operands: Operator,
         grouping_type=None,
-        method="rlf",
+        method="lf",
         id=None,
         _grouping_indices=None,
         _pauli_rep=None,
@@ -281,12 +280,16 @@ class Sum(CompositeOp):
     @handle_recursion_error
     def __str__(self):
         """String representation of the Sum."""
+        if len(self) == 0:
+            return f"{type(self).__name__}()"
         ops = self.operands
         return " + ".join(f"{str(op)}" if i == 0 else f"{str(op)}" for i, op in enumerate(ops))
 
     @handle_recursion_error
     def __repr__(self):
         """Terminal representation for Sum"""
+        if len(self) == 0:
+            return "Sum()"
         # post-processing the flat str() representation
         # We have to do it like this due to the possible
         # nesting of Sums, e.g. X(0) + X(1) + X(2) is a sum(sum(X(0), X(1)), X(2))
@@ -337,10 +340,7 @@ class Sum(CompositeOp):
         """
         if self.pauli_rep:
             return self.pauli_rep.to_mat(wire_order=wire_order or self.wires)
-        gen = (
-            (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix(), op.wires)
-            for op in self
-        )
+        gen = ((op.matrix(), op.wires) for op in self)
 
         reduced_mat, sum_wires = math.reduce_matrices(gen, reduce_func=math.add)
 
@@ -355,9 +355,9 @@ class Sum(CompositeOp):
         return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
 
     @handle_recursion_error
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order=None, format="csr"):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
 
         gen = ((op.sparse_matrix(), op.wires) for op in self)
 
@@ -365,7 +365,7 @@ class Sum(CompositeOp):
 
         wire_order = wire_order or self.wires
 
-        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order)
+        return math.expand_matrix(reduced_mat, sum_wires, wire_order=wire_order).asformat(format)
 
     @property
     def _queue_category(self):  # don't queue Sum instances because it may not be unitary!
@@ -425,8 +425,10 @@ class Sum(CompositeOp):
 
         return new_summands
 
+    # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
+    # pylint: disable=arguments-differ
     @handle_recursion_error
-    def simplify(self, cutoff=1.0e-12) -> "Sum":  # pylint: disable=arguments-differ
+    def simplify(self, cutoff=1.0e-12) -> "Sum":
         # try using pauli_rep:
         if pr := self.pauli_rep:
             pr.simplify()
@@ -500,8 +502,8 @@ class Sum(CompositeOp):
             grouping_type (str): The type of binary relation between Pauli words used to compute
                 the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
             method (str): The graph colouring heuristic to use in solving minimum clique cover for
-                grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-                First).
+                grouping, which can be ``'lf'`` (Largest First), ```'rlf'`` (Recursive Largest First),
+                `'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
 
         **Example**
 
@@ -529,40 +531,9 @@ class Sum(CompositeOp):
         _, ops = self.terms()
 
         with qml.QueuingManager.stop_recording():
-            op_groups = qml.pauli.group_observables(ops, grouping_type=grouping_type, method=method)
-        self._grouping_indices = tuple(tuple(ops.index(o) for o in group) for group in op_groups)
-
-    @property
-    def coeffs(self):
-        r"""
-        Scalar coefficients of the operator when flattened out.
-
-        This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
-
-        .. seealso:: :attr:`~Sum.ops`, :class:`~Sum.pauli_rep`"""
-        warnings.warn(
-            "Sum.coeffs is deprecated and will be removed in future releases. You can access both "
-            "(coeffs, ops) via op.terms(). Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        coeffs, _ = self.terms()
-        return coeffs
-
-    @property
-    def ops(self):
-        r"""
-        Operator terms without scalar coefficients of the operator when flattened out.
-
-        This is a deprecated attribute, please use :meth:`~Sum.terms` instead.
-
-        .. seealso:: :attr:`~Sum.coeffs`, :class:`~Sum.pauli_rep`"""
-        warnings.warn(
-            "Sum.ops is deprecated and will be removed in future releases. You can access both "
-            "(coeffs, ops) via op.terms(). Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        _, ops = self.terms()
-        return ops
+            self._grouping_indices = qml.pauli.compute_partition_indices(
+                ops, grouping_type=grouping_type, method=method
+            )
 
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
@@ -618,7 +589,7 @@ class _SumSummandsGrouping:
             coeff (int, optional): Coefficient of the operator. Defaults to 1.
             op_hash (int, optional): Hash of the operator. Defaults to None.
         """
-        if isinstance(summand, qml.ops.SProd):  # pylint: disable=no-member
+        if isinstance(summand, qml.ops.SProd):
             coeff = summand.scalar if coeff == 1 else summand.scalar * coeff
             self.add(summand=summand.base, coeff=coeff)
         else:

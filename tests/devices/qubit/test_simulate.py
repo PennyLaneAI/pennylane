@@ -72,6 +72,48 @@ def test_custom_operation():
 
 
 # pylint: disable=too-few-public-methods
+class TestSparsePipeline:
+    """System tests for the sparse pipelines."""
+
+    ground_state = np.array([1, 0, 0, 0, 0, 0, 0, 0])
+    cat_state = np.array([1, 0, 0, 0, 0, 0, 0, 1]) / np.sqrt(2)
+
+    @pytest.mark.parametrize(
+        "state",
+        [
+            ground_state,
+            cat_state,
+        ],
+    )
+    def test_sparse_op(self, state):
+        """Test that a sparse QubitUnitary operation works on default.qubit with expval measurement."""
+        mat = sp.sparse.csr_matrix([[0, 1], [1, 0]])
+        op = qml.QubitUnitary(mat, wires=[0])
+        qs = qml.tape.QuantumScript(
+            ops=[qml.StatePrep(state, wires=range(8), pad_with=0), op],
+            measurements=[qml.expval(qml.Z(0))],
+        )
+
+        result = simulate(qs)
+
+        assert qml.math.allclose(result, -1)
+
+    def test_sparse_state_prep(self):
+        """Test a spares state prep can be acted upon by later operations."""
+        state = sp.sparse.csr_matrix([0, 0, 0, 1])
+        qml.StatePrep(state, wires=(0, 1))
+
+        tape = qml.tape.QuantumScript(
+            [qml.StatePrep(state, wires=(0, 1)), qml.X(0), qml.RX(0.0, 0)],
+            [qml.probs(wires=(0, 1))],
+        )
+
+        res = simulate(tape)
+        expected = np.array([0, 1, 0, 0])
+        assert qml.math.allclose(res, expected)
+
+
+# pylint: disable=too-few-public-methods
 class TestStatePrepBase:
     """Tests integration with various state prep methods."""
 
@@ -393,7 +435,8 @@ class TestBroadcasting:
         assert np.allclose(res[0], 1.0)
         assert np.allclose(res[1], np.cos(x))
         assert np.allclose(res[2], -np.cos(x))
-        assert spy.call_args_list[0].args == (qs, {2: 0, 1: 1, 0: 2})
+        qml.assert_equal(spy.call_args_list[0].args[0], qs)
+        assert spy.call_args_list[0].args[1] == {2: 0, 1: 1, 0: 2}
 
 
 class TestPostselection:
@@ -1294,7 +1337,7 @@ class TestMidMeasurements:
     @pytest.mark.parametrize(
         "meas_obj", [qml.Y(0), [1], [1, 0], "mcm", "composite_mcm", "mcm_list"]
     )
-    def test_simple_dynamic_circuit(self, shots, measure_f, postselect, reset, meas_obj, seed):
+    def test_simple_dynamic_circuit(self, *, shots, measure_f, postselect, reset, meas_obj, seed):
         """Tests that `simulate` can handles a simple dynamic circuit with the following measurements:
 
             * qml.counts with obs (comp basis or not), single wire, multiple wires (ordered/unordered), MCM, f(MCM), MCM list
@@ -1305,16 +1348,6 @@ class TestMidMeasurements:
 
         The above combinations should work for finite shots, shot vectors and post-selecting of either the 0 or 1 branch.
         """
-
-        if (
-            isinstance(meas_obj, (qml.X, qml.Z, qml.Y))
-            and measure_f in (qml.var,)
-            and not qml.operation.active_new_opmath()
-        ):
-            pytest.xfail(
-                "The tree-traversal method does not work with legacy opmath with "
-                "`qml.var` of pauli observables in the circuit."
-            )
 
         if measure_f in (qml.expval, qml.var) and (
             isinstance(meas_obj, list) or meas_obj == "mcm_list"
@@ -1559,7 +1592,9 @@ class TestMidMeasurements:
         else:
             assert qml.math.allclose(combined_measurement, expected)
 
-    @pytest.mark.local_salt(2)
+    # Near 10% failure rate; need revise and fix soon
+    # FIXME: [sc-95724]
+    @pytest.mark.local_salt(9)
     @pytest.mark.parametrize("ml_framework", ml_frameworks_list)
     @pytest.mark.parametrize(
         "postselect_mode", [None, "hw-like", "pad-invalid-samples", "fill-shots"]
@@ -1616,3 +1651,28 @@ class TestMidMeasurements:
             )
             expected_sample = simulate(equivalent_tape, rng=rng)
             fisher_exact_test(subset, expected_sample, outcomes=(-1, 1))
+
+    def test_tree_traversal_non_standard_wire_order(self):
+        """Test that tree-traversal still works with a non-standard wire order."""
+
+        ops = [qml.H(0), qml.CNOT((0, 2)), qml.measurements.MidMeasureMP(wires=0), qml.S(1)]
+
+        tape = qml.tape.QuantumScript(ops, [qml.expval(qml.Z(2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, 0)
+
+    def test_measurement_on_non_op_wire(self):
+        """Test that we can measure wires not present in the circuit."""
+
+        ops = [qml.measurements.MidMeasureMP(wires=0)]
+        tape = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1, 2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, np.array([1, 0, 0, 0, 0, 0, 0, 0]))
+
+    def test_measurement_on_non_op_wire_with_nonstandard_order(self):
+        """Test that we can measure wires not present in the circuit."""
+
+        ops = [qml.measurements.MidMeasureMP(wires=1), qml.X(1)]
+        tape = qml.tape.QuantumScript(ops, [qml.probs(wires=(0, 1, 2))])
+        res = simulate_tree_mcm(tape)
+        assert qml.math.allclose(res, np.array([0, 0, 1, 0, 0, 0, 0, 0]))

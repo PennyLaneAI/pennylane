@@ -18,11 +18,11 @@ import functools
 import itertools
 from collections.abc import Hashable, Iterable, Sequence
 from importlib import import_module, util
-from typing import Union
 
 import numpy as np
 
-import pennylane as qml
+from pennylane import math
+from pennylane.exceptions import WireError
 from pennylane.pytrees import register_pytree
 
 if util.find_spec("jax") is not None:
@@ -35,10 +35,6 @@ else:
 if jax_available:
     # pylint: disable=unnecessary-lambda
     setattr(jax.interpreters.partial_eval.DynamicJaxprTracer, "__hash__", lambda x: id(x))
-
-
-class WireError(Exception):
-    """Exception raised by a :class:`~.pennylane.wires.Wire` object when it is unable to process wires."""
 
 
 def _process(wires):
@@ -63,7 +59,7 @@ def _process(wires):
         # of considering the elements of iterables as wire labels.
         wires = [wires]
 
-    if qml.math.get_interface(wires) == "jax" and not qml.math.is_abstract(wires):
+    if math.get_interface(wires) == "jax" and not math.is_abstract(wires):
         wires = tuple(wires.tolist() if wires.ndim > 0 else (wires.item(),))
 
     try:
@@ -120,7 +116,7 @@ class Wires(Sequence):
     """
 
     def _flatten(self):
-        """Serialize Wires into a flattened representation according to the PyTree convension."""
+        """Serialize Wires into a flattened representation according to the PyTree convention."""
         return self._labels, ()
 
     @classmethod
@@ -129,6 +125,8 @@ class Wires(Sequence):
         return cls(data, _override=True)
 
     def __init__(self, wires, _override=False):
+        if wires is None:
+            raise TypeError("Must specify a set of wires. None is not a valid wire label.")
         if _override:
             self._labels = wires
         else:
@@ -216,6 +214,16 @@ class Wires(Sequence):
             ndarray: array representing Wires object
         """
         return np.array(self._labels)
+
+    def __jax_array__(self):
+        """Defines a JAX numpy array representation of the Wires object.
+
+        Returns:
+            JAX ndarray: array representing Wires object
+        """
+        if jax_available:
+            return jax.numpy.array(self._labels)
+        raise ModuleNotFoundError("JAX not found")  # pragma: no cover
 
     @property
     def labels(self):
@@ -535,7 +543,7 @@ class Wires(Sequence):
         >>> wires1 | wires2
         Wires([1, 2, 3, 4, 5])
         """
-        return Wires((set(self.labels) | set(_process(other))))
+        return Wires(set(self.labels) | set(_process(other)))
 
     def __or__(self, other):
         """Return the union of the current Wires object and either another Wires object or an
@@ -586,7 +594,7 @@ class Wires(Sequence):
         >>> wires1 & wires2
         Wires([2, 3])
         """
-        return Wires((set(self.labels) & set(_process(other))))
+        return Wires(set(self.labels) & set(_process(other)))
 
     def __and__(self, other):
         """Return the intersection of the current Wires object and either another Wires object or
@@ -637,7 +645,7 @@ class Wires(Sequence):
         >>> wires1 - wires2
         Wires([1])
         """
-        return Wires((set(self.labels) - set(_process(other))))
+        return Wires(set(self.labels) - set(_process(other)))
 
     def __sub__(self, other):
         """Return the difference of the current Wires object and either another Wires object or
@@ -662,7 +670,7 @@ class Wires(Sequence):
 
     def __rsub__(self, other):
         """Right-hand version of __sub__."""
-        return Wires((set(_process(other)) - set(self.labels)))
+        return Wires(set(_process(other)) - set(self.labels))
 
     def symmetric_difference(self, other):
         """Return the symmetric difference of the current :class:`~.Wires` object and either another :class:`~.Wires`
@@ -689,7 +697,7 @@ class Wires(Sequence):
         Wires([1, 2, 4, 5])
         """
 
-        return Wires((set(self.labels) ^ set(_process(other))))
+        return Wires(set(self.labels) ^ set(_process(other)))
 
     def __xor__(self, other):
         """Return the symmetric difference of the current Wires object and either another Wires
@@ -714,10 +722,10 @@ class Wires(Sequence):
 
     def __rxor__(self, other):
         """Right-hand version of __xor__."""
-        return Wires((set(_process(other)) ^ set(self.labels)))
+        return Wires(set(_process(other)) ^ set(self.labels))
 
 
-WiresLike = Union[Wires, Iterable[Hashable], Hashable]
+WiresLike = Wires | Iterable[Hashable] | Hashable
 
 # Register Wires as a PyTree-serializable class
 register_pytree(Wires, Wires._flatten, Wires._unflatten)  # pylint: disable=protected-access

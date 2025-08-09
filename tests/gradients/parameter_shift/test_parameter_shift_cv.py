@@ -20,8 +20,9 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.exceptions import QuantumFunctionError
 from pennylane.gradients import param_shift_cv
-from pennylane.gradients.gradient_transform import choose_trainable_params
+from pennylane.gradients.gradient_transform import choose_trainable_param_indices
 from pennylane.gradients.parameter_shift_cv import (
     _find_gradient_methods_cv,
     _grad_method_cv,
@@ -51,7 +52,7 @@ class TestGradAnalysis:
         assert _grad_method_cv(tape, 3) == "A"
         assert _grad_method_cv(tape, 4) == "A"
 
-        trainable_params = choose_trainable_params(tape, None)
+        trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods_cv(tape, trainable_params)
 
         assert diff_methods[0] is None
@@ -73,7 +74,7 @@ class TestGradAnalysis:
         assert _grad_method_cv(tape, 0) == "A"
         assert _grad_method_cv(tape, 1) == "0"
 
-        trainable_params = choose_trainable_params(tape, None)
+        trainable_params = choose_trainable_param_indices(tape, None)
         diff_methods = _find_gradient_methods_cv(tape, trainable_params)
 
         assert diff_methods[0] == "A"
@@ -300,8 +301,8 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.param_shift_cv(circuit)(weights)
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_cv(circuit, dev)(weights)
 
     @pytest.mark.torch
     def test_no_trainable_params_qnode_torch(self):
@@ -317,8 +318,8 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.param_shift_cv(circuit)(weights)
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_cv(circuit, dev)(weights)
 
     @pytest.mark.tf
     def test_no_trainable_params_qnode_tf(self):
@@ -334,8 +335,8 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.param_shift_cv(circuit)(weights)
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_cv(circuit, dev)(weights)
 
     @pytest.mark.jax
     def test_no_trainable_params_qnode_jax(self):
@@ -351,8 +352,8 @@ class TestParameterShiftLogic:
             return qml.expval(qml.QuadX(0))
 
         weights = [0.1, 0.2]
-        with pytest.raises(qml.QuantumFunctionError, match="No trainable parameters."):
-            qml.gradients.param_shift_cv(circuit)(weights)
+        with pytest.raises(QuantumFunctionError, match="No trainable parameters."):
+            qml.gradients.param_shift_cv(circuit, dev)(weights)
 
     def test_no_trainable_params_tape(self):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -389,7 +390,7 @@ class TestParameterShiftLogic:
         params = np.array([0.5, 0.5, 0.5], requires_grad=True)
 
         result = qml.gradients.param_shift_cv(circuit, dev)(params)
-        assert np.allclose(result, np.zeros((2, 3)), atol=0, rtol=0)
+        assert np.allclose(result, np.zeros(3), atol=0, rtol=0)
 
     def test_state_non_differentiable_error(self):
         """Test error raised if attempting to differentiate with

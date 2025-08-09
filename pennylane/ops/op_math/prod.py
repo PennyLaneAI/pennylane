@@ -16,9 +16,9 @@ This file contains the implementation of the Prod class which contains logic for
 computing the product between operations.
 """
 import itertools
-import warnings
+from collections import Counter
 from copy import copy
-from functools import reduce, wraps
+from functools import reduce
 from itertools import combinations
 from typing import Union
 
@@ -26,7 +26,8 @@ from scipy.sparse import kron as sparse_kron
 
 import pennylane as qml
 from pennylane import math
-from pennylane.operation import Operator, convert_to_opmath
+from pennylane.capture.autograph import wraps
+from pennylane.operation import Operator
 from pennylane.ops.op_math.pow import Pow
 from pennylane.ops.op_math.sprod import SProd
 from pennylane.ops.op_math.sum import Sum
@@ -55,7 +56,8 @@ def prod(*ops, id=None, lazy=True):
 
     Keyword Args:
         id (str or None): id for the product operator. Default is None.
-        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any of the operators is already a product operator, its operands will be used instead.
+        lazy=True (bool): If ``lazy=False``, a simplification will be performed such that when any
+            of the operators is already a product operator, its operands will be used instead.
 
     Returns:
         ~ops.op_math.Prod: the operator representing the product.
@@ -97,8 +99,10 @@ def prod(*ops, id=None, lazy=True):
     >>> prod_op = prod(qfunc)(1.1)
     >>> prod_op
     CNOT(wires=[0, 1]) @ RX(1.1, wires=[0])
+
+
+    Notice how the order in the output appears reversed. However, this is correct because the operators are applied from right to left.
     """
-    ops = tuple(convert_to_opmath(op) for op in ops)
     if len(ops) == 1:
         if isinstance(ops[0], qml.operation.Operator):
             return ops[0]
@@ -229,8 +233,16 @@ class Prod(CompositeOp):
 
     """
 
+    resource_keys = frozenset({"resources"})
+
+    @property
+    @handle_recursion_error
+    def resource_params(self):
+        resources = dict(Counter(qml.resource_rep(type(op), **op.resource_params) for op in self))
+        return {"resources": resources}
+
     _op_symbol = "@"
-    _math_op = math.prod
+    _math_op = staticmethod(math.prod)
     grad_method = None
 
     @property
@@ -250,17 +262,6 @@ class Prod(CompositeOp):
     @property
     def has_decomposition(self):
         return True
-
-    @property
-    def obs(self):
-        r"""Access the operands of a ``Prod`` instance"""
-        # This is temporary property to smoothen the transition to the new operator arithmetic system.
-        # In particular, the __matmul__ (@ python operator) method between operators now generates Prod instead of Tensor instances.
-        warnings.warn(
-            "Accessing the terms of a tensor product operator via op.obs is deprecated, please use op.operands instead.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        return self.operands
 
     def decomposition(self):
         r"""Decomposition of the product operator is given by each factor applied in succession.
@@ -282,13 +283,7 @@ class Prod(CompositeOp):
         mats: list[TensorLike] = []
         batched: list[bool] = []  # batched[i] tells if mats[i] is batched or not
         for ops in self.overlapping_ops:
-            gen = (
-                (
-                    (qml.matrix(op) if isinstance(op, qml.ops.Hamiltonian) else op.matrix()),
-                    op.wires,
-                )
-                for op in ops
-            )
+            gen = ((op.matrix(), op.wires) for op in ops)
 
             reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
 
@@ -311,9 +306,9 @@ class Prod(CompositeOp):
         return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
 
     @handle_recursion_error
-    def sparse_matrix(self, wire_order=None):
+    def sparse_matrix(self, wire_order=None, format="csr"):
         if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format="csr")
+            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
 
         if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
             gen = ((op.sparse_matrix(), op.wires) for op in self)
@@ -322,10 +317,12 @@ class Prod(CompositeOp):
 
             wire_order = wire_order or self.wires
 
-            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order)
+            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order).asformat(
+                format
+            )
         mats = (op.sparse_matrix() for op in self)
         full_mat = reduce(sparse_kron, mats)
-        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
+        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order).asformat(format)
 
     @property
     @handle_recursion_error
@@ -480,35 +477,19 @@ class Prod(CompositeOp):
                 ops.append(factor)
         return coeffs, ops
 
-    @property
-    def coeffs(self):
-        r"""
-        Scalar coefficients of the operator when flattened out.
 
-        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
+def _prod_resources(resources):
+    return resources
 
-        .. seealso:: :attr:`~Prod.ops`, :class:`~Prod.pauli_rep`"""
-        warnings.warn(
-            "Prod.coeffs is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms(). Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        coeffs, _ = self.terms()
-        return coeffs
 
-    @property
-    def ops(self):
-        r"""
-        Operator terms without scalar coefficients of the operator when flattened out.
+# pylint: disable=unused-argument
+@qml.register_resources(_prod_resources)
+def _prod_decomp(*_, wires=None, operands):
+    for op in reversed(operands):
+        op._unflatten(*op._flatten())  # pylint: disable=protected-access
 
-        This is a deprecated attribute, please use :meth:`~Prod.terms` instead.
 
-        .. seealso:: :attr:`~Prod.coeffs`, :class:`~Prod.pauli_rep`"""
-        warnings.warn(
-            "Prod.ops is deprecated and will be removed in future releases. You can access both (coeffs, ops) via op.terms() Also consider op.operands.",
-            qml.PennyLaneDeprecationWarning,
-        )
-        _, ops = self.terms()
-        return ops
+qml.add_decomps(Prod, _prod_decomp)
 
 
 def _swappable_ops(op1, op2, wire_map: dict = None) -> bool:
@@ -683,7 +664,7 @@ class _ProductFactorsGrouping:
             if pauli_word != "Identity":
                 pauli_op = self._paulis[pauli_word](wire)
                 self._factors += ((pauli_op,),)
-                self.global_phase *= pauli_coeff
+            self.global_phase *= pauli_coeff
 
     def remove_factors(self, wires: list[int]):
         """Remove all factors from the ``self._pauli_factors`` and ``self._non_pauli_factors``

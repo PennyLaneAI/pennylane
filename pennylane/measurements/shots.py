@@ -12,9 +12,9 @@
 # limitations under the License.
 """This module contains the Shots class to hold shot-related information."""
 from collections.abc import Sequence
+from typing import NamedTuple
 
-# pylint:disable=inconsistent-return-statements
-from typing import NamedTuple, Union
+from pennylane import math
 
 
 class ShotCopies(NamedTuple):
@@ -36,7 +36,7 @@ class ShotCopies(NamedTuple):
 
 def valid_int(s):
     """Returns True if s is a positive integer."""
-    return isinstance(s, int) and s > 0
+    return isinstance(s, int) and s > 0 or math.is_abstract(s) and s.shape == ()
 
 
 def valid_tuple(s):
@@ -122,6 +122,11 @@ class Shots:
     >>> Shots([7, (100, 2)]) * 1.5
     Shots(total_shots=310, shot_vector=(ShotCopies(10 shots x 1), ShotCopies(150 shots x 2)))
 
+    Example constructing a Shots instance by adding two existing instances together:
+
+    >>> Shots(100) + Shots(((10,2),))
+    Shots(total_shots=120, shot_vector=(ShotCopies(100 shots x 1), ShotCopies(10 shots x 2)))
+
     One should also note that specifying a single tuple of length 2 is considered two different
     shot values, and *not* a tuple-pair representing shots and copies to avoid special behaviour
     depending on the iterable type:
@@ -172,6 +177,9 @@ class Shots:
             self.__all_tuple_init__([s if isinstance(s, Sequence) else (s, 1) for s in shots])
         elif isinstance(shots, self.__class__):
             return  # self already _is_ shots as defined by __new__
+        elif math.is_abstract(shots) and shots.shape == ():
+            self.total_shots = shots
+            self.shot_vector = (ShotCopies(shots, 1),)
         else:
             raise self._SHOT_ERROR
 
@@ -218,17 +226,20 @@ class Shots:
         total_shots = 0
         current_shots, current_copies = shots[0]
         for s in shots[1:]:
-            if s[0] == current_shots:
-                current_copies += s[1]
-            else:
+            if math.is_abstract(s[0]) or math.is_abstract(current_shots) or s[0] != current_shots:
                 res.append(ShotCopies(current_shots, current_copies))
                 total_shots += current_shots * current_copies
                 current_shots, current_copies = s
+            else:
+                current_copies += s[1]
         self.shot_vector = tuple(res + [ShotCopies(current_shots, current_copies)])
         self.total_shots = total_shots + current_shots * current_copies
 
     def __bool__(self):
         return self.total_shots is not None
+
+    def __add__(self, other):
+        return add_shots(self, other)
 
     def __mul__(self, scalar):
         if not isinstance(scalar, (int, float)):
@@ -281,4 +292,33 @@ class Shots:
                 lower_bound = upper_bound
 
 
-ShotsLike = Union[Shots, None, int, Sequence[Union[int, tuple[int, int]]]]
+ShotsLike = Shots | int | Sequence[int | tuple[int, int]] | None
+
+
+def add_shots(s1: Shots, s2: Shots) -> Shots:
+    """Add two :class:`~.Shots` objects by concatenating their shot vectors.
+
+    Args:
+        s1 (Shots): a Shots object to add
+        s2 (Shots): a Shots object to add
+
+    Returns:
+        Shots: a :class:`~.Shots` object built by concatenating the shot vectors of ``s1`` and ``s2``
+
+    Example:
+        >>> s1 = Shots((5, (10, 2)))
+        >>> s2 = Shots((3, 2, (10, 3)))
+        >>> print(qml.measurements.add_shots(s1, s2))
+        Shots(total=60, vector=[5 shots, 10 shots x 2, 3 shots, 2 shots, 10 shots x 3])
+    """
+    if s1.total_shots is None:
+        return s2
+
+    if s2.total_shots is None:
+        return s1
+
+    shot_vector = []
+    for shot in s1.shot_vector + s2.shot_vector:
+        shot_vector.append((shot.shots, shot.copies))
+
+    return Shots(shots=shot_vector)

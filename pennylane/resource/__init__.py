@@ -72,13 +72,29 @@ Resource Classes
     ~Resources
     ~ResourcesOperation
 
+Resource Functions
+~~~~~~~~~~~~~~~~~~
+
+.. currentmodule:: pennylane.resource
+
+.. autosummary::
+    :toctree: api
+
+    ~add_in_series
+    ~add_in_parallel
+    ~mul_in_series
+    ~mul_in_parallel
+    ~substitute
+
 Tracking Resources for Custom Operations
 ----------------------------------------
 
-We can use the :code:`null.qubit` device with the :code:`qml.Tracker` to track the resources
+We can use the :code:`null.qubit` device with the :class:`pennylane.Tracker` to track the resources
 used in a quantum circuit with custom operations without execution.
 
 .. code-block:: python3
+
+    from functools import partial
 
     class MyCustomAlgorithm(ResourcesOperation):
         num_wires = 2
@@ -92,8 +108,9 @@ used in a quantum circuit with custom operations without execution.
                 depth=3,
             )
 
-    dev = qml.device("null.qubit", wires=[0, 1, 2], shots=100)
+    dev = qml.device("null.qubit", wires=[0, 1, 2])
 
+    @partial(qml.set_shots, shots=100)
     @qml.qnode(dev)
     def circuit(theta):
         qml.RZ(theta, wires=0)
@@ -110,8 +127,8 @@ We can examine the resources by accessing the :code:`resources` key:
 
 >>> resources_lst = tracker.history['resources']
 >>> print(resources_lst[0])
-wires: 3
-gates: 7
+num_wires: 3
+num_gates: 7
 depth: 5
 shots: Shots(None)
 gate_types:
@@ -122,6 +139,14 @@ gate_sizes:
 from .error import AlgorithmicError, ErrorOperation, SpectralNormError
 from .first_quantization import FirstQuantization
 from .measurement import estimate_error, estimate_shots
-from .resource import Resources, ResourcesOperation
+from .resource import (
+    Resources,
+    ResourcesOperation,
+    add_in_series,
+    add_in_parallel,
+    mul_in_series,
+    mul_in_parallel,
+    substitute,
+)
 from .second_quantization import DoubleFactorization
 from .specs import specs

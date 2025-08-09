@@ -22,10 +22,10 @@ noise-related metadata can also be supplied to construct a noise model using:
     ~NoiseModel
 
 Each conditional in the ``model_map`` (and ``meas_map``) evaluates the gate operations 
-(and terminal measurments) in the quantum circuit based on some condition of its attributes
-(e.g., type, parameters, wires, etc.) and use the corresponding callable to apply the
+(and terminal measurements) in the quantum circuit based on some condition of its attributes
+(e.g., type, parameters, wires, etc.) and uses the corresponding callable to apply the
 noise operations, using the user-provided metadata (e.g., hardware topologies or relaxation
-times), whenever the condition results true. A noise model once built can be attached
+times), whenever the condition is true. A noise model, once built, can be attached
 to a circuit or device via the following transform:
 
 .. autosummary::
@@ -209,3 +209,19 @@ but are just located in different modules.
 
 .. inheritance-diagram:: pennylane.boolean_fn
     :parts: 1
+
+Noise transforms
+^^^^^^^^^^^^^^^^
+
+.. currentmodule:: pennylane.noise
+
+.. autosummary::
+    :toctree: api
+
+    ~add_noise
+    ~insert
+    ~mitigate_with_zne
+    ~fold_global
+    ~poly_extrapolate
+    ~richardson_extrapolate
+    ~exponential_extrapolate

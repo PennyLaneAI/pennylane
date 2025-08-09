@@ -17,14 +17,13 @@ LinearCombination class
 import itertools
 import numbers
 
-# pylint: disable=too-many-arguments, protected-access, too-many-instance-attributes
-import warnings
+# pylint: disable=too-many-arguments,protected-access
 from copy import copy
-from typing import Union
 
 import pennylane as qml
-from pennylane.operation import Observable, Operator, Tensor, convert_to_opmath
+from pennylane.operation import Operator
 
+from .sprod import SProd
 from .sum import Sum
 
 
@@ -34,9 +33,13 @@ class LinearCombination(Sum):
     The ``LinearCombination`` is represented as a linear combination of other operators, e.g.,
     :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
 
+    .. note::
+
+        ``qml.Hamiltonian`` dispatches to :class:`~pennylane.ops.op_math.LinearCombination`.
+
     Args:
         coeffs (tensor_like): coefficients of the ``LinearCombination`` expression
-        observables (Iterable[Observable]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
+        observables (Iterable[Operator]): observables in the ``LinearCombination`` expression, of same length as ``coeffs``
         grouping_type (str): If not ``None``, compute and store information on how to group commuting
             observables upon initialization. This information may be accessed when a :class:`~.QNode` containing this
             ``LinearCombination`` is executed on devices. The string refers to the type of binary relation between Pauli words.
@@ -58,8 +61,13 @@ class LinearCombination(Sum):
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.ops.LinearCombination(coeffs, obs)
     >>> print(H)
-    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
+    The same ``LinearCombination`` can be created using the ``qml.Hamiltonian`` alias:
+
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> print(H)
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
     The coefficients can be a trainable tensor, for example:
 
@@ -67,7 +75,7 @@ class LinearCombination(Sum):
     >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
     >>> H = qml.ops.LinearCombination(coeffs, obs)
     >>> print(H)
-    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ H(2))
 
 
     A ``LinearCombination`` can store information on which commuting observables should be measured together in
@@ -95,7 +103,6 @@ class LinearCombination(Sum):
     using the :func:`compute_grouping <pennylane.ops.LinearCombination.compute_grouping>` method.
     """
 
-    num_wires = qml.operation.AnyWires
     grad_method = "A"  # supports analytic gradients
     batch_size = None
     ndim_params = None  # could be (0,) * len(coeffs), but it is not needed. Define at class-level
@@ -119,6 +126,7 @@ class LinearCombination(Sum):
         observables: list[Operator],
         grouping_type=None,
         method="lf",
+        *,
         _grouping_indices=None,
         _pauli_rep=None,
         id=None,
@@ -137,12 +145,13 @@ class LinearCombination(Sum):
 
         self._coeffs = coeffs
 
-        self._ops = [convert_to_opmath(op) for op in observables]
+        self._ops = list(observables)
 
         self._hyperparameters = {"ops": self._ops}
 
         with qml.QueuingManager.stop_recording():
-            operands = tuple(qml.s_prod(c, op) for c, op in zip(coeffs, observables))
+            # type.__call__ valid when capture is enabled and creating an instance
+            operands = tuple(type.__call__(SProd, c, op) for c, op in zip(coeffs, observables))
 
         super().__init__(
             *operands,
@@ -182,7 +191,7 @@ class LinearCombination(Sum):
         """Return the operators defining the LinearCombination.
 
         Returns:
-            Iterable[Observable]): observables in the LinearCombination expression
+            Iterable[Operator]): observables in the LinearCombination expression
         """
         return self._ops
 
@@ -219,8 +228,8 @@ class LinearCombination(Sum):
                 the grouping. Can be ``'qwc'``, ``'commuting'``, or ``'anticommuting'``.
                 Defaults to ``'qwc'``.
             method (str): The graph colouring heuristic to use in solving minimum clique cover for
-                grouping, which can be ``'lf'`` (Largest First) or ``'rlf'`` (Recursive Largest
-                First). Defaults to ``'lf'``.
+                grouping, which can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First),
+                ``'dsatur'`` (Degree of Saturation), or ``'gis'`` (Greedy Independent Set).
 
         **Example**
 
@@ -303,71 +312,6 @@ class LinearCombination(Sum):
         coeffs, ops, pr = self._simplify_coeffs_ops(self.coeffs, self.ops, self.pauli_rep, cutoff)
         return LinearCombination(coeffs, ops, _pauli_rep=pr)
 
-    def compare(self, other):
-        r"""Determines mathematical equivalence between operators
-
-        ``LinearCombination`` and other operators are equivalent if they mathematically represent the same operator
-        (their matrix representations are equal), acting on the same wires.
-
-        .. Warning::
-
-            This method does not compute explicit matrices but uses the underlyding operators and coefficients for comparisons. When both operators
-            consist purely of Pauli operators, and therefore have a valid ``op.pauli_rep``, the comparison is cheap.
-            When that is not the case (e.g. one of the operators contains a ``Hadamard`` gate), it can be more expensive as it involves mathematical simplification of both operators.
-
-        Returns:
-            (bool): True if equivalent.
-
-        **Examples**
-
-        >>> H = qml.ops.LinearCombination(
-        ...     [0.5, 0.5],
-        ...     [qml.PauliZ(0) @ qml.PauliY(1), qml.PauliY(1) @ qml.PauliZ(0) @ qml.Identity("a")]
-        ... )
-        >>> obs = qml.PauliZ(0) @ qml.PauliY(1)
-        >>> print(H.compare(obs))
-        True
-
-        >>> H1 = qml.ops.LinearCombination([1, 1], [qml.PauliX(0), qml.PauliZ(1)])
-        >>> H2 = qml.ops.LinearCombination([1, 1], [qml.PauliZ(0), qml.PauliX(1)])
-        >>> H1.compare(H2)
-        False
-
-        >>> ob1 = qml.ops.LinearCombination([1], [qml.PauliX(0)])
-        >>> ob2 = qml.Hermitian(np.array([[0, 1], [1, 0]]), 0)
-        >>> ob1.compare(ob2)
-        False
-        """
-
-        if isinstance(other, (Operator)):
-            if (pr1 := self.pauli_rep) is not None and (pr2 := other.pauli_rep) is not None:
-                pr1.simplify()
-                pr2.simplify()
-                return pr1 == pr2
-
-            if isinstance(other, (qml.ops.Hamiltonian, Tensor)):
-                warnings.warn(
-                    f"Attempting to compare a legacy operator class instance {other} of type {type(other)} with {self} of type {type(self)}."
-                    f"You are likely disabling/enabling new opmath in the same script or explicitly create legacy operator classes Tensor and ops.Hamiltonian."
-                    f"Please visit https://docs.pennylane.ai/en/stable/news/new_opmath.html for more information and help troubleshooting.",
-                    UserWarning,
-                )
-                op1 = self.simplify()
-                op2 = other.simplify()
-
-                op2 = qml.operation.convert_to_opmath(op2)
-                op2 = qml.ops.LinearCombination(*op2.terms())
-
-                return qml.equal(op1, op2)
-
-            op1 = self.simplify()
-            op2 = other.simplify()
-            return qml.equal(op1, op2)
-
-        raise ValueError(
-            "Can only compare a LinearCombination, and a LinearCombination/Observable/Tensor."
-        )
-
     def __matmul__(self, other: Operator) -> Operator:
         """The product operation between Operator objects."""
         if isinstance(other, LinearCombination):
@@ -402,15 +346,15 @@ class LinearCombination(Sum):
 
         return NotImplemented
 
-    def __add__(self, H: Union[numbers.Number, Operator]) -> Operator:
-        r"""The addition operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
+    def __add__(self, H: numbers.Number | Operator) -> Operator:
+        r"""The addition operation between a LinearCombination and an Operator."""
         ops = copy(self.ops)
         self_coeffs = self.coeffs
 
         if isinstance(H, numbers.Number) and H == 0:
             return self
 
-        if isinstance(H, (LinearCombination, qml.ops.Hamiltonian)):
+        if isinstance(H, LinearCombination):
             coeffs = qml.math.concatenate([self_coeffs, H.coeffs], axis=0)
             ops.extend(H.ops)
             if (pr1 := self.pauli_rep) is not None and (pr2 := H.pauli_rep) is not None:
@@ -426,12 +370,17 @@ class LinearCombination(Sum):
             ops.append(H)
 
             return qml.ops.LinearCombination(coeffs, ops)
+        return NotImplemented
 
+    def __sub__(self, H: Operator) -> Operator:
+        r"""The subtraction operation between a LinearCombination and an Operator."""
+        if isinstance(H, Operator):
+            return self + qml.s_prod(-1.0, H, lazy=False)
         return NotImplemented
 
     __radd__ = __add__
 
-    def __mul__(self, a: Union[int, float, complex]) -> "LinearCombination":
+    def __mul__(self, a: int | float | complex) -> "LinearCombination":
         r"""The scalar multiplication operation between a scalar and a LinearCombination."""
         if isinstance(a, (int, float, complex)):
             self_coeffs = self.coeffs
@@ -442,15 +391,7 @@ class LinearCombination(Sum):
 
     __rmul__ = __mul__
 
-    def __sub__(self, H: Observable) -> Observable:
-        r"""The subtraction operation between a LinearCombination and a LinearCombination/Tensor/Observable."""
-        if isinstance(H, (LinearCombination, qml.ops.Hamiltonian, Tensor, Observable)):
-            return self + qml.s_prod(-1.0, H, lazy=False)
-        return NotImplemented
-
-    def queue(
-        self, context: Union[qml.QueuingManager, qml.queuing.AnnotatedQueue] = qml.QueuingManager
-    ):
+    def queue(self, context: qml.QueuingManager | qml.queuing.AnnotatedQueue = qml.QueuingManager):
         """Queues a ``qml.ops.LinearCombination`` instance"""
         if qml.QueuingManager.recording():
             for o in self.ops:
@@ -471,12 +412,12 @@ class LinearCombination(Sum):
         for ops in self.overlapping_ops:
             if len(ops) == 1:
                 eigvals.append(
-                    qml.utils.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
+                    qml.math.expand_vector(ops[0].eigvals(), list(ops[0].wires), list(self.wires))
                 )
             else:
                 tmp_composite = Sum(*ops)  # only change compared to CompositeOp.eigvals()
                 eigvals.append(
-                    qml.utils.expand_vector(
+                    qml.math.expand_vector(
                         tmp_composite.eigendecomposition["eigval"],
                         list(tmp_composite.wires),
                         list(self.wires),
@@ -542,3 +483,159 @@ if LinearCombination._primitive is not None:
         coeffs = args[:n_obs]
         observables = args[n_obs:]
         return type.__call__(LinearCombination, coeffs, observables, **kwargs)
+
+
+# this just exists for the docs build for now, since we're waiting until the next PR to fix the docs
+# pylint: disable=too-few-public-methods
+class Hamiltonian:
+    r"""Returns an operator representing a Hamiltonian.
+
+    The Hamiltonian is represented as a linear combination of other operators, e.g.,
+    :math:`\sum_{k=0}^{N-1} c_k O_k`, where the :math:`c_k` are trainable parameters.
+
+    .. note::
+
+        ``qml.Hamiltonian`` dispatches to :class:`~pennylane.ops.op_math.LinearCombination`.
+
+    Args:
+        coeffs (tensor_like): coefficients of the Hamiltonian expression
+        observables (Iterable[Operator]): observables in the Hamiltonian expression, of same length as coeffs
+        grouping_type (str): If not None, compute and store information on how to group commuting
+            observables upon initialization. This information may be accessed when QNodes containing this
+            Hamiltonian are executed on devices. The string refers to the type of binary relation between Pauli words.
+            Can be ``'qwc'`` (qubit-wise commuting), ``'commuting'``, or ``'anticommuting'``.
+        method (str): The graph colouring heuristic to use in solving minimum clique cover for grouping, which
+            can be ``'lf'`` (Largest First), ``'rlf'`` (Recursive Largest First), ``'dsatur'`` (Degree of Saturation),
+            or ``'gis'`` (Greedy Independent Set). Ignored if ``grouping_type=None``.
+        id (str): name to be assigned to this Hamiltonian instance
+
+    **Example:**
+
+    ``qml.Hamiltonian`` takes in a list of coefficients and a list of operators.
+
+    >>> coeffs = [0.2, -0.543]
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> print(H)
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+
+    The coefficients can be a trainable tensor, for example:
+
+    >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
+    >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
+    >>> H = qml.Hamiltonian(coeffs, obs)
+    >>> print(H)
+    0.2 * (X(0) @ Z(1)) + -0.543 * (Z(0) @ Hadamard(wires=[2]))
+
+    A ``qml.Hamiltonian`` stores information on which commuting observables should be measured
+    together in a circuit:
+
+    >>> obs = [qml.X(0), qml.X(1), qml.Z(0)]
+    >>> coeffs = np.array([1., 2., 3.])
+    >>> H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+    >>> H.grouping_indices
+    ((0, 1), (2,))
+
+    This attribute can be used to compute groups of coefficients and observables:
+
+    >>> grouped_coeffs = [coeffs[list(indices)] for indices in H.grouping_indices]
+    >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
+    >>> grouped_coeffs
+    [array([1., 2.]), array([3.])]
+    >>> grouped_obs
+    [[X(0), X(1)], [Z(0)]]
+
+    Devices that evaluate a ``qml.Hamiltonian`` expectation by splitting it into its local
+    observables can use this information to reduce the number of circuits evaluated.
+
+    Note that one can compute the ``grouping_indices`` for an already initialized ``qml.Hamiltonian``
+    by using the :func:`compute_grouping <pennylane.ops.LinearCombination.compute_grouping>` method.
+
+    .. details::
+        :title: Old Hamiltonian behaviour
+
+        The following code examples show the behaviour of ``qml.Hamiltonian`` using old operator
+        arithmetic. See :doc:`Updated Operators </news/new_opmath/>` for more details. The old
+        behaviour can be reactivated by calling the deprecated
+
+        >>> qml.operation.disable_new_opmath()
+
+        Alternatively, ``qml.ops.Hamiltonian`` provides a permanent access point for Hamiltonian
+        behaviour before ``v0.36``.
+
+        >>> coeffs = [0.2, -0.543]
+        >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
+        >>> H = qml.Hamiltonian(coeffs, obs)
+        >>> print(H)
+          (-0.543) [Z0 H2]
+        + (0.2) [X0 Z1]
+
+        The coefficients can be a trainable tensor, for example:
+
+        >>> coeffs = tf.Variable([0.2, -0.543], dtype=tf.double)
+        >>> obs = [qml.X(0) @ qml.Z(1), qml.Z(0) @ qml.Hadamard(2)]
+        >>> H = qml.Hamiltonian(coeffs, obs)
+        >>> print(H)
+          (-0.543) [Z0 H2]
+        + (0.2) [X0 Z1]
+
+        The user can also provide custom observables:
+
+        >>> obs_matrix = np.array([[0.5, 1.0j, 0.0, -3j],
+                                   [-1.0j, -1.1, 0.0, -0.1],
+                                   [0.0, 0.0, -0.9, 12.0],
+                                   [3j, -0.1, 12.0, 0.0]])
+        >>> obs = qml.Hermitian(obs_matrix, wires=[0, 1])
+        >>> H = qml.Hamiltonian((0.8, ), (obs, ))
+        >>> print(H)
+        (0.8) [Hermitian0,1]
+
+        Alternatively, the :func:`~.molecular_hamiltonian` function from the
+        :doc:`/introduction/chemistry` module can be used to generate a molecular
+        Hamiltonian.
+
+        In many cases, Hamiltonians can be constructed using Pythonic arithmetic operations.
+        For example:
+
+        >>> qml.Hamiltonian([1.], [qml.X(0)]) + 2 * qml.Z(0) @ qml.Z(1)
+
+        is equivalent to the following Hamiltonian:
+
+        >>> qml.Hamiltonian([1, 2], [qml.X(0), qml.Z(0) @ qml.Z(1)])
+
+        While scalar multiplication requires native python floats or integer types,
+        addition, subtraction, and tensor multiplication of Hamiltonians with Hamiltonians or
+        other observables is possible with tensor-valued coefficients, i.e.,
+
+        >>> H1 = qml.Hamiltonian(torch.tensor([1.]), [qml.X(0)])
+        >>> H2 = qml.Hamiltonian(torch.tensor([2., 3.]), [qml.Y(0), qml.X(1)])
+        >>> obs3 = [qml.X(0), qml.Y(0), qml.X(1)]
+        >>> H3 = qml.Hamiltonian(torch.tensor([1., 2., 3.]), obs3)
+        >>> H3.compare(H1 + H2)
+        True
+
+        A Hamiltonian can store information on which commuting observables should be measured together in
+        a circuit:
+
+        >>> obs = [qml.X(0), qml.X(1), qml.Z(0)]
+        >>> coeffs = np.array([1., 2., 3.])
+        >>> H = qml.Hamiltonian(coeffs, obs, grouping_type='qwc')
+        >>> H.grouping_indices
+        [[0, 1], [2]]
+
+        This attribute can be used to compute groups of coefficients and observables:
+
+        >>> grouped_coeffs = [coeffs[indices] for indices in H.grouping_indices]
+        >>> grouped_obs = [[H.ops[i] for i in indices] for indices in H.grouping_indices]
+        >>> grouped_coeffs
+        [tensor([1., 2.], requires_grad=True), tensor([3.], requires_grad=True)]
+        >>> grouped_obs
+        [[qml.X(0), qml.X(1)], [qml.Z(0)]]
+
+        Devices that evaluate a Hamiltonian expectation by splitting it into its local observables can
+        use this information to reduce the number of circuits evaluated.
+
+        Note that one can compute the ``grouping_indices`` for an already initialized Hamiltonian by
+        using the :func:`compute_grouping <pennylane.Hamiltonian.compute_grouping>` method.
+
+    """

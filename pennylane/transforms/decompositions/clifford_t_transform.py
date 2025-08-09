@@ -15,10 +15,13 @@
 
 import math
 import warnings
+from functools import lru_cache, partial
 from itertools import product
 
 import pennylane as qml
+from pennylane.measurements.mid_measure import MeasurementValue
 from pennylane.ops import Adjoint
+from pennylane.ops.op_math.decompositions.ross_selinger import rs_decomposition
 from pennylane.ops.op_math.decompositions.solovay_kitaev import sk_decomposition
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -62,7 +65,25 @@ _PARAMETER_GATES = (qml.RX, qml.RY, qml.RZ, qml.Rot, qml.PhaseShift)
 _CLIFFORD_T_GATES = tuple(_CLIFFORD_T_ONE_GATES + _CLIFFORD_T_TWO_GATES) + (qml.GlobalPhase,)
 
 # Gates to be skipped during decomposition
-_SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut)
+_SKIP_OP_TYPES = (qml.Barrier, qml.Snapshot, qml.WireCut, MeasurementValue)
+
+# Stores the cache of a specified size for the decomposition function
+# that is used to decompose the RZ gates in the Clifford+T basis.
+_CLIFFORD_T_CACHE = None
+
+_CATALYST_SKIP_OP_TYPES = ()
+
+
+# pylint: disable=import-outside-toplevel, global-statement
+def _add_catalyst_skip_op_types():
+    """Delayed addition of PennyLane-Catalyst skip op types."""
+    global _CATALYST_SKIP_OP_TYPES
+    try:
+        from catalyst.api_extensions.quantum_operators import MidCircuitMeasure
+
+        _CATALYST_SKIP_OP_TYPES = (*_CATALYST_SKIP_OP_TYPES, MidCircuitMeasure)
+    except (ModuleNotFoundError, ImportError):  # pragma: no cover
+        pass
 
 
 def _check_clifford_op(op, use_decomposition=False):
@@ -178,9 +199,18 @@ def _simplify_param(theta, gate):
 # pylint: disable= too-many-branches,
 def _rot_decompose(op):
     r"""Decomposes a rotation operation: :class:`~.Rot`, :class:`~.RX`, :class:`~.RY`, :class:`~.RZ`,
-    :class:`~.PhaseShift` into a basis composed of :class:`~.RZ`, :class:`~.S`, and :class:`~.Hadamard`.
+    :class:`~.PhaseShift` or a :class`~.QubitUnitary` into a basis composed of :class:`~.RZ`,
+    :class:`~.S`, and :class:`~.Hadamard`.
     """
     d_ops = []
+
+    if isinstance(op, qml.QubitUnitary):
+        ops = op.decomposition()
+        for o in ops[:-1]:
+            d_ops.extend(_rot_decompose(o))
+        d_ops.append(ops[-1])
+        return d_ops
+
     # Extend for Rot operation with Rz.Ry.Rz decompositions
     if isinstance(op, qml.Rot):
         (phi, theta, omega), wires = op.parameters, op.wires
@@ -189,7 +219,7 @@ def _rot_decompose(op):
         return d_ops
 
     (theta,), wires = op.data, op.wires
-    if isinstance(op, qml.ops.Adjoint):  # pylint: disable=no-member
+    if isinstance(op, qml.ops.Adjoint):
         ops_ = _rot_decompose(op.base.adjoint())
     elif isinstance(op, qml.RX):
         ops_ = _simplify_param(theta, qml.X(wires))
@@ -213,6 +243,21 @@ def _rot_decompose(op):
         ops_ = _simplify_param(theta, qml.Z(wires))
         if ops_ is None:
             ops_ = [qml.RZ(theta, wires=wires), qml.GlobalPhase(-theta / 2)]
+            if not qml.math.is_abstract(theta):
+                # The following loop simplifies the two cases where for all odd intergers `k`,
+                # `PhaseShift(k * pi / 2)` is S / S* and `PhaseShift(k * pi / 4)` is T / T*.
+                for val_ in [2, 4]:
+                    div_ = qml.math.divide(theta, math.pi / val_)
+                    mod_ = qml.math.mod(theta, math.pi / val_)
+                    if qml.math.allclose(mod_, 0.0, atol=1e-6) and qml.math.allclose(
+                        qml.math.mod(div_, 2), 1.0, atol=1e-6
+                    ):
+                        vop_ = qml.S(wires) if val_ == 2 else qml.T(wires)
+                        sign = qml.math.mod(qml.math.floor_divide(div_, 2), 2)
+                        ops_ = [
+                            vop_ if qml.math.allclose(sign, 0.0, atol=1e-6) else qml.adjoint(vop_)
+                        ]
+                        break
         else:
             ops_.append(qml.GlobalPhase(-theta / 2))
 
@@ -256,7 +301,7 @@ def _two_qubit_decompose(op):
     d_ops = []
     for td_op in td_ops:
         d_ops.extend(
-            _rot_decompose(td_op) if td_op.num_params and td_op.num_wires == 1 else [td_op]
+            _rot_decompose(td_op) if td_op.num_params and len(td_op.wires) == 1 else [td_op]
         )
 
     return d_ops
@@ -306,13 +351,75 @@ def _merge_param_gates(operations, merge_ops=None):
     return merged_ops, number_ops
 
 
+# NOTE: The cache size is set to 2000, which is a reasonable size for the mapping
+# decomposition in circuit with up to 500 wires. This is based on the fact that the
+# decompositions being mapped would contain {H, S, T} (with or without {Sadj, Tadj}).
+@lru_cache(maxsize=2000)
+def _map_wires(op, wire):
+    """Maps the operator to the provided wire."""
+    return op.map_wires({0: wire})
+
+
+class _CachedCallable:
+    """A class to cache the decomposition of the operators.
+
+    Args:
+        method (str): The method to be used for decomposition.
+        epsilon (float): The maximum permissible operator norm error for the decomposition.
+        cache_size (int): The size of the cache built for the decomposition function based on the angle.
+        **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
+    """
+
+    def __init__(self, method, epsilon, cache_size, **method_kwargs):
+        match method:
+            case "sk":
+                self.decompose_fn = lru_cache(maxsize=cache_size)(
+                    partial(sk_decomposition, epsilon=epsilon, **method_kwargs)
+                )
+            case "gridsynth":
+                self.decompose_fn = lru_cache(maxsize=cache_size)(
+                    partial(rs_decomposition, epsilon=epsilon, **method_kwargs)
+                )
+            case _:
+                raise NotImplementedError(
+                    f"Currently we only support Solovay-Kitaev ('sk') and Ross-Selinger ('gridsynth') decompositions, got {method}"
+                )
+
+        self.method = method
+        self.epsilon = epsilon
+        self.cache_size = cache_size
+        self.method_kwargs = method_kwargs
+        self.query = lru_cache(maxsize=cache_size)(self.cached_decompose)
+
+    def compatible(self, method, epsilon, cache_size, **method_kwargs):
+        """Check equality based on `method`, `epsilon` and `method_kwargs`."""
+        return (
+            self.method == method
+            and self.epsilon <= epsilon
+            and self.cache_size <= cache_size
+            and self.method_kwargs == method_kwargs
+        )
+
+    def cached_decompose(self, op):
+        """Decomposes the angle into a sequence of gates."""
+        f_adj = op.data[0] < 2 * math.pi  # 4 * pi / 2
+        cached_op = op if f_adj else op.adjoint()
+
+        seq = self.decompose_fn(cached_op)
+        if f_adj:
+            return seq
+
+        adj = [qml.adjoint(s, lazy=False) for s in reversed(seq)]
+        return adj[1:] + adj[:1]
+
+
 # pylint: disable= too-many-nested-blocks, too-many-branches, too-many-statements, unnecessary-lambda-assignment
 @transform
 def clifford_t_decomposition(
     tape: QuantumScript,
     epsilon=1e-4,
-    max_expansion=None,
     method="sk",
+    cache_size=1000,
     **method_kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Decomposes a circuit into the Clifford+T basis.
@@ -327,15 +434,15 @@ def clifford_t_decomposition(
     Then, the leftover single qubit :class:`~.RZ` operations are approximated in the Clifford+T basis with
     :math:`\epsilon > 0` error. By default, we use the Solovay-Kitaev algorithm described in
     `Dawson and Nielsen (2005) <https://arxiv.org/abs/quant-ph/0505030>`_ for this.
-
-    .. warning::
-        The ``max_expansion`` argument is deprecated and will be removed in version 0.40.
+    Alternatively, the Ross-Selinger algorithm described in `Ross and Selinger (2016) <https://arxiv.org/abs/1403.2975v3>`_
+    can be used by setting the ``method`` to ``"gridsynth"``.
 
     Args:
         tape (QNode or QuantumTape or Callable): The quantum circuit to be decomposed.
         epsilon (float): The maximum permissible operator norm error of the complete circuit decomposition. Defaults to ``0.0001``.
-        max_expansion (int): The depth to be used for tape expansion before manual decomposition to Clifford+T basis is applied.
-        method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev.
+        method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev. Alternatively,
+            the Ross-Selinger algorithm can be used with ``"gridsynth"``.
+        cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
     Returns:
@@ -348,11 +455,15 @@ def clifford_t_decomposition(
         **max_depth** (int), **basis_set** (list[str]), **basis_length** (int) -- arguments for the ``"sk"`` method,
         where the decomposition is performed using the :func:`~.sk_decomposition` method.
 
+    - Ross-Selinger (``gridsynth``) decomposition --
+        **max_search_trials** (int), **max_factoring_trials** (int) -- arguments for the ``"gridsynth"`` method,
+        where the decomposition is performed using the :func:`~.rs_decomposition` method.
+
     Raises:
         ValueError: If a gate operation does not have a decomposition when required.
         NotImplementedError: If chosen decomposition ``method`` is not supported.
 
-    .. seealso:: :func:`~.sk_decomposition` for Solovay-Kitaev decomposition.
+    .. seealso:: :func:`~.rs_decomposition` and :func:`~.sk_decomposition` for Ross-Selinger and Solovay-Kitaev decomposition methods, respectively.
 
     **Example**
 
@@ -373,35 +484,22 @@ def clifford_t_decomposition(
     >>> qml.math.allclose(result, approx, atol=1e-4)
     True
     """
-    if max_expansion is not None:
-        warnings.warn(
-            "The max_expansion argument is deprecated and will be removed in version v0.40. ",
-            qml.PennyLaneDeprecationWarning,
-        )
-    else:
-        max_expansion = 6
-
     with QueuingManager.stop_recording():
-        # Build the basis set and the pipeline for intial compilation pass
-        basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES]
+        # Build the basis set and the pipeline for initial compilation pass
+        basis_set = [op.__name__ for op in _PARAMETER_GATES + _CLIFFORD_T_GATES + _SKIP_OP_TYPES]
         pipelines = [remove_barrier, commute_controlled, cancel_inverses, merge_rotations]
 
         # Compile the tape according to depth provided by the user and expand it
-        with warnings.catch_warnings():
-            warnings.filterwarnings(
-                action="ignore",
-                message=r"The expand_depth argument is deprecated",
-                category=qml.PennyLaneDeprecationWarning,
-            )
-            [compiled_tape], _ = qml.compile(
-                tape, pipelines, basis_set=basis_set, expand_depth=max_expansion
-            )
+        [compiled_tape], _ = qml.compile(tape, pipelines, basis_set=basis_set)
+
+        if not _CATALYST_SKIP_OP_TYPES:
+            _add_catalyst_skip_op_types()
 
         # Now iterate over the expanded tape operations
         decomp_ops, gphase_ops = [], []
         for op in compiled_tape.operations:
             # Check whether operation is to be skipped
-            if isinstance(op, _SKIP_OP_TYPES):
+            if isinstance(op, _SKIP_OP_TYPES + _CATALYST_SKIP_OP_TYPES):
                 decomp_ops.append(op)
 
             # Check whether the operation is a global phase
@@ -431,44 +529,11 @@ def clifford_t_decomposition(
                     d_ops = _two_qubit_decompose(op)
                     decomp_ops.extend(d_ops)
 
-                # For special multi-qubit gates and ones constructed from matrix
+                # If we don't know how to decompose the operation
                 else:
-                    try:
-                        # Attempt decomposing the operation
-                        md_ops = op.decomposition()
-                        idx = 0  # might not be fast but at least is not recursive
-                        while idx < len(md_ops):
-                            md_op = md_ops[idx]
-                            if md_op.name not in basis_set or not check_clifford_t(md_op):
-                                # For the gates acting on one qubit
-                                if len(md_op.wires) == 1:
-                                    if md_op.name in basis_set:  # For known recipe
-                                        d_ops = _rot_decompose(md_op)
-                                    else:  # Resort to decomposing manually
-                                        d_ops, g_op = _one_qubit_decompose(md_op)
-                                        gphase_ops.append(g_op)
-
-                                # For the gates acting on two qubits
-                                elif len(md_op.wires) == 2:
-                                    # Resort to decomposing manually
-                                    d_ops = _two_qubit_decompose(md_op)
-
-                                # Final resort (should not enter in an ideal situtation)
-                                else:
-                                    d_ops = md_op.decomposition()
-
-                                # Expand the list and iterate over
-                                del md_ops[idx]
-                                md_ops[idx:idx] = d_ops
-                            idx += 1
-
-                        decomp_ops.extend(md_ops)
-
-                    # If we don't know how to decompose the operation
-                    except Exception as exc:
-                        raise ValueError(
-                            f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
-                        ) from exc
+                    raise ValueError(
+                        f"Cannot unroll {op} into the Clifford+T basis as no rule exists for its decomposition"
+                    )
 
         # Merge RZ rotations together
         merged_ops, number_ops = _merge_param_gates(decomp_ops, merge_ops=["RZ"])
@@ -479,26 +544,32 @@ def clifford_t_decomposition(
         # Compute the per-gate epsilon value
         epsilon /= number_ops or 1
 
-        # Every decomposition implementation should have the following shape:
+        # _CACHED_DECOMPOSE is a global variable that caches the decomposition function,
+        # where the implementation of each function should have the following signature:
         # def decompose_fn(op: Operator, epsilon: float, **method_kwargs) -> List[Operator]
         # note: the last operator in the decomposition must be a GlobalPhase
 
-        # Build the approximation set for Solovay-Kitaev decomposition
-        if method == "sk":
-            decompose_fn = sk_decomposition
-
-        else:
-            raise NotImplementedError(
-                f"Currently we only support Solovay-Kitaev ('sk') decomposition, got {method}"
-            )
+        # Build the decomposition cache based on the method
+        global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
+        if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
+            method, epsilon, cache_size, **method_kwargs
+        ):
+            _CLIFFORD_T_CACHE = _CachedCallable(method, epsilon, cache_size, **method_kwargs)
 
         decomp_ops = []
         phase = new_operations.pop().data[0]
         for op in new_operations:
             if isinstance(op, qml.RZ):
-                clifford_ops = decompose_fn(op, epsilon, **method_kwargs)
-                phase += qml.math.convert_like(clifford_ops.pop().data[0], phase)
-                decomp_ops.extend(clifford_ops)
+                # If simplifies to Identity, skip it
+                if not (op_param := op.simplify().data):
+                    continue
+                # Decompose the RZ operation with a default wire
+                clifford_ops = _CLIFFORD_T_CACHE.query(qml.RZ(op_param[0], [0]))
+                # Extract the global phase from the last operation
+                phase += qml.math.convert_like(clifford_ops[-1].data[0], phase)
+                # Map the operations to the original wires
+                op_wire = op.wires[0]
+                decomp_ops.extend([_map_wires(cl_op, op_wire) for cl_op in clifford_ops[:-1]])
             else:
                 decomp_ops.append(op)
 
@@ -507,7 +578,9 @@ def clifford_t_decomposition(
             decomp_ops.append(qml.GlobalPhase(phase))
 
     # Construct a new tape with the expanded set of operations
-    new_tape = type(tape)(decomp_ops, compiled_tape.measurements, shots=tape.shots)
+    # and then clear `decomp_ops` list to free up the memory
+    new_tape = compiled_tape.copy(operations=decomp_ops)
+    decomp_ops.clear()
 
     # Perform a final attempt of simplification before return
     [new_tape], _ = cancel_inverses(new_tape)

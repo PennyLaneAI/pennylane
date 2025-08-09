@@ -16,12 +16,13 @@ Contains the ReferenceQubit device, a minimal device that can be used for testin
 and plugin development purposes.
 """
 
+
 import numpy as np
 
 import pennylane as qml
 
 from .device_api import Device
-from .execution_config import DefaultExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import decompose, validate_device_wires, validate_measurements
 
@@ -35,6 +36,7 @@ def sample_state(state: np.ndarray, shots: int, seed=None):
     num_wires = int(np.log2(len(probs)))
 
     rng = np.random.default_rng(seed)
+    probs /= np.sum(probs)  # Fix: Normalize to prevent sum ≠ 1 errors in NumPy 2.0+
     basis_samples = rng.choice(basis_states, shots, p=probs)
 
     # convert basis state integers to array of booleans
@@ -57,6 +59,8 @@ def simulate(tape: qml.tape.QuantumTape, seed=None) -> qml.typing.Result:
     # 2) apply all the operations
     for op in tape.operations:
         op_mat = op.matrix(wire_order=tape.wires)
+        if qml.math.get_interface(op_mat) != "numpy":
+            raise ValueError("Reference qubit can only work with numpy data.")
         state = qml.math.matmul(op_mat, state)
 
     # 3) perform measurements
@@ -128,14 +132,17 @@ class ReferenceQubit(Device):
         # numpy practices to use a local random number generator
         self._rng = np.random.default_rng(seed)
 
-    def preprocess(self, execution_config=DefaultExecutionConfig):
+    def preprocess(self, execution_config: ExecutionConfig | None = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
 
         # Here we convert an arbitrary tape into one natively supported by the device
         program = qml.transforms.core.TransformProgram()
         program.add_transform(validate_device_wires, wires=self.wires, name="reference.qubit")
-        program.add_transform(qml.defer_measurements)
+        program.add_transform(qml.defer_measurements, allow_postselect=False)
         program.add_transform(qml.transforms.split_non_commuting)
         program.add_transform(qml.transforms.diagonalize_measurements)
+        program.add_transform(qml.devices.preprocess.measurements_from_samples)
         program.add_transform(
             decompose,
             stopping_condition=supports_operation,
@@ -148,7 +155,7 @@ class ReferenceQubit(Device):
         # no need to preprocess the config as the device does not support derivatives
         return program, execution_config
 
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute(self, circuits, execution_config: ExecutionConfig | None = None):
         for tape in circuits:
             assert all(supports_operation(op) for op in tape.operations)
         return tuple(simulate(tape, seed=self._rng) for tape in circuits)
