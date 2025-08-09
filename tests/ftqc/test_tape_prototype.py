@@ -18,6 +18,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
 from pennylane.ftqc.ftqc_device import FTQCQubit, LightningQubitBackend, NullQubitBackend
 from pennylane.measurements import MidMeasureMP
 from pennylane.ops import CZ, Adjoint, Conditional, H
@@ -126,3 +127,20 @@ def test_executing_arbitrary_circuit_two_qubit_gate(wires, backend_cls):
     expected_res = (1.0, 1.0, 1.0) if backend_cls is NullQubitBackend else ref_circ()
 
     assert np.allclose(res, expected_res, atol=0.05)
+
+
+@pytest.mark.parametrize(
+    "backend, expected_method",
+    [(LightningQubitBackend(), "one-shot"), (NullQubitBackend(), "device")],
+)
+@pytest.mark.parametrize(
+    "initial_config", [ExecutionConfig(mcm_config=MCMConfig(mcm_method="placeholder")), None]
+)
+def test_setup_execution_config(backend, expected_method, initial_config):
+    """Test that setup_execution_config works as expected"""
+
+    dev = FTQCQubit(wires=2, backend=backend)
+    config = dev.setup_execution_config(initial_config)
+
+    assert isinstance(config, ExecutionConfig)
+    assert config.mcm_config.mcm_method == expected_method
