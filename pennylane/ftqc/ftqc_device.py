@@ -1,0 +1,178 @@
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+Contains an implementation of a PennyLane frontend (Device) for an FTQC/MBQC based
+device
+"""
+from dataclasses import replace
+from pathlib import Path
+
+import pennylane as qml
+from pennylane.devices.capabilities import DeviceCapabilities, validate_mcm_method
+from pennylane.devices.device_api import Device, _default_mcm_method
+from pennylane.devices.execution_config import DefaultExecutionConfig, ExecutionConfig, MCMConfig
+from pennylane.devices.preprocess import (
+    measurements_from_samples,
+    no_analytic,
+    validate_device_wires,
+    validate_observables,
+)
+from pennylane.ftqc import convert_to_mbqc_formalism, convert_to_mbqc_gateset, diagonalize_mcms
+from pennylane.tape.qscript import QuantumScript
+from pennylane.transforms import combine_global_phases, split_non_commuting
+
+
+class FTQCQubit(Device):
+    """An experimental PennyLane device frontend for processing circuits and executing them on an
+    FTQC/MBQC based backend.
+
+    Args:
+        wires (int, Iterable[Number, str]): Number of logical wires present on the device, or iterable that
+            contains consecutive integers starting at 0 to be used as wire labels (i.e., ``[0, 1, 2]``).
+            The number of wires will be limited by the capabilities of the backend.
+        backend: A backend that circuits will be executed on.
+
+    """
+
+    name = "ftqc.qubit"
+    config_filepath = Path(__file__).parent / "ftqc_device.toml"
+
+    def __init__(self, wires, backend):
+
+        super().__init__(wires=wires)
+
+        self._backend = backend
+        self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
+
+    def preprocess_transforms(self, execution_config=DefaultExecutionConfig):
+
+        program = qml.transforms.core.TransformProgram()
+
+        # validate the initial circuit is one we can process + update all observables to have wires
+        program.add_transform(no_analytic)
+        program.add_transform(validate_device_wires, wires=self.wires, name=self.name)
+        program.add_transform(
+            validate_observables,
+            lambda obs: self.capabilities.supports_observable(obs.name),
+            name=self.name,
+        )
+
+        # convert to mbqc formalism
+        program.add_transform(split_non_commuting)
+        program.add_transform(measurements_from_samples)
+
+        program.add_transform(convert_to_mbqc_gateset)
+        program.add_transform(combine_global_phases)
+        program.add_transform(convert_to_mbqc_formalism)
+
+        # validate that conversion didn't use too many wires
+        program.add_transform(
+            validate_device_wires,
+            wires=self.backend.wires,
+            name=f"{self.name}.{self.backend.name}",
+        )
+
+        # set up for backend execution (including MCM handling)
+        if self.backend.diagonalize_mcms:
+            program.add_transform(diagonalize_mcms)
+        # backend preprocess will include mcm execution method if relevant
+        backend_program, _ = self.backend.device.preprocess(execution_config)
+
+        # we skip gradient preprocess transforms, not worrying about derivatives for this prototype
+
+        return program + backend_program
+
+    @property
+    def backend(self):
+        """The backend device circuits will be sent to for execution"""
+        return self._backend
+
+    def setup_execution_config(
+        self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
+    ) -> ExecutionConfig:
+        """Sets up an ``ExecutionConfig`` that configures the execution behaviour.
+
+        In this case, the only modification compared to the standard `ExecutionConfig` is
+        that it gets the MCM method for the backend toml file (either "device" or "one-shot"),
+        so that it can be included when building the transform program for the backend.
+        uses the PennyLane device API.
+
+        Args:
+            config (ExecutionConfig): The initial ExecutionConfig object that describes the
+                parameters needed to configure the execution behaviour.
+            circuit (QuantumScript): The quantum circuit to customize the execution config for.
+
+        Returns:
+            ExecutionConfig: The updated ExecutionConfig object
+
+        """
+
+        # get mcm method - "device" if its an option, otherwise "one-shot"
+        default_mcm_method = _default_mcm_method(self.backend.capabilities, shots_present=True)
+        assert default_mcm_method in ["device", "one-shot"]
+
+        if config is None:
+            config = ExecutionConfig(mcm_config=MCMConfig(mcm_method=default_mcm_method))
+        else:
+            new_mcm_config = replace(config.mcm_config, mcm_method=default_mcm_method)
+            config = replace(config, mcm_config=new_mcm_config)
+
+        validate_mcm_method(
+            self.backend.capabilities, config.mcm_config.mcm_method, shots_present=True
+        )
+
+        return config
+
+    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+        """Execution method for the frontend. To be expanded to orchestrate executing
+        in chunks with feedback for corrections before non-Clifford gates. Currently
+        just feeds into the backend execution"""
+        return self.backend.execute(circuits, execution_config)
+
+
+# pylint: disable=too-few-public-methods
+class LightningQubitBackend:
+    """Wrapper for using lightning.qubit as a backend for the ftqc.qubit device"""
+
+    name = "lightning"
+    config_filepath = Path(__file__).parent / "lightning_backend.toml"
+
+    def __init__(self):
+        self.diagonalize_mcms = True
+        self.wires = qml.wires.Wires(range(25))
+        self.device = qml.device("lightning.qubit")
+        self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
+
+    def execute(self, circuits, execution_config):
+        """To be expanded as needed to support maintaining the _statevector between executions
+        unless explicitly cleared, in order to support a loop of execution and feedback"""
+        return self.device.execute(circuits, execution_config)
+
+
+class NullQubitBackend:
+    """Wrapper for using null.qubit as a backend for the ftqc.qubit device"""
+
+    name = "null"
+    config_filepath = Path(__file__).parent / "null_backend.toml"
+
+    def __init__(self):
+        self.diagonalize_mcms = False
+        self.wires = qml.wires.Wires(range(1000))
+        self.device = qml.device("null.qubit")
+
+        self.capabilities = DeviceCapabilities.from_toml_file(self.config_filepath)
+
+    def execute(self, circuits, execution_config):
+        """Probably not in need of any modification, since its mocked."""
+        return self.device.execute(circuits, execution_config)
