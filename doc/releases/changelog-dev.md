@@ -56,6 +56,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Changed how basis states are assigned internally in `qml.Superposition`, improving its
+  decomposition slightly both regarding classical computing time and gate decomposition.
+  [(#7880)](https://github.com/PennyLaneAI/pennylane/pull/7880)
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
