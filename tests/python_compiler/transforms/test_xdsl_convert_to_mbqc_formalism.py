@@ -74,9 +74,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[m134:%.+]] = arith.addi [[m13:%.+]], [[m4:%.+]] : i1
                 // CHECK: [[cst_ture:%.+]] = arith.constant true
                 // CHECK: [[x_idx:%.+]] = arith.xori [[m134:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[cmp_res:%.+]] = arith.cmpi eq, [[x_idx:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_x_res:%.+]] = scf.if [[cmp_res:%.+]] -> (!quantum.bit) {
+                // CHECK: [[qb4_x_res:%.+]] = scf.if [[x_idx:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4:%.+]] = quantum.custom "PauliX"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: } else {
@@ -86,9 +84,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[m23:%.+]] = arith.addi [[m2:%.+]], [[m3:%.+]] : i1
                 // CHECK: [[cst_ture:%.+]] = arith.constant true
                 // CHECK: [[z_idx:%.+]] = arith.xori [[m23:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[cmp_res:%.+]] = arith.cmpi eq, [[z_idx:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_res:%.+]] = scf.if [[cmp_res:%.+]] -> (!quantum.bit) {
+                // CHECK: [[qb4_res:%.+]] = scf.if [[z_idx:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4_x_res:%.+]] = quantum.custom "PauliZ"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: } else {
@@ -136,9 +132,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[m24:%.+]] = arith.addi [[m2:%.+]], [[m4:%.+]] : i1
                 // CHECK: [[cst_ture:%.+]] = arith.constant true
                 // CHECK: [[x_idx:%.+]] = arith.xori [[m24:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[cmp_res:%.+]] = arith.cmpi eq, [[x_idx:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_x_res:%.+]] = scf.if [[cmp_res:%.+]] -> (!quantum.bit) {
+                // CHECK: [[qb4_x_res:%.+]] = scf.if [[x_idx:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4:%.+]] = quantum.custom "PauliX"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: } else {
@@ -150,9 +144,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[cst_ture:%.+]] = arith.constant true
                 // CHECK: [[m1231:%.+]] = arith.addi [[m123:%.+]], [[cst_ture:%.+]] : i1
                 // CHECK: [[z_idx:%.+]] = arith.xori [[m1231:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[cmp_res:%.+]] = arith.cmpi eq, [[z_idx:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_res:%.+]] = scf.if [[cmp_res:%.+]] -> (!quantum.bit) {
+                // CHECK: [[qb4_res:%.+]] = scf.if [[z_idx:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4_x_res:%.+]] = quantum.custom "PauliZ"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: } else {
@@ -208,9 +200,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[m24:%.+]] = arith.addi [[m2:%.+]], [[m4:%.+]] : i1
                 // CHECK: [[cst_ture:%.+]] = arith.constant true
                 // CHECK: [[x_idx:%.+]] = arith.xori [[m24:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[cmp_res:%.+]] = arith.cmpi eq, [[x_idx:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_x_res:%.+]] = scf.if [[cmp_res:%.+]] -> (!quantum.bit) {
+                // CHECK: [[qb4_x_res:%.+]] = scf.if [[x_idx:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4:%.+]] = quantum.custom "PauliX"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: } else {
@@ -220,9 +210,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[m13:%.+]] = arith.addi [[m1:%.+]], [[m3:%.+]] : i1
                 // CHECK: [[cst_ture:%.+]] = arith.constant true
                 // CHECK: [[z_idx:%.+]] = arith.xori [[m13:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[cmp_res:%.+]] = arith.cmpi eq, [[z_idx:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_res:%.+]] = scf.if [[cmp_res:%.+]] -> (!quantum.bit) {
+                // CHECK: [[qb4_res:%.+]] = scf.if [[z_idx:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4_x_res:%.+]] = quantum.custom "PauliZ"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: } else {
@@ -301,9 +289,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[m24:%.+]] = arith.addi [[m2:%.+]], [[m4:%.+]] : i1
                 // CHECK: [[cst_ture:%.+]] = arith.constant true
                 // CHECK: [[x_idx:%.+]] = arith.xori [[m24:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[cmp_res:%.+]] = arith.cmpi eq, [[x_idx:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_x_res:%.+]] = scf.if [[cmp_res:%.+]] -> (!quantum.bit) {
+                // CHECK: [[qb4_x_res:%.+]] = scf.if [[x_idx:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4:%.+]] = quantum.custom "PauliX"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: } else {
@@ -313,9 +299,7 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[m13:%.+]] = arith.addi [[m1:%.+]], [[m3:%.+]] : i1
                 // CHECK: [[cst_ture:%.+]] = arith.constant true
                 // CHECK: [[z_idx:%.+]] = arith.xori [[m13:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[cmp_res:%.+]] = arith.cmpi eq, [[z_idx:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_res:%.+]] = scf.if [[cmp_res:%.+]] -> (!quantum.bit) {
+                // CHECK: [[qb4_res:%.+]] = scf.if [[z_idx:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4_x_res:%.+]] = quantum.custom "PauliZ"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: } else {

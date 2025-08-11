@@ -162,23 +162,23 @@ class ConvertToMBQCFormalismPattern(
         for node in nodes:
             in_qubits = graph_qubits_dict[node]
             # Create a Hadamard gate object for each auxiliary qubit
-            HadamardOp = CustomOp(in_qubits=in_qubits, gate_name="Hadamard")
+            hadamard_op = CustomOp(in_qubits=in_qubits, gate_name="Hadamard")
             # Insert the newly created Hadamard gate object to the IR
-            rewriter.insert_op(HadamardOp, InsertPoint.before(op))
+            rewriter.insert_op(hadamard_op, InsertPoint.before(op))
             # Ensure the qubits in the graph_qubits_dict are updated
-            graph_qubits_dict[node] = HadamardOp.results[0]
+            graph_qubits_dict[node] = hadamard_op.results[0]
 
         # Apply CZ gate to entangle each nearest auxiliary qubit pair
         for edge in edges:
             in_qubits = [graph_qubits_dict[node] for node in edge]
             # Create a CZ gate object for each auxiliary qubit pair
-            CZOp = CustomOp(in_qubits=in_qubits, gate_name="CZ")
+            cz_op = CustomOp(in_qubits=in_qubits, gate_name="CZ")
             # Insert the newly created CZ gate object to the IR
-            rewriter.insert_op(CZOp, InsertPoint.before(op))
+            rewriter.insert_op(cz_op, InsertPoint.before(op))
             # Ensure the qubits in the graph_qubits_dict are updated
             graph_qubits_dict[edge[0]], graph_qubits_dict[edge[1]] = (
-                CZOp.results[0],
-                CZOp.results[1],
+                cz_op.results[0],
+                cz_op.results[1],
             )
 
         return graph_qubits_dict
@@ -201,18 +201,18 @@ class ConvertToMBQCFormalismPattern(
             The results include: 1. a measurement result; 2, a result qubit.
         """
         angle = 0.0 if xy_basis == _MeasureBasis.X else math.pi / 2
-        planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum("XY"))
+        plane_op = MeasurementPlaneAttr(MeasurementPlaneEnum("XY"))
         # Create a constant op from a float64 variable
-        constAngleOp = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
+        const_angle_op = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
         # Insert the constant op into the IR
-        rewriter.insert_op(constAngleOp, InsertPoint.before(insert_before))
+        rewriter.insert_op(const_angle_op, InsertPoint.before(insert_before))
         # Create a MeasureInBasisOp op
-        measureOp = MeasureInBasisOp(in_qubit=qubit, plane=planeOp, angle=constAngleOp)
-        # Insert the newly created measureOp into the IR
-        rewriter.insert_op(measureOp, InsertPoint.before(insert_before))
-        # Returns the results of the newly created measureOp.
+        measure_op = MeasureInBasisOp(in_qubit=qubit, plane=plane_op, angle=const_angle_op)
+        # Insert the newly created measure_op into the IR
+        rewriter.insert_op(measure_op, InsertPoint.before(insert_before))
+        # Returns the results of the newly created measure_op.
         # The results include: 1, a measurement result; 2, a result qubit.
-        return measureOp.results
+        return measure_op.results
 
     def _measure_x_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert a X-basis measure op related operations to the IR."""
@@ -245,49 +245,51 @@ class ConvertToMBQCFormalismPattern(
             The results include: 1. a measurement result; 2, a result qubit.
         """
         # Create a const op, which hold the integer `1`.
-        constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+        constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
         # Insert the const op into the IR
-        rewriter.insert_op(constantOneOp, InsertPoint.before(insert_before))
+        rewriter.insert_op(constant_one_op, InsertPoint.before(insert_before))
         # Create a CmpiOp object which compares a measurement result with the const one object
-        cmpOp = arith.CmpiOp(meas_parity, constantOneOp, "eq")
+        cmp_op = arith.CmpiOp(meas_parity, constant_one_op, "eq")
         # Insert the newly created CmpiOp object into the IR
-        rewriter.insert_op(cmpOp, InsertPoint.before(insert_before))
+        rewriter.insert_op(cmp_op, InsertPoint.before(insert_before))
 
-        planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
+        plane_op = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
 
         # Create a MeasureInBasisOp op for the true region
-        measureOp = MeasureInBasisOp(in_qubit=qubit, plane=planeOp, angle=angle)
+        measure_op = MeasureInBasisOp(in_qubit=qubit, plane=plane_op, angle=angle)
 
         # Create a const object hold the `-angle` value
-        constNegAngleOp = arith.NegfOp(angle)
+        const_neg_angle_op = arith.NegfOp(angle)
 
         # Create a MeasureInBasisOp op for the false region
         # TODOs: Need confirmation on if we have to insert ops created for the false and true regions to the IR.
         # It seems that the code here [https://github.com/xdslproject/xdsl/blob/37fceab602d98efbb2ba7ecd5548aa657eed558d/tests/interpreters/test_scf_interpreter.py#L64-L74]
         # does not explicitly insert the Ops created to the IR. Checking the result IR after applying current implementation
         # of this pass, all Ops created in this block are inserted to the IR. Need some experts to confirm if it's the best practice.
-        measureNegOp = MeasureInBasisOp(in_qubit=qubit, plane=planeOp, angle=constNegAngleOp.result)
+        measure_neg_op = MeasureInBasisOp(
+            in_qubit=qubit, plane=plane_op, angle=const_neg_angle_op.result
+        )
         # Create the true region
-        true_region = [measureOp, scf.YieldOp(measureOp.results[0], measureOp.results[1])]
+        true_region = [measure_op, scf.YieldOp(measure_op.results[0], measure_op.results[1])]
         # Create the false region
         false_region = [
-            constNegAngleOp,
-            measureNegOp,
-            scf.YieldOp(measureNegOp.results[0], measureNegOp.results[1]),
+            const_neg_angle_op,
+            measure_neg_op,
+            scf.YieldOp(measure_neg_op.results[0], measure_neg_op.results[1]),
         ]
 
         # Create a If control flow Op
-        condOp = IfOp(
-            cmpOp,
+        cond_op = IfOp(
+            cmp_op,
             (builtin.IntegerType(1), QubitType()),
             true_region,
             false_region,
         )
-        # Insert condOp to the IR
-        rewriter.insert_op(condOp, InsertPoint.before(insert_before))
+        # Insert cond_op to the IR
+        rewriter.insert_op(cond_op, InsertPoint.before(insert_before))
 
         # Return the result of if control flow
-        return condOp.results
+        return cond_op.results
 
     def _hadamard_measurements(
         self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter
@@ -398,30 +400,20 @@ class ConvertToMBQCFormalismPattern(
         Return:
             The result auxiliary qubit.
         """
-        # Create a const op, which hold the integer `1`.
-        constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
-        # Insert the const op into the IR
-        rewriter.insert_op(constantOneOp, InsertPoint.before(op))
-        # Crate a CmpiOp object which compares a parity check result with the const one object
-        cmpOp = arith.CmpiOp(parity_res, constantOneOp, "eq")
-        # Insert the newly created CmpiOp object into the IR
-        rewriter.insert_op(cmpOp, InsertPoint.before(op))
-        in_qubit = qubit
-
-        # Create a byproductOp object
-        byproductOp = CustomOp(in_qubits=in_qubit, gate_name=gate_name)
-        true_region = [byproductOp, scf.YieldOp(byproductOp.results[0])]
+        # Create a byproduct_op object
+        byproduct_op = CustomOp(in_qubits=qubit, gate_name=gate_name)
+        true_region = [byproduct_op, scf.YieldOp(byproduct_op.results[0])]
 
         # Create an `Identity` gate object
-        identityOp = CustomOp(in_qubits=in_qubit, gate_name="Identity")
+        identity_op = CustomOp(in_qubits=qubit, gate_name="Identity")
         # TODOs check if we can set false_region = [scf.YieldOp(in_qubit)]
         # The answer is no as xDSL==0.46.0, the error msg is:
         # "'NoneType' object has no attribute 'add_use'""
-        false_region = [identityOp, scf.YieldOp(identityOp.results[0])]
-        condOp = IfOp(cmpOp, QubitType(), true_region, false_region)
-        # Insert condOp to the IR
-        rewriter.insert_op(condOp, InsertPoint.before(op))
-        return condOp.results
+        false_region = [identity_op, scf.YieldOp(identity_op.results[0])]
+        cond_op = IfOp(parity_res, QubitType(), true_region, false_region)
+        # Insert cond_op to the IR
+        rewriter.insert_op(cond_op, InsertPoint.before(op))
+        return cond_op.results
 
     def _parity_check(
         self,
@@ -441,29 +433,29 @@ class ConvertToMBQCFormalismPattern(
             The result of parity check.
         """
         prev_res = mres[0]
-        addOp = None
+        add_op = None
         # Create add ops to sum up the mres and insert them to the IR
         for i in range(1, len(mres)):
-            addOp = arith.AddiOp(prev_res, mres[i])
-            rewriter.insert_op(addOp, InsertPoint.before(op))
-            prev_res = addOp.result
+            add_op = arith.AddiOp(prev_res, mres[i])
+            rewriter.insert_op(add_op, InsertPoint.before(op))
+            prev_res = add_op.result
 
         # Create add const one ops and insert them to the IR
-        constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
-        rewriter.insert_op(constantOneOp, InsertPoint.before(op))
+        constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+        rewriter.insert_op(constant_one_op, InsertPoint.before(op))
 
         # Create an add op to add an additional const one and insert ops to the IR
         if add_const_one:
-            addOp = arith.AddiOp(prev_res, constantOneOp)
-            rewriter.insert_op(addOp, InsertPoint.before(op))
-            prev_res = addOp.result
+            add_op = arith.AddiOp(prev_res, constant_one_op)
+            rewriter.insert_op(add_op, InsertPoint.before(op))
+            prev_res = add_op.result
 
         # Add a xor op for parity check and insert it to the IR
-        xorOp = arith.XOrIOp(prev_res, constantOneOp)
-        rewriter.insert_op(xorOp, InsertPoint.before(op))
+        xor_op = arith.XOrIOp(prev_res, constant_one_op)
+        rewriter.insert_op(xor_op, InsertPoint.before(op))
 
         # Return the parity check result
-        return xorOp.result
+        return xor_op.result
 
     def _hadamard_corrections(
         self,
