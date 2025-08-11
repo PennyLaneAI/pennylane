@@ -203,8 +203,8 @@
 <h4>Resource-efficient decompositions 🔎</h4>
 
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
-
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
@@ -228,6 +228,7 @@
 
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
+
 * New `SparseFragment` and `SparseState` classes have been created that allow to use sparse matrices for the Hamiltonian Fragments when estimating the Trotter error.
   [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
 
