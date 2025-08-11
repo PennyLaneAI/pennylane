@@ -20,6 +20,8 @@ import pytest
 import pennylane as qml
 from pennylane.tape import QuantumScript
 
+pytest.importorskip("pyzx")
+
 
 @pytest.mark.external
 class TestPushHadamards:
