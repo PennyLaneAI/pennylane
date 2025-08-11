@@ -51,7 +51,7 @@ def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
     if len(fragments) == 0:
         return []
 
-    if not any(isinstance(fragment, csr_matrix) for fragment in fragments):
+    if not all(isinstance(fragment, csr_matrix) for fragment in fragments):
         raise TypeError("Fragments must be csr_matrix objects")
 
     return [SparseFragment(fragment) for fragment in fragments]

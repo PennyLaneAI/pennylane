@@ -17,8 +17,8 @@ import numpy as np
 import pytest
 from scipy.sparse import csr_matrix
 
-from pennylane.labs.trotter_error.fragments import SparseState, sparse_fragments
-from pennylane.labs.trotter_error.fragments.sparse_fragments import SparseFragment
+from pennylane.labs.trotter_error.fragments import sparse_fragments
+from pennylane.labs.trotter_error.fragments.sparse_fragments import SparseFragment, SparseState
 
 # pylint: disable=no-self-use
 
