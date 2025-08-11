@@ -17,8 +17,9 @@ Contains the drawing function.
 from __future__ import annotations
 
 import warnings
+from collections.abc import Callable, Sequence
 from functools import wraps
-from typing import TYPE_CHECKING, Callable, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Literal
 
 from pennylane import math
 from pennylane.tape import make_qscript
@@ -36,6 +37,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
+# pylint: disable=too-many-arguments
 def draw(
     qnode,
     wire_order=None,
@@ -45,7 +47,7 @@ def draw(
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     r"""Create a function that draws the given QNode or quantum function.
 
@@ -332,16 +334,17 @@ def draw(
     return wrapper
 
 
+# pylint: disable=too-many-arguments
 def _draw_qnode(
     qnode,
-    wire_order: Optional[Sequence] = None,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
     *,
     decimals=2,
     max_length=100,
     show_matrices=True,
     show_wire_labels=True,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
 ):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
@@ -385,16 +388,17 @@ def _draw_qnode(
     return wrapper
 
 
+# pylint: disable=too-many-arguments
 def draw_mpl(
-    qnode: Union[QNode, Callable],
-    wire_order: Optional[Sequence] = None,
+    qnode: QNode | Callable,
+    wire_order: Sequence | None = None,
     show_all_wires: bool = False,
-    decimals: Optional[int] = None,
-    style: Optional[str] = None,
+    decimals: int | None = None,
+    style: str | None = None,
     *,
-    max_length: Optional[int] = None,
+    max_length: int | None = None,
     fig=None,
-    level: Union[None, Literal["top", "user", "device", "gradient"], int, slice] = "gradient",
+    level: None | Literal["top", "user", "device", "gradient"] | int | slice = "gradient",
     **kwargs,
 ):
     r"""Draw a qnode with matplotlib
@@ -823,6 +827,7 @@ def draw_mpl(
     return wrapper
 
 
+# pylint: disable=too-many-arguments
 def _draw_mpl_qnode(
     qnode,
     wire_order=None,

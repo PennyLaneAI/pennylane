@@ -15,13 +15,15 @@
 This module contains the CircuitGraph class which is used to generate a DAG (directed acyclic graph)
 representation of a quantum circuit from an Operator queue.
 """
+import warnings
 from collections import defaultdict, namedtuple
+from collections.abc import Sequence
 from functools import cached_property
-from typing import Optional, Sequence, Union
 
 import numpy as np
 import rustworkx as rx
 
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.ops.identity import I
@@ -97,11 +99,11 @@ class CircuitGraph:
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
         self,
-        ops: list[Union[Operator, MeasurementProcess]],
-        obs: list[Union[MeasurementProcess, Operator]],
+        ops: list[Operator | MeasurementProcess],
+        obs: list[MeasurementProcess | Operator],
         wires: Wires,
-        par_info: Optional[list[dict]] = None,
-        trainable_params: Optional[set[int]] = None,
+        par_info: list[dict] | None = None,
+        trainable_params: set[int] | None = None,
     ):
         self._operations = ops
         self._observables = obs
@@ -124,18 +126,25 @@ class CircuitGraph:
         # observables per wire
         self._max_simultaneous_measurements = None
 
+    def __str__(self):
+        """The string representation of the class."""
+        string = "Operations\n==========\n"
+        string += "\n".join(repr(op) for op in self.operations)
+
+        string += "\n\nObservables\n===========\n"
+        string += "\n".join(repr(obs) for obs in self.observables)
+        string += "\n"
+
+        return string
+
     def print_contents(self):
         """Prints the contents of the quantum circuit."""
-
-        print("Operations")
-        print("==========")
-        for op in self.operations:
-            print(repr(op))
-
-        print("\nObservables")
-        print("===========")
-        for op in self.observables:
-            print(repr(op))
+        warnings.warn(
+            "``CircuitGraph.print_contents`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``print(circuit_graph_obj)``.",
+            PennyLaneDeprecationWarning,
+        )
+        print(self)
 
     def serialize(self) -> str:
         """Serialize the quantum circuit graph based on the operations and
@@ -150,7 +159,7 @@ class CircuitGraph:
         serialization_string = ""
         delimiter = "!"
 
-        for op in self.operations_in_order:
+        for op in self.operations:
             serialization_string += op.name
 
             for param in op.data:
@@ -164,7 +173,7 @@ class CircuitGraph:
         # name of the operation and wires
         serialization_string += "|||"
 
-        for mp in self.observables_in_order:
+        for mp in self.observables:
             obs = mp.obs or mp
             data, name = ([], "Identity") if obs is mp else (obs.data, str(obs.name))
             serialization_string += mp.__class__.__name__
@@ -198,6 +207,11 @@ class CircuitGraph:
         Returns:
             list[Union[MeasurementProcess, Operator]]: observables
         """
+        warnings.warn(
+            "``CircuitGraph.observables_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.observables``",
+            PennyLaneDeprecationWarning,
+        )
         return self._observables
 
     @property
@@ -217,6 +231,11 @@ class CircuitGraph:
         Returns:
             list[Operation]: operations
         """
+        warnings.warn(
+            "``CircuitGraph.operations_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.operations``",
+            PennyLaneDeprecationWarning,
+        )
         return self._operations
 
     @property
@@ -352,6 +371,11 @@ class CircuitGraph:
         Returns:
             list[Operator]: ancestors of the given operators, topologically ordered
         """
+        warnings.warn(
+            "``CircuitGraph.ancestors_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.ancestors(ops, sort=True)``",
+            PennyLaneDeprecationWarning,
+        )
         return self.ancestors(ops, sort=True)
 
     def descendants_in_order(self, ops):
@@ -365,6 +389,11 @@ class CircuitGraph:
         Returns:
             list[Operator]: descendants of the given operators, topologically ordered
         """
+        warnings.warn(
+            "``CircuitGraph.descendants_in_order`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``CircuitGraph.descendants(ops, sort=True)``",
+            PennyLaneDeprecationWarning,
+        )
         return self.descendants(ops, sort=True)
 
     def nodes_between(self, a, b):

@@ -19,7 +19,6 @@ import logging
 # pylint: disable=unused-argument
 from collections import Counter
 from functools import partial, singledispatch
-from typing import Optional
 
 import numpy as np
 from numpy.random import default_rng
@@ -283,7 +282,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
 def simulate(
     circuit: qml.tape.QuantumScript,
     debugger=None,
-    state_cache: Optional[dict] = None,
+    state_cache: dict | None = None,
     **execution_kwargs,
 ) -> Result:
     """Simulate a single quantum script.
@@ -540,7 +539,8 @@ def simulate_tree_mcm(
             else:
                 initial_state = branch_state(stack.states[depth], mcm_current[depth], mcms[depth])
             circtmp = circuits[depth].copy(shots=qml.measurements.shots.Shots(shots))
-            circtmp = prepend_state_prep(circtmp, initial_state, interface, circuit.wires)
+
+            circtmp = prepend_state_prep(circtmp, initial_state, interface, sorted(circuit.wires))
             state, is_state_batched = get_final_state(
                 circtmp,
                 debugger=debugger,

@@ -13,9 +13,9 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 
+from collections.abc import Callable, Sequence
 from functools import lru_cache, partial
 from numbers import Number
-from typing import Callable, Optional, Sequence, Union
 from warnings import warn
 
 import pennylane as qml
@@ -263,7 +263,7 @@ def _get_plxpr_defer_measurements():
             self,
             primitive: "jax.extend.core.Primitive",
             subfuns: Sequence[Callable],
-            invals: Sequence[Union[MeasurementValue, Number]],
+            invals: Sequence[MeasurementValue | Number],
             params: dict,
         ) -> MeasurementValue:
             """Create a ``MeasurementValue`` that captures all classical processing of the
@@ -473,7 +473,7 @@ def defer_measurements(
     tape: QuantumScript,
     reduce_postselected: bool = True,
     allow_postselect: bool = True,
-    num_wires: Optional[int] = None,
+    num_wires: int | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.

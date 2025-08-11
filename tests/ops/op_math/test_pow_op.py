@@ -20,7 +20,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.operation import AdjointUndefinedError, DecompositionUndefinedError
+from pennylane.exceptions import AdjointUndefinedError, DecompositionUndefinedError
 from pennylane.ops.op_math.controlled import ControlledOp
 from pennylane.ops.op_math.pow import Pow, PowOperation
 
@@ -108,6 +108,15 @@ class TestConstructor:
 
         assert original_op not in q.queue
 
+    def test_simplify_squared(self):
+        """Test that an op without a special pow method can still be simplified when raised to an integer power."""
+
+        class DummyOp(qml.operation.Operator):
+            pass
+
+        simplified = (DummyOp(0) ** 2).simplify()
+        qml.assert_equal(simplified, DummyOp(0) @ DummyOp(0))
+
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestInheritanceMixins:
@@ -122,8 +131,6 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert not isinstance(op, qml.operation.Operation)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not isinstance(op, qml.operation.Observable)
         assert not isinstance(op, PowOperation)
 
         # checking we can call `dir` without problems
@@ -143,37 +150,11 @@ class TestInheritanceMixins:
         assert isinstance(op, Pow)
         assert isinstance(op, qml.operation.Operator)
         assert isinstance(op, qml.operation.Operation)
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert not isinstance(op, qml.operation.Observable)
         assert isinstance(op, PowOperation)
 
         # check operation-specific properties made it into the mapping
         assert "grad_recipe" in dir(op)
         assert "control_wires" in dir(op)
-
-    def test_observable(self, power_method):
-        """Test that when the base is an Observable, Pow will also inherit from Observable."""
-
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-
-            class CustomObs(qml.operation.Observable):
-                num_wires = 1
-                num_params = 0
-
-        base = CustomObs(wires=0)
-        ob: Pow = power_method(base=base, z=-1.2)
-
-        assert isinstance(ob, Pow)
-        assert isinstance(ob, qml.operation.Operator)
-        assert not isinstance(ob, qml.operation.Operation)
-        assert not isinstance(ob, PowOperation)
-
-        # Check some basic observable functionality
-        with pytest.warns(qml.exceptions.PennyLaneDeprecationWarning):
-            assert ob.compare(ob)
-
-        # check the dir
-        assert "grad_recipe" not in dir(ob)
 
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])

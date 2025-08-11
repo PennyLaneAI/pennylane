@@ -25,7 +25,7 @@ from pennylane._grad import jacobian
 from pennylane.ops import LinearCombination
 from pennylane.queuing import apply
 from pennylane.tape import make_qscript
-from pennylane.workflow import QNode, construct_tape
+from pennylane.workflow import QNode, construct_tape, set_shots
 
 from .gradient_descent import GradientDescentOptimizer
 
@@ -47,17 +47,17 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         The bound device must also be instantiated with a finite number of shots.
 
     Args:
-        min_shots (int): The minimum number of shots used to estimate the expectations
+        min_shots (int): the minimum number of shots used to estimate the expectations
             of each term in the Hamiltonian. Note that this must be larger than 2 for the variance
             of the gradients to be computed.
-        mu (float): The running average constant :math:`\mu \in [0, 1]`. Used to control how
-            quickly the number of shots recommended for each gradient component changes.
-        b (float): Regularization bias. The bias should be kept small, but non-zero.
-        term_sampling (str): The random sampling algorithm to multinomially distribute the shot
+        term_sampling (str): the random sampling algorithm to multinomially distribute the shot
             budget across terms in the Hamiltonian expectation value. Currently, only
             ``"weighted_random_sampling"`` is supported. The default value is ``None``, which
             disables the random sampling behaviour.
-        stepsize (float): The learning rate :math:`\eta`. The learning rate *must* be such
+        mu (float): the running average constant :math:`\mu \in [0, 1]`. Used to control how
+            quickly the number of shots recommended for each gradient component changes (default value: 0.99).
+        b (float): the regularization bias. The bias should be kept small, but non-zero (default value: 1e-06).
+        stepsize (float): the learning rate :math:`\eta` (default value: 0.07). The learning rate *must* be such
             that :math:`\eta < 2/L = 2/\sum_i|c_i|`, where:
 
             * :math:`L \leq \sum_i|c_i|` is the bound on the `Lipschitz constant
@@ -259,9 +259,10 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
                     apply(op)
                 return measurements.expval(o)  # pylint:disable=cell-var-from-loop
 
-            qnode.func = func
-
             new_shots = 1 if s == 1 else [(1, int(s))]
+
+            qnode.func = func
+            qnode = set_shots(qnode, shots=new_shots)
 
             if s > 1:
 
@@ -272,7 +273,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             else:
                 cost = qnode
 
-            jacs = jacobian(cost, argnum=argnums)(*args, **kwargs, shots=new_shots)
+            jacs = jacobian(cost, argnum=argnums)(*args, **kwargs)
 
             if s == 1:
                 jacs = [np.expand_dims(j, 0) for j in jacs]
@@ -344,7 +345,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         new_shots = [(1, int(self.max_shots))]
 
         def cost(*args, **kwargs):
-            return math.stack(qnode(*args, **kwargs, shots=new_shots))
+            return math.stack(set_shots(qnode, shots=new_shots)(*args, **kwargs))
 
         grads = [jacobian(cost, argnum=i)(*args, **kwargs) for i in self.trainable_args]
 
@@ -499,5 +500,5 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
             If single arg is provided, list [array] is replaced by array.
         """
         new_args = self.step(objective_fn, *args, **kwargs)
-        forward = objective_fn(*args, **kwargs, shots=int(self.max_shots))
+        forward = set_shots(objective_fn, shots=int(self.max_shots))(*args, **kwargs)
         return new_args, forward

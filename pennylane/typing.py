@@ -17,7 +17,7 @@ import contextlib
 # pylint: disable=import-outside-toplevel,too-few-public-methods
 import sys
 from collections.abc import Callable, Sequence
-from typing import TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
@@ -77,18 +77,11 @@ def _is_jax(other, subclass=False):
     # pylint: disable=c-extension-no-member
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
-            import jax
-            import jaxlib
+            from jax import Array
+            from jax.core import Tracer
             from jax.numpy import ndarray
 
-            JaxTensor = Union[
-                ndarray,
-                (
-                    jax.Array
-                    if hasattr(jax, "Array")
-                    else Union[jaxlib.xla_extension.DeviceArray, jax.core.Tracer]
-                ),
-            ]
+            JaxTensor = ndarray | Array | Tracer
             check = issubclass if subclass else isinstance
 
             return check(other, JaxTensor)
@@ -127,4 +120,4 @@ ResultBatch = Sequence[Result]
 PostprocessingFn = Callable[[ResultBatch], Result]
 BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
-JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]
+JSON = Optional[int | str | bool | list["JSON"] | dict[str, "JSON"]]

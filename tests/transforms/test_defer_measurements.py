@@ -347,6 +347,7 @@ class TestQNode:
             # overwrite None with the expected default value True to determine expected outputs
             reduce_postselected = True
 
+        @qml.set_shots(shots=shots)
         @qml.qnode(dev)
         @dm_transform
         def circ1(phi):
@@ -358,7 +359,7 @@ class TestQNode:
             # Probability of measuring |1> on wire 1 should be 1
             return qml.probs(wires=1)
 
-        assert np.allclose(circ1(phi, shots=shots), [0, 1])
+        assert np.allclose(circ1(phi), [0, 1])
 
         expected_circuit = [
             qml.RX(phi, 0),
@@ -367,7 +368,7 @@ class TestQNode:
             qml.probs(wires=1),
         ]
 
-        tape1 = qml.workflow.construct_tape(circ1)(phi, shots=shots)
+        tape1 = qml.workflow.construct_tape(circ1)(phi)
         assert len(tape1) == len(expected_circuit)
         for op, expected_op in zip(tape1, expected_circuit):
             qml.assert_equal(op, expected_op)
@@ -390,6 +391,7 @@ class TestQNode:
             # overwrite None with the expected default value True to determine expected outputs
             reduce_postselected = True
 
+        @qml.set_shots(shots=shots)
         @qml.qnode(dev)
         @dm_transform
         def circ1(phi):
@@ -405,7 +407,7 @@ class TestQNode:
 
         atol = tol if shots is None else tol_stochastic
         expected_out = [np.cos(phi / 2) ** 2, np.sin(phi / 2) ** 2]
-        assert np.allclose(circ1(phi, shots=shots), expected_out, atol=atol, rtol=0)
+        assert np.allclose(circ1(phi), expected_out, atol=atol, rtol=0)
 
         expected_circuit = [
             qml.RX(phi, 0),
@@ -415,7 +417,7 @@ class TestQNode:
             qml.probs(wires=1),
         ]
 
-        tape1 = qml.workflow.construct_tape(circ1)(phi, shots=shots)
+        tape1 = qml.workflow.construct_tape(circ1)(phi)
         assert len(tape1) == len(expected_circuit)
         for op, expected_op in zip(tape1, expected_circuit):
             qml.assert_equal(op, expected_op)
@@ -448,6 +450,7 @@ class TestQNode:
             # Override None with the expected default value True to determine expected outputs
             reduce_postselected = True
 
+        @qml.set_shots(shots=shots)
         @qml.qnode(dev)
         @dm_transform
         def circ1(phi, theta):
@@ -469,7 +472,7 @@ class TestQNode:
             return qml.probs(wires=[0, 1, 2])
 
         atol = tol if shots is None else tol_stochastic
-        assert np.allclose(circ1(phi, theta, shots=shots), circ2(), atol=atol, rtol=0)
+        assert np.allclose(circ1(phi, theta), circ2(), atol=atol, rtol=0)
 
         expected_first_cond_block = (
             [qml.RY(theta, wires=[2])]
@@ -498,7 +501,7 @@ class TestQNode:
             ]
         )
 
-        tape1 = qml.workflow.construct_tape(circ1)(phi, theta, shots=shots)
+        tape1 = qml.workflow.construct_tape(circ1)(phi, theta)
         assert len(tape1) == len(expected_circuit)
         for op, expected_op in zip(tape1, expected_circuit):
             qml.assert_equal(op, expected_op)
@@ -510,6 +513,7 @@ class TestQNode:
         dev = DefaultQubit(seed=seed)
         dev = shots_to_analytic(dev)
 
+        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev)
         def circ1(x):
@@ -520,13 +524,14 @@ class TestQNode:
         dev = DefaultQubit(seed=seed)
         dev = shots_to_analytic(dev)
 
+        @qml.set_shots(shots=shots)
         @qml.qnode(dev)
         def circ2(x):
             qml.RX(x, 0)
             return qml.probs(wires=[0])
 
         param = 1.5
-        assert np.allclose(circ1(param, shots=shots), circ2(param, shots=shots))
+        assert np.allclose(circ1(param), circ2(param))
 
     @pytest.mark.parametrize("shots", [None, 2000, [2000, 2000]])
     def test_measured_value_wires_mapped(self, shots, tol, tol_stochastic):
@@ -535,6 +540,7 @@ class TestQNode:
         dev = DefaultQubit()
         dev = shots_to_analytic(dev)
 
+        @qml.set_shots(shots=shots)
         @qml.qnode(dev)
         @qml.defer_measurements
         def circ1(x):
@@ -546,6 +552,7 @@ class TestQNode:
         dev = DefaultQubit()
         dev = shots_to_analytic(dev)
 
+        @qml.set_shots(shots=shots)
         @qml.qnode(dev)
         def circ2(x):
             qml.RX(x, 0)
@@ -553,10 +560,10 @@ class TestQNode:
 
         param = 1.5
         atol = tol if shots is None else tol_stochastic
-        assert np.allclose(circ1(param, shots=shots), circ2(param, shots=shots), atol=atol, rtol=0)
+        assert np.allclose(circ1(param), circ2(param), atol=atol, rtol=0)
 
         expected_ops = [qml.RX(param, 0), qml.CNOT([0, 1]), qml.PauliX(0)]
-        tape1 = qml.workflow.construct_tape(circ1)(param, shots=shots)
+        tape1 = qml.workflow.construct_tape(circ1)(param)
         assert tape1.operations == expected_ops
 
         assert len(tape1.measurements) == 1
@@ -573,6 +580,7 @@ class TestQNode:
         dev = DefaultQubit(seed=seed)
         dev = shots_to_analytic(dev)
 
+        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev)
         def circ1(x, y):
@@ -584,6 +592,7 @@ class TestQNode:
         dev = DefaultQubit(seed=seed)
         dev = shots_to_analytic(dev)
 
+        @qml.set_shots(shots=shots)
         @qml.qnode(dev)
         def circ2(x, y):
             qml.RX(x, 0)
@@ -592,13 +601,12 @@ class TestQNode:
 
         params = [1.5, 2.5]
         if isinstance(shots, list):
-            for out1, out2 in zip(circ1(*params, shots=shots), circ2(*params, shots=shots)):
+            for out1, out2 in zip(circ1(*params), circ2(*params)):
                 for o1, o2 in zip(out1, out2):
                     assert np.allclose(o1, o2)
         else:
             assert all(
-                np.allclose(out1, out2)
-                for out1, out2 in zip(circ1(*params, shots=shots), circ2(*params, shots=shots))
+                np.allclose(out1, out2) for out1, out2 in zip(circ1(*params), circ2(*params))
             )
 
     def test_measure_between_ops(self):
