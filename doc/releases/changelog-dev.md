@@ -20,8 +20,29 @@
 <h4>Other improvements</h4>
 
 
-* We now allow custom wire labels to be used with :func:`~pennylane.defer_measurements`.
+* An error is no longer raised when non-integer wire labels are used in QNodes using `mcm_method="deferred"`.
   [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
+  
+  ```python
+  @qml.qnode(qml.device("default.qubit"), mcm_method="deferred")
+  def circuit():
+      for i in range(3):
+          m = qml.measure("a" + str(i))
+          qml.cond(m == 0, qml.X)("meas" + str(i))
+      return [qml.expval(qml.Z("a" + str(i))) for i in range(3)]
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+     a0: ──┤↗├────────────────────┤  <Z>
+     a1: ───║──────┤↗├────────────┤  <Z>
+     a2: ───║───────║──────┤↗├────┤  <Z>
+  meas0: ───║───X───║───────║─────┤     
+  meas1: ───║───║───║───X───║─────┤     
+  meas2: ───║───║───║───║───║───X─┤     
+            ╚═══╝   ╚═══╝   ╚═══╝       
+  ```
+
 
 * A new `qml.transforms.resolve_dynamic_wires` transform can allocate concrete wire values for dynamic
   qubit allocation.
