@@ -143,6 +143,28 @@
 
 <h4>Other improvements</h4>
 
+
+* An error is no longer raised when non-integer wire labels are used in QNodes using `mcm_method="deferred"`.
+  [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
+  
+
+  ```python
+  @qml.qnode(qml.device("default.qubit"), mcm_method="deferred")
+  def circuit():
+      m = qml.measure("a")
+      qml.cond(m == 0, qml.X)("aux")
+      return qml.expval(qml.Z("a"))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+    a: ──┤↗├────┤  <Z>
+  aux: ───║───X─┤     
+          ╚═══╝      
+  ```
+
+
+
 * PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
   [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
 
@@ -529,6 +551,9 @@
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
 
 <h3>Bug fixes 🐛</h3>
+
+* Simplifying operators raised to integer powers no longer causes recursion errors.
+  [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
 
 * Fixes the GPU selection issue in `qml.math` with PyTorch when multiple GPUs are present.
   [(#8008)](https://github.com/PennyLaneAI/pennylane/pull/8008)
