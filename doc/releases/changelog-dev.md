@@ -116,6 +116,11 @@
   It validates that all executions are shot-based.
   [(#8037)](https://github.com/PennyLaneAI/pennylane/pull/8037)
 
+* With program capture, the `true_fn` can now be a subclass of `Operator` when no `false_fn` is provided.
+  `qml.cond(condition, qml.X)(0)` is now valid code and will return nothing, even though `qml.X` is
+  technically a callable that returns an `X` operator.
+  [(#8060)](https://github.com/PennyLaneAI/pennylane/pull/8060)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -203,8 +208,11 @@
 <h4>Resource-efficient decompositions 🔎</h4>
 
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
-
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+
+* A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
+  [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
