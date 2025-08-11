@@ -198,7 +198,8 @@ def sample(
 
     .. warning::
 
-        In v0.42, a breaking change removed the squeezing of singleton dimensions.
+        In v0.42, a breaking change removed the squeezing of singleton dimensions, eliminating the need for
+        specialized, error-prone handling for finite-shot results.
         For the qnode:
 
         >>> @qml.qnode(qml.device('default.qubit'))
