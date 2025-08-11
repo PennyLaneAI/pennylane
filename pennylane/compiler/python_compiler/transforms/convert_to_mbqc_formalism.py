@@ -648,10 +648,7 @@ class ConvertToMBQCFormalismPattern(
 
         in_qubits = (qb_in_reg, IdentityOp.results[0])
 
-        SWAPOp = CustomOp(in_qubits=in_qubits, gate_name="SWAP")
-        rewriter.insert_op(SWAPOp, InsertPoint.before(op))
-
-        return SWAPOp.results
+        return (IdentityOp.results[0], qb_in_reg)
 
     def _deallocate_aux_qubits(
         self,
@@ -716,7 +713,7 @@ class ConvertToMBQCFormalismPattern(
                     )
 
                     # Deallocate the auxiliary qubits
-                    self._deallocate_aux_qubits(graph_qubits_dict, [1], op, rewriter)
+                    self._deallocate_aux_qubits(graph_qubits_dict, [1, 5], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result_qubit
                     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[1])
@@ -761,7 +758,7 @@ class ConvertToMBQCFormalismPattern(
                     )
 
                     # Deallocate aux_qubits
-                    self._deallocate_aux_qubits(graph_qubits_dict, [1, 9], op, rewriter)
+                    self._deallocate_aux_qubits(graph_qubits_dict, [1, 7, 9, 15], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result_qubit
                     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[1])

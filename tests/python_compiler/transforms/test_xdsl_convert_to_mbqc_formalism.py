@@ -96,11 +96,9 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: }
                 // CHECK: [[qb4_res:%.+]] = quantum.custom "Identity"() [[qb4_res:%.+]] : !quantum.bit
-                // CHECK: [[q0_res:%.+]], [[qb4:%.+]] = quantum.custom "SWAP"() [[q0:%.+]], [[qb4_res:%.+]] : !quantum.bit, !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
-                // CHECK: quantum.dealloc_qb [[qb4:%.+]] : !quantum.bit
                 %1 = quantum.custom "Hadamard"() %0 : !quantum.bit
                 return
             }
@@ -162,11 +160,9 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: }
                 // CHECK: [[qb4_res:%.+]] = quantum.custom "Identity"() [[qb4_res:%.+]] : !quantum.bit
-                // CHECK: [[q0_res:%.+]], [[qb4:%.+]] = quantum.custom "SWAP"() [[q0:%.+]], [[qb4_res:%.+]] : !quantum.bit, !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
-                // CHECK: quantum.dealloc_qb [[qb4:%.+]] : !quantum.bit
                 %1 = quantum.custom "S"() %0 : !quantum.bit
                 return
             }
@@ -234,11 +230,9 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: }
                 // CHECK: [[qb4_res:%.+]] = quantum.custom "Identity"() [[qb4_res:%.+]] : !quantum.bit
-                // CHECK: [[q0_res:%.+]], [[qb4:%.+]] = quantum.custom "SWAP"() [[q0:%.+]], [[qb4_res:%.+]] : !quantum.bit, !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
-                // CHECK: quantum.dealloc_qb [[qb4:%.+]] : !quantum.bit
                 %1 = quantum.custom "RZ"(%param0) %0 : !quantum.bit
                 return
             }
@@ -328,11 +322,9 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: }
                 // CHECK: [[qb4_res:%.+]] = quantum.custom "Identity"() [[qb4_res:%.+]] : !quantum.bit
-                // CHECK: [[q0_res:%.+]], [[qb4:%.+]] = quantum.custom "SWAP"() [[q0:%.+]], [[qb4_res:%.+]] : !quantum.bit, !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
-                // CHECK: quantum.dealloc_qb [[qb4:%.+]] : !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 %1 = quantum.custom "RotXZX"(%param0, %param1, %param2) %0 : !quantum.bit
                 return
@@ -379,7 +371,6 @@ class TestConvertToMBQCFormalismPass:
             # CHECK: quantum.custom "PauliX"
             # CHECK: quantum.custom "PauliZ"
             # CHECK: quantum.custom "Identity"
-            # CHECK: quantum.custom "SWAP"
             # CHECK: quantum.custom "CZ"
             # CHECK: quantum.custom "Hadamard"
             # CHECK: quantum.alloc_qb
