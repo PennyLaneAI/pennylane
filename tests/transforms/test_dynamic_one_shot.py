@@ -435,7 +435,6 @@ class TestInterfaces:
                 assert qml.math.allclose(r[1], e2)
         else:
             # Expected result is 2-list since we have two measurements in the tape
-            print(processed_results[0], expected1)
             assert qml.math.allclose(processed_results[0], expected1)
             assert qml.math.allclose(processed_results[1], expected2)
 
