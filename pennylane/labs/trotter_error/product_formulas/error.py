@@ -16,6 +16,7 @@
 import copy
 from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
+from typing import Dict, Tuple
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
@@ -110,6 +111,7 @@ def perturbation_error(
     num_workers: int = 1,
     backend: str = "serial",
     parallel_mode: str = "state",
+    importance: Tuple[Dict, float] = None,
 ) -> list[float]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
@@ -130,6 +132,9 @@ def perturbation_error(
             "state" parallelizes the computation of expectation values per state,
             while "commutator" parallelizes the application of commutators to each state.
             Default value is set to "state".
+        importance (Tuple[Dict, float]): optional argument used for importance sampling. The first item dictionary whose keys are the fragment labels
+            of the product formulas and whose values are their importance weights. The second is a tolerance which will be used to discard commutators
+            whose importance score falls below the tolerance.
 
     Returns:
         List[float]: the list of expectation values computed from the Trotter error operator and the input states
@@ -170,7 +175,7 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order))
+    commutators = _group_sums(bch_expansion(product_formula(1j * timestep), order, importance))
 
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
