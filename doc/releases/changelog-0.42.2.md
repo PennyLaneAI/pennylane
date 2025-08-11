@@ -15,6 +15,7 @@
 
   Previously, this would fail with a recursion error.
   [(#8061)](https://github.com/PennyLaneAI/pennylane/pull/8061)
+  [(#8064)](https://github.com/PennyLaneAI/pennylane/pull/8064)
 
 <h3>Contributors ✍️</h3>
 
