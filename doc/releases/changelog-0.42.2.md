@@ -3,6 +3,7 @@
 # Release 0.42.2 (current release)
 
 <h3>Bug fixes 🐛</h3>
+
 * Fixed a recursion error when simplifying operators that are raised to integer powers. For example,
 
   ```pycon
@@ -14,6 +15,7 @@
 
   Previously, this would fail with a recursion error.
   [(#8061)](https://github.com/PennyLaneAI/pennylane/pull/8061)
+  [(#8064)](https://github.com/PennyLaneAI/pennylane/pull/8064)
 
 <h3>Contributors ✍️</h3>
 
