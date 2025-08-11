@@ -27,12 +27,15 @@ jaxlib = pytest.importorskip("jaxlib")
 xdsl = pytest.importorskip("xdsl")
 
 from catalyst import CompileError
+from catalyst.passes import apply_pass
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl import passes
 from xdsl.context import Context
 from xdsl.dialects import builtin, transform
 from xdsl.interpreters import Interpreter
 
+import pennylane as qml
+from pennylane.capture import enabled as capture_enabled
 from pennylane.compiler.python_compiler import Compiler
 from pennylane.compiler.python_compiler.jax_utils import (
     jax_from_docstring,
@@ -172,17 +175,19 @@ def test_decorator():
     assert available_passes["print-module"]() == PrintModule
 
 
+@compiler_transform
+@dataclass(frozen=True)
+class _HelloWorld(passes.ModulePass):
+    name = "hello-world"
+
+    def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
+        print("hello world")
+
+
 def test_integration_for_transform_interpreter(capsys):
     """Test that a pass is run via the transform interpreter"""
 
-    @compiler_transform
-    @dataclass(frozen=True)
-    class _HelloWorld(passes.ModulePass):
-        name = "hello-world"
-
-        def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
-            print("hello world")
-
+    # The hello-world pass is in the IR
     @xdsl_from_docstring
     def program():
         """
@@ -206,12 +211,43 @@ def test_integration_for_transform_interpreter(capsys):
     assert captured.out.strip() == "hello world"
 
 
-def test_integration_but_run_with_catalyst():
+@pytest.mark.capture
+def test_integration_catalyst_with_capture(capsys):
+    """Test that a pass is run via the transform interpreter when using with a
+    qjit workflow and capture is enabled."""
+
+    assert capture_enabled()
 
     @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-    def none(): ...
+    @_HelloWorld
+    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    def f(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
 
-    none()
+    out = f(1.5)
+    assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "hello world"
+
+
+def test_integration_catalyst_no_capture(capsys):
+    """Test that a pass is run via the transform interpreter when using with a
+    qjit workflow and capture is disabled."""
+
+    assert not capture_enabled()
+
+    @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+    @apply_pass("hello-world")
+    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    def f(x):
+        qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    out = f(1.5)
+    assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "hello world"
 
 
 if __name__ == "__main__":
