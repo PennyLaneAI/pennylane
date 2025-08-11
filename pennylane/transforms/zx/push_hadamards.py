@@ -39,8 +39,7 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     improving the effectiveness of phase-polynomial optimization techniques.
 
     This transform optimizes circuits composed of phase-polynomial blocks and Hadamard gates.
-    It uses a delayed gate placement strategy to potentially create more opportunities for gate cancellations.
-    This strategy basically works by commuting Hadamard gates through the circuit.
+    This strategy works by commuting Hadamard gates through the circuit.
     To preserve the overall unitary, this process relies on commutation rules that can transform the gates a
     Hadamard moves past. For instance, pushing a Hadamard through a CNOT gate will convert the latter into a
     CZ gate. Consequently, the final optimized circuit may have, in some cases, a significantly different
