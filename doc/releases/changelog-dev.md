@@ -524,7 +524,7 @@
 
 * An `xdsl_extras` module has been added to the Python compiler to house additional utilities and
   functionality not available upstream in xDSL.
-  [(#TODO)](https://github.com/PennyLaneAI/pennylane/pull/TODO)
+  [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
 
 <h3>Documentation 📝</h3>
 
