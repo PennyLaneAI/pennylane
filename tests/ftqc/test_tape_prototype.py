@@ -19,7 +19,7 @@ import pytest
 
 import pennylane as qml
 
-from pennylane.devices import ExecutionConfig
+from pennylane.devices import ExecutionConfig, MCMConfig
 from pennylane.ftqc import RotXZX
 from pennylane.ftqc.ftqc_device import (
     FTQCQubit,
@@ -30,7 +30,6 @@ from pennylane.ftqc.ftqc_device import (
 )
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.ops import Adjoint, Conditional, CZ, H, RZ, S, X, Y, Z
-
 
 
 @pytest.mark.parametrize(
@@ -59,6 +58,23 @@ def test_ftqc_device_initializes(backend_cls):
     assert dev.name == "ftqc.qubit"
     assert dev.wires == qml.wires.Wires([0, 1])
     assert isinstance(dev.capabilities, qml.devices.DeviceCapabilities)
+    
+    
+@pytest.mark.parametrize(
+    "backend, expected_method",
+    [(LightningQubitBackend(), "one-shot"), (NullQubitBackend(), "device")],
+)
+@pytest.mark.parametrize(
+    "initial_config", [ExecutionConfig(mcm_config=MCMConfig(mcm_method="placeholder")), None]
+)
+def test_setup_execution_config(backend, expected_method, initial_config):
+    """Test that setup_execution_config works as expected"""
+
+    dev = FTQCQubit(wires=2, backend=backend)
+    config = dev.setup_execution_config(initial_config)
+
+    assert isinstance(config, ExecutionConfig)
+    assert config.mcm_config.mcm_method == expected_method
 
 
 @pytest.mark.parametrize("wires", ([0, 1], ["a", "b"]))

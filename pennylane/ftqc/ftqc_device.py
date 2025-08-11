@@ -109,6 +109,7 @@ class FTQCQubit(Device):
 
         return program
 
+
     @property
     def backend(self):
         """The backend device circuits will be sent to for execution"""
