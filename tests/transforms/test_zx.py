@@ -60,10 +60,10 @@ def test_import_pyzx(monkeypatch):
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "pyzx", None)
 
-        with pytest.raises(ImportError, match="This feature requires PyZX."):
+        with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
             qml.transforms.to_zx(qml.PauliX(wires=0))
 
-        with pytest.raises(ImportError, match="This feature requires PyZX."):
+        with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
             qml.transforms.to_zx(QuantumScript([qml.PauliX(wires=0), qml.PauliZ(wires=1)]))
 
 

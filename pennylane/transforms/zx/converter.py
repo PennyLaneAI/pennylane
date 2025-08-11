@@ -25,6 +25,7 @@ from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
+from pennylane.transforms.zx.helper import _needs_pyzx
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -99,6 +100,7 @@ class EdgeType:  # pylint: disable=too-few-public-methods
     HADAMARD = 2
 
 
+@_needs_pyzx
 def to_zx(tape, expand_measurements=False):
     """This transform converts a PennyLane quantum tape to a ZX-Graph in the `PyZX framework <https://pyzx.readthedocs.io/en/latest/>`_.
     The graph can be optimized and transformed by well-known ZX-calculus reductions.
@@ -323,17 +325,10 @@ def _to_zx_transform(
     tape: QuantumScript, expand_measurements=False
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Private function to convert a PennyLane tape to a `PyZX graph <https://pyzx.readthedocs.io/en/latest/>`_ ."""
-    # Avoid to make PyZX a requirement for PennyLane.
-    try:
-        # pylint: disable=import-outside-toplevel
-        import pyzx
-        from pyzx.circuit.gates import TargetMapper
-        from pyzx.graph import Graph
-
-    except ImportError as Error:
-        raise ImportError(
-            "This feature requires PyZX. It can be installed with: pip install pyzx"
-        ) from Error
+    # pylint: disable=import-outside-toplevel
+    import pyzx
+    from pyzx.circuit.gates import TargetMapper
+    from pyzx.graph import Graph
 
     # Dictionary of gates (PennyLane to PyZX circuit)
     gate_types = {
@@ -457,7 +452,6 @@ def from_zx(graph, decompose_phases=True):
 
     .. code-block:: python
 
-        import pyzx
         dev = qml.device('default.qubit', wires=2)
 
         @qml.transforms.to_zx
