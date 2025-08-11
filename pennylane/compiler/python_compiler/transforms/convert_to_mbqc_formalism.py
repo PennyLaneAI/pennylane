@@ -16,8 +16,8 @@
 written using xDSL."""
 
 import math
-from enum import Enum
 from dataclasses import dataclass
+from enum import Enum
 
 import networkx as nx
 from xdsl import context, passes, pattern_rewriter
@@ -31,9 +31,11 @@ from ..dialects.mbqc import MeasureInBasisOp, MeasurementPlaneAttr, MeasurementP
 from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp, QubitType
 from .api import compiler_transform
 
+
 class _MeasureBasis(Enum):
-    X = 'X'
-    Y = 'Y'
+    X = "X"
+    Y = "Y"
+
 
 def _generate_graph(op_name: str):
     """Generate a network graph to represent the connectivity of auxiliary qubits of
@@ -198,7 +200,7 @@ class ConvertToMBQCFormalismPattern(
         Returns:
             The results include: 1. a measurement result; 2, a result qubit.
         """
-        angle = 0.0 if xy_basis == _MeasureBasis.X else math.pi /2 
+        angle = 0.0 if xy_basis == _MeasureBasis.X else math.pi / 2
         planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum("XY"))
         # Create a constant op from a float64 variable
         constAngleOp = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
@@ -264,9 +266,7 @@ class ConvertToMBQCFormalismPattern(
         # It seems that the code here [https://github.com/xdslproject/xdsl/blob/37fceab602d98efbb2ba7ecd5548aa657eed558d/tests/interpreters/test_scf_interpreter.py#L64-L74]
         # does not explicitly insert the Ops created to the IR. Checking the result IR after applying current implementation
         # of this pass, all Ops created in this block are inserted to the IR. Need some experts to confirm if it's the best practice.
-        measureNegOp = MeasureInBasisOp(
-            in_qubit=qubit, plane=planeOp, angle=constNegAngleOp.result
-        )
+        measureNegOp = MeasureInBasisOp(in_qubit=qubit, plane=planeOp, angle=constNegAngleOp.result)
         # Create the true region
         true_region = [measureOp, scf.YieldOp(measureOp.results[0], measureOp.results[1])]
         # Create the false region
