@@ -116,6 +116,11 @@
   It validates that all executions are shot-based.
   [(#8037)](https://github.com/PennyLaneAI/pennylane/pull/8037)
 
+* With program capture, the `true_fn` can now be a subclass of `Operator` when no `false_fn` is provided.
+  `qml.cond(condition, qml.X)(0)` is now valid code and will return nothing, even though `qml.X` is
+  technically a callable that returns an `X` operator.
+  [(#8060)](https://github.com/PennyLaneAI/pennylane/pull/8060)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -206,6 +211,9 @@
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
 
+* A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
+  [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
@@ -229,6 +237,9 @@
 
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
+
+* The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
+  [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
 
 <h3>Breaking changes 💔</h3>
 
@@ -317,6 +328,10 @@
   [(#7882)](https://github.com/PennyLaneAI/pennylane/pull/7882)
 
 <h3>Deprecations 👋</h3>
+
+* `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
+  Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
+  [(#7987)](https://github.com/PennyLaneAI/pennylane/pull/7987)
 
 * Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
   ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
