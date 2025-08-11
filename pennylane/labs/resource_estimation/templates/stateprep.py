@@ -258,3 +258,164 @@ class ResourceAliasSampling(ResourceOperator):
         gate_lst.append(GateCount(resource_rep(plre.ResourceCSWAP), logl))
 
         return gate_lst
+
+
+class ResourcePrepTHC(ResourceOperator):
+
+    def __init__(self, compact_ham, coeff_precision= 2e-5, select_swap_depth=None, wires=None):
+
+        self.compact_ham = compact_ham
+        self.coeff_precision = coeff_precision
+        self.select_swap_depth = select_swap_depth
+        tensor_rank = compact_ham.params["tensor_rank"]
+        self.num_wires = 2 * int(np.ceil(math.log2(tensor_rank+1)))
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"compact_ham": self.compact_ham, "coeff_precision": self.coeff_precision, "select_swap_depth": self.select_swap_depth}
+
+    @classmethod
+    def resource_rep(cls, compact_ham, coeff_precision=2e-5, select_swap_depth=None) -> CompressedResourceOp:
+        params = {"compact_ham": compact_ham, "coeff_precision": coeff_precision, "select_swap_depth":select_swap_depth}
+        return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def default_resource_decomp(cls, compact_ham, coeff_precision=2e-5, select_swap_depth=None, **kwargs) -> list[GateCount]:
+
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+
+        coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
+        compare_precision_wires = abs(math.floor(math.log2(coeff_precision)))
+
+        num_coeff = num_orb + tensor_rank*(tensor_rank+1)
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        m_register = int(np.ceil(math.log2(tensor_rank+1)))
+
+        gate_list = []
+
+        gate_list.append(AllocWires(coeff_register+2*m_register+2*compare_precision_wires+6))
+
+        hadamard = resource_rep(plre.ResourceHadamard)
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
+
+        # Figure - 3
+        toffoli = resource_rep(plre.ResourceToffoli)
+        gate_list.append(plre.GateCount(toffoli, 4*m_register-4))
+
+        ccz = resource_rep(plre.ResourceCCZ)
+        gate_list.append(plre.GateCount(resource_rep(plre.ResourceControlled, {"base_cmpr_op": ccz, "num_ctrl_wires":1, "num_ctrl_values":0}), 1))
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
+
+        gate_list.append(AllocWires(compare_precision_wires))
+        gate_list.append(plre.GateCount(toffoli, 2*(compare_precision_wires-3)))
+        gate_list.append(FreeWires(compare_precision_wires))
+
+        gate_list.append(plre.GateCount(ccz, 2*m_register-1))
+
+        hadamard = resource_rep(plre.ResourceHadamard)
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
+
+        gate_list.append(plre.GateCount(toffoli, 4*m_register-4))
+
+        mcx = resource_rep(plre.ResourceMultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0})
+        gate_list.append(plre.GateCount(mcx, 1))
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        x = resource_rep(plre.ResourceX)
+        gate_list.append(plre.GateCount(x, 2))
+
+        # Figure- 4(Subprepare Circuit)
+        gate_list.append(plre.GateCount(hadamard, compare_precision_wires + 1))
+
+        #Contiguous register cost
+        gate_list.append(plre.GateCount(toffoli, m_register**2+m_register-1))
+
+        qrom_coeff = resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": 2*m_register+2+coeff_prec_wires, "clean": False,"select_swap_depth": select_swap_depth})
+        gate_list.append(plre.GateCount(qrom_coeff, 1))
+
+        comparator = resource_rep(plre.ResourceRegisterComparator, {"a_num_qubits": coeff_prec_wires, "b_num_qubits": coeff_prec_wires, "geq":False})
+        gate_list.append(plre.GateCount(comparator))
+
+        cz = resource_rep(plre.ResourceCZ)
+        gate_list.append(plre.GateCount(cz, 2))
+        gate_list.append(plre.GateCount(x, 2))
+
+        cswap = resource_rep(plre.ResourceCSWAP)
+        gate_list.append(plre.GateCount(cswap, 2*m_register))
+
+        gate_list.append(plre.GateCount(cswap, m_register))
+        gate_list.append(plre.GateCount(toffoli, 1))
+
+        return gate_list
+
+    @classmethod
+    def default_adjoint_resource_decomp(cls, compact_ham, coeff_precision=2e-5, select_swap_depth=None, **kwargs) -> list[GateCount]:
+
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+
+        coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
+
+        num_coeff = num_orb + tensor_rank*(tensor_rank+1)/2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
+        m_register = int(np.ceil(math.log2(tensor_rank+1)))
+        gate_list = []
+
+        hadamard = resource_rep(plre.ResourceHadamard)
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
+
+        # Figure - 3
+        toffoli = resource_rep(plre.ResourceToffoli)
+        gate_list.append(plre.GateCount(toffoli, 4*m_register-4))
+
+        ccz = resource_rep(plre.ResourceCCZ)
+        gate_list.append(plre.GateCount(resource_rep(plre.ResourceControlled, {"base_cmpr_op": ccz, "num_ctrl_wires":1, "num_ctrl_values":0}), 1))
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
+
+        gate_list.append(AllocWires(compare_precision_wires))
+        gate_list.append(plre.GateCount(toffoli, 2*(compare_precision_wires-3)))
+        gate_list.append(FreeWires(compare_precision_wires))
+
+        gate_list.append(plre.GateCount(ccz, 2*m_register-1))
+
+        hadamard = resource_rep(plre.ResourceHadamard)
+        gate_list.append(plre.GateCount(hadamard, 2*m_register))
+
+        gate_list.append(plre.GateCount(toffoli, 4*m_register-4))
+
+        mcx = resource_rep(plre.ResourceMultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0})
+        gate_list.append(plre.GateCount(mcx, 1))
+        gate_list.append(plre.GateCount(toffoli, 2))
+
+        x = resource_rep(plre.ResourceX)
+        gate_list.append(plre.GateCount(x, 2))
+
+        # Figure- 4 (Subprepare Circuit)
+        gate_list.append(plre.GateCount(hadamard, coeff_prec_wires + 1))
+
+        #Contiguous register cost
+        gate_list.append(plre.GateCount(toffoli, m_register**2+m_register-1))
+
+        qrom_adj= resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": resource_rep(plre.ResourceQROM, {"num_bitstrings": num_coeff, "size_bitstring": 2*m_register+2+coeff_prec_wires, "clean": False, "select_swap_depth": select_swap_depth})})
+        gate_list.append(plre.GateCount(qrom_adj, 1))
+
+        cz = resource_rep(plre.ResourceCZ)
+        gate_list.append(plre.GateCount(cz, 2))
+        gate_list.append(plre.GateCount(x, 2))
+
+        cswap = resource_rep(plre.ResourceCSWAP)
+        gate_list.append(plre.GateCount(cswap, 2*m_register))
+
+        gate_list.append(plre.GateCount(cswap, m_register))
+        gate_list.append(plre.GateCount(toffoli, 1))
+
+        # Free Prepare Wires
+        gate_list.append(FreeWires(coeff_register+2*m_register+2*coeff_prec_wires+6))
+
+        return gate_list

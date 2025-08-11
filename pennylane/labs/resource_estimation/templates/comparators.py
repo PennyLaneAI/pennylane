@@ -225,6 +225,33 @@ class ResourceTwoQubitComparator(ResourceOperator):
 
         return gate_list
 
+    def tempand_based_decomp(cls, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+
+        Resources:
+            The resources are obtained from appendix B, Figure 3 in `arXiv:1711.10460
+            <https://arxiv.org/pdf/1711.10460>`_. Specifically,
+            the resources are given as :math:`2` ``CSWAP`` gates,
+            :math:`3` ``CNOT`` gates, and :math:`1` ``X`` gate. This decomposition
+            is modified to use TempAND gates for building blocks of CSWAP gates.
+
+            .. code-block:: bash
+
+                 x1 : ─╭X─╭●────╭●───────┤
+                 y1 : ─╰●─│─────├SWAP────┤
+                 x0 : ─╭X─├SWAP─│─────╭X─┤
+                 y0 : ─╰●─│─────╰SWAP─╰●─┤
+                |1> : ────╰SWAP──────────┤
+        """
+        gate_list = []
+
+        gate_list.append(AllocWires(2))
+        gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 2))
+        gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 8))
+        gate_list.append(GateCount(resource_rep(plre.ResourceX), 3))
+        gate_list.append(FreeWires(2))
+
 
 class ResourceIntegerComparator(ResourceOperator):
     r"""This operation applies a controlled `X` gate using integer comparison as the condition.
