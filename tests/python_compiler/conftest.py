@@ -39,7 +39,7 @@ except (ImportError, ModuleNotFoundError):
     deps_available = False
 
 
-def _run_filecheck_impl(program_str, pipeline=(), roundtrip=False, verify=False):
+def _run_filecheck_impl(program_str, pipeline=(), verify=True, roundtrip=False):
     """Run filecheck on an xDSL module, comparing it to a program string containing
     filecheck directives."""
     if not deps_available:
@@ -57,8 +57,14 @@ def _run_filecheck_impl(program_str, pipeline=(), roundtrip=False, verify=False)
             ctx, stream.getvalue(), extra_dialects=(test.Test,)
         ).parse_module()
 
+    if verify:
+        xdsl_module.verify()
+
     pipeline = PassPipeline(pipeline)
     pipeline.apply(ctx, xdsl_module)
+
+    if verify:
+        xdsl_module.verify()
 
     stream = StringIO()
     Printer(stream).print_op(xdsl_module)
@@ -102,7 +108,7 @@ def _get_filecheck_directives(qjit_fn):
     return "\n".join(filecheck_directives)
 
 
-def _run_filecheck_qjit_impl(qjit_fn):
+def _run_filecheck_qjit_impl(qjit_fn, verify=True):
     """Run filecheck on a qjit-ed function, using FileCheck directives in its inline
     comments to assert correctness."""
     if not deps_available:
@@ -118,6 +124,9 @@ def _run_filecheck_qjit_impl(qjit_fn):
         binary=False, print_generic_op_form=True, assume_verified=True
     )
     xdsl_module = parse_generic_to_xdsl_module(mod_str)
+
+    if verify:
+        xdsl_module.verify()
 
     opts = parse_argv_options(["filecheck", __file__])
     matcher = Matcher(
