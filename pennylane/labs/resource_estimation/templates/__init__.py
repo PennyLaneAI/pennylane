@@ -40,4 +40,4 @@ from .comparators import (
     ResourceTwoQubitComparator,
     ResourceRegisterComparator,
 )
-from .stateprep import ResourceUniformStatePrep, ResourceAliasSampling
+from .stateprep import ResourceUniformStatePrep, ResourceAliasSampling, ResourcePrepTHC
