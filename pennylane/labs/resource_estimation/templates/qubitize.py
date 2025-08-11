@@ -199,10 +199,10 @@ class ResourceQubitizeTHC(ResourceOperator):
         if isinstance(select_swap_depths, int) or select_swap_depths is None:
             select_swap_depths = [select_swap_depths] * 2
 
-        select = resource_rep(ResourceSelectTHC, {"compact_ham": compact_ham, "rotation_precision": rotation_precision, "select_swap_depth": select_swap_depths[1]})
+        select = resource_rep(plre.ResourceSelectTHC, {"compact_ham": compact_ham, "rotation_precision": rotation_precision, "select_swap_depth": select_swap_depths[1]})
         gate_list.append(select)
 
-        prep = resource_rep(ResourcePrepTHC, {"compact_ham": compact_ham, "coeff_precision": coeff_precision, "select_swap_depth":select_swap_depths[0]})
+        prep = resource_rep(plre.ResourcePrepTHC, {"compact_ham": compact_ham, "coeff_precision": coeff_precision, "select_swap_depth":select_swap_depths[0]})
         gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep})))
 
         #reflection cost
