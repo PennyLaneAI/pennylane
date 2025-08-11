@@ -255,7 +255,7 @@ class TestDynamicDecomposition:
             operations=[qml.QFT(wires=wires)],
             gate_set={"GlobalPhase", "RX", "RZ", "CNOT"},
         )
-        graph.solve()
-        expected_resources = graph.resource_estimate(qml.QFT(wires=wires))
+        solution = graph.solve()
+        expected_resources = solution.resource_estimate(qml.QFT(wires=wires))
 
         assert len(collector.state["ops"]) == expected_resources.num_gates
