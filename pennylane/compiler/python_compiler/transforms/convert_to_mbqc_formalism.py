@@ -425,29 +425,22 @@ class ConvertToMBQCFormalismPattern(
             The result of parity check.
         """
         prev_res = mres[0]
-        add_op = None
-        # Create add ops to sum up the mres and insert them to the IR
+        xor_op = None
+        # Create xor ops to iterate all elements in the mres and insert them to the IR
         for i in range(1, len(mres)):
-            add_op = arith.AddiOp(prev_res, mres[i])
-            rewriter.insert_op(add_op, InsertPoint.before(op))
-            prev_res = add_op.result
+            xor_op = arith.XOrIOp(prev_res, mres[i])
+            rewriter.insert_op(xor_op, InsertPoint.before(op))
+            prev_res = xor_op.result
 
-        # Create add const one ops and insert them to the IR
-        constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
-        rewriter.insert_op(constant_one_op, InsertPoint.before(op))
-
-        # Create an add op to add an additional const one and insert ops to the IR
+        # Create an xor op for an additional const one and insert ops to the IR
         if add_const_one:
-            add_op = arith.AddiOp(prev_res, constant_one_op)
-            rewriter.insert_op(add_op, InsertPoint.before(op))
-            prev_res = add_op.result
+            constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
+            rewriter.insert_op(constant_one_op, InsertPoint.before(op))
+            xor_op = arith.XOrIOp(prev_res, constant_one_op)
+            rewriter.insert_op(xor_op, InsertPoint.before(op))
+            prev_res = xor_op.result
 
-        # Add a xor op for parity check and insert it to the IR
-        xor_op = arith.XOrIOp(prev_res, constant_one_op)
-        rewriter.insert_op(xor_op, InsertPoint.before(op))
-
-        # Return the parity check result
-        return xor_op.result
+        return prev_res
 
     def _hadamard_corrections(
         self,

@@ -70,21 +70,17 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[m3:%.+]], [[qb2:%.+]] = mbqc.measure_in_basis[XY, [[qb2:%.+]]] [[half_pi:%.+]] : i1, !quantum.bit
                 // CHECK: [[half_pi:%.+]] = arith.constant {{1.+}} : f64
                 // CHECK: [[m4:%.+]], [[qb3:%.+]] = mbqc.measure_in_basis[XY, [[qb3:%.+]]] [[half_pi:%.+]] : i1, !quantum.bit
-                // CHECK: [[m13:%.+]] = arith.addi [[m1:%.+]], [[m3:%.+]] : i1
-                // CHECK: [[m134:%.+]] = arith.addi [[m13:%.+]], [[m4:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[x_idx:%.+]] = arith.xori [[m134:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_x_res:%.+]] = scf.if [[x_idx:%.+]] -> (!quantum.bit) {
+                // CHECK: [[m13:%.+]] = arith.xori [[m1:%.+]], [[m3:%.+]] : i1
+                // CHECK: [[m134:%.+]] = arith.xori [[m13:%.+]], [[m4:%.+]] : i1
+                // CHECK: [[qb4_x_res:%.+]] = scf.if [[m134:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4:%.+]] = quantum.custom "PauliX"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: } else {
                 // CHECK: [[qb4:%.+]] = quantum.custom "Identity"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: }
-                // CHECK: [[m23:%.+]] = arith.addi [[m2:%.+]], [[m3:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[z_idx:%.+]] = arith.xori [[m23:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_res:%.+]] = scf.if [[z_idx:%.+]] -> (!quantum.bit) {
+                // CHECK: [[m23:%.+]] = arith.xori [[m2:%.+]], [[m3:%.+]] : i1
+                // CHECK: [[qb4_res:%.+]] = scf.if [[m23:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4_x_res:%.+]] = quantum.custom "PauliZ"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: } else {
@@ -129,22 +125,19 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: [[m3:%.+]], [[qb2:%.+]] = mbqc.measure_in_basis[XY, [[qb2:%.+]]] [[half_pi:%.+]] : i1, !quantum.bit
                 // CHECK: [[cst_zero:%.+]] = arith.constant {{0.+}} : f64
                 // CHECK: [[m4:%.+]], [[qb3:%.+]] = mbqc.measure_in_basis[XY, [[qb3:%.+]]] [[cst_zero:%.+]] : i1, !quantum.bit
-                // CHECK: [[m24:%.+]] = arith.addi [[m2:%.+]], [[m4:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[x_idx:%.+]] = arith.xori [[m24:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_x_res:%.+]] = scf.if [[x_idx:%.+]] -> (!quantum.bit) {
+                // CHECK: [[m24:%.+]] = arith.xori [[m2:%.+]], [[m4:%.+]] : i1
+                // CHECK: [[qb4_x_res:%.+]] = scf.if [[m24:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4:%.+]] = quantum.custom "PauliX"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: } else {
                 // CHECK: [[qb4:%.+]] = quantum.custom "Identity"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: }
-                // CHECK: [[m12:%.+]] = arith.addi [[m1:%.+]], [[m2:%.+]] : i1
-                // CHECK: [[m123:%.+]] = arith.addi [[m12:%.+]], [[m3:%.+]] : i1
+                // CHECK: [[m12:%.+]] = arith.xori [[m1:%.+]], [[m2:%.+]] : i1
+                // CHECK: [[m123:%.+]] = arith.xori [[m12:%.+]], [[m3:%.+]] : i1
                 // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[m1231:%.+]] = arith.addi [[m123:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[z_idx:%.+]] = arith.xori [[m1231:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_res:%.+]] = scf.if [[z_idx:%.+]] -> (!quantum.bit) {
+                // CHECK: [[m1231:%.+]] = arith.xori [[m123:%.+]], [[cst_ture:%.+]] : i1
+                // CHECK: [[qb4_res:%.+]] = scf.if [[m1231:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4_x_res:%.+]] = quantum.custom "PauliZ"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: } else {
@@ -195,20 +188,16 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: }
                 // CHECK: [[cst_zero:%.+]] = arith.constant {{0.+}} : f64
                 // CHECK: [[m4:%.+]], [[qb3:%.+]] = mbqc.measure_in_basis[XY, [[qb3:%.+]]] [[cst_zero:%.+]] : i1, !quantum.bit
-                // CHECK: [[m24:%.+]] = arith.addi [[m2:%.+]], [[m4:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[x_idx:%.+]] = arith.xori [[m24:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_x_res:%.+]] = scf.if [[x_idx:%.+]] -> (!quantum.bit) {
+                // CHECK: [[m24:%.+]] = arith.xori [[m2:%.+]], [[m4:%.+]] : i1
+                // CHECK: [[qb4_x_res:%.+]] = scf.if [[m24:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4:%.+]] = quantum.custom "PauliX"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: } else {
                 // CHECK: [[qb4:%.+]] = quantum.custom "Identity"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: }
-                // CHECK: [[m13:%.+]] = arith.addi [[m1:%.+]], [[m3:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[z_idx:%.+]] = arith.xori [[m13:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_res:%.+]] = scf.if [[z_idx:%.+]] -> (!quantum.bit) {
+                // CHECK: [[m13:%.+]] = arith.xori [[m1:%.+]], [[m3:%.+]] : i1
+                // CHECK: [[qb4_res:%.+]] = scf.if [[m13:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4_x_res:%.+]] = quantum.custom "PauliZ"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: } else {
@@ -278,20 +267,16 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: }
                 
                 
-                // CHECK: [[m24:%.+]] = arith.addi [[m2:%.+]], [[m4:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[x_idx:%.+]] = arith.xori [[m24:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_x_res:%.+]] = scf.if [[x_idx:%.+]] -> (!quantum.bit) {
+                // CHECK: [[m24:%.+]] = arith.xori [[m2:%.+]], [[m4:%.+]] : i1
+                // CHECK: [[qb4_x_res:%.+]] = scf.if [[m24:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4:%.+]] = quantum.custom "PauliX"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: } else {
                 // CHECK: [[qb4:%.+]] = quantum.custom "Identity"() [[qb4:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4:%.+]] : !quantum.bit
                 // CHECK: }
-                // CHECK: [[m13:%.+]] = arith.addi [[m1:%.+]], [[m3:%.+]] : i1
-                // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[z_idx:%.+]] = arith.xori [[m13:%.+]], [[cst_ture:%.+]] : i1
-                // CHECK: [[qb4_res:%.+]] = scf.if [[z_idx:%.+]] -> (!quantum.bit) {
+                // CHECK: [[m13:%.+]] = arith.xori [[m1:%.+]], [[m3:%.+]] : i1
+                // CHECK: [[qb4_res:%.+]] = scf.if [[m13:%.+]] -> (!quantum.bit) {
                 // CHECK: [[qb4_x_res:%.+]] = quantum.custom "PauliZ"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK: } else {
