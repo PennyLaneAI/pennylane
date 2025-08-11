@@ -11,13 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""
-Visualization functions for PennyLane-xDSL transformations.
-"""
-
-# TODO: We should probably only expose the public API of the drawer.
 
 from .collector import QMLCollector
-from .draw import draw
 
-__all__ = ["QMLCollector", "draw"]
+
+def draw(qnode):
+
+    pass
