@@ -3,6 +3,7 @@
 # Release 0.42.2 (current release)
 
 <h3>Bug fixes 🐛</h3>
+
 * Fixed a recursion error when simplifying operators that are raised to integer powers. For example,
 
   ```pycon
