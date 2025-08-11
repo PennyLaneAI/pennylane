@@ -355,7 +355,7 @@ def measure(
         [1],
         [1]])
 
-        Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
+        Note that less than 10 samples are returned. This is because samples that do not meet the postselection criteria are
         thrown away.
 
         If postselection is requested on a state with zero probability of being measured, the result may contain ``NaN``
