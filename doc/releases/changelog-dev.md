@@ -135,7 +135,7 @@
 
 <h4>Other improvements</h4>
 
-* The `NumQubitsOp` has been added to the `Quantum` dialect of the Python compiler.
+* Added the `NumQubitsOp` to the `Quantum` dialect of the Python compiler.
 [(#8063)](https://github.com/PennyLaneAI/pennylane/pull/8063)
 
 * An error is no longer raised when non-integer wire labels are used in QNodes using `mcm_method="deferred"`.
