@@ -121,6 +121,8 @@
   technically a callable that returns an `X` operator.
   [(#8060)](https://github.com/PennyLaneAI/pennylane/pull/8060)
 
+* With program capture, an error is now raised if the conditional predicate is not a scalar.
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
