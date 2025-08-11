@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module contains the necessary helper functions for setting up the workflow for execution."""
+
+from __future__ import annotations
+
 from collections.abc import Callable
 from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
-from typing import Literal, Union, get_args
+from typing import TYPE_CHECKING, Literal, get_args
 from warnings import warn
 
 from packaging.version import Version
@@ -26,7 +29,6 @@ import pennylane as qml
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name, get_interface
-from pennylane.tape import QuantumScriptBatch
 from pennylane.transforms.core import TransformDispatcher
 
 SupportedDiffMethods = Literal[
@@ -43,6 +45,9 @@ SupportedDiffMethods = Literal[
     "finite-diff",
     "spsa",
 ]
+
+if TYPE_CHECKING:
+    from pennylane.tape import QuantumScriptBatch
 
 
 def _get_jax_interface_name() -> Interface:
@@ -91,7 +96,7 @@ def _use_tensorflow_autograph():
     return not tf.executing_eagerly()
 
 
-def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBatch) -> Interface:
+def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) -> Interface:
     """Helper function to resolve an interface based on a set of tapes.
 
     Args:
@@ -135,8 +140,8 @@ def _resolve_interface(interface: Union[str, Interface], tapes: QuantumScriptBat
 
 
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
-) -> "qml.devices.MCMConfig":
+    mcm_config: qml.devices.MCMConfig, interface: Interface, finite_shots: bool
+) -> qml.devices.MCMConfig:
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
     updated_values = {}
@@ -175,8 +180,8 @@ def _resolve_mcm_config(
 
 
 def _resolve_hadamard(
-    initial_config: "qml.devices.ExecutionConfig", device: "qml.devices.Device"
-) -> "qml.devices.ExecutionConfig":
+    initial_config: qml.devices.ExecutionConfig, device: qml.devices.Device
+) -> qml.devices.ExecutionConfig:
     diff_method = initial_config.gradient_method
     updated_values = {"gradient_method": diff_method}
     if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
@@ -203,10 +208,10 @@ def _resolve_hadamard(
 
 @debug_logger
 def _resolve_diff_method(
-    initial_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
-    tape: "qml.tape.QuantumTape" = None,
-) -> "qml.devices.ExecutionConfig":
+    initial_config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
+    tape: qml.tape.QuantumTape = None,
+) -> qml.devices.ExecutionConfig:
     """
     Resolves the differentiation method and updates the initial execution configuration accordingly.
 
@@ -266,10 +271,10 @@ def _resolve_diff_method(
 
 
 def _resolve_execution_config(
-    execution_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    execution_config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
     tapes: QuantumScriptBatch,
-) -> "qml.devices.ExecutionConfig":
+) -> qml.devices.ExecutionConfig:
     """Resolves the execution configuration for non-device specific properties.
 
     Args:

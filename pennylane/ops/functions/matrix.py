@@ -16,16 +16,16 @@ This module contains the qml.matrix function.
 """
 from functools import partial
 
-# pylint: disable=too-many-branches
-from typing import Union
-
 import pennylane as qml
 from pennylane import transform
-from pennylane.operation import MatrixUndefinedError, Operator
+from pennylane.exceptions import MatrixUndefinedError, TransformError
+from pennylane.operation import Operator
 from pennylane.pauli import PauliSentence, PauliWord
+from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError
 from pennylane.typing import PostprocessingFn, TensorLike
+
+# pylint: disable=too-many-branches
 
 
 def catalyst_qjit(qnode):
@@ -33,7 +33,7 @@ def catalyst_qjit(qnode):
     return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
-def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> TensorLike:
+def matrix(op: Operator | PauliWord | PauliSentence, wire_order=None) -> TensorLike:
     r"""The dense matrix representation of an operation or quantum circuit.
 
     .. note::
@@ -235,7 +235,9 @@ def matrix(op: Union[Operator, PauliWord, PauliSentence], wire_order=None) -> Te
     if op.has_sparse_matrix:
         return op.sparse_matrix(wire_order=wire_order).todense()
     if op.has_decomposition:
-        return matrix(QuantumScript(op.decomposition()), wire_order=wire_order or op.wires)
+        with QueuingManager.stop_recording():
+            ops = op.decomposition()
+        return matrix(QuantumScript(ops), wire_order=wire_order or op.wires)
     raise MatrixUndefinedError(
         "Operator must define a matrix, sparse matrix, or decomposition for use with qml.matrix."
     )

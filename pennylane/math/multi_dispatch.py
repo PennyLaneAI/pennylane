@@ -15,6 +15,7 @@
 # pylint: disable=import-outside-toplevel,too-many-return-statements
 import functools
 from collections.abc import Sequence
+from operator import attrgetter
 
 # pylint: disable=wrong-import-order
 import numpy as onp
@@ -163,9 +164,16 @@ def kron(*args, like=None, **kwargs):
         return onp.kron(*args, **kwargs)  # Dispatch scipy kron to numpy backed specifically.
 
     if like == "torch":
-        mats = [
-            np.asarray(arg, like="torch") if isinstance(arg, onp.ndarray) else arg for arg in args
-        ]
+        # Extract all the devices for the incoming tensors
+        devs = set(map(attrgetter("device"), args))
+        devs = list(devs)
+        # If multiple devices found, choose the non-CPU device as the default
+        if len(devs) > 1:  # Assuming "cpu" and non-"cpu" are the only options
+            dev = devs[0] if getattr(devs[0], "type", str(devs[0])) != "cpu" else devs[1]
+        else:
+            dev = devs[0]
+        # Migrate the tensors to all be on the chosen device, if necessary
+        mats = [np.asarray(arg, like="torch", device=dev) for arg in args]
         return np.kron(*mats)
 
     return np.kron(*args, like=like, **kwargs)
@@ -233,24 +241,41 @@ def concatenate(values, axis=0, like=None):
     if like == "torch":
         import torch
 
-        device = (
-            "cuda"
-            if any(t.device.type == "cuda" for t in values if isinstance(t, torch.Tensor))
-            else "cpu"
-        )
+        device_set = set()
+        dev_indices = set()
+        torch_device = None
+        for t in values:
+            if isinstance(t, torch.Tensor):
+                device_set.add(t.device.type)
+                dev_indices.add(t.device.index)
+
+        # TODO: Remove the no-cover pragma once we are able to test with multiple GPUs on CI.
+        if device_set:  # pragma: no cover
+            # If data exists on two separate GPUs, outright fail
+            if len(dev_indices) > 1:
+                device_names = ", ".join(str(d) for d in device_set)
+
+                raise RuntimeError(
+                    f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
+                )
+
+            device = device_set.pop()
+            dev_id = dev_indices.pop() if dev_indices else None
+            torch_device = torch.device(f"{device}:{dev_id}" if dev_id is not None else device)
+
+        else:  # pragma: no cover
+            torch_device = torch.device("cpu")
 
         if axis is None:
             # flatten and then concatenate zero'th dimension
             # to reproduce numpy's behaviour
             values = [
-                np.flatten(torch.as_tensor(t, device=torch.device(device)))  # pragma: no cover
+                np.flatten(torch.as_tensor(t, device=torch_device))  # pragma: no cover
                 for t in values
             ]
             axis = 0
         else:
-            values = [
-                torch.as_tensor(t, device=torch.device(device)) for t in values  # pragma: no cover
-            ]
+            values = [torch.as_tensor(t, device=torch_device) for t in values]  # pragma: no cover
 
     if like == "tensorflow" and axis is None:
         # flatten and then concatenate zero'th dimension

@@ -14,12 +14,15 @@
 """
 This submodule defines a strategy structure for defining custom plxpr interpreters
 """
-# pylint: disable=no-self-use
+from collections.abc import Callable, Sequence
 from copy import copy
 from functools import partial, wraps
-from typing import Callable, Optional, Sequence
+
+# pylint: disable=no-self-use, wrong-import-position
+from importlib.metadata import version
 
 import jax
+from packaging.version import Version
 
 import pennylane as qml
 from pennylane import math
@@ -35,7 +38,6 @@ from .primitives import (
     qnode_prim,
     while_loop_prim,
 )
-from .promote_consts import promote_consts
 
 FlattenedHigherOrderPrimitives: dict["jax.extend.core.Primitive", Callable] = {}
 """
@@ -45,7 +47,7 @@ A dictionary containing flattened style cond, while, and for loop higher order p
 """
 
 
-def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[Optional[int]]):
+def _fill_in_shape_with_dyn_shape(dyn_shape: tuple["jax.core.Tracer"], shape: tuple[int | None]):
     """
     A helper for broadcast_in_dim and iota to combine static dimensions and dynamic dimensions.
 
@@ -459,27 +461,34 @@ def _(self, *dyn_shape, dimension, dtype, shape, sharding):
 
 
 @PlxprInterpreter.register_primitive(adjoint_transform_prim)
-def handle_adjoint_transform(self, *invals, jaxpr, lazy):
+def handle_adjoint_transform(self, *invals, jaxpr, lazy, n_consts):
     """Interpret an adjoint transform primitive."""
-    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *invals)
-    jaxpr, new_invals = promote_consts(jaxpr, invals)
-    return adjoint_transform_prim.bind(*new_invals, jaxpr=jaxpr, lazy=lazy)
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
+    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+
+    return adjoint_transform_prim.bind(
+        *jaxpr.consts, *args, jaxpr=jaxpr.jaxpr, lazy=lazy, n_consts=len(jaxpr.consts)
+    )
 
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(ctrl_transform_prim)
-def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires):
+def handle_ctrl_transform(self, *invals, n_control, jaxpr, control_values, work_wires, n_consts):
     """Interpret a ctrl transform primitive."""
-    args = invals[:-n_control]
-    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, [], *args)
-    jaxpr, new_invals = promote_consts(jaxpr, invals)
+    consts = invals[:n_consts]
+    args = invals[n_consts:-n_control]
+    jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
 
     return ctrl_transform_prim.bind(
-        *new_invals,
+        *jaxpr.consts,
+        *args,
+        *invals[-n_control:],
         n_control=n_control,
-        jaxpr=jaxpr,
+        jaxpr=jaxpr.jaxpr,
         control_values=control_values,
         work_wires=work_wires,
+        n_consts=len(jaxpr.consts),
     )
 
 
@@ -581,18 +590,22 @@ def handle_while_loop(
 
 # pylint: disable=too-many-arguments
 @PlxprInterpreter.register_primitive(qnode_prim)
-def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr):
+def handle_qnode(self, *invals, shots, qnode, device, execution_config, qfunc_jaxpr, n_consts):
     """Handle a qnode primitive."""
+    consts = invals[:n_consts]
+    args = invals[n_consts:]
 
-    qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, [], *invals)
-    jaxpr, new_invals = promote_consts(qfunc_jaxpr, invals)
+    new_qfunc_jaxpr = jaxpr_to_jaxpr(copy(self), qfunc_jaxpr, consts, *args)
+
     return qnode_prim.bind(
-        *new_invals,
+        *new_qfunc_jaxpr.consts,
+        *args,
         shots=shots,
         qnode=qnode,
         device=device,
         execution_config=execution_config,
-        qfunc_jaxpr=jaxpr,
+        qfunc_jaxpr=new_qfunc_jaxpr.jaxpr,
+        n_consts=len(new_qfunc_jaxpr.consts),
     )
 
 
@@ -625,15 +638,22 @@ class FlattenedInterpreter(PlxprInterpreter):
     """
 
 
+jax_version = version("jax")
+if Version(jax_version) > Version("0.6.2"):  # pragma: no cover
+    from jax._src.pjit import jit_p as pjit_p
+else:  # pragma: no cover
+    from jax._src.pjit import pjit_p
+
+
 # pylint: disable=protected-access
-@FlattenedInterpreter.register_primitive(jax._src.pjit.pjit_p)
+@FlattenedInterpreter.register_primitive(pjit_p)
 def _(self, *invals, jaxpr, **params):
     if jax.config.jax_dynamic_shapes:
         # just evaluate it so it doesn't throw dynamic shape errors
         return copy(self).eval(jaxpr.jaxpr, jaxpr.consts, *invals)
 
-    subfuns, params = jax._src.pjit.pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
-    return jax._src.pjit.pjit_p.bind(*subfuns, *invals, **params)
+    subfuns, params = pjit_p.get_bind_params({"jaxpr": jaxpr, **params})
+    return pjit_p.bind(*subfuns, *invals, **params)
 
 
 @FlattenedInterpreter.register_primitive(while_loop_prim)

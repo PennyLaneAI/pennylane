@@ -40,6 +40,8 @@ from pennylane.decomposition.symbolic_decomposition import (
     self_adjoint,
     to_controlled_qubit_unitary,
 )
+
+# pylint: disable=no-name-in-module
 from tests.decomposition.conftest import to_resources
 
 
@@ -58,16 +60,13 @@ class TestAdjointDecompositionRules:
         assert q.queue == [qml.RX(0.5, wires=0)]
         assert cancel_adjoint.compute_resources(**op.resource_params) == to_resources({qml.RX: 1})
 
-    @pytest.mark.jax
+    @pytest.mark.capture
     def test_cancel_adjoint_capture(self):
         """Tests that the adjoint of an adjoint works with capture."""
 
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         op = qml.adjoint(qml.adjoint(qml.RX(0.5, wires=0)))
-
-        capture_enabled = qml.capture.enabled()
-        qml.capture.enable()
 
         def circuit():
             cancel_adjoint(*op.parameters, wires=op.wires, **op.hyperparameters)
@@ -76,9 +75,6 @@ class TestAdjointDecompositionRules:
         collector = CollectOpsandMeas()
         collector.eval(plxpr.jaxpr, plxpr.consts)
         assert collector.state["ops"] == [qml.RX(0.5, wires=0)]
-
-        if not capture_enabled:
-            qml.capture.disable()
 
     def test_adjoint_general(self):
         """Tests the adjoint of a general operator can be correctly decomposed."""
@@ -189,16 +185,13 @@ class TestPowDecomposition:
         assert q.queue == [qml.H(0), qml.H(0), qml.H(0)]
         assert repeat_pow_base.compute_resources(**op.resource_params) == to_resources({qml.H: 3})
 
-    @pytest.mark.jax
+    @pytest.mark.capture
     def test_repeat_pow_base_capture(self):
         """Tests that the general pow decomposition works with capture."""
 
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         op = qml.pow(qml.H(0), 3)
-
-        capture_enabled = qml.capture.enabled()
-        qml.capture.enable()
 
         def circuit():
             repeat_pow_base(*op.parameters, wires=op.wires, **op.hyperparameters)
@@ -207,9 +200,6 @@ class TestPowDecomposition:
         collector = CollectOpsandMeas()
         collector.eval(plxpr.jaxpr, plxpr.consts)
         assert collector.state["ops"] == [qml.H(0), qml.H(0), qml.H(0)]
-
-        if not capture_enabled:
-            qml.capture.disable()
 
     def test_non_integer_pow_not_applicable(self):
         """Tests that is_applicable returns False when z isn't a positive integer."""
@@ -327,7 +317,7 @@ def _custom_resource(num_wires):
             num_control_wires=3,
             num_zero_control_values=1,
             num_work_wires=1,
-            work_wire_type="clean",
+            work_wire_type="zeroed",
         ): 1,
         qml.RX: 1,
         qml.Rot: 1,
@@ -417,14 +407,14 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
-                    work_wire_type="dirty",
+                    work_wire_type="borrowed",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=4,
                     num_zero_control_values=1,
                     num_work_wires=2,
-                    work_wire_type="dirty",
+                    work_wire_type="borrowed",
                 ): 1,
                 qml.resource_rep(qml.CRX): 1,
                 qml.resource_rep(qml.CRot): 1,
@@ -519,21 +509,21 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
-                    work_wire_type="dirty",
+                    work_wire_type="borrowed",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=4,
                     num_zero_control_values=0,
                     num_work_wires=1,
-                    work_wire_type="dirty",
+                    work_wire_type="borrowed",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=5,
                     num_zero_control_values=1,
                     num_work_wires=2,
-                    work_wire_type="dirty",
+                    work_wire_type="borrowed",
                 ): 1,
                 qml.decomposition.controlled_resource_rep(
                     qml.RX, {}, num_control_wires=2, num_work_wires=1
@@ -635,28 +625,28 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=1,
-                    work_wire_type="dirty",
+                    work_wire_type="borrowed",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=4,
                     num_zero_control_values=0,
                     num_work_wires=1,
-                    work_wire_type="dirty",
+                    work_wire_type="borrowed",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=5,
                     num_zero_control_values=0,
                     num_work_wires=1,
-                    work_wire_type="dirty",
+                    work_wire_type="borrowed",
                 ): 1,
                 qml.resource_rep(
                     qml.MultiControlledX,
                     num_control_wires=6,
                     num_zero_control_values=1,
                     num_work_wires=2,
-                    work_wire_type="dirty",
+                    work_wire_type="borrowed",
                 ): 1,
                 qml.decomposition.controlled_resource_rep(
                     qml.RX, {}, num_control_wires=3, num_work_wires=1
@@ -712,7 +702,7 @@ class TestControlledDecomposition:
                         "num_control_wires": 1,
                         "num_zero_control_values": 0,
                         "num_work_wires": 0,
-                        "work_wire_type": "dirty",
+                        "work_wire_type": "borrowed",
                     },
                 ): 1
             }
@@ -744,7 +734,7 @@ class TestControlledDecomposition:
         assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
 
         op = qml.ctrl(
-            qml.RX(0.5, wires=0), control=[1, 2, 3], work_wires=[4, 5], work_wire_type="dirty"
+            qml.RX(0.5, wires=0), control=[1, 2, 3], work_wires=[4, 5], work_wire_type="borrowed"
         )
         assert not controlled_decomp_with_work_wire.is_applicable(**op.resource_params)
 
@@ -768,7 +758,7 @@ class TestControlledDecomposition:
                     num_control_wires=3,
                     num_zero_control_values=0,
                     num_work_wires=2,
-                    work_wire_type="dirty",
+                    work_wire_type="borrowed",
                 ): 1
             }
         )

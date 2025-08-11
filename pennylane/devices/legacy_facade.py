@@ -28,7 +28,7 @@ from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
 
 from .device_api import Device
-from .execution_config import DefaultExecutionConfig
+from .execution_config import ExecutionConfig
 from .modifiers import single_tape_support
 from .preprocess import (
     decompose,
@@ -169,7 +169,7 @@ class LegacyDeviceFacade(Device):
 
     @property
     def tracker(self):
-        """A :class:`~pennylane.devices.Tracker` that can store information about device executions, shots, batches,
+        """A :class:`~pennylane.Tracker` that can store information about device executions, shots, batches,
         intermediate results, or any additional device dependent information.
         """
         return self._device.tracker
@@ -219,7 +219,10 @@ class LegacyDeviceFacade(Device):
     def _debugger(self, new_debugger):
         self._device._debugger = new_debugger
 
-    def preprocess(self, execution_config=DefaultExecutionConfig):
+    def preprocess(self, execution_config: ExecutionConfig | None = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         execution_config = self._setup_execution_config(execution_config)
         program = qml.transforms.core.TransformProgram()
 
@@ -366,7 +369,10 @@ class LegacyDeviceFacade(Device):
         # determine if the device provides its own jacobian method
         return self._device.capabilities().get("provides_jacobian", False)
 
-    def execute(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute(self, circuits, execution_config: ExecutionConfig | None = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig()
+
         dev = self.target_device
 
         kwargs = {}
@@ -380,7 +386,12 @@ class LegacyDeviceFacade(Device):
             _set_shots(dev, t.shots)(dev.batch_execute)((t,), **kwargs)[0] for t in circuits
         )
 
-    def execute_and_compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
+    def execute_and_compute_derivatives(
+        self, circuits, execution_config: ExecutionConfig | None = None
+    ):
+        if execution_config is None:
+            execution_config = ExecutionConfig(gradient_method="device")
+
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
             return _set_shots(self._device, first_shot)(self._device.execute_and_gradients)(
@@ -391,7 +402,10 @@ class LegacyDeviceFacade(Device):
         )
         return tuple(zip(*batched_res))
 
-    def compute_derivatives(self, circuits, execution_config=DefaultExecutionConfig):
+    def compute_derivatives(self, circuits, execution_config: ExecutionConfig | None = None):
+        if execution_config is None:
+            execution_config = ExecutionConfig(gradient_method="device")
+
         first_shot = circuits[0].shots
         if all(t.shots == first_shot for t in circuits):
             return _set_shots(self._device, first_shot)(self._device.gradients)(

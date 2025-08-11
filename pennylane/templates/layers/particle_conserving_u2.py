@@ -52,7 +52,7 @@ def u2_ex_gate(phi, wires=None):
 class ParticleConservingU2(Operation):
     r"""Implements the heuristic VQE ansatz for Quantum Chemistry simulations using the
     particle-conserving entangler :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` proposed in
-    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`_.
+    `arXiv:1805.04340 <https://arxiv.org/abs/1805.04340>`__.
 
     This template prepares :math:`N`-qubit trial states by applying :math:`D` layers of the entangler
     block :math:`U_\mathrm{ent}(\vec{\theta}, \vec{\phi})` to the Hartree-Fock state

@@ -21,14 +21,13 @@ from scipy.linalg import fractional_matrix_power
 
 import pennylane as qml
 from pennylane import math as qmlmath
-from pennylane._deprecated_observable import Observable
-from pennylane.operation import (
+from pennylane.exceptions import (
     AdjointUndefinedError,
     DecompositionUndefinedError,
-    Operation,
     PowUndefinedError,
     SparseMatrixUndefinedError,
 )
+from pennylane.operation import Operation
 from pennylane.ops.identity import Identity
 from pennylane.queuing import QueuingManager, apply
 
@@ -163,14 +162,9 @@ class Pow(ScalarSymbolicOp):
         """
 
         if isinstance(base, Operation):
-            if isinstance(base, Observable):
-                return object.__new__(PowOpObs)
 
             # not an observable
             return object.__new__(PowOperation)
-
-        if isinstance(base, Observable):
-            return object.__new__(PowObs)
 
         return object.__new__(Pow)
 
@@ -401,8 +395,9 @@ class Pow(ScalarSymbolicOp):
             ops = base.pow(z=self.z)
             if not ops:
                 return qml.Identity(self.wires)
-            op = qml.prod(*ops) if len(ops) > 1 else ops[0]
-            return op if qml.capture.enabled() else op.simplify()
+            if not qml.capture.enabled():
+                ops = [op.simplify() for op in ops]
+            return qml.prod(*ops) if len(ops) > 1 else ops[0]
         except PowUndefinedError:
             return Pow(base=base, z=self.z)
 
@@ -430,20 +425,3 @@ class PowOperation(Pow, Operation):
     @property
     def control_wires(self):
         return self.base.control_wires
-
-
-class PowObs(Pow, Observable):
-    """A child class of ``Pow`` that also inherits from ``Observable``."""
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)
-
-
-# pylint: disable=too-many-ancestors
-class PowOpObs(PowOperation, Observable):
-    """A child class of ``Pow`` that inherits from both
-    ``Observable`` and ``Operation``.
-    """
-
-    def __new__(cls, *_, **__):
-        return object.__new__(cls)

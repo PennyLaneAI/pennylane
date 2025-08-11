@@ -16,9 +16,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import QuantumFunctionError
-from pennylane.measurements import MeasurementShapeError
-from pennylane.operation import EigvalsUndefinedError, Operator
+from pennylane.exceptions import EigvalsUndefinedError, MeasurementShapeError, QuantumFunctionError
+from pennylane.operation import Operator
 
 # pylint: disable=protected-access, no-member, too-many-public-methods
 

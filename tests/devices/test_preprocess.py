@@ -25,6 +25,7 @@ from pennylane.devices.preprocess import (
     measurements_from_counts,
     measurements_from_samples,
     mid_circuit_measurements,
+    no_analytic,
     no_sampling,
     null_postprocessing,
     validate_adjoint_trainable_params,
@@ -149,6 +150,18 @@ def test_no_sampling():
         no_sampling(tape2, name="abc")
 
 
+def test_no_analytic():
+    """Test for the no_anayltic transform"""
+
+    tape1 = qml.tape.QuantumScript(shots=2)
+    batch, _ = no_analytic(tape1)
+    assert batch[0] is tape1
+
+    tape2 = qml.tape.QuantumScript(shots=None)
+    with pytest.raises(DeviceError, match="Analytic execution is not supported with abc"):
+        no_analytic(tape2, name="abc")
+
+
 def test_validate_adjoint_trainable_params_obs_warning():
     """Tests warning raised for validate_adjoint_trainable_params with trainable observables."""
 
@@ -187,7 +200,7 @@ class TestValidateDeviceWires:
         assert batch[0] is tape1
 
     def test_fill_in_wires(self):
-        """Tests that if the wires are provided, measurements without wires take them gain them."""
+        """Tests that if the wires are provided, measurements without wires gain them."""
         tape1 = qml.tape.QuantumScript([qml.S("b")], [qml.state(), qml.probs()], shots=52)
 
         wires = qml.wires.Wires(["a", "b", "c"])
@@ -650,11 +663,11 @@ class TestMeasurementsFromCountsOrSamples:
     @pytest.mark.parametrize(
         "meas_transform", [measurements_from_counts, measurements_from_samples]
     )
-    def test_with_sample_output(self, sample_kwargs, meas_transform):
+    def test_with_sample_output(self, sample_kwargs, meas_transform, seed):
         """Test that returning sample works as expected for all-wires, specific wires, or an observable,
         when using both the measurements_from_counts and measurements_from_samples transforms."""
 
-        dev = qml.device("default.qubit", wires=4, shots=5000)
+        dev = qml.device("default.qubit", wires=4, shots=5000, seed=seed)
 
         @partial(validate_device_wires, wires=dev.wires)
         @qml.qnode(dev)
