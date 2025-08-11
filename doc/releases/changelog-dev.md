@@ -119,6 +119,7 @@
 * With program capture, the `true_fn` can now be a subclass of `Operator` when no `false_fn` is provided.
   `qml.cond(condition, qml.X)(0)` is now valid code and will return nothing, even though `qml.X` is
   technically a callable that returns an `X` operator.
+  [(#8060)](https://github.com/PennyLaneAI/pennylane/pull/8060)
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
