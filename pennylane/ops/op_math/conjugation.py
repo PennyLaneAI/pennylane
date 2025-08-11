@@ -91,10 +91,7 @@ class Conjugation(CompositeOp):
         yields false, which ARE hermitian. So a false result only implies a more explicit check
         must be performed.
         """
-        for o1, o2 in combinations(self.operands, r=2):
-            if Wires.shared_wires([o1.wires, o2.wires]):
-                return False
-        return all(op.is_hermitian for op in self)
+        return self[1].is_hermitian()
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
