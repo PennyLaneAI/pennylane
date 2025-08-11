@@ -49,6 +49,7 @@ __all__ = [
 
 def set_item(target, i, x):
     """An implementation of the AutoGraph 'set_item' function. The interface is defined by AutoGraph"""
+
     if qml.math.is_abstract(target):
         target = target.at[i].set(x)
     else:
