@@ -261,7 +261,7 @@ class ResourceAliasSampling(ResourceOperator):
 
 
 class ResourcePrepTHC(ResourceOperator):
-    r"""Resource class for Qubitization of THC Hamiltonian.
+    r"""Resource class for preparing the state for THC Hamiltonian.
 
     Args:
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
@@ -339,7 +339,7 @@ class ResourcePrepTHC(ResourceOperator):
 
     @classmethod
     def default_resource_decomp(
-        cls, compact_ham, coeff_precision=2e-5, select_swap_depth=None, **kwargs
+        cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -363,8 +363,8 @@ class ResourcePrepTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
+        coeff_precision = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
         coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
-        compare_precision_wires = abs(math.floor(math.log2(coeff_precision)))
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1)
         coeff_register = int(math.ceil(math.log2(num_coeff)))
@@ -373,7 +373,7 @@ class ResourcePrepTHC(ResourceOperator):
         gate_list = []
 
         gate_list.append(
-            AllocWires(coeff_register + 2 * m_register + 2 * compare_precision_wires + 6)
+            AllocWires(coeff_register + 2 * m_register + 2 * coeff_precision + 6)
         )
 
         hadamard = resource_rep(plre.ResourceHadamard)
@@ -454,7 +454,7 @@ class ResourcePrepTHC(ResourceOperator):
 
     @classmethod
     def default_adjoint_resource_decomp(
-        cls, compact_ham, coeff_precision=2e-5, select_swap_depth=None, **kwargs
+        cls, compact_ham, coeff_precision=None, select_swap_depth=None, **kwargs
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the adjoint of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
@@ -477,6 +477,7 @@ class ResourcePrepTHC(ResourceOperator):
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
 
+        coeff_precision = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
         coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2

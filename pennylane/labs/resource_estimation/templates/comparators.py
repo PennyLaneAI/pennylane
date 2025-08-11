@@ -21,6 +21,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
+from pennylane.labs.resource_estimation.ops.op_math.symbolic import _apply_adj
 
 # pylint: disable=arguments-differ,unused-argument
 
@@ -250,7 +251,8 @@ class ResourceTwoQubitComparator(ResourceOperator):
         gate_list.append(GateCount(resource_rep(plre.ResourceTempAND), 2))
         gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 8))
         gate_list.append(GateCount(resource_rep(plre.ResourceX), 3))
-        gate_list.append(FreeWires(2))
+
+        return gate_list
 
 
 class ResourceIntegerComparator(ResourceOperator):
@@ -592,26 +594,23 @@ class ResourceRegisterComparator(ResourceOperator):
         compare_register = min(first_register, second_register)
 
         one_qubit_compare = resource_rep(plre.ResourceSingleQubitComparator)
-        two_qubit_compare = resource_rep(plre.ResourceTwoQubitComparator)
-
+        two_qubit_compare = plre.ResourceTwoQubitComparator().tempand_based_decomp()
+        print(two_qubit_compare)
         if first_register == second_register:
 
-            gate_list.append(GateCount(two_qubit_compare, first_register - 1))
+            for op in two_qubit_compare:
+                gate_list.append(op*(first_register-1))
             gate_list.append(GateCount(one_qubit_compare, 1))
 
-            gate_list.append(
-                GateCount(
-                    resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": two_qubit_compare}),
-                    first_register - 1,
-                )
-            )
+            for op in two_qubit_compare:
+                gate_list.append(_apply_adj(op)*(first_register-1))
+
             gate_list.append(
                 GateCount(
                     resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": one_qubit_compare}),
                     1,
                 )
             )
-
             gate_list.append(GateCount(resource_rep(plre.ResourceX), 1))
             gate_list.append(GateCount(resource_rep(plre.ResourceCNOT), 1))
 
@@ -619,15 +618,13 @@ class ResourceRegisterComparator(ResourceOperator):
 
         diff = abs(first_register - second_register)
 
-        gate_list.append(GateCount(two_qubit_compare, compare_register - 1))
+        for op in two_qubit_compare:
+            gate_list.append(op*(compare_register-1))
         gate_list.append(GateCount(one_qubit_compare, 1))
 
-        gate_list.append(
-            GateCount(
-                resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": two_qubit_compare}),
-                compare_register - 1,
-            )
-        )
+        for op in two_qubit_compare:
+            gate_list.append(_apply_adj(op)*(compare_register-1))
+
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": one_qubit_compare}), 1)
         )
