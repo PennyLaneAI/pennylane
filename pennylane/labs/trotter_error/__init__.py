@@ -37,6 +37,7 @@ Classes representing fragments of different types of Hamiltonians.
 .. autosummary::
     :toctree: api
 
+    ~GenericFragment
     ~RealspaceMatrix
     ~RealspaceSum
 
