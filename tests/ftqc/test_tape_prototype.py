@@ -18,7 +18,6 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-
 from pennylane.devices import ExecutionConfig, MCMConfig
 from pennylane.ftqc import RotXZX
 from pennylane.ftqc.ftqc_device import (
@@ -29,7 +28,7 @@ from pennylane.ftqc.ftqc_device import (
     split_at_non_clifford_gates,
 )
 from pennylane.measurements import MidMeasureMP, Shots
-from pennylane.ops import Adjoint, Conditional, CZ, H, RZ, S, X, Y, Z
+from pennylane.ops import CZ, RZ, Adjoint, Conditional, H, S, X, Y, Z
 
 
 @pytest.mark.parametrize(
@@ -58,8 +57,8 @@ def test_ftqc_device_initializes(backend_cls):
     assert dev.name == "ftqc.qubit"
     assert dev.wires == qml.wires.Wires([0, 1])
     assert isinstance(dev.capabilities, qml.devices.DeviceCapabilities)
-    
-    
+
+
 @pytest.mark.parametrize(
     "backend, expected_method",
     [(LightningQubitBackend(), "one-shot"), (NullQubitBackend(), "device")],
@@ -118,7 +117,7 @@ def test_executing_arbitrary_circuit(wires, backend_cls):
 
     assert np.allclose(res, expected_res, atol=0.05)
 
-    
+
 @pytest.mark.parametrize("wires", ([0, 1], ["a", "b"]))
 @pytest.mark.parametrize("backend_cls", [LightningQubitBackend, NullQubitBackend])
 def test_executing_arbitrary_circuit_two_qubit_gate(wires, backend_cls):

@@ -109,7 +109,6 @@ class FTQCQubit(Device):
 
         return program
 
-
     @property
     def backend(self):
         """The backend device circuits will be sent to for execution"""
@@ -138,7 +137,7 @@ class FTQCQubit(Device):
         # get mcm method - "device" if its an option, otherwise "one-shot"
         default_mcm_method = _default_mcm_method(self.backend.capabilities, shots_present=True)
         assert default_mcm_method in ["device", "one-shot"]
-        
+
         if config is None:
             config = ExecutionConfig(mcm_config=MCMConfig(mcm_method=default_mcm_method))
         else:
