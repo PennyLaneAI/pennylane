@@ -108,6 +108,15 @@ class TestConstructor:
 
         assert original_op not in q.queue
 
+    def test_simplify_squared(self):
+        """Test that an op without a special pow method can still be simplified when raised to an integer power."""
+
+        class DummyOp(qml.operation.Operator):
+            pass
+
+        simplified = (DummyOp(0) ** 2).simplify()
+        qml.assert_equal(simplified, DummyOp(0) @ DummyOp(0))
+
 
 @pytest.mark.parametrize("power_method", [Pow, pow_using_dunder_method, qml.pow])
 class TestInheritanceMixins:
