@@ -16,6 +16,7 @@
 written using xDSL."""
 
 import math
+from enum import Enum
 from dataclasses import dataclass
 
 import networkx as nx
@@ -30,6 +31,9 @@ from ..dialects.mbqc import MeasureInBasisOp, MeasurementPlaneAttr, MeasurementP
 from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp, QubitType
 from .api import compiler_transform
 
+class _MeasureBasis(Enum):
+    X = 'X'
+    Y = 'Y'
 
 def _generate_graph(op_name: str):
     """Generate a network graph to represent the connectivity of auxiliary qubits of
@@ -177,33 +181,31 @@ class ConvertToMBQCFormalismPattern(
 
         return graph_qubits_dict
 
-    def _insert_arbitrary_basis_measure_op(
+    def _insert_xy_basis_measure_op(
         self,
-        angle: float,
-        plane: str,
+        xy_basis: _MeasureBasis,
         qubit: QubitType,
         insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         """Insert an arbitrary basis measure related operations to the IR.
         Args:
-            angle (float) : Angle of the measurement basis.
-            plane (str): Plane of the measurement basis.
+            xy_basis (_MeasureBasis) : The measurement basis.
             qubit (QubitType) : The target qubit to be measured.
             insert_before (CustomOp) : A `CustomOp` object to be used as the insertion point for the `measure` op.
             rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
 
         Returns:
-            The measurement results include the result qubit and the measurement result.
+            The results include: 1. a measurement result; 2, a result qubit.
         """
-        in_qubit = qubit
-        planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
+        angle = 0.0 if xy_basis == _MeasureBasis.X else math.pi /2 
+        planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum("XY"))
         # Create a constant op from a float64 variable
         constAngleOp = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
         # Insert the constant op into the IR
         rewriter.insert_op(constAngleOp, InsertPoint.before(insert_before))
         # Create a MeasureInBasisOp op
-        measureOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constAngleOp)
+        measureOp = MeasureInBasisOp(in_qubit=qubit, plane=planeOp, angle=constAngleOp)
         # Insert the newly created measureOp into the IR
         rewriter.insert_op(measureOp, InsertPoint.before(insert_before))
         # Returns the results of the newly created measureOp.
@@ -212,30 +214,29 @@ class ConvertToMBQCFormalismPattern(
 
     def _measure_x_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert a X-basis measure op related operations to the IR."""
-        return self._insert_arbitrary_basis_measure_op(0.0, "XY", qubit, op, rewriter)
+        return self._insert_xy_basis_measure_op(_MeasureBasis.X, qubit, op, rewriter)
 
     def _measure_y_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert a Y-basis measure op related operations to the IR."""
-        return self._insert_arbitrary_basis_measure_op(math.pi / 2, "XY", qubit, op, rewriter)
+        return self._insert_xy_basis_measure_op(_MeasureBasis.Y, qubit, op, rewriter)
 
     def _cond_insert_arbitrary_basis_measure_op(
         self,
-        prev_mres: builtin.IntegerType,
+        meas_parity: builtin.IntegerType,
         angle: SSAValue[builtin.Float64Type],
         plane: str,
         qubit: QubitType,
-        op: CustomOp,
+        insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         """
         Insert a conditional arbitrary basis measurement operation based on a previous measurement result.
         Args:
-            pre_mres (builtin.IntegerType) : A previous measurement result.
-            angle (SSAValue[builtin.Float64Type]) : An angle SSAValue from a parametric gate operation. Note that
-                `_insert_arbitrary_basis_measure_op` accepts a float object instead.
+            meas_parity (builtin.IntegerType) : A parity of previous measurements.
+            angle (SSAValue[builtin.Float64Type]) : An angle SSAValue from a parametric gate operation.
             plane (str): Plane of the measurement basis.
             qubit (QubitType) : The target qubit to be measured.
-            op (CustomOp) : A `CustomOp` object.
+            insert_before (CustomOp) : A `CustomOp` object.
             rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
 
         Returns:
@@ -244,17 +245,16 @@ class ConvertToMBQCFormalismPattern(
         # Create a const op, which hold the integer `1`.
         constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
         # Insert the const op into the IR
-        rewriter.insert_op(constantOneOp, InsertPoint.before(op))
+        rewriter.insert_op(constantOneOp, InsertPoint.before(insert_before))
         # Create a CmpiOp object which compares a measurement result with the const one object
-        cmpOp = arith.CmpiOp(prev_mres, constantOneOp, "eq")
+        cmpOp = arith.CmpiOp(meas_parity, constantOneOp, "eq")
         # Insert the newly created CmpiOp object into the IR
-        rewriter.insert_op(cmpOp, InsertPoint.before(op))
+        rewriter.insert_op(cmpOp, InsertPoint.before(insert_before))
 
-        in_qubit = qubit
         planeOp = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
 
         # Create a MeasureInBasisOp op for the true region
-        measureOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=angle)
+        measureOp = MeasureInBasisOp(in_qubit=qubit, plane=planeOp, angle=angle)
 
         # Create a const object hold the `-angle` value
         constNegAngleOp = arith.NegfOp(angle)
@@ -265,7 +265,7 @@ class ConvertToMBQCFormalismPattern(
         # does not explicitly insert the Ops created to the IR. Checking the result IR after applying current implementation
         # of this pass, all Ops created in this block are inserted to the IR. Need some experts to confirm if it's the best practice.
         measureNegOp = MeasureInBasisOp(
-            in_qubit=in_qubit, plane=planeOp, angle=constNegAngleOp.result
+            in_qubit=qubit, plane=planeOp, angle=constNegAngleOp.result
         )
         # Create the true region
         true_region = [measureOp, scf.YieldOp(measureOp.results[0], measureOp.results[1])]
@@ -284,7 +284,7 @@ class ConvertToMBQCFormalismPattern(
             false_region,
         )
         # Insert condOp to the IR
-        rewriter.insert_op(condOp, InsertPoint.before(op))
+        rewriter.insert_op(condOp, InsertPoint.before(insert_before))
 
         # Return the result of if control flow
         return condOp.results
