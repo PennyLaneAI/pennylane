@@ -91,7 +91,7 @@ class Conjugation(CompositeOp):
         yields false, which ARE hermitian. So a false result only implies a more explicit check
         must be performed.
         """
-        return self[1].is_hermitian()
+        return self[1].is_hermitian
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
