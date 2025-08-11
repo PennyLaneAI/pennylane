@@ -203,8 +203,11 @@
 <h4>Resource-efficient decompositions 🔎</h4>
 
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
-
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+
+* A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
+  [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
+
 <h3>Labs: a place for unified and rapid prototyping of research software 🧪</h3>
 
 * Added state of the art resources for the `ResourceSelectPauliRot` template and the
