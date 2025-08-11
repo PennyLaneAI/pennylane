@@ -255,8 +255,7 @@ class TestDecomposition:
             assert np.allclose(res_weight, exp_weight)
 
     @pytest.mark.parametrize("s_wires, d_wires, weights, n_repeats", test_data_decomposition_new)
-    @pytest.mark.jax
-    # @pytest.mark.capture
+    # Note: UCCSD is not capture compatible
     def test_decomposition_new(
         self, s_wires, d_wires, weights, n_repeats
     ):  # pylint: disable=unused-argument
