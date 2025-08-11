@@ -18,12 +18,19 @@ from .measurements_from_samples import MeasurementsFromSamplesPass, measurements
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
 from .combine_global_phases import combine_global_phases_pass, CombineGlobalPhasesPass
 from .convert_to_mbqc_formalism import convert_to_mbqc_formalism_pass, ConvertToMBQCFormalismPass
+from .diagonalize_measurements import (
+    DiagonalizeFinalMeasurementsPass,
+    diagonalize_final_measurements_pass,
+)
+
 
 __all__ = [
     "combine_global_phases_pass",
     "CombineGlobalPhasesPass",
     "convert_to_mbqc_formalism_pass",
     "ConvertToMBQCFormalismPass",
+    "diagonalize_final_measurements_pass",
+    "DiagonalizeFinalMeasurementsPass",
     "iterative_cancel_inverses_pass",
     "IterativeCancelInversesPass",
     "measurements_from_samples_pass",
