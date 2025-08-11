@@ -347,8 +347,12 @@ class ConvertToMBQCFormalismPattern(
         m3, graph_qubits_dict[3] = self._cond_insert_arbitary_basis_measure_op(
             m2, op.params[1], "XY", graph_qubits_dict[3], op, rewriter
         )
+
+        m1_xor_m3 = arith.XOrIOp(m1, m3)
+        rewriter.insert_op(m1_xor_m3, InsertPoint.before(op))
+
         m4, graph_qubits_dict[4] = self._cond_insert_arbitary_basis_measure_op(
-            m3, op.params[2], "XY", graph_qubits_dict[4], op, rewriter
+            m1_xor_m3.result, op.params[2], "XY", graph_qubits_dict[4], op, rewriter
         )
         return [m1, m2, m3, m4], graph_qubits_dict
 
@@ -645,8 +649,6 @@ class ConvertToMBQCFormalismPattern(
         # TODOS: We need more clarifications for the questions above in the following steps.
         IdentityOp = CustomOp(in_qubits=(aux_res_qubit), gate_name="Identity")
         rewriter.insert_op(IdentityOp, InsertPoint.before(op))
-
-        in_qubits = (qb_in_reg, IdentityOp.results[0])
 
         return (IdentityOp.results[0], qb_in_reg)
 

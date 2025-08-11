@@ -285,8 +285,9 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK: scf.yield [[m3_res:%.+]], [[qb2_res:%.+]] : i1, !quantum.bit
                 // CHECK: }
                 
+                // CHECK: [[m1_xor_m3:%.+]] = arith.xori [[m1:%.+]], [[m3:%.+]] : i1
                 // CHECK: [[cst_ture:%.+]] = arith.constant true
-                // CHECK: [[comp_op:%.+]] = arith.cmpi eq, [[m3:%.+]], [[cst_ture:%.+]] : i1
+                // CHECK: [[comp_op:%.+]] = arith.cmpi eq, [[m1_xor_m3:%.+]], [[cst_ture:%.+]] : i1
                 // CHECK: [[m4:%.+]], [[qb3:%.+]] = scf.if [[comp_op:%.+]] -> (i1, !quantum.bit) {
                 // CHECK: [[m4_res:%.+]], [[qb3_res:%.+]] = mbqc.measure_in_basis[XY, [[param2:%.+]]] [[qb3:%.+]] : i1, !quantum.bit
                 // CHECK: scf.yield [[m4_res:%.+]], [[qb3_res:%.+]] : i1, !quantum.bit
