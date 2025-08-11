@@ -122,6 +122,7 @@
   [(#8060)](https://github.com/PennyLaneAI/pennylane/pull/8060)
 
 * With program capture, an error is now raised if the conditional predicate is not a scalar.
+  [(#8066)](https://github.com/PennyLaneAI/pennylane/pull/8066)
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 
