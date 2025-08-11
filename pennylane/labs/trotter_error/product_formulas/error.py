@@ -174,7 +174,8 @@ def perturbation_error(
         raise ValueError("Fragments do not match product formula")
 
     commutator_lists = [
-        _group_sums(commutators) for commutators in bch_expansion(product_formula, max_order, importance)[1:]
+        _group_sums(commutators)
+        for commutators in bch_expansion(product_formula, max_order, importance)[1:]
     ]
 
     if backend == "serial":
