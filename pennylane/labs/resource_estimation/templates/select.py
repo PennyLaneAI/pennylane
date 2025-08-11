@@ -1,5 +1,6 @@
 import pennylane.labs.resource_estimation as plre
 from pennylane.labs.resource_estimation import GateCount, AllocWires, FreeWires
+import math
 
 class ResourceSelectTHC(ResourceOperator):
     r"""Resource class for creating the Select operator for THC Hamiltonian.
@@ -143,7 +144,6 @@ class ResourceSelectTHC(ResourceOperator):
 
 
         # For one body integrals
-        gate_list.append(AllocWires(rot_prec_wires*(num_orb-1)))
         qrom_onebody = resource_rep(
             re.ResourceQROM,
             {
@@ -184,4 +184,7 @@ class ResourceSelectTHC(ResourceOperator):
                         "num_ctrl_values": 1,
                     })
         gate_list.append(plre.GateCount(ccz, 1))
+
+        gate_list.append(FreeWires(rot_prec_wires*(num_orb-1)))
+        gate_list.append(FreeWires(rot_prec_wires))
         return gate_list
