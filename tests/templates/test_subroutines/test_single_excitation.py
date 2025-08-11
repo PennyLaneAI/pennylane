@@ -159,7 +159,6 @@ class TestDecomposition:
         for rule in qml.list_decomps(qml.FermionicSingleExcitation):
             _test_decomposition_rule(op, rule)
 
-
     @pytest.mark.parametrize(
         ("single_wires"),
         [
