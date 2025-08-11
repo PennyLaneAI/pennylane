@@ -39,7 +39,7 @@ except (ImportError, ModuleNotFoundError):
     deps_available = False
 
 
-def _run_filecheck_impl(program_str, pipeline=(), roundtrip=False):
+def _run_filecheck_impl(program_str, pipeline=(), roundtrip=False, verify=False):
     """Run filecheck on an xDSL module, comparing it to a program string containing
     filecheck directives."""
     if not deps_available:
