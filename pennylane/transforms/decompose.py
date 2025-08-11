@@ -28,6 +28,7 @@ from pennylane.decomposition import DecompositionGraph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
 from pennylane.operation import Operator
+from pennylane.ops import Conditional
 from pennylane.transforms.core import transform
 
 
@@ -369,8 +370,8 @@ def decompose(
     gate_set=None,
     stopping_condition=None,
     max_expansion=None,
-    fixed_decomps: dict = None,
-    alt_decomps: dict = None,
+    fixed_decomps: dict | None = None,
+    alt_decomps: dict | None = None,
 ):  # pylint: disable=too-many-arguments
     """Decomposes a quantum circuit into a user-specified gate set.
 
@@ -828,14 +829,33 @@ def _operator_decomposition_gen(
     if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
 
-    if acceptance_function(op) or max_depth_reached:
+    # Handle MCMs
+    if isinstance(op, qml.measurements.MidMeasureMP):
         yield op
+
+    # Handle classically controlled operators
+    elif isinstance(op, Conditional):
+        if acceptance_function(op.base) or max_depth_reached:
+            yield op
+        for _op in _operator_decomposition_gen(
+            op.base,
+            acceptance_function,
+            max_expansion=max_expansion,
+            current_depth=current_depth,
+            decomp_graph_solution=decomp_graph_solution,
+        ):
+            yield Conditional(op.meas_val, _op)
+
+    elif acceptance_function(op) or max_depth_reached:
+        yield op
+
     elif decomp_graph_solution is not None and decomp_graph_solution.is_solved_for(op):
         op_rule = decomp_graph_solution.decomposition(op)
         with qml.queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         decomp = decomposed_ops.queue
         current_depth += 1
+
     else:
         decomp = op.decomposition()
         current_depth += 1
