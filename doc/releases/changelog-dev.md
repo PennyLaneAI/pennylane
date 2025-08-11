@@ -136,8 +136,26 @@
 <h4>Other improvements</h4>
 
 
-* We now allow custom wire labels to be used with :func:`~pennylane.defer_measurements`.
+* An error is no longer raised when non-integer wire labels are used in QNodes using `mcm_method="deferred"`.
   [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
+  
+
+  ```python
+  @qml.qnode(qml.device("default.qubit"), mcm_method="deferred")
+  def circuit():
+      m = qml.measure("a")
+      qml.cond(m == 0, qml.X)("aux")
+      return qml.expval(qml.Z("a"))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+    a: ──┤↗├────┤  <Z>
+  aux: ───║───X─┤     
+          ╚═══╝      
+  ```
+
+
 
 * PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
   [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
