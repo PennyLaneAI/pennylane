@@ -286,6 +286,12 @@ class ResourcePrepTHC(ResourceOperator):
     """
 
     def __init__(self, compact_ham, coeff_precision=None, select_swap_depth=None, wires=None):
+
+        if compact_ham.method_name != "thc":
+            raise TypeError(
+                f"Unsupported Hamiltonian representation for ResourceQubitizeTHC."
+                f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
+            )
         self.compact_ham = compact_ham
         self.coeff_precision = coeff_precision
         self.select_swap_depth = select_swap_depth

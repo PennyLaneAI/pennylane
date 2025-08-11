@@ -41,3 +41,4 @@ from .comparators import (
     ResourceRegisterComparator,
 )
 from .stateprep import ResourceUniformStatePrep, ResourceAliasSampling, ResourcePrepTHC
+from .select import ResourceSelectTHC

@@ -37,7 +37,10 @@ class ResourceQubitizeTHC(ResourceOperator):
             Hamiltonian for which the walk operator is being created
         coeff_precision (float, optional): precision for loading the coefficients of Hamiltonian
         rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
-        compare_precision (float, optional): precision for comparing two numbers
+        select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
+            used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
+            ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
+            respectively.
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
@@ -63,9 +66,9 @@ class ResourceQubitizeTHC(ResourceOperator):
     def __init__(
         self,
         compact_ham,
-        coeff_precision=1e-5,
-        rotation_precision=1e-5,
-        compare_precision=1e-3,
+        coeff_precision=None,
+        rotation_precision=None,
+        select_swap_depths=None,
         wires=None,
     ):
         if compact_ham.method_name != "thc":
@@ -73,11 +76,21 @@ class ResourceQubitizeTHC(ResourceOperator):
                 f"Unsupported Hamiltonian representation for ResourceQubitizeTHC."
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
+
+        if isinstance(select_swap_depths, int) or select_swap_depths is None:
+            pass
+        elif isinstance(select_swap_depths, (list, tuple, np.ndarray)):
+            if len(select_swap_depths) != 2:
+                raise ValueError(
+                    f"Expected the length of `select_swap_depths` to be 2, got {len(select_swap_depths)}"
+                )
+        else:
+            raise TypeError("`select_swap_depths` must be an integer, None or iterable")
+
         self.compact_ham = compact_ham
         self.coeff_precision = coeff_precision
         self.rotation_precision = rotation_precision
-        self.compare_precision = compare_precision
-
+        self.select_swap_depths = select_swap_depths
         if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
@@ -98,18 +111,21 @@ class ResourceQubitizeTHC(ResourceOperator):
                   Hamiltonian for which the walk operator is being created
                 * coeff_precision (float, optional): precision for loading the coefficients of Hamiltonian
                 * rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
-                * compare_precision (float, optional): precision for comparing two numbers
+                * select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
+                    used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
+                    ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
+                    respectively.
         """
         return {
             "compact_ham": self.compact_ham,
             "coeff_precision": self.coeff_precision,
             "rotation_precision": self.rotation_precision,
-            "compare_precision": self.compare_precision,
+            "select_swap_depths": self.select_swap_depths,
         }
 
     @classmethod
     def resource_rep(
-        cls, compact_ham, coeff_precision, rotation_precision, compare_precision
+        cls, compact_ham, coeff_precision, rotation_precision, select_swap_depths
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -119,16 +135,29 @@ class ResourceQubitizeTHC(ResourceOperator):
                 Hamiltonian for which the walk operator is being created
             coeff_precision (float, optional): precision for loading the coefficients of Hamiltonian
             rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
-            compare_precision (float, optional): precision for comparing two numbers
+            select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
+                used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
+                ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
+                respectively.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+
+        if isinstance(select_swap_depths, int) or select_swap_depths is None:
+            pass
+        elif isinstance(select_swap_depths, (list, tuple, np.ndarray)):
+            if len(select_swap_depths) != 2:
+                raise ValueError(
+                    f"Expected the length of `select_swap_depths` to be 2, got {len(select_swap_depths)}"
+                )
+        else:
+            raise TypeError("`select_swap_depths` must be an integer, None or iterable")
         params = {
             "compact_ham": compact_ham,
             "coeff_precision": coeff_precision,
             "rotation_precision": rotation_precision,
-            "compare_precision": compare_precision,
+            "select_swap_depths": select_swap_depths
         }
         return CompressedResourceOp(cls, params)
 
@@ -136,9 +165,9 @@ class ResourceQubitizeTHC(ResourceOperator):
     def default_resource_decomp(
         cls,
         compact_ham,
-        coeff_precision=1e-5,
-        rotation_precision=1e-5,
-        compare_precision=1e-3,
+        coeff_precision=None,
+        rotation_precision=None,
+        select_swap_depths=None,
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
@@ -149,7 +178,10 @@ class ResourceQubitizeTHC(ResourceOperator):
                 Hamiltonian for which the walk operator is being created
             coeff_precision (float, optional): precision for loading the coefficients of Hamiltonian
             rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
-            compare_precision (float, optional): precision for comparing two numbers
+            select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
+                used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
+                ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
+                respectively.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -157,112 +189,26 @@ class ResourceQubitizeTHC(ResourceOperator):
             in the decomposition.
 
         """
-
-        num_orb = compact_ham.params["num_orbitals"]
-        tensor_rank = compact_ham.params["tensor_rank"]
-
-        rot_prec_wires = abs(np.floor(math.log2(rotation_precision)))
-        coeff_wires = abs(int(np.floor(math.log2(coeff_precision))))
-        compare_precision = abs(int(np.floor(math.log2(compare_precision))))
-
-        # Number of qubits needed for the integrals tensors
-        m_register = int(np.ceil(math.log2(2 * tensor_rank + 1)))
-
         gate_list = []
 
-        # Select Circuit Fig. 5 in arXiv:2011.03494
-        # 1 register of rotation precision for loading the angles,
-        # 2 registers for resource state, 2 wires for spin registers
+        tensor_rank = compact_ham.params["tensor_rank"]
+        m_register = np.int(np.ceil(np.log2(tensor_rank)))
+        coeff_precision = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
+        coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
 
-        gate_list.append(AllocWires(3 * rot_prec_wires + 4))
+        if isinstance(select_swap_depths, int) or select_swap_depths is None:
+            select_swap_depths = [select_swap_depths] * 2
 
-        # Prepare resource state
-        phasegrad = resource_rep(plre.ResourcePhaseGradient, {"num_wires": rot_prec_wires})
-        gate_list.append(plre.GateCount(phasegrad, 1))
+        select = resource_rep(ResourceSelect, {"compact_ham": compact_ham, "rotation_precision": rotation_precision, "select_swap_depth": select_swap_depths[1]})
+        gate_list.append(select)
 
-        # Loading the angles controlled on tensor indices
-        qrom_angle = resource_rep(
-            plre.ResourceQROM,
-            {
-                "num_bitstrings": 2**m_register,
-                "size_bitstring": rot_prec_wires,
-                "clean": False,
-                "select_swap_depth": 1,
-            },
-        )
-        gate_list.append(plre.GateCount(qrom_angle, 2 * (num_orb)))
+        prep = resource_rep(ResourcePrepTHC, {"compact_ham": compact_ham, "coeff_precision": coeff_precision, "select_swap_depth":select_swap_depths[0]})
+        gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep})))
 
-        # Cliffords for conversion to RZ rotations
-        # cost per rotation times 4 for the number of rotations per angle
-
-        h = resource_rep(plre.ResourceHadamard)
-        gate_list.append(plre.GateCount(h, 16 * (num_orb)))
-        z = resource_rep(plre.ResourceZ)
-        gate_list.append(plre.GateCount(z, 8 * (num_orb)))
-        cnot = resource_rep(plre.ResourceCNOT)
-        gate_list.append(plre.GateCount(cnot, 16 * (num_orb)))
-        x = resource_rep(plre.ResourceX)
-        gate_list.append(plre.GateCount(x, 8 * (num_orb)))
-        y = resource_rep(plre.ResourceY)
-        gate_list.append(plre.GateCount(y, 8 * (num_orb)))
-
-        # Swap gates for swapping the state register based on the state
-        cswap = resource_rep(plre.ResourceCSWAP)
-        gate_list.append(plre.GateCount(cswap, 4 * num_orb * (num_orb)))
-
-        # Phase gradient technique for rotation
-        semiadder = resource_rep(
-            plre.ResourceControlled,
-            {
-                "base_cmpr_op": resource_rep(
-                    plre.ResourceSemiAdder,
-                    {"max_register_size": rot_prec_wires},
-                ),
-                "num_ctrl_wires": 1,
-                "num_ctrl_values": 0,
-            },
-        )
-
-        # 2 semiadders required per R gate, and there are 4 R gates per angle.
-        gate_list.append(plre.GateCount(semiadder, 8 * (num_orb)))
-
-        # iZ gate in the center of rotations
-        gate_list.append(plre.GateCount(x, 2 * num_orb))
-        gate_list.append(plre.GateCount(y, 2 * num_orb))
-
-        # unloading the angles
-        gate_list.append(plre.GateCount(qrom_angle, 2 * (num_orb)))
-
-        # Free spin and rotation precision wires
-        gate_list.append(FreeWires(rot_prec_wires + 2))
-
-        # Prepare and unprepare Circuit
-        # This is calculating only the Toffolis from Eq. 33 of arXiv:2011.03494
-        d = num_orb + tensor_rank * (2 * tensor_rank + 1)
-        nd = int(np.ceil(math.log2(num_orb + tensor_rank * (2 * tensor_rank + 1))))
-        gate_list.append(AllocWires(2 * m_register + nd + 2 * coeff_wires))
-
-        m = 2 * m_register + 2 + coeff_wires
+        #reflection cost
         toffoli = resource_rep(plre.ResourceToffoli)
-        num_toffoli = (
-            28 * m_register
-            + 4 * compare_precision
-            - 18
-            + 2 * m_register**2
-            + 2 * coeff_wires
-            + np.ceil(d / 16)
-            + m * (16 - 1)
-            + np.ceil(d / 16)
-            + 16
-        )
+        gate_list.append(GateCount(toffoli, 2*m_register+coeff_prec_wires+4))
 
-        gate_list.append(plre.GateCount(toffoli, num_toffoli))
-
-        # Reflection
-        mcx = resource_rep(
-            plre.ResourceMultiControlledX, {"num_ctrl_wires": nd, "num_ctrl_values": nd}
-        )
-        gate_list.append(plre.GateCount(h, 2))
-        gate_list.append(plre.GateCount(mcx))
+        gate_list.append(GateCount(prep))
 
         return gate_list

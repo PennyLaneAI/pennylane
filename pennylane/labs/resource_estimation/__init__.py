@@ -138,6 +138,7 @@ Templates:
     ~ResourceTrotterVibrational
     ~ResourceTrotterVibronic
     ~ResourceQubitizeTHC
+    ~ResourceSelectTHC
 
 State Preparation:
 ~~~~~~~~~~~~~~~~~~
@@ -147,6 +148,7 @@ State Preparation:
 
     ~ResourceUniformStatePrep
     ~ResourceAliasSampling
+    ~ResourcePrepTHC
 
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -245,4 +247,6 @@ from .templates import (
     ResourceQubitizeTHC,
     ResourceUniformStatePrep,
     ResourceAliasSampling,
+    ResourceSelectTHC,
+    ResourcePrepTHC,
 )
