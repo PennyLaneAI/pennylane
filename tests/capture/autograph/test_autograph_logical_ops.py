@@ -57,8 +57,7 @@ class TestAnd:
             return qml.expval(qml.PauliZ(0))
 
         result = circuit(x=a, y=b)
-        assert result == 1.0 if (a and b) else -1.0
-        # Expect PauliX to flip the state to |1> if both are True, else |0>
+        assert result == -1.0 if (a and b) else 1.0
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -91,9 +90,7 @@ class TestOr:
             return qml.expval(qml.PauliZ(0))
 
         result = circuit(x=a, y=b)
-        assert (
-            result == 1.0 if (a or b) else -1.0
-        )  # Expect PauliX to flip the state to |1> if either is True, else |0>
+        assert result == -1.0 if (a or b) else 1.0
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -126,9 +123,7 @@ class TestNot:
             return qml.expval(qml.PauliZ(0))
 
         result = circuit(x=a)
-        assert (
-            result == -1.0 if a else 1.0
-        )  # Expect PauliX to flip the state to |1> if x is False, else |0>
+        assert result == -1.0 if (not a) else 1.0
 
 
 # pylint: disable=too-few-public-methods
