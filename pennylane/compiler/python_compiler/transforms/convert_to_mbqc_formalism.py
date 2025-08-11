@@ -244,14 +244,6 @@ class ConvertToMBQCFormalismPattern(
         Returns:
             The results include: 1. a measurement result; 2, a result qubit.
         """
-        # Create a const op, which hold the integer `1`.
-        constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
-        # Insert the const op into the IR
-        rewriter.insert_op(constant_one_op, InsertPoint.before(insert_before))
-        # Create a CmpiOp object which compares a measurement result with the const one object
-        cmp_op = arith.CmpiOp(meas_parity, constant_one_op, "eq")
-        # Insert the newly created CmpiOp object into the IR
-        rewriter.insert_op(cmp_op, InsertPoint.before(insert_before))
 
         plane_op = MeasurementPlaneAttr(MeasurementPlaneEnum(plane))
 
@@ -280,7 +272,7 @@ class ConvertToMBQCFormalismPattern(
 
         # Create a If control flow Op
         cond_op = IfOp(
-            cmp_op,
+            meas_parity,
             (builtin.IntegerType(1), QubitType()),
             true_region,
             false_region,
