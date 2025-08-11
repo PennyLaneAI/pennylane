@@ -53,7 +53,6 @@ Pending deprecations
 
   Instead of computing the Suzuki-Trotter product approximation as:
 
-  ```pycon
   >>> qml.evolve(H_flat, num_steps=2).decomposition()
   [RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1]),
@@ -68,7 +67,6 @@ Pending deprecations
   PauliRot(-0.6, XY, wires=[0, 1]),
   RX(0.5, wires=[0]),
   PauliRot(-0.6, XY, wires=[0, 1])]
-  ```
   
   - Deprecated in v0.43
   - Will be removed in a future version
