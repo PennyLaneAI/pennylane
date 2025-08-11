@@ -71,8 +71,8 @@ class TransformFunctionsExt(TransformFunctions):
             pass_instance = pass_class()
             pipeline = PassPipeline((pass_instance,))
             if self.callback:
-                # TODO: decide how this should be handled
-                self.callback(pass_instance, args[0], self.level)
+                if self.level == 0:
+                    self.callback(pass_instance, args[0], self.level)
                 pipeline.apply(self.ctx, args[0])
                 self.level += 1
                 self.callback(pass_instance, args[0], self.level)

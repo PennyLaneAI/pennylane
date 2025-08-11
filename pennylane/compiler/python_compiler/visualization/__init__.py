@@ -15,7 +15,6 @@
 Visualization functions for PennyLane-xDSL transformations.
 """
 
-# TODO: We should probably only expose the public API of the drawer.
 
 from .collector import QMLCollector
 from .draw import draw
