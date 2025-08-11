@@ -522,6 +522,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Simplifying operators raised to integer powers no longer causes recursion errors.
+  [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
+
 * Fixes the GPU selection issue in `qml.math` with PyTorch when multiple GPUs are present.
   [(#8008)](https://github.com/PennyLaneAI/pennylane/pull/8008)
 
