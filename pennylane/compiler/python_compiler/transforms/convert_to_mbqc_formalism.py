@@ -177,21 +177,20 @@ class ConvertToMBQCFormalismPattern(
 
         return graph_qubits_dict
 
-    def _insert_arbitary_basis_measure_op(
+    def _insert_arbitrary_basis_measure_op(
         self,
         angle: float,
         plane: str,
         qubit: QubitType,
-        op: CustomOp,
+        insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
-        """Insert an arbitary basis measure related operations to the IR.
+        """Insert an arbitrary basis measure related operations to the IR.
         Args:
             angle (float) : Angle of the measurement basis.
             plane (str): Plane of the measurement basis.
             qubit (QubitType) : The target qubit to be measured.
-            op (CustomOp) : A `CustomOp` object. Note that op here is a quantum.customop object
-                 instead of a qml.ops.
+            insert_before (CustomOp) : A `CustomOp` object to be used as the insertion point for the `measure` op.
             rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
 
         Returns:
@@ -202,24 +201,24 @@ class ConvertToMBQCFormalismPattern(
         # Create a constant op from a float64 variable
         constAngleOp = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
         # Insert the constant op into the IR
-        rewriter.insert_op(constAngleOp, InsertPoint.before(op))
+        rewriter.insert_op(constAngleOp, InsertPoint.before(insert_before))
         # Create a MeasureInBasisOp op
         measureOp = MeasureInBasisOp(in_qubit=in_qubit, plane=planeOp, angle=constAngleOp)
         # Insert the newly created measureOp into the IR
-        rewriter.insert_op(measureOp, InsertPoint.before(op))
+        rewriter.insert_op(measureOp, InsertPoint.before(insert_before))
         # Returns the results of the newly created measureOp.
         # The results include: 1, a measurement result; 2, a result qubit.
         return measureOp.results
 
     def _measure_x_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert a X-basis measure op related operations to the IR."""
-        return self._insert_arbitary_basis_measure_op(0.0, "XY", qubit, op, rewriter)
+        return self._insert_arbitrary_basis_measure_op(0.0, "XY", qubit, op, rewriter)
 
     def _measure_y_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert a Y-basis measure op related operations to the IR."""
-        return self._insert_arbitary_basis_measure_op(math.pi / 2, "XY", qubit, op, rewriter)
+        return self._insert_arbitrary_basis_measure_op(math.pi / 2, "XY", qubit, op, rewriter)
 
-    def _cond_insert_arbitary_basis_measure_op(
+    def _cond_insert_arbitrary_basis_measure_op(
         self,
         prev_mres: builtin.IntegerType,
         angle: SSAValue[builtin.Float64Type],
@@ -229,11 +228,11 @@ class ConvertToMBQCFormalismPattern(
         rewriter: pattern_rewriter.PatternRewriter,
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         """
-        Insert a conditional arbitary basis measurement operation based on a previous measurement result.
+        Insert a conditional arbitrary basis measurement operation based on a previous measurement result.
         Args:
             pre_mres (builtin.IntegerType) : A previous measurement result.
             angle (SSAValue[builtin.Float64Type]) : An angle SSAValue from a parametric gate operation. Note that
-                `_insert_arbitary_basis_measure_op` accepts a float object instead.
+                `_insert_arbitrary_basis_measure_op` accepts a float object instead.
             plane (str): Plane of the measurement basis.
             qubit (QubitType) : The target qubit to be measured.
             op (CustomOp) : A `CustomOp` object.
@@ -246,7 +245,7 @@ class ConvertToMBQCFormalismPattern(
         constantOneOp = arith.ConstantOp.from_int_and_width(1, builtin.i1)
         # Insert the const op into the IR
         rewriter.insert_op(constantOneOp, InsertPoint.before(op))
-        # Crate a CmpiOp object which compares a measurement result with the const one object
+        # Create a CmpiOp object which compares a measurement result with the const one object
         cmpOp = arith.CmpiOp(prev_mres, constantOneOp, "eq")
         # Insert the newly created CmpiOp object into the IR
         rewriter.insert_op(cmpOp, InsertPoint.before(op))
@@ -330,7 +329,7 @@ class ConvertToMBQCFormalismPattern(
         """Insert measurement ops for a RZ gate and return measurement results and the result graph qubits"""
         m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
         m2, graph_qubits_dict[2] = self._measure_x_op(graph_qubits_dict[2], op, rewriter)
-        m3, graph_qubits_dict[3] = self._cond_insert_arbitary_basis_measure_op(
+        m3, graph_qubits_dict[3] = self._cond_insert_arbitrary_basis_measure_op(
             m2, op.params[0], "XY", graph_qubits_dict[3], op, rewriter
         )
         m4, graph_qubits_dict[4] = self._measure_x_op(graph_qubits_dict[4], op, rewriter)
@@ -341,17 +340,17 @@ class ConvertToMBQCFormalismPattern(
     ):
         """Insert measurement ops for a RotXZX gate and return measurement results and the result graph qubits"""
         m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
-        m2, graph_qubits_dict[2] = self._cond_insert_arbitary_basis_measure_op(
+        m2, graph_qubits_dict[2] = self._cond_insert_arbitrary_basis_measure_op(
             m1, op.params[0], "XY", graph_qubits_dict[2], op, rewriter
         )
-        m3, graph_qubits_dict[3] = self._cond_insert_arbitary_basis_measure_op(
+        m3, graph_qubits_dict[3] = self._cond_insert_arbitrary_basis_measure_op(
             m2, op.params[1], "XY", graph_qubits_dict[3], op, rewriter
         )
 
         m1_xor_m3 = arith.XOrIOp(m1, m3)
         rewriter.insert_op(m1_xor_m3, InsertPoint.before(op))
 
-        m4, graph_qubits_dict[4] = self._cond_insert_arbitary_basis_measure_op(
+        m4, graph_qubits_dict[4] = self._cond_insert_arbitrary_basis_measure_op(
             m1_xor_m3.result, op.params[2], "XY", graph_qubits_dict[4], op, rewriter
         )
         return [m1, m2, m3, m4], graph_qubits_dict
@@ -434,7 +433,7 @@ class ConvertToMBQCFormalismPattern(
         """Insert parity check related operations to the IR.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
-            op (CustomOp) : A gate operatio object.
+            op (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
             add_const_one (bool) : Whether we need to add a const one to get the parity or not. Defaults to False.
 
