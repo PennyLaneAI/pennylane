@@ -64,7 +64,7 @@ class TestDecomposition:
         "n_wires, imprimitive", [(2, qml_ops.CNOT), (3, qml_ops.CZ), (4, qml_ops.CY)]
     )
     @pytest.mark.capture
-    def test_decomposition_new(
+    def test_decomposition_new_capture(
         self, n_wires, imprimitive, batch_dim
     ):  # pylint: disable=unused-argument
         """Tests the decomposition rule implemented with the new system."""

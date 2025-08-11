@@ -210,7 +210,7 @@ def test_expand(wires):
 
 
 @pytest.mark.capture
-def test_decomposition_new():
+def test_decomposition_new_capture():
     """Tests the decomposition rule implemented with the new system."""
     op = qml.GroverOperator(wires=(0, 1, 2))
 

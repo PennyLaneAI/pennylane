@@ -134,7 +134,7 @@ class TestGQSP:
             qml.assert_equal(op1, op2)
 
     @pytest.mark.capture
-    def test_decomposition_new(self):
+    def test_decomposition_new_capture(self):
         """Tests the decomposition rule implemented with the new system."""
         angles = np.array([[1, 2], [3, 4], [5, 6]])
         op = qml.GQSP(qml.Z(1), angles, control=0)
