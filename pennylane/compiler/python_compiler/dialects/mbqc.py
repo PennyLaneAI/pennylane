@@ -119,6 +119,8 @@ class MeasureInBasisOp(IRDLOperation):
 class GraphStatePrepOp(IRDLOperation):
     """Allocate resources for a new graph state."""
 
+    # pylint: disable=too-few-public-methods
+
     name = "mbqc.graph_state_prep"
 
     assembly_format = """
