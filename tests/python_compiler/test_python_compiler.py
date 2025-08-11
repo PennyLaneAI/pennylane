@@ -28,6 +28,7 @@ xdsl = pytest.importorskip("xdsl")
 
 from catalyst import CompileError
 from catalyst.passes import apply_pass
+from catalyst.passes import cancel_inverses as catalyst_cancel_inverses
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl import passes
 from xdsl.context import Context
@@ -242,6 +243,51 @@ def test_integration_catalyst_no_capture(capsys):
     @qml.qnode(qml.device("lightning.qubit", wires=2))
     def f(x):
         qml.RX(x, 0)
+        return qml.expval(qml.Z(0))
+
+    out = f(1.5)
+    assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "hello world"
+
+
+@pytest.mark.capture
+def test_integration_catalyst_mixed_passes_with_capture(capsys):
+    """Test that both Catalyst and Python compiler passes can be used with qjit
+    when capture is enabled."""
+
+    assert capture_enabled()
+
+    @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+    @_HelloWorld
+    @qml.transforms.cancel_inverses
+    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    def f(x):
+        qml.RX(x, 0)
+        qml.X(0)
+        qml.X(0)
+        return qml.expval(qml.Z(0))
+
+    out = f(1.5)
+    assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "hello world"
+
+
+def test_integration_catalyst_mixed_passes_no_capture(capsys):
+    """Test that both Catalyst and Python compiler passes can be used with qjit
+    when capture is disabled."""
+
+    assert not capture_enabled()
+
+    @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+    @apply_pass("hello-world")
+    @catalyst_cancel_inverses
+    @qml.qnode(qml.device("lightning.qubit", wires=2))
+    def f(x):
+        qml.RX(x, 0)
+        qml.X(0)
+        qml.X(0)
         return qml.expval(qml.Z(0))
 
     out = f(1.5)
