@@ -19,7 +19,7 @@ from warnings import warn
 
 import pennylane as qml
 from pennylane import math
-from pennylane.exceptions import GeneratorUndefinedError, PennyLaneDeprecationWarning
+from pennylane.exceptions import GeneratorUndefinedError
 
 from .exp import Exp
 
@@ -42,7 +42,7 @@ class Evolution(Exp):
 
     .. warning::
 
-        Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version.
+        Providing ``num_steps`` to ``Evolution`` is deprecated and will be removed in a future release.
         Instead, use :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the
         Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.
 
@@ -107,13 +107,6 @@ class Evolution(Exp):
     num_params = 1
 
     def __init__(self, generator, param=1, num_steps=None, id=None):
-        if num_steps is not None:
-            warn(
-                "Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated and will be removed in a future version. "
-                "Instead, use ``qml.TrotterProduct`` for approximate methods, providing the ``n`` parameter to perform the "
-                "Suzuki-Trotter product approximation of a Hamiltonian with the specified number of Trotter steps.",
-                PennyLaneDeprecationWarning,
-            )
         super().__init__(generator, coeff=-1j * param, num_steps=num_steps, id=id)
         self._data = (param,)
 
