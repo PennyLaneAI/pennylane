@@ -69,12 +69,14 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             qml.T(1)
             return qml.state()
 
-    ```pycon
-    >>> print(qml.draw(circuit)())
-    0: ──S†─╭Z─╭●─╭●─┤  State
-    1: ──S──╰●─│──╰X─┤  State
-    2: ────────╰X────┤  State
-    ```
+
+    .. code-block:: pycon
+
+        >>> print(qml.draw(circuit)())
+        0: ──S†─╭Z─╭●─╭●─┤  State
+        1: ──S──╰●─│──╰X─┤  State
+        2: ────────╰X────┤  State
+
     """
 
     if not has_pyzx:  # pragma: no cover
