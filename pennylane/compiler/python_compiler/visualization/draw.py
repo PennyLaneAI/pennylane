@@ -14,11 +14,20 @@
 
 from functools import wraps
 
+from catalyst import qjit
+from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
+
 from pennylane.tape import QuantumScript
 from pennylane.typing import Callable
 
 from ..transforms.api.apply_transform_sequence import register_callback
 from .collector import QMLCollector
+
+
+def catalyst_qjit(qnode):
+    """A method checking whether a qnode is compiled by catalyst.qjit"""
+    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
+
 
 # TODO: This caching mechanism should be improved,
 # because now it relies on a mutable global state
@@ -29,6 +38,9 @@ def draw(qnode, *, level: None | int = None):
     "Draw the quantum circuit at the specified level."
 
     cache: dict[int, tuple[str, str]] = _cache_store.setdefault(qnode, {})
+
+    if catalyst_qjit(qnode):
+        qnode = qnode.original_function
 
     def draw_callback(pass_instance, module, pass_level):
         collector = QMLCollector(module)
@@ -41,9 +53,7 @@ def draw(qnode, *, level: None | int = None):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         register_callback(draw_callback)
-        # TODO: this currently does not work if the QNode has no argument, because
-        # `qjit` applies all transformations before reaching this point in that case
-        qnode(*args, **kwargs)
+        qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(qnode)
 
         if level is not None:
             if level in cache:
