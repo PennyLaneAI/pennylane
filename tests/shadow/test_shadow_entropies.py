@@ -76,7 +76,6 @@ class TestShadowEntropies:
         dev_exact = qml.device("default.qubit", wires=range(n_wires))
         dev = qml.device("default.qubit", wires=range(n_wires))
 
-        @qml.set_shots(None)
         @qml.qnode(dev_exact)
         def qnode_exact(x):
             for i in range(n_wires):

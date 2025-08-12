@@ -389,7 +389,6 @@ class TestValidation:
         differentiation method is not parameter-shift."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.set_shots(None)
         @qnode(dev, diff_method="backprop")
         def circuit(param):
             qml.RX(param, wires=0)
@@ -1987,7 +1986,6 @@ class TestTapeExpansion:
 
         assert len(H.grouping_indices) == 2
 
-        @qml.set_shots(None)
         @qnode(dev)
         def circuit():
             return qml.expval(H)
