@@ -16,7 +16,7 @@ This module contains the ``TransformProgram`` class.
 """
 from collections.abc import Sequence
 from functools import partial
-from typing import overload
+from typing import Optional, Union, overload
 
 from pennylane.exceptions import TransformError
 from pennylane.tape import QuantumScriptBatch
@@ -29,7 +29,7 @@ from .transform_dispatcher import TransformContainer, TransformDispatcher
 def _batch_postprocessing(
     results: ResultBatch,
     individual_fns: list[PostprocessingFn],
-    slices: list[slice] | list[int],
+    slices: Union[list[slice], list[int]],
 ) -> ResultBatch:
     """Broadcast individual post processing functions onto their respective tapes.
 
@@ -159,8 +159,8 @@ class TransformProgram:
 
     def __init__(
         self,
-        initial_program: Sequence[TransformContainer] | None = None,
-        cotransform_cache: CotransformCache | None = None,
+        initial_program: Optional[Sequence[TransformContainer]] = None,
+        cotransform_cache: Optional[CotransformCache] = None,
     ):
         self._transform_program = list(initial_program) if initial_program else []
         self.cotransform_cache = cotransform_cache

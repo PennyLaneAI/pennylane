@@ -21,12 +21,12 @@ on:
         description: The version of JAX to use for testing along with Catalyst
         required: false
         type: string
-        default: '0.6.2'
+        default: '0.6.0'
       tensorflow_version:
         description: The version of TensorFlow to use for testing
         required: false
         type: string
-        default: '2.19.0'
+        default: '2.18.0'
       torch_version:
         description: The version of PyTorch to use for testing
         required: false

@@ -222,20 +222,7 @@ eig_h2o.append([-0.67873019, -0.45673019, -0.45673019])
     ),
     [
         (h2, x_h2, 0, None, None, "jordan_wigner", coeffs_h2, ops_h2),
-        pytest.param(
-            h2,
-            x_h2,
-            0,
-            None,
-            None,
-            "parity",
-            coeffs_h2_parity,
-            ops_h2_parity,
-            marks=pytest.mark.xfail(
-                reason="OpenFermion backend is not yet compatible with numpy==2.3.1. See issue https://github.com/quantumlib/OpenFermion/issues/1097 for more details.",
-                strict=True,
-            ),
-        ),
+        (h2, x_h2, 0, None, None, "parity", coeffs_h2_parity, ops_h2_parity),
         (h3p, x_h3p, 1, None, None, "jordan_wigner", coeffs_h3p, ops_h3p),
         (h2o, x_h2o, 0, 2, 2, "bravyi_kitaev", coeffs_h2o, ops_h2o),
     ],

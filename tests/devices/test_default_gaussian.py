@@ -712,7 +712,7 @@ class TestSample:
 
     @pytest.mark.parametrize(
         "observable",
-        sorted(set(qml.ops.cv.__obs__) - {"QuadP", "QuadX", "QuadOperator"}),
+        sorted(set(qml.ops.cv.__obs__) - set(["QuadP", "QuadX", "QuadOperator"])),
     )
     def test_sample_error_unsupported_observable(self, gaussian_device_2_wires, observable):
         """Test that the sample function raises an error if the given observable is not supported"""

@@ -14,7 +14,7 @@
 """Contains an DatasetAttribute that allows for heterogeneous tuples of dataset
 types."""
 
-from typing import Generic
+from typing import Generic, Type
 
 from pennylane.data.base.attribute import DatasetAttribute
 from pennylane.data.base.hdf5 import HDF5Group
@@ -31,7 +31,7 @@ class DatasetTuple(
     type_id = "tuple"
 
     @classmethod
-    def consumes_types(cls) -> tuple[type[tuple]]:
+    def consumes_types(cls) -> tuple[Type[tuple]]:
         return (tuple,)
 
     @classmethod

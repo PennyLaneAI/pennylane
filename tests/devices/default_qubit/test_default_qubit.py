@@ -932,49 +932,51 @@ class TestSumOfTermsDifferentiability:
 
 
 @pytest.mark.parametrize("max_workers", max_workers_list)
-@pytest.mark.parametrize("config", (None, ExecutionConfig(gradient_method="adjoint")))
 class TestAdjointDifferentiation:
     """Tests adjoint differentiation integration with DefaultQubit."""
 
-    def test_derivatives_single_circuit(self, max_workers, config):
+    ec = ExecutionConfig(gradient_method="adjoint")
+
+    def test_derivatives_single_circuit(self, max_workers):
         """Tests derivatives with a single circuit."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
+        config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
         expected_grad = -qml.math.sin(x)
-        actual_grad = dev.compute_derivatives(qs, config)
+        actual_grad = dev.compute_derivatives(qs, self.ec)
         assert isinstance(actual_grad, np.ndarray)
         assert actual_grad.shape == ()  # pylint: disable=no-member
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qml.math.cos(x)
-        actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, config)
+        actual_val, actual_grad = dev.execute_and_compute_derivatives(qs, self.ec)
         assert np.isclose(actual_val, expected_val)
         assert np.isclose(actual_grad, expected_grad)
 
-    def test_derivatives_list_with_single_circuit(self, max_workers, config):
+    def test_derivatives_list_with_single_circuit(self, max_workers):
         """Tests a basic example with a batch containing a single circuit."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
-
+        config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
         expected_grad = -qml.math.sin(x)
-        actual_grad = dev.compute_derivatives([qs], config)
+        actual_grad = dev.compute_derivatives([qs], self.ec)
         assert isinstance(actual_grad, tuple)
         assert isinstance(actual_grad[0], np.ndarray)
         assert np.isclose(actual_grad[0], expected_grad)
 
         expected_val = qml.math.cos(x)
-        actual_val, actual_grad = dev.execute_and_compute_derivatives([qs], config)
+        actual_val, actual_grad = dev.execute_and_compute_derivatives([qs], self.ec)
         assert np.isclose(expected_val, actual_val[0])
         assert np.isclose(expected_grad, actual_grad[0])
 
-    def test_derivatives_many_tapes_many_results(self, max_workers, config):
+    def test_derivatives_many_tapes_many_results(self, max_workers):
         """Tests a basic example with a batch of circuits of varying return shapes."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
@@ -983,12 +985,12 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
         expected_grad = (-qml.math.sin(x), (qml.math.cos(x), -qml.math.sin(x)))
-        actual_grad = dev.compute_derivatives([single_meas, multi_meas], config)
+        actual_grad = dev.compute_derivatives([single_meas, multi_meas], self.ec)
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert isinstance(actual_grad[1], tuple)
         assert qml.math.allclose(actual_grad[1], expected_grad[1])
 
-    def test_derivatives_integration(self, max_workers, config):
+    def test_derivatives_integration(self, max_workers):
         """Tests the expected workflow done by a calling method."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
@@ -998,19 +1000,18 @@ class TestAdjointDifferentiation:
             [qml.RY(x, 0)], [qml.expval(qml.PauliX(0)), qml.expval(qml.PauliZ(0))]
         )
 
-        program, new_ec = dev.preprocess(config)
+        program, new_ec = dev.preprocess(self.ec)
         circuits, _ = program([single_meas, multi_meas])
-        actual_grad = dev.compute_derivatives(circuits, new_ec)
+        actual_grad = dev.compute_derivatives(circuits, self.ec)
 
-        if config and config.gradient_method == "adjoint":
-            assert new_ec.use_device_gradient
-            assert new_ec.grad_on_execution
+        assert new_ec.use_device_gradient
+        assert new_ec.grad_on_execution
 
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert isinstance(actual_grad[1], tuple)
         assert qml.math.allclose(actual_grad[1], expected_grad[1])
 
-    def test_jvps_single_circuit(self, max_workers, config):
+    def test_jvps_single_circuit(self, max_workers):
         """Tests jvps with a single circuit."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
@@ -1018,21 +1019,22 @@ class TestAdjointDifferentiation:
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
+        config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * tangent[0]
-        actual_grad = dev.compute_jvp(qs, tangent, config)
+        actual_grad = dev.compute_jvp(qs, tangent, self.ec)
         assert isinstance(actual_grad, np.ndarray)
         assert actual_grad.shape == ()  # pylint: disable=no-member
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qml.math.cos(x)
-        actual_val, actual_grad = dev.execute_and_compute_jvp(qs, tangent, config)
+        actual_val, actual_grad = dev.execute_and_compute_jvp(qs, tangent, self.ec)
         assert np.isclose(actual_val, expected_val)
         assert np.isclose(actual_grad, expected_grad)
 
-    def test_jvps_list_with_single_circuit(self, max_workers, config):
+    def test_jvps_list_with_single_circuit(self, max_workers):
         """Tests a basic example with a batch containing a single circuit."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
@@ -1040,21 +1042,22 @@ class TestAdjointDifferentiation:
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
+        config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * tangent[0]
-        actual_grad = dev.compute_jvp([qs], [tangent], config)
+        actual_grad = dev.compute_jvp([qs], [tangent], self.ec)
         assert isinstance(actual_grad, tuple)
         assert isinstance(actual_grad[0], np.ndarray)
         assert np.isclose(actual_grad[0], expected_grad)
 
         expected_val = qml.math.cos(x)
-        actual_val, actual_grad = dev.execute_and_compute_jvp([qs], [tangent], config)
+        actual_val, actual_grad = dev.execute_and_compute_jvp([qs], [tangent], self.ec)
         assert np.isclose(expected_val, actual_val[0])
         assert np.isclose(expected_grad, actual_grad[0])
 
-    def test_jvps_many_tapes_many_results(self, max_workers, config):
+    def test_jvps_many_tapes_many_results(self, max_workers):
         """Tests a basic example with a batch of circuits of varying return shapes."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
@@ -1068,21 +1071,21 @@ class TestAdjointDifferentiation:
             -qml.math.sin(x) * tangents[0][0],
             (qml.math.cos(x) * tangents[1][0], -qml.math.sin(x) * tangents[1][0]),
         )
-        actual_grad = dev.compute_jvp([single_meas, multi_meas], tangents, config)
+        actual_grad = dev.compute_jvp([single_meas, multi_meas], tangents, self.ec)
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert isinstance(actual_grad[1], tuple)
         assert qml.math.allclose(actual_grad[1], expected_grad[1])
 
         expected_val = (qml.math.cos(x), (qml.math.sin(x), qml.math.cos(x)))
         actual_val, actual_grad = dev.execute_and_compute_jvp(
-            [single_meas, multi_meas], tangents, config
+            [single_meas, multi_meas], tangents, self.ec
         )
         assert np.isclose(actual_val[0], expected_val[0])
         assert qml.math.allclose(actual_val[1], expected_val[1])
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert qml.math.allclose(actual_grad[1], expected_grad[1])
 
-    def test_jvps_integration(self, max_workers, config):
+    def test_jvps_integration(self, max_workers):
         """Tests the expected workflow done by a calling method."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
@@ -1093,62 +1096,63 @@ class TestAdjointDifferentiation:
         )
         tangents = [(0.456,), (0.789,)]
         circuits = [single_meas, multi_meas]
-        program, new_ec = dev.preprocess(config)
+        program, new_ec = dev.preprocess(self.ec)
         circuits, _ = program(circuits)
-        actual_grad = dev.compute_jvp(circuits, tangents, new_ec)
+        actual_grad = dev.compute_jvp(circuits, tangents, self.ec)
         expected_grad = (
             -qml.math.sin(x) * tangents[0][0],
             (qml.math.cos(x) * tangents[1][0], -qml.math.sin(x) * tangents[1][0]),
         )
 
-        if config and config.gradient_method == "adjoint":
-            assert new_ec.use_device_gradient
-            assert new_ec.grad_on_execution
+        assert new_ec.use_device_gradient
+        assert new_ec.grad_on_execution
 
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert isinstance(actual_grad[1], tuple)
         assert qml.math.allclose(actual_grad[1], expected_grad[1])
 
-    def test_vjps_single_circuit(self, max_workers, config):
+    def test_vjps_single_circuit(self, max_workers):
         """Tests vjps with a single circuit."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         cotangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
-        actual_grad = dev.compute_vjp(qs, cotangent, config)
+        actual_grad = dev.compute_vjp(qs, cotangent, self.ec)
         assert np.isclose(actual_grad, expected_grad)
 
         expected_val = qml.math.cos(x)
-        actual_val, actual_grad = dev.execute_and_compute_vjp(qs, cotangent, config)
+        actual_val, actual_grad = dev.execute_and_compute_vjp(qs, cotangent, self.ec)
         assert np.isclose(actual_val, expected_val)
         assert np.isclose(actual_grad, expected_grad)
 
-    def test_vjps_list_with_single_circuit(self, max_workers, config):
+    def test_vjps_list_with_single_circuit(self, max_workers):
         """Tests a basic example with a batch containing a single circuit."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
         cotangent = (0.456,)
 
         qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
+        config = ExecutionConfig(gradient_method="adjoint")
         batch, _ = dev.preprocess_transforms(config)((qs,))
         qs = batch[0]
 
         expected_grad = -qml.math.sin(x) * cotangent[0]
-        actual_grad = dev.compute_vjp([qs], [cotangent], config)
+        actual_grad = dev.compute_vjp([qs], [cotangent], self.ec)
         assert isinstance(actual_grad, tuple)
         assert np.isclose(actual_grad[0], expected_grad)
 
         expected_val = qml.math.cos(x)
-        actual_val, actual_grad = dev.execute_and_compute_vjp([qs], [cotangent], config)
+        actual_val, actual_grad = dev.execute_and_compute_vjp([qs], [cotangent], self.ec)
         assert np.isclose(expected_val, actual_val[0])
         assert np.isclose(expected_grad, actual_grad[0])
 
-    def test_vjps_many_tapes_many_results(self, max_workers, config):
+    def test_vjps_many_tapes_many_results(self, max_workers):
         """Tests a basic example with a batch of circuits of varying return shapes."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
@@ -1162,20 +1166,20 @@ class TestAdjointDifferentiation:
             -qml.math.sin(x) * cotangents[0][0],
             qml.math.cos(x) * cotangents[1][0] - qml.math.sin(x) * cotangents[1][1],
         )
-        actual_grad = dev.compute_vjp([single_meas, multi_meas], cotangents, config)
+        actual_grad = dev.compute_vjp([single_meas, multi_meas], cotangents, self.ec)
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert np.isclose(actual_grad[1], expected_grad[1])
 
         expected_val = (qml.math.cos(x), (qml.math.sin(x), qml.math.cos(x)))
         actual_val, actual_grad = dev.execute_and_compute_vjp(
-            [single_meas, multi_meas], cotangents, config
+            [single_meas, multi_meas], cotangents, self.ec
         )
         assert np.isclose(actual_val[0], expected_val[0])
         assert qml.math.allclose(actual_val[1], expected_val[1])
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert np.isclose(actual_grad[1], expected_grad[1])
 
-    def test_vjps_integration(self, max_workers, config):
+    def test_vjps_integration(self, max_workers):
         """Tests the expected workflow done by a calling method."""
         dev = DefaultQubit(max_workers=max_workers)
         x = np.array(np.pi / 7)
@@ -1186,18 +1190,17 @@ class TestAdjointDifferentiation:
         )
         cotangents = [(0.456,), (0.789, 0.123)]
         circuits = [single_meas, multi_meas]
-        program, new_ec = dev.preprocess(config)
+        program, new_ec = dev.preprocess(self.ec)
         circuits, _ = program(circuits)
 
-        actual_grad = dev.compute_vjp(circuits, cotangents, new_ec)
+        actual_grad = dev.compute_vjp(circuits, cotangents, self.ec)
         expected_grad = (
             -qml.math.sin(x) * cotangents[0][0],
             qml.math.cos(x) * cotangents[1][0] - qml.math.sin(x) * cotangents[1][1],
         )
 
-        if config and config.gradient_method == "adjoint":
-            assert new_ec.use_device_gradient
-            assert new_ec.grad_on_execution
+        assert new_ec.use_device_gradient
+        assert new_ec.grad_on_execution
 
         assert np.isclose(actual_grad[0], expected_grad[0])
         assert np.isclose(actual_grad[1], expected_grad[1])
@@ -1802,16 +1805,8 @@ def test_projector_dynamic_type(max_workers, n_wires):
         assert np.isclose(res, 1 / 2**n_wires)
 
 
-@pytest.mark.parametrize(
-    "interface",
-    [
-        "numpy",
-        pytest.param("autograd", marks=pytest.mark.autograd),
-        pytest.param("torch", marks=pytest.mark.torch),
-        pytest.param("jax", marks=pytest.mark.jax),
-        pytest.param("tensorflow", marks=pytest.mark.tf),
-    ],
-)
+@pytest.mark.all_interfaces
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "jax", "tensorflow"])
 @pytest.mark.parametrize("use_jit", [True, False])
 class TestPostselection:
     """Various integration tests for postselection of mid-circuit measurements."""
@@ -1891,7 +1886,6 @@ class TestPostselection:
         dev = qml.device("default.qubit", seed=seed)
         param = qml.math.asarray(param, like=interface)
 
-        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev, interface=interface)
         def circ_postselect(theta):
@@ -1900,7 +1894,6 @@ class TestPostselection:
             qml.measure(0, postselect=1)
             return qml.apply(mp)
 
-        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev, interface=interface)
         def circ_expected():
@@ -1911,10 +1904,11 @@ class TestPostselection:
         if use_jit:
             import jax
 
-            circ_postselect = jax.jit(circ_postselect)
+            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
+            circ_postselect = jax.jit(circ_postselect, static_argnames=["shots"])
 
-        res = circ_postselect(param)
-        expected = circ_expected()
+        res = circ_postselect(param, shots=shots)
+        expected = circ_expected(shots=shots)
 
         if not isinstance(shots, tuple):
             assert qml.math.allclose(res, expected, atol=0.1, rtol=0)
@@ -1955,7 +1949,6 @@ class TestPostselection:
 
         with mock.patch("numpy.random.binomial", lambda *args, **kwargs: 5):
 
-            @qml.set_shots(shots=shots)
             @qml.defer_measurements
             @qml.qnode(dev, interface=interface)
             def circ_postselect(theta):
@@ -1964,7 +1957,7 @@ class TestPostselection:
                 qml.measure(0, postselect=1)
                 return qml.apply(mp)
 
-            res = circ_postselect(param)
+            res = circ_postselect(param, shots=shots)
 
         if not isinstance(shots, tuple):
             assert qml.math.get_interface(res) == interface if interface != "autograd" else "numpy"
@@ -2088,7 +2081,6 @@ class TestPostselection:
 
         dev = qml.device("default.qubit")
 
-        @qml.set_shots(shots=shots)
         @qml.defer_measurements
         @qml.qnode(dev, interface=interface)
         def circ():
@@ -2098,13 +2090,12 @@ class TestPostselection:
             return qml.apply(mp)
 
         if use_jit:
-            pytest.xfail(
-                reason="defer measurements + hw-like does not work with JAX jit yet. See sc-96593 or #7981."
-            )
-            # import jax
-            # circ = jax.jit(circ)
+            import jax
 
-        res = circ()
+            pytest.xfail(reason="'shots' cannot be a static_argname for 'jit' in JAX 0.4.28")
+            circ = jax.jit(circ, static_argnames=["shots"])
+
+        res = circ(shots=shots)
 
         if not isinstance(shots, tuple):
             assert qml.math.shape(res) == expected_shape
@@ -2253,7 +2244,8 @@ def test_broadcasted_parameter(max_workers):
     x = np.array([0.536, 0.894])
     qs = qml.tape.QuantumScript([qml.RX(x, 0)], [qml.expval(qml.PauliZ(0))])
 
-    config = ExecutionConfig(gradient_method="adjoint")
+    config = ExecutionConfig()
+    config.gradient_method = "adjoint"
     program, config = dev.preprocess(config)
     batch, pre_processing_fn = program([qs])
     assert len(batch) == 2

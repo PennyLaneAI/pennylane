@@ -20,6 +20,7 @@ This module contains the qml.equal function.
 # pylint: disable=unused-argument
 from collections.abc import Iterable
 from functools import singledispatch
+from typing import Union
 
 import pennylane as qml
 from pennylane.measurements import MeasurementProcess
@@ -33,7 +34,7 @@ from pennylane.ops import Adjoint, CompositeOp, Conditional, Controlled, Exp, Po
 from pennylane.pauli import PauliSentence, PauliWord
 from pennylane.pulse.parametrized_evolution import ParametrizedEvolution
 from pennylane.tape import QuantumScript
-from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep, Select
+from pennylane.templates.subroutines import ControlledSequence, PrepSelPrep
 
 OPERANDS_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different operands because "
 
@@ -41,8 +42,8 @@ BASE_OPERATION_MISMATCH_ERROR_MESSAGE = "op1 and op2 have different base operati
 
 
 def equal(
-    op1: Operator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
-    op2: Operator | MeasurementProcess | QuantumScript | PauliWord | PauliSentence,
+    op1: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
+    op2: Union[Operator, MeasurementProcess, QuantumScript, PauliWord, PauliSentence],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -157,8 +158,8 @@ def equal(
 
 
 def assert_equal(
-    op1: Operator | MeasurementProcess | QuantumScript,
-    op2: Operator | MeasurementProcess | QuantumScript,
+    op1: Union[Operator, MeasurementProcess, QuantumScript],
+    op2: Union[Operator, MeasurementProcess, QuantumScript],
     check_interface=True,
     check_trainability=True,
     rtol=1e-5,
@@ -209,6 +210,8 @@ def assert_equal(
     )
     if isinstance(dispatch_result, str):
         raise AssertionError(dispatch_result)
+    if not dispatch_result:
+        raise AssertionError(f"{op1} and {op2} are not equal for an unspecified reason.")
 
 
 def _equal(
@@ -218,11 +221,11 @@ def _equal(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-) -> bool | str:
+) -> Union[bool, str]:
     if not isinstance(op2, type(op1)):
         return f"op1 and op2 are of different types.  Got {type(op1)} and {type(op2)}."
 
-    dispatch_result = _equal_dispatch(
+    return _equal_dispatch(
         op1,
         op2,
         check_interface=check_interface,
@@ -230,9 +233,6 @@ def _equal(
         atol=atol,
         rtol=rtol,
     )
-    if not dispatch_result:
-        return f"{op1} and {op2} are not equal for an unspecified reason."
-    return dispatch_result
 
 
 @singledispatch
@@ -243,7 +243,7 @@ def _equal_dispatch(
     check_trainability=True,
     rtol=1e-5,
     atol=1e-9,
-) -> bool | str:
+) -> Union[bool, str]:
     raise NotImplementedError(f"Comparison of {type(op1)} and {type(op2)} not implemented")
 
 
@@ -773,15 +773,14 @@ def _equal_hilbert_schmidt(
         "atol": atol,
         "rtol": rtol,
     }
-
-    U1 = qml.prod(*op1.hyperparameters["U"])
-    U2 = qml.prod(*op2.hyperparameters["U"])
-    if qml.equal(U1, U2, **equal_kwargs) is False:
+    # Check hyperparameters using qml.equal rather than == where necessary
+    if op1.hyperparameters["v_wires"] != op2.hyperparameters["v_wires"]:
         return False
-
-    V1 = qml.prod(*op1.hyperparameters["V"])
-    V2 = qml.prod(*op2.hyperparameters["V"])
-    if qml.equal(V1, V2, **equal_kwargs) is False:
+    if not qml.equal(op1.hyperparameters["u_tape"], op2.hyperparameters["u_tape"], **equal_kwargs):
+        return False
+    if not qml.equal(op1.hyperparameters["v_tape"], op2.hyperparameters["v_tape"], **equal_kwargs):
+        return False
+    if op1.hyperparameters["v_function"] != op2.hyperparameters["v_function"]:
         return False
 
     return True
@@ -796,22 +795,4 @@ def _equal_prep_sel_prep(op1: PrepSelPrep, op2: PrepSelPrep, **kwargs):
         return f"op1 and op2 have different wires. Got {op1.wires} and {op2.wires}."
     if not qml.equal(op1.lcu, op2.lcu):
         return f"op1 and op2 have different lcu. Got {op1.lcu} and {op2.lcu}"
-    return True
-
-
-@_equal_dispatch.register
-def _equal_select(op1: Select, op2: Select, **kwargs):
-    """Determine whether two Select are equal"""
-    if op1.control != op2.control:
-        return f"op1 and op2 have different control wires. Got {op1.control} and {op2.control}."
-    t1 = op1.hyperparameters["ops"]
-    t2 = op2.hyperparameters["ops"]
-    if len(t1) != len(t2):
-        return (
-            f"op1 and op2 have different number of target operators. Got {len(t1)} and {len(t2)}."
-        )
-    for idx, (_t1, _t2) in enumerate(zip(t1, t2)):
-        comparer = _equal(_t1, _t2, **kwargs)
-        if isinstance(comparer, str):
-            return f"got different operations at index {idx}: {_t1} and {_t2}. They differ because {comparer}."
     return True

@@ -22,6 +22,7 @@ import logging
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
+from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.devices.qubit_mixed import simulate
@@ -241,8 +242,8 @@ class DefaultMixed(Device):
     @debug_logger
     def supports_derivatives(
         self,
-        execution_config: ExecutionConfig | None = None,
-        circuit: QuantumScript | None = None,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -264,10 +265,8 @@ class DefaultMixed(Device):
     def execute(
         self,
         circuits: QuantumScript,
-        execution_config: ExecutionConfig | None = None,
-    ) -> Result | ResultBatch:
-        if execution_config is None:
-            execution_config = ExecutionConfig()
+        execution_config: Optional[ExecutionConfig] = None,
+    ) -> Union[Result, ResultBatch]:
         return tuple(
             simulate(
                 c,
@@ -299,7 +298,7 @@ class DefaultMixed(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
-        updated_values["interface"] = get_canonical_interface_name(execution_config.interface)
+        execution_config.interface = get_canonical_interface_name(execution_config.interface)
 
         # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy

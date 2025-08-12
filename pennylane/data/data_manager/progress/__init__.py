@@ -34,9 +34,9 @@ class Task:  # pylint: disable=too-few-public-methods
     def update(
         self,
         *,
-        completed: float | None = None,
-        advance: float | None = None,
-        total: float | None = None,
+        completed: Optional[float] = None,
+        advance: Optional[float] = None,
+        total: Optional[float] = None,
     ):
         """Update download state.
 
@@ -75,7 +75,7 @@ class Progress:
         """Exit progress context."""
         return self.progress.__exit__(*args)
 
-    def add_task(self, description: str, total: float | None = None) -> Task:
+    def add_task(self, description: str, total: Optional[float] = None) -> Task:
         """Add a task.
 
         Args:

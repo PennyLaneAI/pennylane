@@ -13,6 +13,7 @@
 # limitations under the License.
 """Cartan involutions"""
 from functools import singledispatch
+from typing import Optional, Union
 
 import numpy as np
 
@@ -78,7 +79,7 @@ def Kpq(p, q, wire=None):
     return np.diag(np.concatenate([np.ones(p), -np.ones(q), np.ones(p), -np.ones(q)]))
 
 
-def A(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bool:
+def A(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type A on
     :math:`\mathfrak{su}(n)\oplus \mathfrak{su}(n)`, given by
     :math:`\theta: x\oplus y \mapsto y\oplus x`.
@@ -102,7 +103,7 @@ def A(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> boo
     return DIII(op, wire)
 
 
-def AI(op: np.ndarray | PauliSentence | Operator) -> bool:
+def AI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
     r"""Canonical Cartan decomposition of type AI, given by :math:`\theta: x \mapsto x^\ast`.
 
     .. note:: Note that we work with Hermitian
@@ -160,7 +161,7 @@ def _AI_op(op: Operator) -> bool:
     return _AI_ps(op.pauli_rep)
 
 
-def AII(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bool:
+def AII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type AII, given by :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
 
     .. note:: Note that we work with Hermitian
@@ -189,7 +190,7 @@ def _AII(op, wire=None):
 
 
 @_AII.register(np.ndarray)
-def _AII_matrix(op: np.ndarray, wire: int | None = None) -> bool:
+def _AII_matrix(op: np.ndarray, wire: Optional[int] = None) -> bool:
     r"""Matrix implementation of the canonical form of the AII involution
     :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
     """
@@ -200,7 +201,7 @@ def _AII_matrix(op: np.ndarray, wire: int | None = None) -> bool:
 
 
 @_AII.register(PauliSentence)
-def _AII_ps(op: PauliSentence, wire: int | None = None) -> bool:
+def _AII_ps(op: PauliSentence, wire: Optional[int] = None) -> bool:
     r"""PauliSentence implementation of the canonical form of the AII involution
     :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
     """
@@ -217,7 +218,7 @@ def _AII_ps(op: PauliSentence, wire: int | None = None) -> bool:
 
 
 @_AII.register(Operator)
-def _AII_op(op: Operator, wire: int | None = None) -> bool:
+def _AII_op(op: Operator, wire: Optional[int] = None) -> bool:
     r"""Operator implementation of the canonical form of the AII involution
     :math:`\theta: x \mapsto Y_0 x^\ast Y_0`.
     """
@@ -225,10 +226,10 @@ def _AII_op(op: Operator, wire: int | None = None) -> bool:
 
 
 def AIII(
-    op: np.ndarray | PauliSentence | Operator,
+    op: Union[np.ndarray, PauliSentence, Operator],
     p: int = None,
     q: int = None,
-    wire: int | None = None,
+    wire: Optional[int] = None,
 ) -> bool:
     r"""Canonical Cartan decomposition of type AIII, given by :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
 
@@ -271,7 +272,7 @@ def _AIII(op, p=None, q=None, wire=None):
 
 
 @_AIII.register(np.ndarray)
-def _AIII_matrix(op: np.ndarray, p: int = None, q: int = None, wire: int | None = None) -> bool:
+def _AIII_matrix(op: np.ndarray, p: int = None, q: int = None, wire: Optional[int] = None) -> bool:
     r"""Matrix implementation of the canonical form of the AIII involution
     :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
     """
@@ -282,7 +283,7 @@ def _AIII_matrix(op: np.ndarray, p: int = None, q: int = None, wire: int | None 
 
 
 @_AIII.register(PauliSentence)
-def _AIII_ps(op: PauliSentence, p: int = None, q: int = None, wire: int | None = None) -> bool:
+def _AIII_ps(op: PauliSentence, p: int = None, q: int = None, wire: Optional[int] = None) -> bool:
     r"""PauliSentence implementation of the canonical form of the AIII involution
     :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
     """
@@ -301,14 +302,14 @@ def _AIII_ps(op: PauliSentence, p: int = None, q: int = None, wire: int | None =
 
 
 @_AIII.register(Operator)
-def _AIII_op(op: Operator, p: int = None, q: int = None, wire: int | None = None) -> bool:
+def _AIII_op(op: Operator, p: int = None, q: int = None, wire: Optional[int] = None) -> bool:
     r"""Operator implementation of the canonical form of the AIII involution
     :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
     """
     return _AIII_ps(op.pauli_rep, p, q, wire)
 
 
-def BD(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bool:
+def BD(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type BD on
     :math:`\mathfrak{so}(n)\oplus \mathfrak{so}(n)`, given by
     :math:`\theta: x\oplus y \mapsto y\oplus x`.
@@ -333,10 +334,10 @@ def BD(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bo
 
 
 def BDI(
-    op: np.ndarray | PauliSentence | Operator,
+    op: Union[np.ndarray, PauliSentence, Operator],
     p: int = None,
     q: int = None,
-    wire: int | None = None,
+    wire: Optional[int] = None,
 ) -> bool:
     r"""Canonical Cartan decomposition of type BDI, given by :math:`\theta: x \mapsto I_{p,q} x I_{p,q}`.
 
@@ -367,7 +368,7 @@ def BDI(
     return AIII(op, p, q, wire)
 
 
-def DIII(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bool:
+def DIII(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type DIII, given by :math:`\theta: x \mapsto Y_0 x Y_0`.
 
     Args:
@@ -392,7 +393,7 @@ def _DIII(op, wire=None):
 
 
 @_DIII.register(np.ndarray)
-def _DIII_matrix(op: np.ndarray, wire: int | None = None) -> bool:
+def _DIII_matrix(op: np.ndarray, wire: Optional[int] = None) -> bool:
     r"""Matrix implementation of the canonical form of the DIII involution
     :math:`\theta: x \mapsto Y_0 x Y_0`.
     """
@@ -401,7 +402,7 @@ def _DIII_matrix(op: np.ndarray, wire: int | None = None) -> bool:
 
 
 @_DIII.register(PauliSentence)
-def _DIII_ps(op: PauliSentence, wire: int | None = None) -> bool:
+def _DIII_ps(op: PauliSentence, wire: Optional[int] = None) -> bool:
     r"""PauliSentence implementation of the canonical form of the DIII involution
     :math:`\theta: x \mapsto Y_0 x Y_0`.
     """
@@ -415,14 +416,14 @@ def _DIII_ps(op: PauliSentence, wire: int | None = None) -> bool:
 
 
 @_DIII.register(Operator)
-def _DIII_op(op: Operator, wire: int | None = None) -> bool:
+def _DIII_op(op: Operator, wire: Optional[int] = None) -> bool:
     r"""Operator implementation of the canonical form of the DIII involution
     :math:`\theta: x \mapsto Y_0 x Y_0`.
     """
     return _DIII_ps(op.pauli_rep, wire)
 
 
-def C(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> bool:
+def C(op: Union[np.ndarray, PauliSentence, Operator], wire: Optional[int] = None) -> bool:
     r"""Canonical Cartan decomposition of type C on
     :math:`\mathfrak{sp}(n)\oplus \mathfrak{sp}(n)`, given by
     :math:`\theta: x\oplus y \mapsto y\oplus x`.
@@ -446,7 +447,7 @@ def C(op: np.ndarray | PauliSentence | Operator, wire: int | None = None) -> boo
     return DIII(op, wire)
 
 
-def CI(op: np.ndarray | PauliSentence | Operator) -> bool:
+def CI(op: Union[np.ndarray, PauliSentence, Operator]) -> bool:
     r"""Canonical Cartan decomposition of type CI, given by :math:`\theta: x \mapsto x^\ast`.
 
     .. note:: Note that we work with Hermitian
@@ -465,10 +466,10 @@ def CI(op: np.ndarray | PauliSentence | Operator) -> bool:
 
 
 def CII(
-    op: np.ndarray | PauliSentence | Operator,
+    op: Union[np.ndarray, PauliSentence, Operator],
     p: int = None,
     q: int = None,
-    wire: int | None = None,
+    wire: Optional[int] = None,
 ) -> bool:
     r"""Canonical Cartan decomposition of type CII, given by :math:`\theta: x \mapsto K_{p,q} x K_{p,q}`.
 
@@ -516,7 +517,7 @@ def _CII(op, p=None, q=None, wire=None):
 
 
 @_CII.register(np.ndarray)
-def _CII_matrix(op: np.ndarray, p: int = None, q: int = None, wire: int | None = None) -> bool:
+def _CII_matrix(op: np.ndarray, p: int = None, q: int = None, wire: Optional[int] = None) -> bool:
     r"""Matrix implementation of the canonical form of the CII involution
     :math:`\theta: x \mapsto K_{p,q} x K_{p,q}`.
     """
@@ -527,7 +528,7 @@ def _CII_matrix(op: np.ndarray, p: int = None, q: int = None, wire: int | None =
 
 
 @_CII.register(PauliSentence)
-def _CII_ps(op: PauliSentence, p: int = None, q: int = None, wire: int | None = None) -> bool:
+def _CII_ps(op: PauliSentence, p: int = None, q: int = None, wire: Optional[int] = None) -> bool:
     r"""PauliSentence implementation of the canonical form of the CII involution
     :math:`\theta: x \mapsto K_{p,q} x K_{p,q}`.
     """
@@ -546,14 +547,14 @@ def _CII_ps(op: PauliSentence, p: int = None, q: int = None, wire: int | None = 
 
 
 @_CII.register(Operator)
-def _CII_op(op: Operator, p: int = None, q: int = None, wire: int | None = None) -> bool:
+def _CII_op(op: Operator, p: int = None, q: int = None, wire: Optional[int] = None) -> bool:
     r"""Operator implementation of the canonical form of the CII involution
     :math:`\theta: x \mapsto K_{p,q} x K_{p,q}`.
     """
     return _CII_ps(op.pauli_rep, p, q, wire)
 
 
-def even_odd_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
+def even_odd_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
     r"""The Even-Odd involution.
 
     This is defined in `quant-ph/0701193 <https://arxiv.org/abs/quant-ph/0701193>`__.
@@ -629,7 +630,7 @@ def _even_odd_involution_op(op: Operator):
 
 
 # dispatch to different input types
-def concurrence_involution(op: PauliSentence | np.ndarray | Operator) -> bool:
+def concurrence_involution(op: Union[PauliSentence, np.ndarray, Operator]) -> bool:
     r"""The Concurrence Canonical Decomposition :math:`\Theta(g) = -g^T` as a Cartan
     involution function. It is of type AI.
 

@@ -29,6 +29,7 @@ The `_add_obj` function is automatically invoked by the text drawer when renderi
 # pylint: disable=unused-argument
 
 from functools import singledispatch
+from typing import Union
 
 from pennylane.measurements import (
     CountsMP,
@@ -180,7 +181,7 @@ def _add_op(obj: Operator, layer_str, config, tape_cache=None, skip_grouping_sym
 @_add_obj.register(Identity)
 @_add_obj.register(GlobalPhase)
 def _add_global_op(
-    obj: GlobalPhase | Identity,
+    obj: Union[GlobalPhase, Identity],
     layer_str,
     config,
     tape_cache=None,

@@ -15,11 +15,11 @@
 This submodule contains the discrete-variable quantum operations that do
 not depend on any parameters.
 """
-from collections.abc import Hashable, Sequence
+from collections.abc import Hashable
 
 # pylint: disable=arguments-differ
 from copy import copy
-from typing import Literal
+from typing import Literal, Optional, Sequence, Union
 
 import pennylane as qml
 from pennylane.operation import Operation
@@ -226,9 +226,9 @@ class Snapshot(Operation):
 
     def __init__(
         self,
-        tag: str | None = None,
+        tag: Optional[str] = None,
         measurement=None,
-        shots: Literal["workflow"] | None | int | Sequence[int] = "workflow",
+        shots: Union[Literal["workflow"], None, int, Sequence[int]] = "workflow",
     ):
         if tag and not isinstance(tag, str):
             raise ValueError("Snapshot tags can only be of type 'str'")

@@ -20,9 +20,10 @@ import os
 import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
+from typing import Optional, Type
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
+from pennylane.exceptions import DeviceError, QuantumFunctionError
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
@@ -30,6 +31,7 @@ from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
+from pennylane.wires import WireError
 
 from .execution_config import MCMConfig
 
@@ -45,10 +47,10 @@ def _operator_decomposition_gen(  # pylint: disable = too-many-positional-argume
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
-    max_expansion: int | None = None,
+    max_expansion: Optional[int] = None,
     current_depth=0,
     name: str = "device",
-    error: type[Exception] | None = None,
+    error: Optional[Type[Exception]] = None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     if error is None:
@@ -108,29 +110,8 @@ def no_sampling(
 
 
 @transform
-def no_analytic(
-    tape: QuantumScript, name: str = "device"
-) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Raises an error if the tape does not have finite shots.
-    Args:
-        tape (QuantumTape or .QNode or Callable): a quantum circuit
-        name (str): name to use in error message.
-    Returns:
-        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
-        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
-
-
-    This transform can be added to forbid analytic results. This is relevant for devices
-    that can only return samples and/or counts based results.
-    """
-    if not tape.shots:
-        raise DeviceError(f"Analytic execution is not supported with {name}")
-    return (tape,), null_postprocessing
-
-
-@transform
 def validate_device_wires(
-    tape: QuantumScript, wires: qml.wires.Wires | None = None, name: str = "device"
+    tape: QuantumScript, wires: Optional[qml.wires.Wires] = None, name: str = "device"
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Validates that all wires present in the tape are in the set of provided wires. Adds the
     device wires to measurement processes like :class:`~.measurements.StateMP` that are broadcasted
@@ -321,11 +302,11 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     stopping_condition: Callable[[qml.operation.Operator], bool],
     stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
     skip_initial_state_prep: bool = True,
-    decomposer: None | (
+    decomposer: Optional[
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
-    ) = None,
+    ] = None,
     name: str = "device",
-    error: type[Exception] | None = None,
+    error: Optional[Type[Exception]] = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 

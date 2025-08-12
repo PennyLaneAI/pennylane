@@ -430,7 +430,7 @@ def _create_decomp_preprocess(custom_decomps, dev):
 
     original_preprocess = dev.preprocess
 
-    def new_preprocess(execution_config: qml.devices.ExecutionConfig | None = None):
+    def new_preprocess(execution_config=qml.devices.DefaultExecutionConfig):
         program, config = original_preprocess(execution_config)
         return _modify_program(program, custom_decomps), config
 
@@ -440,7 +440,7 @@ def _create_decomp_preprocess(custom_decomps, dev):
 def _create_decomp_preprocess_transforms(custom_decomps, dev):
     original_preprocess_transforms = dev.preprocess_transforms
 
-    def new_preprocess_transforms(execution_config: qml.devices.ExecutionConfig | None = None):
+    def new_preprocess_transforms(execution_config=qml.devices.DefaultExecutionConfig):
         program = original_preprocess_transforms(execution_config)
         return _modify_program(program, custom_decomps)
 
@@ -488,7 +488,7 @@ def set_decomposition(custom_decomps, dev):
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(0))
 
-    >>> print(qml.draw(circuit, level="device")())
+    >>> print(qml.draw(circuit, level=None)())
     0: ─╭●─┤  <Z>
     1: ─╰X─┤
 

@@ -17,8 +17,7 @@ This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
 import warnings
-from collections.abc import Hashable, Iterable
-from typing import Any
+from typing import Any, Hashable, Iterable
 
 from pennylane import math as np
 from pennylane.operation import Channel

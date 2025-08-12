@@ -24,14 +24,6 @@ from pennylane.math import Interface
 ML_INTERFACES = ["numpy", "autograd", "torch", "tensorflow", "jax"]
 
 
-def test_execution_with_no_execution_config():
-    """Test execution of a tape with no execution config."""
-    dev = qml.device("default.mixed")
-    qs = qml.tape.QuantumScript([qml.X(0)], [qml.expval(qml.PauliZ(0))])
-    result = dev.execute(qs)
-    assert qml.math.allclose(result, -1.0)
-
-
 class TestDefaultMixedInit:
     """Unit tests for DefaultMixed initialization"""
 

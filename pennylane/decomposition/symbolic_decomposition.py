@@ -209,7 +209,6 @@ def make_controlled_decomp(base_decomposition):
         gate_counts[resource_rep(qml.PauliX)] = num_zero_control_values * 2
         return gate_counts
 
-    # pylint: disable=too-many-arguments
     @register_condition(_condition_fn)
     @register_resources(_resource_fn)
     def _impl(*params, wires, control_wires, control_values, work_wires, work_wire_type, base, **_):
@@ -289,7 +288,6 @@ def _flip_control_adjoint_resource(
     return {adjoint_resource_rep(inner_rep.op_type, inner_rep.params): 1}
 
 
-# pylint: disable=too-many-arguments
 @register_resources(_flip_control_adjoint_resource)
 def flip_control_adjoint(
     *_, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
@@ -311,7 +309,7 @@ def flip_control_adjoint(
 def _controlled_decomp_with_work_wire_condition(
     num_control_wires, num_work_wires, work_wire_type, **__
 ):
-    return num_work_wires > 1 and num_control_wires > 1 and work_wire_type == "zeroed"
+    return num_work_wires > 1 and num_control_wires > 1 and work_wire_type == "clean"
 
 
 def _controlled_decomp_with_work_wire_resource(
@@ -329,7 +327,7 @@ def _controlled_decomp_with_work_wire_resource(
     }
 
 
-# pylint: disable=protected-access,unused-argument, too-many-arguments
+# pylint: disable=protected-access,unused-argument
 @register_condition(_controlled_decomp_with_work_wire_condition)
 @register_resources(_controlled_decomp_with_work_wire_resource)
 def _controlled_decomp_with_work_wire(

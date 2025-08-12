@@ -17,17 +17,15 @@ import pytest
 
 pytestmark = pytest.mark.external
 
-pytest.importorskip("xdsl")
-pytest.importorskip("catalyst")
+xdsl = pytest.importorskip("xdsl")
 
 # pylint: disable=wrong-import-position
-from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
-import pennylane as qml
-from pennylane.compiler.python_compiler.transforms import (
-    IterativeCancelInversesPass,
-    iterative_cancel_inverses_pass,
-)
+from xdsl.context import Context
+from xdsl.dialects import arith, func, test
+
+from pennylane.compiler.python_compiler import Quantum
+from pennylane.compiler.python_compiler.transforms import IterativeCancelInversesPass
 
 
 class TestIterativeCancelInversesPass:
@@ -37,37 +35,53 @@ class TestIterativeCancelInversesPass:
         """Test that nothing changes when there are no inverses."""
         program = """
             func.func @test_func() {
-                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q1:%.+]] = quantum.custom "PauliX"() [[q0]] : !quantum.bit
-                // CHECK: quantum.custom "PauliY"() [[q1]] : !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                // CHECK: quantum.custom "PauliY"() [[q1:%.*]] : !quantum.bit
                 %1 = quantum.custom "PauliX"() %0 : !quantum.bit
                 %2 = quantum.custom "PauliY"() %1 : !quantum.bit
                 return
             }
         """
 
-        pipeline = (IterativeCancelInversesPass(),)
-        run_filecheck(program, pipeline)
+        ctx = Context()
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
 
     def test_inverses_different_qubits(self, run_filecheck):
         """Test that nothing changes when there are no inverses."""
         program = """
             func.func @test_func() {
-                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q1:%.+]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
                 %1 = "test.op"() : () -> !quantum.bit
-                // CHECK: quantum.custom "PauliX"() [[q0]] : !quantum.bit
-                // CHECK: quantum.custom "PauliX"() [[q1]] : !quantum.bit
+                // CHECK: quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                // CHECK: quantum.custom "PauliX"() [[q1:%.*]] : !quantum.bit
                 %2 = quantum.custom "PauliX"() %0 : !quantum.bit
-                %3 = quantum.custom "PauliX"() %1 : !quantum.bit
+                %3 = quantum.custom "PauliX"() %0 : !quantum.bit
                 return
             }
         """
 
-        pipeline = (IterativeCancelInversesPass(),)
-        run_filecheck(program, pipeline)
+        ctx = Context()
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
 
     def test_simple_self_inverses(self, run_filecheck):
         """Test that inverses are cancelled."""
@@ -81,8 +95,16 @@ class TestIterativeCancelInversesPass:
             }
         """
 
-        pipeline = (IterativeCancelInversesPass(),)
-        run_filecheck(program, pipeline)
+        ctx = Context()
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
 
     def test_nested_self_inverses(self, run_filecheck):
         """Test that nested self-inverses are cancelled."""
@@ -100,8 +122,16 @@ class TestIterativeCancelInversesPass:
             }
         """
 
-        pipeline = (IterativeCancelInversesPass(),)
-        run_filecheck(program, pipeline)
+        ctx = Context()
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
 
     def test_cancel_ops_with_control_qubits(self, run_filecheck):
         """Test that ops with control qubits can be cancelled."""
@@ -118,8 +148,17 @@ class TestIterativeCancelInversesPass:
             }
         """
 
-        pipeline = (IterativeCancelInversesPass(),)
-        run_filecheck(program, pipeline)
+        ctx = Context()
+        ctx.load_dialect(arith.Arith)
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
 
     def test_cancel_ops_with_same_control_qubits_and_values(self, run_filecheck):
         """Test that ops with control qubits and control values can be
@@ -138,45 +177,63 @@ class TestIterativeCancelInversesPass:
             }
         """
 
-        pipeline = (IterativeCancelInversesPass(),)
-        run_filecheck(program, pipeline)
+        ctx = Context()
+        ctx.load_dialect(arith.Arith)
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
 
     def test_ops_with_control_qubits_different_control_values(self, run_filecheck):
         """Test that ops with the same control qubits but different
         control values don't cancel."""
         program = """
             func.func @test_func() {
-                // CHECK-DAG: [[cval0:%.+]] = arith.constant false
-                // CHECK-DAG: [[cval1:%.+]] = arith.constant true
+                // CHECK-DAG: [[cval0:%.*]] = arith.constant false
+                // CHECK-DAG: [[cval1:%.*]] = arith.constant true
                 %0 = arith.constant false
                 %1 = arith.constant true
-                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q1:%.+]] = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q2:%.+]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q1:%.*]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q2:%.*]] = "test.op"() : () -> !quantum.bit
                 %2 = "test.op"() : () -> !quantum.bit
                 %3 = "test.op"() : () -> !quantum.bit
                 %4 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q3:%.+]], [[q4:%.+]], [[q5:%.+]] = quantum.custom "PauliY"() [[q0]] ctrls([[q1]], [[q2]]) ctrlvals([[cval1]], [[cval0]]) : !quantum.bit ctrls !quantum.bit, !quantum.bit
-                // CHECK: quantum.custom "PauliY"() [[q3]] ctrls([[q4]], [[q5]]) ctrlvals([[cval0]], [[cval1]]) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                // CHECK: [[q3:%.*]], [[q4:%.*]], [[q5:%.*]] = quantum.custom "PauliY"() [[q0:%.*]] ctrls([[q1:%.*]], [[q2:%.*]]) ctrlvals([[cval1:%.*]], [[cval0:%.*]]) : !quantum.bit ctrls !quantum.bit, !quantum.bit
+                // CHECK: quantum.custom "PauliY"() [[q3:%.*]] ctrls([[q4:%.*]], [[q5:%.*]]) ctrlvals([[cval0:%.*]], [[cval1:%.*]]) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 %5, %6, %7 = quantum.custom "PauliY"() %2 ctrls(%3, %4) ctrlvals(%1, %0) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 %8, %9, %10 = quantum.custom "PauliY"() %5 ctrls(%6, %7) ctrlvals(%0, %1) : !quantum.bit ctrls !quantum.bit, !quantum.bit
                 return
             }
         """
 
-        pipeline = (IterativeCancelInversesPass(),)
-        run_filecheck(program, pipeline)
+        ctx = Context()
+        ctx.load_dialect(arith.Arith)
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
+
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
+        pipeline.apply(ctx, module)
+
+        run_filecheck(program, module)
 
     def test_non_consecutive_self_inverse_ops(self, run_filecheck):
         """Test that self-inverse gates on the same qubit that are not
         consecutive are not cancelled."""
         program = """
             func.func @test_func() {
-                // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
+                // CHECK: [[q0:%.*]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
-                // CHECK: [[q1:%.+]] = quantum.custom "PauliX"() [[q0]] : !quantum.bit
-                // CHECK: [[q2:%.+]] = quantum.custom "PauliY"() [[q1]] : !quantum.bit
-                // CHECK: quantum.custom "PauliX"() [[q2]] : !quantum.bit
+                // CHECK: [[q1:%.*]] = quantum.custom "PauliX"() [[q0:%.*]] : !quantum.bit
+                // CHECK: [[q2:%.*]] = quantum.custom "PauliY"() [[q1:%.*]] : !quantum.bit
+                // CHECK: quantum.custom "PauliX"() [[q2:%.*]] : !quantum.bit
                 %1 = quantum.custom "PauliX"() %0 : !quantum.bit
                 %2 = quantum.custom "PauliY"() %1 : !quantum.bit
                 %3 = quantum.custom "PauliX"() %2 : !quantum.bit
@@ -184,50 +241,16 @@ class TestIterativeCancelInversesPass:
             }
         """
 
-        pipeline = (IterativeCancelInversesPass(),)
-        run_filecheck(program, pipeline)
+        ctx = Context()
+        ctx.load_dialect(func.Func)
+        ctx.load_dialect(test.Test)
+        ctx.load_dialect(Quantum)
 
+        module = xdsl.parser.Parser(ctx, program).parse_module()
+        pipeline = xdsl.passes.PipelinePass((IterativeCancelInversesPass(),))
+        pipeline.apply(ctx, module)
 
-# pylint: disable=too-few-public-methods
-@pytest.mark.usefixtures("enable_disable_plxpr")
-class TestIterativeCancelInversesIntegration:
-    """Integration tests for the IterativeCancelInversesPass."""
-
-    def test_qjit(self, run_filecheck_qjit):
-        """Test that the IterativeCancelInversesPass works correctly with qjit."""
-        dev = qml.device("lightning.qubit", wires=2)
-
-        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
-        @iterative_cancel_inverses_pass
-        @qml.qnode(dev)
-        def circuit():
-            # CHECK-NOT: quantum.custom
-            qml.H(0)
-            qml.X(0)
-            qml.X(0)
-            qml.H(0)
-            return qml.state()
-
-        run_filecheck_qjit(circuit)
-
-    def test_qjit_no_cancellation(self, run_filecheck_qjit):
-        """Test that the IterativeCancelInversesPass works correctly with qjit when
-        there are no operations that can be cancelled."""
-        dev = qml.device("lightning.qubit", wires=2)
-
-        @qml.qjit(target="mlir", pass_plugins=[getXDSLPluginAbsolutePath()])
-        @iterative_cancel_inverses_pass
-        @qml.qnode(dev)
-        def circuit():
-            # CHECK-NOT: quantum.custom
-            qml.H(1)
-            qml.X(1)
-            qml.X(0)
-            qml.H(0)
-            return qml.state()
-
-        with pytest.raises(AssertionError, match="filecheck failed"):
-            run_filecheck_qjit(circuit)
+        run_filecheck(program, module)
 
 
 if __name__ == "__main__":

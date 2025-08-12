@@ -311,7 +311,7 @@ class TestSparse:
 
         dev = qml.device("default.qubit", wires=qubits, shots=None)
         qs = qml.tape.QuantumScript(
-            operations, [qml.expval(qml.SparseHamiltonian(hamiltonian, range(qubits)))]
+            operations, [qml.expval((qml.SparseHamiltonian(hamiltonian, range(qubits))))]
         )
         expval = dev.execute(qs)
 

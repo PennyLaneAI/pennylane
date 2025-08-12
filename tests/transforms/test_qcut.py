@@ -2620,7 +2620,7 @@ class TestCutCircuitMCTransform:
         v = 0.319
 
         temp_shots = 333
-        cut_res = qml.set_shots(shots=temp_shots)(cut_circuit)(v)
+        cut_res = cut_circuit(v, shots=temp_shots)  # pylint: disable=unexpected-keyword-arg
 
         assert cut_res.shape == (temp_shots, 2)
 
@@ -2653,7 +2653,7 @@ class TestCutCircuitMCTransform:
             return qml.sample(wires=[0, 2])
 
         v = 0.319
-        with pytest.raises(ValueError, match="cut_circuit_mc requires finite shots."):
+        with pytest.raises(ValueError, match="A shots value must be provided in the device "):
             cut_circuit(v)
 
     def test_sample_obs_error(self, dev_fn):
@@ -2692,24 +2692,25 @@ class TestCutCircuitMCTransform:
 
         dev = dev_fn(wires=2)
 
-        @partial(qml.cut_circuit_mc, shots=456)
-        @qml.qnode(dev)
-        def cut_circuit(x):  # pylint: disable=unused-variable,unused-argument
-            qml.RX(x, wires=0)
-            qml.RY(0.5, wires=1)
-            qml.RX(1.3, wires=2)
+        with pytest.raises(
+            ValueError, match="Cannot provide a 'shots' value directly to the cut_circuit_mc "
+        ):
 
-            qml.CNOT(wires=[0, 1])
-            qml.WireCut(wires=1)
-            qml.CNOT(wires=[1, 2])
+            @partial(qml.cut_circuit_mc, shots=456)
+            @qml.qnode(dev)
+            def cut_circuit(x):  # pylint: disable=unused-variable,unused-argument
+                qml.RX(x, wires=0)
+                qml.RY(0.5, wires=1)
+                qml.RX(1.3, wires=2)
 
-            qml.RX(x, wires=0)
-            qml.RY(0.7, wires=1)
-            qml.RX(2.3, wires=2)
-            return qml.sample(wires=[0, 2])
+                qml.CNOT(wires=[0, 1])
+                qml.WireCut(wires=1)
+                qml.CNOT(wires=[1, 2])
 
-        with pytest.raises(ValueError, match="shots has been removed from cut_circuit_mc."):
-            cut_circuit(5)
+                qml.RX(x, wires=0)
+                qml.RY(0.7, wires=1)
+                qml.RX(2.3, wires=2)
+                return qml.sample(wires=[0, 2])
 
     def test_multiple_meas_error(self, dev_fn):
         """
@@ -2768,6 +2769,24 @@ class TestCutCircuitMCTransform:
             ValueError, match="The Monte Carlo circuit cutting workflow only supports circuits "
         ):
             cut_circuit(v)
+
+    def test_qnode_shots_arg_error(self, dev_fn):
+        """
+        Tests that if a shots argument is passed directly to the qnode when using
+        `cut_circuit_mc` the correct error is given
+        """
+        shots = 100
+        dev = dev_fn(wires=2, shots=shots)
+
+        with pytest.raises(
+            ValueError,
+            match="Detected 'shots' as an argument of the quantum function to transform. ",
+        ):
+
+            @qml.cut_circuit_mc
+            @qml.qnode(dev)
+            def cut_circuit(x, shots=shots):  # pylint: disable=unused-variable,unused-argument
+                return qml.sample(wires=[0, 2])
 
     def test_no_interface(self, dev_fn):
         """
@@ -4538,9 +4557,8 @@ class TestCutCircuitExpansion:
         spy = mocker.spy(qcut.cutcircuit, "_qcut_expand_fn")
         spy_mc = mocker.spy(qcut.cutcircuit_mc, "_qcut_expand_fn")
 
-        if isinstance(measurement, qml.measurements.SampleMP):
-            circuit = qml.set_shots(circuit, shots=10)
-        cut_transform(circuit, device_wires=[0])()
+        kwargs = {"shots": 10} if isinstance(measurement, qml.measurements.SampleMP) else {}
+        cut_transform(circuit, device_wires=[0])(**kwargs)
 
         assert spy.call_count == 1 or spy_mc.call_count == 1
 
@@ -4556,9 +4574,8 @@ class TestCutCircuitExpansion:
             return qml.apply(measurement)
 
         with pytest.raises(ValueError, match="No WireCut operations found in the circuit."):
-            if isinstance(measurement, qml.measurements.SampleMP):
-                circuit = qml.set_shots(circuit, shots=10)
-            cut_transform(circuit, device_wires=[0])()
+            kwargs = {"shots": 10} if isinstance(measurement, qml.measurements.SampleMP) else {}
+            cut_transform(circuit, device_wires=[0])(**kwargs)
 
     def test_expansion_ttn(self, mocker):
         """Test if wire cutting is compatible with the tree tensor network operation"""
@@ -4672,7 +4689,7 @@ class TestCutStrategy:
 
         devices = [devices] if not isinstance(devices, list) else devices
 
-        max_dev_wires = max(len(d.wires) for d in devices)
+        max_dev_wires = max((len(d.wires) for d in devices))
         assert strategy.max_free_wires == max_free_wires or max_dev_wires or min_free_wires
         assert strategy.min_free_wires == min_free_wires or max_free_wires or max_dev_wires
         assert strategy.imbalance_tolerance == imbalance_tolerance
@@ -4898,7 +4915,9 @@ class TestKaHyPar:
             ),
         ),
     ]
-    config_path = str(Path(__file__).parent.parent / "pennylane/qcut/_cut_kKaHyPar_sea20.ini")
+    config_path = str(
+        Path(__file__).parent.parent.parent / "pennylane/qcut/_cut_kKaHyPar_sea20.ini"
+    )
 
     def test_seed_in_ci(self):
         """Test if seed is properly set in github action CI"""
@@ -5415,7 +5434,7 @@ class TestAutoCutCircuit:
         assert all(lower <= f.order() <= upper for f in frags)
 
         # each frag should have the device size constraint satisfied.
-        assert all(len({e[2] for e in f.edges.data("wire")}) <= device_size for f in frags)
+        assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
 
 
 class TestCutCircuitWithHamiltonians:
@@ -5592,7 +5611,7 @@ class TestCutCircuitWithHamiltonians:
             assert all(frag_ords[idx][0] <= f.order() <= frag_ords[idx][1] for f in frags)
 
             # each frag should have the device size constraint satisfied.
-            assert all(len({e[2] for e in f.edges.data("wire")}) <= device_size for f in frags)
+            assert all(len(set(e[2] for e in f.edges.data("wire"))) <= device_size for f in frags)
 
     def test_hamiltonian_with_tape(self):
         """Test that an expand function that generates multiple tapes is applied before the transform and the transform

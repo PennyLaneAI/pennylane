@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import WireError
+from pennylane.wires import WireError
 
 
 def test_standard_validity():

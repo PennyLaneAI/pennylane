@@ -19,6 +19,7 @@ import functools
 # pylint: disable=unnecessary-lambda-assignment
 import itertools
 from collections.abc import Iterable
+from typing import Union
 
 import networkx as nx
 import rustworkx as rx
@@ -27,7 +28,7 @@ from pennylane.ops import Identity, LinearCombination, X, Y, Z, prod
 from pennylane.wires import Wires
 
 
-def x_mixer(wires: Iterable | Wires):
+def x_mixer(wires: Union[Iterable, Wires]):
     r"""Creates a basic Pauli-X mixer Hamiltonian.
 
     This Hamiltonian is defined as:
@@ -68,7 +69,7 @@ def x_mixer(wires: Iterable | Wires):
     return H
 
 
-def xy_mixer(graph: nx.Graph | rx.PyGraph):
+def xy_mixer(graph: Union[nx.Graph, rx.PyGraph]):
     r"""Creates a generalized SWAP/XY mixer Hamiltonian.
 
     This mixer Hamiltonian is defined as:
@@ -136,7 +137,7 @@ def xy_mixer(graph: nx.Graph | rx.PyGraph):
     return LinearCombination(coeffs, obs)
 
 
-def bit_flip_mixer(graph: nx.Graph | rx.PyGraph, b: int):
+def bit_flip_mixer(graph: Union[nx.Graph, rx.PyGraph], b: int):
     r"""Creates a bit-flip mixer Hamiltonian.
 
     This mixer is defined as:

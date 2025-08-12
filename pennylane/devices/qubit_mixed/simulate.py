@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Simulate a quantum script for a qubit mixed state device."""
+from typing import Optional
 
 from numpy.random import default_rng
 
@@ -192,7 +193,7 @@ def measure_final_state(circuit, state, is_state_batched, **execution_kwargs) ->
 def simulate(
     circuit: qml.tape.QuantumScript,
     debugger=None,
-    state_cache: dict | None = None,
+    state_cache: Optional[dict] = None,
     **execution_kwargs,
 ) -> Result:
     r"""

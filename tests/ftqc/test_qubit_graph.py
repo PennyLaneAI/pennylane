@@ -222,9 +222,7 @@ class TestQubitGraphsInitialization:
         assert set(qubit0_00.edge_labels) == set(g.edges)
         assert qubit0_00.parent is qubit0
 
-        # pylint: disable=unsupported-assignment-operation
         qubit0[(0, 0)][(0, 0)] = QubitGraph(g)
-        # pylint: disable=unsubscriptable-object
         qubit0_00_00 = qubit0[(0, 0)][(0, 0)]
         assert set(qubit0_00_00.node_labels) == set(g.nodes)
         assert set(qubit0_00_00.edge_labels) == set(g.edges)
@@ -311,10 +309,10 @@ class TestQubitGraphConnectivityAttributes:
 
         assert set(q.neighbors) == set()
 
-        assert set(q[(0, 0)].neighbors) == {q[(0, 1)], q[(1, 0)]}
-        assert set(q[(0, 1)].neighbors) == {q[(0, 0)], q[(1, 1)]}
-        assert set(q[(1, 0)].neighbors) == {q[(0, 0)], q[(1, 1)]}
-        assert set(q[(1, 1)].neighbors) == {q[(0, 1)], q[(1, 0)]}
+        assert set(q[(0, 0)].neighbors) == set([q[(0, 1)], q[(1, 0)]])
+        assert set(q[(0, 1)].neighbors) == set([q[(0, 0)], q[(1, 1)]])
+        assert set(q[(1, 0)].neighbors) == set([q[(0, 0)], q[(1, 1)]])
+        assert set(q[(1, 1)].neighbors) == set([q[(0, 1)], q[(1, 0)]])
 
 
 class TestQubitGraphOperations:
@@ -363,7 +361,6 @@ class TestQubitGraphOperations:
         assert not q[0][0].has_cycle()
 
         # 3 layers; cyclic
-        # pylint: disable=unsupported-assignment-operation
         q[0][0] = q
         assert q.has_cycle()
         assert q[0].has_cycle()

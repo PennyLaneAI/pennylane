@@ -30,24 +30,6 @@ from pennylane.transforms.commutation_dag import commutation_dag
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
-CONTROL_BASE = {
-    "CNOT": "PauliX",
-    "CZ": "PauliZ",
-    "CCZ": "PauliZ",
-    "CY": "PauliY",
-    "CH": "Hadamard",
-    "CSWAP": "SWAP",
-    "Toffoli": "PauliX",
-    "ControlledPhaseShift": "PhaseShift",
-    "CRX": "RX",
-    "CRY": "RY",
-    "CRZ": "RZ",
-    "C(S)": "S",
-    "CRot": "Rot",
-    "MultiControlledX": "PauliX",
-    "ControlledOperation": "ControlledOperation",
-}
-
 
 @transform
 def pattern_matching_optimization(
@@ -457,11 +439,7 @@ def _compare_operation_without_qubits(node_1, node_2):
     Return:
         Bool: True if similar operation (no qubits comparison) and False otherwise.
     """
-    return (
-        (node_1.op.name == node_2.op.name)
-        and qml.math.allclose(node_1.op.data, node_2.op.data)
-        and len(node_1.wires) == len(node_2.wires)
-    )
+    return (node_1.op.name == node_2.op.name) and (node_1.op.data == node_2.op.data)
 
 
 def _not_fixed_qubits(n_qubits_circuit, exclude, length):
@@ -492,6 +470,22 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
         list: list of qubits to consider in circuit (with specific order).
     """
     # pylint: disable=too-many-branches
+    control_base = {
+        "CNOT": "PauliX",
+        "CZ": "PauliZ",
+        "CCZ": "PauliZ",
+        "CY": "PauliY",
+        "CH": "Hadamard",
+        "CSWAP": "SWAP",
+        "Toffoli": "PauliX",
+        "ControlledPhaseShift": "PhaseShift",
+        "CRX": "RX",
+        "CRY": "RY",
+        "CRZ": "RZ",
+        "CRot": "Rot",
+        "MultiControlledX": "PauliX",
+        "ControlledOperation": "ControlledOperation",
+    }
 
     first_match_qubits = []
 
@@ -500,15 +494,14 @@ def _first_match_qubits(node_c, node_p, n_qubits_p):
         circuit_control = node_c.op.control_wires
         circuit_target = Wires([w for w in node_c.op.wires if w not in node_c.op.control_wires])
         # Not symmetric target gate or acting on 1 wire (target wires cannot be permuted) (For example Toffoli)
-        if CONTROL_BASE[node_p.op.name] not in symmetric_over_all_wires:
+        if control_base[node_p.op.name] not in symmetric_over_all_wires:
             # Permute control
             for control_permuted in itertools.permutations(circuit_control):
                 control_permuted = list(control_permuted)
                 first_match_qubits_sub = [-1] * n_qubits_p
                 for q in node_p.wires:
                     node_circuit_perm = control_permuted + circuit_target
-                    index = node_p.wires.index(q)
-                    first_match_qubits_sub[q] = node_circuit_perm[index]
+                    first_match_qubits_sub[q] = node_circuit_perm[node_p.wires.index(q)]
                 first_match_qubits.append(first_match_qubits_sub)
         # Symmetric target gate (target wires can be permuted) (For example CSWAP)
         else:
@@ -647,8 +640,23 @@ def _compare_qubits(node1, wires1, control1, target1, wires2, control2, target2)
     """
     # pylint: disable=too-many-arguments
 
+    control_base = {
+        "CNOT": "PauliX",
+        "CZ": "PauliZ",
+        "CY": "PauliY",
+        "CSWAP": "SWAP",
+        "Toffoli": "PauliX",
+        "ControlledPhaseShift": "PhaseShift",
+        "CRX": "RX",
+        "CRY": "RY",
+        "CRZ": "RZ",
+        "CRot": "Rot",
+        "MultiControlledX": "PauliX",
+        "ControlledOperation": "ControlledOperation",
+    }
+
     if control1 and set(control1) == set(control2):
-        if CONTROL_BASE[node1.op.name] in symmetric_over_all_wires and set(target1) == set(target2):
+        if control_base[node1.op.name] in symmetric_over_all_wires and set(target1) == set(target2):
             return True
         if target1 == target2:
             return True
@@ -1548,11 +1556,6 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
                 "SWAP": 6,
                 "CSWAP": 63,
                 "Toffoli": 21,
-                "C(S)": 4,
-                "CCZ": 21,
-                # the quantum cost of a MultiControlledX gate scales as 4n^2, where n is the number of control wires
-                # see exercise 4.29 in Nielsen and Chuang
-                "MultiControlledX": lambda op: 2 * 4 * len(op.control_wires) ** 2,
             }
 
     def _pred_block(self, circuit_sublist, index):
@@ -1586,13 +1589,11 @@ class TemplateSubstitution:  # pylint: disable=too-few-public-methods
         """
         cost_left = 0
         for i in left:
-            cost = self.quantum_cost[self.template_dag.get_node(i).op.name]
-            cost_left += cost(self.template_dag.get_node(i).op) if callable(cost) else cost
+            cost_left += self.quantum_cost[self.template_dag.get_node(i).op.name]
 
         cost_right = 0
         for j in right:
-            cost = self.quantum_cost[self.template_dag.get_node(j).op.name]
-            cost_right += cost(self.template_dag.get_node(j).op) if callable(cost) else cost
+            cost_right += self.quantum_cost[self.template_dag.get_node(j).op.name]
 
         return cost_left > cost_right
 

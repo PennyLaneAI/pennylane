@@ -20,8 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import WireError
-from pennylane.wires import Wires
+from pennylane.wires import WireError, Wires
 
 if util.find_spec("jax") is not None:
     jax = import_module("jax")

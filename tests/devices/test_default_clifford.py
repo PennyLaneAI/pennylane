@@ -89,14 +89,6 @@ def test_expectation_clifford(circuit, expec_op):
     assert np.allclose(qnode_clfrd(), qnode_qubit())
 
 
-def test_execution_with_no_execution_config():
-    """Test execution of a tape with no execution config."""
-    dev = qml.device("default.clifford")
-    qs = qml.tape.QuantumScript([qml.X(0)], [qml.expval(qml.PauliZ(0))])
-    result = dev.execute(qs)
-    assert qml.math.allclose(result, -1.0)
-
-
 @pytest.mark.parametrize("circuit", [circuit_1])
 @pytest.mark.parametrize("tableau", [True, False])
 def test_state_clifford(circuit, tableau):

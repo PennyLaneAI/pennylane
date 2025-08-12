@@ -25,7 +25,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
 
 .. code-block:: python
 
-    from pennylane.devices import Device, ExecutionConfig
+    from pennylane.devices import Device, DefaultExecutionConfig
     from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 
     class MyDevice(Device):
@@ -34,7 +34,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
         def execute(
             self,
             circuits: QuantumScriptOrBatch,
-            execution_config: ExecutionConfig | None = None
+            execution_config: "ExecutionConfig" = DefaultExecutionConfig
         ):
             # your implementation here.
 
@@ -48,7 +48,7 @@ For example:
         def execute(
             self,
             circuits: QuantumScriptOrBatch,
-            execution_config: ExecutionConfig | None = None
+            execution_config: "ExecutionConfig" = DefaultExecutionConfig
         )
             return 0.0 if isinstance(circuits, qml.tape.QuantumScript) else tuple(0.0 for c in circuits)
 
@@ -546,7 +546,7 @@ to handle a single circuit. See the documentation for each modifier for more det
     @single_tape_support
     class MyDevice(qml.devices.Device):
 
-        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
+        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()

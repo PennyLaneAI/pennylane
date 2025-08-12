@@ -27,7 +27,7 @@ import scipy.sparse
 
 import pennylane as qml
 from pennylane.decomposition import DecompositionRule
-from pennylane.exceptions import EigvalsUndefinedError
+from pennylane.operation import EigvalsUndefinedError
 
 
 def _assert_error_raised(func, error, failure_comment):
@@ -364,10 +364,12 @@ def _check_capture(op):
         assert op == new_op
     except Exception as e:
         raise ValueError(
-            "The capture of the operation into jaxpr failed somehow."
-            " This capture mechanism is currently experimental and not a core"
-            " requirement, but will be necessary in the future."
-            " Please see the capture module documentation for more information."
+            (
+                "The capture of the operation into jaxpr failed somehow."
+                " This capture mechanism is currently experimental and not a core"
+                " requirement, but will be necessary in the future."
+                " Please see the capture module documentation for more information."
+            )
         ) from e
     finally:
         qml.capture.disable()
@@ -439,10 +441,10 @@ def assert_valid(
     op: qml.operation.Operator,
     *,
     skip_deepcopy=False,
-    skip_differentiation=False,
-    skip_new_decomp=False,
     skip_pickle=False,
     skip_wire_mapping=False,
+    skip_differentiation=False,
+    skip_new_decomp=False,
     heuristic_resources=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
@@ -452,13 +454,14 @@ def assert_valid(
         op (.Operator): an operator instance to validate
 
     Keyword Args:
-        skip_deepcopy=False: If ``True``, deepcopy tests are not run.
-        skip_differentiation=False: If ``True``, differentiation tests are not run.
-        skip_new_decomp: If ``True``, the operator will not be tested for its decomposition
-            defined using the new system.
+        skip_deepcopy=False: If `True`, deepcopy tests are not run.
         skip_pickle=False : If ``True``, pickling tests are not run. Set to ``True`` when
             testing a locally defined operator, as pickle cannot handle local objects
         skip_wire_mapping : If ``True``, the operator will not be tested for wire mapping.
+        skip_differentiation: If ``True``, differentiation tests are not run. Set to `True` when
+            the operator is parametrized but not differentiable.
+        skip_new_decomp: If ``True``, the operator will not be tested for its decomposition
+            defined using the new system.
         heuristic_resources: If ``True``, the decomposition is not required to match exactly
             with the registered resource estimate.
 

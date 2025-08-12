@@ -9,144 +9,49 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
-  ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
-  state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
-  work wires are restored to their original state upon completing the decomposition.
+* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` has been deprecated 
+  and will be removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
 
-  - Deprecated in v0.43
-  - Will be removed in v0.44
+  - Deprecated in v0.42
+  - Will be removed in v0.43
 
-* Providing ``num_steps`` to :func:`pennylane.evolve`, :func:`pennylane.exp`, :class:`pennylane.ops.Evolution`,
-  and :class:`pennylane.ops.Exp` is deprecated and will be removed in a future release. Instead, use
-  :class:`~.TrotterProduct` for approximate methods, providing the ``n`` parameter to perform the Suzuki-Trotter
-  product approximation of a Hamiltonian with the specified number of Trotter steps.
-
-  As a concrete example, consider the following case:
+* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
+  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
+  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
+  processed into the circuit.
 
   .. code-block:: python
 
-    coeffs = [0.5, -0.6]
-    ops = [qml.X(0), qml.X(0) @ qml.Y(1)]
-    H_flat = qml.dot(coeffs, ops)
+      class MyObs(Operator):
+      
+          is_hermitian = True
 
-  Instead of computing the Suzuki-Trotter product approximation as:
+          def queue(self, context=qml.QueuingManager):
+              return self
 
-  >>> qml.evolve(H_flat, num_steps=2).decomposition()
-  [RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1]),
-  RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1])]
+  To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
 
-  The same result can be obtained using :class:`~.TrotterProduct` as follows:
+  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
 
-  >>> decomp_ops = qml.adjoint(qml.TrotterProduct(H_flat, time=1.0, n=2)).decomposition()
-  >>> [simp_op for op in decomp_ops for simp_op in map(qml.simplify, op.decomposition())]
-  [RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1]),
-  RX(0.5, wires=[0]),
-  PauliRot(-0.6, XY, wires=[0, 1])]
-  
-  - Deprecated in v0.43
-  - Will be removed in a future version
+  - Deprecated in v0.42
+  - Will be removed in v0.43
 
-* ``MeasurementProcess.expand`` is deprecated. The relevant method can be replaced with 
-  ``qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])``.
-  
-  - Deprecated in v0.43
-  - Will be removed in v0.44
+* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
+  on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
+  to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
 
-* The ``shots=`` kwarg in ``QNode`` calls is deprecated and will be removed in v0.44.
-  Instead, please use the ``qml.workflow.set_shots`` transform to set the number of shots for a ``QNode``.
+  - Deprecated in v0.42
+  - Will be removed in v0.43
 
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* The ``QuantumScript.shape`` and ``QuantumScript.numeric_type`` properties are deprecated and will be removed in version v0.44.
-  Instead, the corresponding ``.shape`` or ``.numeric_type`` of the ``MeasurementProcess`` class should be used.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* Some unnecessary methods of the ``qml.CircuitGraph`` class are deprecated and will be removed in version v0.44:
-
-    - ``print_contents`` in favor of ``print(obj)``
-    - ``observables_in_order`` in favor of ``observables``
-    - ``operations_in_order`` in favor of ``operations``
-    - ``ancestors_in_order`` in favor of ``ancestors(obj, sort=True)``
-    - ``descendants_in_order`` in favore of ``.descendants(obj, sort=True)``
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* The ``QuantumScript.to_openqasm`` method is deprecated and will be removed in version v0.44.
-  Instead, the ``qml.to_openqasm`` function should be used.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* ``qml.qnn.cost.SquaredErrorLoss`` is deprecated and will be removed in version v0.44. Instead, this hybrid workflow can be accomplished 
-  with a function like ``loss = lambda *args: (circuit(*args) - target)**2``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* Access to ``add_noise``, ``insert`` and noise mitigation transforms from the ``pennylane.transforms`` module is deprecated.
-  Instead, these functions should be imported from the ``pennylane.noise`` module.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* The ``level=None`` argument in the ``get_transform_program``, ``construct_batch`` , ``qml.draw``, ``qml.draw_mpl``, and ``qml.specs`` transforms is deprecated and will be removed in v0.43.
-  Please use ``level='device'`` instead to apply the noise model at the device level.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-* The ``qml.QNode.add_transform`` method is deprecated and will be removed in v0.43.
-  Instead, please use ``QNode.transform_program.push_back(transform_container=transform_container)``.
-
-  - Deprecated in v0.43
-  - Will be removed in v0.44
-
-Completed removal of legacy operator arithmetic
------------------------------------------------
-
-In PennyLane v0.40, the legacy operator arithmetic system has been removed, and is fully replaced by the new
-operator arithmetic functionality that was introduced in v0.36. Check out the :ref:`Updated operators <new_opmath>` page
-for details on how to port your legacy code to the new system. The following functionality has been removed:
-
-* In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`pennylane.operation.enable_new_opmath`,
-  :func:`pennylane.operation.disable_new_opmath`, :class:`pennylane.ops.Hamiltonian`, and :class:`pennylane.operation.Tensor`. Note
-  that ``qml.Hamiltonian`` will continue to dispatch to :class:`pennylane.ops.LinearCombination`.
-
-  - Deprecated in v0.39
-  - Removed in v0.40
-
-* :meth:`pennylane.pauli.PauliSentence.hamiltonian` and :meth:`pennylane.pauli.PauliWord.hamiltonian` have been removed. Instead, please use
-  :meth:`pennylane.pauli.PauliSentence.operation` and :meth:`pennylane.pauli.PauliWord.operation` respectively.
-
-  - Deprecated in v0.39
-  - Removed in v0.40
-
-* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`pennylane.operation.Operator.simplify`.
-
-  - Deprecated in v0.39
-  - Removed in v0.40
-
-Completed deprecation cycles
-----------------------------
-
-* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for an example of alternative code to use.
+* The boolean functions provided by ``pennylane.operation`` are deprecated. See below for alternate code to
+  use instead.
   These include ``not_tape``, ``has_gen``, ``has_grad_method``,  ``has_multipar``, ``has_nopar``, ``has_unitary_gen``,
   ``is_measurement``, ``defines_diagonalizing_gates``, and ``gen_is_multi_term_hamiltonian``.
 
   - Deprecated in v0.42
-  - Removed in v0.43
+  - Will be removed in v0.43
 
 .. code-block:: python
-
-    from pennylane.operation import TermsUndefinedError, Operator
 
     def not_tape(obj):
         return not isinstance(obj, qml.tape.QuantumScript)
@@ -177,59 +82,48 @@ Completed deprecation cycles
             return False
         try:
             generator = obj.generator()
-            _, ops = generator.terms()
+            _, ops = generator.terms() 
             return len(ops) > 1
         except TermsUndefinedError:
             return False
 
-* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised. They now live in
-  the ``liealg`` module.
-
-  .. code-block:: python
-
-    import pennylane.liealg
-    from pennylane.liealg import lie_closure, structure_constants, center
-
-  - Deprecated in v0.40
-  - Removed in v0.43
-
-* ``qml.operation.Observable`` and the accompanying ``Observable.compare`` methods are deprecated. At this point, ``Observable`` only
-  provides a default value of ``is_hermitian=True`` and prevents the object from being processed into a tape. Instead of inheriting from
-  ``Observable``, operator developers should manually set ``is_hermitian = True`` and update the ``queue`` function to stop it from being
-  processed into the circuit.
-
-  .. code-block:: python
-
-      class MyObs(Operator):
-          is_hermitian = True
-
-          def queue(self, context=qml.QueuingManager):
-              return self
-
-  To check if an operator is likely to be hermitian, the ``op.is_hermitian`` property can be checked.
-
-  ``qml.equal`` and ``op1 == op2`` should be used to compare instances instead of ``op1.compare(op2)``.
-
-  - Deprecated in v0.42
-  - Removed in v0.43
-
-* ``qml.operation.WiresEnum``, ``qml.operation.AllWires``, and ``qml.operation.AnyWires`` are deprecated. If an operation can act
-  on any number of wires ``Operator.num_wires = None`` should be used instead. This is the default, and does not need
-  to be overridden unless the operator developer wants to validate that the correct number of wires is passed.
-  
-  - Deprecated in v0.42
-  - Removed in v0.43
-
 * The :func:`qml.QNode.get_gradient_fn` method is now deprecated. Instead, use :func:`~.workflow.get_best_diff_method` to obtain the differentiation method.
 
   - Deprecated in v0.42
-  - Removed in v0.43
+  - Will be removed in v0.43
 
-* Top-level access to ``DeviceError``, ``PennyLaneDeprecationWarning``, ``QuantumFunctionError`` and ``ExperimentalWarning`` 
-  is now removed in v0.43. Please import these objects from the new ``pennylane.exceptions`` module.
+* Accessing ``lie_closure``, ``structure_constants`` and ``center`` via ``qml.pauli`` is deprecated. Top level import and usage is advised.
 
-  - Deprecated in v0.42
-  - Removed in v0.43
+ - Deprecated in v0.40
+ - Will be removed in v0.41
+
+Completed removal of legacy operator arithmetic
+-----------------------------------------------
+
+In PennyLane v0.40, the legacy operator arithmetic system has been removed, and is fully replaced by the new
+operator arithmetic functionality that was introduced in v0.36. Check out the :ref:`Updated operators <new_opmath>` page
+for details on how to port your legacy code to the new system. The following functionality has been removed:
+
+* In PennyLane v0.40, legacy operator arithmetic has been removed. This includes :func:`~pennylane.operation.enable_new_opmath`,
+  :func:`~pennylane.operation.disable_new_opmath`, :class:`~pennylane.ops.Hamiltonian`, and :class:`~pennylane.operation.Tensor`. Note
+  that ``qml.Hamiltonian`` will continue to dispatch to :class:`~pennylane.ops.LinearCombination`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* :meth:`~pennylane.pauli.PauliSentence.hamiltonian` and :meth:`~pennylane.pauli.PauliWord.hamiltonian` has been removed. Instead, please use
+  :meth:`~pennylane.pauli.PauliSentence.operation` and :meth:`~pennylane.pauli.PauliWord.operation` respectively.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+* :func:`pennylane.pauli.simplify` has been removed. Instead, please use :func:`pennylane.simplify` or :meth:`~pennylane.operation.Operator.simplify`.
+
+  - Deprecated in v0.39
+  - Removed in v0.40
+
+Completed deprecation cycles
+----------------------------
 
 * Specifying gradient keyword arguments as any additional keyword argument to the qnode is now removed in v0.42.
   The gradient keyword arguments should be passed to the new keyword argument ``gradient_kwargs`` via an explicit 

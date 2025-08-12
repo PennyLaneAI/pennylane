@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""Resource operators for symbolic operations."""
-from collections.abc import Iterable
 from functools import singledispatch
+from typing import Dict, Iterable, Tuple, Union
 
 import pennylane.labs.resource_estimation as re
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
@@ -24,6 +24,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourcesNotDefined,
     resource_rep,
 )
+from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
 
 # pylint: disable=too-many-ancestors,arguments-differ,protected-access,too-many-arguments,too-many-positional-arguments,super-init-not-called
@@ -91,8 +92,7 @@ class ResourceAdjoint(ResourceOperator):
     resource_keys = {"base_cmpr_op"}
 
     def __init__(self, base_op: ResourceOperator, wires=None) -> None:
-        self.dequeue(op_to_remove=base_op)
-        self.queue()
+        self.queue(remove_op=base_op)
         base_cmpr_op = base_op.resource_rep_from_op()
 
         self.base_op = base_cmpr_op
@@ -103,6 +103,12 @@ class ResourceAdjoint(ResourceOperator):
         else:
             self.wires = None or base_op.wires
             self.num_wires = base_op.num_wires
+
+    def queue(self, remove_op, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.remove(remove_op)
+        context.append(self)
+        return self
 
     @property
     def resource_params(self) -> dict:
@@ -295,8 +301,7 @@ class ResourceControlled(ResourceOperator):
         num_ctrl_values: int,
         wires=None,
     ) -> None:
-        self.dequeue(op_to_remove=base_op)
-        self.queue()
+        self.queue(remove_base_op=base_op)
         base_cmpr_op = base_op.resource_rep_from_op()
 
         self.base_op = base_cmpr_op
@@ -310,6 +315,12 @@ class ResourceControlled(ResourceOperator):
             self.wires = None
             num_base_wires = base_op.num_wires
             self.num_wires = num_ctrl_wires + num_base_wires
+
+    def queue(self, remove_base_op, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.remove(remove_base_op)
+        context.append(self)
+        return self
 
     @property
     def resource_params(self) -> dict:
@@ -558,8 +569,7 @@ class ResourcePow(ResourceOperator):
     resource_keys = {"base_cmpr_op", "z"}
 
     def __init__(self, base_op: ResourceOperator, z: int, wires=None) -> None:
-        self.dequeue(op_to_remove=base_op)
-        self.queue()
+        self.queue(remove_op=base_op)
         base_cmpr_op = base_op.resource_rep_from_op()
 
         self.z = z
@@ -571,6 +581,12 @@ class ResourcePow(ResourceOperator):
         else:
             self.wires = None or base_op.wires
             self.num_wires = base_op.num_wires
+
+    def queue(self, remove_op, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        context.remove(remove_op)
+        context.append(self)
+        return self
 
     @property
     def resource_params(self) -> dict:
@@ -754,7 +770,7 @@ class ResourceProd(ResourceOperator):
 
     def __init__(
         self,
-        res_ops: Iterable[ResourceOperator | tuple[int, ResourceOperator]],
+        res_ops: Iterable[Union[ResourceOperator, Tuple[int, ResourceOperator]]],
         wires=None,
     ) -> None:
 
@@ -766,8 +782,7 @@ class ResourceProd(ResourceOperator):
             ops.append(op)
             counts.append(count)
 
-        self.dequeue(op_to_remove=ops)
-        self.queue()
+        self.queue(ops)
 
         try:
             cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
@@ -785,13 +800,20 @@ class ResourceProd(ResourceOperator):
             ops_wires = [op.wires for op in ops if op.wires is not None]
             if len(ops_wires) == 0:
                 self.wires = None
-                self.num_wires = max(op.num_wires for op in ops)
+                self.num_wires = max((op.num_wires for op in ops))
             else:
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires)
 
+    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        for op in ops_to_remove:
+            context.remove(op)
+        context.append(self)
+        return self
+
     @property
-    def resource_params(self) -> dict:
+    def resource_params(self) -> Dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:
@@ -934,14 +956,13 @@ class ResourceChangeBasisOp(ResourceOperator):
         self,
         compute_op: ResourceOperator,
         base_op: ResourceOperator,
-        uncompute_op: None | ResourceOperator = None,
+        uncompute_op: Union[None, ResourceOperator] = None,
         wires=None,
     ) -> None:
         uncompute_op = uncompute_op or ResourceAdjoint(compute_op)
         ops_to_remove = [compute_op, base_op, uncompute_op]
 
-        self.dequeue(op_to_remove=ops_to_remove)
-        self.queue()
+        self.queue(ops_to_remove)
 
         try:
             self.cmpr_compute_op = compute_op.resource_rep_from_op()
@@ -960,13 +981,20 @@ class ResourceChangeBasisOp(ResourceOperator):
             ops_wires = [op.wires for op in ops_to_remove if op.wires is not None]
             if len(ops_wires) == 0:
                 self.wires = None
-                self.num_wires = max(op.num_wires for op in ops_to_remove)
+                self.num_wires = max((op.num_wires for op in ops_to_remove))
             else:
                 self.wires = Wires.all_wires(ops_wires)
                 self.num_wires = len(self.wires)
 
+    def queue(self, ops_to_remove, context: QueuingManager = QueuingManager):
+        """Append the operator to the Operator queue."""
+        for op in ops_to_remove:
+            context.remove(op)
+        context.append(self)
+        return self
+
     @property
-    def resource_params(self) -> dict:
+    def resource_params(self) -> Dict:
         r"""Returns a dictionary containing the minimal information needed to compute the resources.
 
         Returns:

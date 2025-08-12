@@ -13,9 +13,7 @@
 # limitations under the License.
 """QJIT compatible quantum and compilation operations API"""
 
-from pennylane.exceptions import CompileError
-
-from .compiler import AvailableCompilers, _check_compiler_version, available
+from .compiler import AvailableCompilers, CompileError, _check_compiler_version, available
 
 
 def qjit(fn=None, *args, compiler="catalyst", **kwargs):  # pylint:disable=keyword-arg-before-vararg

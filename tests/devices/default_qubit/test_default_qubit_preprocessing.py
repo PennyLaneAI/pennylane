@@ -21,7 +21,6 @@ import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane.devices import DefaultQubit, ExecutionConfig
 from pennylane.devices.default_qubit import stopping_condition
-from pennylane.devices.execution_config import MCMConfig
 from pennylane.exceptions import DeviceError
 from pennylane.operation import classproperty
 
@@ -66,12 +65,11 @@ class CustomizedSparseOp(qml.operation.Operator):
         U = sp.sparse.eye(2 ** len(wires))
         super().__init__(U, wires)
 
-    # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_matrix(self) -> bool:
         return False
 
-    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument, arguments-differ
+    def compute_sparse_matrix(self, U):  # pylint:disable=unused-argument
         return sp.sparse.eye(2 ** len(self.wires))
 
 
@@ -193,13 +191,6 @@ class TestConfigSetup:
         dev = qml.device("default.qubit")
         processed = dev.setup_execution_config(config)
         assert processed.convert_to_numpy
-
-    def test_resolve_native_mcm_method(self):
-        """Tests that mcm_method="device" resolves to tree-traversal"""
-        config = ExecutionConfig(mcm_config=MCMConfig(mcm_method="device"))
-        dev = qml.device("default.qubit")
-        processed = dev.setup_execution_config(config)
-        assert processed.mcm_config.mcm_method == "tree-traversal"
 
 
 # pylint: disable=too-few-public-methods

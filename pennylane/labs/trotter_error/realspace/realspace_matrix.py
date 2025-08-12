@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import math
 from itertools import product
+from typing import Dict, Tuple, Union
 
 import numpy as np
 import scipy as sp
@@ -61,7 +62,7 @@ class RealspaceMatrix(Fragment):
         self,
         states: int,
         modes: int,
-        blocks: dict[tuple[int, int], RealspaceSum] = None,
+        blocks: Dict[Tuple[int, int], RealspaceSum] = None,
     ) -> RealspaceMatrix:
 
         if blocks is None:
@@ -146,7 +147,7 @@ class RealspaceMatrix(Fragment):
 
     def matrix(
         self, gridpoints: int, sparse: bool = False, basis: str = "realspace"
-    ) -> np.ndarray | sp.sparse.csr_matrix:
+    ) -> Union[np.ndarray, sp.sparse.csr_matrix]:
         """Return a matrix representation of the operator.
 
         Args:
@@ -200,7 +201,7 @@ class RealspaceMatrix(Fragment):
 
         return matrix
 
-    def norm(self, params: dict) -> float:
+    def norm(self, params: Dict) -> float:
         """Returns an upper bound on the spectral norm of the operator.
 
         Args:
@@ -239,7 +240,7 @@ class RealspaceMatrix(Fragment):
 
         return padded._norm(params)
 
-    def _norm(self, params: dict) -> float:
+    def _norm(self, params: Dict) -> float:
         """Returns an upper bound on the spectral norm. This method assumes ``self.states`` is a power of two."""
         if self.states == 1:
             return self.block(0, 0).norm(params)
@@ -363,7 +364,7 @@ class RealspaceMatrix(Fragment):
 
         return True
 
-    def _partition_into_quadrants(self) -> tuple[RealspaceMatrix]:
+    def _partition_into_quadrants(self) -> Tuple[RealspaceMatrix]:
         """Partitions the :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` into four :class:`~.pennylane.labs.trotter_error.RealspaceMatrix` objects on ``self.states // 2`` states. This method assumes ``self.states`` is a power of two."""
         # pylint: disable=chained-comparison
         half = self.states // 2
@@ -443,7 +444,7 @@ class RealspaceMatrix(Fragment):
             ho_states=ho_states,
         )
 
-    def get_coefficients(self, threshold: float = 0.0) -> dict[tuple[int, int], dict]:
+    def get_coefficients(self, threshold: float = 0.0) -> Dict[Tuple[int, int], Dict]:
         """Return a dictionary containing the coefficients of the :class:`~.pennylane.labs.trotter_error.RealspaceSum`
 
         Args:

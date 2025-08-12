@@ -241,41 +241,24 @@ def concatenate(values, axis=0, like=None):
     if like == "torch":
         import torch
 
-        device_set = set()
-        dev_indices = set()
-        torch_device = None
-        for t in values:
-            if isinstance(t, torch.Tensor):
-                device_set.add(t.device.type)
-                dev_indices.add(t.device.index)
-
-        # TODO: Remove the no-cover pragma once we are able to test with multiple GPUs on CI.
-        if device_set:  # pragma: no cover
-            # If data exists on two separate GPUs, outright fail
-            if len(dev_indices) > 1:
-                device_names = ", ".join(str(d) for d in device_set)
-
-                raise RuntimeError(
-                    f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
-                )
-
-            device = device_set.pop()
-            dev_id = dev_indices.pop() if dev_indices else None
-            torch_device = torch.device(f"{device}:{dev_id}" if dev_id is not None else device)
-
-        else:  # pragma: no cover
-            torch_device = torch.device("cpu")
+        device = (
+            "cuda"
+            if any(t.device.type == "cuda" for t in values if isinstance(t, torch.Tensor))
+            else "cpu"
+        )
 
         if axis is None:
             # flatten and then concatenate zero'th dimension
             # to reproduce numpy's behaviour
             values = [
-                np.flatten(torch.as_tensor(t, device=torch_device))  # pragma: no cover
+                np.flatten(torch.as_tensor(t, device=torch.device(device)))  # pragma: no cover
                 for t in values
             ]
             axis = 0
         else:
-            values = [torch.as_tensor(t, device=torch_device) for t in values]  # pragma: no cover
+            values = [
+                torch.as_tensor(t, device=torch.device(device)) for t in values  # pragma: no cover
+            ]
 
     if like == "tensorflow" and axis is None:
         # flatten and then concatenate zero'th dimension

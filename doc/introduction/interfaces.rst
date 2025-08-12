@@ -195,7 +195,6 @@ PennyLane offers a built-in Jax-based implementation compatible with ``jax.jit``
     :nosignatures:
 
     ~pennylane.QNGOptimizerQJIT
-    ~pennylane.MomentumQNGOptimizerQJIT
 
 :html:`</div>`
 

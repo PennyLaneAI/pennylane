@@ -22,7 +22,7 @@ import pytest
 import scipy as sp
 
 import pennylane as qml
-from pennylane.exceptions import WireError
+from pennylane.wires import WireError
 
 densitymat0 = np.array([[1.0, 0.0], [0.0, 0.0]])
 
@@ -133,33 +133,6 @@ class TestDecomposition:
         assert len(ops1) == len(ops2) == 1
         assert isinstance(ops1[0], qml.MottonenStatePreparation)
         assert isinstance(ops2[0], qml.MottonenStatePreparation)
-
-    def test_stateprep_resources(self):
-        """Test the resources for StatePrep"""
-
-        assert qml.StatePrep.resource_keys == frozenset({"num_wires"})
-
-        op = qml.StatePrep([0, 0, 0, 1], wires=(0, 1))
-        assert op.resource_params == {"num_wires": 2}
-
-    def test_decomposition_rule_stateprep(self):
-        """Test that stateprep has a correct decomposition rule registered."""
-
-        decomp = qml.list_decomps(qml.StatePrep)[0]
-
-        resource_obj = decomp.compute_resources(num_wires=2)
-        assert resource_obj.num_gates == 1
-        assert resource_obj.gate_counts == {
-            qml.resource_rep(qml.MottonenStatePreparation, num_wires=2): 1
-        }
-
-        with qml.queuing.AnnotatedQueue() as q:
-            decomp(np.array([0, 0, 0, 1]), wires=(0, 1))
-
-        qml.assert_equal(q.queue[0], qml.MottonenStatePreparation(np.array([0, 0, 0, 1]), (0, 1)))
-
-
-class TestStatePrepIntegration:
 
     @pytest.mark.parametrize(
         "state, pad_with, expected",

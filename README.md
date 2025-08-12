@@ -67,7 +67,7 @@ For more details and additional features, please see the [PennyLane website](htt
 
 ## Installation
 
-PennyLane requires Python version 3.11 and above. Installation of PennyLane, as well as all
+PennyLane requires Python version 3.10 and above. Installation of PennyLane, as well as all
 dependencies, can be done using pip:
 
 ```console

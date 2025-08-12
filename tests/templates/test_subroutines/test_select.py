@@ -23,7 +23,7 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.subroutines.select import _select_decomp_partial_unary
+from pennylane.templates.subroutines.select import _unary_select
 
 
 @pytest.mark.parametrize("num_ops", [3, 10, 15, 16])
@@ -218,67 +218,6 @@ class TestSelect:
         op_copy = copy.copy(op)
 
         qml.assert_equal(op, op_copy)
-
-    def test_resources(self):
-        """Test the resources property"""
-
-        assert qml.Select.resource_keys == frozenset(("op_reps", "num_control_wires"))
-
-        ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
-
-        op = qml.Select(ops, control=(0, 1))
-
-        resources = op.resource_params
-        assert resources["num_control_wires"] == 2
-
-        op_reps = (
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.Y),
-        )
-
-        assert resources["op_reps"] == op_reps
-
-    def test_new_decomposition(self):
-        """Test that the decomposition is properly register."""
-
-        decomp = qml.list_decomps(qml.Select)[0]
-
-        ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
-        op_reps = (
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.Y),
-        )
-        control = (0, 1)
-
-        resource_obj = decomp.compute_resources(op_reps, num_control_wires=2)
-
-        assert resource_obj.num_gates == 4
-
-        c_resource = qml.decomposition.resources.controlled_resource_rep
-
-        kwargs = {"base_params": {}, "num_control_wires": 2, "num_work_wires": 0}
-
-        expected_counts = {
-            c_resource(base_class=qml.X, **kwargs, num_zero_control_values=2): 1,
-            c_resource(base_class=qml.X, **kwargs, num_zero_control_values=1): 2,
-            c_resource(base_class=qml.Y, **kwargs, num_zero_control_values=0): 1,
-        }
-        assert resource_obj.gate_counts == expected_counts
-
-        op = qml.Select(ops, control)
-        with qml.queuing.AnnotatedQueue() as q:
-            decomp(*op.data, wires=op.wires, **op.hyperparameters)
-
-        decomp_ops = qml.tape.QuantumScript.from_queue(q).operations
-
-        qml.assert_equal(decomp_ops[0], qml.ctrl(qml.X(2), (0, 1), control_values=[0, 0]))
-        qml.assert_equal(decomp_ops[1], qml.ctrl(qml.X(3), (0, 1), control_values=[0, 1]))
-        qml.assert_equal(decomp_ops[2], qml.ctrl(qml.X(4), (0, 1), control_values=[1, 0]))
-        qml.assert_equal(decomp_ops[3], qml.ctrl(qml.Y(2), (0, 1), control_values=[1, 1]))
 
 
 class TestErrorMessages:
@@ -510,7 +449,7 @@ class TestUnaryIterator:
         control = list(range(num_controls))
         work = list(range(num_controls, 2 * num_controls - 1))
 
-        decomp = _select_decomp_partial_unary([], control=control, work_wires=work)
+        decomp = _unary_select([], control=control, work_wires=work)
         assert decomp == []
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
@@ -535,7 +474,7 @@ class TestUnaryIterator:
         def circuit():
             for w, angle in zip(control, angles, strict=True):
                 qml.RX(angle, w)
-            _select_decomp_partial_unary(ops, control=control, work_wires=work)
+            _unary_select(ops, control=control, work_wires=work)
             return qml.probs(target)
 
         probs = circuit()
@@ -554,7 +493,7 @@ class TestUnaryIterator:
         ops = [qml.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
 
         with pytest.raises(ValueError, match=msg_match):
-            _select_decomp_partial_unary(ops, control=wires["control"], work_wires=wires["work"])
+            _unary_select(ops, control=wires["control"], work_wires=wires["work"])
 
     @pytest.mark.parametrize("num_controls, num_ops", num_controls_and_num_ops)
     def test_comparison_with_select(self, num_controls, num_ops, seed):
@@ -578,7 +517,7 @@ class TestUnaryIterator:
         def circuit():
             for w, angle in zip(control, angles, strict=True):
                 qml.RX(angle, w)
-            _select_decomp_partial_unary(ops, control=control, work_wires=work)
+            _unary_select(ops, control=control, work_wires=work)
             qml.Select(adj_ops, control=control, work_wires=None)
             return qml.probs(target)
 

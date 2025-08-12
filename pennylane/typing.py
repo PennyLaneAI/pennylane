@@ -17,59 +17,59 @@ import contextlib
 # pylint: disable=import-outside-toplevel,too-few-public-methods
 import sys
 from collections.abc import Callable, Sequence
-from typing import Optional, TypeVar, Union
+from typing import TypeVar, Union
 
 import numpy as np
 from autograd.numpy.numpy_boxes import ArrayBox
 
+_TensorLike = Union[int, float, bool, complex, bytes, list, tuple, np.ndarray, ArrayBox, np.generic]
 
-class InterfaceTensorMeta(type):
-    """defines dunder methods for the ``isinstance`` and ``issubclass`` checks.
+
+class TensorLikeMETA(type):
+    """TensorLike metaclass that defines dunder methods for the ``isinstance`` and ``issubclass``
+    checks.
 
     .. note:: These special dunder methods can only be defined inside a metaclass.
-
     """
 
     def __instancecheck__(cls, other):
-        """Dunder method used to check if an object is a `InterfaceTensor` instance."""
-        return _is_jax(other) or _is_torch(other) or _is_tensorflow(other)
+        """Dunder method used to check if an object is a `TensorLike` instance."""
+        return (
+            isinstance(other, _TensorLike)
+            or _is_jax(other)
+            or _is_torch(other)
+            or _is_tensorflow(other)
+        )
 
     def __subclasscheck__(cls, other):
-        """Dunder method that checks if a class is a subclass of ``InterfaceTensor``."""
+        """Dunder method that checks if a class is a subclass of ``TensorLike``."""
         return (
-            _is_jax(other, subclass=True)
+            issubclass(other, _TensorLike)
+            or _is_jax(other, subclass=True)
             or _is_torch(other, subclass=True)
             or _is_tensorflow(other, subclass=True)
         )
 
 
-class InterfaceTensor(metaclass=InterfaceTensorMeta):
-    """Adds support for runtime instance checking of interface-specific tensor-like data"""
+class TensorLike(metaclass=TensorLikeMETA):
+    """Returns a ``Union`` of all tensor-like types, which includes any scalar or sequence
+    that can be interpreted as a pennylane tensor, including lists and tuples. Any argument
+    accepted by ``qml.numpy.array`` is tensor-like.
 
+    **Examples**
 
-TensorLike = Union[
-    int, float, bool, complex, bytes, list, tuple, np.ndarray, np.generic, ArrayBox, InterfaceTensor
-]
-"""A type for all tensor-like data.
-
-TensorLike includes any scalar or sequence that can be interpreted as a pennylane tensor,
-including lists and tuples. Any argument accepted by ``qml.numpy.array`` is tensor-like.
-
-**Examples**
-
->>> from pennylane.typing import TensorLike
->>> isinstance(4, TensorLike)
-True
->>> isinstance([2, 6, 8], TensorLike)
-True
->>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
-True
->>> issubclass(list, TensorLike)
-True
->>> issubclass(jax.Array, TensorLike)
-True
-
-"""
+    >>> from pennylane.typing import TensorLike
+    >>> isinstance(4, TensorLike)
+    True
+    >>> isinstance([2, 6, 8], TensorLike)
+    True
+    >>> isinstance(torch.tensor([1, 2, 3]), TensorLike)
+    True
+    >>> issubclass(list, TensorLike)
+    True
+    >>> issubclass(jax.Array, TensorLike)
+    True
+    """
 
 
 def _is_jax(other, subclass=False):
@@ -77,11 +77,18 @@ def _is_jax(other, subclass=False):
     # pylint: disable=c-extension-no-member
     if "jax" in sys.modules:
         with contextlib.suppress(ImportError):
-            from jax import Array
-            from jax.core import Tracer
+            import jax
+            import jaxlib
             from jax.numpy import ndarray
 
-            JaxTensor = ndarray | Array | Tracer
+            JaxTensor = Union[
+                ndarray,
+                (
+                    jax.Array  # TODO: keep this after jax>=0.4 is required
+                    if hasattr(jax, "Array")
+                    else Union[jaxlib.xla_extension.DeviceArray, jax.core.Tracer]
+                ),
+            ]
             check = issubclass if subclass else isinstance
 
             return check(other, JaxTensor)
@@ -120,4 +127,4 @@ ResultBatch = Sequence[Result]
 PostprocessingFn = Callable[[ResultBatch], Result]
 BatchPostprocessingFn = Callable[[ResultBatch], ResultBatch]
 
-JSON = Optional[int | str | bool | list["JSON"] | dict[str, "JSON"]]
+JSON = Union[None, int, str, bool, list["JSON"], dict[str, "JSON"]]

@@ -25,6 +25,7 @@ import pennylane as qml
 from pennylane.devices.capabilities import (
     DeviceCapabilities,
     ExecutionCondition,
+    InvalidCapabilitiesError,
     OperatorProperties,
     _get_compilation_options,
     _get_measurement_processes,
@@ -36,7 +37,6 @@ from pennylane.devices.capabilities import (
     parse_toml_document,
     update_device_capabilities,
 )
-from pennylane.exceptions import InvalidCapabilitiesError
 
 
 @pytest.mark.unit

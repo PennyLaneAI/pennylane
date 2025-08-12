@@ -15,19 +15,14 @@ r"""
 Contains the k-UpCCGSD template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
-# pylint: disable-msg=too-many-positional-arguments
 import copy
 from itertools import product
 
 import numpy as np
 
-from pennylane import math
+import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.templates.embeddings import BasisEmbedding
 from pennylane.wires import Wires
-
-from .fermionic_double_excitation import FermionicDoubleExcitation
-from .fermionic_single_excitation import FermionicSingleExcitation
 
 
 def generalized_singles(wires, delta_sz):
@@ -230,13 +225,13 @@ class kUpCCGSD(Operation):
         s_wires = generalized_singles(list(wires), delta_sz)
         d_wires = generalized_pair_doubles(list(wires))
 
-        shape = math.shape(weights)
+        shape = qml.math.shape(weights)
         if shape != (k, len(s_wires) + len(d_wires)):
             raise ValueError(
                 f"Weights tensor must be of shape {(k, len(s_wires) + len(d_wires))}; got {shape}."
             )
 
-        init_state = math.toarray(init_state)
+        init_state = qml.math.toarray(init_state)
         if init_state.dtype != np.dtype("int"):
             raise ValueError(f"Elements of 'init_state' must be integers; got {init_state.dtype}")
 
@@ -297,18 +292,18 @@ class kUpCCGSD(Operation):
         """
         op_list = []
 
-        op_list.append(BasisEmbedding(init_state, wires=wires))
+        op_list.append(qml.BasisEmbedding(init_state, wires=wires))
 
         for layer in range(k):
             for i, (w1, w2) in enumerate(d_wires):
                 op_list.append(
-                    FermionicDoubleExcitation(
+                    qml.FermionicDoubleExcitation(
                         weights[layer][len(s_wires) + i], wires1=w1, wires2=w2
                     )
                 )
 
             for j, s_wires_ in enumerate(s_wires):
-                op_list.append(FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
+                op_list.append(qml.FermionicSingleExcitation(weights[layer][j], wires=s_wires_))
 
         return op_list
 

@@ -16,7 +16,6 @@ This file provides a device that calculates derivatives via parameter shift.
 """
 
 import dataclasses
-from typing import Optional
 
 import pennylane as qml
 
@@ -85,9 +84,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
         jacs = fn(all_results[len(circuits) :])
         return (results[0], jacs[0]) if is_single_circuit else (results, jacs)
 
-    def compute_jvp(
-        self, circuits, tangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
-    ):
+    def compute_jvp(self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig):
         is_single_circuit = False
         if isinstance(circuits, qml.tape.QuantumScript):
             is_single_circuit = True
@@ -103,7 +100,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
         return fn(results)[0] if is_single_circuit else fn(results)
 
     def execute_and_compute_jvp(
-        self, circuits, tangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
+        self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig
     ):
         is_single_circuit = False
         if isinstance(circuits, qml.tape.QuantumScript):
@@ -127,7 +124,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
         return (results[0], jvps[0]) if is_single_circuit else results, jvps
 
     def compute_vjp(
-        self, circuits, cotangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
+        self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
     ):
         is_single_circuit = False
         if isinstance(circuits, qml.tape.QuantumScript):
@@ -144,7 +141,7 @@ class ParamShiftDerivativesDevice(qml.devices.DefaultQubit):
         return fn(results)[0] if is_single_circuit else fn(results)
 
     def execute_and_compute_vjp(
-        self, circuits, cotangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
+        self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
     ):
         is_single_circuit = False
         if isinstance(circuits, qml.tape.QuantumScript):

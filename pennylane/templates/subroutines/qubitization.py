@@ -17,12 +17,9 @@ This submodule contains the template for Qubitization.
 
 import copy
 
+import pennylane as qml
 from pennylane.operation import Operation
-from pennylane.ops import I, prod
 from pennylane.wires import Wires
-
-from .prepselprep import PrepSelPrep
-from .reflection import Reflection
 
 
 class Qubitization(Operation):
@@ -80,11 +77,11 @@ class Qubitization(Operation):
         return cls._primitive.bind(*args, **kwargs)
 
     def __init__(self, hamiltonian, control, id=None):
-        wires = Wires(control) + hamiltonian.wires
+        wires = qml.wires.Wires(control) + hamiltonian.wires
 
         self._hyperparameters = {
             "hamiltonian": hamiltonian,
-            "control": Wires(control),
+            "control": qml.wires.Wires(control),
         }
 
         super().__init__(*hamiltonian.data, wires=wires, id=id)
@@ -118,8 +115,8 @@ class Qubitization(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(w, w) for w in self.wires])
-        new_op._hyperparameters["hamiltonian"] = new_op._hyperparameters["hamiltonian"].map_wires(
-            wire_map
+        new_op._hyperparameters["hamiltonian"] = qml.map_wires(
+            new_op._hyperparameters["hamiltonian"], wire_map
         )
         new_op._hyperparameters["control"] = Wires(
             [wire_map.get(w, w) for w in self._hyperparameters["control"]]
@@ -158,9 +155,9 @@ class Qubitization(Operation):
 
         decomp_ops = []
 
-        identity = prod(*[I(wire) for wire in control])
+        identity = qml.prod(*[qml.Identity(wire) for wire in control])
 
-        decomp_ops.append(Reflection(identity))
-        decomp_ops.append(PrepSelPrep(hamiltonian, control=control))
+        decomp_ops.append(qml.Reflection(identity))
+        decomp_ops.append(qml.PrepSelPrep(hamiltonian, control=control))
 
         return decomp_ops

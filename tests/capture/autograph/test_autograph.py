@@ -21,6 +21,14 @@ from malt.core import converter
 
 import pennylane as qml
 from pennylane import grad, jacobian, measure
+
+pytestmark = pytest.mark.capture
+
+jax = pytest.importorskip("jax")
+
+# must be below jax importorskip
+# pylint: disable=wrong-import-position
+from pennylane.capture.autograph.ag_primitives import AutoGraphError
 from pennylane.capture.autograph.transformer import (
     NESTED_OPTIONS,
     STANDARD_OPTIONS,
@@ -30,15 +38,6 @@ from pennylane.capture.autograph.transformer import (
     autograph_source,
     run_autograph,
 )
-
-pytestmark = pytest.mark.capture
-
-jax = pytest.importorskip("jax")
-
-
-# must be below jax importorskip
-# pylint: disable=wrong-import-position
-from pennylane.exceptions import AutoGraphError
 
 check_cache = TRANSFORMER.has_cache
 

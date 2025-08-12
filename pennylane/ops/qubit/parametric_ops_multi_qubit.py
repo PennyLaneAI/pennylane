@@ -20,6 +20,7 @@ core parametrized gates.
 import functools
 from collections import Counter
 from operator import matmul
+from typing import Optional, Union
 
 import numpy as np
 
@@ -77,7 +78,7 @@ class MultiRZ(Operation):
     def _flatten(self) -> FlatPytree:
         return self.data, (self.wires, tuple())
 
-    def __init__(self, theta: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, theta: TensorLike, wires: WiresLike, id: Optional[str] = None):
         wires = Wires(wires)
         self.hyperparameters["num_wires"] = len(wires)
         super().__init__(theta, wires=wires, id=id)
@@ -202,7 +203,7 @@ class MultiRZ(Operation):
     def adjoint(self) -> "MultiRZ":
         return MultiRZ(-self.parameters[0], wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         return [MultiRZ(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "MultiRZ":
@@ -309,7 +310,7 @@ class PauliRot(Operation):
         theta: TensorLike,
         pauli_word: str,
         wires: WiresLike,
-        id: str | None = None,
+        id: Optional[str] = None,
     ):
         super().__init__(theta, wires=wires, id=id)
 
@@ -339,9 +340,9 @@ class PauliRot(Operation):
 
     def label(
         self,
-        decimals: int | None = None,
-        base_label: str | None = None,
-        cache: dict | None = None,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
     ) -> str:
         r"""A customizable string representation of the operator.
 
@@ -712,7 +713,7 @@ class PCPhase(Operation):
         hyperparameter = (("dim", self.hyperparameters["dimension"][0]),)
         return tuple(self.data), (self.wires, hyperparameter)
 
-    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, dim: int, wires: WiresLike, id: Optional[str] = None):
         wires = wires if isinstance(wires, Wires) else Wires(wires)
 
         if not (isinstance(dim, int) and (dim <= 2 ** len(wires))):
@@ -890,7 +891,7 @@ class PCPhase(Operation):
         dim, _ = self.hyperparameters["dimension"]
         return PCPhase(-1 * phi, dim=dim, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         """Computes the operator raised to z."""
         phi = self.parameters[0]
         dim, _ = self.hyperparameters["dimension"]
@@ -908,9 +909,9 @@ class PCPhase(Operation):
 
     def label(
         self,
-        decimals: int | None = None,
-        base_label: str | None = None,
-        cache: dict | None = None,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
     ) -> str:
         """The label of the operator when displayed in a circuit."""
         return super().label(decimals=decimals, base_label=base_label or "∏_ϕ", cache=cache)
@@ -1145,7 +1146,7 @@ class IsingXX(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliX(wires=self.wires[0]) @ PauliX(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -1227,7 +1228,7 @@ class IsingXX(Operation):
         (phi,) = self.parameters
         return IsingXX(-phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         return [IsingXX(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXX":
@@ -1303,7 +1304,7 @@ class IsingYY(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliY(wires=self.wires[0]) @ PauliY(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -1391,7 +1392,7 @@ class IsingYY(Operation):
         (phi,) = self.parameters
         return IsingYY(-phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         return [IsingYY(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingYY":
@@ -1468,7 +1469,7 @@ class IsingZZ(Operation):
     def generator(self) -> "qml.Hamiltonian":
         return qml.Hamiltonian([-0.5], [PauliZ(wires=self.wires[0]) @ PauliZ(wires=self.wires[1])])
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -1586,7 +1587,7 @@ class IsingZZ(Operation):
         (phi,) = self.parameters
         return IsingZZ(-phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         return [IsingZZ(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingZZ":
@@ -1680,7 +1681,7 @@ class IsingXY(Operation):
             ],
         )
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -1809,7 +1810,7 @@ class IsingXY(Operation):
         (phi,) = self.parameters
         return IsingXY(-phi, wires=self.wires)
 
-    def pow(self, z: int | float) -> list[Operator]:
+    def pow(self, z: Union[int, float]) -> list[Operator]:
         return [IsingXY(self.data[0] * z, wires=self.wires)]
 
     def simplify(self) -> "IsingXY":
@@ -1878,7 +1879,7 @@ class PSWAP(Operation):
     grad_method = "A"
     grad_recipe = ([[0.5, 1, np.pi / 2], [-0.5, 1, -np.pi / 2]],)
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -2064,7 +2065,7 @@ class CPhaseShift00(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -2073,9 +2074,9 @@ class CPhaseShift00(Operation):
 
     def label(
         self,
-        decimals: int | None = None,
-        base_label: str | None = None,
-        cache: dict | None = None,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
     ) -> str:
         return super().label(decimals=decimals, base_label="Rϕ(00)", cache=cache)
 
@@ -2202,7 +2203,7 @@ class CPhaseShift00(Operation):
     def adjoint(self) -> "CPhaseShift00":
         return CPhaseShift00(-self.data[0], wires=self.wires)
 
-    def pow(self, z: int | float) -> "CPhaseShift00":
+    def pow(self, z: Union[int, float]) -> "CPhaseShift00":
         return [CPhaseShift00(self.data[0] * z, wires=self.wires)]
 
     @property
@@ -2284,7 +2285,7 @@ class CPhaseShift01(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -2293,9 +2294,9 @@ class CPhaseShift01(Operation):
 
     def label(
         self,
-        decimals: int | None = None,
-        base_label: str | None = None,
-        cache: dict | None = None,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
     ) -> str:
         return super().label(decimals=decimals, base_label="Rϕ(01)", cache=cache)
 
@@ -2415,7 +2416,7 @@ class CPhaseShift01(Operation):
     def adjoint(self) -> "CPhaseShift01":
         return CPhaseShift01(-self.data[0], wires=self.wires)
 
-    def pow(self, z: int | float) -> "CPhaseShift01":
+    def pow(self, z: Union[int, float]) -> "CPhaseShift01":
         return [CPhaseShift01(self.data[0] * z, wires=self.wires)]
 
     @property
@@ -2494,7 +2495,7 @@ class CPhaseShift10(Operation):
 
     resource_keys = set()
 
-    def __init__(self, phi: TensorLike, wires: WiresLike, id: str | None = None):
+    def __init__(self, phi: TensorLike, wires: WiresLike, id: Optional[str] = None):
         super().__init__(phi, wires=wires, id=id)
 
     @property
@@ -2503,9 +2504,9 @@ class CPhaseShift10(Operation):
 
     def label(
         self,
-        decimals: int | None = None,
-        base_label: str | None = None,
-        cache: dict | None = None,
+        decimals: Optional[int] = None,
+        base_label: Optional[str] = None,
+        cache: Optional[dict] = None,
     ) -> str:
         return super().label(decimals=decimals, base_label="Rϕ(10)", cache=cache)
 
@@ -2625,7 +2626,7 @@ class CPhaseShift10(Operation):
     def adjoint(self) -> "CPhaseShift10":
         return CPhaseShift10(-self.data[0], wires=self.wires)
 
-    def pow(self, z: int | float):
+    def pow(self, z: Union[int, float]):
         return [CPhaseShift10(self.data[0] * z, wires=self.wires)]
 
     @property

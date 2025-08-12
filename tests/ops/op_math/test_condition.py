@@ -28,9 +28,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import ConditionalTransformError
 from pennylane.operation import Operator
-from pennylane.ops.op_math.condition import Conditional
+from pennylane.ops.op_math.condition import Conditional, ConditionalTransformError
 
 terminal_meas = [
     qml.probs(wires=[1, 0]),

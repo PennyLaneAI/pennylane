@@ -121,13 +121,12 @@ class TestBasics:
         )
         assert repr(jpc) == expected_repr
 
-    def test_device_derivatives_initialization_without_config(self):
-        """Test that not providing an execution config sets it to None."""
+    def test_no_config_falls_back_to_default_config(self):
         device = qml.device("default.qubit")
 
         jpc = DeviceDerivatives(device)
 
-        assert jpc._execution_config is None
+        assert jpc._execution_config == qml.devices.DefaultExecutionConfig
 
     def test_device_jacobians_initialization_new_dev(self):
         """Tests the private attributes are set during initialization of a DeviceDerivatives class."""

@@ -1,6 +1,5 @@
 qubit q0;
 qubit anc;
-qubit[2] p;
 
 def second(qubit q) {
     h q;
@@ -21,10 +20,4 @@ def third(qubit q, float a) {
     rx(a) q;
 }
 
-def fourth(qubit[2] p) {
-    x p[0];
-    y p[1];
-}
-
 third(q0, 0.1);
-fourth(p);

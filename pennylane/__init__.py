@@ -17,21 +17,21 @@ PennyLane can be directly imported.
 """
 import warnings
 
-from pennylane import exceptions
+import pennylane.exceptions
 from pennylane.boolean_fn import BooleanFn
-from pennylane import numpy
+import pennylane.numpy
 from pennylane.queuing import QueuingManager, apply
 
-from pennylane import compiler
+import pennylane.compiler
 from pennylane.compiler import qjit
-from pennylane import capture
-from pennylane import control_flow
+import pennylane.capture
+import pennylane.control_flow
 from pennylane.control_flow import for_loop, while_loop
-from pennylane import kernels
-from pennylane import math
-from pennylane import operation
-from pennylane import allocation
-from pennylane import decomposition
+import pennylane.kernels
+import pennylane.math
+import pennylane.operation
+import pennylane.allocation
+import pennylane.decomposition
 from pennylane.decomposition import (
     register_resources,
     register_condition,
@@ -39,12 +39,12 @@ from pennylane.decomposition import (
     list_decomps,
     resource_rep,
 )
-from pennylane import templates
-from pennylane import pauli
+import pennylane.templates
+import pennylane.pauli
 from pennylane.pauli import pauli_decompose
 from pennylane.resource import specs
-from pennylane import resource
-from pennylane import qchem
+import pennylane.resource
+import pennylane.qchem
 from pennylane.fermi import (
     FermiC,
     FermiA,
@@ -103,7 +103,6 @@ from pennylane.templates.state_preparations import *
 from pennylane.templates.subroutines import *
 from pennylane import qaoa
 from pennylane.workflow import QNode, qnode, execute, set_shots
-from pennylane import workflow
 from pennylane.io import (
     from_pyquil,
     from_qasm,
@@ -132,15 +131,7 @@ from pennylane.transforms import (
     pattern_matching,
     pattern_matching_optimization,
     clifford_t_decomposition,
-)
-from pennylane.noise import (
     add_noise,
-    insert,
-    mitigate_with_zne,
-    fold_global,
-    poly_extrapolate,
-    richardson_extrapolate,
-    exponential_extrapolate,
 )
 from pennylane.ops.functions import (
     dot,
@@ -171,55 +162,51 @@ from pennylane.debugging import (
 )
 from pennylane.shadows import ClassicalShadow
 from pennylane.qcut import cut_circuit, cut_circuit_mc
-from pennylane import pulse
+import pennylane.pulse
 
-from pennylane import fourier
+import pennylane.fourier
 from pennylane.gradients import metric_tensor, adjoint_metric_tensor
-from pennylane import gradients  # pylint:disable=wrong-import-order
+import pennylane.gradients  # pylint:disable=wrong-import-order
 from pennylane.drawer import draw, draw_mpl
 
 # pylint:disable=wrong-import-order
-from pennylane import logging  # pylint:disable=wrong-import-order
+import pennylane.logging  # pylint:disable=wrong-import-order
 
-from pennylane import data
+import pennylane.data
 
-from pennylane import noise
+import pennylane.noise
 from pennylane.noise import NoiseModel
 
 from pennylane.devices import Tracker
 from pennylane.devices.device_constructor import device, refresh_devices
 
-from pennylane import spin
+import pennylane.spin
 
-from pennylane import liealg
+import pennylane.liealg
 from pennylane.liealg import lie_closure, structure_constants, center
-from pennylane import qnn
-
-from importlib.metadata import version as _metadata_version
-from importlib.util import find_spec as _find_spec
-from packaging.version import Version as _Version
-
-if _find_spec("jax") is not None:
-    if (jax_version := _Version(_metadata_version("jax"))) > _Version("0.6.2"):  # pragma: no cover
-        warnings.warn(
-            "PennyLane is not yet compatible with JAX versions > 0.6.2. "
-            f"You have version {jax_version} installed. "
-            "Please downgrade JAX to 0.6.2 to avoid runtime errors using "
-            "python -m pip install jax~=0.6.0 jaxlib~=0.6.0",
-            RuntimeWarning,
-        )
+import pennylane.qnn
 
 # Look for an existing configuration file
 default_config = Configuration("config.toml")
 
 
 def __getattr__(name):
+    if name in {
+        "DeviceError",
+        "PennyLaneDeprecationWarning",
+        "QuantumFunctionError",
+        "ExperimentalWarning",
+    }:  # pragma: no cover
+        warnings.warn(
+            f"pennylane.{name} is no longer accessible at top-level \
+                and must be imported as pennylane.exceptions.{name}. \
+                    Support for top-level access will be removed in v0.43.",
+            pennylane.exceptions.PennyLaneDeprecationWarning,
+        )
+        return getattr(pennylane.exceptions, name)
 
     if name == "plugin_devices":
-        # pylint: disable=import-outside-toplevel
-        from pennylane.devices.device_constructor import plugin_devices
-
-        return plugin_devices
+        return pennylane.devices.device_constructor.plugin_devices
 
     raise AttributeError(f"module 'pennylane' has no attribute '{name}'")
 

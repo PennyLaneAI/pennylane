@@ -723,7 +723,7 @@ class TestDecompositions:
 
         assert np.allclose(decomposed_matrix, exp)
 
-    @pytest.mark.parametrize("work_wire_type", ["zeroed", "borrowed"])
+    @pytest.mark.parametrize("work_wire_type", ["clean", "dirty"])
     def test_controlled_phase_shift_decomp_new(self, work_wire_type):
         """tests the new controlled phase shift decomposition"""
 

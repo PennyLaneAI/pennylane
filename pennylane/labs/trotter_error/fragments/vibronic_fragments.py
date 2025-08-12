@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from typing import List, Sequence
 
 import numpy as np
 
@@ -30,7 +30,7 @@ from pennylane.labs.trotter_error.realspace.realspace_matrix import _next_pow_2
 
 def vibronic_fragments(
     states: int, modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray]
-) -> list[RealspaceMatrix]:
+) -> List[RealspaceMatrix]:
     """Returns a list of fragments summing to a vibronic Hamiltonian.
 
     Args:

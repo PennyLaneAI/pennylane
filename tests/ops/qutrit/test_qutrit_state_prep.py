@@ -18,7 +18,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import WireError
+from pennylane.wires import WireError
 
 
 def test_QutritBasisState_decomposition():

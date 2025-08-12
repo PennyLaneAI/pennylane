@@ -22,8 +22,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.exceptions import ConditionalTransformError
-from pennylane.ops.op_math.condition import CondCallable
+from pennylane.ops.op_math.condition import CondCallable, ConditionalTransformError
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
 

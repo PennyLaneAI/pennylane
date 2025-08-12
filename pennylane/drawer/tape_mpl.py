@@ -22,9 +22,8 @@ images.  If you change the docstring examples, please update this file.
 from __future__ import annotations
 
 from collections import namedtuple
-from collections.abc import Sequence
 from functools import singledispatch
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Sequence
 
 from pennylane import ops
 from pennylane.measurements import MidMeasureMP
@@ -335,13 +334,13 @@ def _tape_mpl(tape, wire_order=None, show_all_wires=False, max_length=None, **kw
 # pylint: disable=too-many-arguments
 def tape_mpl(
     tape: QuantumScript,
-    wire_order: Sequence | None = None,
+    wire_order: Optional[Sequence] = None,
     show_all_wires: bool = False,
-    decimals: int | None = None,
-    style: str | None = None,
+    decimals: Optional[int] = None,
+    style: Optional[str] = None,
     *,
-    fig: mpl.figure.Figure | None = None,
-    max_length: int | None = None,
+    fig: Optional["mpl.figure.Figure"] = None,
+    max_length: Optional[int] = None,
     **kwargs,
 ):
     """Produces matplotlib graphic objects (``fig`` and ``ax``) from a tape.

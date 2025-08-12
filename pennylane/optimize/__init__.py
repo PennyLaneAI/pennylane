@@ -33,7 +33,6 @@ from .rotosolve import RotosolveOptimizer
 from .shot_adaptive import ShotAdaptiveOptimizer
 from .spsa import SPSAOptimizer
 from .qng_qjit import QNGOptimizerQJIT
-from .momentum_qng_qjit import MomentumQNGOptimizerQJIT
 
 # Optimizers to display in the docs
 __all__ = [
@@ -53,5 +52,4 @@ __all__ = [
     "ShotAdaptiveOptimizer",
     "SPSAOptimizer",
     "QNGOptimizerQJIT",
-    "MomentumQNGOptimizerQJIT",
 ]

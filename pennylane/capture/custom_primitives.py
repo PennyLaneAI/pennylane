@@ -19,6 +19,7 @@ This submodule offers custom primitives for the PennyLane capture module.
 # pylint: disable=abstract-method
 
 from enum import Enum
+from typing import Union
 
 from jax.extend.core import Primitive
 
@@ -47,6 +48,6 @@ class QmlPrimitive(Primitive):
         return self._prim_type.value
 
     @prim_type.setter
-    def prim_type(self, value: str | PrimitiveType):
+    def prim_type(self, value: Union[str, PrimitiveType]):
         """Setter for QmlPrimitive.prim_type."""
         self._prim_type = PrimitiveType(value)

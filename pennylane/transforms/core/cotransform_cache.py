@@ -15,6 +15,7 @@
 This submodule contains the CotransformCache for handling the classical cotransform part of a transform.
 """
 from functools import partial
+from typing import Optional
 
 import pennylane as qml  # for qml.workflow.construct_tape
 from pennylane import math
@@ -198,7 +199,7 @@ class CotransformCache:
         classical_jacobian = _jac_map[interface](f, argnums, *self.args, **self.kwargs)
         return classical_jacobian
 
-    def get_argnums(self, transform: TransformContainer) -> list[set[int]] | None:
+    def get_argnums(self, transform: TransformContainer) -> Optional[list[set[int]]]:
         """Calculate the trainable params from the argnums in the transform.
 
         .. code-block:: python

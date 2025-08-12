@@ -23,9 +23,8 @@ import numpy as np
 
 from pennylane import math, ops
 from pennylane.devices.preprocess import decompose
-from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.measurements import ProbabilityMP, expval
-from pennylane.operation import Operator
+from pennylane.operation import DecompositionUndefinedError, Operator
 from pennylane.pauli import PauliWord, pauli_decompose
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import split_to_single_terms

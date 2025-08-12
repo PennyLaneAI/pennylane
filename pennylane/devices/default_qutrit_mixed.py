@@ -18,6 +18,7 @@ import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
 from functools import partial
+from typing import Optional, Union
 
 import numpy as np
 
@@ -31,7 +32,7 @@ from pennylane.typing import Result, ResultBatch
 
 from . import Device
 from .default_qutrit import DefaultQutrit
-from .execution_config import ExecutionConfig
+from .execution_config import DefaultExecutionConfig, ExecutionConfig
 from .modifiers import simulator_tracking, single_tape_support
 from .preprocess import (
     decompose,
@@ -287,8 +288,8 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def supports_derivatives(
         self,
-        execution_config: ExecutionConfig | None = None,
-        circuit: QuantumScript | None = None,
+        execution_config: Optional[ExecutionConfig] = None,
+        circuit: Optional[QuantumScript] = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -334,7 +335,7 @@ class DefaultQutritMixed(Device):
     @debug_logger
     def preprocess(
         self,
-        execution_config: ExecutionConfig | None = None,
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """This function defines the device transform program to be applied and an updated device
         configuration.
@@ -355,8 +356,6 @@ class DefaultQutritMixed(Device):
         * Supports any qutrit channel that provides Kraus matrices
 
         """
-        if execution_config is None:
-            execution_config = ExecutionConfig()
         config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
@@ -386,10 +385,8 @@ class DefaultQutritMixed(Device):
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig | None = None,
-    ) -> Result | ResultBatch:
-        if execution_config is None:
-            execution_config = ExecutionConfig()
+        execution_config: ExecutionConfig = DefaultExecutionConfig,
+    ) -> Union[Result, ResultBatch]:
         interface = (
             execution_config.interface
             if execution_config.gradient_method in {"best", "backprop", None}

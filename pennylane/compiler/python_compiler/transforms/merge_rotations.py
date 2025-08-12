@@ -22,7 +22,7 @@ from xdsl.dialects import arith, builtin, func
 from xdsl.ir import Operation
 from xdsl.rewriter import InsertPoint
 
-from ..dialects.quantum import CustomOp
+from ..quantum_dialect import CustomOp
 from .api import compiler_transform
 
 # Can handle all composible rotations except Rot... for now

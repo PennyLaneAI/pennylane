@@ -17,6 +17,7 @@ Utility functions to convert between ``~.PauliSentence`` and other PennyLane ope
 from functools import reduce, singledispatch
 from itertools import product
 from operator import matmul
+from typing import Union
 
 import pennylane as qml
 from pennylane.math.utils import is_abstract
@@ -217,7 +218,7 @@ def _generalized_pauli_decompose(
 
 def pauli_decompose(
     H, hide_identity=False, wire_order=None, pauli=False, check_hermitian=True
-) -> LinearCombination | PauliSentence:
+) -> Union[LinearCombination, PauliSentence]:
     r"""Decomposes a Hermitian matrix into a linear combination of Pauli operators.
 
     Args:

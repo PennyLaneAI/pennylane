@@ -13,7 +13,7 @@
 # limitations under the License.
 """CNOT routing algorithm ROWCOL as described in https://arxiv.org/abs/1910.14478."""
 
-from collections.abc import Iterable
+from typing import Iterable
 
 import networkx as nx
 import numpy as np

@@ -15,8 +15,8 @@
 Test the base and abstract Resource class
 """
 from collections import defaultdict
-from collections.abc import Hashable
 from dataclasses import dataclass
+from typing import Hashable, List
 
 import numpy as np
 import pytest
@@ -159,7 +159,7 @@ class TestCompressedResourceOp:
     def test_type_error(self):
         """Test that an error is raised if wrong type is provided for op_type."""
         with pytest.raises(TypeError, match="op_type must be a subclass of ResourceOperator."):
-            CompressedResourceOp(int)
+            CompressedResourceOp(type(1))
 
 
 @dataclass(frozen=True)
@@ -184,17 +184,14 @@ class DummyOp(ResourceOperator):
 
     @property
     def resource_params(self):
-        """dummy resource params method"""
         return {"x": self.x}
 
     @classmethod
     def resource_rep(cls, x):
-        """dummy resource rep method"""
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
-        """dummy resources"""
+    def default_resource_decomp(cls, x) -> List:
         return [x]
 
 
@@ -207,12 +204,10 @@ class DummyOp_no_resource_rep(ResourceOperator):
 
     @property
     def resource_params(self):
-        """dummy resource params method"""
         return DummyCmprsRep({"x": self.x})
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
-        """dummy resources"""
+    def default_resource_decomp(cls, x) -> List:
         return [x]
 
 
@@ -225,12 +220,10 @@ class DummyOp_no_resource_params(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, x):
-        """dummy resource rep method"""
         return DummyCmprsRep(cls.__name__, param=x)
 
     @classmethod
-    def default_resource_decomp(cls, x) -> list:
-        """dummy resources"""
+    def default_resource_decomp(cls, x) -> List:
         return [x]
 
 
@@ -243,12 +236,10 @@ class DummyOp_no_resource_decomp(ResourceOperator):
 
     @classmethod
     def resource_rep(cls, x):
-        """dummy resource rep method"""
         return DummyCmprsRep(cls.__name__, param=x)
 
     @property
     def resource_params(self):
-        """dummy resource params method"""
         return DummyCmprsRep({"x": self.x})
 
 
@@ -287,46 +278,24 @@ class TestResourceOperator:
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             res_op(x=1)
 
-    ops_to_queue = [
-        ResourceHadamard(wires=[0]),
-        ResourceHadamard(wires=[1]),
-        ResourceCNOT(wires=[0, 1]),
-        ResourceRX(x=1.23, wires=[0]),
-    ]
-
     def test_init_queuing(self):
         """Test that instantiating a resource operator correctly sets its arguments
         and queues it."""
+
         with AnnotatedQueue() as q:
             ResourceHadamard(wires=[0])
             ResourceHadamard(wires=[1])
             ResourceCNOT(wires=[0, 1])
             ResourceRX(x=1.23, wires=[0])
 
-        assert q.queue == self.ops_to_queue
+        expected_queue = [
+            ResourceHadamard(wires=[0]),
+            ResourceHadamard(wires=[1]),
+            ResourceCNOT(wires=[0, 1]),
+            ResourceRX(x=1.23, wires=[0]),
+        ]
 
-    def test_dequeue(self):
-        """Test that we can remove a resource operator correctly."""
-        ops_to_remove = (
-            self.ops_to_queue[0],
-            [self.ops_to_queue[2]],
-            self.ops_to_queue[0:3],
-        )
-
-        expected_queues = (
-            self.ops_to_queue[1:],
-            self.ops_to_queue[:2] + self.ops_to_queue[3:],
-            self.ops_to_queue[3:],
-        )
-
-        for op_to_remove, expected_queue in zip(ops_to_remove, expected_queues):
-            with AnnotatedQueue() as q:
-                for op in self.ops_to_queue:
-                    qml.apply(op)
-
-                ResourceOperator.dequeue(op_to_remove)
-
-            assert q.queue == expected_queue
+        assert q.queue == expected_queue
 
     def test_init_wire_override(self):
         """Test that setting the wires correctly overrides the num_wires argument."""
@@ -506,7 +475,6 @@ def test_set_adj_decomp():
 
         @classmethod
         def default_adjoint_resource_decomp(cls, x):
-            """dummy adjoint resource decomp method"""
             return cls.default_resource_decomp(x=x)
 
     op1 = DummyAdjOp(x=5)
@@ -534,7 +502,6 @@ def test_set_ctrl_decomp():
 
         @classmethod
         def default_controlled_resource_decomp(cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, x):
-            """dummy control resource decomp method"""
             return cls.default_resource_decomp(x=x + ctrl_num_ctrl_values)
 
     op1 = DummyCtrlOp(x=5)
@@ -562,7 +529,6 @@ def test_set_pow_decomp():
 
         @classmethod
         def default_pow_resource_decomp(cls, pow_z, x):
-            """dummy adjoint resource decomp method"""
             return cls.default_resource_decomp(x=x)
 
     op1 = DummyPowOp(x=5)
@@ -662,7 +628,6 @@ def test_resource_rep():
 
         @classmethod
         def default_resource_decomp(cls, num_wires, continuous_param, bool_param):
-            """dummy default resource decomp method"""
             raise NotImplementedError
 
     class ResourceOpB(ResourceOperator):
@@ -682,7 +647,6 @@ def test_resource_rep():
 
         @classmethod
         def default_resource_decomp(cls, **kwargs):
-            """dummy default resource decomp method"""
             raise NotImplementedError
 
     expected_resource_rep_A = CompressedResourceOp(

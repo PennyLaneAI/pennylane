@@ -3104,7 +3104,7 @@ class TestSetIndex:
         # since idx and val have no interface, we expect the returned array type to match initial type
         assert isinstance(array2, type(array))
 
-    @pytest.mark.parametrize("array", [qml.numpy.zeros(4), torch.zeros(4), jnp.zeros(4)])
+    @pytest.mark.parametrize("array", [qml.numpy.zeros((4)), torch.zeros((4)), jnp.zeros((4))])
     def test_set_index_jax_1d_array(self, array):
         """Test that an array can be created that is a copy of the
         original array, with the value at the specified index updated"""

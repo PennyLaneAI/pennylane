@@ -37,13 +37,6 @@ class TestSemiAdder:
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "work_wires", "x", "y"),
         [
-            ([0], [1], None, 1, 0),
-            ([0], [1], None, 1, 1),
-            ([0, 1], [2], None, 0, 1),
-            ([0, 1], [2], None, 1, 1),
-            ([0, 1], [2], None, 1, 0),
-            ([0, 1], [2, 3], [4], 2, 0),
-            ([0, 1], [2, 3], [4], 1, 2),
             ([0, 1, 2], [3, 4, 5], [6, 7], 1, 2),
             ([0, 1, 2], [3, 4, 5], [6, 7], 5, 6),
             ([0, 1], [2, 3, 4], [5, 6], 3, 2),
@@ -70,21 +63,15 @@ class TestSemiAdder:
 
         output = circuit(x, y)
 
-        if len(y_wires) == 1:
-            sample = [output[0]]
-        else:
-            sample = output[0]
-
         #  check that the output sample is the binary representation of x + y mod 2^len(y_wires)
         # pylint: disable=bad-reversed-sequence
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(sample))),
+            sum(bit * (2**i) for i, bit in enumerate(reversed(output[0]))),
             (x + y) % 2 ** len(y_wires),
         )
 
-        if work_wires:
-            # check work_wires are in state |0>
-            assert np.isclose(output[1][0], 1.0)
+        # check work_wires are in state |0>
+        assert np.isclose(output[1][0], 1.0)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "work_wires", "msg_match"),
@@ -139,7 +126,7 @@ class TestSemiAdder:
         # Example in Fig 1.  https://arxiv.org/pdf/1709.06648
         assert names.count("TemporaryAND") == 4
         assert names.count("Adjoint(TemporaryAND)") == 4
-        assert names.count("CNOT") == 21
+        assert names.count(("CNOT")) == 21
 
     @pytest.mark.parametrize(
         ("x_wires"),

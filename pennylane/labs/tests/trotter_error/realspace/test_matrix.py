@@ -13,6 +13,7 @@
 # limitations under the License.
 """Test matrix operations"""
 
+from typing import Dict, Tuple
 
 import numpy as np
 import pytest
@@ -100,7 +101,7 @@ class TestMatrix:
     @pytest.mark.parametrize("blocks, gridpoints, states, modes, sparse, expected", params)
     def test_norm(
         self,
-        blocks: dict[tuple[int], RealspaceSum],
+        blocks: Dict[Tuple[int], RealspaceSum],
         gridpoints: int,
         states: int,
         modes: int,
@@ -133,7 +134,7 @@ class TestMatrix:
     @pytest.mark.parametrize("blocks, gridpoints, states, modes, sparse", params)
     def test_norm_against_numpy(
         self,
-        blocks: dict[tuple[int], RealspaceSum],
+        blocks: Dict[Tuple[int], RealspaceSum],
         gridpoints: int,
         states: int,
         modes: int,

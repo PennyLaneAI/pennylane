@@ -15,8 +15,6 @@
 Test base AlgorithmicError class and its associated methods.
 """
 
-from typing import Optional
-
 import numpy as np
 
 # pylint: disable=too-few-public-methods, unused-argument
@@ -247,7 +245,7 @@ class TestSpecAndTracker:
     # TODO: remove this when support for below is present
     # little hack for stopping device-level decomposition for custom ops
     @staticmethod
-    def preprocess(execution_config: Optional[qml.devices.ExecutionConfig] = None):
+    def preprocess(execution_config=qml.devices.DefaultExecutionConfig):
         """A vanilla preprocesser"""
         return qml.transforms.core.TransformProgram(), execution_config
 

@@ -18,9 +18,8 @@ import numpy as np
 
 import pennylane as qml
 from pennylane import math
-from pennylane.exceptions import WireError
 from pennylane.operation import StatePrepBase
-from pennylane.wires import Wires
+from pennylane.wires import WireError, Wires
 
 
 class CosineWindow(StatePrepBase):

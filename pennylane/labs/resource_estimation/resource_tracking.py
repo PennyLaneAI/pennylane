@@ -14,8 +14,9 @@
 r"""Core resource tracking logic."""
 import copy
 from collections import defaultdict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 from functools import singledispatch, wraps
+from typing import Dict, Iterable, List, Set, Union
 
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires, QubitManager
 from pennylane.labs.resource_estimation.resource_mapping import map_to_resource_op
@@ -70,18 +71,17 @@ resource_config = {
     "precision_select_pauli_rot": 1e-9,
     "precision_qubit_unitary": 1e-9,
     "precision_qrom_state_prep": 1e-9,
-    "precision_alias_sampling": 1e-9,
 }
 
 
 def estimate_resources(
-    obj: ResourceOperator | Callable | Resources | list,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
-    work_wires: int | dict = 0,
+    obj: Union[ResourceOperator, Callable, Resources, List],
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
+    work_wires: Union[int, Dict] = 0,
     tight_budget: bool = False,
-    single_qubit_rotation_error: float | None = None,
-) -> Resources | Callable:
+    single_qubit_rotation_error: Union[float, None] = None,
+) -> Union[Resources, Callable]:
     r"""Estimate the quantum resources required from a circuit or operation in terms of the gates
     provided in the gateset.
 
@@ -150,12 +150,12 @@ def estimate_resources(
 
 @singledispatch
 def _estimate_resources(
-    obj: ResourceOperator | Callable | Resources | list,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
-    work_wires: int | dict = 0,
+    obj: Union[ResourceOperator, Callable, Resources, List],
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
+    work_wires: Union[int, Dict] = 0,
     tight_budget: bool = False,
-) -> Resources | Callable:
+) -> Union[Resources, Callable]:
     r"""Raise error if there is no implementation registered for the object type."""
 
     raise TypeError(
@@ -166,8 +166,8 @@ def _estimate_resources(
 @_estimate_resources.register
 def resources_from_qfunc(
     obj: Callable,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
     work_wires=0,
     tight_budget=False,
 ) -> Callable:
@@ -209,8 +209,8 @@ def resources_from_qfunc(
 @_estimate_resources.register
 def resources_from_resource(
     obj: Resources,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -249,8 +249,8 @@ def resources_from_resource(
 @_estimate_resources.register
 def resources_from_resource_ops(
     obj: ResourceOperator,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -270,8 +270,8 @@ def resources_from_resource_ops(
 @_estimate_resources.register
 def resources_from_pl_ops(
     obj: Operation,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
+    gate_set: Set = DefaultGateSet,
+    config: Dict = resource_config,
     work_wires=None,
     tight_budget=None,
 ) -> Resources:
@@ -290,9 +290,9 @@ def _counts_from_compressed_res_op(
     cp_rep: CompressedResourceOp,
     gate_counts_dict,
     qbit_mngr,
-    gate_set: set,
+    gate_set: Set,
     scalar: int = 1,
-    config: dict = resource_config,
+    config: Dict = resource_config,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
 
@@ -367,8 +367,8 @@ def _update_config_single_qubit_rot_error(config, error):
 
 @QueuingManager.stop_recording()
 def _ops_to_compressed_reps(
-    ops: Iterable[Operation | ResourceOperator],
-) -> list[CompressedResourceOp]:
+    ops: Iterable[Union[Operation, ResourceOperator]],
+) -> List[CompressedResourceOp]:
     """Convert the sequence of operations to a list of compressed resource ops.
 
     Args:

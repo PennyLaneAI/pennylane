@@ -937,9 +937,6 @@ class TestWorkflows:
 
         if "jax" in angle_type or use_jit:
             jax = pytest.importorskip("jax")
-            array_fn = jax.numpy.array
-        else:
-            array_fn = np.array
 
         if mcm_method == "tree-traversal" and use_jit:
             # https://docs.pennylane.ai/en/stable/introduction/dynamic_quantum_circuits.html#tree-traversal-algorithm
@@ -948,9 +945,9 @@ class TestWorkflows:
         dev = qml.device("default.qubit", shots=shots)
 
         if angle_type == "numpy":
-            angle = array_fn(angle)
+            angle = np.array(angle)
         elif angle_type == "jax":
-            angle = array_fn(angle)
+            angle = jax.numpy.array(angle)
 
         def jit_wrapper(func):
             if use_jit:

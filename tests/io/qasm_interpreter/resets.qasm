@@ -1,9 +1,10 @@
-qubit[10] q;
+qubit q;
+reset q;
 
-def reset_and_measure(qubit[10] q) -> bit {
-  bit b = "0000000000";
-  reset q;
-  measure q -> b;
+def reset_and_measure(qubit p) -> bit {
+  bit b = "0";
+  reset p;
+  measure p -> b;
   return b;
 }
 

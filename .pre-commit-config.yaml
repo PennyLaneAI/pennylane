@@ -1,45 +1,44 @@
 repos:
--   repo: https://github.com/gitleaks/gitleaks
-    rev: v8.28.0
-    hooks:
-      - id: gitleaks
-        name: "🔒 gitleaks · Detect hardcoded secrets"
 -   repo: https://github.com/psf/black
-    rev: 25.1.0
+    rev: 24.4.2
     hooks:
     - id: black
-      name: "🐍 black · Format code"
       args: [
-              "--config",
-              "./pyproject.toml",
+              "--line-length=100",
+              "-t", "py39",
+              "-t", "py310",
+              "-t", "py311",
             ]
       exclude: ^doc/
 -   repo: https://github.com/PyCQA/isort
-    rev: 6.0.1
+    rev: 5.13.2
     hooks:
     - id: isort
-      name: "🐍 isort · Sort imports"
       args:
         [
-          "--settings-path",
-          "./pyproject.toml",
+          "--py",
+          "311",
+          "--profile",
+          "black",
+          "-l",
+          "100",
+          "-o",
+          "autoray",
+          "-p",
+          "./pennylane",
+          "--skip",
+          "__init__.py",
+          "--filter-files",
         ]
       files: ^(pennylane/|tests/)
 -   repo: https://github.com/gauge-sh/tach-pre-commit
-    rev: v0.29.0
+    rev: v0.28.5
     hooks:
     -   id: tach
-        name: "🐍 tach · Check module dependencies"
--   repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
-    hooks:
-    -   id: pyupgrade
-        name: "🐍 pyupgrade · Check language features"
-        args: [--py311-plus]
 - repo: local
   hooks:
     - id: pylint
-      name: "🐍 pylint · Lint codebase"
+      name: pylint
       entry: pylint
       language: system
       types: [python]
@@ -51,7 +50,7 @@ repos:
         ]
       exclude: ^(doc/|tests/)
     - id: pylint-test
-      name: "🐍 pylint · Lint test suite"
+      name: pylint-test
       entry: pylint
       language: system
       types: [python]
@@ -63,7 +62,7 @@ repos:
         ]
       files: ^tests/
     - id: labs-pylint-test
-      name: "🐍 pylint · Lint labs test suite"
+      name: labs-pylint-test
       entry: pylint
       language: system
       types: [python]
@@ -74,3 +73,4 @@ repos:
           "--rcfile=tests/.pylintrc", # Link to your config file
         ]
       files: ^pennylane/labs/tests/
+

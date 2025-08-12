@@ -19,8 +19,7 @@ from __future__ import annotations
 
 import inspect
 import logging
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Callable, Literal, Optional
 
 from cachetools import Cache
 
@@ -38,6 +37,7 @@ logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors import ExecBackends
+    from pennylane.devices import Device, LegacyDevice
     from pennylane.math import InterfaceLike
     from pennylane.tape import QuantumScriptBatch
     from pennylane.transforms.core import TransformDispatcher
@@ -46,23 +46,22 @@ if TYPE_CHECKING:
     from pennylane.workflow.resolution import SupportedDiffMethods
 
 
-# pylint: disable=too-many-arguments
 def execute(
     tapes: QuantumScriptBatch,
     device: SupportedDeviceAPIs,
-    diff_method: Callable | SupportedDiffMethods | TransformDispatcher | None = None,
-    interface: InterfaceLike | None = Interface.AUTO,
+    diff_method: Optional[Callable | SupportedDiffMethods | TransformDispatcher] = None,
+    interface: Optional[InterfaceLike] = Interface.AUTO,
     *,
     grad_on_execution: bool | Literal["best"] = "best",
-    cache: bool | dict | Cache | Literal["auto"] | None = "auto",
+    cache: Optional[bool | dict | Cache | Literal["auto"]] = "auto",
     cachesize: int = 10000,
     max_diff: int = 1,
-    device_vjp: bool | None = False,
-    postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
-    mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
-    gradient_kwargs: dict | None = None,
-    transform_program: TransformProgram | None = None,
-    executor_backend: ExecBackends | str | None = None,
+    device_vjp: Optional[bool] = False,
+    postselect_mode: Optional[Literal["hw-like", "fill-shots"]] = None,
+    mcm_method: Optional[Literal["deferred", "one-shot", "tree-traversal"]] = None,
+    gradient_kwargs: Optional[dict] = None,
+    transform_program: Optional[TransformProgram] = None,
+    executor_backend: Optional[ExecBackends | str] = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 

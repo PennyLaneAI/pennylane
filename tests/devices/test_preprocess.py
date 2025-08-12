@@ -25,7 +25,6 @@ from pennylane.devices.preprocess import (
     measurements_from_counts,
     measurements_from_samples,
     mid_circuit_measurements,
-    no_analytic,
     no_sampling,
     null_postprocessing,
     validate_adjoint_trainable_params,
@@ -148,18 +147,6 @@ def test_no_sampling():
     tape2 = qml.tape.QuantumScript(shots=2)
     with pytest.raises(DeviceError, match="Finite shots are not supported with abc"):
         no_sampling(tape2, name="abc")
-
-
-def test_no_analytic():
-    """Test for the no_anayltic transform"""
-
-    tape1 = qml.tape.QuantumScript(shots=2)
-    batch, _ = no_analytic(tape1)
-    assert batch[0] is tape1
-
-    tape2 = qml.tape.QuantumScript(shots=None)
-    with pytest.raises(DeviceError, match="Analytic execution is not supported with abc"):
-        no_analytic(tape2, name="abc")
 
 
 def test_validate_adjoint_trainable_params_obs_warning():

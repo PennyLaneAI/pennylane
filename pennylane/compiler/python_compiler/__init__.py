@@ -14,11 +14,11 @@
 """Python Compiler API for integration of Catalyst with xDSL."""
 
 from .compiler import Compiler
-from .jax_utils import QuantumParser
+from .quantum_dialect import QuantumDialect as Quantum
 from .transforms.api import compiler_transform
 
 __all__ = [
     "Compiler",
     "compiler_transform",
-    "QuantumParser",
+    "Quantum",
 ]

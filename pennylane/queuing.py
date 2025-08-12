@@ -166,7 +166,9 @@ from contextlib import contextmanager
 from threading import RLock
 from typing import Optional, Union
 
-from pennylane.exceptions import QueuingError
+
+class QueuingError(Exception):
+    """Exception that is raised when there is a queuing error"""
 
 
 class WrappedObj:

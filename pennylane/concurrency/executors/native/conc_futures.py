@@ -20,6 +20,7 @@ This module provides abstractions around the Python ``concurrent.futures`` libra
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from functools import partial
 from multiprocessing import get_context
+from typing import Optional
 
 from ..base import ExecBackendConfig
 from .api import PyNativeExec
@@ -47,7 +48,7 @@ class ProcPoolExec(PyNativeExec):
     def _exec_backend(cls):
         return partial(ProcessPoolExecutor, mp_context=get_context("spawn"))
 
-    def __init__(self, max_workers: int | None = None, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
         self._cfg = ExecBackendConfig(
             submit_fn="submit",
@@ -83,7 +84,7 @@ class ThreadPoolExec(PyNativeExec):
     def _exec_backend(cls):
         return ThreadPoolExecutor
 
-    def __init__(self, max_workers: int | None = None, persist: bool = False, **kwargs):
+    def __init__(self, max_workers: Optional[int] = None, persist: bool = False, **kwargs):
         super().__init__(max_workers=max_workers, persist=persist, **kwargs)
         self._cfg = ExecBackendConfig(
             submit_fn="submit",

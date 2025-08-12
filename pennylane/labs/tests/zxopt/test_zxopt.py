@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Tests for pennylane/labs/dla/zxopt"""
+from typing import List
 
 import pytest
 import pyzx as zx
@@ -87,7 +88,7 @@ def test_full_reduce(circ):
     """Test full_reduce"""
     batch, func = full_reduce(circ)
 
-    assert isinstance(batch, list)
+    assert isinstance(batch, List)
     assert isinstance(batch[0], QuantumScript)
     assert func([1]) == 1
 
@@ -97,7 +98,7 @@ def test_full_optimize(circ):
     """Test full_optimize"""
     batch, func = full_optimize(circ)
 
-    assert isinstance(batch, list)
+    assert isinstance(batch, List)
     assert isinstance(batch[0], QuantumScript)
     assert func([1]) == 1
 
@@ -107,7 +108,7 @@ def test_basic_optimization(circ):
     """Test basic_optimization"""
     batch, func = basic_optimization(circ)
 
-    assert isinstance(batch, list)
+    assert isinstance(batch, List)
     assert isinstance(batch[0], QuantumScript)
     assert func([1]) == 1
 
@@ -117,7 +118,7 @@ def test_todd(circ):
     """Test TODD"""
     batch, func = todd(circ)
 
-    assert isinstance(batch, list)
+    assert isinstance(batch, List)
     assert isinstance(batch[0], QuantumScript)
     assert func([1]) == 1
 

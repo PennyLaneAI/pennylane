@@ -16,9 +16,20 @@ and converting them to strings."""
 
 from enum import Enum
 from functools import lru_cache
-from typing import Any, ForwardRef, Literal, Optional, TypeVar, _SpecialForm, get_args, get_origin
+from typing import (
+    Any,
+    ForwardRef,
+    Literal,
+    Optional,
+    Type,
+    TypeVar,
+    Union,
+    _SpecialForm,
+    get_args,
+    get_origin,
+)
 
-JSON = Optional[str | int | bool | float | dict[str, Any] | list[Any]]
+JSON = Union[str, int, bool, float, None, dict[str, Any], list[Any]]
 
 # Generic type variable
 T = TypeVar("T")
@@ -40,7 +51,7 @@ class UnsetType(Enum):
 UNSET = UnsetType.UNSET
 
 
-def get_type(type_or_obj: object | type) -> type:
+def get_type(type_or_obj: Union[object, Type]) -> Type:
     """Given an object or an object type, returns the underlying class.
 
     Examples:
@@ -66,7 +77,7 @@ def get_type(type_or_obj: object | type) -> type:
 
 
 @lru_cache
-def get_type_str(cls: type | str | None) -> str:  # pylint: disable=too-many-return-statements
+def get_type_str(cls: Union[type, str, None]) -> str:  # pylint: disable=too-many-return-statements
     """Return a string representing the type ``cls``.
 
     If cls is a built-in type, such as 'str', returns the unqualified
@@ -109,7 +120,7 @@ def get_type_str(cls: type | str | None) -> str:  # pylint: disable=too-many-ret
     return f"{cls.__module__}.{cls.__qualname__}"
 
 
-def resolve_special_type(type_: Any) -> tuple[type, list[type]] | None:
+def resolve_special_type(type_: Any) -> Optional[tuple[type, list[type]]]:
     """Converts special typing forms (Union[...], Optional[...]), and parametrized
     generics (List[...], Dict[...]) into a 2-tuple of its base type and arguments.
     If ``type_`` is a regular type, or an object, this function will return

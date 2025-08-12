@@ -14,13 +14,6 @@
 """
 This subpackage contains PennyLane transforms and their building blocks.
 
-.. warning::
-
-    The transforms ``add_noise``, ``insert``, ``mitigate_with_zne``, ``fold_global``, ``poly_extrapolate``, ``richardson_extrapolate``,
-    ``exponential_extrapolate`` have been moved to the :mod:`pennylane.noise` module.
-    Accessing these transforms from the :mod:`pennylane.transforms` module is deprecated
-    and will be removed in v0.44.
-
 .. currentmodule:: pennylane
 
 .. _transforms:
@@ -51,19 +44,17 @@ A set of transforms to perform basic circuit compilation tasks.
 
     ~compile
     ~transforms.cancel_inverses
-    ~transforms.combine_global_phases
     ~transforms.commute_controlled
-    ~transforms.decompose
-    ~transforms.merge_amplitude_embedding
     ~transforms.merge_rotations
-    ~transforms.pattern_matching_optimization
-    ~transforms.remove_barrier
-    ~transforms.match_relative_phase_toffoli
-    ~transforms.match_controlled_iX_gate
     ~transforms.single_qubit_fusion
-    ~transforms.transpile
-    ~transforms.undo_swaps
     ~transforms.unitary_to_rot
+    ~transforms.merge_amplitude_embedding
+    ~transforms.remove_barrier
+    ~transforms.undo_swaps
+    ~transforms.pattern_matching_optimization
+    ~transforms.transpile
+    ~transforms.decompose
+    ~transforms.combine_global_phases
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -95,6 +86,19 @@ This transform accepts quantum circuits and decomposes them to the Clifford+T ba
 
     ~clifford_t_decomposition
 
+
+Transforms for error mitigation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. autosummary::
+    :toctree: api
+
+    ~transforms.mitigate_with_zne
+    ~transforms.fold_global
+    ~transforms.poly_extrapolate
+    ~transforms.richardson_extrapolate
+    ~transforms.exponential_extrapolate
+
 Other transforms
 ~~~~~~~~~~~~~~~~
 
@@ -107,6 +111,8 @@ preprocessing, getting information from a circuit, and more.
 
     ~batch_params
     ~batch_input
+    ~transforms.insert
+    ~transforms.add_noise
     ~defer_measurements
     ~transforms.diagonalize_measurements
     ~transforms.split_non_commuting
@@ -116,7 +122,6 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.convert_to_numpy_parameters
     ~apply_controlled_Q
     ~quantum_monte_carlo
-    ~transforms.resolve_dynamic_wires
 
 Transforms that act only on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -292,6 +297,7 @@ from .batch_input import batch_input
 from .batch_partial import batch_partial
 from .convert_to_numpy_parameters import convert_to_numpy_parameters
 from .compile import compile
+from .add_noise import add_noise
 
 from .decompositions import clifford_t_decomposition
 from .defer_measurements import defer_measurements
@@ -300,9 +306,16 @@ from .dynamic_one_shot import dynamic_one_shot, is_mcm
 from .sign_expand import sign_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
+from .insert_ops import insert
 from .combine_global_phases import combine_global_phases
-from .resolve_dynamic_wires import resolve_dynamic_wires
 
+from .mitigate import (
+    mitigate_with_zne,
+    fold_global,
+    poly_extrapolate,
+    richardson_extrapolate,
+    exponential_extrapolate,
+)
 from .optimization import (
     cancel_inverses,
     commute_controlled,
@@ -313,8 +326,6 @@ from .optimization import (
     undo_swaps,
     pattern_matching,
     pattern_matching_optimization,
-    match_controlled_iX_gate,
-    match_relative_phase_toffoli,
 )
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
@@ -337,31 +348,3 @@ from .transpile import transpile
 from .zx import to_zx, from_zx
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
-
-
-def __getattr__(name):
-    if name in {
-        "add_noise",
-        "insert",
-        "mitigate_with_zne",
-        "fold_global",
-        "poly_extrapolate",
-        "richardson_extrapolate",
-        "exponential_extrapolate",
-    }:
-
-        # pylint: disable=import-outside-toplevel
-        import warnings
-        from pennylane import exceptions
-        from pennylane import noise
-
-        warnings.warn(
-            f"pennylane.{name} is no longer accessible from the transforms module \
-                and must be imported as pennylane.noise.{name}. \
-                    Support for access through this module will be removed in v0.44.",
-            exceptions.PennyLaneDeprecationWarning,
-        )
-
-        return getattr(noise, name)
-
-    raise AttributeError(f"module 'pennylane' has no attribute '{name}'")  # pragma: no cover

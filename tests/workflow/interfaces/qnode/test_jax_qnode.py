@@ -725,13 +725,12 @@ class TestShotsIntegration:
     def test_diff_method_None(self, interface):
         """Test device works with diff_method=None."""
 
-        @qml.set_shots(shots=10)
         @qml.qnode(DefaultQubit(), diff_method=None, interface=interface)
         def circuit(x):
             qml.RX(x, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        assert jax.numpy.allclose(circuit(jax.numpy.array(0.0)), 1)
+        assert jax.numpy.allclose(circuit(jax.numpy.array(0.0), shots=10), 1)
 
     def test_changing_shots(self, interface):
         """Test that changing shots works on execution"""
@@ -749,7 +748,7 @@ class TestShotsIntegration:
             circuit(a, b)
 
         # execute with shots=100
-        res = qml.set_shots(shots=100)(circuit)(a, b)
+        res = circuit(a, b, shots=100)
         assert res.shape == (100, 2)  # pylint: disable=comparison-with-callable
 
     def test_gradient_integration(self, interface):
@@ -757,7 +756,6 @@ class TestShotsIntegration:
         for gradient computations"""
         a, b = jax.numpy.array([0.543, -0.654])
 
-        @qml.set_shots(shots=30000)
         @qnode(DefaultQubit(), diff_method=qml.gradients.param_shift, interface=interface)
         def cost_fn(a, b):
             qml.RY(a, wires=0)
@@ -765,7 +763,7 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        res = jax.grad(cost_fn, argnums=[0, 1])(a, b)
+        res = jax.grad(cost_fn, argnums=[0, 1])(a, b, shots=30000)
 
         expected = [np.sin(a) * np.sin(b), -np.cos(a) * np.cos(b)]
         assert np.allclose(res, expected, atol=0.1, rtol=0)
@@ -784,7 +782,7 @@ class TestShotsIntegration:
             return qml.expval(qml.PauliY(1))
 
         with dev.tracker:
-            jax.grad(qml.set_shots(shots=100)(cost_fn))(a, b)
+            jax.grad(cost_fn)(a, b, shots=100)
         # since we are using finite shots, use parameter shift
         assert dev.tracker.totals["executions"] == 3
 
@@ -808,7 +806,6 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint warns with finite shots")
 
-        @qml.set_shots(shots=10)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             diff_method=diff_method,
@@ -821,7 +818,7 @@ class TestQubitIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        res = circuit()
+        res = circuit(shots=10)
 
         assert isinstance(res, tuple)
 
@@ -838,7 +835,6 @@ class TestQubitIntegration:
         if diff_method == "adjoint":
             pytest.skip("Adjoint errors with finite shots")
 
-        @qml.set_shots(shots=10)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             diff_method=diff_method,
@@ -854,7 +850,7 @@ class TestQubitIntegration:
                 qml.counts(qml.PauliX(1), all_outcomes=True),
             )
 
-        res = circuit()
+        res = circuit(shots=10)
 
         assert isinstance(res, tuple)
 
@@ -1517,7 +1513,6 @@ class TestTapeExpansion:
         spy = mocker.spy(qml.transforms, "split_non_commuting")
         obs = [qml.PauliX(0), qml.PauliX(0) @ qml.PauliZ(1), qml.PauliZ(0) @ qml.PauliZ(1)]
 
-        @qml.set_shots(shots=50000)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1540,13 +1535,13 @@ class TestTapeExpansion:
         c = jax.numpy.array([-0.6543, 0.24, 0.54])
 
         # test output
-        res = circuit(d, w, c)
+        res = circuit(d, w, c, shots=50000)
         expected = c[2] * np.cos(d[1] + w[1]) - c[1] * np.sin(d[0] + w[0]) * np.sin(d[1] + w[1])
         assert np.allclose(res, expected, atol=tol)
         spy.assert_not_called()
 
         # test gradients
-        grad = jax.grad(circuit, argnums=[1, 2])(d, w, c)
+        grad = jax.grad(circuit, argnums=[1, 2])(d, w, c, shots=50000)
         expected_w = [
             -c[1] * np.cos(d[0] + w[0]) * np.sin(d[1] + w[1]),
             -c[1] * np.cos(d[1] + w[1]) * np.sin(d[0] + w[0]) - c[2] * np.sin(d[1] + w[1]),
@@ -1589,7 +1584,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1604,7 +1598,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array(0.1)
 
-        grad = jax.grad(circuit)(a)
+        grad = jax.grad(circuit)(a, shots=shots)
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == ()
@@ -1616,7 +1610,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1632,7 +1625,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        grad = jax.grad(circuit, argnums=[0, 1])(a, b)
+        grad = jax.grad(circuit, argnums=[0, 1])(a, b, shots=shots)
 
         assert isinstance(grad, tuple)
         assert len(grad) == 2
@@ -1646,7 +1639,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1661,7 +1653,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array([0.1, 0.2])
 
-        grad = jax.grad(circuit)(a)
+        grad = jax.grad(circuit)(a, shots=shots)
 
         assert isinstance(grad, jax.numpy.ndarray)
         assert grad.shape == (2,)
@@ -1678,7 +1670,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1693,7 +1684,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array(0.1)
 
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4,)
@@ -1709,7 +1700,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1725,7 +1715,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        jac = jacobian(circuit, argnums=[0, 1])(a, b)
+        jac = jacobian(circuit, argnums=[0, 1])(a, b, shots=shots)
 
         assert isinstance(jac, tuple)
 
@@ -1746,7 +1736,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1760,7 +1749,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             return qml.probs(wires=[0, 1])
 
         a = jax.numpy.array([0.1, 0.2])
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, jax.numpy.ndarray)
         assert jac.shape == (4, 2)
@@ -1779,7 +1768,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1794,7 +1782,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1, shots=shots)
 
         assert isinstance(jac, tuple)
 
@@ -1824,7 +1812,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if "lightning" in dev_name:
             pytest.xfail("lightning device_vjp not compatible with jax.jacobian.")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1839,7 +1826,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -1865,7 +1852,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1880,7 +1866,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
 
-        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1)
+        jac = jacobian(circuit, argnums=[0, 1])(par_0, par_1, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -1911,7 +1897,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1926,7 +1911,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -1949,7 +1934,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -1964,7 +1948,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array(0.1)
 
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -1987,7 +1971,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2003,7 +1986,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         a = jax.numpy.array(0.1)
         b = jax.numpy.array(0.2)
 
-        jac = jacobian(circuit, argnums=[0, 1])(a, b)
+        jac = jacobian(circuit, argnums=[0, 1])(a, b, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2034,7 +2017,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         if diff_method == "adjoint" and jacobian == jax.jacfwd:
             pytest.skip("jacfwd doesn't like complex numbers")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2049,7 +2031,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         a = jax.numpy.array([0.1, 0.2])
 
-        jac = jacobian(circuit)(a)
+        jac = jacobian(circuit)(a, shots=shots)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -2073,7 +2055,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2088,7 +2069,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1, shots=shots)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2116,7 +2097,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         params = jax.numpy.array([0.1, 0.2])
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2131,7 +2111,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = jax.hessian(circuit)(params)
+        hess = jax.hessian(circuit)(params, shots=shots)
 
         assert isinstance(hess, jax.numpy.ndarray)
         assert hess.shape == (2, 2)
@@ -2150,7 +2130,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2165,7 +2144,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1, shots=shots)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2195,7 +2174,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         params = jax.numpy.array([0.1, 0.2])
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2210,7 +2188,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = jax.hessian(circuit)(params)
+        hess = jax.hessian(circuit)(params, shots=shots)
 
         assert isinstance(hess, jax.numpy.ndarray)
         assert hess.shape == (2, 2)
@@ -2230,7 +2208,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         par_0 = jax.numpy.array(0.1)
         par_1 = jax.numpy.array(0.2)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2245,7 +2222,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
-        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1, shots=shots)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2293,7 +2270,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         params = jax.numpy.array([0.1, 0.2])
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2308,7 +2284,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
-        hess = jax.hessian(circuit)(params)
+        hess = jax.hessian(circuit)(params, shots=shots)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2333,7 +2309,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
         par_0 = qml.numpy.array(0.1)
         par_1 = qml.numpy.array(0.2)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2348,7 +2323,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
-        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1)
+        hess = jax.hessian(circuit, argnums=[0, 1])(par_0, par_1, shots=shots)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2396,7 +2371,6 @@ class TestReturn:  # pylint:disable=too-many-public-methods
 
         params = jax.numpy.array([0.1, 0.2])
 
-        @qml.set_shots(shots=shots)
         @qnode(
             get_device(dev_name, wires=2, seed=seed),
             interface=interface,
@@ -2411,7 +2385,7 @@ class TestReturn:  # pylint:disable=too-many-public-methods
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
-        hess = jax.hessian(circuit)(params)
+        hess = jax.hessian(circuit)(params, shots=shots)
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2

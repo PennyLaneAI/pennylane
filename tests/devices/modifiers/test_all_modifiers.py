@@ -29,8 +29,7 @@ def test_chained_modifiers():
     @simulator_tracking
     @single_tape_support
     class DummyDev(qml.devices.Device):
-
-        def execute(self, circuits, execution_config: qml.devices.ExecutionConfig | None = None):
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return tuple(0.0 for _ in circuits)
 
     assert DummyDev._applied_modifiers == [single_tape_support, simulator_tracking]
@@ -68,10 +67,7 @@ class TestModifierDefaultBeahviour:
 
         @modifier
         class DummyDev(qml.devices.Device):
-
-            def execute(
-                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
-            ):
+            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
                 return 0.0
 
         assert DummyDev._applied_modifiers == [modifier]
@@ -81,9 +77,7 @@ class TestModifierDefaultBeahviour:
 
             _applied_modifiers = [None]  # some existing value
 
-            def execute(
-                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
-            ):
+            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
                 return 0.0
 
         assert DummyDev2._applied_modifiers == [None, modifier]
@@ -93,10 +87,7 @@ class TestModifierDefaultBeahviour:
 
         @modifier
         class DummyDev(qml.devices.Device):
-
-            def execute(
-                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
-            ):
+            def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
                 return 0.0
 
         assert DummyDev.compute_derivatives == Device.compute_derivatives

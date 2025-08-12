@@ -20,7 +20,6 @@ from typing import TYPE_CHECKING
 
 import pennylane as qml
 from pennylane.workflow.qnode import _make_execution_config
-from pennylane.workflow.resolution import _resolve_execution_config
 
 if TYPE_CHECKING:
     from pennylane.workflow.qnode import QNode
@@ -52,7 +51,7 @@ def get_best_diff_method(qnode: QNode):
         qnode (.QNode): the qnode to get the 'best' differentiation method for.
 
     Returns:
-        str: the gradient method name.
+        str: the gradient transform.
     """
 
     def handle_return(transform):
@@ -64,20 +63,20 @@ def get_best_diff_method(qnode: QNode):
     @wraps(qnode)
     def wrapper(*args, **kwargs):
         device = qnode.device
+        tape = qml.workflow.construct_tape(qnode)(*args, **kwargs)
 
-        # Construct the tape using the same method as the execution workflow
-        batch, _ = qml.workflow.construct_batch(qnode, level="user")(*args, **kwargs)
+        config = _make_execution_config(None, "best")
 
-        # Create execution config with "best" method - this matches the workflow behavior
-        mcm_config = qml.devices.MCMConfig(
-            postselect_mode=qnode.execute_kwargs.get("postselect_mode"),
-            mcm_method=qnode.execute_kwargs.get("mcm_method"),
-        )
-        config = _make_execution_config(qnode, "best", mcm_config)
+        if device.supports_derivatives(config, circuit=tape):
+            new_config = device.setup_execution_config(config)
+            transform = new_config.gradient_method
+            return handle_return(transform)
 
-        # Use the same resolution logic as execute() and construct_batch()
-        resolved_config = _resolve_execution_config(config, device, batch)
+        if tape and any(isinstance(o, qml.operation.CV) for o in tape):
+            transform = qml.gradients.param_shift_cv
+            return handle_return(transform)
 
-        return handle_return(resolved_config.gradient_method)
+        transform = qml.gradients.param_shift
+        return handle_return(transform)
 
     return wrapper

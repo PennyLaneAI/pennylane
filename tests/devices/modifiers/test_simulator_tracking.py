@@ -14,8 +14,6 @@
 """
 Tests for qml.devices.modifiers.simulator_tracking.
 """
-from typing import Optional
-
 # pylint: disable=unused-argument, too-few-public-methods, missing-class-docstring
 import pennylane as qml
 from pennylane.devices.modifiers import simulator_tracking
@@ -26,8 +24,7 @@ def test_tracking_execute():
 
     @simulator_tracking
     class DummyDev(qml.devices.Device):
-
-        def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             results = []
             for c in circuits:
                 if len(c.measurements) == 1:
@@ -60,12 +57,11 @@ def test_tracking_compute_derivatives():
 
     @simulator_tracking
     class DummyDev(qml.devices.Device):
-
-        def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return 0.0
 
         def compute_derivatives(
-            self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None
+            self, circuits, execution_config=qml.devices.DefaultExecutionConfig
         ):
             return 0.0
 
@@ -85,12 +81,11 @@ def test_tracking_execute_and_compute_derivatives():
 
     @simulator_tracking
     class DummyDev(qml.devices.Device):
-
-        def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return 0.0
 
         def execute_and_compute_derivatives(
-            self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None
+            self, circuits, execution_config=qml.devices.DefaultExecutionConfig
         ):
             return 0.0, 0.0
 
@@ -114,12 +109,11 @@ def test_tracking_compute_jvp():
 
     @simulator_tracking
     class DummyDev(qml.devices.Device):
-
-        def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return 0.0
 
         def compute_jvp(
-            self, circuits, tangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
+            self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
             return 0.0
 
@@ -139,12 +133,11 @@ def test_tracking_execute_and_compute_jvp():
 
     @simulator_tracking
     class DummyDev(qml.devices.Device):
-
-        def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return 0.0
 
         def execute_and_compute_jvp(
-            self, circuits, tangents, execution_config: Optional[qml.devices.ExecutionConfig] = None
+            self, circuits, tangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
             return 0.0, 0.0
 
@@ -169,15 +162,11 @@ def test_tracking_compute_vjp():
 
     @simulator_tracking
     class DummyDev(qml.devices.Device):
-
-        def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return 0.0
 
         def compute_vjp(
-            self,
-            circuits,
-            cotangents,
-            execution_config: Optional[qml.devices.ExecutionConfig] = None,
+            self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
             return 0.0
 
@@ -197,15 +186,11 @@ def test_tracking_execute_and_compute_vjp():
 
     @simulator_tracking
     class DummyDev(qml.devices.Device):
-
-        def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
+        def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
             return 0.0
 
         def execute_and_compute_vjp(
-            self,
-            circuits,
-            cotangents,
-            execution_config: Optional[qml.devices.ExecutionConfig] = None,
+            self, circuits, cotangents, execution_config=qml.devices.DefaultExecutionConfig
         ):
             return 0.0, 0.0
 

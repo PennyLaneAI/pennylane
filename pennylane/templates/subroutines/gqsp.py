@@ -15,9 +15,10 @@
 Contains the GQSP template.
 """
 
+
 import copy
 
-from pennylane import ops
+import pennylane as qml
 from pennylane.operation import Operation
 from pennylane.queuing import QueuingManager
 from pennylane.wires import Wires
@@ -82,9 +83,9 @@ class GQSP(Operation):
     grad_method = None
 
     def __init__(self, unitary, angles, control, id=None):
-        total_wires = Wires(control) + unitary.wires
+        total_wires = qml.wires.Wires(control) + unitary.wires
 
-        self._hyperparameters = {"unitary": unitary, "control": Wires(control)}
+        self._hyperparameters = {"unitary": unitary, "control": qml.wires.Wires(control)}
 
         super().__init__(angles, *unitary.data, wires=total_wires, id=id)
 
@@ -107,7 +108,7 @@ class GQSP(Operation):
         # pylint: disable=protected-access
         new_op = copy.deepcopy(self)
         new_op._wires = Wires([wire_map.get(wire, wire) for wire in self.wires])
-        new_op._hyperparameters["unitary"] = ops.functions.map_wires(
+        new_op._hyperparameters["unitary"] = qml.map_wires(
             new_op._hyperparameters["unitary"], wire_map
         )
         new_op._hyperparameters["control"] = tuple(
@@ -144,19 +145,19 @@ class GQSP(Operation):
         op_list = []
 
         # These four gates adapt PennyLane's qml.U3 to the chosen U3 format in the GQSP paper.
-        op_list.append(ops.X(control))
-        op_list.append(ops.U3(2 * thetas[0], phis[0], lambds[0], wires=control))
-        op_list.append(ops.X(control))
-        op_list.append(ops.Z(control))
+        op_list.append(qml.X(control))
+        op_list.append(qml.U3(2 * thetas[0], phis[0], lambds[0], wires=control))
+        op_list.append(qml.X(control))
+        op_list.append(qml.Z(control))
 
         for theta, phi, lamb in zip(thetas[1:], phis[1:], lambds[1:]):
 
-            op_list.append(ops.ctrl(unitary, control=control, control_values=0))
+            op_list.append(qml.ctrl(unitary, control=control, control_values=0))
 
-            op_list.append(ops.X(control))
-            op_list.append(ops.U3(2 * theta, phi, lamb, wires=control))
-            op_list.append(ops.X(control))
-            op_list.append(ops.Z(control))
+            op_list.append(qml.X(control))
+            op_list.append(qml.U3(2 * theta, phi, lamb, wires=control))
+            op_list.append(qml.X(control))
+            op_list.append(qml.Z(control))
 
         return op_list
 

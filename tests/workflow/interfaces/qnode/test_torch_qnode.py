@@ -541,7 +541,6 @@ class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     differentiates it."""
 
-    @pytest.mark.xfail(reason="deprecated. To be removed in 0.44")
     def test_changing_shots(self):
         """Test that changing shots works on execution"""
         dev = DefaultQubit()
@@ -577,7 +576,7 @@ class TestShotsIntegration:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliY(1))
 
-        res = jacobian(qml.set_shots(shots=[10000, 10000, 10000])(cost_fn), (a, b))
+        res = jacobian(lambda a, b: cost_fn(a, b, shots=[10000, 10000, 10000]), (a, b))
         res = qml.math.transpose(torch.stack(res))
         assert dev.shots is None
         assert len(res) == 3
@@ -602,8 +601,7 @@ class TestShotsIntegration:
         res1 = circuit(*weights)
         assert qml.math.shape(res1) == ()
 
-        circuit_shots = qml.set_shots(shots=[(1, 1000)])(circuit)
-        res2 = circuit_shots(*weights)
+        res2 = circuit(*weights, shots=[(1, 1000)])
         assert len(res2) == 1000
 
         res1.backward()
@@ -624,8 +622,7 @@ class TestShotsIntegration:
             return qml.expval(qml.PauliY(1))
 
         with dev.tracker:
-            cost_fn100 = qml.set_shots(shots=100)(cost_fn)
-            res = cost_fn100(a, b)
+            res = cost_fn(a, b, shots=100)
             res.backward()
         # since we are using finite shots, use parameter shift
         assert dev.tracker.totals["executions"] == 5
@@ -1413,11 +1410,8 @@ class TestTapeExpansion:
         w = torch.tensor([0.654, -0.734], requires_grad=True, dtype=torch.float64)
         c = torch.tensor([-0.6543, 0.24, 0.54], requires_grad=True, dtype=torch.float64)
 
-        # wrap circuit with fixed shots
-        circuit_shots = qml.set_shots(shots=50000)(circuit)
-
         # test output
-        res = circuit_shots(d, w, c)
+        res = circuit(d, w, c, shots=50000)
 
         expected = c[2] * torch.cos(d[1] + w[1]) - c[1] * torch.sin(d[0] + w[0]) * torch.sin(
             d[1] + w[1]
@@ -1447,7 +1441,9 @@ class TestTapeExpansion:
 
         # test second-order derivatives
         if diff_method == "parameter-shift" and max_diff == 2 and dev.name != "param_shift.qubit":
-            hessians = torch.autograd.functional.hessian(circuit_shots, (d, w, c))
+            hessians = torch.autograd.functional.hessian(
+                lambda _d, _w, _c: circuit(_d, _w, _c, shots=50000), (d, w, c)
+            )
 
             grad2_c = hessians[2][2]
             assert torch.allclose(grad2_c, torch.zeros([3, 3], dtype=torch.float64), atol=tol)
@@ -1472,14 +1468,13 @@ class TestSample:
     def test_sample_dimension(self):
         """Test sampling works as expected"""
 
-        @qml.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliX(1))
 
-        res = circuit()
+        res = circuit(shots=10)
 
         assert isinstance(res, tuple)
         assert len(res) == 2
@@ -1493,14 +1488,13 @@ class TestSample:
     def test_sampling_expval(self):
         """Test sampling works as expected if combined with expectation values"""
 
-        @qml.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        res = circuit()
+        res = circuit(shots=10)
 
         assert len(res) == 2
         assert isinstance(res, tuple)
@@ -1513,14 +1507,13 @@ class TestSample:
     def test_counts_expval(self):
         """Test counts works as expected if combined with expectation values"""
 
-        @qml.set_shots(shots=10)
         @qnode(qml.device("default.qubit"), diff_method="parameter-shift", interface="torch")
         def circuit():
             qml.Hadamard(wires=[0])
             qml.CNOT(wires=[0, 1])
             return qml.counts(qml.PauliZ(0)), qml.expval(qml.PauliX(1))
 
-        res = circuit()
+        res = circuit(shots=10)
 
         assert len(res) == 2
         assert isinstance(res, tuple)
@@ -1532,14 +1525,13 @@ class TestSample:
     def test_sample_combination(self):
         """Test the output of combining expval, var and sample"""
 
-        @qml.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
             qml.RX(0.54, wires=0)
 
             return qml.sample(qml.PauliZ(0)), qml.expval(qml.PauliX(1)), qml.var(qml.PauliY(2))
 
-        result = circuit()
+        result = circuit(shots=10)
 
         assert isinstance(result, tuple)
         assert len(result) == 3
@@ -1559,8 +1551,7 @@ class TestSample:
             qml.RX(0.54, wires=0)
             return qml.sample(qml.PauliZ(0))
 
-        circuit10 = qml.set_shots(shots=10)(circuit)
-        result = circuit10()
+        result = circuit(shots=10)
 
         assert isinstance(result, torch.Tensor)
         assert np.array_equal(result.shape, (10,))
@@ -1569,12 +1560,11 @@ class TestSample:
         """Test the return type and shape of sampling multiple wires
         where a rectangular array is expected"""
 
-        @qml.set_shots(shots=10)
         @qnode(DefaultQubit(), diff_method="parameter-shift", interface="torch")
         def circuit():
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
 
-        result = circuit()
+        result = circuit(shots=10)
 
         # If all the dimensions are equal the result will end up to be a proper rectangular array
         assert isinstance(result, tuple)
@@ -1629,8 +1619,7 @@ class TestReturn:
 
         a = torch.tensor(0.1, requires_grad=True)
 
-        circuit_shots = qml.set_shots(shots=shots)(circuit)
-        res = circuit_shots(a)
+        res = circuit(a, shots=shots)
 
         assert isinstance(res, torch.Tensor)
         assert res.shape == ()
@@ -1663,8 +1652,7 @@ class TestReturn:
         a = torch.tensor(0.1, requires_grad=True)
         b = torch.tensor(0.2, requires_grad=True)
 
-        circuit_shots = qml.set_shots(shots=shots)(circuit)
-        res = circuit_shots(a, b)
+        res = circuit(a, b, shots=shots)
 
         # gradient
         res.backward()
@@ -1695,8 +1683,7 @@ class TestReturn:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        circuit_shots = qml.set_shots(shots=shots)(circuit)
-        res = circuit_shots(a)
+        res = circuit(a, shots=shots)
 
         # gradient
         res.backward()
@@ -1760,8 +1747,7 @@ class TestReturn:
         a = torch.tensor(0.1, requires_grad=True)
         b = torch.tensor(0.2, requires_grad=True)
 
-        circuit_shots = qml.set_shots(shots=shots)(circuit)
-        jac = jacobian(circuit_shots, (a, b))
+        jac = jacobian(lambda _a, _b: circuit(_a, _b, shots=shots), (a, b))
 
         assert isinstance(jac, tuple)
 
@@ -1781,7 +1767,6 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -1795,7 +1780,7 @@ class TestReturn:
             return qml.probs(wires=[0, 1])
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
-        jac = jacobian(circuit, a)
+        jac = jacobian(lambda _a: circuit(_a, shots=shots), a)
 
         assert isinstance(jac, torch.Tensor)
         assert jac.shape == (4, 2)
@@ -1810,7 +1795,6 @@ class TestReturn:
         par_0 = torch.tensor(0.1, requires_grad=True)
         par_1 = torch.tensor(0.2, requires_grad=True)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -1825,7 +1809,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.expval(qml.PauliZ(0))
 
-        jac = jacobian(circuit, (par_0, par_1))
+        jac = jacobian(lambda a, b: circuit(a, b, shots=shots), (par_0, par_1))
 
         assert isinstance(jac, tuple)
 
@@ -1850,7 +1834,6 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -1865,7 +1848,7 @@ class TestReturn:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        jac = jacobian(circuit, a)
+        jac = jacobian(lambda _a: circuit(_a, shots=shots), a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -1890,7 +1873,6 @@ class TestReturn:
         par_0 = torch.tensor(0.1, requires_grad=True)
         par_1 = torch.tensor(0.2, requires_grad=True)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -1905,7 +1887,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.var(qml.PauliZ(0))
 
-        jac = jacobian(circuit, (par_0, par_1))
+        jac = jacobian(lambda a, b: circuit(a, b, shots=shots), (par_0, par_1))
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -1935,7 +1917,6 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -1950,7 +1931,7 @@ class TestReturn:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        jac = jacobian(circuit, a)
+        jac = jacobian(lambda _a: circuit(_a, shots=shots), a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -1971,7 +1952,6 @@ class TestReturn:
         if diff_method == "adjoint":
             pytest.skip("Test does not supports adjoint because of probabilities.")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -1986,7 +1966,7 @@ class TestReturn:
 
         a = torch.tensor(0.1, requires_grad=True)
 
-        jac = jacobian(circuit, a)
+        jac = jacobian(lambda _a: circuit(_a, shots=shots), a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2006,7 +1986,6 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2022,7 +2001,7 @@ class TestReturn:
         a = torch.tensor(0.1, requires_grad=True)
         b = torch.tensor(0.2, requires_grad=True)
 
-        jac = jacobian(circuit, (a, b))
+        jac = jacobian(lambda _a, _b: circuit(_a, _b, shots=shots), (a, b))
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2
@@ -2050,7 +2029,6 @@ class TestReturn:
         if shots is not None and diff_method in ("backprop", "adjoint"):
             pytest.skip("Test does not support finite shots and adjoint/backprop")
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2065,7 +2043,7 @@ class TestReturn:
 
         a = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        jac = jacobian(circuit, a)
+        jac = jacobian(lambda _a: circuit(_a, shots=shots), a)
 
         assert isinstance(jac, tuple)
         assert len(jac) == 2  # measurements
@@ -2089,7 +2067,6 @@ class TestReturn:
         par_0 = torch.tensor(0.1, requires_grad=True, dtype=torch.float64)
         par_1 = torch.tensor(0.2, requires_grad=True, dtype=torch.float64)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2104,7 +2081,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = hessian(circuit, (par_0, par_1))
+        hess = hessian(lambda a, b: circuit(a, b, shots=shots), (par_0, par_1))
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2134,7 +2111,6 @@ class TestReturn:
 
         params = torch.tensor([0.1, 0.2], requires_grad=True)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2149,7 +2125,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = hessian(circuit, params)
+        hess = hessian(lambda _a: circuit(_a, shots=shots), params)
 
         assert isinstance(hess, torch.Tensor)
         assert hess.shape == (2, 2)
@@ -2168,7 +2144,6 @@ class TestReturn:
         par_0 = torch.tensor(0.1, requires_grad=True, dtype=torch.float64)
         par_1 = torch.tensor(0.2, requires_grad=True, dtype=torch.float64)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2183,7 +2158,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = hessian(circuit, (par_0, par_1))
+        hess = hessian(lambda _a, _b: circuit(_a, _b, shots=shots), (par_0, par_1))
 
         assert isinstance(hess, tuple)
         assert len(hess) == 2
@@ -2215,7 +2190,6 @@ class TestReturn:
 
         params = torch.tensor([0.1, 0.2], requires_grad=True, dtype=torch.float64)
 
-        @qml.set_shots(shots=shots)
         @qnode(
             dev,
             interface="torch",
@@ -2230,7 +2204,7 @@ class TestReturn:
             qml.CNOT(wires=[0, 1])
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1))
 
-        hess = hessian(circuit, params)
+        hess = hessian(lambda _a: circuit(_a, shots=shots), params)
 
         assert isinstance(hess, torch.Tensor)
         assert hess.shape == (2, 2)
@@ -2265,7 +2239,7 @@ class TestReturn:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         def circuit_stack(x, y):
-            return torch.hstack(qml.set_shots(shots=shots)(circuit)(x, y))
+            return torch.hstack(circuit(x, y, shots=shots))
 
         jac_fn = lambda x, y: jacobian(circuit_stack, (x, y), create_graph=True)
 
@@ -2317,7 +2291,7 @@ class TestReturn:
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         def circuit_stack(x):
-            return torch.hstack(qml.set_shots(shots=shots)(circuit)(x))
+            return torch.hstack(circuit(x, shots=shots))
 
         jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
 
@@ -2356,7 +2330,7 @@ class TestReturn:
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         def circuit_stack(x, y):
-            return torch.hstack(qml.set_shots(shots=shots)(circuit)(x, y))
+            return torch.hstack(circuit(x, y, shots=shots))
 
         jac_fn = lambda x, y: jacobian(circuit_stack, (x, y), create_graph=True)
 
@@ -2408,7 +2382,7 @@ class TestReturn:
             return qml.var(qml.PauliZ(0) @ qml.PauliX(1)), qml.probs(wires=[0])
 
         def circuit_stack(x):
-            return torch.hstack(qml.set_shots(shots=shots)(circuit)(x))
+            return torch.hstack(circuit(x, shots=shots))
 
         jac_fn = lambda x: jacobian(circuit_stack, x, create_graph=True)
 

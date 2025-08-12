@@ -15,13 +15,12 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
-from typing import Any
+from typing import Any, Callable, Dict, List, Sequence
 
 from pennylane.labs.trotter_error import Fragment
 
 
-def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> list[GenericFragment]:
+def generic_fragments(fragments: Sequence[Any], norm_fn: Callable = None) -> List[GenericFragment]:
     """Instantiates :class:`~.pennylane.labs.trotter_error.GenericFragment` objects.
 
     Args:
@@ -120,7 +119,7 @@ class GenericFragment(Fragment):
         """Compute the expectation value using the underlying object's ``__matmul__`` method."""
         return left @ self.fragment @ right
 
-    def norm(self, params: dict = None) -> float:
+    def norm(self, params: Dict = None) -> float:
         """Compute the norm of the fragment."""
         if self.norm_fn:
             params = params or {}

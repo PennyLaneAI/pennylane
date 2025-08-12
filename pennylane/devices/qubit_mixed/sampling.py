@@ -15,7 +15,7 @@
 Submodule for sampling a qubit mixed state.
 """
 # pylint: disable=too-many-positional-arguments
-from collections.abc import Callable
+from typing import Callable, Union
 
 import numpy as np
 
@@ -119,7 +119,7 @@ def _measure_with_samples_diagonalizing_gates(
 
 
 def _measure_classical_shadow(
-    mp: list[ClassicalShadowMP | ShadowExpvalMP],
+    mp: list[Union[ClassicalShadowMP, ShadowExpvalMP]],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
@@ -289,7 +289,7 @@ def sample_state(
 
 
 def measure_with_samples(
-    measurements: list[SampleMeasurement | ClassicalShadowMP | ShadowExpvalMP],
+    measurements: list[Union[SampleMeasurement, ClassicalShadowMP, ShadowExpvalMP]],
     state: np.ndarray,
     shots: Shots,
     is_state_batched: bool = False,
