@@ -180,14 +180,14 @@ class TestValidation:
 
         assert (
             repr(qn)
-            == "<QNode: wires=1, device='default.qubit.legacy', interface='auto', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit.legacy', interface='auto', diff_method='best', shots='Shots(total=None)'>"
         )
 
         qn = QNode(func, dev, interface="autograd")
 
         assert (
             repr(qn)
-            == "<QNode: wires=1, device='default.qubit.legacy', interface='autograd', diff_method='best'>"
+            == "<QNode: wires=1, device='default.qubit.legacy', interface='autograd', diff_method='best', shots='Shots(total=None)'>"
         )
 
         # QNode can still be executed

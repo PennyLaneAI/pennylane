@@ -412,14 +412,14 @@ class TestValidation:
 
         assert (
             repr(qn)
-            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='auto', diff_method='best'>"
+            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='auto', diff_method='best', shots='Shots(total=None)'>"
         )
 
         qn = QNode(func, dev, interface="autograd")
 
         assert (
             repr(qn)
-            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='autograd', diff_method='best'>"
+            == f"<QNode: device='<default.qubit device (wires=1) at {hex(id(dev))}>', interface='autograd', diff_method='best', shots='Shots(total=None)'>"
         )
 
     @pytest.mark.autograd
@@ -1646,7 +1646,7 @@ class TestNewDeviceIntegration:
             return qml.expval(qml.PauliZ(0))
 
         qn = QNode(f, self.dev)
-        assert repr(qn) == "<QNode: device='CustomDevice', interface='auto', diff_method='best'>"
+        assert repr(qn) == "<QNode: device='CustomDevice', interface='auto', diff_method='best', shots='Shots(total=None)'>"
 
     def test_device_with_custom_diff_method_name(self):
         """Test a device that has its own custom diff method."""
