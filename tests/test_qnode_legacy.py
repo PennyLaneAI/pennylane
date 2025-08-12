@@ -865,7 +865,11 @@ class TestShots:
             match="'shots' specified on call to a QNode is deprecated",
         ):
             assert len(circuit(0.8, shots=1)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
         with pytest.warns(
@@ -873,7 +877,11 @@ class TestShots:
             match="'shots' specified on call to a QNode is deprecated",
         ):
             assert len(circuit(0.8, shots=0)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
     # pylint: disable=unexpected-keyword-arg
@@ -1033,7 +1041,11 @@ class TestShots:
         assert tape.shots.total_shots == 5
 
         # Override
-        tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
@@ -1049,7 +1061,11 @@ class TestShots:
         assert tape.shots.total_shots == 5
 
         # Override
-        tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 

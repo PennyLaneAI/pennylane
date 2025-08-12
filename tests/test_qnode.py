@@ -1250,7 +1250,11 @@ class TestShots:
             match="'shots' specified on call to a QNode is deprecated",
         ):
             assert len(circuit(0.8, shots=1)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(circuit)(0.8, shots=1)
         assert tape.operations[0].wires.labels == (1,)
 
         with pytest.warns(
@@ -1258,7 +1262,11 @@ class TestShots:
             match="'shots' specified on call to a QNode is deprecated",
         ):
             assert len(circuit(0.8, shots=0)) == 10
-        tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(circuit)(0.8, shots=0)
         assert tape.operations[0].wires.labels == (0,)
 
     # pylint: disable=unexpected-keyword-arg
@@ -1405,11 +1413,7 @@ class TestShots:
     )
     def test_tape_shots_set_on_call(self, shots, total_shots, shot_vector):
         """test that shots are placed on the tape if they are specified during a call."""
-        with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="shots on device is deprecated",
-        ):
-            dev = qml.device("default.qubit", wires=2, shots=5)
+        dev = qml.device("default.qubit", wires=2)
 
         def func(x, y):
             qml.RX(x, wires=0)
@@ -1420,10 +1424,14 @@ class TestShots:
 
         # No override
         tape = qml.workflow.construct_tape(qn)(0.1, 0.2)
-        assert tape.shots.total_shots == 5
+        assert tape.shots.total_shots == None
 
         # Override
-        tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(qn)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
@@ -1436,10 +1444,14 @@ class TestShots:
 
         # No override
         tape = qml.workflow.construct_tape(qn2)(0.1, 0.2)
-        assert tape.shots.total_shots == 5
+        assert tape.shots.total_shots == None
 
         # Override
-        tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="'shots' specified on call to a QNode is deprecated",
+        ):
+            tape = qml.workflow.construct_tape(qn2)(0.1, 0.2, shots=shots)
         assert tape.shots.total_shots == total_shots
         assert tape.shots.shot_vector == shot_vector
 
@@ -2396,7 +2408,11 @@ class TestSetShots:
         # No warning should be raised when calling with the same shots value
         with warnings.catch_warnings(record=True) as record:
             warnings.simplefilter("always")
-            result = circuit.update(diff_method="parameter-shift")(shots=50)
+            with pytest.warns(
+                PennyLaneDeprecationWarning,
+                match="'shots' specified on call to a QNode is deprecated",
+            ):
+                result = circuit.update(diff_method="parameter-shift")(shots=50)
         # Filter for targeted warnings (by type and/or message)
         targeted = [
             w
