@@ -515,7 +515,7 @@ class TestSupportedConfs:
             x = get_variable("autograd", wire_specs)
             compute_gradient(x, "autograd", circuit, "StateVector")
 
-    @pytest.mark.parametrize("interface", ["jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["jax", "torch"])
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_state_backprop(self, interface, wire_specs):
         """Test gradient of state directly succeeds for non-autograd interfaces"""

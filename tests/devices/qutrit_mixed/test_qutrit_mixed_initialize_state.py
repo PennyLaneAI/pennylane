@@ -33,7 +33,7 @@ class TestInitializeState:
             return self.parameters[0]
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
     def test_create_initial_state_no_state_prep(self, interface):
         """Tests that create_initial_state works without a state-prep operation."""
         state = create_initial_state([0, 1], like=interface)
@@ -43,7 +43,7 @@ class TestInitializeState:
         assert qml.math.get_interface(state) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
     def test_create_initial_state_with_state_prep(self, interface):
         """Tests that create_initial_state works with a state-prep operation."""
         prep_op = self.DefaultPrep(

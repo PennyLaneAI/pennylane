@@ -425,7 +425,7 @@ class TestQNode:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
 
-@pytest.mark.parametrize("interface", ["auto", "tf"])
+@pytest.mark.parametrize("interface", ["auto"])
 class TestShotsIntegration:
     """Test that the QNode correctly changes shot value, and
     differentiates it."""

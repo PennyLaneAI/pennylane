@@ -1588,7 +1588,7 @@ def test_shape(shape, interface, create_array):
     assert fn.shape(t) == shape
 
 
-@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
 def test_shape_and_ndim_deep(interface):
     val = [[fn.asarray(1, like=interface)]]
     assert fn.shape(val) == (1, 1)
@@ -3186,7 +3186,7 @@ class TestScatter:
     """Tests for qml.math.scatter functionality"""
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_scatter_basic(self, interface):
         """Test basic scatter operation - placing values at specific indices in a zero array"""
         indices = [0, 2, 4]
@@ -3202,7 +3202,7 @@ class TestScatter:
         assert qml.math.allclose(result, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_scatter_complex(self, interface):
         """Test scatter with complex values"""
         indices = [1, 3]
@@ -3220,7 +3220,7 @@ class TestScatter:
         assert qml.math.allclose(result, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_scatter_multidimensional(self, interface):
         """Test scatter with multidimensional target shape"""
         indices = [0, 2]
