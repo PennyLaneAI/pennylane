@@ -35,23 +35,18 @@ class _RankConstraint(AttrConstraint, ABC):
     expected_rank: int
     """The expected rank."""
 
-    # --- Abstract properties for subclasses to define ---
-
     @property
     @abstractmethod
     def expected_type(self) -> type:
         """The expected IR type class (e.g., builtin.TensorType)."""
-        ...
 
     @property
     @abstractmethod
     def type_name(self) -> str:
         """The name of the type for use in error messages (e.g., 'tensor')."""
-        ...
-
-    # --- Shared logic ---
 
     def verify(self, attr: Attribute, constraint_context: ConstraintContext) -> None:
+        # pylint: disable=unused-argument,missing-function-docstring
         if not isinstance(attr, self.expected_type):
             raise VerifyException(f"{attr} should be of type {self.expected_type.__name__}.")
         if attr.get_num_dims() != self.expected_rank:
@@ -62,6 +57,7 @@ class _RankConstraint(AttrConstraint, ABC):
     def mapping_type_vars(
         self, type_var_mapping: dict[TypeVar, AttrConstraint]
     ) -> "_RankConstraint":
+        # pylint: disable=unused-argument,missing-function-docstring
         return self
 
 
