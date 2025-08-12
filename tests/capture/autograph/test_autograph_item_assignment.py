@@ -99,3 +99,18 @@ def test_non_trivial_indexing(array_in, index, new_value, array_out):
     ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
     result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
     assert jnp.array_equal(result[0], array_out)
+
+
+def test_non_tracing_assignment():
+    """Tests item assignment if the list is not a tracer."""
+
+    def fn():
+        x = [0] * 5
+        x[2] = 1
+        return x
+
+    ag_fn = run_autograph(fn)
+    ag_fn_jaxpr = make_jaxpr(ag_fn)()
+    result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts)
+    expected = jnp.array([0, 0, 1, 0, 0])
+    assert jnp.array_equal(result, expected)
