@@ -2068,7 +2068,7 @@ def _fixed_sampling(
     print(f"Using fixed-size sampling with {sample_size} commutators out of {len(commutators)} total")
 
     # Validate input parameters
-    _validate_fixed_sampling_params(sample_size, len(commutators), backend, num_workers, convergence_info)
+    _validate_fixed_sampling_params(sample_size, len(commutators), backend, num_workers, sampling_method, convergence_info)
 
     # Setup probabilities and sample commutators
     prob_start_time = time.time()
@@ -2092,6 +2092,12 @@ def _fixed_sampling(
         return _fixed_sampling_with_convergence_tracking(
             sampled_commutators, commutator_weights, fragments, states, convergence_info
         )
+    elif convergence_info and sampling_method == "top_k" and num_workers > 1:
+        # Use batched top-k computation for parallel convergence tracking
+        return _fixed_sampling_top_k_batched(
+            sampled_commutators, commutator_weights, fragments, states, 
+            num_workers, backend, parallel_mode, convergence_info, show_detailed_progress
+        )
     else:
         # Use standard batch computation (faster but no convergence history)
         return _compute_expectation_values(
@@ -2105,6 +2111,7 @@ def _validate_fixed_sampling_params(
     num_commutators: int,
     backend: str,
     num_workers: int,
+    sampling_method: str = "random",
     convergence_info: Optional[Dict] = None,
 ) -> None:
     """
@@ -2115,6 +2122,7 @@ def _validate_fixed_sampling_params(
         num_commutators: Total number of available commutators
         backend: Backend for parallel processing
         num_workers: Number of workers for parallel processing
+        sampling_method: Sampling method being used
         convergence_info: Optional convergence info container
 
     Raises:
@@ -2130,11 +2138,20 @@ def _validate_fixed_sampling_params(
             UserWarning
         )
     
-    # Convergence tracking requires serial execution
-    if convergence_info and (backend != "serial" or num_workers != 1):
+    # Convergence tracking options:
+    # 1. Serial execution (num_workers=1) - always supported
+    # 2. Batched top-k with multiple workers - supported for top_k sampling
+    # 3. Other parallel modes - not supported for convergence tracking
+    if convergence_info and num_workers > 1 and sampling_method != "top_k":
         warnings.warn(
-            "Convergence tracking for fixed sampling requires backend='serial' and num_workers=1. "
+            "Convergence tracking with multiple workers is only supported for top_k sampling. "
             "Will use batch computation without convergence history.",
+            UserWarning
+        )
+    elif convergence_info and backend != "serial" and num_workers == 1:
+        warnings.warn(
+            "Convergence tracking requires backend='serial' for single-worker execution. "
+            "Will use batch computation without convergence history.", 
             UserWarning
         )
 
@@ -2328,6 +2345,196 @@ def _fixed_sampling_with_convergence_tracking(
         convergence_info['states_info'].append(state_info)
 
     return expectations
+
+
+def _fixed_sampling_top_k_batched(
+    sampled_commutators: List[Tuple[Hashable | Set]],
+    commutator_weights: List[float],
+    fragments: Dict[Hashable, Fragment],
+    states: Sequence[AbstractState],
+    num_workers: int,
+    backend: str,
+    parallel_mode: str,
+    convergence_info: Dict,
+    show_detailed_progress: bool = True,
+) -> List[float]:
+    """
+    Compute expectation values with batched parallel processing for top-k sampling.
+    
+    This function processes commutators in batches of size num_workers, evaluating
+    each batch in parallel while maintaining convergence tracking. This allows
+    for parallel computation with deterministic top-k ordering.
+    
+    Args:
+        sampled_commutators: List of top-k sampled commutators (pre-sorted by importance)
+        commutator_weights: List of weights for each commutator (should be uniform for top-k)
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        states: States to compute expectation values for
+        num_workers: Number of workers for parallel processing (batch size)
+        backend: Backend for parallel processing
+        parallel_mode: Mode of parallelization ("state" or "commutator")
+        convergence_info: Convergence info container to populate
+        show_detailed_progress: Whether to show detailed progress information
+    
+    Returns:
+        List of expectation values for each state
+    """
+    if show_detailed_progress:
+        print(f"\n🔄 Batched top-k parallel computation:")
+        print(f"   Total commutators: {len(sampled_commutators)}")
+        print(f"   Batch size (workers): {num_workers}")
+        print(f"   Number of batches: {(len(sampled_commutators) + num_workers - 1) // num_workers}")
+        print(f"   Backend: {backend}, Parallel mode: {parallel_mode}")
+    
+    expectations = []
+    
+    for state_idx, state in tqdm(enumerate(states), desc="Processing states", total=len(states)):
+        state_start_time = time.time()
+        
+        if show_detailed_progress:
+            print(f"\n🏃 Processing state {state_idx + 1}/{len(states)} (Batched Top-K)")
+        
+        # Initialize tracking variables
+        cache = _CommutatorCache()
+        cumulative_expectation = 0.0
+        
+        # Initialize convergence tracking histories
+        mean_history = []
+        variance_history = []  # Will be 0 for fixed sampling
+        sigma2_over_n_history = []  # Will be 0 for fixed sampling  
+        relative_error_history = []  # Will be 0 for fixed sampling
+        
+        # Process commutators in batches
+        num_batches = (len(sampled_commutators) + num_workers - 1) // num_workers
+        
+        for batch_idx in tqdm(range(num_batches), 
+                             desc=f"Processing batches for state {state_idx+1}",
+                             leave=False):
+            
+            batch_start = batch_idx * num_workers
+            batch_end = min(batch_start + num_workers, len(sampled_commutators))
+            
+            # Get current batch
+            batch_commutators = sampled_commutators[batch_start:batch_end]
+            batch_weights = commutator_weights[batch_start:batch_end]
+            
+            # Process batch in parallel
+            batch_contribution = _compute_batch_contribution(
+                batch_commutators, batch_weights, fragments, state, 
+                backend, num_workers, parallel_mode, cache, state_idx
+            )
+            
+            # Update cumulative result
+            cumulative_expectation += batch_contribution
+            
+            # Store convergence point (after this batch)
+            mean_history.append(cumulative_expectation)
+            variance_history.append(0.0)  # No variance in deterministic sampling
+            sigma2_over_n_history.append(0.0)  # No sampling uncertainty
+            relative_error_history.append(0.0)  # No relative error
+            
+            if show_detailed_progress and (batch_idx % max(1, num_batches // 10) == 0 or batch_idx == num_batches - 1):
+                commutators_processed = batch_end
+                print(f"    Batch {batch_idx + 1}/{num_batches}: "
+                      f"{commutators_processed}/{len(sampled_commutators)} commutators processed, "
+                      f"cumulative={cumulative_expectation:.6e}")
+        
+        expectations.append(cumulative_expectation)
+        
+        state_time = time.time() - state_start_time
+        final_cache_stats = cache.get_stats()
+        
+        if show_detailed_progress:
+            print(f"  State {state_idx + 1} completed in {state_time:.2f}s")
+            print(f"    Final expectation: {cumulative_expectation:.6e}")
+            print(f"    Cache performance: {final_cache_stats['hits']} hits, "
+                  f"{final_cache_stats['misses']} misses "
+                  f"({final_cache_stats['hit_rate']:.1%} hit rate)")
+        
+        # Add convergence information
+        state_info = {
+            'mean': cumulative_expectation,
+            'variance': 0.0,  # No variance in deterministic batched sampling
+            'sigma2_over_n': 0.0,  # No sampling uncertainty
+            'n_samples': len(sampled_commutators),
+            'execution_time': state_time,
+            'cache_stats': final_cache_stats,
+            'sampling_method': 'top_k_batched',
+            'num_batches': num_batches,
+            'batch_size': num_workers,
+            'mean_history': mean_history,
+            'variance_history': variance_history,
+            'sigma2_over_n_history': sigma2_over_n_history,
+            'relative_error_history': relative_error_history,
+        }
+        
+        if 'states_info' not in convergence_info:
+            convergence_info['states_info'] = []
+        convergence_info['states_info'].append(state_info)
+    
+    return expectations
+
+
+def _compute_batch_contribution(
+    batch_commutators: List[Tuple[Hashable | Set]],
+    batch_weights: List[float],
+    fragments: Dict[Hashable, Fragment],
+    state: AbstractState,
+    backend: str,
+    num_workers: int,
+    parallel_mode: str,
+    cache: Optional[object] = None,
+    state_idx: Optional[int] = None,
+) -> float:
+    """
+    Compute the contribution of a batch of commutators in parallel.
+    
+    Args:
+        batch_commutators: Commutators in this batch
+        batch_weights: Weights for commutators in this batch
+        fragments: Fragment dictionary
+        state: The quantum state
+        backend: Parallel backend to use
+        num_workers: Number of workers (should be <= len(batch_commutators))
+        parallel_mode: Parallelization mode ("state" or "commutator")
+        cache: Optional cache (note: caching may not work properly in parallel)
+        state_idx: State index for caching
+    
+    Returns:
+        float: Total contribution from this batch
+    """
+    from pennylane.labs.trotter_error.product_formulas import concurrency
+    
+    if len(batch_commutators) == 1:
+        # Single commutator - no need for parallelization
+        commutator, weight = batch_commutators[0], batch_weights[0]
+        applied_state = _apply_commutator(commutator, fragments, state, cache, state_idx)
+        if isinstance(applied_state, _AdditiveIdentity):
+            return 0.0
+        else:
+            return weight * state.dot(applied_state)
+    
+    # Multiple commutators - use parallel processing
+    executor = concurrency.backends.get_executor(backend)
+    
+    with executor(max_workers=min(num_workers, len(batch_commutators))) as ex:
+        # Create tasks for parallel execution
+        # Note: We disable caching in parallel mode for thread safety
+        tasks = [
+            (commutator, weight, fragments, state) 
+            for commutator, weight in zip(batch_commutators, batch_weights)
+        ]
+        
+        # Execute in parallel
+        results = list(ex.starmap(_apply_weighted_commutator, tasks))
+    
+    # Sum contributions from all commutators in batch
+    batch_state = sum(results, start=_AdditiveIdentity())
+    
+    if isinstance(batch_state, _AdditiveIdentity):
+        return 0.0
+    else:
+        return state.dot(batch_state)
 
 
 def _sample_importance_commutators(
