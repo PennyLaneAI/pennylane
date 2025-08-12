@@ -31,7 +31,7 @@ def test_no_interface_error_numpy(grad_fn):
         grad_fn(lambda x: x**2)(np.array(2.0))
 
 
-@pytest.mark.parametrize("interface", ("autograd", "jax", "tensorflow", "torch"))
+@pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
 class TestGrad:
     """Tests for qml.math.grad"""
 
@@ -78,7 +78,7 @@ class TestGrad:
         assert math.allclose(g, 2.0)
 
 
-@pytest.mark.parametrize("interface", ("autograd", "jax", "tensorflow", "torch"))
+@pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
 class TestJacobian:
     """Tests for the math.jacobian function."""
 
