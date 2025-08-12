@@ -213,7 +213,6 @@ class TestSparse:
         differentiation method is not parameter-shift."""
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.set_shots(None)
         @qml.qnode(dev, diff_method="backprop")
         def circuit(param):
             qml.RX(param, wires=0)
@@ -232,7 +231,6 @@ class TestSparse:
 
         hamiltonian = csr_matrix(hamiltonian)
 
-        @qml.set_shots(None)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(param):
             qml.PauliX(0)
@@ -249,7 +247,6 @@ class TestSparse:
 
         hamiltonian = qml.SparseHamiltonian(csr_matrix(H_hydrogen), wires=range(4))
 
-        @qml.set_shots(None)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.PauliX(0)

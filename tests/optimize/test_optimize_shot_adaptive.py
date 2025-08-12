@@ -28,7 +28,6 @@ class TestExceptions:
         H = qml.Hamiltonian([0.3, 0.1], [qml.PauliX(0), qml.PauliZ(0)])
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.set_shots(None)
         @qml.qnode(dev)
         def expval_cost(x):
             qml.RX(x, wires=0)

@@ -1052,7 +1052,6 @@ class TestPulseOdegenTape:
         y = jnp.array(-0.5)
         t = [0.2, 0.3]
 
-        @qml.set_shots(None)
         @qml.qnode(dev, interface="jax")
         def circuit(par):
             qml.evolve(H)(par, t=t)
@@ -1135,7 +1134,6 @@ class TestPulseOdegenTape:
         z = jnp.array([-0.3, 0.6])
         t = [0.2, 0.3]
 
-        @qml.set_shots(None)
         @qml.qnode(dev, interface="jax")
         def circuit(par):
             qml.evolve(H0)(par[:1], t=t)
@@ -1252,7 +1250,6 @@ class TestPulseOdegenQNode:
         T = 0.2
         ham_single_q_const = jnp.polyval * Y(0) + qml.pulse.constant * Y(0)
 
-        @qml.set_shots(None)
         @qml.qnode(dev, interface="jax")
         def circuit(params, c):
             qml.evolve(ham_single_q_const)([params, c], T)
