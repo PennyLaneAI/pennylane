@@ -353,10 +353,11 @@
 * Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
   Instead, we recommend using the :doc:`JAX </introduction/interfaces/jax>` or :doc:`PyTorch </introduction/interfaces/torch>` interface for
-  machine learning applications to benefit from enhanced support and features. Please consult the following demos for 
-  a comprehensive guide on
-  :doc:`PyTorch </qml/demos/tutorial_qnn_module_torch>` or
-  :doc:`JAX </qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
+  machine learning applications to benefit from enhanced support and features. Please consult the following demos for
+  more usage information: 
+  `Turning quantum nodes into Torch Layers <https://pennylane.ai/qml/demos/tutorial_qnn_module_torch>` and
+  `How to optimize a QML model using JAX and Optax <https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`.
+  [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
 
 * `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
