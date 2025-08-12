@@ -46,6 +46,7 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
+        TypeError: if the input quantum circuit is not a Clifford+T circuit.
 
     **Example:**
 
@@ -82,12 +83,14 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         )
 
     qasm2_no_meas = qml.to_openqasm(tape, measure_all=False)
-
     pyzx_circ = pyzx.Circuit.from_qasm(qasm2_no_meas)
-    pyzx_circ = pyzx.phase_block_optimize(pyzx_circ, pre_optimize=False)
+
+    try:
+        pyzx_circ = pyzx.phase_block_optimize(pyzx_circ, pre_optimize=False)
+    except TypeError as e:
+        raise TypeError("The input quantum circuit must be a Clifford+T circuit.") from e
 
     qscript = from_zx(pyzx_circ.to_graph())
-
     new_tape = tape.copy(operations=qscript.operations)
 
     def null_postprocessing(results):
