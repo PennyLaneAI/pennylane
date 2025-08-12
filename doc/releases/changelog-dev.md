@@ -72,40 +72,13 @@
   [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
+  [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
   
-  The included templates are:
-
-  * :class:`~.Adder`
-
-  * :class:`~.ControlledSequence`
-
-  * :class:`~.ModExp`
-
-  * :class:`~.MottonenStatePreparation`
-
-  * :class:`~.MPSPrep`
-
-  * :class:`~.Multiplier`
-
-  * :class:`~.OutAdder`
-
-  * :class:`~.OutMultiplier`
-
-  * :class:`~.OutPoly`
-
-  * :class:`~.PrepSelPrep`
-
-  * :class:`~.ops.Prod`
-
-  * :class:`~.Reflection`
-
-  * :class:`~.Select`
-
-  * :class:`~.StatePrep`
-
-  * :class:`~.TrotterProduct`
-
-  * :class:`~.QROM`
+  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, 
+  :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
+  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`, 
+  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, 
+  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
