@@ -1044,8 +1044,7 @@ class TestPulseOdegenTape:
         import jax.numpy as jnp
 
         prng_key = jax.random.PRNGKey(seed)
-        dev = qml.device("default.qubit", wires=1)
-        dev_shots = qml.device("default.qubit", wires=1, seed=prng_key)
+        dev = qml.device("default.qubit", wires=1, seed=prng_key)
 
         H = 0.1 * Z(0) + jnp.polyval * X(0) + qml.pulse.constant * Y(0)
         x = jnp.array([0.4, 0.2, 0.1])
@@ -1064,7 +1063,7 @@ class TestPulseOdegenTape:
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1])
         assert len(_tapes) == 6  # dim(DLA)=3, two shifts per basis element
 
-        grad = fn(qml.execute(_tapes, dev_shots))
+        grad = fn(qml.execute(_tapes, dev))
         exp_grad = jax.jacobian(circuit)([x, y])
         if isinstance(shots, list):
             assert isinstance(grad, tuple) and len(grad) == len(shots)
@@ -1124,8 +1123,7 @@ class TestPulseOdegenTape:
         import jax.numpy as jnp
 
         prng_key = jax.random.PRNGKey(seed)
-        dev = qml.device("default.qubit", wires=1)
-        dev_shots = qml.device("default.qubit", wires=1, seed=prng_key)
+        dev = qml.device("default.qubit", wires=1, seed=prng_key)
 
         H0 = 0.1 * Z(0) + jnp.polyval * X(0)
         H1 = 0.2 * Y(0) + qml.pulse.constant * Y(0) + jnp.polyval * Z(0)
@@ -1147,7 +1145,7 @@ class TestPulseOdegenTape:
         _tapes, fn = pulse_odegen(tape_with_shots, argnum=[0, 1, 2])
         assert len(_tapes) == 12  # two pulses, dim(DLA)=3, two shifts per basis element
 
-        grad = fn(qml.execute(_tapes, dev_shots))
+        grad = fn(qml.execute(_tapes, dev))
         exp_grad = jax.jacobian(circuit)([x, y, z])
         if isinstance(shots, list):
             assert isinstance(grad, tuple) and len(grad) == len(shots)
