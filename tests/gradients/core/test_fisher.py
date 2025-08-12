@@ -562,10 +562,10 @@ class TestDiffCFIM:
         # Evaluate and compare
         grads = [grad_autograd, grad_torch, grad_jax]
 
-        is_same = np.zeros((4, 4))
+        is_same = np.zeros((len(grads), len(grads)))
 
         for i, g1 in enumerate(grads):
             for j, g2 in enumerate(grads):
                 is_same[i, j] = np.allclose(g1, g2, atol=1e-6)
 
-        assert np.allclose(is_same, np.ones((4, 4)))
+        assert np.allclose(is_same, np.ones((len(grads), len(grads))))
