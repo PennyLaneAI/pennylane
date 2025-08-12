@@ -55,7 +55,8 @@ qscript = [True, False]
 
 
 def test_import_pyzx(monkeypatch):
-    """Test if an ImportError is raised by to_zx function."""
+    """Test that a ModuleNotFoundError is raised by the to_zx function
+    when the pyzx external package is not installed."""
 
     with monkeypatch.context() as m:
         m.setitem(sys.modules, "pyzx", None)

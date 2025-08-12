@@ -13,13 +13,13 @@
 # limitations under the License.
 """
 Helper functions for the ZX calculus module.
-
-Use the decorator ``_needs_pyzx`` on ZX-based functions to raise the appropriate error when ``pyzx`` is not installed.
 """
 from functools import wraps
 
 
 def _needs_pyzx(func):
+    """Function to use as a ZX-based transforms decorator to raise the appropriate
+    error when the pyzx external package is not installed."""
 
     @wraps(func)
     def wrapper(*args, **kwargs):
