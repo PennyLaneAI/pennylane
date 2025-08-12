@@ -616,13 +616,11 @@ class ConvertToMBQCFormalismPattern(
         Return:
             The result qubits, which are the swapping result of the qubit in the global register and the auxiliary result qubit.
         """
-        # NOTE: identity_op inserted here is a temporal solution to fix the issue that SWAPOp can't accept
-        # `res_aux_qubit` as an in_qubits variable, i.e. SWAPOp = CustomOp(in_qubits=(target_qubit, res_aux_qubit), gate_name="SWAP").
-        # The error message would be "| Error while applying pattern: 'NoneType' object has no attribute 'add_use'". Is it a upstream
-        # issue or caused by the way how we define the `CustomOp` operation? Not sure why.
-        # NOTE: It is also worth noting here. The target qubit in the global register is measured and I assume that
-        # physically the target qubit can not be swapped with the result auxiliary qubit, right?
-        # TODOS: We need more clarifications for the questions above in the following steps.
+        # NOTE: identity_op inserted here is a solution to allow the swapping between the auxilliary qubit and the 
+        # target qubit in the global register. 
+        # NOTE: How to deallocate the result auxiliary qubit in this case is still an open question. I believe
+        # the quantum.finalize operation are not responsible for those auxiliary qubits deallocations.
+        # TODOS: Although current implementation works on a `null.qubit` device, we need to come back to the questions mentioned above later.
         identity_op = CustomOp(in_qubits=(aux_res_qubit), gate_name="Identity")
         rewriter.insert_op(identity_op, InsertPoint.before(op))
 
@@ -631,20 +629,20 @@ class ConvertToMBQCFormalismPattern(
     def _deallocate_aux_qubits(
         self,
         graph_qubits_dict: dict,
-        qb_in_reg_key: list[int],
+        res_target_qb: list[int],
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
         """Deallocate the auxiliary qubits in the graph qubit dict.
         Args:
             graph_qubits_dict (dict) : A dict stores all qubits in a graph state.
-            qb_in_reg_key (list[int]) : A list of keys to qubits in the global register.
-            op (CustomOp) : A gate operatio object.
+            res_target_qb (list[int]) : A list of keys of result auxiliary and target (in the global register) qubits.
+            op (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
         """
-        # Deallocate aux_qubits
+        # Deallocate non result aux_qubits
         for node in graph_qubits_dict:
-            if node not in qb_in_reg_key:
+            if node not in res_target_qb:
                 dealloc_qubit_op = DeallocQubitOp(graph_qubits_dict[node])
                 rewriter.insert_op(dealloc_qubit_op, InsertPoint.before(op))
 
@@ -694,7 +692,7 @@ class ConvertToMBQCFormalismPattern(
                     self._deallocate_aux_qubits(graph_qubits_dict, [1, 5], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result_qubit
-                    rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[1])
+                    rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[5])
                     # Remove op operation
                     rewriter.erase_op(op)
                 elif isinstance(op, CustomOp) and op.gate_name.data == "CNOT":
@@ -739,7 +737,7 @@ class ConvertToMBQCFormalismPattern(
                     self._deallocate_aux_qubits(graph_qubits_dict, [1, 7, 9, 15], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result_qubit
-                    rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[1])
-                    rewriter.replace_all_uses_with(op.results[1], graph_qubits_dict[9])
+                    rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[7])
+                    rewriter.replace_all_uses_with(op.results[1], graph_qubits_dict[15])
                     # Remove op operation
                     rewriter.erase_op(op)
