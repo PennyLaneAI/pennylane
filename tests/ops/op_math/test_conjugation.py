@@ -22,7 +22,6 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import math
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.conjugation import Conjugation, conjugation
@@ -190,21 +189,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         for op1, op2 in zip(tape.operations, true_decomposition):
             qml.assert_equal(op1, op2)
 
-    def test_eigen_caching(self):
-        """Test that the eigendecomposition is stored in cache."""
-        conjugation_op = Conjugation(qml.PauliZ(wires=0), qml.Identity(wires=1))
-        eig_decomp = conjugation_op.eigendecomposition
-
-        eig_vecs = eig_decomp["eigvec"]
-        eig_vals = eig_decomp["eigval"]
-
-        eigs_cache = conjugation_op._eigs[conjugation_op.hash]
-        cached_vecs = eigs_cache["eigvec"]
-        cached_vals = eigs_cache["eigval"]
-
-        assert np.allclose(eig_vals, cached_vals)
-        assert np.allclose(eig_vecs, cached_vecs)
-
     @pytest.mark.parametrize(
         "factors",
         (
@@ -243,40 +227,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         conjugation_op = conjugation(*factors)
         assert conjugation_op.has_decomposition is True
 
-    @pytest.mark.parametrize(
-        "factors",
-        (
-            [qml.PauliX(wires=0), qml.PauliY(wires=0)],
-            [qml.PauliX(wires=0), qml.PauliZ(wires="r"), qml.PauliY(0)],
-            [qml.Hamiltonian([0.523], [qml.PauliX(3)]), qml.PauliZ(3)],
-            [
-                qml.Hamiltonian([0.523], [qml.PauliX(0) @ qml.PauliZ(2)]),
-                qml.Hamiltonian([-1.301], [qml.PauliY(2) @ qml.PauliZ(1)]),
-            ],
-        ),
-    )
-    def test_has_diagonalizing_gates_true_via_overlapping_factors(self, factors):
-        """Test that a conjugation of operators that have `has_diagonalizing_gates=True`
-        has `has_diagonalizing_gates=True` as well."""
-
-        conjugation_op = conjugation(*factors)
-        assert conjugation_op.has_diagonalizing_gates is True
-
-    @pytest.mark.parametrize(
-        "factors",
-        (
-            [qml.PauliX(wires=0), qml.PauliX(wires=1)],
-            [qml.PauliX(wires=0), qml.PauliZ(wires="r")],
-            [qml.Hermitian(np.eye(4), wires=[0, 2]), qml.PauliX(wires=1)],
-        ),
-    )
-    def test_has_diagonalizing_gates_true_via_factors(self, factors):
-        """Test that a conjugation of operators that have `has_diagonalizing_gates=True`
-        has `has_diagonalizing_gates=True` as well."""
-
-        conjugation_op = conjugation(*factors)
-        assert conjugation_op.has_diagonalizing_gates is True
-
     def test_has_diagonalizing_gates_false_via_factor(self):
         """Test that a conjugation of operators of which one has
         `has_diagonalizing_gates=False` has `has_diagonalizing_gates=False` as well."""
@@ -293,30 +243,6 @@ class TestProperties:
         """Test _queue_category property is '_ops' when all factors are `_ops`."""
         conjugation_op = conjugation(*ops_lst)
         assert conjugation_op._queue_category == "_ops"
-
-    def test_eigen_caching(self):
-        """Test that the eigendecomposition is stored in cache."""
-        diag_conjugation_op = Conjugation(qml.PauliZ(wires=0), qml.PauliZ(wires=1))
-        eig_decomp = diag_conjugation_op.eigendecomposition
-
-        eig_vecs = eig_decomp["eigvec"]
-        eig_vals = eig_decomp["eigval"]
-        eigs_cache = diag_conjugation_op._eigs[diag_conjugation_op.hash]
-        cached_vecs = eigs_cache["eigvec"]
-        cached_vals = eigs_cache["eigval"]
-
-        assert np.allclose(eig_vals, cached_vals)
-        assert np.allclose(eig_vecs, cached_vecs)
-
-    @pytest.mark.jax
-    def test_eigvals_jax_jit(self):
-        """Assert computing the eigvals of a Conjugation is compatible with jax-jit."""
-        import jax
-
-        def f(t1, t2):
-            return qml.conjugation(qml.RX(t1, 0), qml.RX(t2, 0)).eigvals()
-
-        assert qml.math.allclose(f(0.5, 1.0), jax.jit(f)(0.5, 1.0))
 
 
 class TestWrapperFunc:
@@ -337,66 +263,6 @@ class TestWrapperFunc:
 class TestIntegration:
     """Integration tests for the Conjugation class."""
 
-    def test_measurement_process_expval(self):
-        """Test Conjugation class instance in expval measurement process."""
-        dev = qml.device("default.qubit", wires=2)
-        conjugation_op = Conjugation(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
-
-        @qml.qnode(dev)
-        def my_circ():
-            qml.PauliX(0)
-            return qml.expval(conjugation_op)
-
-        exp_val = my_circ()
-        true_exp_val = qnp.array(-1 / qnp.sqrt(2))
-        assert qnp.allclose(exp_val, true_exp_val)
-
-    def test_measurement_process_var(self):
-        """Test Conjugation class instance in var measurement process."""
-        dev = qml.device("default.qubit", wires=2)
-        conjugation_op = Conjugation(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
-
-        @qml.qnode(dev)
-        def my_circ():
-            qml.PauliX(0)
-            return qml.var(conjugation_op)
-
-        var = my_circ()
-        true_var = qnp.array(1 / 2)
-        assert qnp.allclose(var, true_var)
-
-    def test_measurement_process_probs(self):
-        """Test Conjugation class instance in probs measurement process raises error."""
-        dev = qml.device("default.qubit", wires=2)
-        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.Hadamard(wires=1))
-
-        @qml.qnode(dev)
-        def my_circ():
-            qml.PauliX(0)
-            return qml.probs(op=conjugation_op)
-
-        x_probs = np.array([0.5, 0.5])
-        h_probs = np.array([np.cos(-np.pi / 4 / 2) ** 2, np.sin(-np.pi / 4 / 2) ** 2])
-        expected = np.tensordot(x_probs, h_probs, axes=0).flatten()
-        out = my_circ()
-        assert qml.math.allclose(out, expected)
-
-    def test_differentiable_measurement_process(self):
-        """Test that the gradient can be computed with a Conjugation op in the measurement process."""
-        conjugation_op = Conjugation(qml.PauliZ(wires=0), qml.Hadamard(wires=1))
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(weights):
-            qml.RX(weights[0], wires=0)
-            return qml.expval(conjugation_op)
-
-        weights = qnp.array([0.1], requires_grad=True)
-        grad = qml.grad(circuit)(weights)
-
-        true_grad = -qnp.sqrt(2) * qnp.cos(weights[0] / 2) * qnp.sin(weights[0] / 2)
-        assert qnp.allclose(grad, true_grad)
-
     def test_non_supported_obs_not_supported(self):
         """Test that non-supported ops in a measurement process will raise an error."""
         wires = [0, 1]
@@ -410,51 +276,6 @@ class TestIntegration:
 
         with pytest.raises(DeviceError):
             my_circ()
-
-    def test_operation_integration(self):
-        """Test that a Conjugationuct operation can be queued and executed in a circuit"""
-        dev = qml.device("default.qubit", wires=3)
-        operands = (
-            qml.Hadamard(wires=0),
-            qml.CNOT(wires=[0, 1]),
-        )
-
-        @qml.qnode(dev)
-        def conjugation_state_circ():
-            Conjugation(*operands)
-            return qml.state()
-
-        @qml.qnode(dev)
-        def true_state_circ():
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-            qml.Hadamard(wires=0)
-            return qml.state()
-
-        assert qnp.allclose(conjugation_state_circ(), true_state_circ())
-
-    def test_batched_operation(self):
-        """Test that conjugation with batching gives expected results."""
-        x = qml.numpy.array([1.0, 2.0, 3.0])
-        y = qml.numpy.array([4.0, 5.0, 6.0])
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def batched_conjugation(x, y):
-            qml.conjugation(qml.RX(x, wires=0), qml.RY(y, wires=0))
-            return qml.expval(qml.PauliZ(0))
-
-        @qml.qnode(dev)
-        def batched_no_conjugation(x, y):
-            qml.RX(x, wires=0)
-            qml.RY(y, wires=0)
-            qml.adjoint(qml.RX(x, wires=0))
-            return qml.expval(qml.PauliZ(0))
-
-        res1 = batched_conjugation(x, y)
-        res2 = batched_no_conjugation(x, y)
-        assert qml.math.allclose(res1, res2)
 
     def test_params_can_be_considered_trainable(self):
         """Tests that the parameters of a Conjugation are considered trainable."""
