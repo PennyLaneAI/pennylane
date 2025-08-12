@@ -200,7 +200,7 @@ def sample(
 
         In v0.42, a breaking change removed the squeezing of singleton dimensions, eliminating the need for
         specialized, error-prone handling for finite-shot results.
-        For the qnode:
+        For the QNode:
 
         >>> @qml.qnode(qml.device('default.qubit'))
         ... def circuit(wires):
@@ -215,7 +215,7 @@ def sample(
         >>> qml.set_shots(circuit, 1)((0,1))
         array([0, 0])
 
-        But now the above circuit will **always** return an array of shape ``(shots, num_wires)``.
+        With v0.42 and newer, the above circuit will **always** return an array of shape ``(shots, num_wires)``.
 
         >>> qml.set_shots(circuit, 1)(wires=1)
         array([[0]])
