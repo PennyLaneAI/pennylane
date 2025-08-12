@@ -104,58 +104,6 @@ class Conjugation(CompositeOp):
             return [apply(op) for op in self]
         return list(self)
 
-    @handle_recursion_error
-    def matrix(self, wire_order=None):
-        """Representation of the operator as a matrix in the computational basis."""
-        mats: list[TensorLike] = []
-        batched: list[bool] = []  # batched[i] tells if mats[i] is batched or not
-        for ops in self.overlapping_ops:
-            gen = ((op.matrix(), op.wires) for op in ops)
-
-            reduced_mat, _ = math.reduce_matrices(gen, reduce_func=math.matmul)
-
-            if self.batch_size is not None:
-                batched.append(any(op.batch_size is not None for op in ops))
-            else:
-                batched.append(False)
-
-            mats.append(reduced_mat)
-
-        if self.batch_size is None:
-            full_mat = reduce(math.kron, mats)
-        else:
-            full_mat = math.stack(
-                [
-                    reduce(math.kron, [m[i] if b else m for m, b in zip(mats, batched)])
-                    for i in range(self.batch_size)
-                ]
-            )
-        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order)
-
-    @handle_recursion_error
-    def sparse_matrix(self, wire_order=None, format="csr"):
-        if self.pauli_rep:  # Get the sparse matrix from the PauliSentence representation
-            return self.pauli_rep.to_mat(wire_order=wire_order or self.wires, format=format)
-
-        if self.has_overlapping_wires or self.num_wires > MAX_NUM_WIRES_KRON_PRODUCT:
-            gen = ((op.sparse_matrix(), op.wires) for op in self)
-
-            reduced_mat, prod_wires = math.reduce_matrices(gen, reduce_func=math.dot)
-
-            wire_order = wire_order or self.wires
-
-            return math.expand_matrix(reduced_mat, prod_wires, wire_order=wire_order).asformat(
-                format
-            )
-        mats = (op.sparse_matrix() for op in self)
-        full_mat = reduce(sparse_kron, mats)
-        return math.expand_matrix(full_mat, self.wires, wire_order=wire_order).asformat(format)
-
-    @property
-    @handle_recursion_error
-    def has_sparse_matrix(self):
-        return self.pauli_rep is not None or all(op.has_sparse_matrix for op in self)
-
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
     def has_adjoint(self):

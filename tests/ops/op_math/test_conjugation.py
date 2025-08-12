@@ -22,10 +22,8 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane import PauliX, math
-from pennylane.exceptions import DeviceError, MatrixUndefinedError
-from pennylane.operation import Operator
-from pennylane.ops import prod
+from pennylane import math
+from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.conjugation import Conjugation, conjugation
 from pennylane.wires import Wires
@@ -88,26 +86,6 @@ def test_basic_validity():
     op3 = qml.PauliZ(0)
     op = qml.conjugation(op1, op2, op3)
     qml.ops.functions.assert_valid(op)
-
-
-def compare_and_expand_mat(mat1, mat2):
-    """Helper function which takes two square matrices (of potentially different sizes)
-    and expands the smaller matrix until their shapes match."""
-
-    if mat1.size == mat2.size:
-        return mat1, mat2
-
-    (smaller_mat, larger_mat, flip_order) = (
-        (mat1, mat2, 0) if mat1.size < mat2.size else (mat2, mat1, 1)
-    )
-
-    while smaller_mat.size < larger_mat.size:
-        smaller_mat = math.cast_like(math.kron(smaller_mat, math.eye(2)), smaller_mat)
-
-    if flip_order:
-        return larger_mat, smaller_mat
-
-    return smaller_mat, larger_mat
 
 
 class MyOp(qml.RX):  # pylint:disable=too-few-public-methods
@@ -227,31 +205,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert np.allclose(eig_vals, cached_vals)
         assert np.allclose(eig_vecs, cached_vecs)
 
-    def test_has_matrix_true_via_factors_have_matrix(self):
-        """Test that a conjugation of operators that have `has_matrix=True`
-        has `has_matrix=True` as well."""
-
-        conjugation_op = conjugation(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
-        assert conjugation_op.has_matrix is True
-
-    def test_has_matrix_true_via_factor_has_no_matrix_but_is_hamiltonian(self):
-        """Test that a conjugation of operators of which one does not have `has_matrix=True`
-        but is a Hamiltonian has `has_matrix=True`."""
-
-        H = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
-        conjugation_op = conjugation(H, qml.RZ(0.23, wires=5))
-        assert conjugation_op.has_matrix is True
-
-    @pytest.mark.parametrize(
-        "first_factor", [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])]
-    )
-    def test_has_matrix_false_via_factor_has_no_matrix(self, first_factor):
-        """Test that a conjugation of operators of which one does not have `has_matrix=True`
-        has `has_matrix=False`."""
-
-        conjugation_op = conjugation(first_factor, MyOp(0.23, wires="a"))
-        assert conjugation_op.has_matrix is False
-
     @pytest.mark.parametrize(
         "factors",
         (
@@ -265,8 +218,8 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         ),
     )
     def test_has_adjoint_true_always(self, factors):
-        """Test that a conjugation of operators that have `has_matrix=True`
-        has `has_matrix=True` as well."""
+        """Test that a conjugation of operators that have `has_adjoint=True`
+        has `has_adjoint=True` as well."""
 
         conjugation_op = conjugation(*factors)
         assert conjugation_op.has_adjoint is True
@@ -330,304 +283,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
         conjugation_op = conjugation(MyOp(3.1, 0), qml.PauliX(2))
         assert conjugation_op.has_diagonalizing_gates is False
-
-
-# pylint: disable=too-many-public-methods
-class TestMatrix:
-    """Test matrix-related methods."""
-
-    @pytest.mark.parametrize("op1, mat1", non_param_ops)
-    @pytest.mark.parametrize("op2, mat2", non_param_ops)
-    def test_non_parametric_ops_two_terms(
-        self,
-        op1: Operator,
-        mat1: np.ndarray,
-        op2: Operator,
-        mat2: np.ndarray,
-    ):
-        """Test matrix method for a conjugation of non_parametric ops"""
-        mat1, mat2 = compare_and_expand_mat(mat1, mat2)
-        true_mat = mat1 @ mat2 @ np.conj(mat1).T
-
-        conjugation_op = Conjugation(
-            op1(wires=0 if op1.num_wires is None else range(op1.num_wires)),
-            op2(wires=0 if op2.num_wires is None else range(op2.num_wires)),
-        )
-        conjugation_mat = conjugation_op.matrix()
-
-        assert np.allclose(conjugation_mat, true_mat)
-
-    @pytest.mark.parametrize("op1, mat1", param_ops)
-    @pytest.mark.parametrize("op2, mat2", param_ops)
-    def test_parametric_ops_two_terms(
-        self,
-        op1: Operator,
-        mat1: np.ndarray,
-        op2: Operator,
-        mat2: np.ndarray,
-    ):
-        """Test matrix method for a conjugation of parametric ops"""
-        par1 = tuple(range(op1.num_params))
-        par2 = tuple(range(op2.num_params))
-        mat1, mat2 = compare_and_expand_mat(mat1(*par1), mat2(*par2))
-
-        conjugation_op = Conjugation(
-            op1(*par1, wires=range(op1.num_wires)), op2(*par2, wires=range(op2.num_wires))
-        )
-        conjugation_mat = conjugation_op.matrix()
-        true_mat = mat1 @ mat2 @ np.conj(mat1).T
-        assert np.allclose(conjugation_mat, true_mat)
-
-    @pytest.mark.parametrize("op", no_mat_ops)
-    def test_error_no_mat(self, op: Operator):
-        """Test that an error is raised if one of the factors doesn't
-        have its matrix method defined."""
-        conjugation_op = Conjugation(op(wires=0), qml.PauliX(wires=2), qml.PauliZ(wires=1))
-        with pytest.raises(MatrixUndefinedError):
-            conjugation_op.matrix()
-
-    def test_conjugation_ops_multi_terms(self):
-        """Test matrix is correct for a conjugation of more than two terms."""
-        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.PauliY(wires=0), qml.PauliX(wires=0))
-        mat = conjugation_op.matrix()
-
-        true_mat = math.array(
-            [
-                [0, 1j],
-                [-1j, 0],
-            ]
-        )
-        assert np.allclose(mat, true_mat)
-
-    def test_conjugation_ops_multi_wires(self):
-        """Test matrix is correct when multiple wires are used in the conjugation."""
-        conjugation_op = Conjugation(
-            qml.PauliX(wires=0), qml.Hadamard(wires=1), qml.PauliX(wires=0)
-        )
-        mat = conjugation_op.matrix()
-
-        x = math.array([[0, 1], [1, 0]])
-        h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
-        I = math.array([[1, 0], [0, 1]])
-
-        true_mat = math.kron(x, I) @ math.kron(I, h) @ math.kron(x, I)
-        assert np.allclose(mat, true_mat)
-
-    def test_conjugation_ops_wire_order(self):
-        """Test correct matrix is returned when the wire_order arg is provided."""
-        conjugation_op = Conjugation(
-            qml.Hadamard(wires=1), qml.PauliX(wires=0), qml.Hadamard(wires=1)
-        )
-        wire_order = [0, 1]
-        mat = conjugation_op.matrix(wire_order=wire_order)
-
-        x = math.array([[0, 1], [1, 0]])
-        h = 1 / math.sqrt(2) * math.array([[1, 1], [1, -1]])
-        I = math.array([[1, 0], [0, 1]])
-
-        true_mat = math.kron(I, h) @ math.kron(x, I) @ math.kron(I, h)
-        assert np.allclose(mat, true_mat)
-
-    def test_conjugation_templates(self):
-        """Test that we can compose templates and the generated matrix is correct."""
-
-        def get_qft_mat(num_wires):
-            omega = math.exp(np.pi * 1.0j / 2 ** (num_wires - 1))
-            mat = math.zeros((2**num_wires, 2**num_wires), dtype="complex128")
-
-            for m in range(2**num_wires):
-                for n in range(2**num_wires):
-                    mat[m, n] = omega ** (m * n)
-
-            return 1 / math.sqrt(2**num_wires) * mat
-
-        wires = [0, 1, 2]
-        conjugation_op = Conjugation(qml.QFT(wires=wires), qml.GroverOperator(wires=wires))
-        mat = conjugation_op.matrix()
-
-        grov_mat = (1 / 4) * math.ones((8, 8), dtype="complex128") - math.eye(8, dtype="complex128")
-        qft_mat = get_qft_mat(3)
-
-        true_mat = qft_mat @ grov_mat @ np.conj(qft_mat).T
-        assert np.allclose(mat, true_mat)
-
-    def test_conjugation_qubit_unitary(self):
-        """Test that an arbitrary QubitUnitary can be composed with correct matrix representation."""
-        U = 1 / qnp.sqrt(2) * qnp.array([[1, 1], [1, -1]])  # Hadamard
-        U_op = qml.QubitUnitary(U, wires=0)
-
-        conjugation_op = Conjugation(U_op, qml.Identity(wires=1))
-        mat = conjugation_op.matrix()
-
-        true_mat = qnp.eye(4)
-        assert np.allclose(mat, true_mat)
-
-    def test_conjugation_hamiltonian(self):
-        """Test that a hamiltonian object can be composed."""
-        U = qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])
-        conjugation_op = Conjugation(qml.PauliZ(wires=0), U)
-        mat = conjugation_op.matrix()
-
-        z = math.array([[1, 0], [0, -1]])
-        I = math.array([[1, 0], [0, 1]])
-        true_mat = [
-            [0.0, 0.5, 0.0, 0.0],
-            [0.5, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 0.0, -0.5],
-            [0.0, 0.0, -0.5, 0.0],
-        ] @ np.kron(z, I)
-        assert np.allclose(mat, true_mat)
-
-    def test_matrix_all_batched(self):
-        """Test that Conjugation matrix has batching support when all operands are batched."""
-        x = qml.numpy.array([0.1, 0.2, 0.3])
-        y = qml.numpy.array([0.4, 0.5, 0.6])
-        op = conjugation(qml.RX(x, wires=0), qml.RY(y, wires=2))
-        mat = op.matrix()
-        sum_list = [conjugation(qml.RX(i, wires=0), qml.RY(j, wires=2)) for i, j in zip(x, y)]
-        compare = qml.math.stack([s.matrix() for s in sum_list])
-        assert qml.math.allclose(mat, compare)
-        assert mat.shape == (3, 4, 4)
-
-    def test_matrix_not_all_batched(self):
-        """Test that Conjugation matrix has batching support when all operands are not batched."""
-        x = qml.numpy.array([0.1, 0.2, 0.3])
-        y = 0.5
-        op = conjugation(qml.RX(x, wires=0), qml.RY(y, wires=2))
-        mat = op.matrix()
-        batched_y = [y for _ in x]
-        sum_list = [
-            conjugation(qml.RX(i, wires=0), qml.RY(j, wires=2)) for i, j in zip(x, batched_y)
-        ]
-        compare = qml.math.stack([s.matrix() for s in sum_list])
-        assert qml.math.allclose(mat, compare)
-        assert mat.shape == (3, 4, 4)
-
-    @pytest.mark.jax
-    def test_conjugation_jax(self):
-        """Test matrix is cast correctly using jax parameters."""
-        import jax.numpy as jnp
-
-        theta = jnp.array(1.23)
-        rot_params = jnp.array([0.12, 3.45, 6.78])
-
-        conjugation_op = Conjugation(
-            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0), qml.RX(theta, wires=1)
-        )
-        mat = conjugation_op.matrix()
-
-        true_mat = (
-            jnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
-            @ jnp.kron(qnp.eye(2), gd.Rotx(theta))
-            @ jnp.conj(jnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))).T
-        )
-        true_mat = jnp.array(true_mat)
-
-        assert jnp.allclose(mat, true_mat)
-
-    @pytest.mark.torch
-    def test_conjugation_torch(self):
-        """Test matrix is cast correctly using torch parameters."""
-        import torch
-
-        theta = torch.tensor(1.23)
-        rot_params = torch.tensor([0.12, 3.45, 6.78])
-
-        conjugation_op = Conjugation(
-            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0), qml.RX(theta, wires=1)
-        )
-        mat = conjugation_op.matrix()
-
-        true_mat = (
-            qnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))
-            @ qnp.kron(qnp.eye(2), gd.Rotx(theta))
-            @ qnp.conj(qnp.kron(gd.Rot3(rot_params[0], rot_params[1], rot_params[2]), qnp.eye(2))).T
-        )
-        true_mat = torch.tensor(true_mat, dtype=torch.complex64)
-
-        assert torch.allclose(mat, true_mat)
-
-    @pytest.mark.tf
-    def test_conjugation_tf(self):
-        """Test matrix is cast correctly using tf parameters."""
-        import tensorflow as tf
-
-        theta = tf.Variable(1.23)
-        rot_params = tf.Variable([0.12, 3.45, 6.78])
-
-        conjugation_op = Conjugation(
-            qml.Rot(rot_params[0], rot_params[1], rot_params[2], wires=0), qml.RX(theta, wires=1)
-        )
-        mat = conjugation_op.matrix()
-
-        true_mat = (
-            qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))
-            @ qnp.kron(qnp.eye(2), gd.Rotx(1.23))
-            @ qnp.conj(qnp.kron(gd.Rot3(0.12, 3.45, 6.78), qnp.eye(2))).T
-        )
-        true_mat = tf.Variable(true_mat)
-        true_mat = tf.Variable(true_mat, dtype=tf.complex128)
-
-        assert isinstance(mat, tf.Tensor)
-        assert mat.dtype == true_mat.dtype
-        assert np.allclose(mat, true_mat)
-
-    # sparse matrix tests:
-
-    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
-    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
-    def test_sparse_matrix(self, op1, mat1, op2, mat2):
-        """Test that the sparse matrix of a Conjugation op is defined and correct."""
-        conjugation_op = conjugation(op1(wires=0), op2(wires=1))
-        true_mat = (
-            math.kron(mat1, np.eye(2))
-            @ math.kron(np.eye(2), mat2)
-            @ np.conj(math.kron(mat1, np.eye(2))).T
-        )
-        conjugation_mat = conjugation_op.sparse_matrix().todense()
-
-        assert np.allclose(true_mat, conjugation_mat)
-
-    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
-    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
-    def test_sparse_matrix_same_wires(self, op1, mat1, op2, mat2):
-        """Test that the sparse matrix of a Conjugation op is defined and correct."""
-        conjugation_op = conjugation(op1(wires=0), op2(wires=0))
-        true_mat = mat1 @ mat2 @ np.conj(mat1).T
-        conjugation_mat = conjugation_op.sparse_matrix().todense()
-
-        assert np.allclose(true_mat, conjugation_mat)
-
-    @pytest.mark.parametrize("op1, mat1", non_param_ops[:5])
-    @pytest.mark.parametrize("op2, mat2", non_param_ops[:5])
-    def test_sparse_matrix_wire_order(self, op1, mat1, op2, mat2):
-        """Test that the sparse matrix of a Conjugation op is defined
-        with wire order and correct."""
-        true_mat = (
-            math.kron(mat1, np.eye(2))
-            @ math.kron(np.eye(2), mat2)
-            @ np.conj(math.kron(mat1, np.eye(2))).T
-        )
-
-        conjugation_op = conjugation(op1(wires=1), op2(wires=0))
-        conjugation_mat = conjugation_op.sparse_matrix(wire_order=[1, 0]).todense()
-
-        assert np.allclose(true_mat, conjugation_mat)
-
-    def test_sparse_matrix_undefined_error(self):
-        """Test that an error is raised when the sparse matrix method
-        is undefined for any of the factors."""
-
-        class DummyOp(qml.operation.Operation):  # pylint:disable=too-few-public-methods
-            num_wires = 1
-
-            def sparse_matrix(self, wire_order=None):
-                raise qml.operation.SparseMatrixUndefinedError
-
-        conjugation_op = conjugation(qml.PauliX(wires=0), DummyOp(wires=1))
-
-        with pytest.raises(qml.operation.SparseMatrixUndefinedError):
-            conjugation_op.sparse_matrix()
 
 
 class TestProperties:
