@@ -6,10 +6,10 @@ from scipy.sparse import kron as sparse_kron
 
 from pennylane import apply, math, queuing
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.operation import Operator
 from pennylane.ops.op_math import adjoint
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
-from pennylane.operation import Operator
 
 from .composite import CompositeOp, handle_recursion_error
 

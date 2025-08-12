@@ -26,6 +26,7 @@ from pennylane import PauliX, math
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import prod
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.conjugation import Conjugation, conjugation
 from pennylane.wires import Wires
 
@@ -180,6 +181,14 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert isinstance(decomposition, list)
         for op1, op2 in zip(decomposition, true_decomposition):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_decomposition_new(self, ops_lst):
+        """Test the qfunc decomposition."""
+        conjugation_op = conjugation(*ops_lst)
+
+        for rule in qml.list_decomps(Conjugation):
+            _test_decomposition_rule(conjugation_op, rule)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
