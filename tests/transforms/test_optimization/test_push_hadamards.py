@@ -43,7 +43,7 @@ class TestPushHadamards:
             qml.SWAP(wires=[0, 1]),
         ),
     )
-    def test_hermitian_gates_cancellation(self, gate):
+    def test_hermitian_involutory_gates_cancellation(self, gate):
         """Test cancellation for each supported Hermitian gate (involution property HH=I)"""
         ops = [gate, gate]
 
