@@ -20,6 +20,7 @@ pytestmark = pytest.mark.external
 
 pytest.importorskip("xdsl")
 
+# pylint: disable=wrong-import-position
 from xdsl.context import Context
 from xdsl.dialects import builtin, test
 from xdsl.ir import Dialect
@@ -38,8 +39,8 @@ from pennylane.compiler.python_compiler.xdsl_extras import (
 )
 
 
-@pytest.fixture(scope="session")
-def my_dialect():
+@pytest.fixture(scope="module", name="my_dialect")
+def my_dialect_fixture():
     """Returns a test dialect, called 'my_dialect', with simple ops that operate on memref and
     tensor types.
     """
@@ -48,6 +49,8 @@ def my_dialect():
     class MyMemrefOp(IRDLOperation):
         """A test op with rank-1 memref types"""
 
+        # pylint: disable=too-few-public-methods
+
         name = "my_dialect.memref_op"
         in_value = operand_def(MemRefRankConstraint(1))
         out_value = result_def(MemRefRankConstraint(1))
@@ -55,6 +58,8 @@ def my_dialect():
     @irdl_op_definition
     class MyTensorOp(IRDLOperation):
         """A test op with rank-1 tensor types"""
+
+        # pylint: disable=too-few-public-methods
 
         name = "my_dialect.tensor_op"
         in_value = operand_def(TensorRankConstraint(1))
