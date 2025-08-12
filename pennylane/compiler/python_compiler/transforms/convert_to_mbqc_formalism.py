@@ -453,7 +453,7 @@ class ConvertToMBQCFormalismPattern(
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
-            op (CustomOp) : A gate operatio object.
+            op (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
 
         Returns:
@@ -484,7 +484,7 @@ class ConvertToMBQCFormalismPattern(
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
-            op (CustomOp) : A gate operatio object.
+            op (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
 
         Returns:
@@ -514,7 +514,7 @@ class ConvertToMBQCFormalismPattern(
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubit (QubitType) : An auxiliary result qubit.
-            op (CustomOp) : A gate operatio object.
+            op (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
 
         Returns:
@@ -543,7 +543,7 @@ class ConvertToMBQCFormalismPattern(
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubits (list[QubitType]) : A list of auxiliary result qubits.
-            op (CustomOp) : A gate operatio object.
+            op (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
 
         Returns:
@@ -581,7 +581,7 @@ class ConvertToMBQCFormalismPattern(
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             qubits (QubitType | list[QubitType]) : An or a list of auxiliary result qubit.
-            op (CustomOp) : A gate operatio object.
+            op (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
 
         Returns:
@@ -599,52 +599,49 @@ class ConvertToMBQCFormalismPattern(
             case "CNOT":
                 return self._cnot_corrections(mres, qubits, op, rewriter)
 
-    def _swap_qb_in_reg_aux_res_qb(
+    def _dummy_identity_op_on_res_aux(
         self,
-        qb_in_reg: QubitType,
         aux_res_qubit: QubitType,
-        op: CustomOp,
+        insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
-        """Swap the target qubit in the global register with the corresonding result auxiliary qubit.
+        """Apply an Identity gate to the result auxiliary qubit.
         Args:
-            qb_in_reg (QubitType): A qubit in the global qubit register.
             aux_res_qubit (QubitType): The result auxiliary qubit.
-            op (CustomOp) : A gate operatio object.
+            insert_before (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
 
         Return:
-            The result qubits, which are the swapping result of the qubit in the global register and the auxiliary result qubit.
+            The auxiliary result qubit.
         """
-        # NOTE: identity_op inserted here is a solution to allow the swapping between the auxilliary qubit and the 
-        # target qubit in the global register. 
+        # NOTE: identity_op inserted here is a solution to allow the op.results qubits can be replaced with the auxiliary qubit.
         # NOTE: How to deallocate the result auxiliary qubit in this case is still an open question. I believe
         # the quantum.finalize operation are not responsible for those auxiliary qubits deallocations.
         # TODOS: Although current implementation works on a `null.qubit` device, we need to come back to the questions mentioned above later.
         identity_op = CustomOp(in_qubits=(aux_res_qubit), gate_name="Identity")
-        rewriter.insert_op(identity_op, InsertPoint.before(op))
+        rewriter.insert_op(identity_op, InsertPoint.before(insert_before))
 
-        return (identity_op.results[0], qb_in_reg)
+        return identity_op.results[0]
 
     def _deallocate_aux_qubits(
         self,
         graph_qubits_dict: dict,
         res_target_qb: list[int],
-        op: CustomOp,
+        insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
         """Deallocate the auxiliary qubits in the graph qubit dict.
         Args:
             graph_qubits_dict (dict) : A dict stores all qubits in a graph state.
             res_target_qb (list[int]) : A list of keys of result auxiliary and target (in the global register) qubits.
-            op (CustomOp) : A gate operation object.
+            insert_before (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
         """
         # Deallocate non result aux_qubits
         for node in graph_qubits_dict:
             if node not in res_target_qb:
                 dealloc_qubit_op = DeallocQubitOp(graph_qubits_dict[node])
-                rewriter.insert_op(dealloc_qubit_op, InsertPoint.before(op))
+                rewriter.insert_op(dealloc_qubit_op, InsertPoint.before(insert_before))
 
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
@@ -683,15 +680,15 @@ class ConvertToMBQCFormalismPattern(
                         mres, graph_qubits_dict[5], op, rewriter
                     )
 
-                    # Swap the target qubit in the global register with the result auxiliary qubit
-                    graph_qubits_dict[1], graph_qubits_dict[5] = self._swap_qb_in_reg_aux_res_qb(
-                        graph_qubits_dict[1], graph_qubits_dict[5], op, rewriter
+                    # Apply an Identity gate to the result target auxiliary qubit
+                    graph_qubits_dict[5] = self._dummy_identity_op_on_res_aux(
+                        graph_qubits_dict[5], op, rewriter
                     )
 
-                    # Deallocate the auxiliary qubits
+                    # Deallocate the non-result auxiliary qubits
                     self._deallocate_aux_qubits(graph_qubits_dict, [1, 5], op, rewriter)
 
-                    # Replace all uses of output qubit of op with the result_qubit
+                    # Replace all uses of output qubit of op with the result auxiliary qubit
                     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[5])
                     # Remove op operation
                     rewriter.erase_op(op)
@@ -723,20 +720,20 @@ class ConvertToMBQCFormalismPattern(
                         mres, [graph_qubits_dict[7], graph_qubits_dict[15]], op, rewriter
                     )
 
-                    # Swap the ctrl qubit in the global register with the result auxiliary qubit
-                    graph_qubits_dict[1], graph_qubits_dict[7] = self._swap_qb_in_reg_aux_res_qb(
-                        graph_qubits_dict[1], graph_qubits_dict[7], op, rewriter
+                    # Apply an Identity gate to the result ctrl auxiliary qubit
+                    graph_qubits_dict[7] = self._dummy_identity_op_on_res_aux(
+                        graph_qubits_dict[7], op, rewriter
                     )
 
-                    # Swap the target qubit in the global register with the result auxiliary qubit
-                    graph_qubits_dict[9], graph_qubits_dict[15] = self._swap_qb_in_reg_aux_res_qb(
-                        graph_qubits_dict[9], graph_qubits_dict[15], op, rewriter
+                    # Apply an Identity gate to the result target auxiliary qubit
+                    graph_qubits_dict[15] = self._dummy_identity_op_on_res_aux(
+                        graph_qubits_dict[15], op, rewriter
                     )
 
-                    # Deallocate aux_qubits
+                    # Deallocate non-result aux_qubits
                     self._deallocate_aux_qubits(graph_qubits_dict, [1, 7, 9, 15], op, rewriter)
 
-                    # Replace all uses of output qubit of op with the result_qubit
+                    # Replace all uses of output qubit of op with the result auxiliary qubit
                     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[7])
                     rewriter.replace_all_uses_with(op.results[1], graph_qubits_dict[15])
                     # Remove op operation
