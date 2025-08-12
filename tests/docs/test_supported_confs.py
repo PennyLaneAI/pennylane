@@ -38,8 +38,8 @@ F = pytest.importorskip("torch.autograd.functional")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-interfaces = [None, "autograd", "jax", "tf", "torch"]
-diff_interfaces = ["autograd", "jax", "tf", "torch"]
+interfaces = [None, "autograd", "jax", "torch"]
+diff_interfaces = ["autograd", "jax", "torch"]
 shots_list = [None, 100]
 
 # Each of these tuples contain:

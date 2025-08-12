@@ -120,7 +120,7 @@ class TestMutualInfoUnitTests:
         ).process_density_matrix(dm, wires)
 
         # Set tolerance based on interface
-        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+        atol = 1.0e-7 if interface == "torch" else 1.0e-8
 
         assert qml.math.allclose(
             mutual_info, expected_mutual_info, atol=atol

@@ -322,8 +322,6 @@ class TestNorm:
         (np.array([[5, 6], [-2, 3]]), "numpy", np.array(11), {}),
         (torch.tensor([0.5, -1, 2]), "torch", torch.tensor(2), {}),
         (torch.tensor([[5.0, 6.0], [-2.0, 3.0]]), "torch", torch.tensor(11), {"axis": (0, 1)}),
-        (tf.Variable([0.5, -1, 2]), "tensorflow", tf.Variable(2), {}),
-        (tf.Variable([[5, 6], [-2, 3]]), "tensorflow", tf.Variable(11), {"axis": [-2, -1]}),
         (jnp.array([0.5, -1, 2]), "jax", jnp.array(2), {}),
         (jnp.array([[5, 6], [-2, 3]]), "jax", jnp.array(11), {}),
     )

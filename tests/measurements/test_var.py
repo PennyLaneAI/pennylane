@@ -250,6 +250,6 @@ class TestVar:
         var = qml.math.cast(var, "float64")
 
         # Set tolerance based on interface
-        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+        atol = 1.0e-7 if interface == "torch" else 1.0e-8
 
         assert qml.math.allclose(var, expected, atol=atol), f"Expected {expected}, got {var}"

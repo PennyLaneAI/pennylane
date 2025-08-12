@@ -146,7 +146,7 @@ class TestInitialization:
         )
 
         # Set tolerance based on interface
-        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+        atol = 1.0e-7 if interface == "torch" else 1.0e-8
 
         assert qml.math.allclose(
             vn_entropy, expected_entropy, atol=atol
