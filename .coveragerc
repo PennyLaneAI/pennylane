@@ -5,6 +5,8 @@ omit =
     pennylane/devices/tests*
     pennylane/labs/*
     pennylane/compiler/python_compiler/*
+    pennylane/workflow/interfaces/tensorflow.py
+    pennylane/workflow/interfaces/tensorflow_autograph.py
 
 [report]
 # Regexes for lines to exclude from consideration
@@ -32,7 +34,6 @@ exclude_lines =
 
     # Ignore overload stubs
     @overload
-
 
 ignore_errors = True
 

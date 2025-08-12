@@ -192,13 +192,6 @@ def enable_graph_decomposition():
 #######################################################################
 
 try:
-    import tensorflow as tf
-except (ImportError, ModuleNotFoundError) as e:
-    tf_available = False
-else:
-    tf_available = True
-
-try:
     import torch
     from torch.autograd import Variable
 
@@ -248,7 +241,6 @@ def pytest_collection_modifyitems(items, config):
                     "autograd",
                     "data",
                     "torch",
-                    "tf",
                     "jax",
                     "qchem",
                     "qcut",
@@ -272,9 +264,8 @@ def pytest_collection_modifyitems(items, config):
 def pytest_runtest_setup(item):
     """Automatically skip tests if interfaces are not installed"""
     # Autograd is assumed to be installed
-    interfaces = {"tf", "torch", "jax"}
+    interfaces = {"torch", "jax"}
     available_interfaces = {
-        "tf": tf_available,
         "torch": torch_available,
         "jax": jax_available,
     }
@@ -286,12 +277,12 @@ def pytest_runtest_setup(item):
     ]
 
     # load the marker specifying what the interface is
-    all_interfaces = {"tf", "torch", "jax", "all_interfaces"}
+    all_interfaces = {"torch", "jax", "all_interfaces"}
     marks = {mark.name for mark in item.iter_markers() if mark.name in all_interfaces}
 
     for b in marks:
         if b == "all_interfaces":
-            required_interfaces = {"tf", "torch", "jax"}
+            required_interfaces = {"torch", "jax"}
             for interface in required_interfaces:
                 if interface not in allowed_interfaces:
                     pytest.skip(
