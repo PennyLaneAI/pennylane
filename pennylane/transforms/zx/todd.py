@@ -15,7 +15,7 @@
 This module contains a transform to apply the
 `phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__
 pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
-to a PennyLane Clifford+T circuit.
+to a PennyLane Clifford + T circuit.
 """
 
 import pennylane as qml
@@ -35,7 +35,21 @@ except ModuleNotFoundError:
 @transform
 def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
-    TODO
+    Applies the Third Order Duplicate and Destroy (TODD) algorithm to reduce the number of
+    T gates in the given Clifford + T circuit.
+
+    This transform optimizes Clifford + T circuits by cutting them into phase-polynomial blocks,
+    and using the TODD algorithm to optimize each of these phase polynomials.
+    Depending on the number of qubits and T gates in the original circuit, it might take a long time to run.
+
+    For more theoretical details about the TODD algorithm see:
+
+        Luke E Heyfron and Earl T Campbell.
+        "An efficient quantum compiler that reduces T count."
+        `Quantum Sci. Technol. 4 015004 <https://iopscience.iop.org/article/10.1088/2058-9565/aad604/meta>`__, 2019.
+
+    The implementation is based on the
+    `pyzx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__ pass.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
@@ -46,7 +60,7 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
-        TypeError: if the input quantum circuit is not a Clifford+T circuit.
+        TypeError: if the input quantum circuit is not a Clifford + T circuit.
 
     **Example:**
 
@@ -90,7 +104,7 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     try:
         pyzx_circ = pyzx.phase_block_optimize(pyzx_circ, pre_optimize=False)
     except TypeError as e:
-        raise TypeError("The input quantum circuit must be a Clifford+T circuit.") from e
+        raise TypeError("The input quantum circuit must be a Clifford + T circuit.") from e
 
     qscript = from_zx(pyzx_circ.to_graph())
     new_tape = tape.copy(operations=qscript.operations)
