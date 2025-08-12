@@ -332,6 +332,7 @@ def _handle_measurement_qjit(
             qml.math.sum(result[1] * qml.math.reshape(is_valid, (-1, 1)), axis=0),
         )
         return res, m_count + 1
+    result = qml.math.squeeze(result)
     return gather_non_mcm(m, result, is_valid, postselect_mode=postselect_mode), m_count + 1
 
 

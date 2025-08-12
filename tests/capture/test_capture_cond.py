@@ -384,6 +384,23 @@ class TestCondReturns:
                 jax.numpy.array(1)
             )
 
+    def test_true_fn_operator_type_no_false_fn(self):
+        """Test that the true_fn can be an operator type when there is no false function. Instead,
+        the cond simply has no output."""
+
+        def f():
+            qml.cond(True, qml.X)(0)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[0].primitive == cond_prim
+        assert len(jaxpr.eqns[0].outvars) == 0
+
+        true_fn = jaxpr.eqns[0].params["jaxpr_branches"][0]
+        assert len(true_fn.outvars) == 0
+        assert true_fn.eqns[0].primitive == qml.X._primitive  # pylint: disable=protected-access
+
+        assert jaxpr.eqns[0].params["jaxpr_branches"][-1] is None
+
 
 dev = qml.device("default.qubit", wires=3)
 
