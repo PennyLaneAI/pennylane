@@ -18,8 +18,8 @@ from functools import wraps
 
 
 def _needs_pyzx(func):
-    """Function to use as a ZX-based transforms decorator to raise the appropriate
-    error when the pyzx external package is not installed."""
+    """Private function to use as a ZX-based transforms decorator to raise the
+    appropriate error when the pyzx external package is not installed."""
 
     @wraps(func)
     def wrapper(*args, **kwargs):
