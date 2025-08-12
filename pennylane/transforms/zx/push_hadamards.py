@@ -84,12 +84,13 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
             qml.Hadamard(2)
             return qml.state()
 
-    ```pycon
+.. code-block:: pycon
+
     >>> print(qml.draw(circuit)())
     0: ──T────┤  State
     1: ──T─╭X─┤  State
     2: ──H─╰●─┤  State
-    ```
+
     """
 
     if not has_pyzx:  # pragma: no cover
