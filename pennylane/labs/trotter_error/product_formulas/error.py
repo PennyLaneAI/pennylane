@@ -181,8 +181,9 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
-    if importance is not None:
-        importance_bch_params = (importance.importance_scores, importance.tolerance)
+    importance_bch_params = (
+        (importance.importance_scores, importance.tolerance) if importance is not None else None
+    )
 
     commutator_lists = [
         _group_sums(commutators)
