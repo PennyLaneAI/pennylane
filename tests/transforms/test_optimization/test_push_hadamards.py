@@ -102,7 +102,7 @@ class TestPushHadamards:
 
     def test_transformed_tape(self):
         """Test that the operations of the transformed tape match
-        the expected operations for a simple circut."""
+        the expected operations for a simple circuit."""
         ops = [
             qml.T(wires=0),
             qml.Hadamard(wires=0),
