@@ -3,6 +3,14 @@
 
 <h3>New features since last release</h3>
 
+* New ZX calculus-based transforms have been added to access circuit optimization
+  passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
+
+    * :func:`~.transforms.push_hadamards` to optimize phase-polynomial + Hadamard circuits pushing
+      Hadamard gates to the side to create fewer larger phase-polynomial blocks
+      (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
+      [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
+
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
@@ -64,40 +72,13 @@
   [(#7908)](https://github.com/PennyLaneAI/pennylane/pull/7908)
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
+  [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
   
-  The included templates are:
-
-  * :class:`~.Adder`
-
-  * :class:`~.ControlledSequence`
-
-  * :class:`~.ModExp`
-
-  * :class:`~.MottonenStatePreparation`
-
-  * :class:`~.MPSPrep`
-
-  * :class:`~.Multiplier`
-
-  * :class:`~.OutAdder`
-
-  * :class:`~.OutMultiplier`
-
-  * :class:`~.OutPoly`
-
-  * :class:`~.PrepSelPrep`
-
-  * :class:`~.ops.Prod`
-
-  * :class:`~.Reflection`
-
-  * :class:`~.Select`
-
-  * :class:`~.StatePrep`
-
-  * :class:`~.TrotterProduct`
-
-  * :class:`~.QROM`
+  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, 
+  :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
+  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`, 
+  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, 
+  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
@@ -120,6 +101,9 @@
   `qml.cond(condition, qml.X)(0)` is now valid code and will return nothing, even though `qml.X` is
   technically a callable that returns an `X` operator.
   [(#8060)](https://github.com/PennyLaneAI/pennylane/pull/8060)
+
+* With program capture, an error is now raised if the conditional predicate is not a scalar.
+  [(#8066)](https://github.com/PennyLaneAI/pennylane/pull/8066)
 
 <h4>OpenQASM-PennyLane interoperability</h4>
 

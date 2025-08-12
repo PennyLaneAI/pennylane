@@ -14,3 +14,4 @@
 """PennyLane ZX calculus module"""
 from .converter import to_zx, from_zx
 from .todd import todd
+from .push_hadamards import push_hadamards
