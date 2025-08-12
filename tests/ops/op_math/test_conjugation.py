@@ -191,6 +191,15 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
             _test_decomposition_rule(conjugation_op, rule)
 
     @pytest.mark.parametrize("ops_lst", ops)
+    @pytest.mark.capture
+    def test_decomposition_new_capture(self, ops_lst):
+        """Test the qfunc decomposition."""
+        conjugation_op = conjugation(*ops_lst)
+
+        for rule in qml.list_decomps(Conjugation):
+            _test_decomposition_rule(conjugation_op, rule)
+
+    @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
         """Test the decomposition of a conjugation of operators is a list
         of the provided factors on a tape."""
