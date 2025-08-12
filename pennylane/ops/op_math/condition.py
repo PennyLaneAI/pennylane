@@ -282,6 +282,8 @@ class CondCallable:
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
 
         for pred, fn in branches:
+            if (pred_shape := qml.math.shape(pred)) != ():
+                raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
             conditions.append(pred)
             if fn is None:
                 jaxpr_branches.append(None)
