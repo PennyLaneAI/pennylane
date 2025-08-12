@@ -85,7 +85,6 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK-NEXT: [[qb4_x_res:%.+]] = quantum.custom "Identity"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK-NEXT: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK-NEXT: }
-                // CHECK-NEXT: [[qb4_res:%.+]] = quantum.custom "Identity"() [[qb4_res:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
@@ -142,7 +141,6 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK-NEXT: [[qb4_x_res:%.+]] = quantum.custom "Identity"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK-NEXT: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK-NEXT: }
-                // CHECK-NEXT: [[qb4_res:%.+]] = quantum.custom "Identity"() [[qb4_res:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
@@ -202,7 +200,6 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK-NEXT: [[qb4_x_res:%.+]] = quantum.custom "Identity"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK-NEXT: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK-NEXT: }
-                // CHECK-NEXT: [[qb4_res:%.+]] = quantum.custom "Identity"() [[qb4_res:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit
@@ -281,7 +278,6 @@ class TestConvertToMBQCFormalismPass:
                 // CHECK-NEXT: [[qb4_x_res:%.+]] = quantum.custom "Identity"() [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK-NEXT: scf.yield [[qb4_x_res:%.+]] : !quantum.bit
                 // CHECK-NEXT: }
-                // CHECK-NEXT: [[qb4_res:%.+]] = quantum.custom "Identity"() [[qb4_res:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb1:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb2:%.+]] : !quantum.bit
                 // CHECK: quantum.dealloc_qb [[qb3:%.+]] : !quantum.bit

@@ -402,10 +402,10 @@ class ConvertToMBQCFormalismPattern(
         # The answer is no as xDSL==0.46.0, the error msg is:
         # "'NoneType' object has no attribute 'add_use'""
         false_region = [identity_op, scf.YieldOp(identity_op.results[0])]
-        cond_op = IfOp(parity_res, QubitType(), true_region, false_region)
+        cond_op = IfOp(parity_res, (QubitType(),), true_region, false_region)
         # Insert cond_op to the IR
         rewriter.insert_op(cond_op, InsertPoint.before(op))
-        return cond_op.results
+        return cond_op.results[0]
 
     def _parity_check(
         self,
@@ -599,30 +599,6 @@ class ConvertToMBQCFormalismPattern(
             case "CNOT":
                 return self._cnot_corrections(mres, qubits, op, rewriter)
 
-    def _dummy_identity_op_on_res_aux(
-        self,
-        aux_res_qubit: QubitType,
-        insert_before: CustomOp,
-        rewriter: pattern_rewriter.PatternRewriter,
-    ):
-        """Apply an Identity gate to the result auxiliary qubit.
-        Args:
-            aux_res_qubit (QubitType): The result auxiliary qubit.
-            insert_before (CustomOp) : A gate operation object.
-            rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
-
-        Return:
-            The auxiliary result qubit.
-        """
-        # NOTE: identity_op inserted here is a solution to allow the op.results qubits can be replaced with the auxiliary qubit.
-        # NOTE: How to deallocate the result auxiliary qubit in this case is still an open question. I believe
-        # the quantum.finalize operation are not responsible for those auxiliary qubits deallocations.
-        # TODOS: Although current implementation works on a `null.qubit` device, we need to come back to the questions mentioned above later.
-        identity_op = CustomOp(in_qubits=(aux_res_qubit), gate_name="Identity")
-        rewriter.insert_op(identity_op, InsertPoint.before(insert_before))
-
-        return identity_op.results[0]
-
     def _deallocate_aux_qubits(
         self,
         graph_qubits_dict: dict,
@@ -680,11 +656,6 @@ class ConvertToMBQCFormalismPattern(
                         mres, graph_qubits_dict[5], op, rewriter
                     )
 
-                    # Apply an Identity gate to the result target auxiliary qubit
-                    graph_qubits_dict[5] = self._dummy_identity_op_on_res_aux(
-                        graph_qubits_dict[5], op, rewriter
-                    )
-
                     # Deallocate the non-result auxiliary qubits
                     self._deallocate_aux_qubits(graph_qubits_dict, [1, 5], op, rewriter)
 
@@ -718,16 +689,6 @@ class ConvertToMBQCFormalismPattern(
                     # Insert byproduct ops to the IR
                     graph_qubits_dict[7], graph_qubits_dict[15] = self._queue_byprod_corrections(
                         mres, [graph_qubits_dict[7], graph_qubits_dict[15]], op, rewriter
-                    )
-
-                    # Apply an Identity gate to the result ctrl auxiliary qubit
-                    graph_qubits_dict[7] = self._dummy_identity_op_on_res_aux(
-                        graph_qubits_dict[7], op, rewriter
-                    )
-
-                    # Apply an Identity gate to the result target auxiliary qubit
-                    graph_qubits_dict[15] = self._dummy_identity_op_on_res_aux(
-                        graph_qubits_dict[15], op, rewriter
                     )
 
                     # Deallocate non-result aux_qubits
