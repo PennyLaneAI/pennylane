@@ -411,7 +411,6 @@ class TestPhasedDecomposition:
         """Test differentiability for pauli_decompose"""
 
         import jax
-        import tensorflow as tf
         import torch
 
         dev = qml.device("default.qubit", wires=2)
@@ -435,15 +434,8 @@ class TestPhasedDecomposition:
             result.backward()
             grad_torch = A.grad
 
-            # Tensorflow Interface
-            A = tf.Variable(qml.numpy.array(matrix))
-            with tf.GradientTape() as tape:
-                loss = circuit(A)
-            grad_tflow = tape.gradient(loss, A)
-
             # Comparisons - note: https://github.com/google/jax/issues/9110
             assert qml.math.allclose(grad_numpy, grad_jax)
-            assert qml.math.allclose(grad_torch, grad_tflow)
             assert qml.math.allclose(grad_numpy, qml.math.conjugate(grad_torch))
 
 
