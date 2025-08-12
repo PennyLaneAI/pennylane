@@ -139,15 +139,14 @@ def dynamic_one_shot(
         raise QuantumFunctionError("dynamic_one_shot is only supported with finite shots.")
 
     aux_tapes = [init_auxiliary_tape(tape)]
+    num_mp = len(aux_tapes[0].measurements)
 
-    def processing_fn(results):
+    def processing_fn(results: ResultBatch) -> Result:
         results = results[0]
-        if len(aux_tapes[0].measurements) == 1:
+        if num_mp == 1:
             results = [tuple(results)]
         else:
-            results = [
-                tuple(res[i] for res in results) for i, _ in enumerate(aux_tapes[0].measurements)
-            ]
+            results = [tuple(res[i] for res in results) for i in range(num_mp)]
         return parse_native_mid_circuit_measurements(
             tape, results=results, postselect_mode=postselect_mode
         )
