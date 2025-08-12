@@ -1469,12 +1469,12 @@ class TestShots:
         assert updated_qnode._shots == qml.measurements.Shots(50)
 
     def test_shots_direct_update(self):
-        """Test that _shots can be updated via the shots parameter in update()."""
+        """Test that QNode shots can be updated directly using the update_shots method."""
         dev = qml.device("default.qubit", wires=1)
         qn = qml.set_shots(qml.QNode(dummyfunc, dev), shots=30)
         assert qn._shots == qml.measurements.Shots(30)
 
-        # Update shots directly
+        # Update shots directly using update_shots method
         updated_qnode = qn.update_shots(shots=75)
         assert updated_qnode._shots == qml.measurements.Shots(75)
 
