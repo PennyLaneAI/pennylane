@@ -320,7 +320,7 @@ def _logical_op(*args, jax_fn: Callable, python_fn: Callable):
 
     values = [arg() if isinstance(arg, Callable) else arg for arg in args]
 
-    if all(qml.math.is_abstract(val) for val in values):
+    if any(qml.math.is_abstract(val) for val in values):
         result = jax_fn(*values)
     else:
         result = python_fn(*values)

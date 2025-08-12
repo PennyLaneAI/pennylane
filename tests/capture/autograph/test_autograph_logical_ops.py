@@ -59,6 +59,34 @@ class TestAnd:
         result = circuit(x=a, y=b)
         assert result == -1.0 if (a and b) else 1.0
 
+    @pytest.mark.parametrize("val", (0, 0.0, 0.0j))
+    @pytest.mark.parametrize("x", [True, False])
+    def test_falsy_values(self, x, val):
+        """Test that falsy values also work."""
+
+        fn = lambda x, y: x and y
+        ag_fn = run_autograph(fn)
+
+        args = (x, val)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (x and val)
+
+    @pytest.mark.parametrize("val", (1, 1.0, 1 + 0.0j))
+    @pytest.mark.parametrize("x", [True, False])
+    def test_truthy_values(self, x, val):
+        """Test that truthy values also work."""
+
+        fn = lambda x, y: x and y
+        ag_fn = run_autograph(fn)
+
+        args = (x, val)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (x and val)
+
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestOr:
@@ -92,6 +120,34 @@ class TestOr:
         result = circuit(x=a, y=b)
         assert result == -1.0 if (a or b) else 1.0
 
+    @pytest.mark.parametrize("val", (0, 0.0, 0.0j))
+    @pytest.mark.parametrize("x", [True, False])
+    def test_falsy_values(self, x, val):
+        """Test that falsy values also work."""
+
+        fn = lambda x, y: x or y
+        ag_fn = run_autograph(fn)
+
+        args = (x, val)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (x or val)
+
+    @pytest.mark.parametrize("val", (1, 1.0, 1 + 0.0j))
+    @pytest.mark.parametrize("x", [True, False])
+    def test_truthy_values(self, x, val):
+        """Test that truthy values also work."""
+
+        fn = lambda x, y: x or y
+        ag_fn = run_autograph(fn)
+
+        args = (x, val)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (x or val)
+
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestNot:
@@ -124,6 +180,32 @@ class TestNot:
 
         result = circuit(x=a)
         assert result == -1.0 if (not a) else 1.0
+
+    @pytest.mark.parametrize("val", (0, 0.0, 0.0j))
+    def test_falsy_values(self, val):
+        """Test that falsy values also work."""
+
+        fn = lambda x: not x
+        ag_fn = run_autograph(fn)
+
+        args = (val,)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (not val)
+
+    @pytest.mark.parametrize("val", (1, 1.0, 1 + 0.0j))
+    def test_truthy_values(self, val):
+        """Test that truthy values also work."""
+
+        fn = lambda x: not x
+        ag_fn = run_autograph(fn)
+
+        args = (val,)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (not val)
 
 
 # pylint: disable=too-few-public-methods
