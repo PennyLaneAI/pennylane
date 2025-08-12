@@ -19,17 +19,17 @@ from typing import Dict, List, Sequence
 
 import numpy as np
 import scipy as sp
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_array
 
 from pennylane.labs.trotter_error import Fragment
 from pennylane.labs.trotter_error.abstract import AbstractState
 
 
-def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
+def sparse_fragments(fragments: Sequence[csr_array]) -> List[SparseFragment]:
     """Instantiates :class:`~.pennylane.labs.trotter_error.SparseFragment` objects.
 
     Args:
-        fragments (Sequence[csr_matrix]): A sequence of sparse matrices to be used as fragments.
+        fragments (Sequence[csr_array]): A sequence of sparse matrices to be used as fragments.
 
     Returns:
         List[SparseFragment]: A list of :class:`~.pennylane.labs.trotter_error.SparseFragment` objects instantiated from `fragments`.
@@ -39,8 +39,8 @@ def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
     This code example demonstrates building fragments from scipy sparse matrices.
 
     >>> from pennylane.labs.trotter_error import sparse_fragments
-    >>> from scipy.sparse import csr_matrix
-    >>> matrices = [csr_matrix([[1, 0], [0, 1]]), csr_matrix([[0, 1], [1, 0]])]
+    >>> from scipy.sparse import csr_array
+    >>> matrices = [csr_array([[1, 0], [0, 1]]), csr_array([[0, 1], [1, 0]])]
     >>> fragments = sparse_fragments(matrices)
     >>> fragments
     [SparseFragment(shape=(2, 2), dtype=int64), SparseFragment(shape=(2, 2), dtype=int64)]
@@ -51,8 +51,8 @@ def sparse_fragments(fragments: Sequence[csr_matrix]) -> List[SparseFragment]:
     if len(fragments) == 0:
         return []
 
-    if not all(isinstance(fragment, csr_matrix) for fragment in fragments):
-        raise TypeError("Fragments must be csr_matrix objects")
+    if not all(isinstance(fragment, csr_array) for fragment in fragments):
+        raise TypeError("Fragments must be csr_array objects")
 
     return [SparseFragment(fragment) for fragment in fragments]
 
@@ -61,20 +61,20 @@ class SparseFragment(Fragment):
     """A wrapper class to allow scipy sparse matrices to be used in the Trotter error functions.
 
     Args:
-        fragment (csr_matrix): The `csr_matrix` to be used as a `~.pennylane.labs.trotter_error.abstract.Fragment`.
+        fragment (csr_array): The `csr_array` to be used as a `~.pennylane.labs.trotter_error.abstract.Fragment`.
 
     .. note:: :class:`~.pennylane.labs.trotter_error.SparseFragment` objects should be instantated through the ``~.pennylane.labs.trotter_error.sparse_fragments`` function.
 
     **Example**
 
     >>> from pennylane.labs.trotter_error import sparse_fragments
-    >>> from scipy.sparse import csr_matrix
-    >>> matrices = [csr_matrix([[1, 0], [0, 1]]), csr_matrix([[0, 1], [1, 0]])]
+    >>> from scipy.sparse import csr_array
+    >>> matrices = [csr_array([[1, 0], [0, 1]]), csr_array([[0, 1], [1, 0]])]
     >>> sparse_fragments(matrices)
     [SparseFragment(shape=(2, 2), dtype=int64), SparseFragment(shape=(2, 2), dtype=int64)]
     """
 
-    def __init__(self, fragment: csr_matrix):
+    def __init__(self, fragment: csr_array):
         self.fragment = fragment
 
     def __add__(self, other: SparseFragment):
@@ -106,7 +106,7 @@ class SparseFragment(Fragment):
 
     def apply(self, state: SparseState) -> SparseState:
         result = self.fragment.dot(state.state.transpose()).transpose()
-        return SparseState(csr_matrix(result))
+        return SparseState(csr_array(result))
 
     def expectation(self, left: SparseState, right: SparseFragment) -> complex:
         result = left.state.conjugate().dot(self.fragment.dot(right.state.transpose()))
@@ -128,19 +128,19 @@ class SparseState(AbstractState):
     This class is intended to instantiate states to be used along with the `SparseFragment` class.
     """
 
-    def __init__(self, state: csr_matrix):
+    def __init__(self, state: csr_array):
         """Initialize the ``SparseState``."""
 
-        if not isinstance(state, csr_matrix):
+        if not isinstance(state, csr_array):
             raise TypeError(
-                f"SparseState must be instantiated from a csr_matrix. Got {type(state)}."
+                f"SparseState must be instantiated from a csr_array. Got {type(state)}."
             )
 
         shape = state.shape
 
         if not len(shape) == 2 or not shape[0] == 1:
             raise ValueError(
-                f"Input csr_matrix must be one-dimensional with shape (1, k). Got shape {shape}."
+                f"Input csr_array must be one-dimensional with shape (1, k). Got shape {shape}."
             )
 
         self.state = state
@@ -178,7 +178,7 @@ class SparseState(AbstractState):
         Returns:
             SparseState: an ``SparseState`` representation of the zero state
         """
-        return csr_matrix((dim, dim))
+        return csr_array((dim, dim))
 
     def dot(self, other) -> complex:
         """Compute the dot product of two states.
