@@ -117,6 +117,9 @@ def to_zx(tape, expand_measurements=False):
         The transformed circuit as described in :func:`qml.transform <pennylane.transform>`. Executing this circuit
         will provide the ZX graph in the form of a PyZX graph.
 
+    Raises:
+        ModuleNotFoundError: if the required ``pyzx`` package is not installed.
+
     **Example**
 
     You can use the transform decorator directly on your :class:`~.QNode`, quantum function and executing it will produce a
@@ -300,8 +303,8 @@ def to_zx(tape, expand_measurements=False):
 
     .. note::
 
-        It is a PennyLane adapted and reworked `circuit_to_graph <https://github.com/Quantomatic/pyzx/blob/master/pyzx/circuit/graphparser.py>`_
-        function.
+        This function is a PennyLane adaptation to `circuit_to_graph <https://github.com/zxcalc/pyzx/blob/master/pyzx/circuit/graphparser.py#L89>`_.
+        It requires the `pyzx <https://pyzx.readthedocs.io/en/latest/>`_ external package to be installed.
 
     .. note::
 
