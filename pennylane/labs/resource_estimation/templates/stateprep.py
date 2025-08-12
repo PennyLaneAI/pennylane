@@ -15,7 +15,7 @@ r"""Resource operators for state preparation templates."""
 import math
 
 from pennylane.labs import resource_estimation as plre
-from pennylane.labs.resource_estimation.qubit_manager import AllocWires
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -296,7 +296,7 @@ class ResourcePrepTHC(ResourceOperator):
         self.coeff_precision = coeff_precision
         self.select_swap_depth = select_swap_depth
         tensor_rank = compact_ham.params["tensor_rank"]
-        self.num_wires = 2 * int(np.ceil(math.log2(tensor_rank + 1)))
+        self.num_wires = 2 * int(math.ceil(math.log2(tensor_rank + 1)))
         super().__init__(wires=wires)
 
     @property
@@ -374,13 +374,11 @@ class ResourcePrepTHC(ResourceOperator):
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1)
         coeff_register = int(math.ceil(math.log2(num_coeff)))
-        m_register = int(np.ceil(math.log2(tensor_rank + 1)))
+        m_register = int(math.ceil(math.log2(tensor_rank + 1)))
 
         gate_list = []
 
-        gate_list.append(
-            AllocWires(coeff_register + 2 * m_register + 2 * coeff_precision + 6)
-        )
+        gate_list.append(AllocWires(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
 
         hadamard = resource_rep(plre.ResourceHadamard)
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
@@ -403,9 +401,9 @@ class ResourcePrepTHC(ResourceOperator):
 
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
-        gate_list.append(AllocWires(compare_precision_wires))
-        gate_list.append(plre.GateCount(toffoli, 2 * (compare_precision_wires - 3)))
-        gate_list.append(FreeWires(compare_precision_wires))
+        gate_list.append(AllocWires(coeff_prec_wires))
+        gate_list.append(plre.GateCount(toffoli, 2 * (coeff_prec_wires - 3)))
+        gate_list.append(FreeWires(coeff_prec_wires))
 
         gate_list.append(plre.GateCount(ccz, 2 * m_register - 1))
 
@@ -424,7 +422,7 @@ class ResourcePrepTHC(ResourceOperator):
         gate_list.append(plre.GateCount(x, 2))
 
         # Figure- 4(Subprepare Circuit)
-        gate_list.append(plre.GateCount(hadamard, compare_precision_wires + 1))
+        gate_list.append(plre.GateCount(hadamard, coeff_prec_wires + 1))
 
         # Contiguous register cost
         gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
@@ -488,7 +486,7 @@ class ResourcePrepTHC(ResourceOperator):
 
         num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
-        m_register = int(np.ceil(math.log2(tensor_rank + 1)))
+        m_register = int(math.ceil(math.log2(tensor_rank + 1)))
         gate_list = []
 
         hadamard = resource_rep(plre.ResourceHadamard)
@@ -512,9 +510,9 @@ class ResourcePrepTHC(ResourceOperator):
 
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
-        gate_list.append(AllocWires(compare_precision_wires))
-        gate_list.append(plre.GateCount(toffoli, 2 * (compare_precision_wires - 3)))
-        gate_list.append(FreeWires(compare_precision_wires))
+        gate_list.append(AllocWires(coeff_prec_wires))
+        gate_list.append(plre.GateCount(toffoli, 2 * (coeff_prec_wires - 3)))
+        gate_list.append(FreeWires(coeff_prec_wires))
 
         gate_list.append(plre.GateCount(ccz, 2 * m_register - 1))
 

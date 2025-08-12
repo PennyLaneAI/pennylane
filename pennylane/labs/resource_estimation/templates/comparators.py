@@ -226,6 +226,7 @@ class ResourceTwoQubitComparator(ResourceOperator):
 
         return gate_list
 
+    @classmethod
     def tempand_based_decomp(cls, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
