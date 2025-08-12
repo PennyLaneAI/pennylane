@@ -122,6 +122,9 @@ Templates:
     ~ResourcePhaseGradient
     ~ResourceOutMultiplier
     ~ResourceSemiAdder
+    ~ResourceQPE
+    ~ResourceIterativeQPE
+    ~ResourceControlledSequence
     ~ResourceQFT
     ~ResourceAQFT
     ~ResourceBasisRotation
