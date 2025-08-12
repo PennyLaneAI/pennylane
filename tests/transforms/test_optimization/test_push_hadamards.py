@@ -25,20 +25,21 @@ from pennylane.tape import QuantumScript
 pytest.importorskip("pyzx")
 
 
+def test_import_pyzx_error(monkeypatch):
+    """Test that a ModuleNotFoundError is raised by the push_hadamards transform
+    when the pyzx external package is not installed."""
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "pyzx", None)
+
+        qs = QuantumScript(ops=[], measurements=[])
+
+        with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
+            qml.transforms.zx.push_hadamards(qs)
+
+
 @pytest.mark.external
 class TestPushHadamards:
-
-    def test_import_pyzx_error(self, monkeypatch):
-        """Test that a ModuleNotFoundError is raised by the push_hadamards transform
-        when the pyzx external package is not installed."""
-
-        with monkeypatch.context() as m:
-            m.setitem(sys.modules, "pyzx", None)
-
-            qs = QuantumScript(ops=[], measurements=[])
-
-            with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
-                qml.transforms.zx.push_hadamards(qs)
 
     @pytest.mark.parametrize(
         "gate",

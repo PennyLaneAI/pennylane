@@ -54,7 +54,7 @@ decompose_phases = [True, False]
 qscript = [True, False]
 
 
-def test_import_pyzx(monkeypatch):
+def test_import_pyzx_error(monkeypatch):
     """Test that a ModuleNotFoundError is raised by the to_zx function
     when the pyzx external package is not installed."""
 
