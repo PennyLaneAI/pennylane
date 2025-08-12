@@ -2,10 +2,11 @@ from collections import Counter
 from functools import reduce
 from itertools import combinations
 
+from pennylane.ops import ctrl
 from scipy.sparse import kron as sparse_kron
 
 from pennylane import apply, math, queuing
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import add_decomps, register_resources, resource_rep, controlled_resource_rep
 from pennylane.ops.op_math import adjoint
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
@@ -183,3 +184,43 @@ def _conjugation_decomp(*_, wires=None, operands):
 
 
 add_decomps(Conjugation, _conjugation_decomp)
+
+
+def _controlled_conjugation_resources(
+    *_,
+    num_control_wires,
+    num_zero_control_values,
+    num_work_wires,
+    work_wire_type,
+    base_class,
+    base_params,
+    resources,
+    **__,
+):
+    return {
+        resources.keys()[0]: resources.values()[0],
+        controlled_resource_rep(
+            resources.keys()[1].__class__,
+            resources.keys()[1].resource_params,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+            work_wire_type=work_wire_type,
+        ): resources.values()[1],
+        resources.keys()[2]: resources.values()[2],
+    }
+
+
+@register_resources(_controlled_conjugation_resources)
+def _controlled_conjugation_decomposition(*_, wires, control_wires, work_wires, work_wire_type, operands):  # pylint: disable=unused-argument
+    operands[2]._unflatten(*operands[2]._flatten())
+    ctrl(
+        operands[1]._unflatten(*operands[1]._flatten()),
+        control=control_wires,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    operands[0]._unflatten(*operands[0]._flatten())
+
+
+add_decomps("C(Conjugation)", _controlled_conjugation_decomposition)
