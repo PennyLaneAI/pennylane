@@ -24,14 +24,6 @@ from typing import List, Tuple, Dict, Set, Optional, Union, Any
 from tqdm import tqdm
 import numpy as np
 
-# MPI Detection and Import
-try:
-    from mpi4py import MPI
-    HAS_MPI = True
-except ImportError:
-    HAS_MPI = False
-    MPI = None
-
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator
@@ -299,7 +291,7 @@ class _AdditiveIdentity:
 
 def effective_hamiltonian(
     product_formula: ProductFormula,
-    fragments: dict[Hashable, Fragment],
+    fragments: Dict[Hashable, Fragment],
     order: int,
     timestep: float = 1.0,
 ):
@@ -351,8 +343,8 @@ def effective_hamiltonian(
 
 
 def _insert_fragments(
-    commutator: tuple[Hashable], fragments: dict[Hashable, Fragment]
-) -> tuple[Fragment]:
+    commutator: Tuple[Hashable], fragments: Dict[Hashable, Fragment]
+) -> Tuple[Fragment]:
     """This function transforms a commutator of labels to a commutator of concrete `Fragment` objects.
     The function recurses through the nested structure of the tuple replacing each hashable `label` with
     the concrete value `fragments[label]`."""
@@ -577,9 +569,9 @@ def _execute_sampling_strategy(
 # pylint: disable=too-many-arguments, too-many-positional-arguments
 def perturbation_error(
     product_formula: ProductFormula,
-    fragments: dict[Hashable, Fragment],
+    fragments: Dict[Hashable, Fragment],
     states: Sequence[AbstractState],
-    max_order: int,
+    order: int,
     timestep: float = 1.0,
     num_workers: int = 1,
     backend: str = "serial",
@@ -597,8 +589,7 @@ def perturbation_error(
     convergence_window: int = 10,
     min_convergence_checks: int = 3,
     return_convergence_info: bool = False,
-    show_detailed_progress: bool = True,
-) -> list[dict[int, float]]:
+):
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
@@ -609,8 +600,8 @@ def perturbation_error(
         fragments (Sequence[Fragments]): the set of :class:`~.pennylane.labs.trotter_error.Fragment`
             objects to compute the perturbation error from
         states (Sequence[AbstractState]): the states to compute expectation values from
-        max_order (float): the maximum commutator order to compute in BCH
-        timestep (float): time step for the Trotter error operator.
+        order (int): the order of the BCH expansion
+        timestep (float): time step for the trotter error operator.
         num_workers (int): the number of concurrent units used for the computation. Default value is set to 1.
         backend (string): the executor backend from the list of supported backends.
             Available options : "serial", "mpi4py_pool", "mpi4py_comm". Default value is set to "serial".
@@ -661,8 +652,9 @@ def perturbation_error(
             If False, uses basic progress tracking. Default is True.
 
     Returns:
-        List[Dict[int, float]]: the list of dictionaries of expectation values computed from the Trotter error operator and the input states.
-            The dictionary is indexed by the commutator orders and its value is the error obtained from the commutators of that order.
+        List[float] or Tuple[List[float], Dict]: If return_convergence_info is False,
+            returns the list of expectation values. If True, returns a tuple containing both
+            the expectation values and a dictionary with detailed convergence information.
 
     **Example**
 
@@ -1015,14 +1007,9 @@ def _original_perturbation_error_with_config(
 def _get_expval_state(commutator_lists, fragments, state: AbstractState, timestep: float) -> dict[int, float]:
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
-    expectations = {}
-    total_commutators = sum(len(commutators) for commutators in commutator_lists)
-    
-    # Use a single progress bar for all commutator orders
-    with tqdm(total=total_commutators, desc="Processing commutators", leave=False) as pbar:
-        for commutators in commutator_lists:
-            if len(commutators) == 0:
-                continue
+    new_state = _AdditiveIdentity()
+    for commutator in commutators:
+        new_state += _apply_commutator(commutator, fragments, state, cache, state_id)
 
             order = len(commutators[0])
             new_state = _AdditiveIdentity()
@@ -1204,6 +1191,7 @@ def _op_list(commutator) -> Dict[Tuple[Hashable], complex]:
     Returns:
         Dict[Tuple[Hashable], complex]: Dictionary mapping operation sequences to coefficients
     """
+
     if not commutator:
         return Counter()
 
