@@ -21,8 +21,6 @@ catalyst = pytest.importorskip("catalyst")
 
 # pylint: disable=wrong-import-position
 from catalyst.ftqc import mbqc_pipeline
-
-# pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
