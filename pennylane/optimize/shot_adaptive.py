@@ -284,22 +284,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         return [np.concatenate(i) for i in zip(*grads)]
 
-    @staticmethod
-    def check_finite_shots(qnode):
-        r"""Verifies that the qnode used by the objective function is non-analytic.
-
-        Args:
-            qnode (.QNode): the qnode to verify
-
-        Raises:
-            ValueError: if the qnode is analytic
-        """
-        if not qnode._shots:  # pylint: disable=protected-access
-            raise ValueError(
-                "The Rosalin optimizer can only be used with qnodes "
-                "that estimate expectation values with a finite number of shots."
-            )
-
     def check_learning_rate(self, coeffs):
         r"""Verifies that the learning rate is less than 2 over the Lipschitz constant,
         where the Lipschitz constant is given by :math:`\sum |c_i|` for Hamiltonian
