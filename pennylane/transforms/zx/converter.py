@@ -25,9 +25,10 @@ from pennylane.exceptions import QuantumFunctionError, TransformError
 from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
-from pennylane.transforms.zx.helper import _needs_pyzx
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
+
+from .helper import _needs_pyzx
 
 
 def _toffoli_clifford_t_decomp(wires):
