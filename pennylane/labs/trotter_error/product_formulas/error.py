@@ -16,9 +16,8 @@
 import copy
 from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
+from dataclasses import dataclass
 from typing import Dict, Optional
-
-from dataclass import dataclass
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
@@ -36,12 +35,15 @@ class _AdditiveIdentity:
     def __radd__(self, other):
         return other
 
+
 @dataclass
 class ImportanceConfig:
     """Used to provide parameters for importance sampling."""
+
     importance_scores: Dict[Hashable, float] = None
     tolerance: float = 10e-8
     method: str = "top-k"
+
 
 def effective_hamiltonian(
     product_formula: ProductFormula,
@@ -119,7 +121,7 @@ def perturbation_error(
     num_workers: int = 1,
     backend: str = "serial",
     parallel_mode: str = "state",
-    importance: Optional[ImportanceConfig] = None
+    importance: Optional[ImportanceConfig] = None,
 ) -> list[float]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
@@ -184,7 +186,9 @@ def perturbation_error(
 
     commutator_lists = [
         _group_sums(commutators)
-        for commutators in bch_expansion(product_formula, max_order, importance=importance_bch_params)[1:]
+        for commutators in bch_expansion(
+            product_formula, max_order, importance=importance_bch_params
+        )[1:]
     ]
 
     if backend == "serial":
