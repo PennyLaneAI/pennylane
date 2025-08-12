@@ -1007,6 +1007,17 @@ def _original_perturbation_error_with_config(
 def _get_expval_state(commutator_lists, fragments, state: AbstractState, timestep: float) -> dict[int, float]:
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
+    Args:
+        commutators: List of commutator tuples
+        fragments: Dictionary mapping fragment keys to Fragment objects
+        state: The quantum state to compute expectation value for
+        cache: Optional cache to store/retrieve computed results
+        state_id: Optional state identifier for caching
+
+    Returns:
+        float: The expectation value
+    """
+
     new_state = _AdditiveIdentity()
     for commutator in commutators:
         new_state += _apply_commutator(commutator, fragments, state, cache, state_id)
