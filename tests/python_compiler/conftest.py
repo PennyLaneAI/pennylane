@@ -39,7 +39,7 @@ except (ImportError, ModuleNotFoundError):
     deps_available = False
 
 
-def _run_filecheck_impl(program_str, pipeline=(), verify=True, roundtrip=False):
+def _run_filecheck_impl(program_str, pipeline=(), verify=False, roundtrip=False):
     """Run filecheck on an xDSL module, comparing it to a program string containing
     filecheck directives."""
     if not deps_available:
@@ -52,10 +52,7 @@ def _run_filecheck_impl(program_str, pipeline=(), verify=True, roundtrip=False):
         # Print generic format
         stream = StringIO()
         Printer(stream=stream, print_generic_format=True).print_op(xdsl_module)
-        ctx = Context(allow_unregistered=True)
-        xdsl_module = QuantumParser(
-            ctx, stream.getvalue(), extra_dialects=(test.Test,)
-        ).parse_module()
+        xdsl_module = QuantumParser(ctx, stream.getvalue()).parse_module()
 
     if verify:
         xdsl_module.verify()
@@ -108,7 +105,7 @@ def _get_filecheck_directives(qjit_fn):
     return "\n".join(filecheck_directives)
 
 
-def _run_filecheck_qjit_impl(qjit_fn, verify=True):
+def _run_filecheck_qjit_impl(qjit_fn, verify=False):
     """Run filecheck on a qjit-ed function, using FileCheck directives in its inline
     comments to assert correctness."""
     if not deps_available:

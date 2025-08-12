@@ -76,7 +76,8 @@ class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-
 
         extra_dialects = extra_dialects or ()
         for dialect in self.default_dialects + tuple(extra_dialects):
-            self.ctx.load_dialect(dialect)
+            if self.ctx.get_optional_dialect(dialect.name) is None:
+                self.ctx.load_dialect(dialect)
 
 
 def _module_inline(func: JaxJittedFunction, *args, **kwargs) -> jModule:
