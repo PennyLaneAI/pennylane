@@ -16,7 +16,9 @@
 import copy
 from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
-from typing import Dict, Tuple
+from typing import Dict, Optional
+
+from dataclass import dataclass
 
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
@@ -34,6 +36,12 @@ class _AdditiveIdentity:
     def __radd__(self, other):
         return other
 
+@dataclass
+class ImportanceConfig:
+    """Used to provide parameters for importance sampling."""
+    importance_scores: Dict[Hashable, float] = None
+    tolerance: float = 10e-8
+    method: str = "top-k"
 
 def effective_hamiltonian(
     product_formula: ProductFormula,
@@ -111,7 +119,7 @@ def perturbation_error(
     num_workers: int = 1,
     backend: str = "serial",
     parallel_mode: str = "state",
-    importance: Tuple[Dict, float] = None,
+    importance: Optional[ImportanceConfig] = None
 ) -> list[float]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
@@ -133,10 +141,8 @@ def perturbation_error(
             "state" parallelizes the computation of expectation values per state,
             while "commutator" parallelizes the application of commutators to each state.
             Default value is set to "state".
-        importance (Tuple[Dict, float]): optional argument used for importance sampling. The first item dictionary whose keys are the fragment labels
-            of the product formulas and whose values are their importance weights. The second is a tolerance which will be used to discard commutators
-            whose importance score falls below the tolerance.
-
+        importance (Optional[ImportanceConfig]): optional argument used for importance sampling. See
+            :class:`~.pennylane.labs.trotter_error.ImportanceConfig` for available options.
     Returns:
         List[Dict[int, float]]: the list of dictionaries of expectation values computed from the Trotter error operator and the input states.
             The dictionary is indexed by the commutator orders and its value is the error obtained from the commutators of that order.
@@ -173,9 +179,12 @@ def perturbation_error(
     if not product_formula.fragments.issubset(fragments.keys()):
         raise ValueError("Fragments do not match product formula")
 
+    if importance is not None:
+        importance_bch_params = (importance.importance_scores, importance.tolerance)
+
     commutator_lists = [
         _group_sums(commutators)
-        for commutators in bch_expansion(product_formula, max_order, importance)[1:]
+        for commutators in bch_expansion(product_formula, max_order, importance=importance_bch_params)[1:]
     ]
 
     if backend == "serial":

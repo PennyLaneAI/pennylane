@@ -30,7 +30,7 @@ from pennylane.labs.trotter_error.product_formulas.product_formula import Produc
 def bch_expansion(
     product_formula: ProductFormula,
     order: int,
-    importance: Dict[Hashable, float] = None,
+    importance: Tuple[Dict[Hashable, float], float] = None,
 ) -> list[Dict[Tuple[Hashable], complex]]:
     r"""Compute the Baker-Campbell-Hausdorff expansion of a :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
 
