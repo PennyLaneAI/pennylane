@@ -141,17 +141,6 @@ class TestJacobianPytreeOutput:
         ):
             math.jacobian(f)(math.asarray(2.0, like="autograd", requires_grad=True))
 
-    def test_jacobian_tf_error(self):
-        """Test that an informative error is raised if the output of a function isnt an array with tensorflow."""
-
-        def f(x):
-            return (x,)
-
-        with pytest.raises(
-            ValueError, match="qml.math.jacobian does not work with tensorflow and non-tensor"
-        ):
-            math.jacobian(f)(math.asarray(2.0, like="tensorflow", requires_grad=True))
-
     @pytest.mark.parametrize("interface", ("torch", "jax"))
     def test_tuple_output_scalar_argnum(self, interface):
         """Test the shape outputted for a tuple valued function."""

@@ -387,10 +387,9 @@ class TestPhasedDecomposition:
         """Test builtins support in pauli_decompose"""
 
         import jax
-        import tensorflow as tf
         import torch
 
-        libraries = [np.array, jax.numpy.array, torch.tensor, tf.Variable]
+        libraries = [np.array, jax.numpy.array, torch.tensor]
         matrices = [[[library(i) for i in row] for row in matrix] for library in libraries]
 
         interfaces = ["numpy", "jax", "torch", "tensorflow"]

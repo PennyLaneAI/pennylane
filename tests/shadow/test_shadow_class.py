@@ -406,7 +406,6 @@ class TestExpvalEstimationInterfaces:
 def convert_to_interface(arr, interface):
     """Dispatch arrays for different interfaces"""
     import jax.numpy as jnp
-    import tensorflow as tf
     import torch
 
     if interface == "autograd":
@@ -414,9 +413,6 @@ def convert_to_interface(arr, interface):
 
     if interface == "jax":
         return jnp.array(arr)
-
-    if interface == "tf":
-        return tf.constant(arr)
 
     if interface == "torch":
         return torch.tensor(arr)
