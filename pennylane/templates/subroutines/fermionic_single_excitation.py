@@ -228,7 +228,7 @@ def _fermionic_single_excitation_decomposition(weight, wires):
     p = wires[-1]
 
     # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
-    set_cnot_wires = [wires[l : l + 2] for l in range(len(wires) - 1)]
+    set_cnot_wires = [list(wires.labels[l : l + 2]) for l in range(len(wires) - 1)]
 
     if has_jax and capture.enabled():
         set_cnot_wires = jnp.array(set_cnot_wires)

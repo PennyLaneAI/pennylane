@@ -63,8 +63,22 @@ class TestDecomposition:
     @pytest.mark.parametrize(
         "n_wires, imprimitive", [(2, qml_ops.CNOT), (3, qml_ops.CZ), (4, qml_ops.CY)]
     )
-    @pytest.mark.jax
     @pytest.mark.capture
+    def test_decomposition_new_capture(
+        self, n_wires, imprimitive, batch_dim
+    ):  # pylint: disable=unused-argument
+        """Tests the decomposition rule implemented with the new system."""
+        weights = np.random.random(
+            size=(1, n_wires, 3),
+        )
+        op = qml.StronglyEntanglingLayers(weights, wires=range(n_wires), imprimitive=imprimitive)
+
+        for rule in qml.list_decomps(qml.StronglyEntanglingLayers):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        "n_wires, imprimitive", [(2, qml_ops.CNOT), (3, qml_ops.CZ), (4, qml_ops.CY)]
+    )
     def test_decomposition_new(
         self, n_wires, imprimitive, batch_dim
     ):  # pylint: disable=unused-argument

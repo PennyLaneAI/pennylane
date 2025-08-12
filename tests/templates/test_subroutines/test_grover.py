@@ -209,8 +209,15 @@ def test_expand(wires):
         assert actual_op.wires == qml.wires.Wires(expected_wire)
 
 
-@pytest.mark.jax
 @pytest.mark.capture
+def test_decomposition_new_capture():
+    """Tests the decomposition rule implemented with the new system."""
+    op = qml.GroverOperator(wires=(0, 1, 2))
+
+    for rule in qml.list_decomps(qml.GroverOperator):
+        _test_decomposition_rule(op, rule)
+
+
 def test_decomposition_new():
     """Tests the decomposition rule implemented with the new system."""
     op = qml.GroverOperator(wires=(0, 1, 2))

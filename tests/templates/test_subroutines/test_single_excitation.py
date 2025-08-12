@@ -148,8 +148,25 @@ class TestDecomposition:
             [1, 2, 3, 4],
         ],
     )
-    @pytest.mark.jax
     @pytest.mark.capture
+    def test_decomposition_new_capture(self, single_wires):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.FermionicSingleExcitation(
+            np.pi / 3,
+            wires=single_wires,
+        )
+
+        for rule in qml.list_decomps(qml.FermionicSingleExcitation):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        ("single_wires"),
+        [
+            [0, 1, 2],
+            [10, 11],
+            [1, 2, 3, 4],
+        ],
+    )
     def test_decomposition_new(self, single_wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qml.FermionicSingleExcitation(

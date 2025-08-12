@@ -1064,8 +1064,8 @@ def _fermionic_double_excitation_decomopsition(
     p = wires2[-1]
 
     # Sequence of the wires entering the CNOTs
-    cnots_occ = [wires1[l : l + 2] for l in range(len(wires1) - 1)]
-    cnots_unocc = [wires2[l : l + 2] for l in range(len(wires2) - 1)]
+    cnots_occ = [list(wires1.labels[l : l + 2]) for l in range(len(wires1) - 1)]
+    cnots_unocc = [list(wires2.labels[l : l + 2]) for l in range(len(wires2) - 1)]
 
     set_cnot_wires = cnots_occ + [[r, q]] + cnots_unocc
 
