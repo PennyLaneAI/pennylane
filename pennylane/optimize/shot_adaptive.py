@@ -304,7 +304,7 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
         """Compute the single shot gradients of a QNode."""
         tape = construct_tape(qnode)(*args, **kwargs)
         if not tape.shots:
-             raise ValueError(
+            raise ValueError(
                 "The Rosalin optimizer can only be used with qnodes "
                 "that estimate expectation values with a finite number of shots."
             )
