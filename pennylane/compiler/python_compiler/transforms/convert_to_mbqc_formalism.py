@@ -38,7 +38,7 @@ class _MeasureBasis(Enum):
 
 
 def _generate_graph(op_name: str):
-    """Generate a network graph to represent the connectivity of auxiliary qubits of
+    """Generate a networkx graph to represent the connectivity of auxiliary qubits of
     a gate.
     Args:
         op_name (str): Gate name.
@@ -412,14 +412,14 @@ class ConvertToMBQCFormalismPattern(
         mres: list[builtin.IntegerType],
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
-        add_const_one: bool = False,
+        additional_const_one: bool = False,
     ):
         """Insert parity check related operations to the IR.
         Args:
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             op (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
-            add_const_one (bool) : Whether we need to add a const one to get the parity or not. Defaults to False.
+            additional_const_one (bool) : Whether we need to an additioanl const one to get the parity or not. Defaults to False.
 
         Returns:
             The result of parity check.
@@ -433,7 +433,7 @@ class ConvertToMBQCFormalismPattern(
             prev_res = xor_op.result
 
         # Create an xor op for an additional const one and insert ops to the IR
-        if add_const_one:
+        if additional_const_one:
             constant_one_op = arith.ConstantOp.from_int_and_width(1, builtin.i1)
             rewriter.insert_op(constant_one_op, InsertPoint.before(op))
             xor_op = arith.XOrIOp(prev_res, constant_one_op)
@@ -497,7 +497,7 @@ class ConvertToMBQCFormalismPattern(
         res_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubit, op, rewriter)
 
         # Z correction
-        z_parity = self._parity_check([m1, m2, m3], op, rewriter, add_const_one=True)
+        z_parity = self._parity_check([m1, m2, m3], op, rewriter, additional_const_one=True)
         res_aux_qubit = self._insert_cond_byproduct_op(
             z_parity, "PauliZ", res_aux_qubit, op, rewriter
         )
@@ -554,7 +554,7 @@ class ConvertToMBQCFormalismPattern(
         x_parity = self._parity_check([m2, m3, m5, m6], op, rewriter)
         ctrl_aux_qubit = self._insert_cond_byproduct_op(x_parity, "PauliX", qubits[0], op, rewriter)
         z_parity = self._parity_check(
-            [m1, m3, m4, m5, m8, m9, m11], op, rewriter, add_const_one=True
+            [m1, m3, m4, m5, m8, m9, m11], op, rewriter, additional_const_one=True
         )
         ctrl_aux_qubit = self._insert_cond_byproduct_op(
             z_parity, "PauliZ", ctrl_aux_qubit, op, rewriter
@@ -616,17 +616,17 @@ class ConvertToMBQCFormalismPattern(
         Return:
             The result qubits, which are the swapping result of the qubit in the global register and the auxiliary result qubit.
         """
-        # NOTE: IdentityOp inserted here is a temporal solution to fix the issue that SWAPOp can't accept
+        # NOTE: identity_op inserted here is a temporal solution to fix the issue that SWAPOp can't accept
         # `res_aux_qubit` as an in_qubits variable, i.e. SWAPOp = CustomOp(in_qubits=(target_qubit, res_aux_qubit), gate_name="SWAP").
         # The error message would be "| Error while applying pattern: 'NoneType' object has no attribute 'add_use'". Is it a upstream
         # issue or caused by the way how we define the `CustomOp` operation? Not sure why.
         # NOTE: It is also worth noting here. The target qubit in the global register is measured and I assume that
         # physically the target qubit can not be swapped with the result auxiliary qubit, right?
         # TODOS: We need more clarifications for the questions above in the following steps.
-        IdentityOp = CustomOp(in_qubits=(aux_res_qubit), gate_name="Identity")
-        rewriter.insert_op(IdentityOp, InsertPoint.before(op))
+        identity_op = CustomOp(in_qubits=(aux_res_qubit), gate_name="Identity")
+        rewriter.insert_op(identity_op, InsertPoint.before(op))
 
-        return (IdentityOp.results[0], qb_in_reg)
+        return (identity_op.results[0], qb_in_reg)
 
     def _deallocate_aux_qubits(
         self,
@@ -645,8 +645,8 @@ class ConvertToMBQCFormalismPattern(
         # Deallocate aux_qubits
         for node in graph_qubits_dict:
             if node not in qb_in_reg_key:
-                deallocQubitOp = DeallocQubitOp(graph_qubits_dict[node])
-                rewriter.insert_op(deallocQubitOp, InsertPoint.before(op))
+                dealloc_qubit_op = DeallocQubitOp(graph_qubits_dict[node])
+                rewriter.insert_op(dealloc_qubit_op, InsertPoint.before(op))
 
     # pylint: disable=no-self-use
     @pattern_rewriter.op_type_rewrite_pattern
@@ -667,13 +667,13 @@ class ConvertToMBQCFormalismPattern(
                     graph_qubits_dict = self._prep_graph_state(op, rewriter)
 
                     # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
-                    CZOp = CustomOp(
+                    cz_op = CustomOp(
                         in_qubits=[op.in_qubits[0], graph_qubits_dict[2]], gate_name="CZ"
                     )
-                    rewriter.insert_op(CZOp, InsertPoint.before(op))
+                    rewriter.insert_op(cz_op, InsertPoint.before(op))
 
                     # Update the graph qubit dict
-                    graph_qubits_dict[1], graph_qubits_dict[2] = CZOp.results
+                    graph_qubits_dict[1], graph_qubits_dict[2] = cz_op.results
 
                     # Insert measurement ops to the IR
                     mres, graph_qubits_dict = self._queue_measurements(
@@ -702,18 +702,18 @@ class ConvertToMBQCFormalismPattern(
                     graph_qubits_dict = self._prep_graph_state(op, rewriter)
 
                     # Entangle the op.in_qubits[0] with the graph_qubits_dict[2]
-                    CZOp = CustomOp(
+                    cz_op = CustomOp(
                         in_qubits=[op.in_qubits[0], graph_qubits_dict[2]], gate_name="CZ"
                     )
-                    rewriter.insert_op(CZOp, InsertPoint.before(op))
-                    graph_qubits_dict[1], graph_qubits_dict[2] = CZOp.results
+                    rewriter.insert_op(cz_op, InsertPoint.before(op))
+                    graph_qubits_dict[1], graph_qubits_dict[2] = cz_op.results
 
                     # Entangle op.in_qubits[1] with with the graph_qubits_dict[10] for a CNOT gate
-                    CZOp = CustomOp(
+                    cz_op = CustomOp(
                         in_qubits=[op.in_qubits[1], graph_qubits_dict[10]], gate_name="CZ"
                     )
-                    rewriter.insert_op(CZOp, InsertPoint.before(op))
-                    graph_qubits_dict[9], graph_qubits_dict[10] = CZOp.results
+                    rewriter.insert_op(cz_op, InsertPoint.before(op))
+                    graph_qubits_dict[9], graph_qubits_dict[10] = cz_op.results
 
                     # Insert measurement ops to the IR
                     mres, graph_qubits_dict = self._queue_measurements(
