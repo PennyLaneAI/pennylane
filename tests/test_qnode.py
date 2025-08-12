@@ -2066,11 +2066,17 @@ class TestSetShots:
     """Tests for the set_shots decorator functionality."""
 
     def test_shots_initialization(self):
-        """Test that _shots is correctly initialized from the device."""
-        dev = qml.device("default.qubit", wires=1)
-        qn = qml.set_shots(qml.QNode(dummyfunc, dev), shots=42)
-        assert qn._shots == qml.measurements.Shots(42)
+        """Test that _shots is correctly initialized from the device with deprecation warning."""
+        # Test that QNode inherits shots from device (with deprecation warning)
+        with pytest.warns(
+            PennyLaneDeprecationWarning,
+            match="shots on device is deprecated",
+        ):
+            dev_with_shots = qml.device("default.qubit", wires=1, shots=42)
+        qn_with_device_shots = qml.QNode(dummyfunc, dev_with_shots)
+        assert qn_with_device_shots._shots == qml.measurements.Shots(42)
 
+        # Test that QNode defaults to analytic mode when device has no shots
         dev_analytic = qml.device("default.qubit", wires=1)
         qnode_analytic = qml.QNode(dummyfunc, dev_analytic)
         assert qnode_analytic._shots.total_shots is None
