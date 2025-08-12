@@ -209,6 +209,21 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         for rule in qml.list_decomps("C(Conjugation)"):
             _test_decomposition_rule(op, rule)
 
+    @pytest.mark.parametrize("ops_lst", ops)
+    @pytest.mark.capture
+    def test_controlled_decomposition_new_capture(self, ops_lst):
+        """Tests the decomposition rule implemented with the new system."""
+        control_wires = [4]
+        work_wires = [2, 3]
+        op = qml.ops.Controlled(
+            conjugation(*ops_lst),
+            control_wires,
+            [1],
+            work_wires=work_wires,
+        )
+        for rule in qml.list_decomps("C(Conjugation)"):
+            _test_decomposition_rule(op, rule)
+
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
         conjugation_op = Conjugation(qml.PauliZ(wires=0), qml.Identity(wires=1))
