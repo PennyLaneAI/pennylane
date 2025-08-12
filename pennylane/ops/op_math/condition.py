@@ -65,6 +65,16 @@ def _add_abstract_shapes(f):
     return new_f
 
 
+def _no_return(fn):
+    if isinstance(fn, type) and issubclass(fn, Operator):
+
+        def new_fn(*args, **kwargs):
+            fn(*args, **kwargs)
+
+        return new_fn
+    return fn
+
+
 class Conditional(SymbolicOp, Operation):
     """A Conditional Operation.
 
@@ -257,7 +267,8 @@ class CondCallable:
             if len(self.orig_elifs) > 0 and not isinstance(self.orig_elifs[0], tuple)
             else list(self.orig_elifs)
         )
-        flat_true_fn = FlatFn(self.true_fn)
+        true_fn = _no_return(self.true_fn) if self.otherwise_fn is None else self.true_fn
+        flat_true_fn = FlatFn(true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
         end_const_ind = len(
