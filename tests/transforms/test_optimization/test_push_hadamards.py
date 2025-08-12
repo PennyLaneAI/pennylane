@@ -100,9 +100,18 @@ class TestPushHadamards:
         ):
             qml.transforms.zx.push_hadamards(qs)
 
-    def test_transformed_tape(self):
-        """Test that the operations of the transformed tape match
-        the expected operations for a simple circuit."""
+    @pytest.mark.parametrize(
+        "measurements",
+        (
+            [],
+            [qml.expval(qml.Z(0))],
+            [qml.probs()],
+            [qml.state()],
+        ),
+    )
+    def test_transformed_tape(self, measurements):
+        """Test that the operations of the transformed tape match the expected operations
+        and that the original measurements are not touched."""
         ops = [
             qml.T(wires=0),
             qml.Hadamard(wires=0),
@@ -113,9 +122,9 @@ class TestPushHadamards:
             qml.Hadamard(wires=1),
             qml.Hadamard(wires=2),
         ]
-        original_tape = qml.tape.QuantumScript(ops=ops, measurements=[])
+        original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        (reduced_tape,), _ = qml.transforms.zx.push_hadamards(original_tape)
+        (transformed_tape,), _ = qml.transforms.zx.push_hadamards(original_tape)
 
         expected_ops = [
             qml.T(wires=0),
@@ -124,7 +133,8 @@ class TestPushHadamards:
             qml.CNOT(wires=[2, 1]),
         ]
 
-        assert reduced_tape.operations == expected_ops
+        assert transformed_tape.operations == expected_ops
+        assert transformed_tape.measurements == measurements
 
     def test_equivalent_state(self):
         """Test that the output state returned by the transformed QNode matches
