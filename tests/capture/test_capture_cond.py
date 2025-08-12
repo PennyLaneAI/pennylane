@@ -58,6 +58,16 @@ def testing_functions():
     return true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4
 
 
+def test_bad_predicate_shape():
+    """Test that an error is raised if the predicate is not a scalar."""
+
+    def f():
+        qml.cond(np.array([0, 0]), qml.X, qml.Z)(0)
+
+    with pytest.raises(ValueError, match="predicate must be a scalar"):
+        jax.make_jaxpr(f)()
+
+
 @pytest.mark.parametrize("decorator", [True, False])
 class TestCond:
     """Tests for conditional functions using qml.cond."""
