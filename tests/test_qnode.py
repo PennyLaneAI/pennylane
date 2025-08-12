@@ -1444,16 +1444,17 @@ class TestShots:
         assert tape.shots.shot_vector == shot_vector
 
     def test_shots_update_with_device(self):
-        """Test that _shots is updated when updating the QNode with a new device."""
+        """Test that _shots is not updated when updating the QNode with a new device."""
         dev1 = qml.device("default.qubit", wires=1)
         qn = qml.set_shots(qml.QNode(dummyfunc, dev1), shots=100)
         assert qn._shots == qml.measurements.Shots(100)
 
         # _shots should take precedence over device shots
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+            dev2 = qml.device("default.qubit", wires=1, shots=200)
         with pytest.warns(
             UserWarning, match="The device's shots value does not match the QNode's shots value."
         ):
-            dev2 = qml.device("default.qubit", wires=1)
             updated_qnode = qn.update(device=dev2)
         assert updated_qnode._shots == qml.measurements.Shots(100)
 
