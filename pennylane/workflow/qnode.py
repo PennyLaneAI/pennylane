@@ -31,7 +31,7 @@ from pennylane import math, pytrees
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name
-from pennylane.measurements import MidMeasureMP, Shots
+from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -518,6 +518,7 @@ class QNode:
         device: SupportedDeviceAPIs,
         interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
+        shots: ShotsLike = None,
         *,
         grad_on_execution: bool | Literal["best"] = "best",
         cache: Cache | dict | Literal["auto"] | bool = "auto",
@@ -605,7 +606,7 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        self._shots: Shots = device.shots
+        self._shots: Shots = shots or device.shots
         self._shots_override_device: bool = False
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
@@ -649,7 +650,7 @@ class QNode:
     @shots.setter
     def shots(self, _):
         raise AttributeError(
-            "Shots can no longer be set on a qnode instance. "
+            "Shots can not be set on a qnode instance. "
             "You can set shots with `qml.set_shots`."
         )
 
