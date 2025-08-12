@@ -151,16 +151,6 @@ class TestGQSP:
             _test_decomposition_rule(op, rule)
 
     @pytest.mark.jax
-    @pytest.mark.capture
-    def test_decomposition_new(self):
-        """Tests the decomposition rule implemented with the new system."""
-        angles = np.array([[1, 2], [3, 4], [5, 6]])
-        op = qml.GQSP(qml.Z(1), angles, control=0)
-
-        for rule in qml.list_decomps(qml.GQSP):
-            _test_decomposition_rule(op, rule)
-
-    @pytest.mark.jax
     def test_gqsp_jax(self):
         """Test that GQSP works with jax"""
 
