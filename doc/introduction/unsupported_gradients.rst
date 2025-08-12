@@ -298,13 +298,13 @@ error, but the results will be incorrect:
 
 >>> sample_backward()
 [[[0.5]]
-
+<BLANKLINE>
  [[0.5]]
-
+<BLANKLINE>
  [[0.5]]
-
+<BLANKLINE>
  [[0.5]]
-
+<BLANKLINE>
  [[0.5]]]
 
 The forward pass is supported and will work as expected:
