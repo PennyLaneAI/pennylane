@@ -350,7 +350,7 @@
 
 <h3>Deprecations 👋</h3>
 
-* Setting shots on device, e.g. `qml.device("default.qubit", wires=2, shots=1000)`, is deprecated. Please use `set_shots` on the `QNode` instead.
+* Setting shots on a device through the `shots=` kwarg, e.g. `qml.device("default.qubit", wires=2, shots=1000)`, is deprecated. Please use the `set_shots` transform on the `QNode` instead.
 
   ```python
   dev = qml.device("default.qubit", wires=2)

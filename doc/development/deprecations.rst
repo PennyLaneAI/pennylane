@@ -9,8 +9,8 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
-* Setting shots on device level is deprecated.
-  Please use :func:`pennylane.set_shots` on the :class:`~.QNode` instead.
+* Setting shots on a device through the `shots=` kwarg is deprecated.
+  Please use the :func:`pennylane.set_shots` transform on the :class:`~.QNode` instead.
 
   .. code-block:: python
   
