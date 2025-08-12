@@ -26,6 +26,7 @@ from pennylane import PauliX, math
 from pennylane.exceptions import DeviceError, MatrixUndefinedError
 from pennylane.operation import Operator
 from pennylane.ops import prod
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math.conjugation import Conjugation, conjugation
 from pennylane.wires import Wires
 
@@ -193,6 +194,20 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         tape = qml.tape.QuantumScript.from_queue(q)
         for op1, op2 in zip(tape.operations, true_decomposition):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_controlled_decomposition_new(self, ops_lst):
+        """Tests the decomposition rule implemented with the new system."""
+        control_wires = [4]
+        work_wires = [2, 3]
+        op = qml.ops.Controlled(
+            conjugation(*ops_lst),
+            control_wires,
+            [1],
+            work_wires=work_wires,
+        )
+        for rule in qml.list_decomps("C(Conjugation)"):
+            _test_decomposition_rule(op, rule)
 
     def test_eigen_caching(self):
         """Test that the eigendecomposition is stored in cache."""
