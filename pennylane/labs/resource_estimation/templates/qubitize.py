@@ -97,7 +97,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         else:
             num_orb = compact_ham.params["num_orbitals"]
             tensor_rank = compact_ham.params["tensor_rank"]
-            self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(2 * tensor_rank + 1))) + 1
+            self.num_wires = num_orb*2 +  2 * int(np.ceil(math.log2(tensor_rank+1))) + 6
             self.wires = None
         super().__init__(wires=wires)
 
@@ -192,7 +192,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         gate_list = []
 
         tensor_rank = compact_ham.params["tensor_rank"]
-        m_register = np.int(np.ceil(np.log2(tensor_rank)))
+        m_register = int(np.ceil(np.log2(tensor_rank)))
         coeff_precision = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
         coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
 
@@ -207,7 +207,7 @@ class ResourceQubitizeTHC(ResourceOperator):
                 "select_swap_depth": select_swap_depths[1],
             },
         )
-        gate_list.append(select)
+        gate_list.append(GateCount(select))
 
         prep = resource_rep(
             plre.ResourcePrepTHC,
@@ -217,12 +217,12 @@ class ResourceQubitizeTHC(ResourceOperator):
                 "select_swap_depth": select_swap_depths[0],
             },
         )
+        gate_list.append(GateCount(prep))
         gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep})))
 
         # reflection cost
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_prec_wires + 4))
 
-        gate_list.append(GateCount(prep))
 
         return gate_list

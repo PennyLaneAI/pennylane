@@ -249,4 +249,7 @@ from .templates import (
     ResourceAliasSampling,
     ResourceSelectTHC,
     ResourcePrepTHC,
+    ResourceQPE,
+    ResourceControlledSequence,
+    ResourceIterativeQPE,
 )

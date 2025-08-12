@@ -378,7 +378,7 @@ class ResourcePrepTHC(ResourceOperator):
 
         gate_list = []
 
-        gate_list.append(AllocWires(coeff_register + 2 * m_register + 2 * coeff_precision + 6))
+        gate_list.append(AllocWires(coeff_register + 2 * m_register + 2 * coeff_prec_wires + 6))
 
         hadamard = resource_rep(plre.ResourceHadamard)
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
@@ -440,7 +440,7 @@ class ResourcePrepTHC(ResourceOperator):
 
         comparator = resource_rep(
             plre.ResourceRegisterComparator,
-            {"a_num_qubits": coeff_prec_wires, "b_num_qubits": coeff_prec_wires, "geq": False},
+            {"first_register": coeff_prec_wires, "second_register": coeff_prec_wires, "geq": False},
         )
         gate_list.append(plre.GateCount(comparator))
 

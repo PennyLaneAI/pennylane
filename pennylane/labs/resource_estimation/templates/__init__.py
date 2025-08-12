@@ -25,6 +25,9 @@ from .subroutines import (
     ResourceQROM,
     ResourceSelectPauliRot,
     ResourceQubitUnitary,
+    ResourceQPE,
+    ResourceIterativeQPE,
+    ResourceControlledSequence,
 )
 from .trotter import (
     ResourceTrotterCDF,
