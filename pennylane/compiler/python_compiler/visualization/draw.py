@@ -12,16 +12,46 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import io
+import subprocess
 from functools import wraps
 
+import graphviz
 from catalyst import qjit
+from catalyst.compiler import CompileError, _get_catalyst_cli_cmd
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
+from xdsl.printer import Printer
 
 from pennylane.tape import QuantumScript
 from pennylane.typing import Callable
 
 from ..transforms.api.apply_transform_sequence import register_callback
 from .collector import QMLCollector
+
+
+def _catalyst(*args, stdin=None, stderr_return=False):
+    """Raw interface to catalyst
+
+    echo ${stdin} | catalyst *args -
+    catalyst *args
+    """
+    cmd = _get_catalyst_cli_cmd(*args, stdin=stdin)
+    try:
+        result = subprocess.run(cmd, input=stdin, check=True, capture_output=True, text=True)
+        if stderr_return:
+            return result.stdout, result.stderr
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        raise CompileError(f"catalyst failed with error code {e.returncode}: {e.stderr}") from e
+
+
+def _quantum_opt_stderr(*args, stdin=None, stderr_return=False):
+    """Raw interface to quantum-opt
+
+    echo ${stdin} | catalyst --tool=opt *args -
+    catalyst --tool=opt *args
+    """
+    return _catalyst(("--tool", "opt"), *args, stdin=stdin, stderr_return=stderr_return)
 
 
 def catalyst_qjit(qnode):
@@ -49,6 +79,15 @@ def draw(qnode, *, level: None | int = None):
         # using PennyLane's built-in drawing capabilities of QuantumScript
         tape = QuantumScript(ops, meas)
         cache[pass_level] = (tape.draw(), pass_instance.name if pass_level else "No transforms")
+
+        buffer = io.StringIO()
+        Printer(stream=buffer, print_generic_format=True).print_op(module)
+        _, dot_graph = _quantum_opt_stderr(
+            "--view-op-graph", stdin=buffer.getvalue(), stderr_return=True
+        )
+        graph = graphviz.Source(dot_graph)
+        with open(f"level_{pass_level}.svg", "wb") as f:
+            f.write(graph.pipe(format="svg"))
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
