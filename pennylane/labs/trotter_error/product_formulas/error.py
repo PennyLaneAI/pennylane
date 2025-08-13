@@ -17,6 +17,8 @@ import copy
 from collections import Counter, defaultdict
 from collections.abc import Hashable, Sequence
 
+import numpy as np
+
 from pennylane import concurrency
 from pennylane.labs.trotter_error import AbstractState, Fragment
 from pennylane.labs.trotter_error.abstract import nested_commutator
@@ -110,7 +112,7 @@ def perturbation_error(
     num_workers: int = 1,
     backend: str = "serial",
     parallel_mode: str = "state",
-) -> list[float]:
+) -> tuple[list[dict], dict]:
     r"""Computes the perturbation theory error using the effective Hamiltonian :math:`\hat{\epsilon} = \hat{H}_{eff} - \hat{H}` for a  given product formula.
 
 
@@ -133,8 +135,11 @@ def perturbation_error(
             Default value is set to "state".
 
     Returns:
-        List[Dict[int, float]]: the list of dictionaries of expectation values computed from the Trotter error operator and the input states.
-            The dictionary is indexed by the commutator orders and its value is the error obtained from the commutators of that order.
+        tuple[list[dict], dict]: A tuple containing:
+            - List[Dict[int, float]]: the list of dictionaries of expectation values computed from the Trotter error operator and the input states.
+              The dictionary is indexed by the commutator orders and its value is the error obtained from the commutators of that order.
+            - Dict: convergence_info dictionary containing convergence statistics for each state and order,
+              including partial sums, mean, median, and standard deviation.
 
     **Example**
 
@@ -160,7 +165,7 @@ def perturbation_error(
     >>> state1 = HOState(n_modes, gridpoints, {(0, 0): 1})
     >>> state2 = HOState(n_modes, gridpoints, {(1, 1): 1})
     >>>
-    >>> errors = perturbation_error(pf, frags, [state1, state2], order=3)
+    >>> errors, convergence_info = perturbation_error(pf, frags, [state1, state2], order=3)
     >>> print(errors)
     [{3: 0.9189251160920876j}, {3: 4.7977166824268505j}]
     """
@@ -175,35 +180,67 @@ def perturbation_error(
     if backend == "serial":
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
-        for state in states:
+        convergence_info = {}
+
+        for state_idx, state in enumerate(states):
             new_state = _AdditiveIdentity()
+            state_convergence = {}
+            state_expectations = {}
+
             for commutators in commutator_lists:
                 if len(commutators) == 0:
                     continue
 
                 order = len(commutators[0])
+                partial_sums = []
+                mean_history = []
+                median_history = []
+                std_history = []
+
                 for commutator in commutators:
                     new_state += _apply_commutator(commutator, fragments, state)
+                    current_sum = (1j * timestep) ** order * state.dot(new_state)
+                    partial_sums.append(current_sum)
 
-                expectations.append({order: (1j * timestep) ** order * state.dot(new_state)})
+                    # Compute convergence statistics incrementally
+                    _update_convergence_histories(
+                        partial_sums, mean_history, median_history, std_history
+                    )
 
-        return expectations
+                final_error = (1j * timestep) ** order * state.dot(new_state)
+                state_expectations[order] = final_error
+
+                state_convergence[order] = {
+                    "mean_history": mean_history,
+                    "median_history": median_history,
+                    "std_history": std_history,
+                }
+
+            expectations.append(state_expectations)
+            convergence_info[state_idx] = state_convergence
+
+        return expectations, convergence_info
 
     if parallel_mode == "state":
         executor = concurrency.backends.get_executor(backend)
         with executor(max_workers=num_workers) as ex:
-            expectations = ex.starmap(
+            results = ex.starmap(
                 _get_expval_state,
                 [(commutator_lists, fragments, state, timestep) for state in states],
             )
 
-        return expectations
+        expectations = [result[0] for result in results]
+        convergence_info = {state_idx: result[1] for state_idx, result in enumerate(results)}
+
+        return expectations, convergence_info
 
     if parallel_mode == "commutator":
         executor = concurrency.backends.get_executor(backend)
         expectations = []
+        convergence_info = {}
         commutators = [x for xs in commutator_lists for x in xs]
-        for state in states:
+
+        for state_idx, state in enumerate(states):
             with executor(max_workers=num_workers) as ex:
                 applied_commutators = ex.starmap(
                     _apply_commutator_track_order,
@@ -213,37 +250,87 @@ def perturbation_error(
             new_states = defaultdict(
                 lambda: _AdditiveIdentity()  # pylint: disable=unnecessary-lambda
             )
+            order_commutators = defaultdict(list)
+
             for applied_state, order in applied_commutators:
                 new_states[order] += applied_state
+                order_commutators[order].append(applied_state)
 
-            expectations.append(
-                {
-                    order: (1j * timestep) ** order * state.dot(new_state)
-                    for order, new_state in new_states.items()
+            state_expectations = {
+                order: (1j * timestep) ** order * state.dot(new_state)
+                for order, new_state in new_states.items()
+            }
+            expectations.append(state_expectations)
+
+            # For convergence info, we need to compute partial sums sequentially
+            # since parallel execution doesn't preserve order
+            state_convergence = {}
+            for order in order_commutators:
+                partial_sums = []
+                mean_history = []
+                median_history = []
+                std_history = []
+                cumulative_state = _AdditiveIdentity()
+
+                for applied_state in order_commutators[order]:
+                    cumulative_state += applied_state
+                    current_sum = (1j * timestep) ** order * state.dot(cumulative_state)
+                    partial_sums.append(current_sum)
+
+                    # Compute convergence statistics incrementally
+                    _update_convergence_histories(
+                        partial_sums, mean_history, median_history, std_history
+                    )
+
+                state_convergence[order] = {
+                    "mean_history": mean_history,
+                    "median_history": median_history,
+                    "std_history": std_history,
                 }
-            )
 
-        return expectations
+            convergence_info[state_idx] = state_convergence
+
+        return expectations, convergence_info
 
     raise ValueError("Invalid parallel mode. Choose 'state' or 'commutator'.")
 
 
-def _get_expval_state(commutator_lists, fragments, state: AbstractState, timestep: float) -> float:
-    """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
+def _get_expval_state(
+    commutator_lists, fragments, state: AbstractState, timestep: float
+) -> tuple[dict, dict]:
+    """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``,
+    along with convergence information."""
 
     expectations = {}
+    convergence = {}
     new_state = _AdditiveIdentity()
+
     for commutators in commutator_lists:
         if len(commutators) == 0:
             continue
 
         order = len(commutators[0])
+        partial_sums = []
+        mean_history = []
+        median_history = []
+        std_history = []
+
         for commutator in commutators:
             new_state += _apply_commutator(commutator, fragments, state)
+            current_sum = (1j * timestep) ** order * state.dot(new_state)
+            partial_sums.append(current_sum)
+
+            # Compute convergence statistics incrementally
+            _update_convergence_histories(partial_sums, mean_history, median_history, std_history)
 
         expectations[order] = (1j * timestep) ** order * state.dot(new_state)
+        convergence[order] = {
+            "mean_history": mean_history,
+            "median_history": median_history,
+            "std_history": std_history,
+        }
 
-    return expectations
+    return expectations, convergence
 
 
 def _apply_commutator(
@@ -326,3 +413,11 @@ def _group_sums(term_dict: dict[tuple[Hashable], complex]) -> list[tuple[Hashabl
         grouped_comms[tail].add((head, coeff))
 
     return [(frozenset(heads), *tail) for tail, heads in grouped_comms.items()]
+
+
+def _update_convergence_histories(partial_sums, mean_history, median_history, std_history):
+    """Update convergence histories with the latest partial sum."""
+    subset = np.array(partial_sums)
+    mean_history.append(np.mean(subset))
+    median_history.append(np.median(subset))
+    std_history.append(np.std(subset) if len(partial_sums) > 1 else 0.0)
