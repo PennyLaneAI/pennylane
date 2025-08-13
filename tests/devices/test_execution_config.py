@@ -165,17 +165,17 @@ class TestExecutionConfig:
             interface=Interface.JAX,
         )
         str_repr = str(config)
-        
+
         # Check that it's properly formatted
         assert "ExecutionConfig(" in str_repr
         assert "'grad_on_execution': False" in str_repr
         assert "'gradient_method': 'best'" in str_repr
         assert "Interface.JAX" in str_repr
-        
+
         # Check that it's multiline formatted
         lines = str_repr.split("\n")
         assert len(lines) > 1  # Should be multiline
-        
+
         # Test with MCMConfig
         config_with_mcm = ExecutionConfig(
             mcm_config=MCMConfig(mcm_method="deferred", postselect_mode="hw-like")
