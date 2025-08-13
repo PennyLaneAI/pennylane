@@ -26,7 +26,17 @@ dialect documentation in Catalyst.
 
 from typing import TypeAlias
 
-from xdsl.dialects.builtin import I32, AnyAttr, Float64Type, IntegerAttr, IntegerType, StringAttr
+from xdsl.dialects.builtin import (
+    I32,
+    AnyAttr,
+    Float64Type,
+    IntegerAttr,
+    IntegerType,
+    MemRefType,
+    StringAttr,
+    TensorType,
+    i1,
+)
 from xdsl.ir import Dialect, EnumAttribute, Operation, SpacedOpaqueSyntaxAttribute, SSAValue
 from xdsl.irdl import (
     IRDLOperation,
@@ -40,6 +50,7 @@ from xdsl.irdl import (
 from xdsl.utils.exceptions import VerifyException
 from xdsl.utils.str_enum import StrEnum  # StrEnum is standard in Python>=3.11
 
+from ..xdsl_extras import MemRefRankConstraint, TensorRankConstraint
 from .quantum import QubitType, QuregType
 
 QubitSSAValue: TypeAlias = SSAValue[QubitType]
@@ -130,7 +141,10 @@ class GraphStatePrepOp(IRDLOperation):
             `(` $adj_matrix `:` type($adj_matrix) `)` `[` `init` $init_op `,` `entangle` $entangle_op `]` attr-dict `:` type(results)
         """
 
-    adj_matrix = operand_def(AnyAttr())
+    adj_matrix = operand_def(
+        (TensorType.constr(i1) & TensorRankConstraint(1))
+        | (MemRefType.constr(i1) & MemRefRankConstraint(1))
+    )
 
     init_op = prop_def(StringAttr)
 
