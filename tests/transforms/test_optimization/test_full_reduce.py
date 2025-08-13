@@ -62,6 +62,7 @@ class TestFullReduce:
         ),
     )
     def test_hermitian_involutory_gates_cancellation(self, gate):
+        """Test cancellation for each supported Hermitian gate (involution property HH=I)"""
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
@@ -78,6 +79,7 @@ class TestFullReduce:
         ),
     )
     def test_S_gate_simplification(self, num_gates, expected_ops):
+        """Test S gate simplification/cancellation."""
         ops = [qml.S(0)] * num_gates
 
         qs = QuantumScript(ops)
@@ -95,6 +97,7 @@ class TestFullReduce:
         ),
     )
     def test_T_gate_simplification(self, num_gates, expected_ops):
+        """Test T gate simplification/cancellation."""
         ops = [qml.T(0)] * num_gates
 
         qs = QuantumScript(ops)
@@ -111,6 +114,7 @@ class TestFullReduce:
         ),
     )
     def test_merge_RX_rotations(self, params):
+        """Test that RX rotation gates are correctly merged together."""
         ops = [qml.RX(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
@@ -137,6 +141,7 @@ class TestFullReduce:
         ),
     )
     def test_merge_RY_rotations(self, params):
+        """Test that RY rotation gates are correctly merged together."""
         ops = [qml.RY(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
@@ -165,6 +170,7 @@ class TestFullReduce:
         ),
     )
     def test_merge_RZ_rotations(self, params):
+        """Test that RZ rotation gates are correctly merged together."""
         ops = [qml.RZ(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
@@ -213,6 +219,8 @@ class TestFullReduce:
         ),
     )
     def test_transformed_tape(self, measurements):
+        """Test that the operations of the transformed tape match the expected operations
+        and that the original measurements are not touched."""
         ops = [
             qml.CNOT(wires=[0, 1]),
             qml.T(wires=0),
@@ -257,6 +265,8 @@ class TestFullReduce:
         ),
     )
     def test_equivalent_state(self, params):
+        """Test that the output state returned by the transformed QNode matches
+        the output state returned by the original QNode up to a global phase."""
         num_wires = 3
         device = qml.device("default.qubit", wires=num_wires)
 
