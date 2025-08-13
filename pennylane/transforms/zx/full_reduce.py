@@ -14,7 +14,7 @@
 """
 This module contains a transform to apply the
 `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__ simplification
-pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
+pipeline (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
 to a PennyLane arbitrary circuit.
 """
 
@@ -34,7 +34,7 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     This transform works performing the following simplification/optimization steps:
 
         - apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
-          simplification pass to the ``pyzx`` graph representation of the given input circuit;
+          simplification pipeline to the ``pyzx`` graph representation of the given input circuit;
 
         - use the `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__
           function to extract the equivalent sequence of gates and build a new optimized circuit;
