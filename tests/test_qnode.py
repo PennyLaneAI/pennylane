@@ -1424,7 +1424,7 @@ class TestShots:
 
         # No override
         tape = qml.workflow.construct_tape(qn)(0.1, 0.2)
-        assert tape.shots.total_shots == None
+        assert tape.shots.total_shots is None
 
         # Override
         with pytest.warns(
@@ -1444,7 +1444,7 @@ class TestShots:
 
         # No override
         tape = qml.workflow.construct_tape(qn2)(0.1, 0.2)
-        assert tape.shots.total_shots == None
+        assert tape.shots.total_shots is None
 
         # Override
         with pytest.warns(
