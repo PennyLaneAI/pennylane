@@ -159,3 +159,31 @@ class TestTODD:
 
         assert transformed_tape.operations == expected_ops
         assert transformed_tape.measurements == measurements
+
+    def test_equivalent_state(self):
+        """Test that the output state returned by the transformed QNode matches
+        the output state returned by the original QNode up to a global phase."""
+        num_wires = 3
+        device = qml.device("default.qubit", wires=num_wires)
+
+        @qml.qnode(device)
+        def original_circ():
+            for i in range(num_wires):
+                qml.Hadamard(wires=i)
+            qml.T(wires=0)
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(np.pi / 2, wires=0)
+            qml.S(wires=2)
+            qml.CNOT(wires=[1, 2])
+            qml.RZ(-np.pi, wires=2)
+            return qml.state()
+
+        reduced_circ = qml.transforms.zx.todd(original_circ)
+
+        state1 = original_circ()
+        state2 = reduced_circ()
+
+        # test that the states are equivalent up to a global phase
+        check = np.abs(np.conj(state1) @ state2)
+        assert np.isclose(check, 1)
