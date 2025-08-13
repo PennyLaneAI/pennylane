@@ -23,7 +23,7 @@ from pennylane.exceptions import QuantumFunctionError
 from pennylane.measurements import MeasurementProcess
 
 
-def _get_all_shots(shot_vector):
+def _get_num_shot_copies(shot_vector):
     """Helper function to get the total number of shots from a shot vector."""
     return qml.measurements.Shots(shot_vector).num_copies
 
@@ -526,7 +526,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -548,7 +548,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -574,7 +574,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -623,7 +623,7 @@ class TestShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -650,7 +650,7 @@ class TestSameMeasurementShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -683,7 +683,7 @@ class TestSameMeasurementShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -736,7 +736,7 @@ class TestSameMeasurementShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -827,7 +827,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -862,7 +862,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -895,7 +895,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -930,7 +930,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -970,7 +970,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1012,7 +1012,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1060,7 +1060,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1116,7 +1116,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
@@ -1159,7 +1159,7 @@ class TestMixMeasurementsShotVector:
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
         )
 
-        all_shots = _get_all_shots(shot_vector)
+        all_shots = _get_num_shot_copies(shot_vector)
 
         assert isinstance(res[0], tuple)
         assert len(res[0]) == all_shots
