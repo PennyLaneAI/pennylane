@@ -230,7 +230,9 @@ class Pow(ScalarSymbolicOp):
     @staticmethod
     def _matrix(scalar, mat):
         if isinstance(scalar, int):
-            if qml.math.get_deep_interface(mat) == "tensorflow":
+            if (
+                qml.math.get_deep_interface(mat) == "tensorflow"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 # TensorFlow doesn't have a matrix_power func, and scipy.linalg.fractional_matrix_power
                 # is not differentiable. So we use a custom implementation of matrix power for integer
                 # exponents below.
