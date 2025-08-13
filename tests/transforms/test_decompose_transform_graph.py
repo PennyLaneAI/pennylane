@@ -13,8 +13,8 @@
 # limitations under the License.
 
 """Tests the ``decompose`` transform with the new experimental graph-based decomposition system."""
+
 from functools import partial
-from math import pi
 
 import numpy as np
 import pytest
@@ -316,7 +316,7 @@ class TestDecomposeGraphEnabled:
     def test_decompose_with_mcm(self):
         """Tests that circuits and decomposition rules containing MCMs are supported."""
 
-        class CustomOp(Operation):
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
 
             resource_keys = set()
 
