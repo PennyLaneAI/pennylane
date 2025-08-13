@@ -23,14 +23,10 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .converter import from_zx, to_zx
-
-has_pyzx = True
-try:
-    import pyzx
-except ModuleNotFoundError:
-    has_pyzx = False
+from .helper import _needs_pyzx
 
 
+@_needs_pyzx
 @transform
 def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
@@ -91,11 +87,8 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         2: ────────╰X────┤  State
 
     """
-
-    if not has_pyzx:  # pragma: no cover
-        raise ModuleNotFoundError(
-            "The `pyzx` package is required. You can install it by `pip install pyzx`."
-        )
+    # pylint: disable=import-outside-toplevel
+    import pyzx
 
     pyzx_graph = to_zx(tape)
     pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
