@@ -284,7 +284,7 @@ def _parse_mid_measurements(tape: QuantumScript, mid_meas: list):
                 )
             by_op = [_single_xz_corrections(op, *ms)]
         elif isinstance(op, _PAULIS):
-            gate_offset = 0
+            continue
         else:
             raise NotImplementedError(f"{op.name} is not supported.")
 
@@ -336,7 +336,6 @@ def _get_xz_record(tape: QuantumScript, by_ops: list[tuple[int, int]]):
         else:  # branch for Paulis
             # Commutate step is skipped.
             # Get the new xz by merging the recorded xz with the Pauli ops directly.
-            _ = by_ops.pop()  # empty list
             new_xz.append(math.bitwise_xor(pauli_to_xz(op), xz[0]))
         # Assign the updated the xz to the x, z record
         for idx, wire in enumerate(wires):
