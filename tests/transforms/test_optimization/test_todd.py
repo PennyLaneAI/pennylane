@@ -35,7 +35,7 @@ def test_import_pyzx_error(monkeypatch):
         qs = QuantumScript(ops=[], measurements=[])
 
         with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
-            qml.transforms.zx.push_hadamards(qs)
+            qml.transforms.zx.todd(qs)
 
 
 @pytest.mark.external
@@ -92,6 +92,7 @@ class TestTODD:
         ),
     )
     def test_non_clifford_or_T_gates_error(self, gate):
+        """Test that an error is raised when the input circuit is not Clifford + T."""
         qs = QuantumScript(ops=[gate])
 
         with pytest.raises(
@@ -115,6 +116,7 @@ class TestTODD:
         ),
     )
     def test_RZ_rotation_with_Clifford_T_angle(self, angle, expected_ops):
+        """Test that RZ rotation gates are transformed into the corresponding sequence of Clifford + T gates."""
         ops = [qml.RZ(angle, wires=0)]
 
         qs = QuantumScript(ops)
