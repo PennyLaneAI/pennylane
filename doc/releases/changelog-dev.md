@@ -528,6 +528,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Operators queued with qml.apply no longer get dequeued by subsequent dequeuing operations
+  (e.g. qml.adjoint).
+  [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
+
 * Simplifying operators raised to integer powers no longer causes recursion errors.
   [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
 

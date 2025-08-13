@@ -416,6 +416,16 @@ class TestApplyOp:
         assert q1.queue == [op2]
         assert q2.queue == [op1]
 
+    def test_apply_plus_dequeuing(self):
+        """Test that operations queued with qml.apply don't get dequeued by subsequent ops."""
+
+        h = qml.H(0)
+        with qml.queuing.AnnotatedQueue() as q1:
+            op1 = qml.apply(h)
+            op2 = qml.adjoint(h)
+
+        assert q1.queue == [op1, op2]
+
 
 class TestWrappedObj:
     """Tests for the ``WrappedObj`` class"""
