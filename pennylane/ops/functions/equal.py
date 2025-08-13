@@ -696,7 +696,12 @@ def _equal_measurements(
 
 @_equal_dispatch.register
 def _equal_mid_measure(op1: MidMeasureMP, op2: MidMeasureMP, **_):
-    return op1.wires == op2.wires and op1.reset == op2.reset and op1.postselect == op2.postselect
+    return (
+        op1.wires == op2.wires
+        and op1.id == op2.id
+        and op1.reset == op2.reset
+        and op1.postselect == op2.postselect
+    )
 
 
 @_equal_dispatch.register
