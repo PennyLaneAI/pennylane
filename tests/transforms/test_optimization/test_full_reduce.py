@@ -203,7 +203,16 @@ class TestFullReduce:
 
         assert new_qs.operations == expected_ops
 
-    def test_transformed_tape(self):
+    @pytest.mark.parametrize(
+        "measurements",
+        (
+            [],
+            [qml.expval(qml.Z(0))],
+            [qml.probs()],
+            [qml.state()],
+        ),
+    )
+    def test_transformed_tape(self, measurements):
         ops = [
             qml.CNOT(wires=[0, 1]),
             qml.T(wires=0),
@@ -218,9 +227,9 @@ class TestFullReduce:
             qml.T(wires=0),
             qml.CNOT(wires=[0, 1]),
         ]
-        original_tape = qml.tape.QuantumScript(ops=ops, measurements=[])
+        original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        (reduced_tape,), _ = qml.transforms.zx.full_reduce(original_tape)
+        (transformed_tape,), _ = qml.transforms.zx.full_reduce(original_tape)
 
         expected_ops = [
             qml.S(wires=0),
@@ -234,7 +243,8 @@ class TestFullReduce:
             qml.CNOT(wires=[0, 1]),
         ]
 
-        assert reduced_tape.operations == expected_ops
+        assert transformed_tape.operations == expected_ops
+        assert transformed_tape.measurements == measurements
 
     @pytest.mark.parametrize(
         "params",
