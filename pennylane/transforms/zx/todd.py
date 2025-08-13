@@ -18,12 +18,11 @@ pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/lates
 to a PennyLane Clifford + T circuit.
 """
 
-import pennylane as qml
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
-from .converter import from_zx
+from .converter import from_zx, to_zx
 
 has_pyzx = True
 try:
@@ -98,11 +97,11 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
             "The `pyzx` package is required. You can install it by `pip install pyzx`."
         )
 
-    qasm2_no_meas = qml.to_openqasm(tape, measure_all=False)
-    pyzx_circ = pyzx.Circuit.from_qasm(qasm2_no_meas)
+    pyzx_graph = to_zx(tape)
+    pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
 
     try:
-        pyzx_circ = pyzx.phase_block_optimize(pyzx_circ, pre_optimize=False)
+        pyzx_circ = pyzx.phase_block_optimize(pyzx_circ.to_basic_gates(), pre_optimize=False)
     except TypeError as e:
         raise TypeError("The input quantum circuit must be a Clifford + T circuit.") from e
 
