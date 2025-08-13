@@ -23,6 +23,8 @@ from pennylane.labs.trotter_error.abstract import nested_commutator
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
 from pennylane.labs.trotter_error.product_formulas.product_formula import ProductFormula
 
+# pylint: disable=too-many-arguments, too-many-positional-arguments
+
 
 class _AdditiveIdentity:
     """Only used to initialize accumulators for summing Fragments"""
@@ -120,7 +122,6 @@ def _insert_fragments(
     )
 
 
-# pylint: disable=too-many-arguments, too-many-positional-arguments
 def perturbation_error(
     product_formula: ProductFormula,
     fragments: dict[Hashable, Fragment],
