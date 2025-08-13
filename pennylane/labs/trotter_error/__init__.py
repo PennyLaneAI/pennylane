@@ -96,6 +96,7 @@ Classes for representing product formulas.
 
 from .abstract import AbstractState, Fragment
 from .fragments import (
+    GenericFragment,
     generic_fragments,
     vibrational_fragments,
     vibronic_fragments,
