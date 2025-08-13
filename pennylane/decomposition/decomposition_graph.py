@@ -458,7 +458,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
         return rules
 
-    def solve(self, num_work_wires: int | None = 0, lazy=True):
+    def solve(self, num_work_wires: int | None = 0, lazy=True) -> DecompGraphSolution:
         """Solves the graph using the Dijkstra search algorithm.
 
         Args:
