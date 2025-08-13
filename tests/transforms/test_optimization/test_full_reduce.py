@@ -180,6 +180,29 @@ class TestFullReduce:
 
         assert np.isclose(new_angle, exp_angle)
 
+    @pytest.mark.parametrize(
+        "angle, expected_ops",
+        (
+            (0, []),
+            (0.25 * np.pi, [qml.T(0)]),
+            (0.5 * np.pi, [qml.S(0)]),
+            (0.75 * np.pi, [qml.Z(0), qml.adjoint(qml.T(0))]),
+            (np.pi, [qml.Z(0)]),
+            (1.25 * np.pi, [qml.Z(0), qml.T(0)]),
+            (1.5 * np.pi, [qml.adjoint(qml.S(0))]),
+            (1.75 * np.pi, [qml.adjoint(qml.T(0))]),
+            (2 * np.pi, []),
+        ),
+    )
+    def test_RZ_rotation_with_Clifford_T_angle(self, angle, expected_ops):
+        """Test that RZ rotation gates are transformed into the corresponding sequence of Clifford + T gates."""
+        ops = [qml.RZ(angle, wires=0)]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.zx.full_reduce(qs)
+
+        assert new_qs.operations == expected_ops
+
     def test_transformed_tape(self):
         ops = [
             qml.CNOT(wires=[0, 1]),
