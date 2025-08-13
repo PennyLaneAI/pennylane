@@ -13,6 +13,8 @@ omit =
 exclude_lines =
     # Have to re-enable the standard pragma
     pragma: no cover
+
+    pragma: no cover (TensorFlow tests were disabled during deprecation)
     
     # Ignore type checking 
     if TYPE_CHECKING:

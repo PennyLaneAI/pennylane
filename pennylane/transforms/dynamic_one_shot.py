@@ -463,7 +463,9 @@ def _gather_samples(measurement: SampleMP, samples, is_valid, postselect_mode=No
 # pylint: disable=unused-arguement
 @gather_non_mcm.register
 def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mode=None):
-    if qml.math.get_interface(is_valid) == "tensorflow":
+    if (
+        qml.math.get_interface(is_valid) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # Tensorflow requires arrays that are used for arithmetic with each other to have the
         # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
         # index other tf.Tensors (is_valid is used to index valid samples).
@@ -474,7 +476,9 @@ def _gather_expval(measurement: ExpectationMP, samples, is_valid, postselect_mod
 # pylint: disable=unused-arguement
 @gather_non_mcm.register
 def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselect_mode=None):
-    if qml.math.get_interface(is_valid) == "tensorflow":
+    if (
+        qml.math.get_interface(is_valid) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # Tensorflow requires arrays that are used for arithmetic with each other to have the
         # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
         # index other tf.Tensors (is_valid is used to index valid samples).
@@ -488,13 +492,17 @@ def _gather_probability(measurement: ProbabilityMP, samples, is_valid, postselec
 # pylint: disable=unused-argument
 @gather_non_mcm.register
 def _gather_variance(measurement: VarianceMP, samples, is_valid, postselect_mode=None):
-    if (interface := qml.math.get_interface(is_valid)) == "tensorflow":
+    if (
+        interface := qml.math.get_interface(is_valid)
+    ) == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # Tensorflow requires arrays that are used for arithmetic with each other to have the
         # same dtype. We don't cast if measuring samples as float tf.Tensors cannot be used to
         # index other tf.Tensors (is_valid is used to index valid samples).
         is_valid = qml.math.cast_like(is_valid, samples)
     expval = qml.math.sum(samples * is_valid) / qml.math.sum(is_valid)
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # Casting needed for tensorflow
         samples = qml.math.cast_like(samples, expval)
         is_valid = qml.math.cast_like(is_valid, expval)
