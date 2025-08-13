@@ -24,7 +24,6 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
@@ -36,7 +35,6 @@ test_multi_dispatch_stack_data = [
     anp.array([[1.0, 0.0], [2.0, 3.0]]),
     np.array([[1.0, 0.0], [2.0, 3.0]]),
     jnp.array([[1.0, 0.0], [2.0, 3.0]]),
-    tf.constant([[1.0, 0.0], [2.0, 3.0]]),
 ]
 
 
@@ -82,7 +80,6 @@ test_data0 = [
     np.array([1, 2, 3]),
     torch.tensor([1, 2, 3]),
     jnp.array([1, 2, 3]),
-    tf.constant([1, 2, 3]),
 ]
 
 test_data = [(x, x) for x in test_data0]
@@ -107,7 +104,6 @@ test_data_values = [
     [anp.array([1, 2, 3]) for _ in range(5)],
     [torch.tensor([1, 2, 3]) for _ in range(5)],
     [jnp.array([1, 2, 3]) for _ in range(5)],
-    [tf.constant([1, 2, 3]) for _ in range(5)],
 ]
 
 
@@ -134,7 +130,6 @@ def test_unwrap():
     params = [
         [torch.tensor(2)],
         [[3, 4], torch.tensor([5, 6])],
-        tf.Variable([-1.0, -2.0]),
         [jnp.array(0.5), jnp.array([6, 7])],
         torch.tensor(0.5),
     ]
@@ -209,20 +204,6 @@ def test_dot_autograd_with_scalar():
     res = fn.dot(y, x)
     assert isinstance(res, np.tensor)
     assert res.requires_grad
-    assert fn.allclose(res, [2.0, 3.0])
-
-
-def test_dot_tf_with_scalar():
-
-    x = tf.Variable(1.0)
-    y = tf.Variable([2.0, 3.0])
-
-    res = fn.dot(x, y)
-    assert isinstance(res, tf.Tensor)
-    assert fn.allclose(res, [2.0, 3.0])
-
-    res = fn.dot(y, x)
-    assert isinstance(res, tf.Tensor)
     assert fn.allclose(res, [2.0, 3.0])
 
 
@@ -302,18 +283,6 @@ class TestDetach:
         jac = torch.autograd.functional.jacobian(fn.detach, x)
         assert fn.isclose(jac, jac * 0.0)
 
-    def test_tf(self):
-        """Test that detach works with Tensorflow."""
-
-        x = tf.Variable(0.3)
-        assert x.trainable is True
-        detached_x = fn.detach(x)
-        assert not hasattr(detached_x, "trainable")
-        with tf.GradientTape() as t:
-            out = fn.detach(x)
-        jac = t.jacobian(out, x)
-        assert jac is None
-
 
 @pytest.mark.all_interfaces
 class TestNorm:
@@ -384,10 +353,6 @@ class TestSVD:
         (
             torch.tensor(mat),
             "torch",
-        ),
-        (
-            tf.Variable(mat),
-            "tensorflow",
         ),
         (
             jnp.array(mat),

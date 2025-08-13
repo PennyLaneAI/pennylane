@@ -20,7 +20,6 @@ from pennylane import numpy as np
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow", minversion="2.1")
 torch = pytest.importorskip("torch")
 jax = pytest.importorskip("jax")
 
@@ -327,22 +326,6 @@ class TestMaxEntropy:
 
         assert qml.math.allclose(gradient, 0.0)
 
-    @pytest.mark.tf
-    @pytest.mark.parametrize("params", parameters)
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("check_state", check_state)
-    def test_max_entropy_grad_tf(self, params, wires, base, check_state):
-        """Test `max_entropy` differentiability with tensorflow interface."""
-        params = tf.Variable(params)
-
-        with tf.GradientTape() as tape:
-            max_entropy = qml.math.max_entropy(params, wires, base, check_state)
-
-        gradient = tape.gradient(max_entropy, params)
-
-        assert qml.math.allclose(gradient, 0.0)
-
     @pytest.mark.jax
     @pytest.mark.parametrize("params", parameters)
     @pytest.mark.parametrize("wires", single_wires_list)
@@ -437,23 +420,6 @@ class TestMinEntropy:
         min_entropy = qml.math.min_entropy(params, wires, base, check_state)
         min_entropy.backward()
         gradient = params.grad
-
-        assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
-
-    @pytest.mark.tf
-    @pytest.mark.parametrize("params", parameters)
-    @pytest.mark.parametrize("wires", single_wires_list)
-    @pytest.mark.parametrize("base", base)
-    @pytest.mark.parametrize("check_state", check_state)
-    def test_min_entropy_grad_tf(self, params, wires, base, check_state):
-        """Test `min_entropy` differentiability with tensorflow interface."""
-
-        params = tf.Variable(params)
-
-        with tf.GradientTape() as tape:
-            min_entropy = qml.math.min_entropy(params, wires, base, check_state)
-
-        gradient = tape.gradient(min_entropy, params)
 
         assert qml.math.allclose(gradient, -np.eye(4) / np.log(base))
 

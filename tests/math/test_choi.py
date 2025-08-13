@@ -19,11 +19,6 @@ import pennylane as qml
 from pennylane import math
 from pennylane.math import choi_matrix
 
-# tf = pytest.importorskip("tensorflow", minversion="2.1")
-# torch = pytest.importorskip("torch")
-# jax = pytest.importorskip("jax")
-# jnp = pytest.importorskip("jax.numpy")
-
 Ks1 = np.array([qml.matrix(qml.CNOT((0, 1)))])  # a simple unitary channel
 Ks2 = np.array(
     [
