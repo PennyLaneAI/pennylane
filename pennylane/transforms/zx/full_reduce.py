@@ -13,7 +13,7 @@
 # limitations under the License.
 """
 This module contains a transform to apply the
-`full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__ optimization
+`full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__ simplification
 pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
 to a PennyLane arbitrary circuit.
 """
@@ -29,22 +29,21 @@ from .helper import _needs_pyzx
 @_needs_pyzx
 @transform
 def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Reduce an arbitrary circuit applying the full ZX-based pipeline for T-gate optimization,
-    available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package.
+    """Optimizes an arbitrary circuit applying the full ZX-based pipeline to reduce the number of T gates.
 
-    The transform returns a simplified circuit equivalent to the original input up to a global phase.
-    It performs the following steps:
-
-        - convert the quantum circuit into the corresponding ``pyzx`` graph;
+    This transform works performing the following simplification/optimization steps:
 
         - apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
-          optimization pass to the ``pyzx`` graph;
+          simplification pass to the ``pyzx`` graph representation of the given input circuit;
 
-        - use `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__ and
-          apply the `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass
-          to the extracted ``pyzx`` circuit;
+        - use the `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__
+          function to extract the equivalent sequence of gates and build a new optimized circuit;
 
-        - build a new simplified ``pyzx`` graph and convert it back to its quantum circuit representation.
+        - apply the `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass
+          to further optimize the phase-polynomial blocks circuit.
+
+    This pipeline does not run the Third Order Duplicate and Destroy (TODD) algorithm and thus is not restricted to Clifford + T circuits.
+    The returned circuit is equivalent to the original input up to a global phase.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
@@ -58,32 +57,32 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
 
     **Example:**
 
-    Consider the following simple circuit:
-
     .. code-block:: python3
 
         import pennylane as qml
         import pennylane.transforms.zx as zx
 
-        dev = qml.device("default.qubit", wires=2)
+        dev = qml.device("default.qubit")
 
+        @zx.full_reduce
         @qml.qnode(dev)
         def circuit(x, y):
-            qml.T(wires=0)
-            qml.Hadamard(wires=0)
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0,1])
-            qml.T(wires=0)
-            qml.RX(x, wires=1)
-            qml.RX(y, wires=1)
+            qml.T(0)
+            qml.Hadamard(0)
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.T(0)
+            qml.RX(x, 1)
+            qml.RX(y, 1)
             return qml.state()
 
-    To apply this ZX-based optimization pass you can do:
 
-    >>> new_circuit = zx.full_reduce(circuit)
-    >>> print(qml.draw(new_circuit)(3.2, -2.2))
-    0: ──S─╭●─────────────────┤  State
-    1: ────╰X──H──RZ(1.00)──H─┤  State
+    .. code-block:: pycon
+
+        >>> print(qml.draw(circuit)(3.2, -2.2))
+        0: ──S─╭●─────────────────┤  State
+        1: ────╰X──H──RZ(1.00)──H─┤  State
+
 
     .. note::
 
@@ -99,8 +98,6 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
 
         - Aleks Kissinger, John van de Wetering (2020), "Reducing T-count with the ZX-calculus", <https://arxiv.org/abs/1903.10477>.
 
-    For the list of ZX calculus-based simplification rules implemented in ``pyzx``, see the
-    `online documentation <https://pyzx.readthedocs.io/en/latest/api.html#list-of-simplifications>`__.
     """
     # pylint: disable=import-outside-toplevel
     import pyzx
@@ -108,12 +105,12 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     zx_graph = to_zx(tape)
 
     pyzx.hsimplify.from_hypergraph_form(zx_graph)
-    pyzx.simplify.full_reduce(zx_graph)
+    pyzx.full_reduce(zx_graph)
+
     zx_circ = pyzx.extract_circuit(zx_graph)
     zx_circ = pyzx.basic_optimization(zx_circ.to_basic_gates())
 
     qscript = from_zx(zx_circ.to_graph())
-
     new_tape = tape.copy(operations=qscript.operations)
 
     def null_postprocessing(results):
