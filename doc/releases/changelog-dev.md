@@ -246,6 +246,9 @@
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
 
+* New `SparseFragment` and `SparseState` classes have been created that allow to use sparse matrices for the Hamiltonian Fragments when estimating the Trotter error.
+  [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
+
 * The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
   [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
 
@@ -593,6 +596,7 @@ Simone Gasperini,
 David Ittah,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
+Pablo Antonio Moreno Casares
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
