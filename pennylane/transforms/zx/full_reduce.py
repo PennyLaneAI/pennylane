@@ -20,14 +20,10 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .converter import from_zx, to_zx
-
-has_pyzx = True
-try:
-    import pyzx
-except ModuleNotFoundError:
-    has_pyzx = False
+from .helper import _needs_pyzx
 
 
+@_needs_pyzx
 @transform
 def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Reduce an arbitrary circuit applying the full ZX-based pipeline for T-gate optimization,
@@ -55,7 +51,7 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
         the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        ModuleNotFoundError: if the required ``pyzx`` Python package is not installed.
+        ModuleNotFoundError: if the required ``pyzx`` package is not installed.
 
     **Example:**
 
@@ -103,11 +99,8 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     For the list of ZX calculus-based simplification rules implemented in ``pyzx``, see the
     `online documentation <https://pyzx.readthedocs.io/en/latest/api.html#list-of-simplifications>`__.
     """
-
-    if not has_pyzx:  # pragma: no cover
-        raise ModuleNotFoundError(
-            "The `pyzx` package is required. You can install it by `pip install pyzx`."
-        )
+    # pylint: disable=import-outside-toplevel
+    import pyzx
 
     zx_graph = to_zx(tape)
 

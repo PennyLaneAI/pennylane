@@ -14,6 +14,8 @@
 """
 Unit tests for the `zx.full_reduce` transform.
 """
+import sys
+
 import numpy as np
 import pytest
 
@@ -21,6 +23,19 @@ import pennylane as qml
 from pennylane.tape import QuantumScript
 
 pytest.importorskip("pyzx")
+
+
+def test_import_pyzx_error(monkeypatch):
+    """Test that a ModuleNotFoundError is raised by the full_reduce transform
+    when the pyzx external package is not installed."""
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "pyzx", None)
+
+        qs = QuantumScript(ops=[], measurements=[])
+
+        with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
+            qml.transforms.zx.full_reduce(qs)
 
 
 @pytest.mark.external
