@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This module provides transforms to reduce a circuit applying simplification rules based on the ZX calculus.
+This module contains a transform to apply the
+`full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__ optimization
+pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
+to a PennyLane arbitrary circuit.
 """
 
 from pennylane.tape import QuantumScript, QuantumScriptBatch
