@@ -61,7 +61,7 @@ class TestFullReduce:
             qml.CCZ(wires=[0, 1, 2]),
         ),
     )
-    def test_hermitian_gates_cancellation(self, gate):
+    def test_hermitian_involutory_gates_cancellation(self, gate):
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
@@ -110,7 +110,7 @@ class TestFullReduce:
             (0.1, 0.9, -2.8),
         ),
     )
-    def test_rx_rotation_gates(self, params):
+    def test_merge_RX_rotations(self, params):
         ops = [qml.RX(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
@@ -136,7 +136,7 @@ class TestFullReduce:
             (0.1, 0.9, -2.8),
         ),
     )
-    def test_ry_rotation_gates(self, params):
+    def test_merge_RY_rotations(self, params):
         ops = [qml.RY(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
@@ -164,7 +164,7 @@ class TestFullReduce:
             (0.1, 0.9, -2.8),
         ),
     )
-    def test_rz_rotation_gates(self, params):
+    def test_merge_RZ_rotations(self, params):
         ops = [qml.RZ(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
