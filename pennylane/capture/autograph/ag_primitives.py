@@ -43,7 +43,19 @@ __all__ = [
     "for_stmt",
     "while_stmt",
     "converted_call",
+    "set_item",
 ]
+
+
+def set_item(target, i, x):
+    """An implementation of the AutoGraph 'set_item' function."""
+
+    if qml.math.is_abstract(target):
+        target = target.at[i].set(x)
+    else:
+        target[i] = x
+
+    return target
 
 
 def _assert_results(results, var_names):
