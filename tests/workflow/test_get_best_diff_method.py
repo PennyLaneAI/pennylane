@@ -99,7 +99,7 @@ class TestValidation:
         # no interface - fall back on parameter-shift
         dev2 = qml.device("default.qubit", wires=1)
         qn = qml.QNode(dummyfunc, dev2)
-        res2 = get_best_diff_method(qn)(shots=50)
+        res2 = get_best_diff_method(qml.set_shots(qn, shots=50))()
         assert res2 == "parameter-shift"
 
     def test_best_method_is_param_shift_cv(self):
