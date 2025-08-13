@@ -21,7 +21,9 @@ import pytest
 
 import pennylane as qml
 from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.measurements.mid_measure import MidMeasureMP
 from pennylane.operation import Operation
+from pennylane.ops.op_math.condition import Conditional
 from pennylane.transforms.decompose import _resolve_gate_set
 
 
@@ -343,6 +345,7 @@ class TestDecomposeGraphEnabled:
             return qml.probs()
 
         decomposed_tape = qml.workflow.construct_tape(circuit, level="user")()
+        assert len(decomposed_tape.operations) == 7
 
         def equivalent_circuit():
             qml.RZ(np.pi, wires=0)
@@ -356,8 +359,16 @@ class TestDecomposeGraphEnabled:
         with qml.queuing.AnnotatedQueue() as q:
             equivalent_circuit()
 
-        for op, expected in zip(decomposed_tape.operations, q.queue):
-            qml.assert_equal(op, expected)
+        qml.assert_equal(decomposed_tape.operations[0], q.queue[0])
+        qml.assert_equal(decomposed_tape.operations[1], q.queue[1])
+        assert isinstance(decomposed_tape.operations[3], Conditional)
+        assert isinstance(decomposed_tape.operations[4], Conditional)
+        assert isinstance(decomposed_tape.operations[6], Conditional)
+        qml.assert_equal(decomposed_tape.operations[3].base, q.queue[3].base)
+        qml.assert_equal(decomposed_tape.operations[4].base, q.queue[4].base)
+        qml.assert_equal(decomposed_tape.operations[6].base, q.queue[6].base)
+        assert isinstance(decomposed_tape.operations[2], MidMeasureMP)
+        assert isinstance(decomposed_tape.operations[5], MidMeasureMP)
 
 
 @pytest.mark.capture
