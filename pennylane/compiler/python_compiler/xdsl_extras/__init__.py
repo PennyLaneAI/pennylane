@@ -11,9 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Module containing functions to generate fragments for various Hamiltonians"""
 
-from .generic_fragments import GenericFragment, generic_fragments
-from .vibrational_fragments import vibrational_fragments
-from .vibronic_fragments import vibronic_fragments
-from .sparse_fragments import sparse_fragments
+"""This module contains additional utilities and functionality not available upstream in xDSL."""
+
+from .constraints import MemRefRankConstraint, TensorRankConstraint
+
+__all__ = [
+    "MemRefRankConstraint",
+    "TensorRankConstraint",
+]
