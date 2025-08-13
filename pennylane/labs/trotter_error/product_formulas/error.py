@@ -102,7 +102,7 @@ def effective_hamiltonian(
         )
 
     for coeff, commutator in zip(all_coeffs, expectations):
-        eff += coeff * nested_commutator(_insert_fragments(commutator, fragments))
+        eff += coeff * nested_commutator(commutator)
 
     return eff
 
