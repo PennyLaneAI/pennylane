@@ -38,24 +38,6 @@ sci = pytest.importorskip("scipy")
 class TestGetMultiTensorbox:
     """Tests for the get_interface utility function"""
 
-    def test_exception_torch(self):
-        """Test that an exception is raised if the sequence of tensors contains
-        tensors from incompatible dispatch libraries"""
-        x = onp.array([0.5, 0.1])
-        y = torch.tensor([0.6])
-
-        with pytest.raises(ValueError, match="Tensors contain mixed types"):
-            fn.get_interface(x, y)
-
-    def test_exception_jax(self):
-        """Test that an exception is raised if the sequence of tensors contains
-        tensors from incompatible dispatch libraries"""
-        x = onp.array([0.5, 0.1])
-        y = jnp.array([0.6])
-
-        with pytest.raises(ValueError, match="Tensors contain mixed types"):
-            fn.get_interface(x, y)
-
     def test_warning_torch_and_autograd(self):
         """Test that a warning is raised if the sequence of tensors contains
         both torch and autograd tensors."""
@@ -2233,7 +2215,7 @@ class TestCoercion:
             torch.tensor(1 + 3j, dtype=torch.complex64),
             np.array([1, 2, 3]),
         ]
-        expected_interfaces = ["jax", "numpy", "tensorflow", "torch", "autograd"]
+        expected_interfaces = ["jax", "numpy", "torch", "autograd"]
         res = qml.math.coerce(tensors, like=coercion_interface)
         for tensor, interface in zip(res, expected_interfaces, strict=True):
             assert fn.get_interface(tensor) == interface
@@ -2463,7 +2445,6 @@ class TestSize:
         "interface",
         [
             pytest.param("torch", marks=pytest.mark.torch),
-            pytest.param("tensorflow", marks=pytest.mark.tf),
         ],
     )
     @pytest.mark.parametrize(("array", "size"), array_and_size)

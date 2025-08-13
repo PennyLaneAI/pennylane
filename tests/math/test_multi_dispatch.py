@@ -141,14 +141,11 @@ def test_unwrap():
     assert fn.allclose(out[1][1], np.array([5, 6]))
     assert fn.get_interface(out[1][1]) == "numpy"
 
-    assert fn.allclose(out[2], np.array([-1.0, -2.0]))
-    assert fn.get_interface(out[2]) == "numpy"
+    assert out[2][0] == 0.5
+    assert fn.allclose(out[2][1], np.array([6, 7]))
+    assert fn.get_interface(out[2][1]) == "numpy"
 
-    assert out[3][0] == 0.5
-    assert fn.allclose(out[3][1], np.array([6, 7]))
-    assert fn.get_interface(out[3][1]) == "numpy"
-
-    assert out[4] == 0.5
+    assert out[3] == 0.5
 
 
 @pytest.mark.parametrize(
