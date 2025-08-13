@@ -157,6 +157,32 @@ class TestExecutionConfig:
         assert config.device_options == {"hi": "bye"}
         assert config.gradient_keyword_arguments == {"foo": "bar"}
 
+    def test_str_representation(self):
+        """Test the string representation of ExecutionConfig."""
+        config = ExecutionConfig(
+            grad_on_execution=False,
+            gradient_method="best",
+            interface=Interface.JAX,
+        )
+        str_repr = str(config)
+        
+        # Check that it's properly formatted
+        assert "ExecutionConfig(" in str_repr
+        assert "'grad_on_execution': False" in str_repr
+        assert "'gradient_method': 'best'" in str_repr
+        assert "Interface.JAX" in str_repr
+        
+        # Check that it's multiline formatted
+        lines = str_repr.split("\n")
+        assert len(lines) > 1  # Should be multiline
+        
+        # Test with MCMConfig
+        config_with_mcm = ExecutionConfig(
+            mcm_config=MCMConfig(mcm_method="deferred", postselect_mode="hw-like")
+        )
+        str_repr_mcm = str(config_with_mcm)
+        assert "MCMConfig(mcm_method='deferred', postselect_mode='hw-like')" in str_repr_mcm
+
 
 class TestMCMConfig:
     """Tests for the MCMConfig class."""
@@ -236,3 +262,18 @@ class TestMCMConfig:
 
         assert config1 == config2
         assert config1 != config3
+
+    def test_str_representation(self):
+        """Test the string representation of MCMConfig."""
+        config = MCMConfig(mcm_method="deferred", postselect_mode="hw-like")
+        str_repr = str(config)
+        assert "MCMConfig" in str_repr
+        assert "mcm_method='deferred'" in str_repr
+        assert "postselect_mode='hw-like'" in str_repr
+
+        # Test with None values
+        config_none = MCMConfig()
+        str_repr_none = str(config_none)
+        assert "MCMConfig" in str_repr_none
+        assert "mcm_method=None" in str_repr_none
+        assert "postselect_mode=None" in str_repr_none
