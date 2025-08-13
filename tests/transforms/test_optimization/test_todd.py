@@ -16,6 +16,7 @@ Unit tests for the `zx.todd` transform.
 """
 import sys
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -98,3 +99,25 @@ class TestTODD:
             match=r"The input quantum circuit must be a Clifford \+ T circuit.",
         ):
             qml.transforms.zx.todd(qs)
+
+    @pytest.mark.parametrize(
+        "angle, expected_ops",
+        (
+            (0, []),
+            (0.25 * np.pi, [qml.T(0)]),
+            (0.5 * np.pi, [qml.S(0)]),
+            (0.75 * np.pi, [qml.T(0), qml.S(0)]),
+            (np.pi, [qml.Z(0)]),
+            (1.25 * np.pi, [qml.T(0), qml.Z(0)]),
+            (1.5 * np.pi, [qml.adjoint(qml.S(0))]),
+            (1.75 * np.pi, [qml.T(0), qml.adjoint(qml.S(0))]),
+            (2 * np.pi, []),
+        ),
+    )
+    def test_RZ_rotation_with_Clifford_T_angle(self, angle, expected_ops):
+        ops = [qml.RZ(angle, wires=0)]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.zx.todd(qs)
+
+        assert new_qs.operations == expected_ops
