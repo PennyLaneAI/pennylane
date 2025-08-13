@@ -23,15 +23,10 @@ from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 
 from .converter import from_zx, to_zx
-
-try:
-    import pyzx
-
-    has_pyzx = True
-except ModuleNotFoundError:
-    has_pyzx = False
+from .helper import _needs_pyzx
 
 
+@_needs_pyzx
 @transform
 def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
@@ -93,14 +88,10 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         2: ──H─╰●─┤  State
 
     """
-
-    if not has_pyzx:  # pragma: no cover
-        raise ModuleNotFoundError(
-            "The `pyzx` package is required. You can install it with `pip install pyzx`."
-        )
+    # pylint: disable=import-outside-toplevel
+    import pyzx
 
     pyzx_graph = to_zx(tape)
-
     pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
 
     try:
@@ -114,7 +105,6 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
         ) from e
 
     qscript = from_zx(pyzx_circ.to_graph())
-
     new_tape = tape.copy(operations=qscript.operations)
 
     def null_postprocessing(results):
