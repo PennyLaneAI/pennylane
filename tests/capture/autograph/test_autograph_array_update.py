@@ -60,16 +60,18 @@ def test_update_array_with_operations(op, expected):
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
-def test_div_update():
+@pytest.mark.parametrize(
+    "array_in", [jnp.array([4, 2, 1], dtype=int), jnp.array([3, 2, 1], dtype=int)]
+)
+def test_div_update(array_in):
     """Tests single integer indexing like `x[index] = new_value`."""
 
     def fn(x):
         x[0] /= 2
         return x
 
-    array_in = jnp.array([4, 2, 1], dtype=int)
     ag_fn = run_autograph(fn)
     args = (array_in,)
     ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
     result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
-    assert jnp.array_equal(result[0], jnp.array([2, 2, 1], dtype=int))
+    assert jnp.array_equal(result[0], jnp.array([array_in[0] / 2, 2, 1], dtype=result[0].dtype))
