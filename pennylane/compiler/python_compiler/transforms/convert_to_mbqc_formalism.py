@@ -657,7 +657,10 @@ class ConvertToMBQCFormalismPattern(
                     )
 
                     # Deallocate the non-result auxiliary qubits
-                    self._deallocate_aux_qubits(graph_qubits_dict, [1, 5], op, rewriter)
+                    # TODOs: the following line will lead to failure, the error msg is : 
+                    # RuntimeError: [/__w/catalyst/catalyst/runtime/lib/backend/common/QubitManager.hpp:47][Function:_remove_simulator_qubit_id] Error in Catalyst Runtime: Invalid simulator qubit index
+                    # While, if we replace [5] with [1, 5], there is no error for the unit test
+                    self._deallocate_aux_qubits(graph_qubits_dict, [5], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result auxiliary qubit
                     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[5])
@@ -692,7 +695,10 @@ class ConvertToMBQCFormalismPattern(
                     )
 
                     # Deallocate non-result aux_qubits
-                    self._deallocate_aux_qubits(graph_qubits_dict, [1, 7, 9, 15], op, rewriter)
+                    # TODOs: the following line will lead to failure, the error msg is : 
+                    # RuntimeError: [/__w/catalyst/catalyst/runtime/lib/backend/common/QubitManager.hpp:47][Function:_remove_simulator_qubit_id] Error in Catalyst Runtime: Invalid simulator qubit index
+                    # While, if we replace [9, 15] with [1,7,9, 15], there is no error for the unit test
+                    self._deallocate_aux_qubits(graph_qubits_dict, [9, 15], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result auxiliary qubit
                     rewriter.replace_all_uses_with(op.results[0], graph_qubits_dict[7])
