@@ -91,17 +91,17 @@ def effective_hamiltonian(
     bch = bch_expansion(product_formula(1j * timestep), order)
     eff = _AdditiveIdentity()
 
-    all_coeffs = [coeff for ith_order in bch for coeff in ith_order.values()]
-    all_commutators = [commutator for ith_order in bch for commutator in ith_order.keys()]
+    coeffs = [coeff for ith_order in bch for coeff in ith_order.values()]
+    commutators = [commutator for ith_order in bch for commutator in ith_order.keys()]
 
     executor = concurrency.backends.get_executor(backend)
     with executor(max_workers=num_workers) as ex:
         expectations = ex.starmap(
             _insert_fragments,
-            [(commutator, fragments) for commutator in all_commutators],
+            [(commutator, fragments) for commutator in commutators],
         )
 
-    for coeff, commutator in zip(all_coeffs, expectations):
+    for coeff, commutator in zip(coeffs, expectations):
         eff += coeff * nested_commutator(commutator)
 
     return eff
