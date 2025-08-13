@@ -423,6 +423,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `cond` primitive with program capture no longer stores missing false branches as `None`, instead storing them
+  as jaxprs with no output.
+
 * Removed unnecessary execution tests along with accuracy validation in `tests/ops/functions/test_map_wires.py`.
   [(#8032)](https://github.com/PennyLaneAI/pennylane/pull/8032)
 
