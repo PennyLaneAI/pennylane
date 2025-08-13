@@ -509,6 +509,10 @@
   to be passed from the python compiler to Catalyst.
   [(#7957)](https://github.com/PennyLaneAI/pennylane/pull/7957)
 
+* An `xdsl_extras` module has been added to the Python compiler to house additional utilities and
+  functionality not available upstream in xDSL.
+  [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
+
 <h3>Documentation 📝</h3>
 
 * Updated the code examples in the documentation of :func:`~.specs`.
