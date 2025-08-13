@@ -211,5 +211,5 @@ class TestTODD:
         state2 = reduced_circ()
 
         # test that the states are equivalent up to a global phase
-        check = np.abs(np.conj(state1) @ state2)
+        check = qml.math.fidelity_statevector(state1, state2)
         assert np.isclose(check, 1)
