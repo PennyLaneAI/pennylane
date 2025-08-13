@@ -248,6 +248,9 @@ class TestDecompositionGraph:
             {qml.RY: 1, qml.GlobalPhase: 1, qml.RZ: 1},
         )
 
+        # verify that is_solved_for returns False for non-existent operators
+        assert not solution.is_solved_for(qml.Toffoli(wires=[0, 1, 2]))
+
     def test_decomposition_not_found(self, _):
         """Tests that the correct error is raised if a decomposition isn't found."""
 
