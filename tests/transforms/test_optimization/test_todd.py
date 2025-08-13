@@ -123,3 +123,39 @@ class TestTODD:
         (new_qs,), _ = qml.transforms.zx.todd(qs)
 
         assert new_qs.operations == expected_ops
+
+    @pytest.mark.parametrize(
+        "measurements",
+        (
+            [],
+            [qml.expval(qml.Z(0))],
+            [qml.probs()],
+            [qml.state()],
+        ),
+    )
+    def test_transformed_tape(self, measurements):
+        """Test that the operations of the transformed tape match the expected operations
+        and that the original measurements are not touched."""
+        ops = [
+            qml.T(wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.S(wires=0),
+            qml.T(wires=0),
+            qml.T(wires=1),
+            qml.CNOT(wires=[0, 2]),
+            qml.T(wires=1),
+        ]
+        original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+
+        (transformed_tape,), _ = qml.transforms.zx.todd(original_tape)
+
+        expected_ops = [
+            qml.adjoint(qml.S(wires=0)),
+            qml.S(wires=1),
+            qml.CZ(wires=[1, 0]),
+            qml.CNOT(wires=[0, 2]),
+            qml.CNOT(wires=[0, 1]),
+        ]
+
+        assert transformed_tape.operations == expected_ops
+        assert transformed_tape.measurements == measurements
