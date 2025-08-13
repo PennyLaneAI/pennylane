@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Wrapper class for generic fragment objects"""
+"""Wrapper class for Scipy sparse matrices."""
 
 from __future__ import annotations
 
