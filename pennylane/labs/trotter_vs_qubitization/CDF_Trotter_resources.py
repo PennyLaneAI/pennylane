@@ -167,7 +167,7 @@ def spectroscopy_longest(N, order, epsilon, time, Y2kp1dN2 = 1):
         steps = (Y2kp1/epsilon)**(1/o) * time
     elif order == 'NI4': 
         step_size = Y2kp1/epsilon
-        steps = (0.01 * (Y2kp1/epsilon)**(1/2) + (Y2kp1/epsilon)**(1/o)) * time #The second order takes over but starts being 1%
+        steps = (0.01 * (Y2kp1/epsilon)**(1/2) + (Y2kp1/epsilon)**(1/4)) * time #The second order takes over but starts being 1%
     rotations = Trotter_cost(N, order, steps)
     return rotations
 
