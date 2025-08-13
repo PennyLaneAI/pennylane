@@ -42,6 +42,32 @@ def test_import_pyzx_error(monkeypatch):
 class TestTODD:
 
     @pytest.mark.parametrize(
+        "gate",
+        (
+            # 1-qubit hermitian gates
+            qml.Identity(wires=0),
+            qml.PauliX(wires=0),
+            qml.PauliY(wires=0),
+            qml.PauliZ(wires=0),
+            qml.Hadamard(wires=0),
+            # 2-qubit hermitian gates
+            qml.CNOT(wires=[0, 1]),
+            qml.CY(wires=[0, 1]),
+            qml.CZ(wires=[0, 1]),
+            qml.CH(wires=[0, 1]),
+            qml.SWAP(wires=[0, 1]),
+        ),
+    )
+    def test_hermitian_involutory_gates_cancellation(self, gate):
+        """Test cancellation for each supported Hermitian gate (involution property HH=I)"""
+        ops = [gate, gate]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.zx.todd(qs)
+
+        assert new_qs.operations == []
+
+    @pytest.mark.parametrize(
         "num_gates, expected_ops",
         (
             (1, [qml.S(0)]),
