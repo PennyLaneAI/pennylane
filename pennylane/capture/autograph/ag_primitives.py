@@ -18,6 +18,7 @@ functions. The purpose is to convert imperative style code to functional or grap
 """
 import copy
 import functools
+import operator
 from collections.abc import Callable, Iterator
 from typing import Any, SupportsIndex
 
@@ -44,6 +45,7 @@ __all__ = [
     "while_stmt",
     "converted_call",
     "set_item",
+    "update_item_with_op",
 ]
 
 
@@ -55,6 +57,31 @@ def set_item(target, i, x):
     else:
         target[i] = x
 
+    return target
+
+
+def update_item_with_op(target, index, x, op):
+    """An implementation of the AutoGraph 'update_item_with_op' function."""
+
+    gast_op_map = {"mult": "multiply", "div": "divide", "add": "add", "sub": "add", "pow": "power"}
+    inplace_operation_map = {
+        "mult": "mul",
+        "div": "truediv",
+        "add": "add",
+        "sub": "add",
+        "pow": "pow",
+    }
+    if op == "sub":
+        x = -x
+
+    if qml.math.is_abstract(target):
+        if isinstance(index, slice):
+            target = getattr(target.at[index.start : index.stop : index.step], gast_op_map[op])(x)
+        else:
+            target = getattr(target.at[index], gast_op_map[op])(x)
+    else:
+        # Use Python's in-place operator
+        target[index] = getattr(operator, f"__i{inplace_operation_map[op]}__")(target[index], x)
     return target
 
 
