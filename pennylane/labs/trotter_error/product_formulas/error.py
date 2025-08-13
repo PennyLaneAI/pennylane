@@ -39,14 +39,25 @@ def effective_hamiltonian(
     fragments: dict[Hashable, Fragment],
     order: int,
     timestep: float = 1.0,
+    num_workers: int = 1,
+    backend: str = "serial",
 ):
-    r"""Compute the effective Hamiltonian :math:`\hat{H}_{eff} = \hat{H} + \hat{\epsilon}` that corresponds to a given product formula.
+    r"""Compute the effective Hamiltonian :math:`\hat{H}_{eff} = \hat{H} + \hat{\epsilon}` that
+    corresponds to a given product formula.
 
     Args:
-        product_formula (ProductFormula): A product formula used to approximate the time-evolution operator for a Hamiltonian.
-        fragments (Dict[Hashable, :class:`~.pennylane.labs.trotter_error.Fragment`): The fragments that sum to the Hamiltonian. The keys in the dictionary must match the labels used to build the :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
+        product_formula (ProductFormula): A product formula used to approximate the time-evolution
+            operator for a Hamiltonian.
+        fragments (Dict[Hashable, :class:`~.pennylane.labs.trotter_error.Fragment`): The fragments
+            that sum to the Hamiltonian. The keys in the dictionary must match the labels used to
+            build the :class:`~.pennylane.labs.trotter_error.ProductFormula` object.
         order (int): The order of the approximatation.
         timestep (float): The timestep for simulation.
+        num_workers (int): the number of concurrent units used for the computation. Default value is
+            set to 1.
+        backend (string): the executor backend from the list of supported backends.
+            Available options : "mp_pool", "cf_procpool", "cf_threadpool", "serial", "mpi4py_pool",
+            "mpi4py_comm". Default value is set to "serial".
 
     **Example**
 
@@ -80,9 +91,18 @@ def effective_hamiltonian(
     bch = bch_expansion(product_formula(1j * timestep), order)
     eff = _AdditiveIdentity()
 
-    for ith_order in bch:
-        for commutator, coeff in ith_order.items():
-            eff += coeff * nested_commutator(_insert_fragments(commutator, fragments))
+    all_coeffs = [coeff for ith_order in bch for coeff in ith_order.values()]
+    all_commutators = [commutator for ith_order in bch for commutator in ith_order.keys()]
+
+    executor = concurrency.backends.get_executor(backend)
+    with executor(max_workers=num_workers) as ex:
+        expectations = ex.starmap(
+            _insert_fragments,
+            [(commutator, fragments) for commutator in all_commutators],
+        )
+
+    for coeff, commutator in zip(all_coeffs, expectations):
+        eff += coeff * nested_commutator(_insert_fragments(commutator, fragments))
 
     return eff
 
