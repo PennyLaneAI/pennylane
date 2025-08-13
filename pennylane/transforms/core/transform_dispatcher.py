@@ -257,6 +257,28 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                 return processing_fn(transformed_tapes)
             return transformed_tapes, processing_fn
 
+        #### THIS SHOULD NEVER MERGE INTO PENNYLANE PROPER ####
+        # I'm so sorry for this, but it *does* do the thing,
+        # at least for the little subset of transforms we need
+        # for this prototype
+        if "QuantumScriptSequence" in str(type(obj)):
+            if self.transform.__name__ in ["convert_to_mbqc_formalism"]:
+                transformed_tapes, processing_fn = self._transform(obj, *targs, **tkwargs)
+            else:
+                new_tapes = []
+                for inner_tape in obj.intermediate_tapes:
+                    # this will only work if the postprocessing is null
+                    # or related only to measurements on the final tape
+                    new_tape, _ = self._transform(inner_tape, *targs, **tkwargs)
+                    new_tapes.append(new_tape[0])
+                final_tape, processing_fn = self._transform(obj.final_tape, *targs, **tkwargs)
+                new_tapes.append(final_tape[0])
+                transformed_tapes = [
+                    obj.copy(tapes=new_tapes),
+                ]
+            return transformed_tapes, processing_fn
+        #### --------------------------------------------- ####
+
         if isinstance(obj, qml.workflow.QNode):
             if capture.enabled():
                 new_qnode = self.default_qnode_transform(obj, targs, tkwargs)
