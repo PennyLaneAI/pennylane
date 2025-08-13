@@ -3,16 +3,17 @@
 
 <h3>New features since last release</h3>
 
-* A new transform :func:`~.transforms.zx_full_reduce` has been added to reduce a given circuit by applying
+* A new transform :func:`~.transforms.zx.full_reduce` has been added to reduce a given circuit by applying
   simplification rules based on the ZX calculus. Here is an example showcasing somes simple optimizations
   applied to the original circuit (e.g. inverses cancellation, rotations merging):
 
   ```python
   import pennylane as qml
-  from pennylane.transforms import zx_full_reduce
+  import pennylane.transforms.zx as zx
 
   dev = qml.device("default.qubit", wires=2)
 
+  @zx.full_reduce
   @qml.qnode(dev)
   def circuit(x, y):
       qml.T(wires=0)
@@ -23,12 +24,10 @@
       qml.RX(x, wires=1)
       qml.RX(y, wires=1)
       return qml.state()
-
-  new_circuit = zx_full_reduce(circuit)
   ```
 
   ```pycon
-  >>> print(qml.draw(new_circuit)(3.2, -2.2))
+  >>> print(qml.draw(circuit)(3.2, -2.2))
   0: ──S─╭●─────────────────┤  State
   1: ────╰X──H──RZ(1.00)──H─┤  State
   ```

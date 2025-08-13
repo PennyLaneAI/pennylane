@@ -62,7 +62,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.match_controlled_iX_gate
     ~transforms.single_qubit_fusion
     ~transforms.transpile
-    ~transforms.zx_full_reduce
+    ~transforms.zx.full_reduce
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
 
@@ -335,7 +335,8 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from .zx import to_zx, from_zx, zx_full_reduce
+from .zx import to_zx, from_zx
+from .zx.full_reduce import full_reduce
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 

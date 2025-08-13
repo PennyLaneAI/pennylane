@@ -29,7 +29,7 @@ except ModuleNotFoundError:
 
 
 @transform
-def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Reduce an arbitrary circuit applying the full ZX-based pipeline for T-gate optimization,
     available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package.
 
@@ -64,7 +64,7 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     .. code-block:: python3
 
         import pennylane as qml
-        from pennylane.transforms import zx_full_reduce
+        import pennylane.transforms.zx as zx
 
         dev = qml.device("default.qubit", wires=2)
 
@@ -81,7 +81,7 @@ def zx_full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     To apply this ZX-based optimization pass you can do:
 
-    >>> new_circuit = zx_full_reduce(circuit)
+    >>> new_circuit = zx.full_reduce(circuit)
     >>> print(qml.draw(new_circuit)(3.2, -2.2))
     0: ──S─╭●─────────────────┤  State
     1: ────╰X──H──RZ(1.00)──H─┤  State
