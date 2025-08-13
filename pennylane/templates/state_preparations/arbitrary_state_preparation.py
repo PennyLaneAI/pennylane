@@ -16,9 +16,19 @@ Contains the ArbitraryStatePreparation template.
 """
 
 import functools
+from collections import Counter
 
 import pennylane as qml
+from pennylane import capture, register_resources
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, resource_rep
 from pennylane.operation import Operation
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 @functools.lru_cache
@@ -82,6 +92,8 @@ class ArbitraryStatePreparation(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires"}
+
     def __init__(self, weights, wires, id=None):
         shape = qml.math.shape(weights)
         if shape != (2 ** (len(wires) + 1) - 2,):
@@ -90,6 +102,12 @@ class ArbitraryStatePreparation(Operation):
             )
 
         super().__init__(weights, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.wires),
+        }
 
     @property
     def num_params(self):
@@ -141,3 +159,25 @@ class ArbitraryStatePreparation(Operation):
             tuple[int]: shape
         """
         return (2 ** (n_wires + 1) - 2,)
+
+
+def _arbitrary_state_preparation_resources(num_wires):
+    resources = Counter()
+    for i, pauli_word in enumerate(_state_preparation_pauli_words(num_wires)):
+        resources[resource_rep(qml.PauliRot, pauli_word=pauli_word)] += 1
+    return resources
+
+
+@register_resources(_arbitrary_state_preparation_resources)
+def _arbitrary_state_preparation_decomposition(weights, wires):
+    pauli_words = _state_preparation_pauli_words(len(wires))
+
+    @for_loop(len(pauli_words))
+    def pauli_loop(i):
+        pauli_word = pauli_words[i]
+        qml.PauliRot(weights[i], pauli_word, wires=wires)
+
+    pauli_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(ArbitraryStatePreparation, _arbitrary_state_preparation_decomposition)
