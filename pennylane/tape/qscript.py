@@ -38,21 +38,6 @@ from pennylane.wires import Wires, WiresLike
 QS = TypeVar("QS", bound="QuantumScript")
 
 
-class SpecsDict(dict):
-    """A special dictionary for storing the specs of a circuit. Used to customize ``KeyError`` messages."""
-
-    def __getitem__(self, __k):
-        if __k == "num_diagonalizing_gates":
-            raise KeyError(
-                "num_diagonalizing_gates is no longer in specs due to the ambiguity of the definition "
-                "and extreme performance costs."
-            )
-        try:
-            return super().__getitem__(__k)
-        except KeyError as e:
-            raise KeyError(f"key {__k} not available. Options are {set(self.keys())}") from e
-
-
 class QuantumScript:
     r"""The operations and measurements that represent instructions for
     execution on a quantum device.
@@ -768,6 +753,11 @@ class QuantumScript:
         Returns:
             Union[tuple[int], tuple[tuple[int]]]: the output shape(s) of the quantum script result
 
+        .. warning::
+
+            The ``QuantumScript.shape`` method is deprecated and will be removed in v0.44.
+            Instead, please use ``MeasurementProcess.shape``.
+
         **Examples**
 
         .. code-block:: pycon
@@ -781,6 +771,12 @@ class QuantumScript:
             >>> qs.shape(dev)
             ((4,), (), (4,))
         """
+        warnings.warn(
+            "``QuantumScript.shape`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``MeasurementProcess.shape``.",
+            PennyLaneDeprecationWarning,
+        )
+
         num_device_wires = len(device.wires) if device.wires else len(self.wires)
 
         def get_shape(mp, _shots):
@@ -807,6 +803,11 @@ class QuantumScript:
             Union[type, Tuple[type]]: The numeric type corresponding to the result type of the
             quantum script, or a tuple of such types if the script contains multiple measurements
 
+        .. warning::
+
+            The ``QuantumScript.numeric_type`` method is deprecated and will be removed in v0.44.
+            Instead, please use ``MeasurementProcess.numeric_type``.
+
         **Example:**
 
         .. code-block:: pycon
@@ -816,6 +817,12 @@ class QuantumScript:
             >>> qs.numeric_type
             complex
         """
+        warnings.warn(
+            "``QuantumScript.numeric_type`` is deprecated and will be removed in v0.44. "
+            "Instead, please use ``MeasurementProcess.numeric_type``.",
+            PennyLaneDeprecationWarning,
+        )
+
         types = tuple(observable.numeric_type for observable in self.measurements)
 
         return types[0] if len(types) == 1 else types
@@ -1079,11 +1086,11 @@ class QuantumScript:
         return self._graph
 
     @property
-    def specs(self) -> SpecsDict[str, Any]:
+    def specs(self) -> "qml.resource.resource.SpecsDict[str, Any]":
         """Resource information about a quantum circuit.
 
         Returns:
-            dict[str, Union[defaultdict,int]]: dictionaries that contain quantum script specifications
+            SpecsDict[str, Any]: A dictionary containing the specifications of the quantum script.
 
         **Example**
          >>> ops = [qml.Hadamard(0), qml.RX(0.26, 1), qml.CNOT((1,0)),
@@ -1106,20 +1113,8 @@ class QuantumScript:
         gate_sizes:
         {1: 4, 2: 2}
         """
-        # pylint: disable=protected-access
         if self._specs is None:
-            resources = qml.resource.resource._count_resources(self)
-            algo_errors = qml.resource.error._compute_algo_error(self)
-
-            self._specs = SpecsDict(
-                {
-                    "resources": resources,
-                    "errors": algo_errors,
-                    "num_observables": len(self.observables),
-                    "num_trainable_params": self.num_params,
-                }
-            )
-
+            self._specs = qml.resource.resource.specs_from_tape(self)
         return self._specs
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments

@@ -207,7 +207,7 @@ class Sum(CompositeOp):
     """
 
     _op_symbol = "+"
-    _math_op = math.sum
+    _math_op = staticmethod(math.sum)
     grad_method = "A"
 
     def _flatten(self):
