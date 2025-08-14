@@ -555,6 +555,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Rename `ancilla` to `auxiliary`.
+  [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
+
 * Updated the code examples in the documentation of :func:`~.specs`.
   [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
 
