@@ -251,7 +251,7 @@ def match_controlled_iX_gate(
 def match_mcx_gt4wires(
     tape: QuantumScript, custom_quantum_cost=None, additional_controls=0
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Quantum transform to match (greater than or equal to 4)-qubit multi controlled X gates, simple case given on
+    """Quantum transform to match (greater than or equal to 4)-qubit `MultiControlledX` gates as outlined on
     page six of Amy, M. and Ross, N. J., “Phase-state duality in reversible circuit design”,
     Physical Review A, vol. 104, no. 5, Art. no. 052602, APS, 2021. `doi:10.1103/PhysRevA.104.052602
     <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.104.052602>`_.
