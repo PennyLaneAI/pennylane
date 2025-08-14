@@ -155,7 +155,7 @@ class ExecutionConfig:
     mcm_config: MCMConfig | dict = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
 
-    gradient_config: GradientConfig | dict | None = field(default_factory=GradientConfig)
+    gradient_config: GradientConfig | dict | None = None
     """Configuration options for handling mid-circuit measurements"""
 
     convert_to_numpy: bool = True
