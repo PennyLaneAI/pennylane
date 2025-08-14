@@ -43,14 +43,14 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("wires", test_wires)
     def test_state_mixed(self, wires, interface, shots):
         """Return state with default.mixed."""
-        dev = DefaultQubitLegacy(wires=wires, shots=shots)
+        dev = DefaultQubitLegacy(wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.state()
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -65,14 +65,14 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("d_wires", test_wires)
     def test_density_matrix(self, d_wires, interface, shots):
         """Return density matrix."""
-        dev = DefaultQubitLegacy(wires=4, shots=shots)
+        dev = DefaultQubitLegacy(wires=4)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.density_matrix(wires=range(0, d_wires))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -86,14 +86,14 @@ class TestSingleReturnExecute:
 
     def test_expval(self, interface, shots):
         """Return a single expval."""
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -107,14 +107,14 @@ class TestSingleReturnExecute:
 
     def test_var(self, interface, shots):
         """Return a single var."""
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.var(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -128,14 +128,14 @@ class TestSingleReturnExecute:
 
     def test_vn_entropy(self, interface, shots):
         """Return a single vn entropy."""
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.vn_entropy(wires=0)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -149,14 +149,14 @@ class TestSingleReturnExecute:
 
     def test_mutual_info(self, interface, shots):
         """Return a single mutual information."""
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.mutual_info(wires0=[0], wires1=[1])
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -180,14 +180,14 @@ class TestSingleReturnExecute:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, op, wires, interface, shots):
         """Return a single prob."""
-        dev = DefaultQubitLegacy(wires=3, shots=shots)
+        dev = DefaultQubitLegacy(wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op, wires=wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -208,14 +208,14 @@ class TestSingleReturnExecute:
         if shots is None:
             pytest.skip("Sample requires finite shots.")
 
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -233,14 +233,14 @@ class TestSingleReturnExecute:
         if shots is None:
             pytest.skip("Counts requires finite shots.")
 
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)],
@@ -264,14 +264,14 @@ class TestMultipleReturns:
 
     def test_multiple_expval(self, shots):
         """Return multiple expvals."""
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliZ(wires=0)), qml.expval(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -288,14 +288,14 @@ class TestMultipleReturns:
 
     def test_multiple_var(self, shots):
         """Return multiple vars."""
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.var(qml.PauliZ(wires=0)), qml.var(qml.PauliZ(wires=1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -326,14 +326,14 @@ class TestMultipleReturns:
     @pytest.mark.parametrize("op1,wires1,op2,wires2", multi_probs_data)
     def test_multiple_prob(self, op1, op2, wires1, wires2, shots):
         """Return multiple probs."""
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -360,7 +360,7 @@ class TestMultipleReturns:
     def test_mix_meas(self, op1, wires1, op2, wires2, wires3, wires4, shots):
         """Return multiple different measurements."""
 
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -372,7 +372,7 @@ class TestMultipleReturns:
                 qml.expval(qml.PauliZ(wires=wires4)),
             )
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -404,14 +404,14 @@ class TestMultipleReturns:
     @pytest.mark.parametrize("wires", wires)
     def test_list_multiple_expval(self, wires, shots):
         """Return a comprehension list of multiple expvals."""
-        dev = DefaultQubitLegacy(wires=wires, shots=shots)
+        dev = DefaultQubitLegacy(wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, wires)]
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -430,14 +430,14 @@ class TestMultipleReturns:
         if shots is None:
             pytest.skip("Sample requires finite shots.")
 
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -457,14 +457,14 @@ class TestMultipleReturns:
         if shots is None:
             pytest.skip("Counts requires finite shots.")
 
-        dev = DefaultQubitLegacy(wires=2, shots=shots)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shots)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -513,14 +513,14 @@ class TestShotVector:
     @pytest.mark.parametrize("measurement", single_scalar_output_measurements)
     def test_scalar(self, shot_vector, measurement):
         """Test a single scalar-valued measurement."""
-        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -535,14 +535,14 @@ class TestShotVector:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, shot_vector, op, wires):
         """Test a single probability measurement."""
-        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op, wires=wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -561,14 +561,14 @@ class TestShotVector:
         if 1 in shot_vector:
             pytest.xfail("cannot handle single-shot in shot vector")
 
-        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.density_matrix(wires=wires)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -584,14 +584,14 @@ class TestShotVector:
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
     def test_samples(self, shot_vector, measurement):
         """Test the sample measurement."""
-        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -610,14 +610,14 @@ class TestShotVector:
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement):
         """Test the counts measurement."""
-        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -637,14 +637,14 @@ class TestSameMeasurementShotVector:
 
     def test_scalar(self, shot_vector):
         """Test multiple scalar-valued measurements."""
-        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -670,14 +670,14 @@ class TestSameMeasurementShotVector:
     @pytest.mark.parametrize("op2,wires2", reversed(probs_data2))
     def test_probs(self, shot_vector, op1, wires1, op2, wires2):
         """Test multiple probability measurements."""
-        dev = DefaultQubitLegacy(wires=4, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=4)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -699,14 +699,14 @@ class TestSameMeasurementShotVector:
     @pytest.mark.parametrize("measurement2", [qml.sample(qml.PauliX(1)), qml.sample(wires=[1])])
     def test_samples(self, shot_vector, measurement1, measurement2):
         """Test multiple sample measurements."""
-        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement1), qml.apply(measurement2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -723,14 +723,14 @@ class TestSameMeasurementShotVector:
     @pytest.mark.parametrize("measurement2", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement1, measurement2):
         """Test multiple counts measurements."""
-        dev = DefaultQubitLegacy(wires=2, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement1), qml.apply(measurement2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -814,14 +814,14 @@ class TestMixMeasurementsShotVector:
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
     def test_scalar_probs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and probability measurements"""
-        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -848,7 +848,7 @@ class TestMixMeasurementsShotVector:
     def test_scalar_sample_with_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and sample measurements where sample takes an
         observable."""
-        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
@@ -856,7 +856,7 @@ class TestMixMeasurementsShotVector:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -882,14 +882,14 @@ class TestMixMeasurementsShotVector:
     @pytest.mark.xfail
     def test_scalar_sample_no_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and computational basis sample measurements."""
-        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -916,7 +916,7 @@ class TestMixMeasurementsShotVector:
     def test_scalar_counts_with_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and counts measurements where counts takes an
         observable."""
-        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
@@ -924,7 +924,7 @@ class TestMixMeasurementsShotVector:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -956,7 +956,7 @@ class TestMixMeasurementsShotVector:
     @pytest.mark.parametrize("meas1,meas2", scalar_counts_no_obs_multi)
     def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2):
         """Test scalar-valued and computational basis counts measurements."""
-        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
@@ -964,7 +964,7 @@ class TestMixMeasurementsShotVector:
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
@@ -989,12 +989,13 @@ class TestMixMeasurementsShotVector:
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_sample(self, shot_vector, sample_obs):
         """Test probs and sample measurements."""
-        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
 
+        @qml.set_shots(shot_vector)
         @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1037,12 +1038,13 @@ class TestMixMeasurementsShotVector:
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_counts(self, shot_vector, sample_obs):
         """Test probs and counts measurements."""
-        dev = DefaultQubitLegacy(wires=3, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=3)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
 
+        @qml.set_shots(shot_vector)
         @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1087,9 +1089,10 @@ class TestMixMeasurementsShotVector:
     def test_sample_counts(self, shot_vector, sample_wires, counts_wires):
         """Test sample and counts measurements, each measurement with custom
         samples or computational basis state samples."""
-        dev = DefaultQubitLegacy(wires=6, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=6)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
+        @qml.set_shots(shot_vector)
         @qml.qnode(device=dev)
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -1140,7 +1143,7 @@ class TestMixMeasurementsShotVector:
     def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2):
         """Test scalar-valued, probability, sample and counts measurements all
         in a single qfunc."""
-        dev = DefaultQubitLegacy(wires=5, shots=shot_vector)
+        dev = DefaultQubitLegacy(wires=5)
         raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
@@ -1153,7 +1156,7 @@ class TestMixMeasurementsShotVector:
                 qml.counts(qml.PauliX(3)),
             )
 
-        qnode = qml.QNode(circuit, dev)
+        qnode = qml.set_shots(qml.QNode(circuit, dev), shots=shot_vector)
 
         res = qml.execute(
             tapes=[qml.workflow.construct_tape(qnode)(0.5)], device=dev, diff_method=None
