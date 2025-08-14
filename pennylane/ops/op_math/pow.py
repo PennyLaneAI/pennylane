@@ -395,8 +395,9 @@ class Pow(ScalarSymbolicOp):
             ops = base.pow(z=self.z)
             if not ops:
                 return qml.Identity(self.wires)
-            op = qml.prod(*ops) if len(ops) > 1 else ops[0]
-            return op if qml.capture.enabled() else op.simplify()
+            if not qml.capture.enabled():
+                ops = [op.simplify() for op in ops]
+            return qml.prod(*ops) if len(ops) > 1 else ops[0]
         except PowUndefinedError:
             return Pow(base=base, z=self.z)
 
