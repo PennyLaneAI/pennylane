@@ -18,19 +18,20 @@ import pennylane as qml
 from pennylane.operation import Operation
 
 
-def order_states(basis_states):
+def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
     r"""
     This function maps a given list of :math:`m` computational basis states to the first
     :math:`m` computational basis states, except for input states that are among the first
     :math:`m` computational basis states, which are mapped to themselves.
 
     Args:
-        basis_states (Sequence[Sequence]): sequence of :math:`m` basis states to be mapped.
+        basis_states (list[list[int]]): sequence of :math:`m` basis states to be mapped.
             Each state is a sequence of 0s and 1s.
 
     Returns:
-        dict: dictionary mapping basis states to the first :math:`m` basis states, except for
-        fixed points (states in the input that already were among the first :math:`m` basis states).
+        dict[tuple[int], tuple[int]]: dictionary mapping basis states to the first :math:`m` basis
+        states, except for fixed points (states in the input that already were among the
+        first :math:`m` basis states).
 
     ** Example **
 
