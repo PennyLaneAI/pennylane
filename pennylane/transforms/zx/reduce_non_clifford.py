@@ -29,7 +29,7 @@ from .helper import _needs_pyzx
 @_needs_pyzx
 @transform
 def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Optimizes an arbitrary circuit applying the full ZX-based pipeline to reduce the number of T gates.
+    """Reduce the number of non-Clifford phase gates applying the full ZX-based pipeline for an arbitrary circuit.
 
     This transform works performing the following simplification/optimization steps:
 
@@ -86,11 +86,11 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
 
     .. note::
 
-        This transform is designed to minimize T-count, and is not as effective at reducing the
-        number of two-qubit gates, such as CNOTs. However, its performance varies significantly
-        depending on the type of circuit. For example, you might see a substantial increase in CNOT
-        gates when optimizing a circuit composed primarily of Toffoli gates. Conversely, it tends
-        to perform much better on Trotterized chemistry circuits.
+        This transform is designed to minimize non-Clifford phase gates (e.g. T), and it's not as effective
+        at reducing the number of two-qubit gates (e.g. CNOT).
+        However, its performance varies significantly depending on the type of circuit.
+        For example, you might see a substantial increase in CNOT gates when optimizing a circuit composed primarily of Toffoli gates.
+        Conversely, it tends to perform much better on Trotterized chemistry circuits.
 
     For more details about ZX calculus-based simplification of quantum circuits, see the following papers:
 
