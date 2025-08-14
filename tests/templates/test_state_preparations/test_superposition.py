@@ -22,7 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.superposition import assign_states
+from pennylane.templates.state_preparations.superposition import order_states
 
 
 def int_to_state(i, length):
@@ -74,8 +74,8 @@ def int_to_state(i, length):
         ]
     ),
 )
-def test_assign_states(basis_states, exp_map):
-    assert assign_states(basis_states) == exp_map
+def test_order_states(basis_states, exp_map):
+    assert order_states(basis_states) == exp_map
 
 
 def test_standard_validity():
