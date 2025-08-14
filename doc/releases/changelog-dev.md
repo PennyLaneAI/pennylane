@@ -462,6 +462,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improve type hinting internally.
+  [(#8086)](https://github.com/PennyLaneAI/pennylane/pull/8086)
+
 * The `cond` primitive with program capture no longer stores missing false branches as `None`, instead storing them
   as jaxprs with no output.
   [(#8080)](https://github.com/PennyLaneAI/pennylane/pull/8080)
