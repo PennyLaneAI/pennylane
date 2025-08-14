@@ -352,7 +352,7 @@ class TestOptimize:
         coeffs = [1, 1]
         obs_list = [qml.PauliX(0), qml.PauliZ(0)]
 
-        H = qml.Hamiltonian(coeffs=coeffs, observables=obs_list)
+        H = qml.ops.LinearCombination(coeffs=coeffs, observables=obs_list)
 
         @qml.qnode(dev)
         def circuit(x, y, wires=0):
