@@ -597,8 +597,9 @@ def test_jacobian_with_and_without_jit_has_same_output(shots, atol, seed):
 
     import jax
 
-    dev = qml.device("default.qubit", shots=shots, seed=seed)
+    dev = qml.device("default.qubit", seed=seed)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(coeffs):
         qml.AmplitudeEmbedding(coeffs, normalize=True, wires=[0, 1])
