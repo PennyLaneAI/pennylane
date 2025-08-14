@@ -354,7 +354,8 @@ class TestConstructBatch:
         """Test that the device transforms can be selected with level=device or None without trainable parameters"""
 
         @qml.transforms.cancel_inverses
-        @qml.qnode(DefaultQubitLegacy(wires=2, shots=50))
+        @qml.set_shots(50)
+        @qml.qnode(DefaultQubitLegacy(wires=2))
         def circuit(order):
             qml.Permute(order, wires=(0, 1, 2))
             qml.X(0)
