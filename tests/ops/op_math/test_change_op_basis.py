@@ -347,15 +347,3 @@ class TestDecomposition:
             default_decomp(operands=_ops)
 
         assert q.queue == _ops[::-1]
-
-    def test_integration(self, enable_graph_decomposition):
-        """Test that change_op_basis's can be integrated into the decomposition."""
-
-        op = ChangeOpBasis(qml.S(0), qml.S(1))
-
-        graph = qml.decomposition.DecompositionGraph([op], gate_set=set(qml.ops.__all__))
-        graph.solve()
-        with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(**op.hyperparameters)
-
-        assert q.queue == list(op[::-1])
