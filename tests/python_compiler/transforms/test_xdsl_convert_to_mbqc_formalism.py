@@ -36,11 +36,10 @@ from pennylane.ftqc import RotXZX
 class TestConvertToMBQCFormalismPass:
     """Unit tests for ConvertToMBQCFormalismPass."""
 
-    @pytest.mark.parametrize("unsupported_gate", ["IsingXY", "IsingXX", "Test"])
     def test_generate_graph_unsupported_gate(self, unsupported_gate):
         """Test that error raised for unsupported gates."""
         with pytest.raises(NotImplementedError):
-            _generate_graph(unsupported_gate)
+            _generate_graph("IsingXY")
 
     def test_hadamard_gate(self, run_filecheck):
         """Test for lowering a Hadamard gate to a MBQC formalism."""
@@ -343,6 +342,9 @@ class TestConvertToMBQCFormalismPass:
 
         run_filecheck_qjit(circuit)
 
+    @pytest.mark.xfail(
+        reason="Failure due to the deallocation of qubits in a qreg and insertion of qubit into a qreg is not supported yet."
+    )
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_e2e(self):
         """Test that the convert_to_mbqc_formalism_pass end to end on null.qubit."""

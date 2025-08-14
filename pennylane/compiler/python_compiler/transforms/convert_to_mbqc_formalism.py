@@ -372,6 +372,10 @@ class ConvertToMBQCFormalismPattern(
                 return self._rotxzx_measurements(graph_qubits_dict, op, rewriter)
             case "CNOT":
                 return self._cnot_measurements(graph_qubits_dict, op, rewriter)
+            case _:
+                raise ValueError(
+                    f"{op.gate_name.data} is not supported in the MBQC formalism. Please decompose it into the MBQC gate set."
+                )
 
     def _insert_cond_byproduct_op(
         self,
@@ -598,6 +602,10 @@ class ConvertToMBQCFormalismPattern(
                 return self._rot_corrections(mres, qubits, op, rewriter)
             case "CNOT":
                 return self._cnot_corrections(mres, qubits, op, rewriter)
+            case _:
+                raise ValueError(
+                    f"{op.gate_name.data} is not supported in the MBQC formalism. Please decompose it into the MBQC gate set."
+                )
 
     def _deallocate_aux_qubits(
         self,
@@ -628,6 +636,7 @@ class ConvertToMBQCFormalismPattern(
 
         for region in root.regions:
             for op in region.ops:
+                # TODOs: Migrate the if/else body to functions
                 if isinstance(op, CustomOp) and op.gate_name.data in [
                     "Hadamard",
                     "S",
@@ -656,8 +665,8 @@ class ConvertToMBQCFormalismPattern(
                         mres, graph_qubits_dict[5], op, rewriter
                     )
 
-                    # Deallocate the non-result auxiliary qubits
-                    # TODOs: the following line will lead to failure, the error msg is : 
+                    # Deallocate the non-result auxiliary qubits and target qubit in the qreg
+                    # TODOs: the following line will lead to failure, the error msg is :
                     # RuntimeError: [/__w/catalyst/catalyst/runtime/lib/backend/common/QubitManager.hpp:47][Function:_remove_simulator_qubit_id] Error in Catalyst Runtime: Invalid simulator qubit index
                     # While, if we replace [5] with [1, 5], there is no error for the unit test
                     self._deallocate_aux_qubits(graph_qubits_dict, [5], op, rewriter)
@@ -694,8 +703,8 @@ class ConvertToMBQCFormalismPattern(
                         mres, [graph_qubits_dict[7], graph_qubits_dict[15]], op, rewriter
                     )
 
-                    # Deallocate non-result aux_qubits
-                    # TODOs: the following line will lead to failure, the error msg is : 
+                    # Deallocate non-result aux_qubits and the target/control qubits in the qreg
+                    # TODOs: the following line will lead to failure, the error msg is :
                     # RuntimeError: [/__w/catalyst/catalyst/runtime/lib/backend/common/QubitManager.hpp:47][Function:_remove_simulator_qubit_id] Error in Catalyst Runtime: Invalid simulator qubit index
                     # While, if we replace [9, 15] with [1,7,9, 15], there is no error for the unit test
                     self._deallocate_aux_qubits(graph_qubits_dict, [9, 15], op, rewriter)
