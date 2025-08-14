@@ -25,13 +25,12 @@ from pennylane.ops.op_math.decompositions.normal_forms import (
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 from pennylane.queuing import QueuingManager
 
-has_jax = True
 try:
     import jax
     import jax.numpy as jnp
     from jax.core import ShapedArray
-except (ModuleNotFoundError, ImportError):
-    has_jax = False
+except (ModuleNotFoundError, ImportError):  # pragma: no cover
+    pass
 
 
 def _domain_correction(theta: float) -> tuple[float, ZOmega]:
@@ -176,7 +175,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
         ops.append(syllable_sequence_loop.operation)
 
     # Rightmost Clifford operator
-    # TODO: Whenver subroutines is supported in QJIT, make this function as subroutines.
+    # TODO: Whenever subroutines is supported in QJIT, make this function as subroutines.
     rightmost_cliff_op_cond = apply_clifford_from_idx(clifford_op_idx, wire)
     rightmost_cliff_op_cond()
     ops.append(rightmost_cliff_op_cond.operation)
@@ -279,12 +278,12 @@ def rs_decomposition(
                 so3_mat, compressed=is_qjit, upper_bounded_size=upper_bounded_size
             )
 
-            if is_qjit and has_jax:
+            if is_qjit:
                 return (decomposition_info, jnp.float64(g_phase), jnp.float64(phase))
             return (decomposition_info, g_phase, phase)
 
         # If QJIT is active, use the compressed normal form.
-        if is_qjit and has_jax:
+        if is_qjit:
             # circular import issue when import outside of the function
 
             api_extensions = AvailableCompilers.names_entrypoints["catalyst"]["ops"].load()
@@ -324,7 +323,7 @@ def rs_decomposition(
                 _ = [qml.apply(op) for op in new_tape.operations]
 
     # TODO: Improve the global phase information to the decomposition.
-    if is_qjit and has_jax:
+    if is_qjit:
         with jax.ensure_compile_time_eval():
             interface = qml.math.get_interface(angle)
             phase += qml.math.mod(g_phase, 2) * math.pi
