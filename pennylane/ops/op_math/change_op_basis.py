@@ -32,7 +32,6 @@ from pennylane.operation import (
     SparseMatrixUndefinedError,
 )
 from pennylane.ops.op_math import adjoint, ctrl
-from pennylane.typing import TensorLike
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -96,7 +95,7 @@ class ChangeOpBasis(CompositeOp):
     @property
     @handle_recursion_error
     def resource_params(self):
-        resources = dict()
+        resources = {}
         resources["compute_op"] = self[0]
         resources["target_op"] = self[1]
         resources["uncompute_op"] = self[2]
@@ -173,7 +172,7 @@ def _controlled_change_op_basis_resources(
     base_class,
     base_params,
     **__,
-):  # pylint: disable=unused-argument
+):  # pylint: disable=unused-argument, too-many-arguments
     resources = Counter()
     resources[
         resource_rep(type(base_params["compute_op"]), **base_params["compute_op"].resource_params)
@@ -206,17 +205,17 @@ def _controlled_change_op_basis_decomposition(
     work_wire_type,
     base,
     **__,
-):  # pylint: disable=unused-argument
-    base.resource_params["compute_op"]._unflatten(*base.resource_params["compute_op"]._flatten())
+):  # pylint: disable=unused-argument, too-many-arguments
+    base.resource_params["compute_op"]._unflatten(*base.resource_params["compute_op"]._flatten())  # pylint: disable=protected-access
     ctrl(
-        base.resource_params["target_op"]._unflatten(*base.resource_params["target_op"]._flatten()),
+        base.resource_params["target_op"]._unflatten(*base.resource_params["target_op"]._flatten()),  # pylint: disable=protected-access
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    base.resource_params["uncompute_op"]._unflatten(
-        *base.resource_params["uncompute_op"]._flatten()
+    base.resource_params["uncompute_op"]._unflatten(  # pylint: disable=protected-access
+        *base.resource_params["uncompute_op"]._flatten()  # pylint: disable=protected-access
     )
 
 
