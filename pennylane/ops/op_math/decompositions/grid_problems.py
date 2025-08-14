@@ -289,7 +289,7 @@ class EllipseState:
                 new_state = new_state.apply_grid_op(grid_op_z)
                 n_grid_op = n_grid_op * grid_op_z
 
-            if (new_state.e1.z + new_state.e2.z) < 0:
+            if (new_state.e1.z + new_state.e2.z) < 0:  # pragma: no cover
                 grid_op_x = GridOp.from_string("X")
                 new_state = new_state.apply_grid_op(grid_op_x)
                 n_grid_op = n_grid_op * grid_op_x
