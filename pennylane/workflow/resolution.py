@@ -15,12 +15,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Literal, get_args
+from typing import TYPE_CHECKING, Any, Literal, get_args
 from warnings import warn
 
 from packaging.version import Version
@@ -82,7 +81,7 @@ def _validate_jax_version():
 
 
 # pylint: disable=import-outside-toplevel
-def _use_tensorflow_autograph():
+def _use_tensorflow_autograph():  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
         import tensorflow as tf
@@ -122,7 +121,9 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
     if interface in (Interface.JAX, Interface.JAX_JIT):
         _validate_jax_version()
 
-    if interface == Interface.TF and _use_tensorflow_autograph():
+    if (
+        interface == Interface.TF and _use_tensorflow_autograph()
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
         # pylint: disable=unused-import
@@ -140,11 +141,11 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
 
 
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig", interface: Interface, finite_shots: bool
-) -> "qml.devices.MCMConfig":
+    mcm_config: qml.devices.MCMConfig, interface: Interface, finite_shots: bool
+) -> qml.devices.MCMConfig:
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
-    updated_values = {}
+    updated_values: dict[str, Any] = {}
 
     if not finite_shots:
         updated_values["postselect_mode"] = None
@@ -180,8 +181,8 @@ def _resolve_mcm_config(
 
 
 def _resolve_hadamard(
-    initial_config: "qml.devices.ExecutionConfig", device: "qml.devices.Device"
-) -> "qml.devices.ExecutionConfig":
+    initial_config: qml.devices.ExecutionConfig, device: qml.devices.Device
+) -> qml.devices.ExecutionConfig:
     diff_method = initial_config.gradient_method
     updated_values = {"gradient_method": diff_method}
     if diff_method != "hadamard" and "mode" in initial_config.gradient_keyword_arguments:
@@ -208,10 +209,10 @@ def _resolve_hadamard(
 
 @debug_logger
 def _resolve_diff_method(
-    initial_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
-    tape: "qml.tape.QuantumTape" = None,
-) -> "qml.devices.ExecutionConfig":
+    initial_config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
+    tape: qml.tape.QuantumTape = None,
+) -> qml.devices.ExecutionConfig:
     """
     Resolves the differentiation method and updates the initial execution configuration accordingly.
 
@@ -271,10 +272,10 @@ def _resolve_diff_method(
 
 
 def _resolve_execution_config(
-    execution_config: "qml.devices.ExecutionConfig",
-    device: "qml.devices.Device",
+    execution_config: qml.devices.ExecutionConfig,
+    device: qml.devices.Device,
     tapes: QuantumScriptBatch,
-) -> "qml.devices.ExecutionConfig":
+) -> qml.devices.ExecutionConfig:
     """Resolves the execution configuration for non-device specific properties.
 
     Args:
@@ -285,10 +286,10 @@ def _resolve_execution_config(
     Returns:
         qml.devices.ExecutionConfig: resolved execution configuration
     """
-    updated_values = {}
+    updated_values: dict[str, Any] = {}
 
-    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not isinstance(
-        execution_config.gradient_method, Callable
+    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not callable(
+        execution_config.gradient_method
     ):
         updated_values["grad_on_execution"] = False
     execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])

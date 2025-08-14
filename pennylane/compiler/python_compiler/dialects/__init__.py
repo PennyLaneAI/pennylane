@@ -16,8 +16,7 @@
 
 from .mbqc import MBQC
 from .quantum import Quantum
+from .catalyst import Catalyst
+from .qec import QEC
 
-__all__ = [
-    "MBQC",
-    "Quantum",
-]
+__all__ = ["Catalyst", "MBQC", "Quantum", "QEC"]

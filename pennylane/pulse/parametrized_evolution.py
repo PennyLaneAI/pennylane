@@ -19,7 +19,6 @@ This file contains the ``ParametrizedEvolution`` operator.
 
 import warnings
 from collections.abc import Sequence
-from typing import Union
 
 from pennylane import math
 from pennylane.operation import Operation
@@ -373,7 +372,7 @@ class ParametrizedEvolution(Operation):
         self,
         H: ParametrizedHamiltonian,
         params: list = None,
-        t: Union[float, list[float]] = None,
+        t: float | list[float] = None,
         return_intermediate: bool = False,
         complementary: bool = False,
         dense: bool = None,
@@ -419,7 +418,7 @@ class ParametrizedEvolution(Operation):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
+                "You can install jax via: pip install jax~=0.6.0"
             )
         # Need to cast all elements inside params to `jnp.arrays` to make sure they are not cast
         # to `np.arrays` inside `Operator.__init__`
@@ -512,7 +511,7 @@ class ParametrizedEvolution(Operation):
         if not has_jax:
             raise ImportError(
                 "Module jax is required for the ``ParametrizedEvolution`` class. "
-                "You can install jax via: pip install jax"
+                "You can install jax via: pip install jax~=0.6.0"
             )
         if not self.has_matrix:
             raise ValueError(

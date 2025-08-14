@@ -174,7 +174,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 if np.isscalar(torch_argnum):
                     jac = jac[torch_argnum]
                 else:
-                    jac = tuple((jac[idx] for idx in torch_argnum))
+                    jac = tuple(jac[idx] for idx in torch_argnum)
                 return jac
 
             jac = _jacobian(*args, **kwargs)
@@ -189,7 +189,9 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
             jac = _jacobian(*args, **kwargs)
 
-        elif qnode.interface == "tf":
+        elif (
+            qnode.interface == "tf"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             import tensorflow as tf
 
             def _jacobian(*args, **kwargs):
@@ -198,7 +200,7 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
                 elif wrapper_argnum is None:
                     sub_args = args
                 else:
-                    sub_args = tuple((args[i] for i in wrapper_argnum))
+                    sub_args = tuple(args[i] for i in wrapper_argnum)
 
                 with tf.GradientTape() as tape:
                     gate_params = classical_preprocessing(*args, **kwargs)

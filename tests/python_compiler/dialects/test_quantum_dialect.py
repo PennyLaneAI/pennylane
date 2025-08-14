@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit test module for pennylane/compiler/python_compiler/quantum_dialect.py."""
+"""Unit test module for pennylane/compiler/python_compiler/dialects/quantum.py."""
 
 import io
 
@@ -36,10 +36,12 @@ all_attrs = list(Quantum.attributes)
 expected_ops_names = {
     "AdjointOp": "quantum.adjoint",
     "AllocOp": "quantum.alloc",
+    "AllocQubitOp": "quantum.alloc_qb",
     "ComputationalBasisOp": "quantum.compbasis",
     "CountsOp": "quantum.counts",
     "CustomOp": "quantum.custom",
     "DeallocOp": "quantum.dealloc",
+    "DeallocQubitOp": "quantum.dealloc_qb",
     "DeviceInitOp": "quantum.device",
     "DeviceReleaseOp": "quantum.device_release",
     "ExpvalOp": "quantum.expval",
@@ -53,6 +55,7 @@ expected_ops_names = {
     "MeasureOp": "quantum.measure",
     "MultiRZOp": "quantum.multirz",
     "NamedObsOp": "quantum.namedobs",
+    "NumQubitsOp": "quantum.num_qubits",
     "ProbsOp": "quantum.probs",
     "QubitUnitaryOp": "quantum.unitary",
     "SampleOp": "quantum.sample",
@@ -109,6 +112,13 @@ def test_all_attributes_names(attr):
 
 def test_assembly_format():
     program = """
+    // CHECK: quantum.alloc(1) : !quantum.reg
+    %qreg_alloc_static = quantum.alloc(1) : !quantum.reg
+
+    %i = "test.op"() : () -> i64
+    // CHECK: quantum.alloc(%i) : !quantum.reg
+    %qreg_alloc_dyn = quantum.alloc(%i) : !quantum.reg
+
     // CHECK: [[QREG:%.+]] = "test.op"() : () -> !quantum.reg
     %qreg = "test.op"() : () -> !quantum.reg
 
@@ -121,11 +131,32 @@ def test_assembly_format():
     // CHECK: [[PARAM:%.+]] = "test.op"() : () -> f64
     %cst = "test.op"() : () -> f64
 
-    // CHECK: [[QUBIT:%.+]] = "quantum.extract"([[QREG]])
-    %qubit = "quantum.extract"(%qreg) <{idx_attr = 0 : i64}> : (!quantum.reg) -> !quantum.bit
+    // CHECK: [[QUBIT:%.+]] = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
+    %qubit = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
+
+    // CHECK: [[WIRE_DYN:%.+]] = "test.op"() : () -> i64
+    %cst2 = "test.op"() : () -> i64
+
+    // CHECK: [[QUBIT_DYN:%.+]] = quantum.extract %qreg[%cst2] : !quantum.reg -> !quantum.bit
+    %qubit_dyn = quantum.extract %qreg[%cst2] : !quantum.reg -> !quantum.bit
+
+    // CHECK: quantum.insert [[QREG:%.+]][0], [[QUBIT]] : !quantum.reg, !quantum.bit
+    %qreg_insert_static = quantum.insert %qreg[0], %qubit : !quantum.reg, !quantum.bit
+
+    // CHECK: quantum.insert [[QREG:%.+]][[[WIRE_DYN]]], [[QUBIT]] : !quantum.reg, !quantum.bit
+    %qreg_insert_dyn = quantum.insert %qreg[%cst2], %qubit : !quantum.reg, !quantum.bit
 
     // CHECK: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
     %out_qubit = quantum.custom "RX"(%cst) %qubit : !quantum.bit
+
+    // CHECK: [[QUBIT3:%.+]] = quantum.alloc_qb : !quantum.bit
+    %alloc_qubit = quantum.alloc_qb : !quantum.bit
+
+    // CHECK: [[NUM_QUBITS:%.+]] = quantum.num_qubits : i64
+    %num_qubits = quantum.num_qubits : i64
+
+    // CHECK: quantum.dealloc_qb [[QUBIT3]] : !quantum.bit
+    quantum.dealloc_qb %alloc_qubit : !quantum.bit
 
     // CHECK: quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
     quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
@@ -164,3 +195,7 @@ def test_assembly_format():
     )
 
     assert matcher.run() == 0
+
+
+if __name__ == "__main__":
+    pytest.main(["-x", __file__])

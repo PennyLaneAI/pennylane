@@ -15,7 +15,7 @@
 Contains class to represent different Hamiltonians.
 """
 
-from typing import Any, Dict
+from typing import Any
 
 
 class CompactHamiltonian:
@@ -54,7 +54,7 @@ class CompactHamiltonian:
 
     """
 
-    def __init__(self, method_name: str, **params: Dict[str, Any]):
+    def __init__(self, method_name: str, **params: dict[str, Any]):
         self.method_name = method_name
         self.params = params
 

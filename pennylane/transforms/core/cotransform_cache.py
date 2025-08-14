@@ -15,7 +15,6 @@
 This submodule contains the CotransformCache for handling the classical cotransform part of a transform.
 """
 from functools import partial
-from typing import Optional
 
 import pennylane as qml  # for qml.workflow.construct_tape
 from pennylane import math
@@ -37,7 +36,9 @@ def _autograd_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
 
 
 # pylint: disable=import-outside-toplevel, unused-argument
-def _tf_jac(classical_function, argnums, *args, **kwargs) -> TensorLike:
+def _tf_jac(
+    classical_function, argnums, *args, **kwargs
+) -> TensorLike:  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     if not math.get_trainable_indices(args):
         raise QuantumFunctionError("No trainable parameters.")
     import tensorflow as tf
@@ -199,7 +200,7 @@ class CotransformCache:
         classical_jacobian = _jac_map[interface](f, argnums, *self.args, **self.kwargs)
         return classical_jacobian
 
-    def get_argnums(self, transform: TransformContainer) -> Optional[list[set[int]]]:
+    def get_argnums(self, transform: TransformContainer) -> list[set[int]] | None:
         """Calculate the trainable params from the argnums in the transform.
 
         .. code-block:: python

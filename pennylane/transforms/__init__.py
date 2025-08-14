@@ -51,17 +51,20 @@ A set of transforms to perform basic circuit compilation tasks.
 
     ~compile
     ~transforms.cancel_inverses
-    ~transforms.commute_controlled
-    ~transforms.merge_rotations
-    ~transforms.single_qubit_fusion
-    ~transforms.unitary_to_rot
-    ~transforms.merge_amplitude_embedding
-    ~transforms.remove_barrier
-    ~transforms.undo_swaps
-    ~transforms.pattern_matching_optimization
-    ~transforms.transpile
-    ~transforms.decompose
     ~transforms.combine_global_phases
+    ~transforms.commute_controlled
+    ~transforms.decompose
+    ~transforms.merge_amplitude_embedding
+    ~transforms.merge_rotations
+    ~transforms.pattern_matching_optimization
+    ~transforms.remove_barrier
+    ~transforms.match_relative_phase_toffoli
+    ~transforms.match_controlled_iX_gate
+    ~transforms.single_qubit_fusion
+    ~transforms.transpile
+    ~transforms.undo_swaps
+    ~transforms.unitary_to_rot
+    ~transforms.zx.push_hadamards
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -114,6 +117,7 @@ preprocessing, getting information from a circuit, and more.
     ~transforms.convert_to_numpy_parameters
     ~apply_controlled_Q
     ~quantum_monte_carlo
+    ~transforms.resolve_dynamic_wires
 
 Transforms that act only on QNodes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -298,6 +302,7 @@ from .sign_expand import sign_expand
 from .split_non_commuting import split_non_commuting
 from .split_to_single_terms import split_to_single_terms
 from .combine_global_phases import combine_global_phases
+from .resolve_dynamic_wires import resolve_dynamic_wires
 
 from .optimization import (
     cancel_inverses,
@@ -309,6 +314,8 @@ from .optimization import (
     undo_swaps,
     pattern_matching,
     pattern_matching_optimization,
+    match_controlled_iX_gate,
+    match_relative_phase_toffoli,
 )
 from .qmc import apply_controlled_Q, quantum_monte_carlo
 from .unitary_to_rot import unitary_to_rot
@@ -329,6 +336,7 @@ from .tape_expand import (
 )
 from .transpile import transpile
 from .zx import to_zx, from_zx
+from .zx.push_hadamards import push_hadamards
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 

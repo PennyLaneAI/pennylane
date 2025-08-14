@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def test_assert_valid_qrom():
@@ -96,8 +97,9 @@ class TestQROM:
         self, bitstrings, target_wires, control_wires, work_wires, clean
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the QROM template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(j):
             qml.BasisEmbedding(j, wires=control_wires)
@@ -139,8 +141,9 @@ class TestQROM:
     )
     def test_work_wires_output(self, bitstrings, target_wires, control_wires, work_wires):
         """Tests that the ``clean = True`` version don't modify the initial state in work_wires."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
 
@@ -191,6 +194,32 @@ class TestQROM:
 
         for op1, op2 in zip(qrom_decomposition, expected_gates):
             qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize(
+        ("bitstrings", "control_wires", "target_wires", "work_wires", "clean"),
+        [
+            (["11", "01", "00", "10"], [2, 3], [0, 1], [4, 5, 6, 7, 8, 9], True),
+            (["1", "0", "0", "1"], [0, 1], [2], [3], True),
+            (["1"], [], [0], [1], True),
+            (["10", "00", "00", "01", "01", "00", "00", "01"], [0, 1, 2], [3, 4], [5], False),
+            (["01", "00", "00", "10", "10", "00", "00", "01"], [0, 1, 2], [3, 4], [5], True),
+            (["1", "0", "0", "1"], [0, 1], [2], [], False),
+            (["1", "0", "0", "1"], [0, 1], [2], [3, 4], False),
+        ],  # pylint: disable=too-many-arguments
+    )
+    def test_decomposition_new(
+        self, bitstrings, control_wires, target_wires, work_wires, clean
+    ):  # pylint: disable=too-many-arguments
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.QROM(
+            bitstrings,
+            control_wires=control_wires,
+            target_wires=target_wires,
+            work_wires=work_wires,
+            clean=clean,
+        )
+        for rule in qml.list_decomps(qml.QROM):
+            _test_decomposition_rule(op, rule)
 
     def test_zero_control_wires(self):
         """Test that the edge case of zero control wires works"""

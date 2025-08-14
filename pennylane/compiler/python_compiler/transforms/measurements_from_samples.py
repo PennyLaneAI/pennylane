@@ -33,7 +33,6 @@ Known Limitations
 from abc import abstractmethod
 from dataclasses import dataclass
 from itertools import islice
-from typing import Optional
 
 import jax
 import jax.numpy as jnp
@@ -42,7 +41,7 @@ from xdsl.dialects import arith, builtin, func, tensor
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern
 from xdsl.rewriter import InsertPoint
 
-from pennylane.compiler.compiler import CompileError
+from pennylane.exceptions import CompileError
 
 from ..dialects import quantum
 from ..jax_utils import xdsl_module
@@ -233,7 +232,7 @@ class MeasurementsFromSamplesPattern(RewritePattern):
         cls,
         postprocessing_module: builtin.ModuleOp,
         matched_op: ir.Operation,
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> func.FuncOp:
         """Get the post-processing FuncOp from `postprocessing_module` (and any helper functions
         also contained in `postprocessing_module`) and insert it (them) immediately after the FuncOp

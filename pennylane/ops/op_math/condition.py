@@ -15,14 +15,15 @@
 Contains the condition transform.
 """
 import functools
-from typing import Callable, Optional, Sequence, Type, Union
+from collections.abc import Callable, Sequence
+from typing import Union
 
 import pennylane as qml
 from pennylane import QueuingManager
 from pennylane.capture import FlatFn
 from pennylane.capture.autograph import wraps
 from pennylane.compiler import compiler
-from pennylane.measurements import MeasurementValue, MidMeasureMP, get_mcm_predicates
+from pennylane.exceptions import ConditionalTransformError
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.symbolicop import SymbolicOp
 
@@ -64,8 +65,18 @@ def _add_abstract_shapes(f):
     return new_f
 
 
-class ConditionalTransformError(ValueError):
-    """Error for using qml.cond incorrectly"""
+def _no_return(fn):
+    if isinstance(fn, type) and issubclass(fn, Operator):
+
+        def new_fn(*args, **kwargs):
+            fn(*args, **kwargs)
+
+        return new_fn
+    return fn
+
+
+def _empty_return_fn(*_, **__):
+    return None
 
 
 class Conditional(SymbolicOp, Operation):
@@ -82,13 +93,13 @@ class Conditional(SymbolicOp, Operation):
     will apply the :func:`defer_measurements` transform.
 
     Args:
-        expr (MeasurementValue): the measurement outcome value to consider
+        expr (qml.measurements.MeasurementValue): the measurement outcome value to consider
         then_op (Operation): the PennyLane operation to apply conditionally
         id (str): custom label given to an operator instance,
             can be useful for some applications where the instance has to be identified
     """
 
-    def __init__(self, expr, then_op: Type[Operation], id=None):
+    def __init__(self, expr, then_op: type[Operation], id=None):
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         super().__init__(then_op, id=id)
@@ -260,7 +271,8 @@ class CondCallable:
             if len(self.orig_elifs) > 0 and not isinstance(self.orig_elifs[0], tuple)
             else list(self.orig_elifs)
         )
-        flat_true_fn = FlatFn(self.true_fn)
+        true_fn = _no_return(self.true_fn) if self.otherwise_fn is None else self.true_fn
+        flat_true_fn = FlatFn(true_fn)
         branches = [(self.preds[0], flat_true_fn), *elifs, (True, self.otherwise_fn)]
 
         end_const_ind = len(
@@ -274,21 +286,21 @@ class CondCallable:
         abstracted_axes, abstract_shapes = qml.capture.determine_abstracted_axes(args)
 
         for pred, fn in branches:
+            if (pred_shape := qml.math.shape(pred)) != ():
+                raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
             conditions.append(pred)
             if fn is None:
-                jaxpr_branches.append(None)
-                consts_slices.append(slice(0, 0))
-            else:
-                f = FlatFn(functools.partial(fn, **kwargs))
-                if jax.config.jax_dynamic_shapes:
-                    f = _add_abstract_shapes(f)
-                jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
-                jaxpr_branches.append(jaxpr.jaxpr)
-                consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
-                consts += jaxpr.consts
-                end_const_ind += len(jaxpr.consts)
+                fn = _empty_return_fn
+            f = FlatFn(functools.partial(fn, **kwargs))
+            if jax.config.jax_dynamic_shapes:
+                f = _add_abstract_shapes(f)
+            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+            jaxpr_branches.append(jaxpr.jaxpr)
+            consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
+            consts += jaxpr.consts
+            end_const_ind += len(jaxpr.consts)
 
-        _validate_jaxpr_returns(jaxpr_branches)
+        _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
         flat_args, _ = jax.tree_util.tree_flatten(args)
         results = cond_prim.bind(
             *conditions,
@@ -312,9 +324,9 @@ class CondCallable:
 
 
 def cond(
-    condition: Union[MeasurementValue, bool],
-    true_fn: Optional[Callable] = None,
-    false_fn: Optional[Callable] = None,
+    condition: Union["qml.measurements.MeasurementValue", bool],
+    true_fn: Callable | None = None,
+    false_fn: Callable | None = None,
     elifs: Sequence = (),
 ):
     """Quantum-compatible if-else conditionals --- condition quantum operations
@@ -353,7 +365,7 @@ def cond(
         If a branch returns one or more variables, every other branch must return the same abstract values.
 
     Args:
-        condition (Union[.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
+        condition (Union[qml.measurements.MeasurementValue, bool]): a conditional expression that may involve a mid-circuit
            measurement value (see :func:`.pennylane.measure`).
         true_fn (callable): The quantum function or PennyLane operation to
             apply if ``condition`` is ``True``
@@ -616,7 +628,7 @@ def cond(
 
         return cond_func
 
-    if not isinstance(condition, MeasurementValue):
+    if not isinstance(condition, qml.measurements.MeasurementValue):
         # The condition is not a mid-circuit measurement. This will also work
         # when the condition is a mid-circuit measurement but qml.capture.enabled()
         if true_fn is None:
@@ -666,7 +678,7 @@ def cond(
                 raise ConditionalTransformError(with_meas_err)
 
             for op in qscript.operations:
-                if isinstance(op, MidMeasureMP):
+                if isinstance(op, qml.measurements.MidMeasureMP):
                     raise ConditionalTransformError(with_meas_err)
                 Conditional(condition, op)
 
@@ -680,7 +692,7 @@ def cond(
                 inverted_condition = ~condition
 
                 for op in else_qscript.operations:
-                    if isinstance(op, MidMeasureMP):
+                    if isinstance(op, qml.measurements.MidMeasureMP):
                         raise ConditionalTransformError(with_meas_err)
                     Conditional(inverted_condition, op)
 
@@ -736,21 +748,15 @@ def _validate_abstract_values(
             _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
 
 
-def _validate_jaxpr_returns(jaxpr_branches):
+def _validate_jaxpr_returns(jaxpr_branches, false_fn):
     out_avals_true = [out.aval for out in jaxpr_branches[0].outvars]
-    for idx, jaxpr_branch in enumerate(jaxpr_branches):
 
-        if idx == 0:
-            continue
+    if false_fn is None and out_avals_true:
+        raise ValueError(
+            "The false branch must be provided if the true branch returns any variables"
+        )
 
-        if jaxpr_branch is None:
-            if out_avals_true:
-                raise ValueError(
-                    "The false branch must be provided if the true branch returns any variables"
-                )
-            # this is tested, but coverage does not pick it up
-            continue  # pragma: no cover
-
+    for idx, jaxpr_branch in enumerate(jaxpr_branches[1:], start=1):
         out_avals_branch = [out.aval for out in jaxpr_branch.outvars]
         branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
         _validate_abstract_values(out_avals_branch, out_avals_true, branch_type, idx - 1)
@@ -783,7 +789,7 @@ def _get_cond_qfunc_prim():
         # Find predicates that use mid-circuit measurements. We don't check the last
         # condition as that is always `True`.
         mcm_conditions = tuple(
-            pred for pred in conditions[:-1] if isinstance(pred, MeasurementValue)
+            pred for pred in conditions[:-1] if isinstance(pred, qml.measurements.MeasurementValue)
         )
         if len(mcm_conditions) != 0:
             if len(mcm_conditions) != len(conditions) - 1:
@@ -791,12 +797,10 @@ def _get_cond_qfunc_prim():
                     "Cannot use qml.cond with a combination of mid-circuit measurements "
                     "and other classical conditions as predicates."
                 )
-            conditions = get_mcm_predicates(mcm_conditions)
+            conditions = qml.measurements.get_mcm_predicates(mcm_conditions)
 
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
             consts = all_args[const_slice]
-            if jaxpr is None:
-                continue
             if isinstance(pred, qml.measurements.MeasurementValue):
 
                 with qml.queuing.AnnotatedQueue() as q:
