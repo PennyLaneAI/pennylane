@@ -240,7 +240,7 @@ def _decompose_mcx_with_two_workers_old(
         list[Operator]: The synthesized quantum circuit.
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
