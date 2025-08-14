@@ -95,6 +95,8 @@ class Select(Operation):
         work_wires (Union[Wires, Sequence[int], or int]): auxiliary wire(s) that may be
             utilized during the decomposition of the operator into native operations.
             For details, see the section on the unary iterator decomposition below.
+        partial (bool): Whether the state on the wires provided in ``control`` are compatible with
+            a partial Select decomposition. See the note below for details.
         id (str or None): String representing the operation (optional)
 
     .. note::
@@ -110,6 +112,8 @@ class Select(Operation):
         ``control`` wires satisfies :math:`\langle j|\psi\rangle=0` for all :math:`j\in [K, 2^c)`,
         where :math:`K` is the number of operators (``len(ops)``) and :math:`c` is the number of
         control wires (``len(control)``).
+        For more details on the partial Select decomposition, see
+        `its compilation page <https://pennylane.ai/compilation/partial-select>`__.
 
     **Example**
 
@@ -127,7 +131,7 @@ class Select(Operation):
     3: ────╰X────╰SWAP─┤  State
 
     If there are fewer operators to be applied than possible for the given number of control
-    wires, we call the ``Select`` operator a *partial Select*.
+    wires, we call the ``Select`` operator a `partial Select <https://pennylane.ai/compilation/partial-select>`__.
     In this case, the control structure can be simplified if the state on the control wires
     does not have overlap with the unused computational basis states (:math:`|j\rangle` with
     :math:`j>K-1`). Passing ``partial=True`` tells ``Select`` that this criterion is

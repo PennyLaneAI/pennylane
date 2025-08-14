@@ -35,14 +35,12 @@ from pennylane.templates.subroutines.select import (
 @pytest.mark.parametrize("work_wires", [None, [5, 6, 7]])
 def test_standard_checks(num_ops, partial, work_wires):
     """Run standard validity tests."""
-    if work_wires is None:
-        pytest.xfail()
     ops = [qml.PauliX(0) for _ in range(num_ops)]
     control = [1, 2, 3, 4]
 
     op = qml.Select(ops, control, work_wires, partial=not partial)
     assert op.target_wires == qml.wires.Wires(0)
-    qml.ops.functions.assert_valid(op, skip_new_decomp=partial)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=(partial or work_wires is None))
 
 
 def test_repr():
