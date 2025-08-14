@@ -116,7 +116,6 @@ operations.append(ApplyRegisteredPassOp)
 Transform = Dialect(
     "transform",
     [
-        *xTransform.operations,
         *operations,
     ],
     [
