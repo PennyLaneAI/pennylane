@@ -340,7 +340,6 @@ def _get_xz_record(tape: QuantumScript, by_ops: list[tuple[int, int]]):
         # Assign the updated the xz to the x, z record
         for idx, wire in enumerate(wires):
             x_record[wire], z_record[wire] = new_xz[idx]
-
     return x_record, z_record
 
 
@@ -364,7 +363,7 @@ def _correct_samples(tape: QuantumScript, x_record: math.array, measurement_vals
     return correct_meas
 
 
-def get_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_vals: list):
+def apply_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement_vals: list):
     r"""Correct sample results offline based on the executed quantum script and the mid-circuit measurement results for each shot.
     The mid measurement results are first parsed with the quantum script to get the byproduct operations for each Clifford
     and non-Clifford gates. Note that byproduct operations are stored as a list and accessed in a stack manner. The calculation iteratively
