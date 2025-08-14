@@ -139,7 +139,7 @@ class TestNormalForms:
         for op_ in cl_list[c]:
             so3rep @= op_
 
-        (t_bit, rep_bits, c_bit, phase) = _ma_normal_form(so3mat, compressed=True)
+        ((t_bit, rep_bits, c_bit), phase) = _ma_normal_form(so3mat, compressed=True)
 
         assert t_bit == a, "T bit does not match expected value"
         assert (rep_bits == b).all(), "Representation bits do not match expected values"

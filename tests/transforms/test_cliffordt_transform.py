@@ -126,6 +126,16 @@ def circuit_8():
     return qml.expval(qml.PauliZ(1))
 
 
+def circuit_9(num_repeat, rand_angles):
+    """Circuit 9 with a repeated operations"""
+    for angle in rand_angles:
+        for idx in range(num_repeat):
+            qml.RZ(angle, idx)
+        for idx in range(num_repeat):
+            qml.CNOT([idx, (idx + 1) % num_repeat])
+    return qml.expval(qml.Z(0))
+
+
 class TestCliffordCompile:
     """Unit tests for clifford compilation function."""
 
@@ -221,21 +231,20 @@ class TestCliffordCompile:
 
         def circuit(angle, qb):
             qml.H(qb)
-            qml.CNOT(qb, qb + 1)
+            qml.CNOT([qb, qb + 1])
             qml.RX(angle * 0.37, qb)
             qml.RZ(angle * 0.27, qb + 1)
             qml.RY(angle * 0.73, qb)
-            qml.CNOT(qb + 1, qb)
+            qml.CNOT([qb + 1, qb])
             qml.H(qb)
             return qml.expval(qml.Z(0) @ qml.Z(1))
 
         dev = qml.device("lightning.qubit", wires=2)
-        qnode_cir = qml.qnode(dev)(circuit)
-        decomp_cir = clifford_t_decomposition(qnode_cir, method="gridsynth")
-        qjit_cir = qml.qjit(decomp_cir)
+        decomposed_cir = qml.QNode(clifford_t_decomposition(circuit, method="gridsynth"), dev)
+        qjit_cir = qml.qjit(decomposed_cir)
 
         angle, qb = PI, 0
-        default_res, qjit_res = decomp_cir(angle, qb), qjit_cir(angle, qb)
+        default_res, qjit_res = decomposed_cir(angle, qb), qjit_cir(angle, qb)
 
         assert qml.math.allclose(default_res, qjit_res, atol=1e-2)
 
@@ -251,14 +260,14 @@ class TestCliffordCompile:
             return qml.expval(qml.PauliZ(0))
 
         original_qnode = qml.QNode(qfunc, dev)
-        transfmd_qnode = qml.QNode(
+        transformed_qnode = qml.QNode(
             clifford_t_decomposition(qfunc, max_depth=3, basis_length=10), dev
         )
 
-        res1, res2 = original_qnode(), transfmd_qnode()
+        res1, res2 = original_qnode(), transformed_qnode()
         assert qml.math.isclose(res1, res2, atol=1e-2)
 
-        tape = qml.workflow.construct_tape(transfmd_qnode)()
+        tape = qml.workflow.construct_tape(transformed_qnode)()
 
         assert all(
             isinstance(op, _CLIFFORD_PHASE_GATES)
@@ -600,16 +609,6 @@ class TestCliffordCompile:
         assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*igrads))
 
 
-def circuit_7(num_repeat, rand_angles):
-    """Circuit 7 with a repeated operations"""
-    for angle in rand_angles:
-        for idx in range(num_repeat):
-            qml.RZ(angle, idx)
-        for idx in range(num_repeat):
-            qml.CNOT([idx, (idx + 1) % num_repeat])
-    return qml.expval(qml.Z(0))
-
-
 class TestCliffordCached:
     """Unit tests for clifford caching function."""
 
@@ -626,7 +625,7 @@ class TestCliffordCached:
         rand_angles = qml.math.concatenate((rand_angles, -rand_angles))
 
         num_repeat = 2
-        old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
+        old_tape = qml.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, epsilon=10)
 
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
@@ -635,7 +634,7 @@ class TestCliffordCached:
         assert cache_info.hits == 2 * num_angles * (num_repeat - 1)
 
         num_repeat = 2
-        old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
+        old_tape = qml.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, epsilon=10)
 
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)
@@ -644,7 +643,7 @@ class TestCliffordCached:
         assert cache_info.hits == 2 * num_angles * (2 * num_repeat - 1)
 
         num_repeat = 2
-        old_tape = qml.tape.make_qscript(circuit_7)(num_repeat, rand_angles)
+        old_tape = qml.tape.make_qscript(circuit_9)(num_repeat, rand_angles)
         _ = clifford_t_decomposition(old_tape, cache_size=100)
 
         assert isinstance(clt2._CLIFFORD_T_CACHE, _CachedCallable)

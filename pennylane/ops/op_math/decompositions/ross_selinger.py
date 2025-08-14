@@ -124,6 +124,7 @@ def apply_clifford_from_idx(idx, wire):
     return qml.cond(head_cond, head_fn, elifs=elifs)
 
 
+# pylint: disable=no-value-for-parameter
 def _jit_rs_decomposition(wire, decomposition_info):
     """Apply the Ross-Selinger decomposition with QJIT to the given decomposition.
 
