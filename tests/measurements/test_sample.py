@@ -36,8 +36,9 @@ class TestSample:
         """Test the output of combining expval, var and sample"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(n_sample)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             qml.RX(0.54, wires=0)
@@ -56,8 +57,9 @@ class TestSample:
         """Test the return type and shape of sampling a single wire"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=1, shots=n_sample)
+        dev = qml.device("default.qubit", wires=1)
 
+        @qml.set_shots(n_sample)
         @qml.qnode(dev)
         def circuit():
             qml.RX(0.54, wires=0)
@@ -74,8 +76,9 @@ class TestSample:
         where a rectangular array is expected"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(n_sample)
         @qml.qnode(dev)
         def circuit():
             return qml.sample(qml.PauliZ(0)), qml.sample(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
@@ -96,8 +99,9 @@ class TestSample:
         in combination with expvals and vars"""
         n_sample = 10
 
-        dev = qml.device("default.qubit", wires=3, shots=n_sample)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(n_sample)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit():
             return qml.expval(qml.PauliZ(0)), qml.var(qml.PauliZ(1)), qml.sample(qml.PauliZ(2))
@@ -114,8 +118,9 @@ class TestSample:
     def test_observable_is_measurement_value(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -135,8 +140,9 @@ class TestSample:
     def test_observable_is_composite_measurement_value(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a composite measurement value."""
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -158,9 +164,10 @@ class TestSample:
     def test_observable_is_measurement_value_list(self, shots, phi):
         """Test that samples for mid-circuit measurement values
         are correct for a measurement value list."""
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
         @qml.defer_measurements
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -217,8 +224,9 @@ class TestSample:
 
     def test_providing_no_observable_and_no_wires(self):
         """Test that we can provide no observable and no wires to sample function"""
-        dev = qml.device("default.qubit", wires=2, shots=1000)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -237,8 +245,9 @@ class TestSample:
         shots1 = 1
         shots2 = 10
         shots3 = 1000
-        dev = qml.device("default.qubit", wires=num_wires, shots=[shots1, shots2, shots3])
+        dev = qml.device("default.qubit", wires=num_wires)
 
+        @qml.set_shots([shots1, shots2, shots3])
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -263,8 +272,9 @@ class TestSample:
         """Test that we can provide no observable but specify wires to the sample function"""
         wires = [0, 2]
         wires_obj = qml.wires.Wires(wires)
-        dev = qml.device("default.qubit", wires=3, shots=1000)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -351,8 +361,9 @@ class TestSample:
     def test_shape_shot_vector_obs(self):
         """Test that the shape is correct with the shot vector and a observable too."""
         shot_vec = (2, 2)
-        dev = qml.device("default.qubit", wires=3, shots=shot_vec)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(shot_vec)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -374,8 +385,9 @@ class TestSample:
     @pytest.mark.parametrize("shots", [2, 100])
     def test_sample_no_arguments(self, shots):
         """Test that using ``qml.sample`` with no arguments returns the samples of all wires."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             return qml.sample()
@@ -396,8 +408,9 @@ class TestSample:
 
     def test_sample_allowed_with_parameter_shift(self):
         """Test that qml.sample doesn't raise an error with parameter-shift and autograd."""
-        dev = qml.device("default.qubit", shots=10)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(10)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(angle):
             qml.RX(angle, wires=0)
@@ -413,8 +426,9 @@ class TestSample:
         """Test that qml.sample executes with parameter-shift and jax."""
         import jax
 
-        dev = qml.device("default.qubit", shots=10)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(10)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(angle):
             qml.RX(angle, wires=0)
@@ -436,8 +450,9 @@ class TestJAXCompatibility:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=3, shots=samples)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(samples)
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -482,8 +497,9 @@ class TestJAXCompatibility:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", wires=5, shots=100)
+        dev = qml.device("default.qubit", wires=5)
 
+        @qml.set_shots(100)
         @qml.qnode(dev, interface="jax")
         def circuit(x):
             qml.RX(x, wires=0)

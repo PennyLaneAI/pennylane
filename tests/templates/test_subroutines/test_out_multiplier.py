@@ -100,8 +100,9 @@ class TestOutMultiplier:
         self, x_wires, y_wires, output_wires, mod, work_wires, x, y
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutMultiplier template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x, y):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -276,9 +277,10 @@ class TestOutMultiplier:
         y_wires = [2, 3]
         output_wires = [6, 7, 8, 9]
         work_wires = [5, 10]
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
         @jax.jit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x_list, wires=x_wires)

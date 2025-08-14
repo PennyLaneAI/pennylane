@@ -213,9 +213,10 @@ class TestOutPoly:
         def f(x, y, z):
             return x**2 + y * x * z**5 - z**3 + 3
 
-        dev = qml.device("default.qubit", wires=14, shots=1)
+        dev = qml.device("default.qubit", wires=14)
 
         @jax.jit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             # loading values for x, y and z

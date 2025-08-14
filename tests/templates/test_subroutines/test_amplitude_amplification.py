@@ -160,9 +160,11 @@ class TestDifferentiability:
     def test_qnode_autograd(self, shots, seed):
         """Test that the QNode executes with Autograd."""
 
-        dev = qml.device("default.qubit", wires=3, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=3, seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="autograd", diff_method=diff_method), shots=shots
+        )
 
         params = qml.numpy.array(self.params, requires_grad=True)
         res = qml.grad(qnode)(params)
@@ -179,10 +181,12 @@ class TestDifferentiability:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method), shots=shots
+        )
         if use_jit:
             qnode = jax.jit(qnode)
 
@@ -203,10 +207,12 @@ class TestDifferentiability:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method), shots=shots
+        )
 
         params = torch.tensor(self.params, requires_grad=True)
         jac = torch.autograd.functional.jacobian(qnode, params)
@@ -221,9 +227,11 @@ class TestDifferentiability:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+        qnode = qml.set_shots(
+            qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method), shots=shots
+        )
 
         params = tf.Variable(self.params)
         with tf.GradientTape() as tape:
