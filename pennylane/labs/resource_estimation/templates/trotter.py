@@ -29,6 +29,7 @@ from pennylane.wires import Wires
 
 # pylint: disable=arguments-differ, too-many-arguments
 
+
 class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
     exponential of a Hamiltonian operator.
@@ -56,8 +57,8 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
     For more details see `J. Math. Phys. 32, 400 (1991) <https://pubs.aip.org/aip/jmp/article-abstract/32/2/400/229229>`_.
 
     Args:
-        first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): the first order expansion of the
-            Hamiltonian to be approximately exponentiated
+        first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): A list of operators representing
+            the first order expansion of the Hamiltonian to be approximately exponentiated.
         num_steps (int): number of Trotter steps to perform
         order (int): order of the approximation, must be 1 or even.
         wires (list[int] or optional): the wires on which the operator acts
@@ -99,6 +100,17 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         self.num_steps = num_steps
         self.order = order
 
+        if wires:
+            self.num_wires = len(wires)
+        else:
+            self.num_wires = max(
+                [
+                    op.num_wires
+                    for op in first_order_expansion
+                    if not isinstance(op, (AllocWires, FreeWires))
+                ]
+            )
+
         super().__init__(wires=wires)
 
     @property
@@ -107,8 +119,8 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): the first order expansion of the
-                  Hamiltonian to be approximately exponentiated
+                * first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): A list of operators representing
+                    the first order expansion of the Hamiltonian to be approximately exponentiated.
                 * num_steps (int): number of Trotter steps to perform
                 * order (int): order of the approximation, must be 1 or even.
 
@@ -125,8 +137,8 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         the Operator that are needed to compute a resource estimation.
 
         Args:
-            first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): the first order expansion of the
-                Hamiltonian to be approximately exponentiated
+            first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): A list of operators representing
+                the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
 
@@ -141,13 +153,15 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def default_resource_decomp(cls, first_order_expansion, num_steps, order, **kwargs) -> list[GateCount]:
+    def default_resource_decomp(
+        cls, first_order_expansion, num_steps, order, **kwargs
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 
         Args:
-            first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): the first order expansion of the
-                Hamiltonian to be approximately exponentiated
+            first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): A list of operators representing
+                the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
             order (int): order of the approximation, must be 1 or even.
 
@@ -162,24 +176,27 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 
         if order == 1:
             for op in first_order_expansion:
-                if isinstance(op, AllocWires) or isinstance(op, FreeWires):
-                    continue
-                gate_list.append(plre.GateCount(op, num_steps))
+                gate_list.append(plre.GateCount(resource_rep(op, op.resource_params), num_steps))
             return gate_list
 
         # For first and last fragment
-        first_frag = first_order_expansion[0]
-        last_frag = first_order_expansion[-1]
+        first_frag = resource_rep(
+            first_order_expansion[0], first_order_expansion[0].resource_params
+        )
+        last_frag = resource_rep(
+            first_order_expansion[-1], first_order_expansion[-1].resource_params
+        )
         gate_list.append(plre.GateCount(first_frag, num_steps * (5 ** (k - 1)) + 1))
         gate_list.append(plre.GateCount(last_frag, num_steps * (5 ** (k - 1))))
 
         # For rest of the fragments
         for op in first_order_expansion[1:-1]:
-            if isinstance(op, AllocWires) or isinstance(op, FreeWires):
-                continue
-            gate_list.append(plre.GateCount(op, 2 * num_steps * (5 ** (k - 1))))
+            gate_list.append(
+                plre.GateCount(resource_rep(op, op.resource_params), 2 * num_steps * (5 ** (k - 1)))
+            )
 
         return gate_list
+
 
 class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestors
     r"""An operation representing the Suzuki-Trotter product approximation for the complex matrix
