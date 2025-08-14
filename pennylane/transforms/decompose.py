@@ -837,14 +837,17 @@ def _operator_decomposition_gen(
     elif isinstance(op, Conditional):
         if acceptance_function(op.base) or max_depth_reached:
             yield op
-        for _op in _operator_decomposition_gen(
-            op.base,
-            acceptance_function,
-            max_expansion=max_expansion,
-            current_depth=current_depth,
-            decomp_graph_solution=decomp_graph_solution,
-        ):
-            yield Conditional(op.meas_val, _op)
+        else:
+            decomp = [
+                Conditional(op.meas_val, base_op)
+                for base_op in _operator_decomposition_gen(
+                    op.base,
+                    acceptance_function,
+                    max_expansion=max_expansion,
+                    current_depth=current_depth,
+                    decomp_graph_solution=decomp_graph_solution,
+                )
+            ]
 
     elif acceptance_function(op) or max_depth_reached:
         yield op
