@@ -39,10 +39,24 @@ Once xDSL moves to a newer version of MLIR, these changes should
 be contributed upstream.
 """
 
+from xdsl.dialects.builtin import Dialect
+
 # pylint: disable=unused-wildcard-import,wildcard-import,undefined-variable,too-few-public-methods
 from xdsl.dialects.transform import ApplyRegisteredPassOp as xApplyRegisteredPassOp
+from xdsl.dialects.transform import (
+    DictionaryAttr,
+    StringAttr,
+)
 from xdsl.dialects.transform import Transform as xTransform
-from xdsl.dialects.transform import *
+from xdsl.dialects.transform import (
+    TransformHandleType,
+    irdl_op_definition,
+    operand_def,
+    prop_def,
+    result_def,
+)
+from xdsl.ir import Attribute, SSAValue
+from xdsl.irdl import IRDLOperation, ParsePropInAttrDict
 
 
 @irdl_op_definition
@@ -98,6 +112,14 @@ class ApplyRegisteredPassOp(IRDLOperation):
 operations = list(xTransform.operations)
 del operations[operations.index(xApplyRegisteredPassOp)]
 operations.append(ApplyRegisteredPassOp)
-attributes = list(xTransform.attributes)
 
-Transform = Dialect("transform", operations, attributes)
+Transform = Dialect(
+    "transform",
+    [
+        *xTransform.operations,
+        *operations,
+    ],
+    [
+        *xTransform.attributes,
+    ],
+)
