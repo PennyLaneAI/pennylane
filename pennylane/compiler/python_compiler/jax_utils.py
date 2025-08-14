@@ -62,6 +62,7 @@ class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-
         Quantum,
         MBQC,
         Catalyst,
+        QEC,
     )
 
     def __init__(
