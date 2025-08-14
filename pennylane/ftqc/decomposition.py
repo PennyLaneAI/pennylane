@@ -57,7 +57,7 @@ def convert_to_mbqc_gateset(tape):
 
 
 @transform
-def convert_to_mbqc_formalism(tape):
+def convert_to_mbqc_formalism(tape, include_corrections=True):
     """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
@@ -90,7 +90,8 @@ def convert_to_mbqc_formalism(tape):
                 wire_map[ctrl], wire_map[tgt], measurements = queue_cnot(
                     q_mgr, wire_map[ctrl], wire_map[tgt]
                 )
-                cnot_corrections(measurements)(wire_map[ctrl], wire_map[tgt])
+                if include_corrections:
+                    cnot_corrections(measurements)(wire_map[ctrl], wire_map[tgt])
             else:  # one wire
                 # pylint: disable=isinstance-second-argument-not-valid-type
                 if isinstance(op, (X, Y, Z, Identity)):
@@ -102,7 +103,8 @@ def convert_to_mbqc_formalism(tape):
                     wire_map[w], measurements = queue_single_qubit_gate(
                         q_mgr, op, in_wire=wire_map[w]
                     )
-                    queue_corrections(op, measurements)(wire_map[w])
+                    if include_corrections:
+                        queue_corrections(op, measurements)(wire_map[w])
 
     temp_tape = QuantumScript.from_queue(q)
 
