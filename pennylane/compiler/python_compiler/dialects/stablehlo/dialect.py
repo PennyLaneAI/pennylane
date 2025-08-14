@@ -24,8 +24,82 @@ the upstream operation list.
 import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
+from .elementwise.binary import (
+    DivideOp,
+    MaximumOp,
+    MinimumOp,
+    PowerOp,
+    RemainderOp,
+)
+from .elementwise.other import (
+    ClampOp,
+    CompareOp,
+    ComplexOp,
+    MapOp,
+    ReducePrecisionOp,
+    SelectOp,
+)
+
+# Import all elementwise operations from organized files
+from .elementwise.unary import (
+    AbsOp,
+    ConvertOp,
+    CosineOp,
+    ExponentialMinusOneOp,
+    ExponentialOp,
+    FloorOp,
+    ImagOp,
+    IsFiniteOp,
+    LogisticOp,
+    LogOp,
+    LogPlusOneOp,
+    NegateOp,
+    RealOp,
+    RoundNearestAfzOp,
+    RoundNearestEvenOp,
+    RsqrtOp,
+    SignOp,
+    SineOp,
+    SqrtOp,
+    TanhOp,
+    TanOp,
+)
+
 # Operations to add to the dialect
-OPERATIONS = []
+OPERATIONS = [
+    AbsOp,
+    ClampOp,
+    CompareOp,
+    ComplexOp,
+    ConvertOp,
+    CosineOp,
+    DivideOp,
+    ExponentialMinusOneOp,
+    ExponentialOp,
+    FloorOp,
+    ImagOp,
+    IsFiniteOp,
+    LogOp,
+    LogPlusOneOp,
+    LogisticOp,
+    MapOp,
+    MaximumOp,
+    MinimumOp,
+    NegateOp,
+    PowerOp,
+    RealOp,
+    ReducePrecisionOp,
+    RemainderOp,
+    RoundNearestAfzOp,
+    RoundNearestEvenOp,
+    RsqrtOp,
+    SelectOp,
+    SignOp,
+    SineOp,
+    SqrtOp,
+    TanOp,
+    TanhOp,
+]
 
 # Operations from upstream that should be deleted/replaced in the local version
 UPSTREAM_OPERATIONS_TO_DELETE = []
