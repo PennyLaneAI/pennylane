@@ -128,6 +128,7 @@ class ConvertToMBQCFormalismPattern(
 ):  # pylint: disable=too-few-public-methods, no-self-use, unpacking-non-sequence
     """RewritePattern for converting to the MBQC formalism."""
 
+    # TODOs: replace it with a mbqc.graph_state_prep op once the deallocation of qubits in a qreg is resolved.
     def _prep_graph_state(self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter):
         """Allocate auxiliary qubits and prepare a graph state for auxiliary qubits. Auxiliary qubits are
         entangled in the way described in the textbook MBQC form. **Note that all ops
