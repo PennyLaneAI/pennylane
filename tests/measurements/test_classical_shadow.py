@@ -469,12 +469,11 @@ class TestClassicalShadow:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("shots", shots_list)
     @pytest.mark.parametrize("seed", seed_recipes_list)
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("device", ["default.qubit", "default.mixed"])
     def test_format(self, wires, shots, seed, interface, device):
         """Test that the format of the returned classical shadow
         measurement is correct"""
-        import tensorflow as tf
         import torch
 
         circuit = get_circuit(wires, shots, seed, interface, device)
@@ -485,9 +484,7 @@ class TestClassicalShadow:
 
         # test dtype is correct
         expected_dtype = np.int8
-        if interface == "tf":
-            expected_dtype = tf.int8
-        elif interface == "torch":
+        if interface == "torch":
             expected_dtype = torch.int8
 
         assert shadow.dtype == expected_dtype
@@ -499,7 +496,7 @@ class TestClassicalShadow:
         assert qml.math.all(np.logical_or(recipes == 0, np.logical_or(recipes == 1, recipes == 2)))
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize(
         "circuit_fn, basis_recipe",
         [(get_x_basis_circuit, 0), (get_y_basis_circuit, 1), (get_z_basis_circuit, 2)],
@@ -805,7 +802,8 @@ class TestExpvalForward:
 # pylint: disable=too-few-public-methods
 @pytest.mark.all_interfaces
 class TestExpvalForwardInterfaces:
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_qft_expval(self, interface, k=1, obs=obs_qft, expected=expected_qft):
         """Test that the expval estimation is correct for a QFT state"""
         import torch
@@ -971,7 +969,7 @@ wires_list = [1, 3]
 
 @pytest.mark.parametrize("wires", [1, 3])
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 @pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
 def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
     """Test that the distribution of the bits and recipes are correct for a circuit
@@ -1016,7 +1014,7 @@ def test_return_distribution(wires, interface, circuit_basis, basis_recipe):
 
 @pytest.mark.parametrize("wires", [1, 3])
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "tf", "torch"])
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
 @pytest.mark.parametrize("circuit_basis, basis_recipe", [("x", 0), ("y", 1), ("z", 2)])
 def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recipe, seed):
     """Test that the distribution of the bits and recipes are correct for a circuit
@@ -1121,7 +1119,7 @@ def test_hadamard_expval_mixed(k=1, obs=obs_hadamard, expected=expected_hadamard
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "tf", "torch"])
+@pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
 @pytest.mark.parametrize("circuit_basis", ["x", "y", "z"])
 def test_partitioned_shots(interface, circuit_basis):
     """Test that mixed device works for partitioned shots"""

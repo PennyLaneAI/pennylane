@@ -58,6 +58,16 @@ def testing_functions():
     return true_fn, false_fn, elif_fn1, elif_fn2, elif_fn3, elif_fn4
 
 
+def test_bad_predicate_shape():
+    """Test that an error is raised if the predicate is not a scalar."""
+
+    def f():
+        qml.cond(np.array([0, 0]), qml.X, qml.Z)(0)
+
+    with pytest.raises(ValueError, match="predicate must be a scalar"):
+        jax.make_jaxpr(f)()
+
+
 @pytest.mark.parametrize("decorator", [True, False])
 class TestCond:
     """Tests for conditional functions using qml.cond."""
@@ -383,6 +393,25 @@ class TestCondReturns:
             jax.make_jaxpr(CondCallable(True, true_fn, false_fn, elifs=[(True, elif_fn3)]))(
                 jax.numpy.array(1)
             )
+
+    def test_true_fn_operator_type_no_false_fn(self):
+        """Test that the true_fn can be an operator type when there is no false function. Instead,
+        the cond simply has no output."""
+
+        def f():
+            qml.cond(True, qml.X)(0)
+
+        jaxpr = jax.make_jaxpr(f)()
+        assert jaxpr.eqns[0].primitive == cond_prim
+        assert len(jaxpr.eqns[0].outvars) == 0
+
+        true_fn = jaxpr.eqns[0].params["jaxpr_branches"][0]
+        assert len(true_fn.outvars) == 0
+        assert true_fn.eqns[0].primitive == qml.X._primitive  # pylint: disable=protected-access
+
+        false_fn = jaxpr.eqns[0].params["jaxpr_branches"][-1]
+        assert len(false_fn.eqns) == 0
+        assert len(false_fn.outvars) == 0
 
 
 dev = qml.device("default.qubit", wires=3)

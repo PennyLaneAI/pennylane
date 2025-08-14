@@ -696,7 +696,7 @@ class TestIntegration:
     """Integration tests."""
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
     def test_correct_number_of_executions(self, interface):
         """Test that number of executions can be tracked correctly and executiong
         returns results in the expected interface"""
@@ -918,7 +918,7 @@ class TestIntegration:
         assert np.allclose(r1, r2)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["tf", "auto"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_conditional_ops_tensorflow(self, interface):
         """Test conditional operations with TensorFlow."""
         import tensorflow as tf
@@ -1657,14 +1657,14 @@ class TestNewDeviceIntegration:
                 return getattr(execution_config, "gradient_method", None) == "hello"
 
             def setup_execution_config(
-                self, config=qml.devices.DefaultExecutionConfig, circuit=None
+                self, config: qml.devices.ExecutionConfig | None = None, circuit=None
             ):
                 if config.gradient_method in {"best", "hello"}:
                     return replace(config, gradient_method="hello", use_device_gradient=True)
                 return config
 
             def compute_derivatives(
-                self, circuits, execution_config=qml.devices.DefaultExecutionConfig
+                self, circuits, execution_config: qml.devices.ExecutionConfig | None = None
             ):
                 if self.tracker.active:
                     self.tracker.update(derivative_config=execution_config)
@@ -2005,7 +2005,7 @@ class TestPrivateFunctions:
 
         assert config == expected_config
 
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax", "jax-jit"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax", "jax-jit"])
     def test_make_execution_config_with_qnode(self, interface):
         """Test that a execution config is made correctly with no QNode."""
         if "jax" in interface:
