@@ -1168,6 +1168,18 @@ class TestIntegration:
 class TestShots:
     """Unit tests for specifying shots per call."""
 
+    def test_shots_setter_error(self):
+        """Tests that an error is raised when setting shots on a QNode."""
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(a):
+            qml.RX(a, wires=0)
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(AttributeError, match="Shots can not be set on a qnode instance"):
+            circuit.shots = 5
+
     # pylint: disable=unexpected-keyword-arg
     def test_specify_shots_per_call_sample(self):
         """Tests that shots can be set per call for a sample return type."""
@@ -1682,7 +1694,10 @@ class TestNewDeviceIntegration:
             return qml.expval(qml.PauliZ(0))
 
         qn = QNode(f, self.dev)
-        assert repr(qn) == "<QNode: device='CustomDevice', interface='auto', diff_method='best', shots='Shots(total=None)'>"
+        assert (
+            repr(qn)
+            == "<QNode: device='CustomDevice', interface='auto', diff_method='best', shots='Shots(total=None)'>"
+        )
 
     def test_device_with_custom_diff_method_name(self):
         """Test a device that has its own custom diff method."""

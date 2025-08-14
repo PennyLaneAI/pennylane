@@ -655,8 +655,7 @@ class QNode:
     @shots.setter
     def shots(self, _):
         raise AttributeError(
-            "Shots can not be set on a qnode instance. "
-            "You can set shots with `qml.set_shots`."
+            "Shots can not be set on a qnode instance. You can set shots with `qml.set_shots`."
         )
 
     @property
