@@ -24,6 +24,8 @@ from xdsl.context import Context as xContext
 from xdsl.passes import PassPipeline
 from xdsl.printer import Printer
 
+from pennylane.typing import Callable
+
 from .jax_utils import QuantumParser
 from .transforms.api import ApplyTransformSequence
 
@@ -33,7 +35,7 @@ class Compiler:
     """Compiler namespace"""
 
     @staticmethod
-    def run(jmod: jaxModule) -> jaxModule:
+    def run(jmod: jaxModule, callback: Callable = None) -> jaxModule:
         """Runs the apply-transform-sequence pass.
 
         The apply-transform-sequence pass is a "meta-pass". In other words,
@@ -46,7 +48,7 @@ class Compiler:
         ctx = xContext(allow_unregistered=True)
         parser = QuantumParser(ctx, gentxtmod)
         xmod = parser.parse_module()
-        pipeline = PassPipeline((ApplyTransformSequence(),))
+        pipeline = PassPipeline((ApplyTransformSequence(callback=callback),))
         # xmod is modified in place
         pipeline.apply(ctx, xmod)
 
