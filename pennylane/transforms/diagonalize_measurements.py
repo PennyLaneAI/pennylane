@@ -174,6 +174,7 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
         and diagonalize_all
     ):
         try:
+            raise QuantumFunctionError
             if tape.samples_computational_basis and len(tape.measurements) > 1:
                 _validate_computational_basis_sampling(tape)
             diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(
