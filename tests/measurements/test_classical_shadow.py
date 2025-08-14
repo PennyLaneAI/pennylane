@@ -22,7 +22,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 
@@ -569,7 +569,8 @@ class TestClassicalShadow:
     def test_parameter_broadcasting(self, wires, shots, params):
         """Test that the classical_shadow measurement process supports parameter broadcasting"""
 
-        @qml.qnode(qml.device("default.qubit", wires=wires, shots=shots))
+        @qml.set_shots(shots)
+        @qml.qnode(qml.device("default.qubit", wires=wires))
         def circuit(x):
             qml.RX(x, wires=0)
             qml.Hadamard(wires=0)
@@ -713,7 +714,8 @@ class TestExpvalMeasurement:
     def test_expval_parameter_broadcasting(self, params):
         """Test that the shadow_expval measurement process supports parameter broadcasting"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2, shots=10))
+        @qml.set_shots(10)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit(x):
             qml.RX(x, wires=1)
             qml.Hadamard(wires=0)
@@ -1035,8 +1037,9 @@ def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recip
     # high number of shots to prevent true negatives
     shots = 1000
 
-    dev = DefaultQubitLegacy(wires=wires, shots=shots, seed=seed)
+    dev = DefaultQubitLegacy(wires=wires, seed=seed)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         for wire in range(wires):
@@ -1093,7 +1096,8 @@ def hadamard_circuit_legacy(wires, shots=10000, interface="autograd"):
 def test_hadamard_expval_legacy(k=1, obs=obs_hadamard, expected=expected_hadamard):
     """Test that the expval estimation is correct for a uniform
     superposition of qubits"""
-    circuit = hadamard_circuit_legacy(3, shots=50000)
+    with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+        circuit = hadamard_circuit_legacy(3, shots=50000)
     actual = circuit(obs, k=k)
 
     tape = qml.workflow.construct_tape(circuit)(obs)
