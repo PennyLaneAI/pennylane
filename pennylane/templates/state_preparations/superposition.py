@@ -33,11 +33,11 @@ def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
         states, except for fixed points (states in the input that already were among the
         first :math:`m` basis states).
 
-    ** Example **
+    **Example**
 
     For instance, a given list of :math:`[s_0, s_1, ..., s_m]` where :math:`s` is a basis
     state of length :math:`4` will be mapped as
-    :math:`{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots}`.
+    :math:`\{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots\}`.
 
     .. code-block:: pycon
 
@@ -49,7 +49,7 @@ def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
          (1, 0, 0, 1): (0, 0, 1, 1)}
 
     If a state in ``basis_states`` is one of the first :math:`m` basis states,
-    this state will be mapped to itself, i.e. it will be fixed point of the mapping.
+    this state will be mapped to itself, i.e. it will be a fixed point of the mapping.
 
     .. code-block:: pycon
 
