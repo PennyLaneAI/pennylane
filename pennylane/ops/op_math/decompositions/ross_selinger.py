@@ -122,6 +122,7 @@ def apply_clifford_from_idx(idx, wire):
     # Remaining cases handled as "elif"
     elifs = cases[1:]
 
+    # TODO: use qml.switch once available
     return qml.cond(head_cond, head_fn, elifs=elifs)
 
 
