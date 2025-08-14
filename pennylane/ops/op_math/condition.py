@@ -76,7 +76,7 @@ def _no_return(fn):
 
 
 def _empty_return_fn(*_, **__):
-    return []
+    return None
 
 
 class Conditional(SymbolicOp, Operation):
