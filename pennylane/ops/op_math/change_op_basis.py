@@ -160,11 +160,13 @@ class ChangeOpBasis(CompositeOp):
 
 
 def _change_op_basis_resources(compute_op, target_op, uncompute_op):
-    return {
-        resource_rep(type(compute_op), **compute_op.resource_params): 1,
-        resource_rep(type(target_op), **target_op.resource_params): 1,
-        resource_rep(type(uncompute_op), **uncompute_op.resource_params): 1,
-    }
+    resources = Counter()
+
+    resources[resource_rep(type(compute_op), **compute_op.resource_params)] += 1
+    resources[resource_rep(type(target_op), **target_op.resource_params)] += 1
+    resources[resource_rep(type(uncompute_op), **uncompute_op.resource_params)] += 1
+
+    return resources
 
 
 def _controlled_change_op_basis_resources(
