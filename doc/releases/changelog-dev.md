@@ -64,6 +64,30 @@
 
 <h3>Improvements 🛠</h3>
 
+* The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
+  have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
+  [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
+
+  ```python
+  import pennylane as qml
+
+  @qml.draw
+  @qml.qnode(qml.device("lightning.qubit", wires=4))
+  def node():
+      qml.TemporaryAND([0, 1, 2], control_values=[1, 0])
+      qml.CNOT([2, 3])
+      qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[1, 0]))
+      return qml.expval(qml.Z(3))
+  ```
+
+  ```pycon
+  print(node())
+  0: ─╭●─────●╮─┤     
+  1: ─├○─────○┤─┤     
+  2: ─╰──╭●───╯─┤     
+  3: ────╰X─────┤  <Z>
+  ```
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
@@ -119,6 +143,8 @@
 
 <h4>Other improvements</h4>
 
+* Added the `NumQubitsOp` operation to the `Quantum` dialect of the Python compiler.
+[(#8063)](https://github.com/PennyLaneAI/pennylane/pull/8063)
 
 * An error is no longer raised when non-integer wire labels are used in QNodes using `mcm_method="deferred"`.
   [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
@@ -190,6 +216,7 @@
 * The `mbqc` xDSL dialect has been added to the Python compiler, which is used to represent
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
+  [(#8059)](https://github.com/PennyLaneAI/pennylane/pull/8059)
 
 * The `AllocQubitOp` and `DeallocQubitOp` operations have been added to the `Quantum` dialect in the
   Python compiler.
@@ -508,6 +535,10 @@
   format when printing in the generic IR format. This enables usage of this attribute when IR needs
   to be passed from the python compiler to Catalyst.
   [(#7957)](https://github.com/PennyLaneAI/pennylane/pull/7957)
+
+* An `xdsl_extras` module has been added to the Python compiler to house additional utilities and
+  functionality not available upstream in xDSL.
+  [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
 
 <h3>Documentation 📝</h3>
 
