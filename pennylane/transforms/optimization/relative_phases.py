@@ -276,8 +276,8 @@ def match_mcx_gt4wires(
         for relative phases as we do here, the work wires must remain in the same state when matched with a global
         uncomputation later (Amy, M. and Ross, N. J., 2021).
 
-        i.e. if a compiler pass using match_controlled_iX_gate() yields a circuit with 4-qubit multi controlled X
-        gates in it, a second compiler pass using this transfom would lower these to Toffolis + Hadamards. This yields
+        For example, if a compiler pass using ``match_controlled_iX_gate`` yields a circuit with 4-qubit ``MultiControlledX``
+        gates in it, a second compiler pass using this transfom would lower these to ``Toffoli`` and ``Hadamard`` gates. This yields
         an improved decomposition in terms of the number of expensive gates.
 
     **Example**
