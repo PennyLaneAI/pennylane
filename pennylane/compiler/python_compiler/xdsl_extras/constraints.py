@@ -156,6 +156,9 @@ class ContainerConstraint(AttrConstraint, ABC):
         # pylint: disable=unused-argument,missing-function-docstring
         return self
 
+    def get_bases(self):
+        return set()
+
 
 @dataclass(frozen=True, init=False)
 class TensorConstraint(ContainerConstraint):
