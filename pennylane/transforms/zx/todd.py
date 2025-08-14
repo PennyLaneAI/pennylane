@@ -90,8 +90,8 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
 
     try:
         pyzx_circ = pyzx.phase_block_optimize(pyzx_circ.to_basic_gates())
-    except TypeError as e:
-        raise TypeError("The input quantum circuit must be a Clifford + T circuit.") from e
+    except TypeError:
+        raise TypeError("The input quantum circuit must be a Clifford + T circuit.") from None
 
     qscript = from_zx(pyzx_circ.to_graph())
     new_tape = tape.copy(operations=qscript.operations)
