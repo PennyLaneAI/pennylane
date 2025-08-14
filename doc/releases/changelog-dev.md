@@ -453,6 +453,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improve type hinting internally.
+  [(#8086)](https://github.com/PennyLaneAI/pennylane/pull/8086)
+
 * Removed unnecessary execution tests along with accuracy validation in `tests/ops/functions/test_map_wires.py`.
   [(#8032)](https://github.com/PennyLaneAI/pennylane/pull/8032)
 
