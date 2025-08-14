@@ -277,6 +277,9 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
                     obj.copy(tapes=new_tapes),
                 ]
             return transformed_tapes, processing_fn
+
+        if isinstance(obj, Sequence) and all("QuantumScriptSequence" in str(type(q)) for q in obj):
+            return self._batch_transform(obj, targs, tkwargs)
         #### --------------------------------------------- ####
 
         if isinstance(obj, qml.workflow.QNode):
