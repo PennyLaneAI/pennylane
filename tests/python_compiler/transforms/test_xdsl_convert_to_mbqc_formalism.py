@@ -36,7 +36,7 @@ from pennylane.ftqc import RotXZX
 class TestConvertToMBQCFormalismPass:
     """Unit tests for ConvertToMBQCFormalismPass."""
 
-    def test_generate_graph_unsupported_gate(self, unsupported_gate):
+    def test_generate_graph_unsupported_gate(self):
         """Test that error raised for unsupported gates."""
         with pytest.raises(NotImplementedError):
             _generate_graph("IsingXY")
