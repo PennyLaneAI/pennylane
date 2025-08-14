@@ -251,7 +251,7 @@ def match_controlled_iX_gate(
 def match_mcx_gt4wires(
     tape: QuantumScript, custom_quantum_cost=None, additional_controls=0
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Quantum transform to match (greater than or equal to 4)-qubit multi controlled X gates, simple case given on
+    """Quantum transform to match (greater than or equal to 4)-qubit `MultiControlledX` gates as outlined on
     page six of Amy, M. and Ross, N. J., “Phase-state duality in reversible circuit design”,
     Physical Review A, vol. 104, no. 5, Art. no. 052602, APS, 2021. `doi:10.1103/PhysRevA.104.052602
     <https://journals.aps.org/pra/abstract/10.1103/PhysRevA.104.052602>`_.
@@ -259,7 +259,7 @@ def match_mcx_gt4wires(
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
         additional_controls (int): Additional controls in excess of 4.
-        custom_quantum_cost (dict): Custom cost dict for involved gates.
+        custom_quantum_cost (dict): Custom cost dictionary for gates involved in the pattern-match. The dictionary keys are the gates involved, and the values are integers (higher/lower integer value means the associated gate has a higher/lower cost).
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
@@ -267,8 +267,8 @@ def match_mcx_gt4wires(
 
     .. note::
 
-        Will also replace any subcircuits from the full pattern (composed of the greater-than-or-equal-to-4-qubit
-        multi-controlled-X gate and its decomposition) that can be replaced by the rest of the pattern.
+        This transform will also replace any subcircuits from the full pattern (composed of the greater-than-or-equal-to-4-qubit
+        ``MultiControlledX`` gate and its decomposition) that can be replaced by the rest of the pattern.
 
     .. note::
 
@@ -276,8 +276,8 @@ def match_mcx_gt4wires(
         for relative phases as we do here, the work wires must remain in the same state when matched with a global
         uncomputation later (Amy, M. and Ross, N. J., 2021).
 
-        i.e. if a compiler pass using match_controlled_iX_gate() yields a circuit with 4-qubit multi controlled X
-        gates in it, a second compiler pass using this transfom would lower these to Toffolis + Hadamards. This yields
+        For example, if a compiler pass using ``match_controlled_iX_gate`` yields a circuit with 4-qubit ``MultiControlledX``
+        gates in it, a second compiler pass using this transfom would lower these to ``Toffoli`` and ``Hadamard`` gates. This yields
         an improved decomposition in terms of the number of expensive gates.
 
     **Example**
@@ -309,7 +309,7 @@ def match_mcx_gt4wires(
         6: ────╰X─┤
         5: ──X────┤
 
-    By running the transform we replaced the 4-qubit multi controlled X gate:
+    By running the transform we replaced the 4-qubit ``MultiControlledX`` gate:
 
     >>> print(qml.draw(lowered_qnode, level=1)())
         0: ──────────╭●─────────────┤  <Z>
