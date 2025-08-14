@@ -259,7 +259,7 @@ def match_mcx_gt4wires(
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
         additional_controls (int): Additional controls in excess of 4.
-        custom_quantum_cost (dict): Custom cost dict for involved gates.
+        custom_quantum_cost (dict): Custom cost dictionary for gates involved in the pattern-match. The dictionary keys are the gates involved, and the values are integers (higher/lower integer value means the associated gate has a higher/lower cost).
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
