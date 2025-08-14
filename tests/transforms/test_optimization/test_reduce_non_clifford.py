@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the `zx.full_reduce` transform.
+Unit tests for the `zx.reduce_non_clifford` transform.
 """
 import sys
 
@@ -26,7 +26,7 @@ pytest.importorskip("pyzx")
 
 
 def test_import_pyzx_error(monkeypatch):
-    """Test that a ModuleNotFoundError is raised by the full_reduce transform
+    """Test that a ModuleNotFoundError is raised by the reduce_non_clifford transform
     when the pyzx external package is not installed."""
 
     with monkeypatch.context() as m:
@@ -35,11 +35,11 @@ def test_import_pyzx_error(monkeypatch):
         qs = QuantumScript(ops=[], measurements=[])
 
         with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
-            qml.transforms.zx.full_reduce(qs)
+            qml.transforms.zx.reduce_non_clifford(qs)
 
 
 @pytest.mark.external
-class TestFullReduce:
+class TestReduceNonClifford:
 
     @pytest.mark.parametrize(
         "gate",
@@ -66,7 +66,7 @@ class TestFullReduce:
         ops = [gate, gate]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.full_reduce(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == []
 
@@ -83,7 +83,7 @@ class TestFullReduce:
         ops = [qml.S(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.full_reduce(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -101,7 +101,7 @@ class TestFullReduce:
         ops = [qml.T(0)] * num_gates
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.full_reduce(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -118,7 +118,7 @@ class TestFullReduce:
         ops = [qml.RX(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.full_reduce(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert len(new_qs.operations) == 3
 
@@ -145,7 +145,7 @@ class TestFullReduce:
         ops = [qml.RY(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.full_reduce(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert len(new_qs.operations) == 5
 
@@ -174,7 +174,7 @@ class TestFullReduce:
         ops = [qml.RZ(angle, wires=0) for angle in params]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.full_reduce(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert len(new_qs.operations) == 1
 
@@ -205,7 +205,7 @@ class TestFullReduce:
         ops = [qml.RZ(angle, wires=0)]
 
         qs = QuantumScript(ops)
-        (new_qs,), _ = qml.transforms.zx.full_reduce(qs)
+        (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert new_qs.operations == expected_ops
 
@@ -237,7 +237,7 @@ class TestFullReduce:
         ]
         original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
 
-        (transformed_tape,), _ = qml.transforms.zx.full_reduce(original_tape)
+        (transformed_tape,), _ = qml.transforms.zx.reduce_non_clifford(original_tape)
 
         expected_ops = [
             qml.S(wires=0),
@@ -285,7 +285,7 @@ class TestFullReduce:
             qml.CNOT(wires=[1, 2])
             return qml.state()
 
-        reduced_circ = qml.transforms.zx.full_reduce(original_circ)
+        reduced_circ = qml.transforms.zx.reduce_non_clifford(original_circ)
 
         state1 = original_circ(*params)
         state2 = reduced_circ(*params)

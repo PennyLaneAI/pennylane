@@ -28,7 +28,7 @@ from .helper import _needs_pyzx
 
 @_needs_pyzx
 @transform
-def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Optimizes an arbitrary circuit applying the full ZX-based pipeline to reduce the number of T gates.
 
     This transform works performing the following simplification/optimization steps:
@@ -64,7 +64,7 @@ def full_reduce(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
 
         dev = qml.device("default.qubit")
 
-        @zx.full_reduce
+        @zx.reduce_non_clifford
         @qml.qnode(dev)
         def circuit(x, y):
             qml.T(0)

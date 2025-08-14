@@ -13,5 +13,5 @@
 # limitations under the License.
 """PennyLane ZX calculus module"""
 from .converter import to_zx, from_zx
-from .full_reduce import full_reduce
+from .reduce_non_clifford import reduce_non_clifford
 from .push_hadamards import push_hadamards

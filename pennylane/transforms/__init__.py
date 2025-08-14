@@ -62,10 +62,10 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.match_controlled_iX_gate
     ~transforms.single_qubit_fusion
     ~transforms.transpile
-    ~transforms.zx.full_reduce
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
     ~transforms.zx.push_hadamards
+    ~transforms.zx.reduce_non_clifford
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -337,8 +337,8 @@ from .tape_expand import (
 )
 from .transpile import transpile
 from .zx import to_zx, from_zx
-from .zx.full_reduce import full_reduce
 from .zx.push_hadamards import push_hadamards
+from .zx.reduce_non_clifford import reduce_non_clifford
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 
