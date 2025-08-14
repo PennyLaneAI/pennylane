@@ -64,6 +64,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
+  with quantum just-in-time compilation via the `@qml.qjit` decorator.
+  [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+
 * The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
   have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
   [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
