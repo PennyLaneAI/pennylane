@@ -59,7 +59,7 @@ def test_perturbation_error(backend, parallel_mode, mpi4py_support):
         pf,
         frags,
         [state1, state2],
-        order=3,
+        max_order=3,
         num_workers=num_workers,
         backend=backend,
         parallel_mode=parallel_mode,
@@ -93,7 +93,7 @@ def test_perturbation_error_invalid_parallel_mode():
             pf,
             frags,
             [state1, state2],
-            order=3,
+            max_order=3,
             num_workers=1,
             backend="mp_pool",
             parallel_mode="invalid_mode",
@@ -104,11 +104,11 @@ def test_perturbation_error_invalid_parallel_mode():
     "term_dict, expected",
     [
         (
-            [{("A",): 5}, {("X", "A", "B"): 4, ("Y", "A", "B"): 3}],
+            {("X", "A", "B"): 4, ("Y", "A", "B"): 3},
             [(frozenset({("X", 4), ("Y", 3)}), "A", "B")],
         ),
         (
-            [{("A",): 5}, {("X", "A", "B"): 4, ("Y", "A", "C"): 3}],
+            {("X", "A", "B"): 4, ("Y", "A", "C"): 3},
             [(frozenset({("X", 4)}), "A", "B"), (frozenset({("Y", 3)}), "A", "C")],
         ),
     ],

@@ -241,26 +241,45 @@ def concatenate(values, axis=0, like=None):
     if like == "torch":
         import torch
 
-        device = (
-            "cuda"
-            if any(t.device.type == "cuda" for t in values if isinstance(t, torch.Tensor))
-            else "cpu"
-        )
+        device_set = set()
+        dev_indices = set()
+        torch_device = None
+        for t in values:
+            if isinstance(t, torch.Tensor):
+                device_set.add(t.device.type)
+                dev_indices.add(t.device.index)
+
+        # TODO: Remove the no-cover pragma once we are able to test with multiple GPUs on CI.
+        if device_set:  # pragma: no cover
+            # If data exists on two separate GPUs, outright fail
+            if len(dev_indices) > 1:
+                device_names = ", ".join(str(d) for d in device_set)
+
+                raise RuntimeError(
+                    f"Expected all tensors to be on the same device, but found at least two devices, {device_names}!"
+                )
+
+            device = device_set.pop()
+            dev_id = dev_indices.pop() if dev_indices else None
+            torch_device = torch.device(f"{device}:{dev_id}" if dev_id is not None else device)
+
+        else:  # pragma: no cover
+            torch_device = torch.device("cpu")
 
         if axis is None:
             # flatten and then concatenate zero'th dimension
             # to reproduce numpy's behaviour
             values = [
-                np.flatten(torch.as_tensor(t, device=torch.device(device)))  # pragma: no cover
+                np.flatten(torch.as_tensor(t, device=torch_device))  # pragma: no cover
                 for t in values
             ]
             axis = 0
         else:
-            values = [
-                torch.as_tensor(t, device=torch.device(device)) for t in values  # pragma: no cover
-            ]
+            values = [torch.as_tensor(t, device=torch_device) for t in values]  # pragma: no cover
 
-    if like == "tensorflow" and axis is None:
+    if (
+        like == "tensorflow" and axis is None
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # flatten and then concatenate zero'th dimension
         # to reproduce numpy's behaviour
         values = [np.flatten(np.array(t)) for t in values]
@@ -570,7 +589,7 @@ def einsum(indices, *operands, like=None, optimize=None):
     if optimize is None or like == "torch":
         # torch einsum doesn't support the optimize keyword argument
         return np.einsum(indices, *operands, like=like)
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # Unpacking and casting necessary for higher order derivatives,
         # and avoiding implicit fp32 down-conversions.
         op1, op2 = operands
@@ -642,7 +661,9 @@ def where(condition, x=None, y=None):
         interface = get_interface(condition)
         res = np.where(condition, like=interface)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             return np.transpose(np.stack(res))
 
         return res
@@ -845,7 +866,7 @@ def add(*args, like=None, **kwargs):
 @multi_dispatch()
 def iscomplex(tensor, like=None):
     """Return True if the tensor has a non-zero complex component."""
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         imag_tensor = tf.math.imag(tensor)
@@ -876,7 +897,7 @@ def expm(tensor, like=None):
         from jax.scipy.linalg import expm as jax_expm
 
         return jax_expm(tensor)
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         return tf.linalg.expm(tensor)
@@ -891,7 +912,9 @@ def norm(tensor, like=None, **kwargs):
     if like == "jax":
         from jax.numpy.linalg import norm
 
-    elif like == "tensorflow":
+    elif (
+        like == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         from tensorflow import norm
 
     elif like == "torch":
@@ -936,7 +959,7 @@ def svd(tensor, like=None, **kwargs):
         if ``compute_uv`` is ``True`` or ``None``, or only the singular values
         if ``compute_uv`` is ``False``
     """
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         from tensorflow.linalg import adjoint, svd
 
         # Tensorflow results need some post-processing to keep it similar to other frameworks.
@@ -1028,7 +1051,7 @@ def detach(tensor, like=None):
     if like == "torch":
         return tensor.detach()
 
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         return tf.stop_gradient(tensor)
@@ -1061,7 +1084,7 @@ def set_index(array, idx, val, like=None):
         jax_array = jnp.array(array)
         return jax_array.at[idx].set(val)
 
-    if like == "tensorflow":
+    if like == "tensorflow":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         return tf.concat([array[:idx], val[None], array[idx + 1 :]], 0)

@@ -230,24 +230,26 @@ class Pow(ScalarSymbolicOp):
     @staticmethod
     def _matrix(scalar, mat):
         if isinstance(scalar, int):
-            if qml.math.get_deep_interface(mat) != "tensorflow":
-                return qmlmath.linalg.matrix_power(mat, scalar)
+            if (
+                qml.math.get_deep_interface(mat) == "tensorflow"
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
+                # TensorFlow doesn't have a matrix_power func, and scipy.linalg.fractional_matrix_power
+                # is not differentiable. So we use a custom implementation of matrix power for integer
+                # exponents below.
+                if scalar == 0:
+                    # Used instead of qml.math.eye for tracing derivatives
+                    return mat @ qmlmath.linalg.inv(mat)
+                if scalar > 0:
+                    out = mat
+                else:
+                    out = mat = qmlmath.linalg.inv(mat)
+                    scalar *= -1
 
-            # TensorFlow doesn't have a matrix_power func, and scipy.linalg.fractional_matrix_power
-            # is not differentiable. So we use a custom implementation of matrix power for integer
-            # exponents below.
-            if scalar == 0:
-                # Used instead of qml.math.eye for tracing derivatives
-                return mat @ qmlmath.linalg.inv(mat)
-            if scalar > 0:
-                out = mat
-            else:
-                out = mat = qmlmath.linalg.inv(mat)
-                scalar *= -1
+                for _ in range(scalar - 1):
+                    out @= mat
+                return out
 
-            for _ in range(scalar - 1):
-                out @= mat
-            return out
+            return qmlmath.linalg.matrix_power(mat, scalar)
 
         return fractional_matrix_power(mat, scalar)
 
@@ -395,8 +397,9 @@ class Pow(ScalarSymbolicOp):
             ops = base.pow(z=self.z)
             if not ops:
                 return qml.Identity(self.wires)
-            op = qml.prod(*ops) if len(ops) > 1 else ops[0]
-            return op if qml.capture.enabled() else op.simplify()
+            if not qml.capture.enabled():
+                ops = [op.simplify() for op in ops]
+            return qml.prod(*ops) if len(ops) > 1 else ops[0]
         except PowUndefinedError:
             return Pow(base=base, z=self.z)
 

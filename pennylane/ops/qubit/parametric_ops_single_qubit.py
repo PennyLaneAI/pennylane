@@ -122,7 +122,9 @@ class RX(Operation):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
@@ -291,7 +293,9 @@ class RY(Operation):
 
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
         # The following avoids casting an imaginary quantity to reals when backpropagating
@@ -448,7 +452,9 @@ class RZ(Operation):
         tensor([[0.9689-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9689+0.2474j]])
         """
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
             z = qml.math.zeros_like(p)
 
@@ -496,7 +502,9 @@ class RZ(Operation):
         >>> qml.RZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
             return qml.math.stack([phase, qml.math.conj(phase)], axis=-1)
 
@@ -664,7 +672,9 @@ class PhaseShift(Operation):
         tensor([[0.9689-0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.9689+0.2474j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
             ones = qml.math.ones_like(p)
             zeros = qml.math.zeros_like(p)
@@ -707,7 +717,9 @@ class PhaseShift(Operation):
         >>> qml.PhaseShift.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
             return stack_last([qml.math.ones_like(phase), phase])
 
@@ -780,7 +792,7 @@ add_decomps("Pow(PhaseShift)", pow_rotation)
 
 
 def _controlled_phaseshift_condition(*_, num_control_wires, num_work_wires, work_wire_type, **__):
-    return num_control_wires == 1 or (num_work_wires > 0 and work_wire_type == "clean")
+    return num_control_wires == 1 or (num_work_wires > 0 and work_wire_type == "zeroed")
 
 
 def _controlled_phaseshift_resource(*_, num_control_wires, num_work_wires, work_wire_type, **__):
@@ -918,7 +930,9 @@ class Rot(Operation):
         s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted and then
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
             omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
@@ -1138,7 +1152,9 @@ class U1(Operation):
         tensor([[1.0000+0.0000j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.8776+0.4794j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(phi, 1j)
             fac = qml.math.cast_like([0, 1], 1j)
         else:
@@ -1287,7 +1303,9 @@ class U2(Operation):
         interface = qml.math.get_interface(phi, delta)
 
         # If anything is not tensorflow, it has to be casted and then
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
             delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
 
@@ -1477,7 +1495,9 @@ class U3(Operation):
         s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted and then
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
             delta = qml.math.cast_like(qml.math.asarray(delta, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
