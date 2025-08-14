@@ -257,8 +257,8 @@ def _get_plxpr_merge_amplitude_embedding():  # pylint: disable=missing-docstring
             # newly seen states from the branches continue to be
             # detected after the cond
             curr_wires |= self.state["visited_wires"]
-            curr_dynamic_wires_found = self.state["dynamic_wires_found"]
-            curr_ops_found = self.state["ops_found"]
+            curr_dynamic_wires_found = curr_dynamic_wires_found or self.state["dynamic_wires_found"]
+            curr_ops_found = curr_ops_found or self.state["ops_found"]
 
             # Reset state for the next branch so we don't get false positive collisions
             # (copy so if state mutates we preserved true initial state)
