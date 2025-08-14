@@ -86,10 +86,12 @@ class ExecutionConfig:
     gradient_method: str | TransformDispatcher | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict | MappingProxyType = MappingProxyType({})
+    gradient_keyword_arguments: dict | MappingProxyType = field(
+        default_factory=lambda: MappingProxyType({})
+    )
     """Arguments used to control a gradient transform"""
 
-    device_options: dict | MappingProxyType = MappingProxyType({})
+    device_options: dict | MappingProxyType = field(default_factory=lambda: MappingProxyType({}))
     """Various options for the device executing a quantum circuit"""
 
     interface: Interface = Interface.NUMPY
