@@ -870,8 +870,10 @@ class QNode:
         return self._impl_call(*args, **kwargs)
 
 
-def qnode(device, **kwargs) -> Callable[..., Result]:
-    """A decorator that creates a QNode for a quantum function."""
-    partial_func = functools.partial(QNode, device=device, **kwargs)
-    functools.update_wrapper(partial_func, QNode)
-    return partial_func
+def qnode(device, **kwargs):
+    """Docstring will be updated below."""
+    return functools.partial(QNode, device=device, **kwargs)
+
+
+qnode.__doc__ = QNode.__doc__
+qnode.__signature__ = inspect.signature(QNode)
