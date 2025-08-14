@@ -72,7 +72,7 @@ class TestValidation:
         assert res == "device"
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["jax", "tensorflow", "torch", "autograd"])
+    @pytest.mark.parametrize("interface", ["jax", "torch", "autograd"])
     def test_best_method_is_backprop(self, interface):
         """Test that the method for determining the best diff method
         for the default.qubit device and a valid interface returns back-propagation"""

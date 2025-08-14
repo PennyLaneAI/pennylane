@@ -409,7 +409,9 @@ class TestCondReturns:
         assert len(true_fn.outvars) == 0
         assert true_fn.eqns[0].primitive == qml.X._primitive  # pylint: disable=protected-access
 
-        assert jaxpr.eqns[0].params["jaxpr_branches"][-1] is None
+        false_fn = jaxpr.eqns[0].params["jaxpr_branches"][-1]
+        assert len(false_fn.eqns) == 0
+        assert len(false_fn.outvars) == 0
 
 
 dev = qml.device("default.qubit", wires=3)

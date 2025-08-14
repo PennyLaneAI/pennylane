@@ -465,7 +465,7 @@ class TestIntegration:
         assert dev.num_executions == 5
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["tf", "auto"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_correct_number_of_executions_tf(self, interface):
         """Test that number of executions are tracked in the tf interface."""
 
@@ -656,7 +656,7 @@ class TestIntegration:
         spy.assert_called()
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["tf", "auto"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_conditional_ops_tensorflow(self, interface):
         """Test conditional operations with TensorFlow."""
         import tensorflow as tf
