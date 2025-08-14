@@ -387,7 +387,7 @@ def quantum_fisher(
 
     """
 
-    if device.shots or not isinstance(device, DefaultQubit):
+    if tape.shots or not isinstance(device, DefaultQubit):
         tapes, processing_fn = metric_tensor(tape, *args, **kwargs)
 
         def processing_fn_multiply(res):

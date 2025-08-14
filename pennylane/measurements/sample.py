@@ -191,7 +191,7 @@ def sample(
     wires=None,
 ) -> SampleMP:
     r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
+    determined from QNode,
     returning raw samples. If no observable is provided then basis state samples are returned
     directly from the device.
 

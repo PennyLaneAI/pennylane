@@ -36,7 +36,7 @@ class TestRotoselectOptimizer:
         possible_generators = [qml.RX, qml.RY, qml.RZ]
         rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", shots=None, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
@@ -80,7 +80,7 @@ class TestRotoselectOptimizer:
         possible_generators = [qml.RX, qml.RY, qml.RZ]
         rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", shots=None, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
@@ -134,7 +134,7 @@ class TestRotoselectOptimizer:
         possible_generators = [qml.RX, qml.RY, qml.RZ]
         rotoselect_opt.possible_generators = possible_generators
 
-        dev = qml.device("default.qubit", shots=None, wires=2)
+        dev = qml.device("default.qubit", wires=2)
 
         def ansatz(params, generators):
             generators[0](params[0], wires=0)
