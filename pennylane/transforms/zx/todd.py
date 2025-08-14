@@ -30,8 +30,8 @@ from .helper import _needs_pyzx
 @transform
 def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
-    Applies the `Third Order Duplicate and Destroy (TODD) <https://arxiv.org/abs/1712.01557>` algorithm to reduce the number of
-    T gates in the given Clifford + T circuit.
+    Apply the `Third Order Duplicate and Destroy (TODD) <https://arxiv.org/abs/1712.01557>` algorithm to reduce
+    the number of T gates in the given Clifford + T circuit.
 
     This transform optimizes Clifford + T circuits by cutting them into phase-polynomial blocks,
     and using the TODD algorithm to optimize each of these phase polynomials.
