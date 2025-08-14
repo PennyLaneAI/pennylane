@@ -9,10 +9,6 @@ from pennylane.ops.op_math import adjoint
 from .composite import CompositeOp, handle_recursion_error
 from ...exceptions import MatrixUndefinedError
 
-MAX_NUM_WIRES_KRON_PRODUCT = 9
-"""The maximum number of wires up to which using ``math.kron`` is faster than ``math.dot`` for
-computing the sparse matrix representation."""
-
 
 def conjugation(U, V, U_dag=None):
     """Construct an operator which represents the product of the
