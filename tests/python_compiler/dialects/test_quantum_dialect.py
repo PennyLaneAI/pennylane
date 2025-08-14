@@ -55,6 +55,7 @@ expected_ops_names = {
     "MeasureOp": "quantum.measure",
     "MultiRZOp": "quantum.multirz",
     "NamedObsOp": "quantum.namedobs",
+    "NumQubitsOp": "quantum.num_qubits",
     "ProbsOp": "quantum.probs",
     "QubitUnitaryOp": "quantum.unitary",
     "SampleOp": "quantum.sample",
@@ -151,6 +152,9 @@ def test_assembly_format():
     // CHECK: [[QUBIT3:%.+]] = quantum.alloc_qb : !quantum.bit
     %alloc_qubit = quantum.alloc_qb : !quantum.bit
 
+    // CHECK: [[NUM_QUBITS:%.+]] = quantum.num_qubits : i64
+    %num_qubits = quantum.num_qubits : i64
+
     // CHECK: quantum.dealloc_qb [[QUBIT3]] : !quantum.bit
     quantum.dealloc_qb %alloc_qubit : !quantum.bit
 
@@ -191,3 +195,7 @@ def test_assembly_format():
     )
 
     assert matcher.run() == 0
+
+
+if __name__ == "__main__":
+    pytest.main(["-x", __file__])
