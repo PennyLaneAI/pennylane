@@ -59,6 +59,9 @@
 * PennyLane `autograph` supports standard python `arr[i] = x` instead of jax `arr = arr.at[i].set(x)`.
   [(#8027)](https://github.com/PennyLaneAI/pennylane/pull/8027)
 
+* PennyLane `autograph` supports in-place array updates like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
+  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
