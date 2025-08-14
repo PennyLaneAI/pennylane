@@ -20,22 +20,16 @@ from xdsl.context import Context
 from xdsl.dialects import builtin
 from xdsl.passes import ModulePass, PassPipeline
 
+from pennylane.typing import Callable
+
 from .transform_interpreter import TransformInterpreterPass  # pylint: disable=no-name-in-module
 
 available_passes = {}
-callback = None
 
 
 def register_pass(name, _callable):
     """Registers the passes available in the dictionary"""
     available_passes[name] = _callable  # pragma: no cover
-
-
-def register_callback(_callback):
-    """Register callback"""
-    # pylint: disable-next=global-statement
-    global callback
-    callback = _callback
 
 
 # pylint: disable=too-few-public-methods
@@ -50,6 +44,7 @@ class ApplyTransformSequence(ModulePass):
     """
 
     name = "apply-transform-sequence"
+    callback: Callable[[ModulePass, builtin.ModuleOp, ModulePass], None] | None = None
 
     def apply(  # pylint: disable=arguments-renamed,no-self-use
         self, ctx: Context, module: builtin.ModuleOp
@@ -64,7 +59,7 @@ class ApplyTransformSequence(ModulePass):
 
         pipeline = PassPipeline(
             # pylint: disable-next=unexpected-keyword-arg
-            (TransformInterpreterPass(passes=available_passes, callback=callback),)
+            (TransformInterpreterPass(passes=available_passes, callback=self.callback),)
         )
         for op in nested_modules:
             pipeline.apply(ctx, op)

@@ -148,4 +148,19 @@ class ExecutionConfig:
             object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
 
 
-DefaultExecutionConfig = ExecutionConfig()
+# pylint: disable=missing-function-docstring, inconsistent-return-statements
+def __getattr__(name):
+    if name == "DefaultExecutionConfig":
+        # pylint: disable=import-outside-toplevel
+        import warnings
+
+        from pennylane.exceptions import PennyLaneDeprecationWarning
+
+        warnings.warn(
+            "`pennylane.devices.execution_config.DefaultExecutionConfig` is deprecated and will be removed in v0.44. "
+            "Please use `ExecutionConfig()` instead.",
+            PennyLaneDeprecationWarning,
+            stacklevel=2,
+        )
+        return ExecutionConfig()
+    raise AttributeError(f"module 'pennylane.devices.execution_config' has no attribute '{name}'")

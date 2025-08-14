@@ -387,13 +387,12 @@ class TestPhasedDecomposition:
         """Test builtins support in pauli_decompose"""
 
         import jax
-        import tensorflow as tf
         import torch
 
-        libraries = [np.array, jax.numpy.array, torch.tensor, tf.Variable]
+        libraries = [np.array, jax.numpy.array, torch.tensor]
         matrices = [[[library(i) for i in row] for row in matrix] for library in libraries]
 
-        interfaces = ["numpy", "jax", "torch", "tensorflow"]
+        interfaces = ["numpy", "jax", "torch"]
         for mat, interface in zip(matrices, interfaces):
             coeffs = qml.pauli_decompose(mat).coeffs
             assert qml.math.get_interface(coeffs[0]) == interface
@@ -412,7 +411,6 @@ class TestPhasedDecomposition:
         """Test differentiability for pauli_decompose"""
 
         import jax
-        import tensorflow as tf
         import torch
 
         dev = qml.device("default.qubit", wires=2)
@@ -436,15 +434,8 @@ class TestPhasedDecomposition:
             result.backward()
             grad_torch = A.grad
 
-            # Tensorflow Interface
-            A = tf.Variable(qml.numpy.array(matrix))
-            with tf.GradientTape() as tape:
-                loss = circuit(A)
-            grad_tflow = tape.gradient(loss, A)
-
             # Comparisons - note: https://github.com/google/jax/issues/9110
             assert qml.math.allclose(grad_numpy, grad_jax)
-            assert qml.math.allclose(grad_torch, grad_tflow)
             assert qml.math.allclose(grad_numpy, qml.math.conjugate(grad_torch))
 
 

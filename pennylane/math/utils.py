@@ -430,7 +430,9 @@ def is_abstract(tensor, like=None):
 
         return isinstance(tensor, DynamicJaxprTracer)
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
         from tensorflow.python.framework.ops import EagerTensor
 
@@ -517,7 +519,9 @@ def requires_grad(tensor, interface=None):
     """
     interface = interface or math.get_interface(tensor)
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         should_record_backprop = import_should_record_backprop()
@@ -569,7 +573,9 @@ def in_backprop(tensor, interface=None):
     """
     interface = interface or math.get_interface(tensor)
 
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf
 
         should_record_backprop = import_should_record_backprop()
