@@ -35,7 +35,7 @@ class Compiler:
     """Compiler namespace"""
 
     @staticmethod
-    def run(jmod: jaxModule, callback: Callable = None) -> jaxModule:
+    def run(jmod: jaxModule, callback: Callable[[ModulePass, builtin.ModuleOp, ModulePass], None] | None = None) -> jaxModule:
         """Runs the apply-transform-sequence pass.
 
         The apply-transform-sequence pass is a "meta-pass". In other words,
