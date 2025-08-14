@@ -225,6 +225,21 @@ class TestUpdate:
 class TestInitialization:
     """Testing the initialization of the qnode."""
 
+    def test_shots_initialization(self):
+        """Test that when max_diff = 1, the cache initializes to false."""
+
+        @qml.qnode(qml.device("default.qubit"))
+        def f():
+            return qml.state()
+
+        assert not f.shots
+
+        @qml.qnode(qml.device("default.qubit"), shots=10)
+        def f():
+            return qml.state()
+
+        assert f.shots == 10
+
     def test_cache_initialization_maxdiff_1(self):
         """Test that when max_diff = 1, the cache initializes to false."""
 
@@ -2106,6 +2121,10 @@ class TestSetShots:
         dev_analytic = qml.device("default.qubit", wires=1)
         qnode_analytic = qml.QNode(dummyfunc, dev_analytic)
         assert qnode_analytic._shots.total_shots is None
+
+        # Test that qnode creation with shots parameter initializes _shots correctly
+        qn_with_shots = qml.QNode(dummyfunc, dev_with_shots)
+        assert qn_with_shots._shots == qml.measurements.Shots(42)
 
     def test_shots_override_warning(self):
         """Test that a warning is raised when both set_shots transform and shots parameter are used."""
