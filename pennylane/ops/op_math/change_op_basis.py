@@ -17,7 +17,7 @@ This submodule defines a class for compute, uncompute patterns.
 from collections import Counter
 from functools import reduce
 
-from pennylane import apply, math, queuing
+from pennylane import math, queuing
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
 from pennylane.operation import (
     DiagGatesUndefinedError,
@@ -132,7 +132,7 @@ class ChangeOpBasis(CompositeOp):
             return [
                 self[0]._unflatten(*self[0]._flatten()),  # pylint: disable=protected-access
                 self[1]._unflatten(*self[1]._flatten()),  # pylint: disable=protected-access
-                self[2]._unflatten(*self[2]._flatten())   # pylint: disable=protected-access
+                self[2]._unflatten(*self[2]._flatten()),  # pylint: disable=protected-access
             ]
         return list(self)
 
