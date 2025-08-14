@@ -483,7 +483,7 @@ def _decompose_mcx_with_two_workers(wires, work_wires, work_wire_type, **__):
     auxiliary qubits as described in Sec. 5 of [1].
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
 
     """
