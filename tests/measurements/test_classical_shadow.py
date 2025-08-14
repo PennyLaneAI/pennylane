@@ -1037,18 +1037,19 @@ def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recip
     # high number of shots to prevent true negatives
     shots = 1000
 
-    dev = DefaultQubitLegacy(wires=wires, seed=seed)
+    dev = DefaultQubitLegacy(wires=wires, shots=shots, seed=seed)
 
-    @qml.set_shots(shots)
-    @qml.qnode(dev, interface=interface)
-    def circuit():
-        for wire in range(wires):
-            if circuit_basis in ("x", "y"):
-                qml.Hadamard(wire)
-            if circuit_basis == "y":
-                qml.RZ(np.pi / 2, wire)
+    with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
 
-        return qml.classical_shadow(wires=range(wires), seed=seed)
+        @qml.qnode(dev, interface=interface)
+        def circuit():
+            for wire in range(wires):
+                if circuit_basis in ("x", "y"):
+                    qml.Hadamard(wire)
+                if circuit_basis == "y":
+                    qml.RZ(np.pi / 2, wire)
+
+            return qml.classical_shadow(wires=range(wires), seed=seed)
 
     bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
     tape = qml.workflow.construct_tape(circuit)()
