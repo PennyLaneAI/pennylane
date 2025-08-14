@@ -319,23 +319,6 @@ def match_mcx_gt4wires(
         5: ──H─├●─├X─│──├X─├●──H──X─┤
         4: ──H─│──╰●─╰X─╰●─│───H──X─┤
         6: ────╰X──────────╰X───────┤
-
-    .. details::
-        :title: Usage Details
-
-        The transform can be applied on :class:`QNode` directly.
-
-        .. code-block:: python
-
-            @replace_relative_phase_toffoli(custom_quantum_cost={"Toffoli": 1, "C(Hadamard)": 1, "CH": 1})
-            @qml.qnode(device=dev)
-            def circuit():
-                qml.MultiControlledX(wires=[0, 1, 2, 3, 6])
-                qml.X(4)
-                qml.X(5)
-                return qml.expval(qml.Z(0))
-
-        The 4-qubit multi controlled X gate is then replaced before execution.
     """
     pattern_ops = [
         qml.MultiControlledX(
