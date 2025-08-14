@@ -17,9 +17,17 @@ Contains the FermionicSingleExcitation template.
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 import numpy as np
 
-from pennylane import math
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RX, RZ, Hadamard
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class FermionicSingleExcitation(Operation):
@@ -116,6 +124,8 @@ class FermionicSingleExcitation(Operation):
     grad_method = "A"
     parameter_frequencies = [(0.5, 1.0)]
 
+    resource_keys = {"num_wires"}
+
     def __init__(self, weight, wires=None, id=None):
         if len(wires) < 2:
             raise ValueError(f"expected at least two wires; got {len(wires)}")
@@ -125,6 +135,10 @@ class FermionicSingleExcitation(Operation):
             raise ValueError(f"Weight must be a scalar tensor {()}; got shape {shape}.")
 
         super().__init__(weight, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"num_wires": len(self.wires)}
 
     @property
     def num_params(self):
@@ -201,3 +215,69 @@ class FermionicSingleExcitation(Operation):
         op_list.append(RX(np.pi / 2, wires=p))
 
         return op_list
+
+
+def _fermionic_single_excitation_resources(num_wires):
+    return {RX: 4, Hadamard: 4, CNOT: 4 * (num_wires - 1), RZ: 2}
+
+
+@register_resources(_fermionic_single_excitation_resources)
+def _fermionic_single_excitation_decomposition(weight, wires):
+    # Interpret first and last wire as r and p
+    r = wires[0]
+    p = wires[-1]
+
+    # Sequence of the wires entering the CNOTs between wires 'r' and 'p'
+    set_cnot_wires = [list(wires.labels[l : l + 2]) for l in range(len(wires) - 1)]
+
+    if has_jax and capture.enabled():
+        set_cnot_wires = jnp.array(set_cnot_wires)
+
+    # ------------------------------------------------------------------
+    # Apply the first layer
+
+    # U_1, U_2 acting on wires 'r' and 'p'
+    RX(-np.pi / 2, wires=r)
+    Hadamard(wires=p)
+
+    # Applying CNOTs
+    @for_loop(len(set_cnot_wires))
+    def apply_cnots(i):
+        CNOT(wires=set_cnot_wires[i])
+
+    apply_cnots()  # pylint: disable=no-value-for-parameter
+
+    # Z rotation acting on wire 'p'
+    RZ(weight / 2, wires=p)
+
+    # Applying CNOTs in reverse order
+    @for_loop(len(set_cnot_wires) - 1, -1, -1)
+    def apply_cnots_reversed(i):
+        CNOT(wires=set_cnot_wires[i])
+
+    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
+
+    # U_1^+, U_2^+ acting on wires 'r' and 'p'
+    RX(np.pi / 2, wires=r)
+    Hadamard(wires=p)
+
+    # ------------------------------------------------------------------
+    # Apply the second layer
+
+    # U_1, U_2 acting on wires 'r' and 'p'
+    Hadamard(wires=r)
+    RX(-np.pi / 2, wires=p)
+
+    apply_cnots()  # pylint: disable=no-value-for-parameter
+
+    # Z rotation acting on wire 'p'
+    RZ(-weight / 2, wires=p)
+
+    apply_cnots_reversed()  # pylint: disable=no-value-for-parameter
+
+    # U_1^+, U_2^+ acting on wires 'r' and 'p'
+    Hadamard(wires=r)
+    RX(np.pi / 2, wires=p)
+
+
+add_decomps(FermionicSingleExcitation, _fermionic_single_excitation_decomposition)
