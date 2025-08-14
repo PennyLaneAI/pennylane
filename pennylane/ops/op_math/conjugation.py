@@ -117,7 +117,7 @@ class Conjugation(CompositeOp):
         return True
 
     def adjoint(self):
-        return Conjugation(*(adjoint(factor) for factor in self[::-1]))
+        return Conjugation(*(adjoint(factor, lazy=False) for factor in self[::-1]))
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
