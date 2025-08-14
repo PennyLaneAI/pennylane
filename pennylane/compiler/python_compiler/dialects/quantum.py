@@ -64,6 +64,7 @@ from xdsl.irdl import (
     SameVariadicResultSize,
     irdl_attr_definition,
     irdl_op_definition,
+    lazy_traits_def,
     operand_def,
     opt_operand_def,
     opt_prop_def,
@@ -75,11 +76,12 @@ from xdsl.irdl import (
     var_operand_def,
     var_result_def,
 )
-from xdsl.traits import (  # SingleBlockImplicitTerminator,
+from xdsl.traits import (
     HasParent,
     IsTerminator,
     NoMemoryEffect,
     Pure,
+    SingleBlockImplicitTerminator,
 )
 from xdsl.utils.exceptions import VerifyException
 
@@ -161,8 +163,7 @@ class AdjointOp(IRDLOperation):
 
     region = region_def("single_block")
 
-    # FIXME: Figure out what to do about YieldOp
-    # traits = traits_def(SingleBlockImplicitTerminator(YieldOp))
+    traits = lazy_traits_def(lambda: SingleBlockImplicitTerminator(YieldOp))
 
     def __init__(
         self,
