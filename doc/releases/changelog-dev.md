@@ -119,6 +119,8 @@
 
 <h4>Other improvements</h4>
 
+* Added the `NumQubitsOp` operation to the `Quantum` dialect of the Python compiler.
+[(#8063)](https://github.com/PennyLaneAI/pennylane/pull/8063)
 
 * An error is no longer raised when non-integer wire labels are used in QNodes using `mcm_method="deferred"`.
   [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
@@ -190,6 +192,7 @@
 * The `mbqc` xDSL dialect has been added to the Python compiler, which is used to represent
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
+  [(#8059)](https://github.com/PennyLaneAI/pennylane/pull/8059)
 
 * The `AllocQubitOp` and `DeallocQubitOp` operations have been added to the `Quantum` dialect in the
   Python compiler.
@@ -242,6 +245,9 @@
 
 * The `catalyst` xDSL dialect has been added to the Python compiler, which contains data structures that support core compiler functionality.
   [(#7901)](https://github.com/PennyLaneAI/pennylane/pull/7901)
+
+* New `SparseFragment` and `SparseState` classes have been created that allow to use sparse matrices for the Hamiltonian Fragments when estimating the Trotter error.
+  [(#7971)](https://github.com/PennyLaneAI/pennylane/pull/7971)
 
 * The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
   [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
@@ -506,6 +512,10 @@
   to be passed from the python compiler to Catalyst.
   [(#7957)](https://github.com/PennyLaneAI/pennylane/pull/7957)
 
+* An `xdsl_extras` module has been added to the Python compiler to house additional utilities and
+  functionality not available upstream in xDSL.
+  [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
+
 <h3>Documentation 📝</h3>
 
 * Updated the code examples in the documentation of :func:`~.specs`.
@@ -590,6 +600,7 @@ Simone Gasperini,
 David Ittah,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
+Pablo Antonio Moreno Casares
 Erick Ochoa,
 Mudit Pandey,
 Andrija Paurevic,
