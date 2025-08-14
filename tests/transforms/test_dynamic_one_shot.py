@@ -96,9 +96,10 @@ def test_postselection_error_with_wrong_device():
 def test_postselect_mode(postselect_mode, mocker):
     """Test that invalid shots are discarded if requested"""
     shots = 100
-    dev = qml.device("default.qubit", shots=shots)
+    dev = qml.device("default.qubit")
     spy = mocker.spy(qml, "dynamic_one_shot")
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, postselect_mode=postselect_mode)
     def f(x):
         qml.RX(x, 0)
@@ -119,8 +120,9 @@ def test_postselect_mode(postselect_mode, mocker):
 def test_postselect_mode_transform(postselect_mode):
     """Test that invalid shots are discarded if requested"""
     shots = 100
-    dev = qml.device("default.qubit", shots=shots)
+    dev = qml.device("default.qubit")
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, mcm_method="one-shot", postselect_mode=postselect_mode)
     def f(x):
         qml.RX(x, 0)
@@ -144,8 +146,9 @@ def test_hw_like_with_jax(use_jit, diff_method, seed):
     import jax  # pylint: disable=import-outside-toplevel
 
     shots = 10
-    dev = qml.device("default.qubit", shots=shots, seed=jax.random.PRNGKey(seed))
+    dev = qml.device("default.qubit", seed=jax.random.PRNGKey(seed))
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, postselect_mode="hw-like", diff_method=diff_method)
     def f(x):
         qml.RX(x, 0)
@@ -336,7 +339,7 @@ class TestInterfaces:
 
             seed = PRNGKey(seed)
 
-        dev = qml.device("default.qubit", wires=4, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=4, seed=seed)
         param = qml.math.array(np.pi / 2, like=interface)
 
         mv = qml.measure(0)

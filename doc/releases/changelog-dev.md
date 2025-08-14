@@ -368,6 +368,20 @@
 
 <h3>Deprecations 👋</h3>
 
+* Setting shots on a device through the `shots=` kwarg, e.g. `qml.device("default.qubit", wires=2, shots=1000)`, is deprecated. Please use the `set_shots` transform on the `QNode` instead.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.set_shots(1000)
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
+
 * Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
   Instead, we recommend using the :doc:`JAX </introduction/interfaces/jax>` or :doc:`PyTorch </introduction/interfaces/torch>` interface for
@@ -465,6 +479,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Improve type hinting internally.
+  [(#8086)](https://github.com/PennyLaneAI/pennylane/pull/8086)
 
 * The `cond` primitive with program capture no longer stores missing false branches as `None`, instead storing them
   as jaxprs with no output.
