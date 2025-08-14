@@ -571,7 +571,10 @@ class SpecialUnitary(Operation):
             rjac, ijac = torch.autograd.functional.jacobian(split_matrix, theta)
             jac = rjac + 1j * ijac
 
-        elif interface in ("tensorflow", "tf"):
+        elif interface in (
+            "tensorflow",
+            "tf",
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             import tensorflow as tf
 
             with tf.GradientTape(persistent=True) as tape:

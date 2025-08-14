@@ -82,7 +82,7 @@ def _validate_jax_version():
 
 
 # pylint: disable=import-outside-toplevel
-def _use_tensorflow_autograph():
+def _use_tensorflow_autograph():  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Checks if TensorFlow is in graph mode, allowing Autograph for optimized execution"""
     try:  # pragma: no cover
         import tensorflow as tf
@@ -122,7 +122,9 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
     if interface in (Interface.JAX, Interface.JAX_JIT):
         _validate_jax_version()
 
-    if interface == Interface.TF and _use_tensorflow_autograph():
+    if (
+        interface == Interface.TF and _use_tensorflow_autograph()
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         interface = Interface.TF_AUTOGRAPH
     if interface == Interface.JAX:
         # pylint: disable=unused-import

@@ -526,7 +526,6 @@ class TestDiffCFIM:
         """
         import jax
         import jax.numpy as jnp
-        import tensorflow as tf
         import torch
 
         dev = qml.device("default.qubit", wires=3)
@@ -560,19 +559,13 @@ class TestDiffCFIM:
         weights = jnp.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
         grad_jax = jax.jacobian(classical_fisher(circuit))(weights)
 
-        circuit = qml.QNode(qfunc, dev)
-        weights = tf.Variable([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-        with tf.GradientTape() as tape:
-            loss = classical_fisher(circuit)(weights)
-        grad_tf = tape.jacobian(loss, weights)
-
         # Evaluate and compare
-        grads = [grad_autograd, grad_tf, grad_torch, grad_jax]
+        grads = [grad_autograd, grad_torch, grad_jax]
 
-        is_same = np.zeros((4, 4))
+        is_same = np.zeros((len(grads), len(grads)))
 
         for i, g1 in enumerate(grads):
             for j, g2 in enumerate(grads):
                 is_same[i, j] = np.allclose(g1, g2, atol=1e-6)
 
-        assert np.allclose(is_same, np.ones((4, 4)))
+        assert np.allclose(is_same, np.ones((len(grads), len(grads))))

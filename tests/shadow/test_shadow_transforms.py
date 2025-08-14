@@ -207,7 +207,7 @@ class TestStateForward:
 class TestStateForwardInterfaces:
     """Test that state reconstruction works for all interfaces"""
 
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("diffable", [True, False])
     def test_qft_state(self, interface, diffable):
         """Test that the state reconstruction is correct for a QFT state"""

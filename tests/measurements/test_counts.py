@@ -565,7 +565,7 @@ class TestCountsIntegration:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_counts_no_op_finite_shots(self, interface, wires, basis_state):
         """Check all interfaces with computational basis state counts and
         finite shot"""
@@ -582,7 +582,7 @@ class TestCountsIntegration:
         assert qml.math.get_interface(res[basis_state]) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_counts_operator_finite_shots(self, interface):
         """Check all interfaces with observable measurement counts and finite
         shot"""
@@ -599,7 +599,7 @@ class TestCountsIntegration:
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
     @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_counts_binned(
         self, shot_vec, interface, wires, basis_state
     ):  # pylint:disable=too-many-arguments
@@ -623,7 +623,7 @@ class TestCountsIntegration:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("shot_vec", [(1, 10, 10), (1, 10, 1000)])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_counts_operator_binned(self, shot_vec, interface):
         """Check all interfaces with observable measurement counts and different
         shot vectors"""
@@ -696,7 +696,7 @@ class TestCountsIntegration:
     ]
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("meas2", meas2)
     @pytest.mark.parametrize("shots", [1000, (1, 10)])
     def test_counts_observable_finite_shots(self, interface, meas2, shots):
@@ -843,7 +843,7 @@ class TestCountsIntegration:
 
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("wires, basis_state", [(None, "010"), ([2, 1], "01")])
-@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_counts_no_op_finite_shots(interface, wires, basis_state):
     """Check all interfaces with computational basis state counts and finite shot"""
     n_shots = 10
@@ -861,7 +861,7 @@ def test_counts_no_op_finite_shots(interface, wires, basis_state):
 
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("wires, basis_states", [(None, ("010", "000")), ([2, 1], ("01", "00"))])
-@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_no_op_finite_shots(interface, wires, basis_states):
     """Check all interfaces with computational basis state counts and
     finite shot"""
@@ -879,7 +879,7 @@ def test_batched_counts_no_op_finite_shots(interface, wires, basis_states):
 
 @pytest.mark.all_interfaces
 @pytest.mark.parametrize("wires, basis_states", [(None, ("010", "000")), ([2, 1], ("01", "00"))])
-@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_states):
     """Check all interfaces with computational basis state counts and
     finite shot"""
@@ -901,7 +901,7 @@ def test_batched_counts_and_expval_no_op_finite_shots(interface, wires, basis_st
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_operator_finite_shots(interface):
     """Check all interfaces with observable measurement counts, batching and finite shots"""
     n_shots = 10
@@ -917,7 +917,7 @@ def test_batched_counts_operator_finite_shots(interface):
 
 
 @pytest.mark.all_interfaces
-@pytest.mark.parametrize("interface", ["autograd", "jax", "tensorflow", "torch"])
+@pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
 def test_batched_counts_and_expval_operator_finite_shots(interface):
     """Check all interfaces with observable measurement counts, batching and finite shots"""
     n_shots = 10
