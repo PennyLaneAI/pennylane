@@ -342,7 +342,9 @@ def _structure_constants_matrix(g: TensorLike, is_orthogonal: bool = True) -> Te
     if is_orthogonal:
         # Orthogonal but not normalized inputs. Need to correct by (diagonal) Gram matrix
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             import keras  # pylint: disable=import-outside-toplevel
 
             pre_diag = keras.ops.diagonal(
