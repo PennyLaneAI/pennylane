@@ -155,7 +155,7 @@ class ExecutionConfig:
     mcm_config: MCMConfig | dict = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
 
-    gradient_config: GradientConfig | dict | None = None
+    gradient_config: GradientConfig | dict | None = field(default_factory=GradientConfig)
     """Configuration options for handling mid-circuit measurements"""
 
     convert_to_numpy: bool = True
@@ -211,9 +211,7 @@ class ExecutionConfig:
                 self, "gradient_keyword_arguments", gradient_config.gradient_keyword_arguments
             )
             object.__setattr__(self, "derivative_order", gradient_config.derivative_order)
-        elif isinstance(self.gradient_config, GradientConfig):
-            pass
-        else:
+        elif not isinstance(self.gradient_config, GradientConfig):
             raise ValueError(f"Got invalid type {type(self.gradient_config)} for 'gradient_config'")
 
 
