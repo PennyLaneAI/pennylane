@@ -17,6 +17,7 @@
 # pylint: disable=import-outside-toplevel,unnecessary-lambda
 
 from functools import partial
+from typing import Optional
 
 import numpy as np
 import pytest
@@ -50,7 +51,7 @@ complex_obs_list = [
 class NoTermsDevice(qml.devices.DefaultQubit):
     """A device that builds on default.qubit, but won't accept LinearCombination or Sum"""
 
-    def execute(self, circuits, execution_config=qml.devices.DefaultExecutionConfig):
+    def execute(self, circuits, execution_config: Optional[qml.devices.ExecutionConfig] = None):
         for t in circuits:
             for mp in t.measurements:
                 if mp.obs and isinstance(mp.obs, qml.ops.Sum):
