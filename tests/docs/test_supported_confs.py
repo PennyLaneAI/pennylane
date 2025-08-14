@@ -32,14 +32,13 @@ from pennylane.exceptions import DeviceError, QuantumFunctionError
 
 pytestmark = pytest.mark.all_interfaces
 
-tf = pytest.importorskip("tensorflow")
 torch = pytest.importorskip("torch")
 F = pytest.importorskip("torch.autograd.functional")
 jax = pytest.importorskip("jax")
 jnp = pytest.importorskip("jax.numpy")
 
-interfaces = [None, "autograd", "jax", "tf", "torch"]
-diff_interfaces = ["autograd", "jax", "tf", "torch"]
+interfaces = [None, "autograd", "jax", "torch"]
+diff_interfaces = ["autograd", "jax", "torch"]
 shots_list = [None, 100]
 
 # Each of these tuples contain:
@@ -156,12 +155,6 @@ def get_variable(interface, wire_specs, complex=False):
     if interface == "jax":
         # complex dtype is required for JAX when holomorphic gradient is used
         return jnp.array([0.1] * num_wires, dtype=np.complex128 if complex else None)
-    if interface == "tf":
-        # complex dtype is required for TF when the gradients have non-zero
-        # imaginary parts, otherwise they will be ignored
-        return tf.Variable(
-            [0.1] * num_wires, trainable=True, dtype=tf.complex128 if complex else tf.float64
-        )
     if interface == "torch":
         # complex dtype is required for torch when the gradients have non-zero
         # imaginary parts, otherwise they will be ignored
@@ -224,13 +217,6 @@ def compute_gradient(x, interface, circuit, return_type, complex=False):
         if return_type in grad_return_cases:
             return jax.grad(cost_fn)(x)
         return jax.jacrev(cost_fn, holomorphic=complex)(x)
-    if interface == "tf":
-        with tf.GradientTape(persistent=True) as tape:
-            out = cost_fn(x)
-
-        if return_type in grad_return_cases:
-            return tape.gradient(out, [x])
-        return tape.jacobian(out, [x], experimental_use_pfor=False)
     if interface == "torch":
         if return_type in grad_return_cases:
             res = cost_fn(x)
@@ -348,11 +334,6 @@ class TestSupportedConfs:
 
         if shots is not None:
             with pytest.raises(QuantumFunctionError):
-                compute_gradient(x, interface, circuit, return_type)
-        elif return_type == "Probability" and interface == "tf":
-            with pytest.raises(Exception):
-                # tensorflow.python.framework.errors_impl.InvalidArgumentError
-                # TODO: figure out why [sc-52490]
                 compute_gradient(x, interface, circuit, return_type)
         else:
             compute_gradient(x, interface, circuit, return_type)
@@ -516,7 +497,7 @@ class TestSupportedConfs:
             x = get_variable("autograd", wire_specs)
             compute_gradient(x, "autograd", circuit, "StateVector")
 
-    @pytest.mark.parametrize("interface", ["jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["jax", "torch"])
     @pytest.mark.parametrize("wire_specs", wire_specs_list)
     def test_all_state_backprop(self, interface, wire_specs):
         """Test gradient of state directly succeeds for non-autograd interfaces"""

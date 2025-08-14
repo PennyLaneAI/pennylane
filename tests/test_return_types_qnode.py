@@ -2887,7 +2887,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_multiple_expval_tf(self, interface, device):
         """Return Jacobian of multiple expvals."""
         import tensorflow as tf
@@ -2914,7 +2914,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert res.shape == (2, 3)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_multiple_meas_tf_autograph(self, interface):
         """Return Jacobian of multiple measurements with Tf Autograph."""
         import tensorflow as tf
@@ -3048,7 +3048,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_multiple_probs_tf(self, interface, device):
         """Return Jacobian of multiple probs."""
         import tensorflow as tf
@@ -3186,7 +3186,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_multiple_meas_tf(self, interface, device):
         """Return Jacobian of multiple measurements."""
         import tensorflow as tf

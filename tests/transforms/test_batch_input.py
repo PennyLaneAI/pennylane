@@ -443,7 +443,7 @@ class TestDiffSingle:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_tf(self, diff_method, tol, interface):
         """Test derivatives when using TF"""
         import tensorflow as tf
@@ -471,7 +471,7 @@ class TestDiffSingle:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["backprop", "adjoint", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto", "tf", "tf-autograph"])
+    @pytest.mark.parametrize("interface", ["auto", "tf-autograph"])
     def test_tf_autograph(self, diff_method, tol, interface):
         """Test derivatives when using TF and autograph"""
         import tensorflow as tf
@@ -742,7 +742,7 @@ class TestDiffMulti:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_tf(self, diff_method, tol, interface):
         """Test derivatives when using TF"""
         import tensorflow as tf
@@ -794,7 +794,7 @@ class TestDiffMulti:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("diff_method", ["backprop", "parameter-shift"])
-    @pytest.mark.parametrize("interface", ["auto", "tf", "tf-autograph"])
+    @pytest.mark.parametrize("interface", ["auto", "tf-autograph"])
     def test_tf_autograph(self, diff_method, tol, interface):
         """Test derivatives when using TF and autograph"""
         import tensorflow as tf

@@ -24,6 +24,14 @@ Pending deprecations
   - Deprecated in v0.43
   - Will be removed in a future version
 
+* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in PennyLane v0.44.
+  Future versions of PennyLane are not guaranteed to work with TensorFlow.
+  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
+  machine learning applications to benefit from enhanced support and features.
+  
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+  
 * ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
   Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
 

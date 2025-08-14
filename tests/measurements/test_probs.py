@@ -158,7 +158,7 @@ class TestProbs:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize(
         "subset_wires,expected",
         [
@@ -179,7 +179,7 @@ class TestProbs:
         assert qml.math.allclose(subset_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize(
         "subset_wires,expected",
         [
@@ -200,7 +200,7 @@ class TestProbs:
         assert qml.math.allclose(subset_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     def test_process_density_matrix_basic(self, interface):
         """Test that process_density_matrix returns correct probabilities from a density matrix."""
         dm = qml.math.array([[0.5, 0], [0, 0.5]], like=interface)
@@ -211,7 +211,7 @@ class TestProbs:
         assert qml.math.allclose(calculated_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, expected",
         [
@@ -234,7 +234,7 @@ class TestProbs:
         assert qml.math.allclose(subset_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, expected",
         [
@@ -274,7 +274,7 @@ class TestProbs:
         ), f"Value mismatch: expected {expected.tolist()}, got {subset_probs.tolist()}"
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires",
         [[3, 1, 0]],

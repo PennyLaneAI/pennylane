@@ -1073,7 +1073,6 @@ class TestInterfaces:
     @pytest.mark.all_interfaces
     def test_all_interfaces_gradient_agree(self, tol):
         """Test the gradient agrees across all interfaces"""
-        import tensorflow as tf
         import torch
 
         dev = qml.device("default.qubit", wires=2)
@@ -1085,16 +1084,6 @@ class TestInterfaces:
 
         shape = qml.templates.StronglyEntanglingLayers.shape(3, 2)
         params = np.random.uniform(low=0, high=2 * np.pi, size=shape)
-
-        # TensorFlow interface
-        w = tf.Variable(params)
-        ansatz = qml.templates.layers.StronglyEntanglingLayers
-
-        cost = generate_cost_fn(ansatz, H, dev, interface="tf")
-
-        with tf.GradientTape() as tape:
-            loss = cost(w)
-            res_tf = np.array(tape.gradient(loss, w))
 
         # Torch interface
         w = torch.tensor(params, requires_grad=True)
@@ -1113,5 +1102,4 @@ class TestInterfaces:
         dcost = qml.grad(cost, argnum=[0])
         res = dcost(w)
 
-        assert np.allclose(res, res_tf, atol=tol, rtol=0)
         assert np.allclose(res, res_torch, atol=tol, rtol=0)

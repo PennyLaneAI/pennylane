@@ -273,7 +273,8 @@ class TestStateReconstruction:
 
 @pytest.mark.all_interfaces
 class TestStateReconstructionInterfaces:
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_qft_reconstruction(self, interface):
         """Test that the state reconstruction is correct for a QFT state"""
         circuit = qft_circuit(3, interface=interface)
@@ -367,7 +368,8 @@ class TestExpvalEstimation:
 
 @pytest.mark.all_interfaces
 class TestExpvalEstimationInterfaces:
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_qft_expval(self, interface):
         """Test that the expval estimation is correct for a QFT state"""
         circuit = qft_circuit(3, shots=100000, interface=interface)
@@ -409,7 +411,6 @@ class TestExpvalEstimationInterfaces:
 def convert_to_interface(arr, interface):
     """Dispatch arrays for different interfaces"""
     import jax.numpy as jnp
-    import tensorflow as tf
     import torch
 
     if interface == "autograd":
@@ -417,9 +418,6 @@ def convert_to_interface(arr, interface):
 
     if interface == "jax":
         return jnp.array(arr)
-
-    if interface == "tf":
-        return tf.constant(arr)
 
     if interface == "torch":
         return torch.tensor(arr)
@@ -442,7 +440,7 @@ class TestMedianOfMeans:
             (np.array([0.2, 0.1, 0.4]), 3, 0.2),
         ],
     )
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_output(self, arr, num_batches, expected, interface):
         """Test that the output is correct"""
         arr = convert_to_interface(arr, interface)
@@ -457,7 +455,7 @@ class TestPauliExpval:
     """Test the Pauli expectation value function"""
 
     @pytest.mark.parametrize("word", [[0, 0, 1], [0, 2, -1], [-1, -1, 1]])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_word_not_present(self, word, interface):
         """Test that the output is 0 if the Pauli word is not present in the recipes"""
         bits = convert_to_interface(np.array([[0, 0, 0]]), interface)
@@ -473,7 +471,7 @@ class TestPauliExpval:
     @pytest.mark.parametrize(
         "word, expected", [([0, 1, 2], 27), ([0, 1, -1], -9), ([-1, -1, 2], -3), ([-1, -1, -1], 1)]
     )
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_single_word_present(self, word, expected, interface):
         """Test that the output is correct if the Pauli word appears once in the recipes"""
         bits = convert_to_interface(self.single_bits, interface)
@@ -495,7 +493,7 @@ class TestPauliExpval:
             ([-1, -1, -1], [1, 1, 1]),
         ],
     )
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_multi_word_present(self, word, expected, interface):
         """Test that the output is correct if the Pauli word appears multiple
         times in the recipes"""
