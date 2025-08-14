@@ -19,49 +19,6 @@ Workflow Development Status
 
 The non-exhaustive list of unsupported features are:
 
-**Overridden shots:** Device execution currently pulls the shot information from the device. In order
-to support dynamic shots, we need to develop an additional protocol for communicating the shot information
-associated with a circuit. Dynamically mutating objects is not compatible with jaxpr and jitting.
-
-**Shot vectors**.  Shot vectors are not yet supported. We need to figure out how to stack
-and reshape the outputs from measurements on the device when multiple measurements are present.
-
-**Gradients other than default qubit backprop**. We managed to get backprop of default qubit for
-free, but no other gradient methods have support yet.
-
-**MCM methods other than single branch statistics**. Mid-circuit measurements
-are only handled via a "single branch statistics" algorithm, which will lead to unexpected
-results. Even on analytic devices, one branch will be randomly chosen on each execution.
-Returning measurements based on mid-circuit measurements, ``qml.sample(m0)``,
-is also not yet supported on default qubit or lightning.
-
->>> @qml.qnode(qml.device('default.qubit', wires=1))
->>> def circuit(x):
-...     qml.H(0)
-...     m0 = qml.measure(0)
-...     qml.cond(m0, qml.RX, qml.RZ)(x,0)
-...     return qml.expval(qml.Z(0))
->>> circuit(0.5), circuit(0.5), circuit(0.5)
-(Array(-0.87758256, dtype=float64),
-Array(1., dtype=float64),
-Array(-0.87758256, dtype=float64))
->>> qml.capture.disable()
->>> circuit(0.5)
-np.float64(0.06120871905481362)
->>> qml.capture.enable()
-
-**Device preprocessing and validation**. No device preprocessing and validation will occur. The captured
-jaxpr is directly sent to the device, whether or not the device can handle it.
-
->>> @qml.qnode(qml.device('default.qubit', wires=3))
-... def circuit():
-...     qml.Permute(jax.numpy.array((0,1,2)), wires=(2,1,0))
-...     return qml.state()
->>> circuit()
-MatrixUndefinedError:
-
-**Transforms are still under development**. No transforms will currently be applied as part of the workflow.
-
 **Breaking ``vmap``/parameter broadcasting into a non-broadcasted state**. The current workflow assumes
 that the device execution can natively handle broadcasted parameters. ``vmap`` and parameter broadcasting
 will not work with devices other than default qubit.
