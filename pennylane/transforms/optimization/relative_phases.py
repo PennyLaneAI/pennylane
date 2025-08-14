@@ -309,7 +309,7 @@ def match_mcx_gt4wires(
         6: ────╰X─┤
         5: ──X────┤
 
-    By running the transform we replaced the 4-qubit multi controlled X gate:
+    By running the transform we replaced the 4-qubit ``MultiControlledX`` gate:
 
     >>> print(qml.draw(lowered_qnode, level=1)())
         0: ──────────╭●─────────────┤  <Z>
