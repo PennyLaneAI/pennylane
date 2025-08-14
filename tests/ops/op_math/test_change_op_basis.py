@@ -21,9 +21,9 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
+from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.ops.op_math.change_op_basis import ChangeOpBasis, change_op_basis
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
@@ -234,7 +234,7 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         assert change_op_basis_op.has_diagonalizing_gates is False
 
 
-class TestProperties:
+class TestProperties:  # pylint: disable=too-few-public-methods
     """Test class properties."""
 
     @pytest.mark.parametrize("ops_lst", ops)
@@ -244,7 +244,7 @@ class TestProperties:
         assert change_op_basis_op._queue_category == "_ops"
 
 
-class TestWrapperFunc:
+class TestWrapperFunc:  # pylint: disable=too-few-public-methods
     """Test wrapper function."""
 
     def test_op_change_op_basis_top_level(self):
@@ -252,7 +252,6 @@ class TestWrapperFunc:
         created using the class."""
 
         factors = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
-        op_id = "change_op_basis_op"
 
         change_op_basis_func_op = change_op_basis(*factors)
         change_op_basis_class_op = ChangeOpBasis(*factors)
@@ -297,9 +296,9 @@ class TestDecomposition:
     def test_resource_keys(self):
         """Test that the resource keys of `ChangeOpBasis` are op_reps."""
         assert ChangeOpBasis.resource_keys == frozenset({"resources"})
-        change_op_basis = qml.X(0) @ qml.Y(1) @ qml.X(2)
+        change_op_basis_op = qml.X(0) @ qml.Y(1) @ qml.X(2)
         resources = {qml.resource_rep(qml.X): 2, qml.resource_rep(qml.Y): 1}
-        assert change_op_basis.resource_params == {"resources": resources}
+        assert change_op_basis_op.resource_params == {"resources": resources}
 
     def test_registered_decomp(self):
         """Test that the decomposition of change_op_basis is registered."""
