@@ -227,7 +227,7 @@ def _decompose_mcx_with_two_workers_old(
     r"""
     Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` auxiliary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
-    clean auxiliary qubits, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using borrowed
+    zeroed auxiliary qubits, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using borrowed
     auxiliary qubits as described in Sec. 5 of [1].
 
     Args:
