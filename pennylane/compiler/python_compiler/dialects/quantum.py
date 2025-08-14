@@ -709,6 +709,19 @@ class NamedObsOp(IRDLOperation):
 
 
 @irdl_op_definition
+class NumQubitsOp(IRDLOperation):
+    """Get the number of currently allocated qubits."""
+
+    name = "quantum.num_qubits"
+
+    assembly_format = """
+        attr-dict `:` type(results)
+    """
+
+    num_qubits = result_def(IntegerType(64))
+
+
+@irdl_op_definition
 class ProbsOp(IRDLOperation):
     """Compute computational basis probabilities for the current state"""
 
@@ -913,6 +926,7 @@ Quantum = Dialect(
         MeasureOp,
         MultiRZOp,
         NamedObsOp,
+        NumQubitsOp,
         ProbsOp,
         QubitUnitaryOp,
         SampleOp,
