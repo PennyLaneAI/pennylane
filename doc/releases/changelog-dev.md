@@ -143,6 +143,10 @@
 
 <h4>Other improvements</h4>
 
+* Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
+  representation of the program between multiple compilation passes.
+  [(#7964)](https://github.com/PennyLaneAI/pennylane/pull/7964)
+
 * Added the `NumQubitsOp` operation to the `Quantum` dialect of the Python compiler.
 [(#8063)](https://github.com/PennyLaneAI/pennylane/pull/8063)
 
@@ -164,12 +168,6 @@
   aux: ───║───X─┤     
           ╚═══╝      
   ```
-
-
-
-* Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
-  representation of the program between multiple compilation passes.
-  [(#7964)](https://github.com/PennyLaneAI/pennylane/pull/7964)
 
 * PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
   [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
