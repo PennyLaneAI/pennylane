@@ -89,7 +89,7 @@ class ExecutionConfig:
     gradient_keyword_arguments: dict | MappingProxyType = field(default_factory=dict)
     """Arguments used to control a gradient transform"""
 
-    device_options: dict | MappingProxyType = field(default_factory=dict)
+    device_options: dict | MappingProxyType = MappingProxyType({})
     """Various options for the device executing a quantum circuit"""
 
     interface: Interface = Interface.NUMPY
