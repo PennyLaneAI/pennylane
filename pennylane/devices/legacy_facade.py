@@ -169,7 +169,7 @@ class LegacyDeviceFacade(Device):
         self._device = device
         self.config_filepath = getattr(self._device, "config_filepath", None)
 
-        if self._device.shots is not None and self._device.shots != Shots():
+        if self._device.shots:
             warnings.warn(
                 "Setting shots on device is deprecated. Please use the `set_shots` transform on the respective QNode instead.",
                 PennyLaneDeprecationWarning,
