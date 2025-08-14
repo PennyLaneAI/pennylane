@@ -918,7 +918,7 @@ def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
         target_wires: The wires for target register.
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
@@ -946,7 +946,7 @@ def _build_linear_depth_ladder(wires) -> int:
         int: the index of the last unmarked wire.
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
 
     """
@@ -989,7 +989,7 @@ def _build_log_n_depth_ccx_ladder(control_wires) -> list:
         list: The list of unmarked wires to use as control wires.
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
     """
 
