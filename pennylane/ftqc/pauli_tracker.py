@@ -488,6 +488,5 @@ def apply_byproduct_corrections(tape: QuantumScript, mid_meas: list, measurement
     by_ops = _parse_mid_measurements(tape, mid_meas)
 
     x_record, _ = _get_xz_record(tape, by_ops)
-    print(x_record)
 
     return _correct_samples(tape, x_record, measurement_vals)
