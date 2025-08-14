@@ -25,6 +25,7 @@ import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
 from .elementwise.binary import (
+    ComplexOp,
     DivideOp,
     MaximumOp,
     MinimumOp,
@@ -34,7 +35,6 @@ from .elementwise.binary import (
 from .elementwise.other import (
     ClampOp,
     CompareOp,
-    ComplexOp,
     MapOp,
     ReducePrecisionOp,
     SelectOp,

@@ -43,6 +43,7 @@ from .elementwise.unary import (
 )
 
 from .elementwise.binary import (
+    ComplexOp,
     DivideOp,
     MaximumOp,
     MinimumOp,
@@ -53,7 +54,6 @@ from .elementwise.binary import (
 from .elementwise.other import (
     ClampOp,
     CompareOp,
-    ComplexOp,
     MapOp,
     ReducePrecisionOp,
     SelectOp,
@@ -87,6 +87,7 @@ __all__ = [
     "TanOp",
     "TanhOp",
     # Binary operations
+    "ComplexOp",
     "DivideOp",
     "MaximumOp",
     "MinimumOp",
@@ -95,7 +96,6 @@ __all__ = [
     # Other operations
     "ClampOp",
     "CompareOp",
-    "ComplexOp",
     "MapOp",
     "ReducePrecisionOp",
     "SelectOp",

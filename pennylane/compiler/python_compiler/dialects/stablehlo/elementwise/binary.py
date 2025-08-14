@@ -19,7 +19,7 @@ Binary elementwise operations for the StableHLO dialect.
 import abc
 from typing import Generic, TypeVar
 
-from xdsl.dialects.builtin import AnyTensorType
+from xdsl.dialects.builtin import AnyTensorType, ComplexType, Float32Type, Float64Type, TensorType
 from xdsl.ir import Attribute, SSAValue
 from xdsl.irdl import (
     IRDLOperation,
@@ -30,7 +30,16 @@ from xdsl.irdl import (
 )
 from xdsl.traits import NoMemoryEffect
 
-from pennylane.compiler.python_compiler.xdsl_extras import Elementwise, SameOperandsAndResultShape
+from pennylane.compiler.python_compiler.xdsl_extras import (
+    Elementwise,
+    SameOperandsAndResultShape,
+    SameOperandsElementType,
+)
+
+# Type aliases
+F32Or64Type = Float32Type | Float64Type
+F32Or64TensorType = TensorType[F32Or64Type]
+ComplexTensorType = TensorType[ComplexType]
 
 # Generic type variables for templating
 T_IN = TypeVar("T_IN", bound=AnyTensorType)
@@ -69,6 +78,34 @@ class ElementwiseBinaryOperation(IRDLOperation, abc.ABC, Generic[T_IN, T_OUT]):
         if result_type is None:
             result_type = lhs.type
         super().__init__(operands=(lhs, rhs), result_types=(result_type,))
+
+
+@irdl_op_definition
+class ComplexOp(ElementwiseBinaryOperation[F32Or64TensorType, ComplexTensorType]):
+    """
+    Performs element-wise conversion to a complex value from a pair of real and
+    imaginary values, `lhs` and `rhs`, and produces a `result` tensor.
+    See:
+    https://github.com/openxla/stablehlo/blob/main/docs/spec.md#complex
+    Example:
+    ```mlir
+    %result = stablehlo.complex %lhs, %rhs : tensor<2xcomplex<f64>>
+    ```
+    """
+
+    name = "stablehlo.complex"
+
+    # assembly_format = """
+    # operands attr-dict
+    #   `:` custom<ComplexOpType>(type($lhs), type($rhs), type($result))
+    # """
+
+    traits = traits_def(
+        NoMemoryEffect(),
+        SameOperandsElementType(),
+        SameOperandsAndResultShape(),
+        # TODO: HLO_SpeculatableIfAllInputsStatic(),
+    )
 
 
 @irdl_op_definition
