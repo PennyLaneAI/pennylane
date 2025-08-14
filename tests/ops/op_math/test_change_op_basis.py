@@ -146,48 +146,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         change_op_basis_op = change_op_basis(qml.PauliX(0), qml.RX(1.0, wires=0))
         assert change_op_basis_op.batch_size is None
 
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_decomposition(self, ops_lst):
-        """Test the decomposition of a change_op_basis of operators is a list
-        of the provided factors."""
-        change_op_basis_op = change_op_basis(*ops_lst)
-        decomposition = change_op_basis_op.decomposition()
-        true_decomposition = list(ops_lst[::-1])  # reversed list of factors
-
-        assert isinstance(decomposition, list)
-        for op1, op2 in zip(decomposition, true_decomposition):
-            qml.assert_equal(op1, op2)
-
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_decomposition_new(self, ops_lst):
-        """Test the qfunc decomposition."""
-        change_op_basis_op = change_op_basis(*ops_lst)
-
-        for rule in qml.list_decomps(ChangeOpBasis):
-            _test_decomposition_rule(change_op_basis_op, rule)
-
-    @pytest.mark.parametrize("ops_lst", ops)
-    @pytest.mark.capture
-    def test_decomposition_new_capture(self, ops_lst):
-        """Test the qfunc decomposition."""
-        change_op_basis_op = change_op_basis(*ops_lst)
-
-        for rule in qml.list_decomps(ChangeOpBasis):
-            _test_decomposition_rule(change_op_basis_op, rule)
-
-    @pytest.mark.parametrize("ops_lst", ops)
-    def test_decomposition_on_tape(self, ops_lst):
-        """Test the decomposition of a change_op_basis of operators is a list
-        of the provided factors on a tape."""
-        change_op_basis_op = change_op_basis(*ops_lst)
-        true_decomposition = list(ops_lst[::-1])  # reversed list of factors
-        with qml.queuing.AnnotatedQueue() as q:
-            change_op_basis_op.decomposition()
-
-        tape = qml.tape.QuantumScript.from_queue(q)
-        for op1, op2 in zip(tape.operations, true_decomposition):
-            qml.assert_equal(op1, op2)
-
     @pytest.mark.parametrize(
         "factors",
         (
@@ -236,6 +194,23 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
 
 class TestProperties:  # pylint: disable=too-few-public-methods
     """Test class properties."""
+
+    @pytest.mark.parametrize("ops_lst", list(ops))
+    def test_adjoint(self, ops_lst):
+        """Tests the adjoint of a ChangeOpBasis is correct."""
+        change_op_basis_op = ChangeOpBasis(*ops_lst)
+        adjoint_ops = []
+        for op in change_op_basis_op[::-1]:
+            adjoint_ops.append(op.adjoint())
+        for i, op in enumerate(change_op_basis_op.adjoint()):
+            assert op == adjoint_ops[i]
+
+    @pytest.mark.parametrize("ops_lst", list(ops))
+    def test_is_hermitian(self, ops_lst):
+        """Test is_hermitian property updates correctly."""
+        middle_op = ops_lst[1]
+        change_op = change_op_basis(*ops_lst)
+        assert middle_op.is_hermitian == change_op.is_hermitian
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_category_ops(self, ops_lst):
@@ -318,3 +293,74 @@ class TestDecomposition:
             default_decomp(operands=_ops)
 
         assert q.queue == _ops[::-1]
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_decomposition(self, ops_lst):
+        """Test the decomposition of a change_op_basis of operators is a list
+        of the provided factors."""
+        change_op_basis_op = change_op_basis(*ops_lst)
+        decomposition = change_op_basis_op.decomposition()
+        true_decomposition = list(ops_lst[::-1])  # reversed list of factors
+
+        assert isinstance(decomposition, list)
+        for op1, op2 in zip(decomposition, true_decomposition):
+            qml.assert_equal(op1, op2)
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_decomposition_new(self, ops_lst):
+        """Test the qfunc decomposition."""
+        change_op_basis_op = change_op_basis(*ops_lst)
+
+        for rule in qml.list_decomps(ChangeOpBasis):
+            _test_decomposition_rule(change_op_basis_op, rule)
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    @pytest.mark.capture
+    def test_decomposition_new_capture(self, ops_lst):
+        """Test the qfunc decomposition."""
+        change_op_basis_op = change_op_basis(*ops_lst)
+
+        for rule in qml.list_decomps(ChangeOpBasis):
+            _test_decomposition_rule(change_op_basis_op, rule)
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_controlled_decomposition_new(self, ops_lst):
+        """Tests the decomposition rule implemented with the new system."""
+        control_wires = [4]
+        work_wires = [2, 3]
+        op = qml.ops.Controlled(
+            change_op_basis(*ops_lst),
+            control_wires,
+            [1],
+            work_wires=work_wires,
+        )
+        for rule in qml.list_decomps("C(ChangeOpBasis)"):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    @pytest.mark.capture
+    def test_controlled_decomposition_new_capture(self, ops_lst):
+        """Tests the decomposition rule implemented with the new system."""
+        control_wires = [4]
+        work_wires = [2, 3]
+        op = qml.ops.Controlled(
+            change_op_basis(*ops_lst),
+            control_wires,
+            [1],
+            work_wires=work_wires,
+        )
+        for rule in qml.list_decomps("C(ChangeOpBasis)"):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize("ops_lst", ops)
+    def test_decomposition_on_tape(self, ops_lst):
+        """Test the decomposition of a change_op_basis of operators is a list
+        of the provided factors on a tape."""
+        change_op_basis_op = change_op_basis(*ops_lst)
+        true_decomposition = list(ops_lst[::-1])  # reversed list of factors
+        with qml.queuing.AnnotatedQueue() as q:
+            change_op_basis_op.decomposition()
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        for op1, op2 in zip(tape.operations, true_decomposition):
+            qml.assert_equal(op1, op2)
