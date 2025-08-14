@@ -206,9 +206,13 @@ def _controlled_change_op_basis_decomposition(
     base,
     **__,
 ):  # pylint: disable=unused-argument, too-many-arguments
-    base.resource_params["compute_op"]._unflatten(*base.resource_params["compute_op"]._flatten())  # pylint: disable=protected-access
+    base.resource_params["compute_op"]._unflatten(
+        *base.resource_params["compute_op"]._flatten()
+    )  # pylint: disable=protected-access
     ctrl(
-        base.resource_params["target_op"]._unflatten(*base.resource_params["target_op"]._flatten()),  # pylint: disable=protected-access
+        base.resource_params["target_op"]._unflatten(
+            *base.resource_params["target_op"]._flatten()
+        ),  # pylint: disable=protected-access
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,

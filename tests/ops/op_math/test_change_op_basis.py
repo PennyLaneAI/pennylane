@@ -21,9 +21,9 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
-from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
