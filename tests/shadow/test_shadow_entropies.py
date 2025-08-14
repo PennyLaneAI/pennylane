@@ -129,7 +129,7 @@ class TestShadowEntropies:
             assert np.allclose(entropies, exact, atol=1e-1)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "torch", "tf", "jax"])
+    @pytest.mark.parametrize("interface", ["autograd", "torch", "jax"])
     def test_analytic_entropy(self, interface):
         """Test entropies on analytic results"""
         dev = qml.device("default.qubit", wires=2, shots=100000)

@@ -112,7 +112,9 @@ class MultiRZ(Operation):
         """
         eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
-        if math.get_interface(theta) == "tensorflow":
+        if (
+            math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
             eigs = math.cast_like(eigs, 1j)
 
@@ -156,7 +158,9 @@ class MultiRZ(Operation):
         """
         eigs = math.convert_like(qml.pauli.pauli_eigs(num_wires), theta)
 
-        if math.get_interface(theta) == "tensorflow":
+        if (
+            math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
             eigs = math.cast_like(eigs, 1j)
 
@@ -423,7 +427,9 @@ class PauliRot(Operation):
 
         interface = math.get_interface(theta)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
 
         # Simplest case is if the Pauli is the identity matrix
@@ -443,7 +449,9 @@ class PauliRot(Operation):
             math.kron,
             [PauliRot._PAULI_CONJUGATION_MATRICES[gate] for gate in non_identity_gates],
         )
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             conjugation_matrix = math.cast_like(conjugation_matrix, 1j)
         # Note: we use einsum with reverse arguments here because it is not multi-dispatched
         # and the tensordot containing multi_Z_rot_matrix should decide about the interface
@@ -489,7 +497,9 @@ class PauliRot(Operation):
         >>> qml.PauliRot.compute_eigvals(torch.tensor(0.5), "X")
         tensor([0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if math.get_interface(theta) == "tensorflow":
+        if (
+            math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             theta = math.cast_like(theta, 1j)
 
         # Identity must be treated specially because its eigenvalues are all the same
@@ -733,7 +743,9 @@ class PCPhase(Operation):
         """Get the matrix representation of Pi-controlled phase unitary."""
         d, t = dimension
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = math.exp(1j * math.cast_like(phi, 1j))
             minus_p = math.exp(-1j * math.cast_like(phi, 1j))
             zeros = math.zeros_like(p)
@@ -763,7 +775,9 @@ class PCPhase(Operation):
         phi = params[0]
         d, t = hyperparams["dimension"]
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = math.exp(1j * math.cast_like(phi, 1j))
             minus_phase = math.exp(-1j * math.cast_like(phi, 1j))
             return stack_last([phase if index < d else minus_phase for index in range(t)])
@@ -1181,7 +1195,9 @@ class IsingXX(Operation):
 
         eye = math.eye(4, like=phi)
         rev_eye = math.convert_like(np.eye(4)[::-1].copy(), phi)
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = math.cast_like(c, 1j)
             s = math.cast_like(s, 1j)
             eye = math.cast_like(eye, 1j)
@@ -1365,7 +1381,9 @@ class IsingYY(Operation):
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = math.cast_like(c, 1j)
             s = math.cast_like(s, 1j)
 
@@ -1527,7 +1545,9 @@ class IsingZZ(Operation):
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.9689+0.2474j, 0.0000+0.0000j],
                 [0.0000+0.0000j, 0.0000+0.0000j, 0.0000+0.0000j, 0.9689-0.2474j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = math.exp(-0.5j * math.cast_like(phi, 1j))
             if math.ndim(p) == 0:
                 return math.diag([p, math.conj(p), math.conj(p), p])
@@ -1571,7 +1591,9 @@ class IsingZZ(Operation):
         >>> qml.IsingZZ.compute_eigvals(torch.tensor(0.5))
         tensor([0.9689-0.2474j, 0.9689+0.2474j, 0.9689+0.2474j, 0.9689-0.2474j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = math.exp(-0.5j * math.cast_like(phi, 1j))
             return stack_last([phase, math.conj(phase), math.conj(phase), phase])
 
@@ -1745,7 +1767,9 @@ class IsingXY(Operation):
         c = math.cos(phi / 2)
         s = math.sin(phi / 2)
 
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = math.cast_like(c, 1j)
             s = math.cast_like(s, 1j)
 
@@ -1796,7 +1820,9 @@ class IsingXY(Operation):
         >>> qml.IsingXY.compute_eigvals(0.5)
         array([0.96891242+0.24740396j, 0.96891242-0.24740396j,       1.        +0.j        , 1.        +0.j        ])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         signs = np.array([1, -1, 0, 0])
@@ -1937,7 +1963,9 @@ class PSWAP(Operation):
               [0.        +0.j, 0.87758256+0.47942554j, 0.        +0.j        , 0.        +0.j],
               [0.        +0.j, 0.        +0.j        , 0.        +0.j        , 1.        +0.j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         e = math.exp(1j * phi)
@@ -1981,7 +2009,9 @@ class PSWAP(Operation):
         >>> qml.PSWAP.compute_eigvals(0.5)
         array([ 1.        +0.j        ,  1.        +0.j,       -0.87758256-0.47942554j,  0.87758256+0.47942554j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         e = math.exp(1j * phi)
@@ -2102,7 +2132,9 @@ class CPhaseShift00(Operation):
                     [0.0000+0.0000j, 0.0+0.0j, 1.0+0.0j, 0.0+0.0j],
                     [0.0000+0.0000j, 0.0+0.0j, 0.0+0.0j, 1.0+0.0j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2148,7 +2180,9 @@ class CPhaseShift00(Operation):
         >>> qml.CPhaseShift00.compute_eigvals(torch.tensor(0.5))
         tensor([0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2322,7 +2356,9 @@ class CPhaseShift01(Operation):
                     [0.0+0.0j, 0.0000+0.0000j, 1.0+0.0j, 0.0+0.0j],
                     [0.0+0.0j, 0.0000+0.0000j, 0.0+0.0j, 1.0+0.0j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2368,7 +2404,9 @@ class CPhaseShift01(Operation):
         >>> qml.CPhaseShift01.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j, 1.0000+0.0000j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2532,7 +2570,9 @@ class CPhaseShift10(Operation):
                     [0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j, 0.0+0.0j],
                     [0.0+0.0j, 0.0+0.0j, 0.0000+0.0000j, 1.0+0.0j]])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)
@@ -2578,7 +2618,9 @@ class CPhaseShift10(Operation):
         >>> qml.CPhaseShift10.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j, 1.0000+0.0000j])
         """
-        if math.get_interface(phi) == "tensorflow":
+        if (
+            math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = math.cast_like(phi, 1j)
 
         exp_part = math.exp(1j * phi)

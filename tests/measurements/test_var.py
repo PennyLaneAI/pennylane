@@ -205,7 +205,7 @@ class TestVar:
         assert np.allclose(res, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     def test_process_density_matrix_basic(self, interface):
         """Test that process_density_matrix returns correct probabilities from a maximum mixed density matrix."""
         dm = qml.math.array([[0.5, 0], [0, 0.5]], like=interface)
@@ -219,7 +219,7 @@ class TestVar:
         assert qml.math.allclose(var, expected, atol=atol), f"Expected {expected}, got {var}"
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, expected_var",
         [
@@ -250,6 +250,6 @@ class TestVar:
         var = qml.math.cast(var, "float64")
 
         # Set tolerance based on interface
-        atol = 1.0e-7 if interface in ["torch", "tensorflow"] else 1.0e-8
+        atol = 1.0e-7 if interface == "torch" else 1.0e-8
 
         assert qml.math.allclose(var, expected, atol=atol), f"Expected {expected}, got {var}"

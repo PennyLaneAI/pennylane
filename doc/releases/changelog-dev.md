@@ -68,6 +68,30 @@
   decomposition slightly both regarding classical computing time and gate decomposition.
   [(#7880)](https://github.com/PennyLaneAI/pennylane/pull/7880)
 
+* The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
+  have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
+  [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
+
+  ```python
+  import pennylane as qml
+
+  @qml.draw
+  @qml.qnode(qml.device("lightning.qubit", wires=4))
+  def node():
+      qml.TemporaryAND([0, 1, 2], control_values=[1, 0])
+      qml.CNOT([2, 3])
+      qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[1, 0]))
+      return qml.expval(qml.Z(3))
+  ```
+
+  ```pycon
+  print(node())
+  0: ─╭●─────●╮─┤     
+  1: ─├○─────○┤─┤     
+  2: ─╰──╭●───╯─┤     
+  3: ────╰X─────┤  <Z>
+  ```
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
@@ -344,6 +368,15 @@
 
 <h3>Deprecations 👋</h3>
 
+* Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
+  Future versions of PennyLane are not guaranteed to work with TensorFlow.
+  Instead, we recommend using the :doc:`JAX </introduction/interfaces/jax>` or :doc:`PyTorch </introduction/interfaces/torch>` interface for
+  machine learning applications to benefit from enhanced support and features. Please consult the following demos for
+  more usage information: 
+  [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
+  [How to optimize a QML model using JAX and Optax](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
+  [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
+
 * `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
   Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
   [(#7987)](https://github.com/PennyLaneAI/pennylane/pull/7987)
@@ -432,6 +465,10 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* The `cond` primitive with program capture no longer stores missing false branches as `None`, instead storing them
+  as jaxprs with no output.
+  [(#8080)](https://github.com/PennyLaneAI/pennylane/pull/8080)
 
 * Removed unnecessary execution tests along with accuracy validation in `tests/ops/functions/test_map_wires.py`.
   [(#8032)](https://github.com/PennyLaneAI/pennylane/pull/8032)
