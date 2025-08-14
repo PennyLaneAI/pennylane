@@ -267,8 +267,8 @@ def match_mcx_gt4wires(
 
     .. note::
 
-        Will also replace any subcircuits from the full pattern (composed of the greater-than-or-equal-to-4-qubit
-        multi-controlled-X gate and its decomposition) that can be replaced by the rest of the pattern.
+        This transform will also replace any subcircuits from the full pattern (composed of the greater-than-or-equal-to-4-qubit
+        ``MultiControlledX`` gate and its decomposition) that can be replaced by the rest of the pattern.
 
     .. note::
 
