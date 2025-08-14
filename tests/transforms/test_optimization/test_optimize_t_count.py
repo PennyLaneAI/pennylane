@@ -16,6 +16,7 @@ Unit tests for the `zx.optimize_t_count` transform.
 """
 import sys
 
+import numpy as np
 import pytest
 
 import pennylane as qml
@@ -125,3 +126,89 @@ class TestOptimizeTCount:
             match=r"The input quantum circuit must be a Clifford \+ T circuit.",
         ):
             qml.transforms.zx.optimize_t_count(qs)
+
+    @pytest.mark.parametrize(
+        "angle, expected_ops",
+        (
+            (0, []),
+            (0.25 * np.pi, [qml.T(0)]),
+            (0.5 * np.pi, [qml.S(0)]),
+            (0.75 * np.pi, [qml.Z(0), qml.adjoint(qml.T(0))]),
+            (np.pi, [qml.Z(0)]),
+            (1.25 * np.pi, [qml.Z(0), qml.T(0)]),
+            (1.5 * np.pi, [qml.adjoint(qml.S(0))]),
+            (1.75 * np.pi, [qml.adjoint(qml.T(0))]),
+            (2 * np.pi, []),
+        ),
+    )
+    def test_RZ_rotation_with_Clifford_T_angle(self, angle, expected_ops):
+        """Test that RZ rotation gates are transformed into the corresponding sequence of Clifford + T gates."""
+        ops = [qml.RZ(angle, wires=0)]
+
+        qs = QuantumScript(ops)
+        (new_qs,), _ = qml.transforms.zx.optimize_t_count(qs)
+
+        assert new_qs.operations == expected_ops
+
+    @pytest.mark.parametrize(
+        "measurements",
+        (
+            [],
+            [qml.expval(qml.Z(0))],
+            [qml.probs()],
+            [qml.state()],
+        ),
+    )
+    def test_transformed_tape(self, measurements):
+        """Test that the operations of the transformed tape match the expected operations
+        and that the original measurements are not touched."""
+        ops = [
+            qml.T(wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.S(wires=0),
+            qml.T(wires=0),
+            qml.T(wires=1),
+            qml.CNOT(wires=[0, 2]),
+            qml.T(wires=1),
+        ]
+        original_tape = qml.tape.QuantumScript(ops=ops, measurements=measurements)
+
+        (transformed_tape,), _ = qml.transforms.zx.optimize_t_count(original_tape)
+
+        expected_ops = [
+            qml.Z(wires=0),
+            qml.CNOT(wires=[0, 1]),
+            qml.S(wires=1),
+            qml.CNOT(wires=[0, 2]),
+        ]
+
+        assert transformed_tape.operations == expected_ops
+        assert transformed_tape.measurements == measurements
+
+    def test_equivalent_state(self):
+        """Test that the output state returned by the transformed QNode matches
+        the output state returned by the original QNode up to a global phase."""
+        num_wires = 3
+        device = qml.device("default.qubit", wires=num_wires)
+
+        @qml.qnode(device)
+        def original_circ():
+            for i in range(num_wires):
+                qml.Hadamard(wires=i)
+            qml.T(wires=0)
+            qml.Hadamard(wires=0)
+            qml.CNOT(wires=[0, 1])
+            qml.RZ(np.pi / 2, wires=0)
+            qml.S(wires=2)
+            qml.CNOT(wires=[1, 2])
+            qml.RZ(-np.pi, wires=2)
+            return qml.state()
+
+        reduced_circ = qml.transforms.zx.optimize_t_count(original_circ)
+
+        state1 = original_circ()
+        state2 = reduced_circ()
+
+        # test that the states are equivalent up to a global phase
+        check = qml.math.fidelity_statevector(state1, state2)
+        assert np.isclose(check, 1)
