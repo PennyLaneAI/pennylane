@@ -24,12 +24,7 @@ pytest.importorskip("xdsl")
 from xdsl.context import Context
 from xdsl.dialects import builtin, test
 from xdsl.ir import Dialect
-from xdsl.irdl import (
-    IRDLOperation,
-    irdl_op_definition,
-    operand_def,
-    result_def,
-)
+from xdsl.irdl import IRDLOperation, irdl_op_definition, operand_def, result_def
 from xdsl.utils.exceptions import VerifyException
 
 from pennylane.compiler.python_compiler.jax_utils import QuantumParser

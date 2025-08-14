@@ -38,7 +38,7 @@ def _clifford_keys_unwired() -> list:
     I, X, Y, Z = qml.I, qml.X, qml.Y, qml.Z
     H, S, Sd = qml.H, qml.S, qml.adjoint(qml.S)
 
-    return [ 
+    return [
         (I,), (H,), (S,), (X,), (Y,), (Z,), (Sd,),
         (H, S), (H, Z), (H, Sd), (S, H),
         (S, X), (S, Y), (Z, H), (Sd, H),
@@ -165,7 +165,7 @@ def _parity_transforms() -> dict:
     }
 
 
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel,too-many-branches
 def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
     r"""Decompose an SO(3) matrix into Matsumoto-Amano normal form.
 
