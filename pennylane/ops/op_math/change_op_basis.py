@@ -1,3 +1,19 @@
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This submodule defines a class for compute, uncompute patterns.
+"""
 from collections import Counter
 from functools import reduce
 
@@ -65,10 +81,10 @@ class ChangeOpBasis(CompositeOp):
     _op_symbol = "@"
     _math_op = staticmethod(math.prod)
 
-    def matrix(self):
+    def matrix(self, wire_order=None):
         raise MatrixUndefinedError
 
-    def sparse_matrix(self):
+    def sparse_matrix(self, wire_order=None, format="csr"):
         raise SparseMatrixUndefinedError
 
     def diagonalizing_gates(self):
