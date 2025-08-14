@@ -13,7 +13,7 @@ example, such a transformation could
 replace a gate type with another, fuse gates, exploit mathematical relations that simplify an observable,
 or replace a large circuit by a number of smaller circuits.
 
-Compilation functionality is mostly designed as **transforms**; see the
+Compilation functionality is mostly designed as **transforms**; see
 the :doc:`transforms documentation <../code/qml_transforms>` for more details,
 as well as information on how to write your own custom transforms.
 
