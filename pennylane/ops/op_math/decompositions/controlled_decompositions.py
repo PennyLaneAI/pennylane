@@ -542,7 +542,7 @@ def _decompose_mcx_with_one_worker(wires, work_wires, work_wire_type="zeroed", *
     Sec. 5.1 of [1].
 
     References:
-        1. Khattar and Gidney, Rise of conditionally clean auxiliary qubits for optimizing quantum circuits
+        1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
         `arXiv:2407.17966 <https://arxiv.org/abs/2407.17966>`__
 
     """
