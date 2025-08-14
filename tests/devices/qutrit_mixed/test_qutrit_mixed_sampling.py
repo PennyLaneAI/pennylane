@@ -125,7 +125,7 @@ class TestSampleState:
     """Test that the sample_state function works as expected"""
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_sample_state_basic(self, interface, two_qutrit_pure_state):
         """Tests that the returned samples are as expected."""
         state = math.array(two_qutrit_pure_state, like=interface)

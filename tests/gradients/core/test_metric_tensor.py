@@ -707,7 +707,7 @@ class TestMetricTensor:
 
     @pytest.mark.tf
     @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_no_trainable_params_qnode_tf(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -1114,7 +1114,7 @@ class TestFullMetricTensor:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_tf(self, dev_name, ansatz, params, interface):
         import tensorflow as tf
@@ -1279,7 +1279,7 @@ class TestDifferentiabilityDiag:
         assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_tf_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
         """Test metric tensor differentiability in the TF interface"""
         import tensorflow as tf
@@ -1401,7 +1401,7 @@ class TestDifferentiability:
         assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_tf(self, diff_method, tol, ansatz, weights, interface):
         """Test metric tensor differentiability in the TF interface"""
         import tensorflow as tf

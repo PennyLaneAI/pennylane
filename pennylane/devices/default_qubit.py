@@ -224,7 +224,7 @@ def adjoint_state_measurements(
                 math.requires_grad(p)
                 and math.get_interface(p) == "tensorflow"
                 and math.get_dtype_name(p) in {"float32", "complex64"}
-            ):
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 raise ValueError(
                     "tensorflow with adjoint differentiation of the state requires float64 or complex128 parameters."
                 )
