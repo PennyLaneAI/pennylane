@@ -761,6 +761,7 @@ class QNode:
 
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
+        # pylint: disable=protected-access
         if updated_qn.shots != old_shots:
             updated_qn._set_shots(old_shots)
         if self._shots_override_device:
