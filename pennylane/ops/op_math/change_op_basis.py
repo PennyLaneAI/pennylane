@@ -3,48 +3,53 @@ from functools import reduce
 
 from pennylane import apply, math, queuing
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.operation import Operator, SparseMatrixUndefinedError, DiagGatesUndefinedError, EigvalsUndefinedError
+from pennylane.operation import (
+    DiagGatesUndefinedError,
+    EigvalsUndefinedError,
+    MatrixUndefinedError,
+    Operator,
+    SparseMatrixUndefinedError,
+)
 from pennylane.ops.op_math import adjoint
 
 from .composite import CompositeOp, handle_recursion_error
-from ...exceptions import MatrixUndefinedError
 
 
-def conjugation(U, V, U_dag=None):
+def change_op_basis(compute_op, target_op, uncompute_op=None):
     """Construct an operator which represents the product of the
     operators provided.
 
     Args:
-        U (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
-        V (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        U_dag (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations. Default is U_dag=qml.adjoint(U).
+        compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
+        target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
+        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations. Default is uncompute_op=qml.adjoint(compute_op).
 
     Returns:
-        ~ops.op_math.Conjugation: the operator representing the compute, uncompute pattern.
+        ~ops.op_math.ChangeOpBasis: the operator representing the compute, uncompute pattern.
     """
 
-    ops_simp = Conjugation(U, V, U_dag)
+    ops_simp = ChangeOpBasis(compute_op, target_op, uncompute_op)
 
     return ops_simp
 
 
-class Conjugation(CompositeOp):
+class ChangeOpBasis(CompositeOp):
     """
     Composite operator representing a compute, uncompute pattern of operators.
 
     Args:
-        U (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
-        V (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        U_dag (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations. Default is U_dag=qml.adjoint(U).
+        compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
+        target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
+        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations. Default is uncompute_op=qml.adjoint(compute_op).
 
     Returns:
-        (Operator): Returns an Operator which is the conjugation of the provided Operators: U, V, U†.
+        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, compute_op†.
     """
 
-    def __init__(self, U, V, U_dag=None):
-        if U_dag is None:
-            U_dag = adjoint(U)
-        super().__init__(U, V, U_dag)
+    def __init__(self, compute_op, target_op, uncompute_op=None):
+        if uncompute_op is None:
+            uncompute_op = adjoint(compute_op)
+        super().__init__(compute_op, target_op, uncompute_op)
 
     resource_keys = frozenset({"resources"})
 
@@ -106,7 +111,7 @@ class Conjugation(CompositeOp):
         return True
 
     def decomposition(self):
-        r"""Decomposition of the product operator is given by each of U, V, U† applied in succession."""
+        r"""Decomposition of the product operator is given by each of compute_op, target_op, compute_op† applied in succession."""
         if queuing.QueuingManager.recording():
             return [apply(op) for op in self]
         return list(self)
@@ -117,7 +122,7 @@ class Conjugation(CompositeOp):
         return True
 
     def adjoint(self):
-        return Conjugation(*(adjoint(factor) for factor in self[::-1]))
+        return ChangeOpBasis(*(adjoint(factor) for factor in self[::-1]))
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
@@ -126,15 +131,15 @@ class Conjugation(CompositeOp):
         return None
 
 
-def _conjugation_resources(resources):
+def _change_op_basis_resources(resources):
     return resources
 
 
 # pylint: disable=unused-argument
-@register_resources(_conjugation_resources)
-def _conjugation_decomp(*_, wires=None, operands):
+@register_resources(_change_op_basis_resources)
+def _change_op_basis_decomp(*_, wires=None, operands):
     for op in reversed(operands):
         op._unflatten(*op._flatten())  # pylint: disable=protected-access
 
 
-add_decomps(Conjugation, _conjugation_decomp)
+add_decomps(ChangeOpBasis, _change_op_basis_decomp)

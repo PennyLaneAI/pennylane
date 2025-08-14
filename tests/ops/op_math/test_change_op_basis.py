@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-Unit tests for the Conjugation arithmetic class of qubit operations
+Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
 # pylint:disable=protected-access, unused-argument
 import gate_data as gd  # a file containing matrix rep of each gate
-import numpy as np
 import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.ops.op_math.conjugation import Conjugation, conjugation
+from pennylane.ops.op_math.change_op_basis import ChangeOpBasis, change_op_basis
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
@@ -79,11 +78,11 @@ ops = (
 
 
 def test_basic_validity():
-    """Run basic validity checks on a conjugation operator."""
+    """Run basic validity checks on a change_op_basis operator."""
     op1 = qml.PauliZ(0)
     op2 = qml.Rot(1.2, 2.3, 3.4, wires=0)
     op3 = qml.PauliZ(0)
-    op = qml.conjugation(op1, op2, op3)
+    op = qml.change_op_basis(op1, op2, op3)
     qml.ops.functions.assert_valid(op)
 
 
@@ -99,60 +98,60 @@ class MyOp(qml.RX):  # pylint:disable=too-few-public-methods
 class TestInitialization:  # pylint:disable=too-many-public-methods
     """Test the initialization."""
 
-    def test_init_conjugation_op(self):
-        """Test the initialization of a Conjugation operator."""
-        conjugation_op = Conjugation(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
+    def test_init_change_op_basis_op(self):
+        """Test the initialization of a ChangeOpBasis operator."""
+        change_op_basis_op = ChangeOpBasis(qml.PauliX(wires=0), qml.RZ(0.23, wires="a"))
 
-        assert conjugation_op.wires == Wires((0, "a"))
-        assert conjugation_op.num_wires == 2
-        assert conjugation_op.name == "Conjugation"
+        assert change_op_basis_op.wires == Wires((0, "a"))
+        assert change_op_basis_op.num_wires == 2
+        assert change_op_basis_op.name == "ChangeOpBasis"
 
-        assert conjugation_op.data == (0.23,)
-        assert conjugation_op.parameters == [0.23]
-        assert conjugation_op.num_params == 1
+        assert change_op_basis_op.data == (0.23,)
+        assert change_op_basis_op.parameters == [0.23]
+        assert change_op_basis_op.num_params == 1
 
     def test_hash(self):
         """Testing some situations for the hash property."""
         # test not the same hash if different order
-        op1 = qml.conjugation(qml.PauliX("a"), qml.PauliY("a"), qml.PauliX(1))
-        op2 = qml.conjugation(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
+        op1 = qml.change_op_basis(qml.PauliX("a"), qml.PauliY("a"), qml.PauliX(1))
+        op2 = qml.change_op_basis(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
         assert op1.hash != op2.hash
 
     PROD_TERMS_OP_PAIRS = (  # not all operands have pauli representation
         (
-            qml.conjugation(qml.Hadamard(0), X(1), qml.Hadamard(0)),
+            qml.change_op_basis(qml.Hadamard(0), X(1), qml.Hadamard(0)),
             [1.0],
-            [qml.conjugation(qml.Hadamard(0), X(1), qml.Hadamard(0))],
-        ),  # trivial conjugation
+            [qml.change_op_basis(qml.Hadamard(0), X(1), qml.Hadamard(0))],
+        ),  # trivial change_op_basis
         (
-            qml.conjugation(X(0), X(1), X(0)),
+            qml.change_op_basis(X(0), X(1), X(0)),
             [1.0],
-            [qml.conjugation(X(0), X(1), X(0))],
-        ),  # trivial conjugation
+            [qml.change_op_basis(X(0), X(1), X(0))],
+        ),  # trivial change_op_basis
         (
-            qml.conjugation(qml.Hadamard(0), X(1)),
+            qml.change_op_basis(qml.Hadamard(0), X(1)),
             [1.0],
-            [qml.conjugation(qml.Hadamard(0), X(1), qml.Hadamard(0))],
-        ),  # conjugation without adjoint provided
+            [qml.change_op_basis(qml.Hadamard(0), X(1), qml.Hadamard(0))],
+        ),  # change_op_basis without adjoint provided
     )
 
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
         x = qml.numpy.array([1.0, 2.0, 3.0])
-        conjugation_op = conjugation(qml.PauliX(0), qml.RX(x, wires=0))
-        assert conjugation_op.batch_size == 3
+        change_op_basis_op = change_op_basis(qml.PauliX(0), qml.RX(x, wires=0))
+        assert change_op_basis_op.batch_size == 3
 
     def test_batch_size_None(self):
         """Test that the batch size is none if no factors have batching."""
-        conjugation_op = conjugation(qml.PauliX(0), qml.RX(1.0, wires=0))
-        assert conjugation_op.batch_size is None
+        change_op_basis_op = change_op_basis(qml.PauliX(0), qml.RX(1.0, wires=0))
+        assert change_op_basis_op.batch_size is None
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition(self, ops_lst):
-        """Test the decomposition of a conjugation of operators is a list
+        """Test the decomposition of a change_op_basis of operators is a list
         of the provided factors."""
-        conjugation_op = conjugation(*ops_lst)
-        decomposition = conjugation_op.decomposition()
+        change_op_basis_op = change_op_basis(*ops_lst)
+        decomposition = change_op_basis_op.decomposition()
         true_decomposition = list(ops_lst[::-1])  # reversed list of factors
 
         assert isinstance(decomposition, list)
@@ -162,28 +161,28 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_new(self, ops_lst):
         """Test the qfunc decomposition."""
-        conjugation_op = conjugation(*ops_lst)
+        change_op_basis_op = change_op_basis(*ops_lst)
 
-        for rule in qml.list_decomps(Conjugation):
-            _test_decomposition_rule(conjugation_op, rule)
+        for rule in qml.list_decomps(ChangeOpBasis):
+            _test_decomposition_rule(change_op_basis_op, rule)
 
     @pytest.mark.parametrize("ops_lst", ops)
     @pytest.mark.capture
     def test_decomposition_new_capture(self, ops_lst):
         """Test the qfunc decomposition."""
-        conjugation_op = conjugation(*ops_lst)
+        change_op_basis_op = change_op_basis(*ops_lst)
 
-        for rule in qml.list_decomps(Conjugation):
-            _test_decomposition_rule(conjugation_op, rule)
+        for rule in qml.list_decomps(ChangeOpBasis):
+            _test_decomposition_rule(change_op_basis_op, rule)
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition_on_tape(self, ops_lst):
-        """Test the decomposition of a conjugation of operators is a list
+        """Test the decomposition of a change_op_basis of operators is a list
         of the provided factors on a tape."""
-        conjugation_op = conjugation(*ops_lst)
+        change_op_basis_op = change_op_basis(*ops_lst)
         true_decomposition = list(ops_lst[::-1])  # reversed list of factors
         with qml.queuing.AnnotatedQueue() as q:
-            conjugation_op.decomposition()
+            change_op_basis_op.decomposition()
 
         tape = qml.tape.QuantumScript.from_queue(q)
         for op1, op2 in zip(tape.operations, true_decomposition):
@@ -202,11 +201,11 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         ),
     )
     def test_has_adjoint_true_always(self, factors):
-        """Test that a conjugation of operators that have `has_adjoint=True`
+        """Test that a change_op_basis of operators that have `has_adjoint=True`
         has `has_adjoint=True` as well."""
 
-        conjugation_op = conjugation(*factors)
-        assert conjugation_op.has_adjoint is True
+        change_op_basis_op = change_op_basis(*factors)
+        assert change_op_basis_op.has_adjoint is True
 
     @pytest.mark.parametrize(
         "factors",
@@ -221,18 +220,18 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         ),
     )
     def test_has_decomposition_true_always(self, factors):
-        """Test that a conjugation of operators that have `has_decomposition=True`
+        """Test that a change_op_basis of operators that have `has_decomposition=True`
         has `has_decomposition=True` as well."""
 
-        conjugation_op = conjugation(*factors)
-        assert conjugation_op.has_decomposition is True
+        change_op_basis_op = change_op_basis(*factors)
+        assert change_op_basis_op.has_decomposition is True
 
     def test_has_diagonalizing_gates_false_via_factor(self):
-        """Test that a conjugation of operators of which one has
+        """Test that a change_op_basis of operators of which one has
         `has_diagonalizing_gates=False` has `has_diagonalizing_gates=False` as well."""
 
-        conjugation_op = conjugation(MyOp(3.1, 0), qml.PauliX(2))
-        assert conjugation_op.has_diagonalizing_gates is False
+        change_op_basis_op = change_op_basis(MyOp(3.1, 0), qml.PauliX(2))
+        assert change_op_basis_op.has_diagonalizing_gates is False
 
 
 class TestProperties:
@@ -241,50 +240,50 @@ class TestProperties:
     @pytest.mark.parametrize("ops_lst", ops)
     def test_queue_category_ops(self, ops_lst):
         """Test _queue_category property is '_ops' when all factors are `_ops`."""
-        conjugation_op = conjugation(*ops_lst)
-        assert conjugation_op._queue_category == "_ops"
+        change_op_basis_op = change_op_basis(*ops_lst)
+        assert change_op_basis_op._queue_category == "_ops"
 
 
 class TestWrapperFunc:
     """Test wrapper function."""
 
-    def test_op_conjugation_top_level(self):
+    def test_op_change_op_basis_top_level(self):
         """Test that the top level function constructs an identical instance to one
         created using the class."""
 
         factors = (qml.PauliX(wires=1), qml.RX(1.23, wires=0), qml.CNOT(wires=[0, 1]))
-        op_id = "conjugation_op"
+        op_id = "change_op_basis_op"
 
-        conjugation_func_op = conjugation(*factors)
-        conjugation_class_op = Conjugation(*factors)
-        qml.assert_equal(conjugation_func_op, conjugation_class_op)
+        change_op_basis_func_op = change_op_basis(*factors)
+        change_op_basis_class_op = ChangeOpBasis(*factors)
+        qml.assert_equal(change_op_basis_func_op, change_op_basis_class_op)
 
 
 class TestIntegration:
-    """Integration tests for the Conjugation class."""
+    """Integration tests for the ChangeOpBasis class."""
 
     def test_non_supported_obs_not_supported(self):
         """Test that non-supported ops in a measurement process will raise an error."""
         wires = [0, 1]
         dev = qml.device("default.qubit", wires=wires)
-        conjugation_op = Conjugation(qml.RX(1.23, wires=0), qml.Identity(wires=1))
+        change_op_basis_op = ChangeOpBasis(qml.RX(1.23, wires=0), qml.Identity(wires=1))
 
         @qml.qnode(dev)
         def my_circ():
             qml.PauliX(0)
-            return qml.expval(conjugation_op)
+            return qml.expval(change_op_basis_op)
 
         with pytest.raises(DeviceError):
             my_circ()
 
     def test_params_can_be_considered_trainable(self):
-        """Tests that the parameters of a Conjugation are considered trainable."""
+        """Tests that the parameters of a ChangeOpBasis are considered trainable."""
         dev = qml.device("default.qubit", wires=2)
 
         @qml.qnode(dev)
         def circuit(x, U):
             qml.RX(x, 0)
-            return qml.expval(qml.conjugation(qml.Hermitian(U, 0), qml.PauliX(1)))
+            return qml.expval(qml.change_op_basis(qml.Hermitian(U, 0), qml.PauliX(1)))
 
         x = qnp.array(0.1, requires_grad=False)
         U = qnp.array([[1.0, 0.0], [0.0, -1.0]], requires_grad=True)
@@ -296,16 +295,16 @@ class TestIntegration:
 class TestDecomposition:
 
     def test_resource_keys(self):
-        """Test that the resource keys of `Conjugation` are op_reps."""
-        assert Conjugation.resource_keys == frozenset({"resources"})
-        conjugation = qml.X(0) @ qml.Y(1) @ qml.X(2)
+        """Test that the resource keys of `ChangeOpBasis` are op_reps."""
+        assert ChangeOpBasis.resource_keys == frozenset({"resources"})
+        change_op_basis = qml.X(0) @ qml.Y(1) @ qml.X(2)
         resources = {qml.resource_rep(qml.X): 2, qml.resource_rep(qml.Y): 1}
-        assert conjugation.resource_params == {"resources": resources}
+        assert change_op_basis.resource_params == {"resources": resources}
 
     def test_registered_decomp(self):
-        """Test that the decomposition of conjugation is registered."""
+        """Test that the decomposition of change_op_basis is registered."""
 
-        decomps = qml.decomposition.list_decomps(Conjugation)
+        decomps = qml.decomposition.list_decomps(ChangeOpBasis)
 
         default_decomp = decomps[0]
         _ops = [qml.X(0), qml.X(1), qml.X(2), qml.MultiRZ(0.5, wires=(0, 1))]
@@ -322,9 +321,9 @@ class TestDecomposition:
         assert q.queue == _ops[::-1]
 
     def test_integration(self, enable_graph_decomposition):
-        """Test that conjugation's can be integrated into the decomposition."""
+        """Test that change_op_basis's can be integrated into the decomposition."""
 
-        op = Conjugation(qml.S(0), qml.S(1))
+        op = ChangeOpBasis(qml.S(0), qml.S(1))
 
         graph = qml.decomposition.DecompositionGraph([op], gate_set=set(qml.ops.__all__))
         graph.solve()
