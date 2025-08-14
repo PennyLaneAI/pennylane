@@ -21,7 +21,8 @@ from jaxlib.mlir.dialects import stablehlo
 from jaxlib.mlir.ir import Context as jaxContext  # pylint: disable=no-name-in-module
 from jaxlib.mlir.ir import Module as jaxModule  # pylint: disable=no-name-in-module
 from xdsl.context import Context as xContext
-from xdsl.passes import PassPipeline
+from xdsl.dialects.builtin import ModuleOp
+from xdsl.passes import ModulePass, PassPipeline
 from xdsl.printer import Printer
 
 from pennylane.typing import Callable
@@ -35,7 +36,9 @@ class Compiler:
     """Compiler namespace"""
 
     @staticmethod
-    def run(jmod: jaxModule, callback: Callable[[ModulePass, builtin.ModuleOp, ModulePass], None] | None = None) -> jaxModule:
+    def run(
+        jmod: jaxModule, callback: Callable[[ModulePass, ModuleOp, ModulePass], None] | None = None
+    ) -> jaxModule:
         """Runs the apply-transform-sequence pass.
 
         The apply-transform-sequence pass is a "meta-pass". In other words,
