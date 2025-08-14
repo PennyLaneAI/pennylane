@@ -270,10 +270,13 @@ class TestDecomposition:
 
     def test_resource_keys(self):
         """Test that the resource keys of `ChangeOpBasis` are op_reps."""
-        assert ChangeOpBasis.resource_keys == frozenset({"resources"})
-        change_op_basis_op = qml.X(0) @ qml.Y(1) @ qml.X(2)
-        resources = {qml.resource_rep(qml.X): 2, qml.resource_rep(qml.Y): 1}
-        assert change_op_basis_op.resource_params == {"resources": resources}
+        assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
+        change_op_basis_op = ChangeOpBasis(qml.X(0), qml.Y(1), qml.X(2))
+        assert change_op_basis_op.resource_params == {
+            "compute_op": qml.X(0),
+            "target_op": qml.Y(1),
+            "uncompute_op": qml.X(2),
+        }
 
     def test_registered_decomp(self):
         """Test that the decomposition of change_op_basis is registered."""

@@ -18,7 +18,12 @@ from collections import Counter
 from functools import reduce
 
 from pennylane import math, queuing
-from pennylane.decomposition import add_decomps, register_resources, resource_rep
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import (
     DiagGatesUndefinedError,
     EigvalsUndefinedError,
@@ -26,7 +31,7 @@ from pennylane.operation import (
     Operator,
     SparseMatrixUndefinedError,
 )
-from pennylane.ops.op_math import adjoint
+from pennylane.ops.op_math import adjoint, ctrl
 
 from .composite import CompositeOp, handle_recursion_error
 
@@ -67,7 +72,7 @@ class ChangeOpBasis(CompositeOp):
             uncompute_op = adjoint(compute_op)
         super().__init__(compute_op, target_op, uncompute_op)
 
-    resource_keys = frozenset({"resources"})
+    resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})
 
     has_matrix = False
     has_sparse_matrix = False
@@ -90,8 +95,11 @@ class ChangeOpBasis(CompositeOp):
     @property
     @handle_recursion_error
     def resource_params(self):
-        resources = dict(Counter(resource_rep(type(op), **op.resource_params) for op in self))
-        return {"resources": resources}
+        resources = {}
+        resources["compute_op"] = self[0]
+        resources["target_op"] = self[1]
+        resources["uncompute_op"] = self[2]
+        return resources
 
     grad_method = None
 
@@ -151,15 +159,82 @@ class ChangeOpBasis(CompositeOp):
         return None
 
 
-def _change_op_basis_resources(resources):
+def _change_op_basis_resources(compute_op, target_op, uncompute_op):
+    resources = Counter()
+
+    resources[resource_rep(type(compute_op), **compute_op.resource_params)] += 1
+    resources[resource_rep(type(target_op), **target_op.resource_params)] += 1
+    resources[resource_rep(type(uncompute_op), **uncompute_op.resource_params)] += 1
+
     return resources
+
+
+def _controlled_change_op_basis_resources(
+    *_,
+    num_control_wires,
+    num_zero_control_values,
+    num_work_wires,
+    work_wire_type,
+    base_class,
+    base_params,
+    **__,
+):  # pylint: disable=unused-argument, too-many-arguments
+    resources = Counter()
+    resources[
+        resource_rep(type(base_params["compute_op"]), **base_params["compute_op"].resource_params)
+    ] += 1
+    resources[
+        controlled_resource_rep(
+            type(base_params["target_op"]),
+            base_params["target_op"].resource_params,
+            num_control_wires=num_control_wires,
+            num_zero_control_values=num_zero_control_values,
+            num_work_wires=num_work_wires,
+            work_wire_type=work_wire_type,
+        )
+    ] += 1
+    resources[
+        resource_rep(
+            type(base_params["uncompute_op"]), **base_params["uncompute_op"].resource_params
+        )
+    ] += 1
+    return resources
+
+
+@register_resources(_controlled_change_op_basis_resources)
+def _controlled_change_op_basis_decomposition(
+    *_,
+    wires,
+    control_wires,
+    control_values,
+    work_wires,
+    work_wire_type,
+    base,
+    **__,
+):  # pylint: disable=unused-argument, too-many-arguments
+    base.resource_params["compute_op"]._unflatten(  # pylint: disable=protected-access
+        *base.resource_params["compute_op"]._flatten()  # pylint: disable=protected-access
+    )
+    ctrl(
+        base.resource_params["target_op"]._unflatten(  # pylint: disable=protected-access
+            *base.resource_params["target_op"]._flatten()  # pylint: disable=protected-access
+        ),
+        control=control_wires,
+        control_values=control_values,
+        work_wires=work_wires,
+        work_wire_type=work_wire_type,
+    )
+    base.resource_params["uncompute_op"]._unflatten(  # pylint: disable=protected-access
+        *base.resource_params["uncompute_op"]._flatten()  # pylint: disable=protected-access
+    )
 
 
 # pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(*_, wires=None, operands):
-    for op in reversed(operands):
+    for op in operands:
         op._unflatten(*op._flatten())  # pylint: disable=protected-access
 
 
 add_decomps(ChangeOpBasis, _change_op_basis_decomp)
+add_decomps("C(ChangeOpBasis)", _controlled_change_op_basis_decomposition)
