@@ -32,7 +32,7 @@ from pennylane.operation import Operation, Operator
 from pennylane.queuing import AnnotatedQueue, QueuingManager
 from pennylane.registers import registers
 from pennylane.tape import make_qscript
-from pennylane.templates.state_preparations.superposition import assign_states
+from pennylane.templates.state_preparations.superposition import order_states
 from pennylane.wires import WiresLike
 from pennylane.workflow import construct_tape
 from pennylane.workflow.qnode import QNode
@@ -124,7 +124,7 @@ def _(op: qtemps.state_preparations.Superposition):
     size_basis_state = len(bases[0])  # assuming they are all the same size
 
     dic_state = dict(zip(bases, coeffs))
-    perms = assign_states(bases)
+    perms = order_states(bases)
     new_dic_state = {perms[key]: val for key, val in dic_state.items() if key in perms}
 
     sorted_coefficients = [

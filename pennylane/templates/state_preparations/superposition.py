@@ -18,7 +18,7 @@ import pennylane as qml
 from pennylane.operation import Operation
 
 
-def assign_states(basis_states):
+def order_states(basis_states):
     r"""
     This function maps a given list of :math:`m` computational basis states to the first
     :math:`m` computational basis states, except for input states that are among the first
@@ -41,7 +41,7 @@ def assign_states(basis_states):
     .. code-block:: pycon
 
         >>> basis_states = [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]]
-        >>> assign_states(basis_states)
+        >>> order_states(basis_states)
         {(1, 1, 0, 0): (0, 0, 0, 0),
          (1, 0, 1, 0): (0, 0, 0, 1),
          (0, 1, 0, 1): (0, 0, 1, 0),
@@ -53,7 +53,7 @@ def assign_states(basis_states):
     .. code-block:: pycon
 
         >>> basis_states = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
-        >>> assign_states(basis_states)
+        >>> order_states(basis_states)
         {(0, 0, 0, 1): (0, 0, 0, 1),
          (1, 1, 0, 0): (0, 0, 0, 0),
          (0, 1, 0, 1): (0, 0, 1, 0),
@@ -287,7 +287,7 @@ class Superposition(Operation):
         """
 
         dic_state = dict(zip(bases, coeffs))
-        perms = assign_states(bases)
+        perms = order_states(bases)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 
         sorted_coefficients = [
