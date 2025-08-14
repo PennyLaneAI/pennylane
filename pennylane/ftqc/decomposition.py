@@ -83,7 +83,7 @@ def correct_final_samples(results, tape):
 
 
 @transform
-def convert_to_mbqc_formalism(tape):
+def convert_to_mbqc_formalism(tape, include_corrections=False):
     """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
@@ -110,7 +110,7 @@ def convert_to_mbqc_formalism(tape):
 
     wire_map = {w: q_mgr.acquire_qubit() for w in tape.wires}
 
-    def get_new_ops(tape_in, wire_map_in, include_corrections=True):
+    def get_new_ops(tape_in, wire_map_in):
         with AnnotatedQueue() as q:
             for op in tape_in.operations:
                 if isinstance(op, GlobalPhase):  # no wires
@@ -140,8 +140,6 @@ def convert_to_mbqc_formalism(tape):
 
     if isinstance(tape, QuantumScriptSequence):
 
-        postprocessing = partial(correct_final_samples, tape=tape.final_tape)
-
         new_tapes = []
 
         # new ops for intermediate tapes
@@ -151,7 +149,7 @@ def convert_to_mbqc_formalism(tape):
             new_tapes.append(new_tape)
 
         # new ops and measurement wires for the final tape
-        ops_queue = get_new_ops(tape.final_tape, wire_map, include_corrections=False)
+        ops_queue = get_new_ops(tape.final_tape, wire_map)
         new_wires = [wire_map[w] for w in meas_wires]
         # new_measurements = [sample(wires=new_wires)] #+ [sample(m) for m in mcms]
         new_tapes.append(
@@ -162,12 +160,12 @@ def convert_to_mbqc_formalism(tape):
         new_tape = tape.copy(tapes=new_tapes)
 
     else:
-        postprocessing = null_postprocessing
+
         ops_queue = get_new_ops(tape, wire_map)
         new_wires = [wire_map[w] for w in meas_wires]
         new_tape = tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
 
-    return (new_tape,), postprocessing
+    return (new_tape,), null_postprocessing
 
 
 def queue_single_qubit_gate(q_mgr, op, in_wire):
