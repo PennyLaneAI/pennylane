@@ -226,3 +226,87 @@ class ResourceQubitizeTHC(ResourceOperator):
 
 
         return gate_list
+
+    @classmethod
+    def default_controlled_resource_decomp(
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
+        compact_ham,
+        coeff_precision=None,
+        rotation_precision=None,
+        select_swap_depths=None,
+        **kwargs,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources for the controlled version of the operator.
+
+        Args:
+            ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
+            ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
+            compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
+                Hamiltonian for which the walk operator is being created
+            coeff_precision (float, optional): precision for loading the coefficients of Hamiltonian
+            rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
+            select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
+                used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
+                ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
+                respectively.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+
+        """
+        gate_list = []
+
+        tensor_rank = compact_ham.params["tensor_rank"]
+        m_register = int(np.ceil(np.log2(tensor_rank)))
+        coeff_precision = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
+        coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
+
+        if isinstance(select_swap_depths, int) or select_swap_depths is None:
+            select_swap_depths = [select_swap_depths] * 2
+
+        if ctrl_num_ctrl_wires > 1:
+            mcx = resource_rep(
+                re.ResourceMultiControlledX,
+                {
+                    "num_ctrl_wires": ctrl_num_ctrl_wires,
+                    "num_ctrl_values": ctrl_num_ctrl_values,
+                },
+            )
+            gate_list.append(AllocWires(1))
+            gate_list.append(GateCount(mcx, 2))
+
+        select = resource_rep(
+            plre.ResourceSelectTHC,
+            {
+                "compact_ham": compact_ham,
+                "rotation_precision": rotation_precision,
+                "select_swap_depth": select_swap_depths[1],
+            },
+        )
+        gate_list.append(GateCount(resource_rep(plre.ResourceControlled, {"base_cmpr_op": select, "num_ctrl_wires":1, "num_ctrl_values":0})))
+
+        prep = resource_rep(
+            plre.ResourcePrepTHC,
+            {
+                "compact_ham": compact_ham,
+                "coeff_precision": coeff_precision,
+                "select_swap_depth": select_swap_depths[0],
+            },
+        )
+        gate_list.append(GateCount(prep))
+        gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep})))
+
+        # reflection cost
+        toffoli = resource_rep(plre.ResourceToffoli)
+        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_prec_wires + 4))
+
+        if ctrl_num_ctrl_wires > 1:
+            gate_list.append(FreeWires(1))
+        elif ctrl_num_ctrl_values > 0:
+            gate_list.append(GateCount(resource_rep(plre.ResourceX), 2 * ctrl_num_ctrl_values))
+
+        return gate_list

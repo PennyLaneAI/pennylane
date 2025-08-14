@@ -372,14 +372,13 @@ class ResourcePrepTHC(ResourceOperator):
         coeff_precision = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
         coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
 
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1)
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
         m_register = int(math.ceil(math.log2(tensor_rank + 1)))
 
         gate_list = []
 
         gate_list.append(AllocWires(coeff_register + 2 * m_register + 2 * coeff_prec_wires + 6))
-
         hadamard = resource_rep(plre.ResourceHadamard)
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
@@ -564,5 +563,4 @@ class ResourcePrepTHC(ResourceOperator):
 
         # Free Prepare Wires
         gate_list.append(FreeWires(coeff_register + 2 * m_register + 2 * coeff_prec_wires + 6))
-
         return gate_list
