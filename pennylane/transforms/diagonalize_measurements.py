@@ -169,27 +169,28 @@ def diagonalize_measurements(tape, supported_base_obs=_default_supported_obs, to
             "be supported when using eigvals."
         )
 
-    if (
-        all(m.obs.pauli_rep is not None for m in tape.measurements if m.obs is not None)
-        and diagonalize_all
-    ):
-        try:
-            if tape.samples_computational_basis and len(tape.measurements) > 1:
-                _validate_computational_basis_sampling(tape)
-            diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(
-                tape, to_eigvals=to_eigvals
-            )
-        except QuantumFunctionError:
-            # the pauli_rep based method sometimes fails unnecessarily -
-            # if it fails, fall back on the less efficient method (which may also fail)
-            diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
-                tape, supported_base_obs, to_eigvals=to_eigvals
-            )
+    # if (
+    #     all(m.obs.pauli_rep is not None for m in tape.measurements if m.obs is not None)
+    #     and diagonalize_all
+    # ):
+    #     try:
+    #         if tape.samples_computational_basis and len(tape.measurements) > 1:
+    #             _validate_computational_basis_sampling(tape)
+    #         diagonalizing_gates, new_measurements = _diagonalize_all_pauli_obs(
+    #             tape, to_eigvals=to_eigvals
+    #         )
+    #     except QuantumFunctionError:
+    #         print("this should be happening")
+    #         # the pauli_rep based method sometimes fails unnecessarily -
+    #         # if it fails, fall back on the less efficient method (which may also fail)
+    #         diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
+    #             tape, supported_base_obs, to_eigvals=to_eigvals
+    #         )
 
-    else:
-        diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
-            tape, supported_base_obs, to_eigvals=to_eigvals
-        )
+    # else:
+    diagonalizing_gates, new_measurements = _diagonalize_subset_of_pauli_obs(
+        tape, supported_base_obs, to_eigvals=to_eigvals
+    )
 
     new_operations = tape.operations + diagonalizing_gates
 
