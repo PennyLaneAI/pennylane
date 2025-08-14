@@ -21,7 +21,7 @@ import networkx as nx
 from pennylane import math
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
-from pennylane.measurements import MeasurementValue, MidMeasureMP, SampleMP, sample
+from pennylane.measurements import SampleMP, sample
 from pennylane.ops import CNOT, CZ, RZ, GlobalPhase, H, Identity, Rot, S, X, Y, Z, cond
 from pennylane.queuing import AnnotatedQueue
 from pennylane.transforms import decompose, transform
@@ -59,9 +59,12 @@ def convert_to_mbqc_gateset(tape):
 def correct_final_samples(results, tape):
     """Correct the samples based on the mcms and the pauli tracker
     output"""
+    # ToDo: if its quick, move some things around to avoid circular imports so this can be imported top level
+    # pylint: disable=import-outside-toplevel
     from pennylane.ftqc.pauli_tracker import apply_byproduct_corrections
+
     correction_fn = partial(apply_byproduct_corrections, tape)
-    
+
     corrected_results = []
 
     for result in results:
@@ -107,9 +110,8 @@ def convert_to_mbqc_formalism(tape):
 
     wire_map = {w: q_mgr.acquire_qubit() for w in tape.wires}
 
-    def get_new_ops(tape_in, wire_map_in, delay_corrections=False):
+    def get_new_ops(tape_in, wire_map_in, include_corrections=True):
         with AnnotatedQueue() as q:
-            additional_measurements = []
             for op in tape_in.operations:
                 if isinstance(op, GlobalPhase):  # no wires
                     GlobalPhase(*op.data)
@@ -118,10 +120,7 @@ def convert_to_mbqc_formalism(tape):
                     wire_map_in[ctrl], wire_map_in[tgt], measurements = queue_cnot(
                         q_mgr, wire_map_in[ctrl], wire_map_in[tgt]
                     )
-                    # if delay_corrections:
-                    #     additional_measurements.extend(measurements)
-                    # else:
-                    if not delay_corrections:
+                    if include_corrections:
                         cnot_corrections(measurements)(wire_map_in[ctrl], wire_map_in[tgt])
                 else:  # one wire
                     # pylint: disable=isinstance-second-argument-not-valid-type
@@ -134,12 +133,10 @@ def convert_to_mbqc_formalism(tape):
                         wire_map_in[w], measurements = queue_single_qubit_gate(
                             q_mgr, op, in_wire=wire_map_in[w]
                         )
-                        # if delay_corrections:
-                        #     additional_measurements.extend(measurements)
-                        if not delay_corrections:
+                        if include_corrections:
                             queue_corrections(op, measurements)(wire_map_in[w])
 
-        return q.queue, additional_measurements
+        return q.queue
 
     if isinstance(tape, QuantumScriptSequence):
 
@@ -149,26 +146,26 @@ def convert_to_mbqc_formalism(tape):
 
         # new ops for intermediate tapes
         for inner_tape in tape.intermediate_tapes:
-            ops_queue, _ = get_new_ops(inner_tape, wire_map)
+            ops_queue = get_new_ops(inner_tape, wire_map)
             new_tape = inner_tape.copy(operations=ops_queue)
             new_tapes.append(new_tape)
 
         # new ops and measurement wires for the final tape
-        ops_queue, mcms = get_new_ops(tape.final_tape, wire_map, delay_corrections=True)
+        ops_queue = get_new_ops(tape.final_tape, wire_map, include_corrections=False)
         new_wires = [wire_map[w] for w in meas_wires]
         # new_measurements = [sample(wires=new_wires)] #+ [sample(m) for m in mcms]
-        final_tape = tape.final_tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
-        new_tapes.append(final_tape)
+        new_tapes.append(
+            tape.final_tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
+        )
 
         # new sequence
         new_tape = tape.copy(tapes=new_tapes)
 
     else:
         postprocessing = null_postprocessing
-
         ops_queue = get_new_ops(tape, wire_map)
         new_wires = [wire_map[w] for w in meas_wires]
-        new_tape = tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])        
+        new_tape = tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
 
     return (new_tape,), postprocessing
 
