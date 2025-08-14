@@ -499,8 +499,8 @@ class Select(Operation):
             ]
             return decomp_ops
 
-        states = product([0, 1], repeat=len(control))
-        return [ctrl(op, control, control_values=state) for state, op in zip(states, ops)]
+        ctrl_states = product([0, 1], repeat=len(control))
+        return [ctrl(op, control, control_values=state) for state, op in zip(ctrl_states, ops)]
 
     @property
     def ops(self):
@@ -531,13 +531,13 @@ class Select(Operation):
 # Decomposition of Select using multi-control strategy
 
 
-def _multi_controlled_rep(target_rep, num_control_wires, state):
+def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state):
     return controlled_resource_rep(
         base_class=target_rep.op_type,
         base_params=target_rep.params,
         num_control_wires=num_control_wires,
         num_work_wires=0,
-        num_zero_control_values=num_control_wires - sum(state),
+        num_zero_control_values=num_control_wires - sum(ctrl_state),
     )
 
 
@@ -548,9 +548,9 @@ def _select_resources_multi_control(op_reps, num_control_wires, partial):
             resources[op_reps[0]] += 1
         else:
             # Use dummy control values, we will only care about the length of the outputs
-            controls_and_states = _partial_select(len(op_reps), list(range(num_control_wires)))
-            for (ctrl_, state), rep in zip(controls_and_states, op_reps):
-                resources[_multi_controlled_rep(rep, len(ctrl_), state)] += 1
+            ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
+            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
+                resources[_multi_controlled_rep(rep, len(ctrl_), ctrl_state)] += 1
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
@@ -567,12 +567,12 @@ def _select_decomp_multi_control(ops, control, work_wires, partial, **_):
         if len(ops) == 1:
             apply(ops[0])
         else:
-            controls_and_values = _partial_select(len(ops), control)
-            for (ctrl_, values), op in zip(controls_and_values, ops):
-                ctrl(op, ctrl_, control_values=values)
+            ctrls_and_ctrl_states = _partial_select(len(ops), control)
+            for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops):
+                ctrl(op, ctrl_, control_values=ctrl_state)
     else:
-        for state, op in zip(product([0, 1], repeat=len(control)), ops):
-            ctrl(op, control, control_values=state)
+        for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops):
+            ctrl(op, control, control_values=ctrl_state)
 
 
 add_decomps(Select, _select_decomp_multi_control)

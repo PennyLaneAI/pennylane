@@ -249,7 +249,14 @@ class TestSelect:
                 qml.apply(op)
             return qml.state()
 
+        @qml.qnode(dev)
+        def circuit3():
+            qml.StatePrep(state, wires=control)
+            qml.Select(ops, control, partial=False)
+            return qml.state()
+
         assert np.allclose(circuit1(), circuit2())
+        assert np.allclose(circuit1(), circuit3())
 
     @pytest.mark.parametrize(
         ("ops", "control", "expected_gates", "expected_gates_partial"),
