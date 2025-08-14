@@ -159,7 +159,9 @@ def _controlled_change_op_basis_resources(
     **__,
 ):  # pylint: disable=unused-argument
     resources = Counter()
-    resources[resource_rep(type(base_params["compute_op"]), **base_params["compute_op"].resource_params)] += 1
+    resources[
+        resource_rep(type(base_params["compute_op"]), **base_params["compute_op"].resource_params)
+    ] += 1
     resources[
         controlled_resource_rep(
             type(base_params["target_op"]),
@@ -170,7 +172,11 @@ def _controlled_change_op_basis_resources(
             work_wire_type=work_wire_type,
         )
     ] += 1
-    resources[resource_rep(type(base_params["uncompute_op"]), **base_params["uncompute_op"].resource_params)] += 1
+    resources[
+        resource_rep(
+            type(base_params["uncompute_op"]), **base_params["uncompute_op"].resource_params
+        )
+    ] += 1
     return resources
 
 
@@ -193,7 +199,9 @@ def _controlled_change_op_basis_decomposition(
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    base.resource_params["uncompute_op"]._unflatten(*base.resource_params["uncompute_op"]._flatten())
+    base.resource_params["uncompute_op"]._unflatten(
+        *base.resource_params["uncompute_op"]._flatten()
+    )
 
 
 # pylint: disable=unused-argument
