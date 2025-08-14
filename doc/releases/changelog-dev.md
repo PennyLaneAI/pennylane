@@ -292,6 +292,8 @@
 * The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
   StableHLO dialect with missing upstream operations.
   [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
+  [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
+  
 
 <h3>Breaking changes 💔</h3>
 
