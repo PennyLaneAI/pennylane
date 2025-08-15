@@ -12,51 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import io
-import subprocess
+
 from functools import wraps
 
-import graphviz
-from catalyst import qjit
-from catalyst.compiler import CompileError, _get_catalyst_cli_cmd
-from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
-from xdsl.printer import Printer
 
 from pennylane.tape import QuantumScript
 from pennylane.typing import Callable
 
-from ..transforms.api.apply_transform_sequence import register_callback
+from ..compiler import Compiler
 from .collector import QMLCollector
-
-
-def _catalyst(*args, stdin=None, stderr_return=False):
-    """Raw interface to catalyst
-
-    echo ${stdin} | catalyst *args -
-    catalyst *args
-    """
-    cmd = _get_catalyst_cli_cmd(*args, stdin=stdin)
-    try:
-        result = subprocess.run(cmd, input=stdin, check=True, capture_output=True, text=True)
-        if stderr_return:
-            return result.stdout, result.stderr
-        return result.stdout
-    except subprocess.CalledProcessError as e:
-        raise CompileError(f"catalyst failed with error code {e.returncode}: {e.stderr}") from e
-
-
-def _quantum_opt_stderr(*args, stdin=None, stderr_return=False):
-    """Raw interface to quantum-opt
-
-    echo ${stdin} | catalyst --tool=opt *args -
-    catalyst --tool=opt *args
-    """
-    return _catalyst(("--tool", "opt"), *args, stdin=stdin, stderr_return=stderr_return)
-
-
-def catalyst_qjit(qnode):
-    """A method checking whether a qnode is compiled by catalyst.qjit"""
-    return qnode.__class__.__name__ == "QJIT" and hasattr(qnode, "user_function")
 
 
 # TODO: This caching mechanism should be improved,
@@ -65,12 +29,19 @@ _cache_store: dict[Callable, dict[int, tuple[str, str]]] = {}
 
 
 def draw(qnode, *, level: None | int = None):
-    "Draw the quantum circuit at the specified level."
+    """
+    Draw the QNode at the specified level.
+
+    This function can be used to visualize the QNode at different stages of the transformation pipeline
+    when xDSL compilation passes are applied.
+
+    Args:
+        qnode (.QNode): the input QNode that is to be visualized. The QNode is assumed to be compiled with ``qjit``.
+        level (None, int): An indication of what passes to apply before drawing.
+
+    """
 
     cache: dict[int, tuple[str, str]] = _cache_store.setdefault(qnode, {})
-
-    if catalyst_qjit(qnode):
-        qnode = qnode.original_function
 
     def draw_callback(pass_instance, module, pass_level):
         collector = QMLCollector(module)
@@ -80,19 +51,12 @@ def draw(qnode, *, level: None | int = None):
         tape = QuantumScript(ops, meas)
         cache[pass_level] = (tape.draw(), pass_instance.name if pass_level else "No transforms")
 
-        buffer = io.StringIO()
-        Printer(stream=buffer, print_generic_format=True).print_op(module)
-        _, dot_graph = _quantum_opt_stderr(
-            "--view-op-graph", stdin=buffer.getvalue(), stderr_return=True
-        )
-        graph = graphviz.Source(dot_graph)
-        with open(f"level_{pass_level}.svg", "wb") as f:
-            f.write(graph.pipe(format="svg"))
-
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        register_callback(draw_callback)
-        qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(qnode)
+
+        # We need to compile the qnode to ensure the passes are applied.
+        # This could potentially be done only once by caching the results
+        Compiler.run(qnode.mlir_module, callback=draw_callback)
 
         if level is not None:
             if level in cache:

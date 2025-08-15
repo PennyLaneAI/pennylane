@@ -65,32 +65,30 @@ class TransformFunctionsExt(TransformFunctions):
         """Try to run the pass in xDSL, if it can't run on catalyst"""
 
         pass_name = op.pass_name.data  # pragma: no cover
+        xdsl_module = args[0]
+
         if pass_name in self.passes:
             # pragma: no cover
             pass_class = self.passes[pass_name]()
             pass_instance = pass_class()
             pipeline = PassPipeline((pass_instance,))
+            if self.callback and self.level == 0 and self.callback.__name__ == "draw_callback":
+                self.callback(pass_instance, xdsl_module, self.level)
+            pipeline.apply(self.ctx, xdsl_module)
             if self.callback:
-                if self.level == 0:
-                    self.callback(pass_instance, args[0], self.level)
-                pipeline.apply(self.ctx, args[0])
                 self.level += 1
-                self.callback(pass_instance, args[0], self.level)
-            else:
-                pipeline.apply(self.ctx, args[0])
-            return (args[0],)
+                self.callback(pass_instance, xdsl_module, self.level)
+            return (xdsl_module,)
 
         # pragma: no cover
         buffer = io.StringIO()
-
-        Printer(stream=buffer, print_generic_format=True).print_op(args[0])
+        Printer(stream=buffer, print_generic_format=True).print_op(xdsl_module)
         schedule = f"--{pass_name}"
         modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
 
-        module = args[0]
         data = Parser(self.ctx, modified).parse_module()
         rewriter = Rewriter()
-        rewriter.replace_op(module, data)
+        rewriter.replace_op(xdsl_module, data)
         if self.callback:
             prev = None  # We don't know which one
             next = None  # We don't know which one
