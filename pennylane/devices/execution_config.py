@@ -86,7 +86,7 @@ class ExecutionConfig:
     gradient_method: str | TransformDispatcher | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict | None = field(default_factory=dict)
+    gradient_keyword_arguments: dict = field(default_factory=dict)
     """Arguments used to control a gradient transform"""
 
     device_options: dict | None = field(default_factory=dict)
