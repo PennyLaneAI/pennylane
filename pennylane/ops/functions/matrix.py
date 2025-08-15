@@ -14,7 +14,8 @@
 """
 This module contains the qml.matrix function.
 """
-from functools import partial
+from functools import lru_cache, partial
+from string import ascii_letters as alphabet
 
 import pennylane as qml
 from pennylane import transform
@@ -256,6 +257,25 @@ def _matrix_transform(
 
     wires = kwargs.get("device_wires", None) or tape.wires
     wire_order = wire_order or wires
+    n = len(wire_order)
+    wire_map = {w: i for i, w in enumerate(wire_order)}
+
+    @lru_cache
+    def make_indices(op_wires, n, result_batched, op_batched):
+        result_indices_in = alphabet[: 2 * n]
+        mapped_op_wires = [wire_map[w] for w in op_wires]
+        op_indices = alphabet[-len(op_wires) :] + "".join(alphabet[w] for w in mapped_op_wires)
+        result_indices_out = result_indices_in
+        for i, w in enumerate(mapped_op_wires):
+            result_indices_out = result_indices_out.replace(alphabet[w], op_indices[i])
+        if result_batched:
+            result_indices_in = "A" + result_indices_in
+        if op_batched:
+            op_indices = "A" + op_indices
+        if result_batched or op_batched:
+            result_indices_out = "A" + result_indices_out
+        indices = f"{op_indices},{result_indices_in}->{result_indices_out}"
+        return indices
 
     def processing_fn(res):
         """Defines how matrix works if applied to a tape containing multiple operations."""
@@ -265,17 +285,33 @@ def _matrix_transform(
 
         # initialize the unitary matrix
         if len(res[0].operations) == 0:
-            result = qml.math.eye(2 ** len(wire_order), like=interface)
-        else:
-            result = matrix(res[0].operations[0], wire_order=wire_order)
+            return qml.math.eye(2**n, like=interface)
+
+        first_op = res[0].operations[0]
+        result = matrix(first_op, wire_order=wire_order)
+        local_dim = int(qml.math.round(qml.math.shape(result)[-1] ** (1 / n)))
+
+        shape = (local_dim,) * (2 * n)
+        result_batched = False
+        if first_op.batch_size is not None:
+            result_batched = True
+            shape = (first_op.batch_size,) + shape
+        result = qml.math.reshape(result, shape)
 
         for op in res[0].operations[1:]:
-            U = matrix(op, wire_order=wire_order)
-            # Coerce the matrices U and result and use matrix multiplication. Broadcasted axes
-            # are handled correctly automatically by ``matmul`` (See e.g. NumPy documentation)
-            result = qml.math.matmul(*qml.math.coerce([U, result], like=interface), like=interface)
+            k = len(op.wires)
+            op_shape = (local_dim,) * (2 * k)
+            if op_batched := op.batch_size is not None:
+                op_shape = (op.batch_size,) + op_shape
+            U = matrix(op).reshape(op_shape)
+            indices = make_indices(op.wires, n, result_batched, op_batched)
+            result = qml.math.einsum(indices, U, result)
+            if op_batched:
+                result_batched = True
 
-        return result
+        if result_batched:
+            return qml.math.reshape(result, (-1, local_dim**n, local_dim**n))
+        return qml.math.reshape(result, (local_dim**n, local_dim**n))
 
     return [tape], processing_fn
 
