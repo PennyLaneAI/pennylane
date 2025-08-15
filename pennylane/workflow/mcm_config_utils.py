@@ -27,6 +27,7 @@ class MCM_METHOD(Enum):
     ONE_SHOT = "one-shot"
     TREE_TRAVERSAL = "tree-traversal"
     SINGLE_BRANCH_STATISTICS = "single-branch-statistics"
+    DEVICE = "device"
 
     def __eq__(self, mcm_method):
         if not isinstance(mcm_method, MCM_METHOD):
@@ -44,6 +45,7 @@ MCM_METHOD_MAP = {
     "one-shot": MCM_METHOD.ONE_SHOT,
     "tree-traversal": MCM_METHOD.TREE_TRAVERSAL,
     "single-branch-statistics": MCM_METHOD.SINGLE_BRANCH_STATISTICS,
+    "device": MCM_METHOD.DEVICE,
 }
 SupportedMCMMethodUserInput = Literal[tuple(MCM_METHOD_MAP.keys())]
 
