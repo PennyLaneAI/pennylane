@@ -104,11 +104,9 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
             self.num_wires = len(wires)
         else:
             self.num_wires = max(
-                [
-                    op.num_wires
-                    for op in first_order_expansion
-                    if not isinstance(op, (AllocWires, FreeWires))
-                ]
+                op.num_wires
+                for op in first_order_expansion
+                if not isinstance(op, (AllocWires, FreeWires))
             )
 
         super().__init__(wires=wires)
