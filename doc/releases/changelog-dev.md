@@ -289,6 +289,10 @@
 * The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
   [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
 
+* The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
+  StableHLO dialect with missing upstream operations.
+  [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
