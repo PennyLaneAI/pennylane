@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.devices import ExecutionConfig, NullQubit
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import (
     ClassicalShadowMP,
     SampleMeasurement,
@@ -527,7 +528,7 @@ class TestSampleMeasurements:
         res1, res2 = dev.execute((qs1, qs2))
 
         assert np.array_equal(res1, np.zeros((100, 2)))
-        assert np.array_equal(res2, np.zeros(50))
+        assert np.array_equal(res2, np.zeros((50, 1)))
 
     @pytest.mark.parametrize("all_outcomes", [True, False])
     def test_counts_wires(self, all_outcomes):
@@ -1345,16 +1346,16 @@ def test_measurement_shape_matches_default_qubit(mp, x, shots):
     if isinstance(x, list) and isinstance(mp, (ClassicalShadowMP, ShadowExpvalMP)):
         pytest.xfail(reason="default.qubit cannot handle batching with shadow measurements")
 
-    nq = qml.device("null.qubit", shots=shots)
-    dq = qml.device("default.qubit", shots=shots)
+    nq = qml.device("null.qubit")
+    dq = qml.device("default.qubit")
 
     def circuit(param):
         qml.RX(param, 0)
         qml.CNOT([0, 1])
         return qml.apply(mp)
 
-    res = qml.QNode(circuit, nq)(x)
-    target = qml.QNode(circuit, dq)(x)
+    res = qml.set_shots(qml.QNode(circuit, nq), shots=shots)(x)
+    target = qml.set_shots(qml.QNode(circuit, dq), shots=shots)(x)
     assert qml.math.shape(res) == qml.math.shape(target)
 
 
@@ -1390,7 +1391,11 @@ def test_execute_plxpr_shots():
 
     jaxpr = jax.make_jaxpr(f)(0.5)
 
-    dev = qml.device("null.qubit", wires=4, shots=50)
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="Setting shots on device is deprecated",
+    ):
+        dev = qml.device("null.qubit", wires=4, shots=50)
     res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 1.0)
     assert qml.math.allclose(res[0], 0)
     assert qml.math.allclose(res[1], 0)
