@@ -32,7 +32,7 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
     """Reduce the number of non-Clifford gates by applying a combination of phase gadgetization strategies
     and Clifford gates simplification rules.
 
-    This transform works performing the following simplification/optimization steps:
+    This transform performs the following simplification/optimization steps:
 
         - apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
           simplification pipeline to the ``pyzx`` graph representation of the given input circuit;
