@@ -73,7 +73,7 @@ class TestSampleState:
     """Test that the sample_state function works as expected"""
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_sample_state_basic(self, interface):
         """Tests that the returned samples are as expected."""
         state = qml.math.array(two_qubit_state, like=interface)
@@ -215,11 +215,11 @@ class TestMeasureSamples:
         result0 = measure_with_samples([mp0], state, shots=shots)[0]
         result1 = measure_with_samples([mp1], state, shots=shots)[0]
 
-        assert result0.shape == (shots.total_shots,)
+        assert result0.shape == (shots.total_shots, 1)
         assert result0.dtype == np.int64
         assert np.all(result0 == 0)
 
-        assert result1.shape == (shots.total_shots,)
+        assert result1.shape == (shots.total_shots, 1)
         assert result1.dtype == np.int64
         assert len(np.unique(result1)) == 2
 
@@ -614,7 +614,7 @@ class TestInvalidStateSamples:
             qml.var(qml.PauliZ(0)),
         ],
     )
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "jax"])
     @pytest.mark.parametrize("shots", [0, [0, 0]])
     def test_nan_float_result(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
@@ -641,7 +641,7 @@ class TestInvalidStateSamples:
     @pytest.mark.parametrize(
         "mp", [qml.sample(wires=0), qml.sample(op=qml.PauliZ(0)), qml.sample(wires=[0, 1])]
     )
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "jax"])
     @pytest.mark.parametrize("shots", [0, [0, 0]])
     def test_nan_samples(self, mp, interface, shots):
         """Test that the result of circuits with 0 probability postselections is NaN with the
@@ -652,7 +652,7 @@ class TestInvalidStateSamples:
         if not isinstance(shots, list):
             assert isinstance(res, tuple)
             res = res[0]
-            assert qml.math.shape(res) == (shots,) if len(mp.wires) == 1 else (shots, len(mp.wires))
+            assert qml.math.shape(res) == (shots,) if mp.obs else (shots, len(mp.wires))
 
         else:
             assert isinstance(res, tuple)
@@ -660,14 +660,10 @@ class TestInvalidStateSamples:
             for i, r in enumerate(res):
                 assert isinstance(r, tuple)
                 r = r[0]
-                assert (
-                    qml.math.shape(r) == (shots[i],)
-                    if len(mp.wires) == 1
-                    else (shots[i], len(mp.wires))
-                )
+                assert qml.math.shape(r) == (shots[i],) if mp.obs else (shots[i], len(mp.wires))
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "jax"])
     @pytest.mark.parametrize("shots", [0, [0, 0]])
     def test_nan_classical_shadows(self, interface, shots):
         """Test that classical_shadows returns an empty array when the state has
@@ -694,7 +690,7 @@ class TestInvalidStateSamples:
 
     @pytest.mark.all_interfaces
     @pytest.mark.parametrize("H", [qml.PauliZ(0), [qml.PauliZ(0), qml.PauliX(1)]])
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow", "jax"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "jax"])
     @pytest.mark.parametrize("shots", [0, [0, 0]])
     def test_nan_shadow_expval(self, H, interface, shots):
         """Test that shadow_expval returns an empty array when the state has
@@ -743,7 +739,7 @@ class TestRenormalization:
     """Test suite for renormalization functionality."""
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     def test_sample_state_renorm(self, interface):
         """Test renormalization for a non-batched state."""
 
@@ -752,7 +748,7 @@ class TestRenormalization:
 
     # jax.random.choice accepts unnormalized probabilities
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch"])
     def test_sample_state_renorm_error(self, interface):
         """Test that renormalization does not occur if the error is too large."""
 
@@ -761,7 +757,7 @@ class TestRenormalization:
             _ = sample_state(state, 10)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax"])
     def test_sample_batched_state_renorm(self, interface):
         """Test renormalization for a batched state."""
 
@@ -770,7 +766,7 @@ class TestRenormalization:
 
     # jax.random.choices accepts unnormalized probabilities
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch"])
     def test_sample_batched_state_renorm_error(self, interface):
         """Test that renormalization does not occur if the error is too large."""
 

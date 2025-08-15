@@ -16,13 +16,15 @@ Defines a LegacyDeviceFacade class for converting legacy devices to the
 new interface.
 """
 
+import warnings
+
 # pylint: disable=not-callable
 from contextlib import contextmanager
 from copy import copy, deepcopy
 from dataclasses import replace
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 from pennylane.math import get_canonical_interface_name, requires_grad
 from pennylane.measurements import MidMeasureMP, Shots
 from pennylane.transforms.core.transform_program import TransformProgram
@@ -150,7 +152,11 @@ class LegacyDeviceFacade(Device):
     Shots(total_shots=None, shot_vector=())
     >>> tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=5)
     >>> new_dev.execute(tape)
-    array([0, 0, 0, 0, 0])
+    array([[0],
+       [0],
+       [0],
+       [0],
+       [0]])
 
     """
 
@@ -166,6 +172,12 @@ class LegacyDeviceFacade(Device):
 
         self._device = device
         self.config_filepath = getattr(self._device, "config_filepath", None)
+
+        if self._device.shots:
+            warnings.warn(
+                "Setting shots on device is deprecated. Please use the `set_shots` transform on the respective QNode instead.",
+                PennyLaneDeprecationWarning,
+            )
 
     @property
     def tracker(self):
