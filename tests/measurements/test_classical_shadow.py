@@ -22,7 +22,7 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, PennyLaneDeprecationWarning
 from pennylane.measurements import ClassicalShadowMP
 from pennylane.measurements.classical_shadow import ShadowExpvalMP
 
@@ -34,8 +34,9 @@ def get_circuit(wires, shots, seed_recipes, interface="autograd", device="defaul
     Return a QNode that prepares the state (|00...0> + |11...1>) / sqrt(2)
         and performs the classical shadow measurement
     """
-    dev = qml.device(device, wires=wires, shots=shots)
+    dev = qml.device(device, wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         qml.Hadamard(wires=0)
@@ -52,8 +53,9 @@ def get_x_basis_circuit(wires, shots, interface="autograd"):
     """
     Return a QNode that prepares the |++..+> state and performs a classical shadow measurement
     """
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         for wire in range(wires):
@@ -67,8 +69,9 @@ def get_y_basis_circuit(wires, shots, interface="autograd"):
     """
     Return a QNode that prepares the |+i>|+i>...|+i> state and performs a classical shadow measurement
     """
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         for wire in range(wires):
@@ -83,8 +86,9 @@ def get_z_basis_circuit(wires, shots, interface="autograd"):
     """
     Return a QNode that prepares the |00..0> state and performs a classical shadow measurement
     """
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         return qml.classical_shadow(wires=range(wires))
@@ -540,8 +544,9 @@ class TestClassicalShadow:
     def test_multi_measurement_error(self, wires, shots):
         """Test that an error is raised when classical shadows is returned
         with other measurement processes"""
-        dev = qml.device("default.qubit", wires=wires, shots=shots)
+        dev = qml.device("default.qubit", wires=wires)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -561,7 +566,8 @@ class TestClassicalShadow:
     def test_parameter_broadcasting(self, wires, shots, params):
         """Test that the classical_shadow measurement process supports parameter broadcasting"""
 
-        @qml.qnode(qml.device("default.qubit", wires=wires, shots=shots))
+        @qml.set_shots(shots)
+        @qml.qnode(qml.device("default.qubit", wires=wires))
         def circuit(x):
             qml.RX(x, wires=0)
             qml.Hadamard(wires=0)
@@ -577,8 +583,9 @@ class TestClassicalShadow:
 
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit(obs, k=1):
         for i in range(wires):
@@ -589,8 +596,9 @@ def hadamard_circuit(wires, shots=10000, interface="autograd"):
 
 
 def max_entangled_circuit(wires, shots=10000, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit(obs, k=1):
         qml.Hadamard(wires=0)
@@ -602,11 +610,12 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
 
 
 def qft_circuit(wires, shots=10000, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
     one_state = np.zeros(wires)
     one_state[-1] = 1
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit(obs, k=1):
         qml.BasisState(one_state, wires=range(wires))
@@ -673,8 +682,9 @@ class TestExpvalMeasurement:
     def test_multi_measurement_allowed(self, seed):
         """Test that no error is raised when classical shadows is returned
         with other measurement processes"""
-        dev = qml.device("default.qubit", wires=2, shots=10000, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
+        @qml.set_shots(10000)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(wires=0)
@@ -701,7 +711,8 @@ class TestExpvalMeasurement:
     def test_expval_parameter_broadcasting(self, params):
         """Test that the shadow_expval measurement process supports parameter broadcasting"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2, shots=10))
+        @qml.set_shots(10)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circuit(x):
             qml.RX(x, wires=1)
             qml.Hadamard(wires=0)
@@ -828,8 +839,9 @@ obs_strongly_entangled = [
 
 
 def strongly_entangling_circuit(wires, shots=10000, interface="autograd"):
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit(x, obs, k):
         qml.StronglyEntanglingLayers(weights=x, wires=range(wires))
@@ -949,8 +961,9 @@ def get_basis_circuit(wires, shots, basis, interface="autograd", device="default
     Return a QNode that prepares a state in a given computational basis
     and performs a classical shadow measurement
     """
-    dev = qml.device(device or "default.mixed", wires=wires, shots=shots)
+    dev = qml.device(device or "default.mixed", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         for wire in range(wires):
@@ -1024,15 +1037,17 @@ def test_return_distribution_legacy(wires, interface, circuit_basis, basis_recip
 
     dev = DefaultQubitLegacy(wires=wires, shots=shots, seed=seed)
 
-    @qml.qnode(dev, interface=interface)
-    def circuit():
-        for wire in range(wires):
-            if circuit_basis in ("x", "y"):
-                qml.Hadamard(wire)
-            if circuit_basis == "y":
-                qml.RZ(np.pi / 2, wire)
+    with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
 
-        return qml.classical_shadow(wires=range(wires), seed=seed)
+        @qml.qnode(dev, interface=interface)
+        def circuit():
+            for wire in range(wires):
+                if circuit_basis in ("x", "y"):
+                    qml.Hadamard(wire)
+                if circuit_basis == "y":
+                    qml.RZ(np.pi / 2, wire)
+
+            return qml.classical_shadow(wires=range(wires), seed=seed)
 
     bits, recipes = circuit()  # pylint: disable=unpacking-non-sequence
     tape = qml.workflow.construct_tape(circuit)()
@@ -1080,7 +1095,8 @@ def hadamard_circuit_legacy(wires, shots=10000, interface="autograd"):
 def test_hadamard_expval_legacy(k=1, obs=obs_hadamard, expected=expected_hadamard):
     """Test that the expval estimation is correct for a uniform
     superposition of qubits"""
-    circuit = hadamard_circuit_legacy(3, shots=50000)
+    with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+        circuit = hadamard_circuit_legacy(3, shots=50000)
     actual = circuit(obs, k=k)
 
     tape = qml.workflow.construct_tape(circuit)(obs)
@@ -1093,8 +1109,9 @@ def test_hadamard_expval_legacy(k=1, obs=obs_hadamard, expected=expected_hadamar
 
 
 def hadamard_circuit_mixed(wires, shots=10000, interface="autograd"):
-    dev = qml.device("default.mixed", wires=wires, shots=shots)
+    dev = qml.device("default.mixed", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit(obs, k=1):
         for i in range(wires):
