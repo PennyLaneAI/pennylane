@@ -94,7 +94,7 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
         at reducing the number of two-qubit gates (e.g. ``CNOT``).
         However, its performance varies significantly depending on the type of circuit.
         For example, you might see a substantial increase in CNOT gates when optimizing a circuit composed primarily of Toffoli gates.
-        Conversely, it tends to perform much better on Trotterized chemistry circuits.
+        Conversely, it tends to perform quite well on Trotterized chemistry circuits.
 
     For more details about ZX calculus-based simplification of quantum circuits, see the following papers:
 
