@@ -67,31 +67,33 @@ class TransformFunctionsExt(TransformFunctions):
         """Try to run the pass in xDSL, if it can't run on catalyst"""
 
         pass_name = op.pass_name.data  # pragma: no cover
+        module = args[0]
+
         if pass_name in self.passes:
             # pragma: no cover
             pass_class = self.passes[pass_name]()
-            pipeline = PassPipeline((pass_class(**op.options.data),))
-            pipeline.apply(self.ctx, args[0])
+            pass_instance = pass_class(**op.options.data)
+            pipeline = PassPipeline((pass_instance,))
+            pipeline.apply(self.ctx, module)
             if self.callback:
-                next = None  # We don't know which one
-                self.callback(pass_instance, args[0], next)
-            return (args[0],)
+                next_pass = None
+                self.callback(pass_instance, module, next_pass)
+            return (module,)
 
         # pragma: no cover
         buffer = io.StringIO()
 
-        Printer(stream=buffer, print_generic_format=True).print_op(args[0])
+        Printer(stream=buffer, print_generic_format=True).print_op(module)
         schedule = f"--{pass_name}"
         modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
 
-        module = args[0]
         data = Parser(self.ctx, modified).parse_module()
         rewriter = Rewriter()
         rewriter.replace_op(module, data)
         if self.callback:
-            prev = None  # We don't know which one
-            next = None  # We don't know which one
-            self.callback(prev, data, next)
+            previous_pass = None
+            next_pass = None
+            self.callback(previous_pass, data, next_pass)
         return (data,)
 
 
