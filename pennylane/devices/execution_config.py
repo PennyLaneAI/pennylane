@@ -163,15 +163,11 @@ class ExecutionConfig:
 
     def __getattribute__(self, name):
         if name == "device_options":
-            if isinstance(object.__getattribute__(self, "device_options"), MappingProxyType):
-                return object.__getattribute__(self, "device_options")
-            return MappingProxyType(object.__getattribute__(self, "device_options"))
+            val = object.__getattribute__(self, "device_options")
+            return val if isinstance(val, MappingProxyType) else MappingProxyType(val)
         if name == "gradient_keyword_arguments":
-            if isinstance(
-                object.__getattribute__(self, "gradient_keyword_arguments"), MappingProxyType
-            ):
-                return object.__getattribute__(self, "gradient_keyword_arguments")
-            return MappingProxyType(object.__getattribute__(self, "gradient_keyword_arguments"))
+            val = object.__getattribute__(self, "gradient_keyword_arguments")
+            return val if isinstance(val, MappingProxyType) else MappingProxyType(val)
         return object.__getattribute__(self, name)
 
 
