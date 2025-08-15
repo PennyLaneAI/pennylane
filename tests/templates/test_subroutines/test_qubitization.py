@@ -141,14 +141,11 @@ def test_decomposition_new(hamiltonian, control):  # pylint: disable=unused-argu
 def test_lightning_qubit():
     H = qml.ops.LinearCombination([0.1, 0.3, -0.3], [qml.Z(0), qml.Z(1), qml.Z(0) @ qml.Z(2)])
 
-    # lightning uses DefaultExecutionConfig
-    with pytest.warns(PennyLaneDeprecationWarning):
-
-        @qml.qnode(qml.device("lightning.qubit", wires=5))
-        def circuit_lightning():
-            qml.Hadamard(wires=0)
-            qml.Qubitization(H, control=[3, 4])
-            return qml.expval(qml.PauliZ(0) @ qml.PauliZ(4))
+    @qml.qnode(qml.device("lightning.qubit", wires=5))
+    def circuit_lightning():
+        qml.Hadamard(wires=0)
+        qml.Qubitization(H, control=[3, 4])
+        return qml.expval(qml.PauliZ(0) @ qml.PauliZ(4))
 
     @qml.qnode(qml.device("default.qubit", wires=5))
     def circuit_default():
