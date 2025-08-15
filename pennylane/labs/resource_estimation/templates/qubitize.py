@@ -35,8 +35,12 @@ class ResourceQubitizeTHC(ResourceOperator):
     Args:
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
             Hamiltonian for which the walk operator is being created
-        coeff_precision (float, optional): precision for loading the coefficients of Hamiltonian
-        rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
+        coeff_precision_bits (float, optional): Number of bits used to represent the precision for loading
+            the coefficients of the Hamiltonian. If `None` is provided the default value from the
+            `resource_config` is used.
+        rotation_precision_bits (float, optional): Number of bits used to represent the precision for loading
+            the rotation angles for basis rotation. If `None` is provided the default value from the
+            `resource_config` is used.
         select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
             used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
             ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
@@ -66,8 +70,8 @@ class ResourceQubitizeTHC(ResourceOperator):
     def __init__(
         self,
         compact_ham,
-        coeff_precision=None,
-        rotation_precision=None,
+        coeff_precision_bits=None,
+        rotation_precision_bits=None,
         select_swap_depths=None,
         wires=None,
     ):
@@ -77,9 +81,7 @@ class ResourceQubitizeTHC(ResourceOperator):
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
 
-        if isinstance(select_swap_depths, int) or select_swap_depths is None:
-            pass
-        elif isinstance(select_swap_depths, (list, tuple, np.ndarray)):
+        if isinstance(select_swap_depths, (list, tuple, np.ndarray)):
             if len(select_swap_depths) != 2:
                 raise ValueError(
                     f"Expected the length of `select_swap_depths` to be 2, got {len(select_swap_depths)}"
@@ -144,9 +146,7 @@ class ResourceQubitizeTHC(ResourceOperator):
             CompressedResourceOp: the operator in a compressed representation
         """
 
-        if isinstance(select_swap_depths, int) or select_swap_depths is None:
-            pass
-        elif isinstance(select_swap_depths, (list, tuple, np.ndarray)):
+        if isinstance(select_swap_depths, (list, tuple, np.ndarray)):
             if len(select_swap_depths) != 2:
                 raise ValueError(
                     f"Expected the length of `select_swap_depths` to be 2, got {len(select_swap_depths)}"
