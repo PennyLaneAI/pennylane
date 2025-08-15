@@ -65,25 +65,66 @@ def correct_final_samples(results, tape):
 
     correction_fn = partial(apply_byproduct_corrections, tape)
 
-    corrected_results = []
+    # for an iterable of sequences
+    # corrected_results = []
 
-    for result in results:
-        corrected_samples = []
-        for shot_res in result:
-            measurements = shot_res[0]
-            mcms = shot_res[1:]
-            new_measurements = correction_fn(mcms, measurements)
-            corrected_samples.append([new_measurements, *mcms])
-        corrected_results.append(tuple(corrected_samples))
+    # for result in results:
+    #     corrected_samples = []
+    #     for shot_res in result:
+    #         measurements = shot_res[0]
+    #         mcms = shot_res[1:]
+    #         new_measurements = correction_fn(mcms, measurements)
+    #         corrected_samples.append([new_measurements, *mcms])
+    #     corrected_results.append(tuple(corrected_samples))
 
-    if len(results) == 1:
-        corrected_results = corrected_results[0]
+    # if len(results) == 1:
+    #     corrected_results = corrected_results[0]
 
-    return tuple(corrected_results)
+    # return tuple(corrected_results)
+
+    # for sample results of a single sequence
+    corrected_samples = []
+
+    for shot_res in results:
+        measurements = shot_res[0]
+        mcms = shot_res[1:]
+        new_measurements = correction_fn(mcms, measurements)
+        corrected_samples.append([new_measurements, *mcms])
+
+    return corrected_samples
+
+
+def get_new_ops(tape_in, wire_map_in, q_mgr, include_corrections):
+    with AnnotatedQueue() as q:
+        for op in tape_in.operations:
+            if isinstance(op, GlobalPhase):  # no wires
+                GlobalPhase(*op.data)
+            elif isinstance(op, CNOT):  # two wires
+                ctrl, tgt = op.wires[0], op.wires[1]
+                wire_map_in[ctrl], wire_map_in[tgt], measurements = queue_cnot(
+                    q_mgr, wire_map_in[ctrl], wire_map_in[tgt]
+                )
+                if include_corrections:
+                    cnot_corrections(measurements)(wire_map_in[ctrl], wire_map_in[tgt])
+            else:  # one wire
+                # pylint: disable=isinstance-second-argument-not-valid-type
+                if isinstance(op, (X, Y, Z, Identity)):
+                    # else branch because Identity may not have wires
+                    wire = wire_map_in[op.wires[0]] if op.wires else ()
+                    op.__class__(wire)
+                else:
+                    w = op.wires[0]
+                    wire_map_in[w], measurements = queue_single_qubit_gate(
+                        q_mgr, op, in_wire=wire_map_in[w]
+                    )
+                    if include_corrections:
+                        queue_corrections(op, measurements)(wire_map_in[w])
+
+    return q.queue
 
 
 @transform
-def convert_to_mbqc_formalism(tape, include_corrections=False):
+def convert_to_mbqc_formalism(tape):
     """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
@@ -107,36 +148,7 @@ def convert_to_mbqc_formalism(tape, include_corrections=False):
     # we include 13 auxillary wires - the largest number needed is 13 (for CNOT)
     num_qubits = len(tape.wires) + 13
     q_mgr = QubitMgr(num_qubits=num_qubits, start_idx=0)
-
     wire_map = {w: q_mgr.acquire_qubit() for w in tape.wires}
-
-    def get_new_ops(tape_in, wire_map_in):
-        with AnnotatedQueue() as q:
-            for op in tape_in.operations:
-                if isinstance(op, GlobalPhase):  # no wires
-                    GlobalPhase(*op.data)
-                elif isinstance(op, CNOT):  # two wires
-                    ctrl, tgt = op.wires[0], op.wires[1]
-                    wire_map_in[ctrl], wire_map_in[tgt], measurements = queue_cnot(
-                        q_mgr, wire_map_in[ctrl], wire_map_in[tgt]
-                    )
-                    if include_corrections:
-                        cnot_corrections(measurements)(wire_map_in[ctrl], wire_map_in[tgt])
-                else:  # one wire
-                    # pylint: disable=isinstance-second-argument-not-valid-type
-                    if isinstance(op, (X, Y, Z, Identity)):
-                        # else branch because Identity may not have wires
-                        wire = wire_map_in[op.wires[0]] if op.wires else ()
-                        op.__class__(wire)
-                    else:
-                        w = op.wires[0]
-                        wire_map_in[w], measurements = queue_single_qubit_gate(
-                            q_mgr, op, in_wire=wire_map_in[w]
-                        )
-                        if include_corrections:
-                            queue_corrections(op, measurements)(wire_map_in[w])
-
-        return q.queue
 
     if isinstance(tape, QuantumScriptSequence):
 
@@ -144,28 +156,77 @@ def convert_to_mbqc_formalism(tape, include_corrections=False):
 
         # new ops for intermediate tapes
         for inner_tape in tape.intermediate_tapes:
-            ops_queue = get_new_ops(inner_tape, wire_map)
+            ops_queue = get_new_ops(inner_tape, wire_map, q_mgr, include_corrections=True)
             new_tape = inner_tape.copy(operations=ops_queue)
             new_tapes.append(new_tape)
-
         # new ops and measurement wires for the final tape
-        ops_queue = get_new_ops(tape.final_tape, wire_map)
+        ops_queue = get_new_ops(tape.final_tape, wire_map, q_mgr, include_corrections=True)
         new_wires = [wire_map[w] for w in meas_wires]
-        # new_measurements = [sample(wires=new_wires)] #+ [sample(m) for m in mcms]
         new_tapes.append(
             tape.final_tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
         )
-
         # new sequence
         new_tape = tape.copy(tapes=new_tapes)
 
     else:
-
-        ops_queue = get_new_ops(tape, wire_map)
+        ops_queue = get_new_ops(tape, wire_map, q_mgr, include_corrections=True)
         new_wires = [wire_map[w] for w in meas_wires]
         new_tape = tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
 
     return (new_tape,), null_postprocessing
+
+
+def convert_to_mbqc_formalism_with_pauli_tracker(sequence):
+    """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
+    Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
+    be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
+    before applying the transform.
+
+    Note that this transform leaves all Paulis and Identities as physical gates, and applies
+    all byproduct operations online immediately after their respective measurement procedures.
+
+    On this branch, the transform has been extended so it can be used directly on the experimental
+    QuantumScriptSequence class"""
+
+    if len(sequence.measurements) != 1 or not isinstance(sequence.measurements[0], (SampleMP)):
+        raise NotImplementedError(
+            "Transforming to the MBQC formalism is not implemented for circuits where the "
+            "final measurements have not been converted to a single samples measurement"
+        )
+
+    mp = sequence.measurements[0]
+    meas_wires = mp.wires if mp.wires else sequence.wires
+
+    # we include 13 auxillary wires - the largest number needed is 13 (for CNOT)
+    num_qubits = len(sequence.wires) + 13
+    q_mgr = QubitMgr(num_qubits=num_qubits, start_idx=0)
+    wire_map = {w: q_mgr.acquire_qubit() for w in sequence.wires}
+
+    new_tapes = []
+    byproduct_fns = []
+
+    # new ops for intermediate tapes
+    for inner_tape in sequence.intermediate_tapes:
+        from pennylane.ftqc.pauli_tracker import get_byproduct_ops
+
+        ops_queue = get_new_ops(inner_tape, wire_map, q_mgr, include_corrections=False)
+        byproduct_fns.append(partial(get_byproduct_ops, tape=inner_tape, wire_map=wire_map))
+        new_tapes.append(inner_tape.copy(operations=ops_queue))
+
+    # new ops and measurement wires for the final tape
+    ops_queue = get_new_ops(sequence.final_tape, wire_map, q_mgr, include_corrections=False)
+    new_wires = [wire_map[w] for w in meas_wires]
+    new_tapes.append(
+        sequence.final_tape.copy(operations=ops_queue, measurements=[sample(wires=new_wires)])
+    )
+
+    # no wire mapping, we updated sample
+    offline_correction_fn = partial(correct_final_samples, tape=sequence.final_tape)
+
+    # new sequence
+    new_sequence = sequence.copy(tapes=new_tapes)
+
+    return new_sequence, byproduct_fns, offline_correction_fn
 
 
 def queue_single_qubit_gate(q_mgr, op, in_wire):
