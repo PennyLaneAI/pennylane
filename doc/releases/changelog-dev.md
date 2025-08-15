@@ -623,6 +623,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Small typos in the docstring for `qml.noise.partial_wires` have been corrected.
+  [(#8052)](https://github.com/PennyLaneAI/pennylane/pull/8052)
+
 * The theoretical background section of :class:`~.BasisRotation` has been extended to explain
   the underlying Lie group/algebra homomorphism between the (dense) rotation matrix and the
   performed operations on the target qubits.
@@ -702,6 +705,7 @@ Ali Asadi,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
+Isaac De Vlugt,
 Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
