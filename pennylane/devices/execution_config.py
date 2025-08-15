@@ -23,6 +23,8 @@ from pennylane.transforms.core import TransformDispatcher
 from pennylane.workflow.mcm_config_utils import (
     MCM_METHOD,
     POSTSELECT_MODE,
+    SUPPORTED_MCM_METHODS,
+    SUPPORTED_POSTSELECT_MODES,
     get_canonical_mcm_method,
     get_canonical_postselect_mode,
 )
@@ -32,14 +34,14 @@ from pennylane.workflow.mcm_config_utils import (
 class MCMConfig:
     """A class to store mid-circuit measurement configurations."""
 
-    mcm_method: MCM_METHOD | None = None
+    mcm_method: MCM_METHOD | str | None = None
     """The mid-circuit measurement strategy to use. Use ``"deferred"`` for the deferred
     measurements principle and ``"one-shot"`` if using finite shots to execute the circuit for
     each shot separately. Any other value will be passed to the device, and the device is
     expected to handle mid-circuit measurements using the requested method. If not specified,
     the device will decide which method to use."""
 
-    postselect_mode: POSTSELECT_MODE | None = None
+    postselect_mode: POSTSELECT_MODE | str | None = None
     """How postselection is handled with finite-shots. If ``"hw-like"``, invalid shots will be
     discarded and only results for valid shots will be returned. In this case, fewer samples
     may be returned than the original number of shots. If ``"fill-shots"``, the returned samples
@@ -49,10 +51,25 @@ class MCMConfig:
 
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
-        object.__setattr__(self, "mcm_method", get_canonical_mcm_method(self.mcm_method))
-        object.__setattr__(
-            self, "postselect_mode", get_canonical_postselect_mode(self.postselect_mode)
-        )
+        if isinstance(self.mcm_method, str):
+            object.__setattr__(self, "mcm_method", get_canonical_mcm_method(self.mcm_method))
+        elif isinstance(self.mcm_method, MCM_METHOD):
+            object.__setattr__(self, "mcm_method", self.mcm_method)
+        elif self.mcm_method and not isinstance(self.mcm_method, MCM_METHOD):
+            raise ValueError(
+                f"Invalid mid-circuit measurement method '{self.mcm_method}', must be one of {SUPPORTED_MCM_METHODS}."
+            )
+
+        if isinstance(self.postselect_mode, str):
+            object.__setattr__(
+                self, "postselect_mode", get_canonical_postselect_mode(self.postselect_mode)
+            )
+        elif isinstance(self.postselect_mode, POSTSELECT_MODE):
+            object.__setattr__(self, "postselect_mode", self.postselect_mode)
+        elif self.postselect_mode and not isinstance(self.postselect_mode, POSTSELECT_MODE):
+            raise ValueError(
+                f"Invalid postselection mode '{self.postselect_mode}', must be one of {SUPPORTED_POSTSELECT_MODES}."
+            )
 
 
 # pylint: disable=too-many-instance-attributes
