@@ -15,12 +15,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from copy import copy
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
-from typing import TYPE_CHECKING, Literal, get_args
+from typing import TYPE_CHECKING, Any, Literal, get_args
 from warnings import warn
 
 from packaging.version import Version
@@ -146,7 +145,7 @@ def _resolve_mcm_config(
 ) -> qml.devices.MCMConfig:
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
-    updated_values = {}
+    updated_values: dict[str, Any] = {}
 
     if not finite_shots:
         updated_values["postselect_mode"] = None
@@ -287,10 +286,10 @@ def _resolve_execution_config(
     Returns:
         qml.devices.ExecutionConfig: resolved execution configuration
     """
-    updated_values = {}
+    updated_values: dict[str, Any] = {}
 
-    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not isinstance(
-        execution_config.gradient_method, Callable
+    if execution_config.interface in {Interface.JAX, Interface.JAX_JIT} and not callable(
+        execution_config.gradient_method
     ):
         updated_values["grad_on_execution"] = False
     execution_config = _resolve_diff_method(execution_config, device, tape=tapes[0])
