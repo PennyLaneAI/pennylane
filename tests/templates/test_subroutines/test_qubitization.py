@@ -21,7 +21,6 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
