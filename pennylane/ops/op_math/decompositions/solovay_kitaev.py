@@ -119,7 +119,7 @@ def _prune_approximate_set(
     return approx_set_ids, approx_set_mat, approx_set_gph, approx_set_qat
 
 
-@lru_cache()
+@lru_cache
 def _approximate_set(basis_gates, max_length=10):
     r"""Builds an approximate unitary set required for the `Solovay-Kitaev algorithm <https://arxiv.org/abs/quant-ph/0505030>`_.
 
@@ -256,7 +256,7 @@ def _group_commutator_decompose(matrix, tol=1e-5):
         return qml.math.eye(2, dtype=complex), qml.math.eye(2, dtype=complex)
 
     # The angle phi comes from the Eq. 10 in the Solovay-Kitaev algorithm paper (arXiv:0505030).
-    phi = 2.0 * qml.math.arcsin(qml.math.sqrt(qml.math.sqrt((0.5 - 0.5 * qml.math.cos(theta / 2)))))
+    phi = 2.0 * qml.math.arcsin(qml.math.sqrt(qml.math.sqrt(0.5 - 0.5 * qml.math.cos(theta / 2))))
 
     # Begin decomposition by computing the rotation operations V and W.
     v = qml.RX(phi, [0])

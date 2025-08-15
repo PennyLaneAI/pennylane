@@ -32,7 +32,7 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     while_loop_prim,
 )
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 class SimplifyInterpreter(PlxprInterpreter):
@@ -501,7 +501,8 @@ class TestHigherOrderPrimitiveRegistrations:
 
         jaxpr = jax.make_jaxpr(f)(True)
 
-        assert jaxpr.eqns[0].params["jaxpr_branches"][-1] is None  # no false branch
+        false_branch = jaxpr.eqns[0].params["jaxpr_branches"][-1]
+        assert len(false_branch.eqns) == 0
 
         with qml.queuing.AnnotatedQueue() as q_true:
             jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, True)

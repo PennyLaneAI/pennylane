@@ -22,6 +22,7 @@ from pennylane.labs.trotter_error import (
     perturbation_error,
     vibrational_fragments,
 )
+from pennylane.labs.trotter_error.product_formulas.error import _group_sums
 
 
 @pytest.mark.parametrize(
@@ -58,7 +59,7 @@ def test_perturbation_error(backend, parallel_mode, mpi4py_support):
         pf,
         frags,
         [state1, state2],
-        order=3,
+        max_order=3,
         num_workers=num_workers,
         backend=backend,
         parallel_mode=parallel_mode,
@@ -92,8 +93,26 @@ def test_perturbation_error_invalid_parallel_mode():
             pf,
             frags,
             [state1, state2],
-            order=3,
+            max_order=3,
             num_workers=1,
             backend="mp_pool",
             parallel_mode="invalid_mode",
         )
+
+
+@pytest.mark.parametrize(
+    "term_dict, expected",
+    [
+        (
+            {("X", "A", "B"): 4, ("Y", "A", "B"): 3},
+            [(frozenset({("X", 4), ("Y", 3)}), "A", "B")],
+        ),
+        (
+            {("X", "A", "B"): 4, ("Y", "A", "C"): 3},
+            [(frozenset({("X", 4)}), "A", "B"), (frozenset({("Y", 3)}), "A", "C")],
+        ),
+    ],
+)
+def test_group_sums(term_dict, expected):
+    """Test the private _group_sums method"""
+    assert _group_sums(term_dict) == expected

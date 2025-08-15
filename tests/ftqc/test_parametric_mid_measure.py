@@ -464,8 +464,7 @@ class TestMeasureFunctions:
         ):
             func([0, 1])
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "func", [partial(measure_arbitrary_basis, angle=-0.8, plane="XY"), measure_x, measure_y]
     )
@@ -496,8 +495,7 @@ class TestMeasureFunctions:
         assert isinstance(mp, MidMeasureMP)
 
     # pylint: disable=too-many-positional-arguments, too-many-arguments
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "meas_func, angle, plane", [(measure_x, 0.0, "XY"), (measure_y, np.pi / 2, "XY")]
     )
@@ -532,8 +530,7 @@ class TestMeasureFunctions:
         assert captured_measurement[:8] == "a:bool[]"
         assert "lambda ; a:i64[]" in conditional
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize("angle, plane", [(1.23, "XY"), (1.5707, "YZ"), (-0.34, "ZX")])
     @pytest.mark.parametrize(
         "wire, reset, postselect", ((2, True, None), (3, False, 0), (0, True, 1))
@@ -583,8 +580,7 @@ class TestMeasureFunctions:
         assert captured_measurement[:8] == "a:bool[]"
         assert "lambda ; a:i64[]" in conditional
 
-    @pytest.mark.jax
-    @pytest.mark.usefixtures("enable_disable_plxpr")
+    @pytest.mark.capture
     @pytest.mark.parametrize(
         "func, kwargs",
         [
@@ -879,9 +875,10 @@ class TestWorkflows:
         """Test that we can execute a QNode with a ParametricMidMeasureMP and produce
         an accurate result"""
 
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
         @diagonalize_mcms
+        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ():
             rot_gate(0)
@@ -911,9 +908,10 @@ class TestWorkflows:
         """Test that we can execute a QNode with a ParametricMidMeasureMP as the condition of a conditional,
         and produce an accurate result"""
 
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
         @diagonalize_mcms
+        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ():
             rot_gate(0)
@@ -941,17 +939,20 @@ class TestWorkflows:
 
         if "jax" in angle_type or use_jit:
             jax = pytest.importorskip("jax")
+            array_fn = jax.numpy.array
+        else:
+            array_fn = np.array
 
         if mcm_method == "tree-traversal" and use_jit:
             # https://docs.pennylane.ai/en/stable/introduction/dynamic_quantum_circuits.html#tree-traversal-algorithm
             pytest.skip("TT & jax.jit are incompatible")
 
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
         if angle_type == "numpy":
-            angle = np.array(angle)
+            angle = array_fn(angle)
         elif angle_type == "jax":
-            angle = jax.numpy.array(angle)
+            angle = array_fn(angle)
 
         def jit_wrapper(func):
             if use_jit:
@@ -962,6 +963,7 @@ class TestWorkflows:
 
         @jit_wrapper
         @diagonalize_mcms
+        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ(angle):
             m0 = measure_x(0)
@@ -980,9 +982,10 @@ class TestWorkflows:
         if mcm_method == "one-shot":
             pytest.xfail(reason="not implemented yet")  # sc-90607
 
-        dev = qml.device("default.qubit", shots=shots)
+        dev = qml.device("default.qubit")
 
         @diagonalize_mcms
+        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method=mcm_method)
         def circ():
             qml.H(0)

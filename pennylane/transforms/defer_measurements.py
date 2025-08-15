@@ -13,12 +13,13 @@
 # limitations under the License.
 """Code for the tape transform implementing the deferred measurement principle."""
 
+from collections.abc import Callable, Sequence
 from functools import lru_cache, partial
 from numbers import Number
-from typing import Callable, Optional, Sequence, Union
 from warnings import warn
 
 import pennylane as qml
+from pennylane.exceptions import TransformError
 from pennylane.measurements import (
     CountsMP,
     MeasurementValue,
@@ -30,7 +31,7 @@ from pennylane.measurements import (
 from pennylane.ops.op_math import ctrl
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, QuantumScriptBatch
-from pennylane.transforms import TransformError, transform
+from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
 from pennylane.wires import Wires
 
@@ -262,7 +263,7 @@ def _get_plxpr_defer_measurements():
             self,
             primitive: "jax.extend.core.Primitive",
             subfuns: Sequence[Callable],
-            invals: Sequence[Union[MeasurementValue, Number]],
+            invals: Sequence[MeasurementValue | Number],
             params: dict,
         ) -> MeasurementValue:
             """Create a ``MeasurementValue`` that captures all classical processing of the
@@ -407,11 +408,6 @@ def _get_plxpr_defer_measurements():
         args = invals[args_slice]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
-            if jaxpr is None:
-                # If a false branch isn't provided, the jaxpr corresponding to the condition
-                # for the false branch will be None. That is the only scenario where we would
-                # reach here.
-                continue
 
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])
@@ -472,7 +468,7 @@ def defer_measurements(
     tape: QuantumScript,
     reduce_postselected: bool = True,
     allow_postselect: bool = True,
-    num_wires: Optional[int] = None,
+    num_wires: int | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Quantum function transform that substitutes operations conditioned on
     measurement outcomes to controlled operations.
@@ -518,11 +514,6 @@ def defer_measurements(
         :func:`~.pennylane.counts` can only be used with ``defer_measurements`` if wires
         or an observable are explicitly specified.
 
-    .. warning::
-
-        ``defer_measurements`` does not support using custom wire labels if any measured
-        wires are reused or reset.
-
     Args:
         tape (QNode or QuantumTape or Callable): a quantum circuit.
         reduce_postselected (bool): Whether to use postselection information to reduce the number
@@ -539,7 +530,6 @@ def defer_measurements(
             transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        ValueError: If custom wire labels are used with qubit reuse or reset
         ValueError: If any measurements with no wires or observable are present
         ValueError: If continuous variable operations or measurements are present
         ValueError: If using the transform with any device other than
@@ -775,16 +765,15 @@ def defer_measurements(
             "must support the Projector gate to apply postselection."
         )
 
-    if len(reused_measurement_wires) > 0 and not all(isinstance(w, int) for w in tape.wires):
-        raise ValueError(
-            "qml.defer_measurements does not support custom wire labels with qubit reuse/reset."
-        )
+    integer_wires = [w for w in tape.wires if isinstance(w, int)]
 
     # Apply controlled operations to store measurement outcomes and replace
     # classically controlled operations
     control_wires = {}
     cur_wire = (
-        max(tape.wires) + 1 if reused_measurement_wires or any_repeated_measurements else None
+        (max(integer_wires) + 1 if integer_wires else 0)
+        if reused_measurement_wires or any_repeated_measurements
+        else None
     )
 
     for op in tape.operations:

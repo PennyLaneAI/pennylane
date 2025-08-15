@@ -1,4 +1,4 @@
-qubit[1] q0;
+qubit q0;
 bit[2] bits = "10";
 
 // while loop

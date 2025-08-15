@@ -19,11 +19,11 @@ from default_qubit_legacy import DefaultQubitLegacy
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.exceptions import QuantumFunctionError
+from pennylane.exceptions import QuantumFunctionError, WireError
 from pennylane.math.matrix_manipulation import _permute_dense_matrix
 from pennylane.math.quantum import reduce_dm, reduce_statevector
 from pennylane.measurements import DensityMatrixMP, StateMP, density_matrix, expval, state
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 
 class TestStateMP:
@@ -48,7 +48,7 @@ class TestStateMP:
         assert qml.math.allclose(processed, vec)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
     def test_state_returns_itself_if_wires_match(self, interface):
         """Test that when wire_order matches the StateMP, the state is returned."""
         ket = qml.math.array([0.48j, 0.48, -0.64j, 0.36], like=interface)
@@ -57,7 +57,7 @@ class TestStateMP:
         )
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
     @pytest.mark.parametrize("wires, wire_order", [([1, 0], [0, 1]), (["b", "a"], ["a", "b"])])
     def test_reorder_state(self, interface, wires, wire_order):
         """Test that a state can be re-ordered."""
@@ -67,7 +67,7 @@ class TestStateMP:
         assert qml.math.get_interface(ket) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
     def test_reorder_state_three_wires(self, interface):
         """Test that a 3-qubit state can be re-ordered."""
         input_wires = Wires([2, 0, 1])
@@ -79,7 +79,7 @@ class TestStateMP:
         assert qml.math.get_interface(ket) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "jax", "torch"])
     def test_reorder_state_three_wires_batched(self, interface):
         """Test that a batched, 3-qubit state can be re-ordered."""
         input_wires = Wires([2, 0, 1])

@@ -35,14 +35,14 @@ class TestEllipse:
 
     def test_init_and_repr(self):
         """Test that Ellipse initializes correctly and has correct representations."""
-        ellipse = Ellipse((1, 0, 1), (4, 5), (6, 7))
+        ellipse = Ellipse((1, 0, 1), (4, 5))
         assert ellipse.a == 1 and ellipse.b == 0 and ellipse.d == 1
-        assert ellipse.p == (4, 5) and ellipse.axes == (6, 7)
-        assert repr(ellipse) == "Ellipse(a=1, b=0, d=1, p=(4, 5), axes=(6, 7))"
-        assert str(ellipse) == "Ellipse(a=1, b=0, d=1, p=(4, 5), axes=(6, 7))"
+        assert ellipse.p == (4, 5)
+        assert repr(ellipse) == "Ellipse(a=1, b=0, d=1, p=(4, 5))"
+        assert str(ellipse) == "Ellipse(a=1, b=0, d=1, p=(4, 5))"
         assert ellipse.determinant == 1 and ellipse.discriminant == 0
         assert ellipse.bounding_box() == (-1, 1, -1, 1)
-        assert ellipse.offset(1) == Ellipse((1, 0, 1), p=(5, 6), axes=(6, 7))
+        assert ellipse.offset(1) == Ellipse((1, 0, 1), p=(5, 6))
         assert ellipse.b_from_uprightness(0.2) == math.sqrt((math.pi / 0.8) ** 2 - 1)
         assert ellipse.positive_semi_definite
         assert ellipse.x_points(4) == (4.0, 4.0)
@@ -51,7 +51,7 @@ class TestEllipse:
 
     def test_raise_error(self):
         """Test that Ellipse raises an error when the ellipse is not valid."""
-        ellipse = Ellipse((1, 0, 1), (4, 5), (6, 7))
+        ellipse = Ellipse((1, 0, 1), (4, 5))
         with pytest.raises(ValueError, match="is outside the ellipse"):
             ellipse.x_points(24)
         with pytest.raises(ValueError, match="is outside the ellipse"):
@@ -63,8 +63,8 @@ class TestEllipseState:
 
     def test_init_and_repr(self):
         """Test that EllipseState initializes correctly and has correct representations."""
-        e1 = Ellipse((1, 0, 1), (4, 5), (6, 7))
-        e2 = Ellipse((2, 1, 2), (2, 3), (4, 5))
+        e1 = Ellipse((1, 0, 1), (4, 5))
+        e2 = Ellipse((2, 1, 2), (2, 3))
         state = EllipseState(e1, e2)
         assert state.e1 == e1
         assert state.e2 == e2
@@ -87,8 +87,8 @@ class TestGridOp:
         )
 
         grid_op = GridOp.from_string("B")
-        e1 = Ellipse((1, 0, 1), (4, 5), (6, 7))
-        e2 = Ellipse((2, 1, 2), (2, 3), (4, 5))
+        e1 = Ellipse((1, 0, 1), (4, 5))
+        e2 = Ellipse((2, 1, 2), (2, 3))
         state = EllipseState(e1, e2)
         state1 = grid_op.apply_to_state(state)
         state2 = grid_op.inverse().apply_to_state(state1)

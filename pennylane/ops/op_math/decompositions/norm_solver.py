@@ -231,7 +231,7 @@ def _factorize_prime_zomega(x: ZSqrtTwo, p: int) -> ZOmega | None:
     return _gcd(ZOmega(1, 0, 1, h), ZOmega(-x.b, 0, x.b, x.a))
 
 
-@lru_cache(maxsize=100)
+@lru_cache(maxsize=400)
 def _primality_test(n: int) -> bool:
     r"""Determines whether an integer is prime or not.
 
@@ -374,6 +374,8 @@ def _solve_diophantine(xi: ZSqrtTwo, max_trials: int = 1000) -> ZOmega | None:
 
     Args:
         xi (ZSqrtTwo): An element of the ring :math:`\mathbb{Z}[\sqrt{2}]`.
+        max_trials (int): The maximum number of attempts to find a factor.
+            Default is ``1000``.
 
     Returns:
         ZOmega | None: An element of the ring :math:`\mathbb{Z}[\omega]` that satisfies the equation, or ``None`` if no solution exists.

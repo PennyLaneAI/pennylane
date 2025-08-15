@@ -18,8 +18,8 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.exceptions import DecompositionUndefinedError
 from pennylane.io.qualtran_io import _get_op_call_graph, _get_to_pl_op, _map_to_bloq, _QReg
-from pennylane.operation import DecompositionUndefinedError
 
 
 @pytest.fixture
@@ -34,7 +34,7 @@ def test_to_bloq_error():
         import qualtran  # pylint: disable=unused-import
     except (ModuleNotFoundError, ImportError):
         with pytest.raises(ImportError, match="Optional dependency"):
-            qml.ToBloq(qml.H(0))
+            qml.io.ToBloq(qml.H(0))
 
         with pytest.raises(ImportError, match="The `to_bloq` function requires Qualtran "):
             qml.to_bloq(qml.H(0))
@@ -81,7 +81,7 @@ class TestFromBloq:
 
         from qualtran.bloqs.phase_estimation import RectangularWindowState
 
-        from pennylane.operation import MatrixUndefinedError
+        from pennylane.exceptions import MatrixUndefinedError
 
         with pytest.raises(MatrixUndefinedError):
             qml.FromBloq(RectangularWindowState(3), [0, 1, 2]).matrix()
@@ -383,18 +383,18 @@ class TestToBloq:
         def circuit():
             qml.H(0)
 
-        assert qml.ToBloq(qml.Hadamard(0)).__repr__() == "ToBloq(Hadamard)"
-        assert qml.ToBloq(circuit).__repr__() == "ToBloq(QNode)"
-        assert qml.ToBloq(qml.H(0)).__str__() == "PLHadamard"
+        assert repr(qml.io.ToBloq(qml.Hadamard(0))) == "ToBloq(Hadamard)"
+        assert repr(qml.io.ToBloq(circuit)) == "ToBloq(QNode)"
+        assert str(qml.io.ToBloq(qml.H(0))) == "PLHadamard"
         with pytest.raises(TypeError, match="Input must be either an instance of"):
-            qml.ToBloq("123")
+            qml.io.ToBloq("123")
 
     def test_equivalence(self):
         """Tests that ToBloq's __eq__ functions as expected"""
 
-        assert qml.ToBloq(qml.H(0)) == qml.ToBloq(qml.H(0))
-        assert qml.ToBloq(qml.H(0)) != qml.ToBloq(qml.H(1))
-        assert qml.ToBloq(qml.H(0)) != "Hadamard"
+        assert qml.io.ToBloq(qml.H(0)) == qml.io.ToBloq(qml.H(0))
+        assert qml.io.ToBloq(qml.H(0)) != qml.io.ToBloq(qml.H(1))
+        assert qml.io.ToBloq(qml.H(0)) != "Hadamard"
 
     def test_allocate_and_free(self):
         """Tests that ToBloq functions on a FromBloq that has ghost wires"""
@@ -438,10 +438,10 @@ class TestToBloq:
             qml.H(0)
 
         assert qml.to_bloq(qml.Hadamard(0)) == Hadamard()
-        assert qml.to_bloq(circuit).__repr__() == "ToBloq(QNode)"
-        assert qml.to_bloq(qfunc).__repr__() == "ToBloq(Qfunc)"
-        assert qml.to_bloq(qfunc).__str__() == "PLQfunc"
-        assert qml.to_bloq(qml.Hadamard(0), map_ops=False).__repr__() == "Hadamard()"
+        assert repr(qml.to_bloq(circuit)) == "ToBloq(QNode)"
+        assert repr(qml.to_bloq(qfunc)) == "ToBloq(Qfunc)"
+        assert str(qml.to_bloq(qfunc)) == "PLQfunc"
+        assert repr(qml.to_bloq(qml.Hadamard(0), map_ops=False)) == "Hadamard()"
         assert qml.to_bloq(circuit).call_graph()[1] == {Hadamard(): 1}
         assert qml.to_bloq(qfunc).call_graph()[1] == {Hadamard(): 1}
 
@@ -1157,7 +1157,7 @@ class TestToBloq:
 
         qreg = _QReg(qubits=q0, dtype=dtype_bit)
 
-        assert qreg.__repr__() == "_QReg(qubits=(cirq.LineQubit(0),), dtype=QBit())"
+        assert repr(qreg) == "_QReg(qubits=(cirq.LineQubit(0),), dtype=QBit())"
         assert isinstance(qreg.qubits, tuple)
         assert qreg.qubits == (q0,)
         assert qreg.dtype == dtype_bit
