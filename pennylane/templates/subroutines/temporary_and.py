@@ -80,7 +80,7 @@ class TemporaryAND(Operation):
         2: ────╰──╭●───╯─┤ ├Sample
         3: ───────╰X─────┤ ╰Sample
         >>> print(circuit())
-        [1 1 0 1]
+        [[1 1 0 1]]
     """
 
     num_wires = 3

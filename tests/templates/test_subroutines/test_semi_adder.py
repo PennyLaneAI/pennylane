@@ -71,15 +71,12 @@ class TestSemiAdder:
 
         output = circuit(x, y)
 
-        if len(y_wires) == 1:
-            sample = [output[0]]
-        else:
-            sample = output[0]
+        sample = output[0]
 
         #  check that the output sample is the binary representation of x + y mod 2^len(y_wires)
         # pylint: disable=bad-reversed-sequence
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(sample))),
+            sum(bit * (2**i) for i, bit in enumerate(reversed(sample[0, :]))),
             (x + y) % 2 ** len(y_wires),
         )
 
@@ -184,6 +181,6 @@ class TestSemiAdder:
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))),
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))),
             (x + y) % 2 ** len(y_wires),
         )

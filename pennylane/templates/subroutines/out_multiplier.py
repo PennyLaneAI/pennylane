@@ -84,9 +84,9 @@ class OutMultiplier(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [0 0 1 0]
+        [[0 0 1 0]]
 
-    The result :math:`[0 0 1 0]`, is the binary representation of
+    The result :math:`[[0 0 1 0]]`, is the binary representation of
     :math:`2 \cdot 7 \; \text{modulo} \; 12 = 2`.
 
     .. details::
@@ -133,9 +133,9 @@ class OutMultiplier(Operation):
         .. code-block:: pycon
 
             >>> print(circuit())
-            [0 0 1 1]
+            [[0 0 1 1]]
 
-        The result :math:`[0 0 1 1]`, is the binary representation of
+        The result :math:`[[0 0 1 1]]`, is the binary representation of
         :math:`2 \cdot 7 + 1\; \text{modulo} \; 12 = 3`.
 
         The fourth set of wires is ``work_wires`` which consist of the auxiliary qubits used to perform the modular multiplication operation.

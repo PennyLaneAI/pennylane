@@ -571,7 +571,7 @@ class TestSampleMeasurements:
         assert len(results) == 2
         assert all(isinstance(res, (float, np.ndarray)) for res in results)
         assert results[0].shape == (100, 2)
-        assert results[1].shape == (50,)
+        assert results[1].shape == (50, 1)
 
     @pytest.mark.parametrize("all_outcomes", [False, True])
     def test_counts_obs(self, all_outcomes, subspace, seed):

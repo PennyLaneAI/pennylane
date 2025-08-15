@@ -84,7 +84,7 @@ class TestOutAdder:
 
         # pylint: disable=bad-reversed-sequence
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)))),
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)[0, :]))),
             (x + y + z) % mod,
         )
 
@@ -251,5 +251,5 @@ class TestOutAdder:
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x + y) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x + y) % mod
         )
