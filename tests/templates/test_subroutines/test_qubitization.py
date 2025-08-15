@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 @pytest.mark.parametrize(
@@ -66,17 +67,21 @@ def test_operator_definition_qpe(hamiltonian):
 
 
 @pytest.mark.parametrize(
-    ("lcu", "control", "skip_diff"),
+    ("lcu", "control"),
     [
-        (qml.dot([0.1, -0.3], [qml.X(2), qml.Z(3)]), [0], False),
-        (qml.dot([0.1, -0.3, -0.3], [qml.X(0), qml.Z(1), qml.Y(0) @ qml.Z(2)]), [3, 4], True),
+        (qml.X(1) @ qml.Z(2), [0]),
+        (qml.X(0) @ qml.Z(1), [2]),
+        (qml.X(1) @ qml.Z(2) @ qml.Y(3), [0]),
+        (qml.X(0) @ qml.Z(1) @ qml.Y(2), [3]),
+        (qml.PauliX("a") @ qml.PauliZ(1), [0]),
+        (qml.PauliX("a") @ qml.PauliZ(1) @ qml.PauliY(2), [0]),
     ],
 )
-def test_standard_validity(lcu, control, skip_diff):
+def test_standard_validity(lcu, control):
     """Check the operation using the assert_valid function."""
     op = qml.Qubitization(lcu, control)
     # Skip differentiation for test cases that raise NaNs in gradients (known limitation of ``MottonenStatePreparation``).
-    qml.ops.functions.assert_valid(op, skip_differentiation=skip_diff)
+    qml.ops.functions.assert_valid(op)
 
 
 @pytest.mark.parametrize(
@@ -112,6 +117,24 @@ def test_decomposition(hamiltonian, expected_decomposition):
     decomposition = qml.Qubitization.compute_decomposition(hamiltonian=hamiltonian, control=[1])
     for i, op in enumerate(decomposition):
         qml.assert_equal(op, expected_decomposition[i])
+
+
+@pytest.mark.parametrize(
+    "hamiltonian, control",
+    [
+        (qml.X(1) @ qml.Z(2), [0]),
+        (qml.X(0) @ qml.Z(1), [2]),
+        (qml.X(1) @ qml.Z(2) @ qml.Y(3), [0]),
+        (qml.X(0) @ qml.Z(1) @ qml.Y(2), [3]),
+        (qml.PauliX("a") @ qml.PauliZ(1), [0]),
+        (qml.PauliX("a") @ qml.PauliZ(1) @ qml.PauliY(2), [0]),
+    ],
+)
+def test_decomposition_new(hamiltonian, control):  # pylint: disable=unused-argument
+    """Tests the decomposition rule implemented with the new system."""
+    op = qml.Qubitization(hamiltonian, control=control)
+    for rule in qml.list_decomps(qml.Qubitization):
+        _test_decomposition_rule(op, rule)
 
 
 def test_lightning_qubit():
