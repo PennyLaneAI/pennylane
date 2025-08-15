@@ -55,6 +55,9 @@ class TransformFunctionsExt(TransformFunctions):
 
     def __init__(self, ctx, passes, callback=None):
         super().__init__(ctx, passes)
+        # The signature of the callback function is assumed to be
+        # the one used in xDSL:
+        # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass) -> None:
         self.callback = callback
 
     @impl(ApplyRegisteredPassOp)
