@@ -92,19 +92,10 @@ class SampleMP(SampleMeasurement):
         sample_eigvals = n_wires is None or has_eigvals
         dtype = float if sample_eigvals else int
 
-        if n_wires == 0:
-            dim = num_device_wires
-        elif sample_eigvals:
-            dim = 1
-        else:
-            dim = n_wires
-
-        shape = []
-        if shots != 1:
-            shape.append(shots)
-        if dim != 1:
-            shape.append(dim)
-        return tuple(shape), dtype
+        if sample_eigvals:
+            return (shots,), dtype
+        dim = num_device_wires if n_wires == 0 else n_wires
+        return (shots, dim), dtype
 
     @property
     def numeric_type(self):
@@ -120,19 +111,14 @@ class SampleMP(SampleMeasurement):
                 f"{self.__class__.__name__}."
             )
         if self.obs:
-            num_values_per_shot = 1  # one single eigenvalue
-        elif self.mv is not None:
+            return (shots,)
+
+        if self.mv is not None:
             num_values_per_shot = 1 if isinstance(self.mv, MeasurementValue) else len(self.mv)
         else:
-            # one value per wire
             num_values_per_shot = len(self.wires) if len(self.wires) > 0 else num_device_wires
 
-        shape = []
-        if shots != 1:
-            shape.append(shots)
-        if num_values_per_shot != 1:
-            shape.append(num_values_per_shot)
-        return tuple(shape)
+        return (shots, num_values_per_shot)
 
     def process_samples(
         self,
@@ -191,7 +177,7 @@ def sample(
     wires=None,
 ) -> SampleMP:
     r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
+    determined from QNode,
     returning raw samples. If no observable is provided then basis state samples are returned
     directly from the device.
 
@@ -209,6 +195,37 @@ def sample(
 
     Raises:
         ValueError: Cannot set wires if an observable is provided
+
+    .. warning::
+
+        In v0.42, a breaking change removed the squeezing of singleton dimensions, eliminating the need for
+        specialized, error-prone handling for finite-shot results.
+        For the QNode:
+
+        >>> @qml.qnode(qml.device('default.qubit'))
+        ... def circuit(wires):
+        ...     return qml.sample(wires=wires)
+
+        We previously squeezed out singleton dimensions like:
+
+        >>> qml.set_shots(circuit, 1)(wires=1)
+        array(0)
+        >>> qml.set_shots(circuit, 2)(0)
+        array([0, 0])
+        >>> qml.set_shots(circuit, 1)((0,1))
+        array([0, 0])
+
+        With v0.42 and newer, the above circuit will **always** return an array of shape ``(shots, num_wires)``.
+
+        >>> qml.set_shots(circuit, 1)(wires=1)
+        array([[0]])
+        >>> qml.set_shots(circuit, 2)(0)
+        array([[0],
+        [0]])
+        >>> qml.set_shots(circuit, 1)((0,1))
+        array([[0, 0]])
+
+        Previous behavior can be recovered by applying ``qml.math.squeeze(result)`` to the array.
 
     The samples are drawn from the eigenvalues :math:`\{\lambda_i\}` of the observable.
     The probability of drawing eigenvalue :math:`\lambda_i` is given by
