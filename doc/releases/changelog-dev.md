@@ -64,6 +64,10 @@
 
 <h3>Improvements 🛠</h3>
 
+* Changed how basis states are assigned internally in `qml.Superposition`, improving its
+  decomposition slightly both regarding classical computing time and gate decomposition.
+  [(#7880)](https://github.com/PennyLaneAI/pennylane/pull/7880)
+
 * The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
   have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
   [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
