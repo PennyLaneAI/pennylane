@@ -264,16 +264,18 @@ def _matrix_transform(
     def make_indices(op_wires, n, result_batched, op_batched):
         result_indices_in = alphabet[: 2 * n]
         mapped_op_wires = [wire_map[w] for w in op_wires]
-        op_indices = alphabet[-len(op_wires) :] + "".join(alphabet[w] for w in mapped_op_wires)
+        op_indices = alphabet[-len(op_wires) - 1 : -1] + "".join(
+            alphabet[w] for w in mapped_op_wires
+        )
         result_indices_out = result_indices_in
         for i, w in enumerate(mapped_op_wires):
             result_indices_out = result_indices_out.replace(alphabet[w], op_indices[i])
         if result_batched:
-            result_indices_in = "A" + result_indices_in
+            result_indices_in = "Z" + result_indices_in
         if op_batched:
-            op_indices = "A" + op_indices
+            op_indices = "Z" + op_indices
         if result_batched or op_batched:
-            result_indices_out = "A" + result_indices_out
+            result_indices_out = "Z" + result_indices_out
         indices = f"{op_indices},{result_indices_in}->{result_indices_out}"
         return indices
 
