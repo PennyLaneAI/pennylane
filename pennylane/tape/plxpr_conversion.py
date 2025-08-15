@@ -150,8 +150,6 @@ def _(self, *all_args, jaxpr_branches, consts_slices, args_slice):
 
     for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
         consts = all_args[const_slice]
-        if jaxpr is None:
-            continue
         if isinstance(pred, qml.measurements.MeasurementValue):
             if jaxpr.outvars:
                 outvals = [v.aval for v in jaxpr.outvars]
