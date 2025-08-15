@@ -525,6 +525,7 @@
 
 * `counts` can now be captured by program capture. `MeasurementProcess._abstract_eval` should now return a tuple
   of `(shape, dtype)` tuples, instead of a single `(shape, dtype)` tuple.
+  [(#8096)](https://github.com/PennyLaneAI/pennylane/pull/8096)
 
 * Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
 `run_filecheck_qjit` fixtures.
