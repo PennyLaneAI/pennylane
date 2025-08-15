@@ -50,6 +50,7 @@ class CountsMP(SampleMeasurement):
     """
 
     _shortname = "counts"
+    _num_outputs = 2
 
     # pylint: disable=too-many-arguments, too-many-positional-arguments
     def __init__(
@@ -88,9 +89,11 @@ class CountsMP(SampleMeasurement):
         shots: int | None = None,
         num_device_wires: int = 0,
     ) -> tuple:
-        raise NotImplementedError(
-            "CountsMP returns a dictionary, which is not compatible with capture."
-        )
+        if shots is None:
+            raise ValueError("finite shots are required to use Counts")
+        dim = num_device_wires if n_wires == 0 else n_wires
+        arr1 = ((dim,), int)
+        return (arr1, arr1)
 
     @property
     def hash(self):

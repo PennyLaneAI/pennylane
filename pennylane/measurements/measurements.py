@@ -68,6 +68,9 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
     _wires_primitive: Optional["jax.extend.core.Primitive"] = None
     _mcm_primitive: Optional["jax.extend.core.Primitive"] = None
 
+    _num_outputs: int = 1
+    """The number of arrays returned by this measurement process."""
+
     def __init_subclass__(cls, **_):
         register_pytree(cls, cls._flatten, cls._unflatten)
         name = cls._shortname or cls.__name__
@@ -116,7 +119,7 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         has_eigvals=False,
         shots: int | None = None,
         num_device_wires: int = 0,
-    ) -> tuple[tuple, type]:
+    ) -> tuple[tuple[tuple, type], ...]:
         """Calculate the shape and dtype that will be returned when a measurement is performed.
 
         This information is similar to ``numeric_type`` and ``shape``, but is provided through
@@ -130,18 +133,18 @@ class MeasurementProcess(ABC, metaclass=ABCCaptureMeta):
         measurements. ``n_wires = 0`` indicates a measurement that is broadcasted across all device wires.
 
         >>> ProbabilityMP._abstract_eval(n_wires=2)
-        ((4,), float)
+        (((4,), float),)
         >>> ProbabilityMP._abstract_eval(n_wires=0, num_device_wires=2)
-        ((4,), float)
+        (((4,), float),)
         >>> SampleMP._abstract_eval(n_wires=0, shots=50, num_device_wires=2)
-        ((50, 2), int)
+        (((50, 2), int),)
         >>> SampleMP._abstract_eval(n_wires=4, has_eigvals=True, shots=50)
-        ((50,), float)
+        (((50,), float),)
         >>> SampleMP._abstract_eval(n_wires=None, shots=50)
-        ((50,), float)
+        (((50,), float),)
 
         """
-        return (), float
+        return (((), float),)
 
     def _flatten(self):
         metadata = (("wires", self.raw_wires),)

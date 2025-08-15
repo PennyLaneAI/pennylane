@@ -64,8 +64,9 @@ def _get_shapes_for(*measurements, shots=qml.measurements.Shots(None), num_devic
 
     for s in shots:
         for m in measurements:
-            shape, dtype = m.abstract_eval(shots=s, num_device_wires=num_device_wires)
-            shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
+            shape_and_dtypes = m.abstract_eval(shots=s, num_device_wires=num_device_wires)
+            for shape, dtype in shape_and_dtypes:
+                shapes.append(jax.core.ShapedArray(shape, dtype_map.get(dtype, dtype)))
     return shapes
 
 
@@ -79,7 +80,7 @@ def test_abstract_measurement():
     expected_repr = "AbstractMeasurement(n_wires=2, has_eigvals=True)"
     assert repr(am) == expected_repr
 
-    assert am.abstract_eval(2, 50) == ((), float)
+    assert am.abstract_eval(2, 50) == (((), float),)
 
     with pytest.raises(NotImplementedError):
         am.at_least_vspace()
@@ -96,13 +97,6 @@ def test_abstract_measurement():
 
     assert am == am2
     assert hash(am) == hash("AbstractMeasurement")
-
-
-def test_counts_no_measure():
-    """Test that counts can't be measured and raises a NotImplementedError."""
-
-    with pytest.raises(NotImplementedError, match=r"CountsMP returns a dictionary"):
-        qml.counts()._abstract_eval()
 
 
 def test_primitive_none_behavior():

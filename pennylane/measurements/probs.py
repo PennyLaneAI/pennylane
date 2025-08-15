@@ -53,7 +53,7 @@ class ProbabilityMP(SampleMeasurement, StateMeasurement):
     def _abstract_eval(cls, n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
         n_wires = num_device_wires if n_wires == 0 else n_wires
         shape = (2**n_wires,)
-        return shape, float
+        return ((shape, float),)
 
     @property
     def numeric_type(self):
