@@ -126,13 +126,14 @@ class ExecutionConfig:
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
+        # Need to check instance of MappingProxyType in case we use `dataclasses.replace`
+        # and these fields are not being updated. This ensures we don't get nested mappingproxy types.
         if not (
             isinstance(object.__getattribute__(self, "device_options"), (dict, MappingProxyType))
         ):
             raise ValueError(
                 f"Got invalid type {type(object.__getattribute__(self, 'device_options'))} for 'device_options'"
             )
-
         if not (
             isinstance(
                 object.__getattribute__(self, "gradient_keyword_arguments"),
