@@ -53,12 +53,16 @@ class TransformFunctionsExt(TransformFunctions):
     then it will try to run this pass in Catalyst.
     """
 
+    visual_callbacks: list[str] = ["_draw_callback", "_mlir_graph_callback"]
+
     def __init__(self, ctx, passes, callback=None):
         super().__init__(ctx, passes)
         # The signature of the callback function is assumed to be
-        # the one used in xDSL:
+        # def callback(previous_pass: ModulePass, module: ModuleOp, level: int) -> None
+        # This is slightly different from the one used in xDSL:
         # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass) -> None:
         self.callback = callback
+        self.level = 0
 
     @impl(ApplyRegisteredPassOp)
     def run_apply_registered_pass_op(  # pragma: no cover
@@ -77,10 +81,16 @@ class TransformFunctionsExt(TransformFunctions):
             pass_class = self.passes[pass_name]()
             pass_instance = pass_class(**op.options.data)
             pipeline = PassPipeline((pass_instance,))
+            if (
+                self.callback
+                and self.level == 0
+                and self.callback.__name__ in self.visual_callbacks
+            ):
+                self.callback(pass_instance, module, self.level)
             pipeline.apply(self.ctx, module)
             if self.callback:
-                next_pass = None
-                self.callback(pass_instance, module, next_pass)
+                self.level += 1
+                self.callback(pass_instance, module, self.level)
             return (module,)
 
         # pragma: no cover
@@ -94,9 +104,7 @@ class TransformFunctionsExt(TransformFunctions):
         rewriter = Rewriter()
         rewriter.replace_op(module, data)
         if self.callback:
-            previous_pass = None
-            next_pass = None
-            self.callback(previous_pass, data, next_pass)
+            self.callback(None, data, self.level)
         return (data,)
 
 
