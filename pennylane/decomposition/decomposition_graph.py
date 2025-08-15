@@ -253,6 +253,10 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
     def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
         """Constructs the decomposition graph."""
         for op in operations:
+            if isinstance(op, qml.measurements.MidMeasureMP):
+                continue  # cannot decompose a mid-circuit measurement
+            if isinstance(op, qml.ops.Conditional):
+                op = op.base  # decompose the base of a classically controlled operator.
             if isinstance(op, Operator):
                 op = resource_rep(type(op), **op.resource_params)
             idx = self._add_op_node(op, 0)
