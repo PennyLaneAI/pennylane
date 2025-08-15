@@ -22,7 +22,6 @@ from collections.abc import Callable, Generator, Sequence
 from copy import copy
 
 import pennylane as qml
-from pennylane.allocation import DynamicWire
 from pennylane.exceptions import AllocationError, DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
