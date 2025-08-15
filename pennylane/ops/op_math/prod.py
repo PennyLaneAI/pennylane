@@ -114,6 +114,12 @@ def prod(*ops, id=None, lazy=True):
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
+            # dequeue operators passed as arguments to the quantum function
+            if qml.QueuingManager.recording():
+                for arg in args:
+                    qml.QueuingManager.remove(arg)
+                for arg in kwargs.values():
+                    qml.QueuingManager.remove(arg)
             qs = qml.tape.make_qscript(fn)(*args, **kwargs)
             if len(qs.operations) == 1:
                 if qml.QueuingManager.recording():
