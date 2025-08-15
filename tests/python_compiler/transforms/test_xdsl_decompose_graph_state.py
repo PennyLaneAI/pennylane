@@ -50,16 +50,16 @@ class TestDecomposeGraphStatePass:
             // CHECK-NOT: arith.constant dense<[1]> : tensor<1xi1>
             // CHECK-NOT: mbqc.graph_state_prep
 
-            // CHECK: [[graph_reg:%.+]] = quantum.alloc( 2) : !quantum.reg
-            // CHECK: [[q00:%.+]] = quantum.extract [[graph_reg]][ 0] : !quantum.reg -> !quantum.bit
-            // CHECK: [[q10:%.+]] = quantum.extract [[graph_reg]][ 1] : !quantum.reg -> !quantum.bit
+            // CHECK: [[graph_reg:%.+]] = quantum.alloc(2) : !quantum.reg
+            // CHECK: [[q00:%.+]] = quantum.extract [[graph_reg]][0] : !quantum.reg -> !quantum.bit
+            // CHECK: [[q10:%.+]] = quantum.extract [[graph_reg]][1] : !quantum.reg -> !quantum.bit
 
-            // CHECK: [[q01:%.+]] = quantum.custom "Hadamard"() %q00 : !quantum.bit
-            // CHECK: [[q11:%.+]] = quantum.custom "Hadamard"() %q10 : !quantum.bit
-            // CHECK: [[q20:%.+]]:2 = quantum.custom "CZ"() [[q01]], [[q11]] : !quantum.bit, !quantum.bit
+            // CHECK: [[q01:%.+]] = quantum.custom "Hadamard"() [[q00]] : !quantum.bit
+            // CHECK: [[q11:%.+]] = quantum.custom "Hadamard"() [[q10]] : !quantum.bit
+            // CHECK: [[q20:%.+]], [[q21:%.+]] = quantum.custom "CZ"() [[q01]], [[q11]] : !quantum.bit, !quantum.bit
 
-            // CHECK: [[out_reg0:%.+]] = quantum.insert [[graph_reg]][ 0], %q20#0 : !quantum.reg, !quantum.bit
-            // CHECK: [[out_reg1:%.+]] = quantum.insert [[graph_reg]][ 1], %q20#1 : !quantum.reg, !quantum.bit
+            // CHECK: [[out_reg0:%.+]] = quantum.insert [[graph_reg]][0], [[q20]] : !quantum.reg, !quantum.bit
+            // CHECK: [[out_reg1:%.+]] = quantum.insert [[out_reg0]][1], [[q21]] : !quantum.reg, !quantum.bit
 
             %adj_matrix = arith.constant dense<[1]> : tensor<1xi1>
             %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<1xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg

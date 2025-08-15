@@ -46,7 +46,6 @@ class DecomposeGraphStatePass(passes.ModulePass):
         )
         walker = pattern_rewriter.PatternRewriteWalker(greedy_applier)
         walker.rewrite_module(module)
-        breakpoint()
 
 
 decompose_graph_state_pass = compiler_transform(DecomposeGraphStatePass)
@@ -88,36 +87,47 @@ class DecomposeGraphStatePattern(RewritePattern):
         alloc_op = quantum.AllocOp(n_vertices)
         rewriter.insert_op(alloc_op)
 
-        extract_ops: list[quantum.ExtractOp] = []
+        graph_qubits_map: dict[int, quantum.QubitSSAValue] = {}
+
+        qextract_ops: list[quantum.ExtractOp] = []
         for i in range(n_vertices):
-            extract_op = quantum.ExtractOp(alloc_op.qreg, i)
-            # rewriter.insert_op(extract_op)
-            extract_ops.append(extract_op)
+            qextract_op = quantum.ExtractOp(alloc_op.qreg, i)
+            qextract_ops.append(qextract_op)
+            graph_qubits_map[i] = qextract_op.qubit
 
         init_ops: list[quantum.CustomOp] = []
         for i in range(n_vertices):
-            init_op = quantum.CustomOp(in_qubits=extract_ops[i].qubit, gate_name=init_op_gate_name)
-            # rewriter.insert_op(extract_op)
+            init_op = quantum.CustomOp(in_qubits=graph_qubits_map[i], gate_name=init_op_gate_name)
             init_ops.append(init_op)
+            graph_qubits_map[i] = init_op.out_qubits[0]
 
-        # FIXME!! This block is wrong, we need to cascade the output qubits from the previous op to
-        # the next
         entangle_ops: list[quantum.CustomOp] = []
         for edge in _edge_iter(adj_matrix):
-            q0 = init_ops[edge[0]].out_qubits[0]
-            q1 = init_ops[edge[1]].out_qubits[0]
+            q0 = graph_qubits_map[edge[0]]
+            q1 = graph_qubits_map[edge[1]]
             entangle_op = quantum.CustomOp(in_qubits=(q0, q1), gate_name=entangle_op_gate_name)
-            # rewriter.insert_op(entangle_op)
             entangle_ops.append(entangle_op)
+            graph_qubits_map[edge[0]] = entangle_op.out_qubits[0]
+            graph_qubits_map[edge[1]] = entangle_op.out_qubits[1]
 
-        for extract_op in extract_ops:
-            rewriter.insert_op(extract_op)
+        qinsert_ops: list[quantum.InsertOp] = []
+        qreg = alloc_op.qreg
+        for i in range(n_vertices):
+            qinsert_op = quantum.InsertOp(in_qreg=qreg, idx=i, qubit=graph_qubits_map[i])
+            qinsert_ops.append(qinsert_op)
+            qreg = qinsert_op.out_qreg
+
+        for qextract_op in qextract_ops:
+            rewriter.insert_op(qextract_op)
 
         for init_op in init_ops:
             rewriter.insert_op(init_op)
 
         for entangle_op in entangle_ops:
             rewriter.insert_op(entangle_op)
+
+        for qinsert_op in qinsert_ops:
+            rewriter.insert_op(qinsert_op)
 
         rewriter.erase_matched_op()
         rewriter.erase_op(graph_prep_op.adj_matrix.owner)
