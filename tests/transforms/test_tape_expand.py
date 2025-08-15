@@ -878,8 +878,9 @@ class TestCreateCustomDecompExpandFn:
         """Test that specifying a single custom decomposition works as expected."""
 
         custom_decomps = {"Hadamard": custom_hadamard}
-        decomp_dev = qml.device("default.qubit", shots=shots, custom_decomps=custom_decomps)
+        decomp_dev = qml.device("default.qubit", custom_decomps=custom_decomps)
 
+        @qml.set_shots(shots)
         @qml.qnode(decomp_dev)
         def circuit():
             qml.Hadamard(wires=0)

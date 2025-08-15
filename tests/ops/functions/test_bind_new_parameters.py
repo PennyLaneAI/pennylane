@@ -93,12 +93,18 @@ def test_composite_ops(op, new_params, expected_op):
 
 
 def test_num_steps_is_deprecated():
-    """Test that providing `num_steps` to `qml.evolve` raises a deprecation warning."""
+    """Test that providing `num_steps` to `qml.evolve` and `qml.exp` raises a deprecation warning."""
     with pytest.warns(
         PennyLaneDeprecationWarning,
-        match="Providing ``num_steps`` to ``qml.evolve`` and ``Evolution`` is deprecated",
+        match="Providing 'num_steps' to 'qml.evolve' and 'qml.exp' is deprecated",
     ):
         qml.evolve(qml.PauliX(0), 0.5, num_steps=15)
+
+    with pytest.warns(
+        PennyLaneDeprecationWarning,
+        match="Providing 'num_steps' to 'qml.evolve' and 'qml.exp' is deprecated",
+    ):
+        qml.exp(qml.PauliX(0), 0.5, num_steps=15)
 
 
 @pytest.mark.parametrize(

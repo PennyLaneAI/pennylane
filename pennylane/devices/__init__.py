@@ -113,7 +113,7 @@ to handle a single circuit. See the documentation for each modifier for more det
     @single_tape_support
     class MyDevice(qml.devices.Device):
 
-        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()
@@ -155,10 +155,11 @@ Qutrit Mixed-State Simulation Tools
 
 """
 
+
 from .tracker import Tracker
 
 from .capabilities import DeviceCapabilities
-from .execution_config import ExecutionConfig, DefaultExecutionConfig, MCMConfig
+from .execution_config import ExecutionConfig, MCMConfig
 from .device_constructor import device, refresh_devices
 from .device_api import Device
 from .default_qubit import DefaultQubit
@@ -183,5 +184,18 @@ from ._qutrit_device import QutritDevice
 def __getattr__(name):
     if name == "plugin_devices":
         return device_constructor.plugin_devices
+
+    if name == "DefaultExecutionConfig":
+        # pylint: disable=import-outside-toplevel
+        import warnings
+        from pennylane.exceptions import PennyLaneDeprecationWarning
+
+        warnings.warn(
+            "`pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44. "
+            "Please use `ExecutionConfig()` instead.",
+            PennyLaneDeprecationWarning,
+            stacklevel=2,
+        )
+        return ExecutionConfig()
 
     raise AttributeError(f"module 'pennylane.devices' has no attribute '{name}'")

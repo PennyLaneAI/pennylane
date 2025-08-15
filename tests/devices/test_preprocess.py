@@ -26,6 +26,7 @@ from pennylane.devices.preprocess import (
     measurements_from_counts,
     measurements_from_samples,
     mid_circuit_measurements,
+    no_analytic,
     no_sampling,
     null_postprocessing,
     validate_adjoint_trainable_params,
@@ -148,6 +149,18 @@ def test_no_sampling():
     tape2 = qml.tape.QuantumScript(shots=2)
     with pytest.raises(DeviceError, match="Finite shots are not supported with abc"):
         no_sampling(tape2, name="abc")
+
+
+def test_no_analytic():
+    """Test for the no_anayltic transform"""
+
+    tape1 = qml.tape.QuantumScript(shots=2)
+    batch, _ = no_analytic(tape1)
+    assert batch[0] is tape1
+
+    tape2 = qml.tape.QuantumScript(shots=None)
+    with pytest.raises(DeviceError, match="Analytic execution is not supported with abc"):
+        no_analytic(tape2, name="abc")
 
 
 def test_validate_adjoint_trainable_params_obs_warning():
@@ -578,7 +591,7 @@ class TestMeasurementsFromCountsOrSamples:
         """
 
         theta = 2.5
-        dev = qml.device("default.qubit", wires=4, shots=shots)
+        dev = qml.device("default.qubit", wires=4)
 
         tape = qml.tape.QuantumScript(
             [qml.RX(theta, 0), qml.RX(theta / 2, 1)],
@@ -616,9 +629,10 @@ class TestMeasurementsFromCountsOrSamples:
         """Test that returning counts works as expected for all-wires, specific wires, or an observable,
         when using both the measurements_from_counts and measurements_from_samples transforms."""
 
-        dev = qml.device("default.qubit", wires=4, shots=5000)
+        dev = qml.device("default.qubit", wires=4)
 
         @partial(validate_device_wires, wires=dev.wires)
+        @qml.set_shots(5000)
         @qml.qnode(dev)
         def basic_circuit(theta: float):
             qml.RY(theta, 0)
@@ -655,9 +669,10 @@ class TestMeasurementsFromCountsOrSamples:
         """Test that returning sample works as expected for all-wires, specific wires, or an observable,
         when using both the measurements_from_counts and measurements_from_samples transforms."""
 
-        dev = qml.device("default.qubit", wires=4, shots=5000, seed=seed)
+        dev = qml.device("default.qubit", wires=4, seed=seed)
 
         @partial(validate_device_wires, wires=dev.wires)
+        @qml.set_shots(5000)
         @qml.qnode(dev)
         def basic_circuit(theta: float):
             qml.RY(theta, 0)
@@ -693,9 +708,10 @@ class TestMeasurementsFromCountsOrSamples:
         """Test that the measurements with counts when only some states have non-zero counts,
         and confirm that all_counts returns the expected entries"""
 
-        dev = qml.device("default.qubit", wires=4, shots=5000)
+        dev = qml.device("default.qubit", wires=4)
 
         @partial(validate_device_wires, wires=dev.wires)
+        @qml.set_shots(5000)
         @qml.qnode(dev)
         def basic_circuit():
             return qml.counts(**counts_kwargs, all_outcomes=all_outcomes)
@@ -717,8 +733,9 @@ class TestMeasurementsFromCountsOrSamples:
         """Test the results of applying measurements_from_counts/measurements_from_samples with
         multiple measurements"""
 
-        dev = qml.device("default.qubit", wires=4, shots=5000, seed=seed)
+        dev = qml.device("default.qubit", wires=4, seed=seed)
 
+        @qml.set_shots(5000)
         @qml.qnode(dev)
         def basic_circuit(theta: float):
             qml.RY(theta, 0)

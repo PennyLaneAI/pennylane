@@ -94,8 +94,9 @@ class TestExpval:
     @pytest.mark.parametrize("shots", [None, 1111, [1111, 1111]])
     def test_value(self, tol, shots, seed):
         """Test that the expval interface works"""
-        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -123,8 +124,9 @@ class TestExpval:
     ):  # pylint: disable=too-many-arguments
         """Test that expectation values for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -222,8 +224,9 @@ class TestExpval:
     def test_projector_expval_qnode(self, state, shots, seed):
         """Tests that the expectation of a ``Projector`` object is computed correctly for both of
         its subclasses when integrating with the ``QNode``."""
-        dev = qml.device("default.qubit", wires=3, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=3, seed=seed)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)
