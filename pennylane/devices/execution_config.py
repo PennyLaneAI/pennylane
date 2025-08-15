@@ -127,7 +127,7 @@ class ExecutionConfig:
             )
 
         if not (
-            isinstance(object.__getattribute__(self, "device_options"), dict)
+            isinstance(object.__getattribute__(self, "device_options"), (dict, MappingProxyType))
             or object.__getattribute__(self, "device_options") is None
         ):
             raise ValueError(
@@ -135,7 +135,10 @@ class ExecutionConfig:
             )
 
         if not (
-            isinstance(object.__getattribute__(self, "gradient_keyword_arguments"), dict)
+            isinstance(
+                object.__getattribute__(self, "gradient_keyword_arguments"),
+                (dict, MappingProxyType),
+            )
             or object.__getattribute__(self, "gradient_keyword_arguments") is None
         ):
             raise ValueError(
@@ -160,8 +163,14 @@ class ExecutionConfig:
 
     def __getattribute__(self, name):
         if name == "device_options":
+            if isinstance(object.__getattribute__(self, "device_options"), MappingProxyType):
+                return object.__getattribute__(self, "device_options")
             return MappingProxyType(object.__getattribute__(self, "device_options"))
         if name == "gradient_keyword_arguments":
+            if isinstance(
+                object.__getattribute__(self, "gradient_keyword_arguments"), MappingProxyType
+            ):
+                return object.__getattribute__(self, "gradient_keyword_arguments")
             return MappingProxyType(object.__getattribute__(self, "gradient_keyword_arguments"))
         return object.__getattribute__(self, name)
 
