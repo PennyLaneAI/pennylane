@@ -217,6 +217,20 @@ class TestMCMConfig:
         ):
             MCMConfig(postselect_mode=invalid_postselect_mode)
 
+    @pytest.mark.parametrize(
+        "invalid_mcm_method_mode",
+        [
+            123,
+            True,
+        ],
+    )
+    def test_invalid_mcm_method_mode_raises_value_error(self, invalid_mcm_method_mode):
+        """Test that MCMConfig raises ValueError for invalid mcm method."""
+        with pytest.raises(
+            ValueError, match=f"Invalid mid-circuit measurement method '{invalid_mcm_method_mode}'."
+        ):
+            MCMConfig(mcm_method=invalid_mcm_method_mode)
+
     def test_immutability(self):
         """Test that MCMConfig instances are immutable."""
         config = MCMConfig(mcm_method="deferred", postselect_mode="hw-like")
