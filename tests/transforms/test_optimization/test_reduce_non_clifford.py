@@ -172,14 +172,8 @@ class TestReduceNonClifford:
         (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert len(new_qs.operations) == 1
-
         rot = new_qs.operations[0]
-        assert isinstance(rot, qml.RZ)
-
-        new_angle = rot.parameters[0]
-        exp_angle = np.mod(np.sum(params), 2 * np.pi)
-
-        assert np.isclose(new_angle, exp_angle)
+        assert qml.equal(rot, qml.RZ(np.mod(np.sum(params), 2 * np.pi), 0))
 
     @pytest.mark.parametrize(
         "angle, expected_ops",
