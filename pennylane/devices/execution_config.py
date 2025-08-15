@@ -86,10 +86,10 @@ class ExecutionConfig:
     gradient_method: str | TransformDispatcher | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict | None = None
+    gradient_keyword_arguments: dict | None = field(default_factory=dict)
     """Arguments used to control a gradient transform"""
 
-    device_options: dict | None = None
+    device_options: dict | None = field(default_factory=dict)
     """Various options for the device executing a quantum circuit"""
 
     interface: Interface = Interface.NUMPY
@@ -126,22 +126,20 @@ class ExecutionConfig:
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
-        if isinstance(self.device_options, dict) or self.device_options is None:
-            object.__setattr__(self, "device_options", MappingProxyType(self.device_options or {}))
-        else:
-            raise ValueError(f"Got invalid type {type(self.device_options)} for 'device_options'")
-        if (
-            isinstance(self.gradient_keyword_arguments, dict)
-            or self.gradient_keyword_arguments is None
+        if not (
+            isinstance(object.__getattribute__(self, "device_options"), dict)
+            or object.__getattribute__(self, "device_options") is None
         ):
-            object.__setattr__(
-                self,
-                "gradient_keyword_arguments",
-                MappingProxyType(self.gradient_keyword_arguments or {}),
-            )
-        else:
             raise ValueError(
-                f"Got invalid type {type(self.gradient_keyword_arguments)} for 'gradient_keyword_arguments'"
+                f"Got invalid type {type(object.__getattribute__(self, 'device_options'))} for 'device_options'"
+            )
+
+        if not (
+            isinstance(object.__getattribute__(self, "gradient_keyword_arguments"), dict)
+            or object.__getattribute__(self, "gradient_keyword_arguments") is None
+        ):
+            raise ValueError(
+                f"Got invalid type {type(object.__getattribute__(self, 'gradient_keyword_arguments'))} for 'gradient_keyword_arguments'"
             )
 
         if not (
@@ -159,6 +157,13 @@ class ExecutionConfig:
 
         if self.executor_backend is None:
             object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
+
+    def __getattribute__(self, name):
+        if name == "device_options":
+            return MappingProxyType(object.__getattribute__(self, "device_options"))
+        if name == "gradient_keyword_arguments":
+            return MappingProxyType(object.__getattribute__(self, "gradient_keyword_arguments"))
+        return object.__getattribute__(self, name)
 
 
 # pylint: disable=missing-function-docstring, inconsistent-return-statements
