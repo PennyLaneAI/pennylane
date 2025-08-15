@@ -203,17 +203,19 @@ class TestMCMConfig:
         assert config.postselect_mode == postselect_mode
 
     @pytest.mark.parametrize(
-        "invalid_mode",
+        "invalid_postselect_mode",
         [
             "foo",
             123,
             True,
         ],
     )
-    def test_invalid_postselect_mode_raises_value_error(self, invalid_mode):
+    def test_invalid_postselect_mode_raises_value_error(self, invalid_postselect_mode):
         """Test that MCMConfig raises ValueError for invalid postselect_mode."""
-        with pytest.raises(ValueError, match=f"Invalid postselection mode '{invalid_mode}'."):
-            MCMConfig(postselect_mode=invalid_mode)
+        with pytest.raises(
+            ValueError, match=f"Invalid postselection mode '{invalid_postselect_mode}'."
+        ):
+            MCMConfig(postselect_mode=invalid_postselect_mode)
 
     def test_immutability(self):
         """Test that MCMConfig instances are immutable."""
