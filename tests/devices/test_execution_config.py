@@ -123,6 +123,40 @@ class TestExecutionConfig:
         ):
             _ = ExecutionConfig(gradient_method=invalid_method)
 
+    @pytest.mark.parametrize(
+        "invalid_device_options",
+        [
+            "hi",
+            123,
+            lambda grad_fn: True,
+            True,
+        ],
+    )
+    def test_invalid_device_options(self, invalid_device_options):
+        """Test that invalid types for device_options raise an error."""
+        with pytest.raises(
+            ValueError,
+            match=r"Got invalid type .* for 'device_options'",
+        ):
+            _ = ExecutionConfig(device_options=invalid_device_options)
+
+    @pytest.mark.parametrize(
+        "invalid_gradient_keyword_arguments",
+        [
+            "hi",
+            123,
+            lambda grad_fn: True,
+            True,
+        ],
+    )
+    def test_invalid_gradient_keyword_arguments(self, invalid_gradient_keyword_arguments):
+        """Test that invalid types for gradient_keyword_arguments raise an error."""
+        with pytest.raises(
+            ValueError,
+            match=r"Got invalid type .* for 'gradient_keyword_arguments'",
+        ):
+            _ = ExecutionConfig(gradient_keyword_arguments=invalid_gradient_keyword_arguments)
+
     def test_immutability(self):
         """Test that ExecutionConfig instances are immutable if frozen."""
         config = ExecutionConfig(grad_on_execution=True)
@@ -131,15 +165,20 @@ class TestExecutionConfig:
 
         assert config.grad_on_execution is True
 
-    @pytest.mark.xfail(
-        reason="This test will fail until device_options and gradient_keyword_arguments are immutable.",
-        strict=True,
+    @pytest.mark.parametrize(
+        "config",
+        (
+            ExecutionConfig(),
+            ExecutionConfig(
+                device_options={"hi": "bye"}, gradient_keyword_arguments={"foo": "bar"}
+            ),
+        ),
     )
-    def test_dict_immutability(self):
+    def test_dict_immutability(self, config):
         """Test that the device_options and gradient_keyword_arguments are immutable."""
-        config = ExecutionConfig(
-            device_options={"hi": "bye"}, gradient_keyword_arguments={"foo": "bar"}
-        )
+
+        og_device_options = config.device_options.copy()
+        og_gradient_keyword_arguments = config.gradient_keyword_arguments.copy()
 
         with pytest.raises(
             TypeError,
@@ -154,8 +193,8 @@ class TestExecutionConfig:
             config.gradient_keyword_arguments["foo"] = "buzz"
 
         # Verify the original dictionaries were not changed
-        assert config.device_options == {"hi": "bye"}
-        assert config.gradient_keyword_arguments == {"foo": "bar"}
+        assert config.device_options == og_device_options
+        assert config.gradient_keyword_arguments == og_gradient_keyword_arguments
 
 
 class TestMCMConfig:

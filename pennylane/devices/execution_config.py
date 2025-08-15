@@ -15,6 +15,7 @@
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
@@ -85,10 +86,10 @@ class ExecutionConfig:
     gradient_method: str | TransformDispatcher | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict | None = None
+    gradient_keyword_arguments: dict = field(default_factory=dict)
     """Arguments used to control a gradient transform"""
 
-    device_options: dict | None = None
+    device_options: dict = field(default_factory=dict)
     """Various options for the device executing a quantum circuit"""
 
     interface: Interface = Interface.NUMPY
@@ -125,11 +126,23 @@ class ExecutionConfig:
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
-        if self.device_options is None:
-            object.__setattr__(self, "device_options", {})
-
-        if self.gradient_keyword_arguments is None:
-            object.__setattr__(self, "gradient_keyword_arguments", {})
+        # Need to check instance of MappingProxyType in case we use `dataclasses.replace`
+        # and these fields are not being updated. This ensures we don't get nested mappingproxy types.
+        if not (
+            isinstance(object.__getattribute__(self, "device_options"), (dict, MappingProxyType))
+        ):
+            raise ValueError(
+                f"Got invalid type {type(object.__getattribute__(self, 'device_options'))} for 'device_options'"
+            )
+        if not (
+            isinstance(
+                object.__getattribute__(self, "gradient_keyword_arguments"),
+                (dict, MappingProxyType),
+            )
+        ):
+            raise ValueError(
+                f"Got invalid type {type(object.__getattribute__(self, 'gradient_keyword_arguments'))} for 'gradient_keyword_arguments'"
+            )
 
         if not (
             isinstance(self.gradient_method, (str, TransformDispatcher))
@@ -146,6 +159,15 @@ class ExecutionConfig:
 
         if self.executor_backend is None:
             object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
+
+    def __getattribute__(self, name):
+        if name == "device_options":
+            val = object.__getattribute__(self, "device_options")
+            return val if isinstance(val, MappingProxyType) else MappingProxyType(val)
+        if name == "gradient_keyword_arguments":
+            val = object.__getattribute__(self, "gradient_keyword_arguments")
+            return val if isinstance(val, MappingProxyType) else MappingProxyType(val)
+        return object.__getattribute__(self, name)
 
 
 # pylint: disable=missing-function-docstring, inconsistent-return-statements
