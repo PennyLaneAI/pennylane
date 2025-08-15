@@ -225,3 +225,54 @@ class TestAliasSampling:
             )
         else:
             assert plre.ResourceAliasSampling.resource_decomp(num_coeffs, precision) == expected_res
+
+
+class TestPrepTHC:
+    """Test the ResourcePrepTHC class."""
+
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, selswap_depth",
+        (
+            (plre.CompactHamiltonian.thc(58, 160), 13, 1),
+            (plre.CompactHamiltonian.thc(10, 50), None, None),
+            (plre.CompactHamiltonian.thc(4, 20), None, 2),
+        ),
+    )
+    def test_resource_params(self, compact_ham, coeff_prec, selswap_depth):
+        """Test that the resource params are correct."""
+        op = plre.ResourcePrepTHC(compact_ham, coeff_prec, selswap_depth)
+        assert op.resource_params == {"compact_ham": compact_ham, "coeff_precision_bits": coeff_prec, "select_swap_depth": selswap_depth}
+
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, selswap_depth",
+        (
+            (plre.CompactHamiltonian.thc(58, 160), 13, 1),
+            (plre.CompactHamiltonian.thc(10, 50), None, None),
+            (plre.CompactHamiltonian.thc(4, 20), None, 2),
+        ),
+    )
+    def test_resource_rep(self, compact_ham, coeff_prec, selswap_depth):
+        """Test that the compressed representation is correct."""
+        expected = plre.CompressedResourceOp(
+            plre.ResourcePrepTHC, {"compact_ham": compact_ham, "coeff_precision_bits": coeff_prec, "select_swap_depth": selswap_depth}
+        )
+        assert plre.ResourcePrepTHC.resource_rep(compact_ham, coeff_prec, selswap_depth) == expected
+
+
+    # We are comparing the Toffoli and qubit cost here
+    # Expected number of Toffolis and qubits were obtained from https://arxiv.org/abs/2011.03494
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, selswap_depth, expected_res",
+        (
+            (plre.CompactHamiltonian.thc(58, 160), 13, 1, {"algo_qubits": 16, "ancilla_qubits":86, "toffoli_gates": 13156}),
+            (plre.CompactHamiltonian.thc(10, 50), None, None, {"algo_qubits": 12, "ancilla_qubits": 174, "toffoli_gates": 579}),
+            (plre.CompactHamiltonian.thc(4, 20), None, 2, {"algo_qubits": 10, "ancilla_qubits": 109, "toffoli_gates": 279})
+        ),
+    )
+    def test_resources(self, compact_ham, coeff_prec, selswap_depth, expected_res):
+        """Test that the resources are correct."""
+
+        prep_cost = plre.estimate_resources(plre.ResourcePrepTHC(compact_ham, coeff_precision_bits=coeff_prec, select_swap_depth=selswap_depth))
+        assert prep_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
+        assert prep_cost.qubit_manager.clean_qubits + prep_cost.qubit_manager.dirty_qubits == expected_res["ancilla_qubits"]
+        assert prep_cost.clean_gate_counts["Toffoli"] == expected_res["toffoli_gates"]

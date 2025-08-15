@@ -35,10 +35,10 @@ class ResourceQubitizeTHC(ResourceOperator):
     Args:
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
             Hamiltonian for which the walk operator is being created
-        coeff_precision_bits (float, optional): Number of bits used to represent the precision for loading
+        coeff_precision_bits (int, optional): Number of bits used to represent the precision for loading
             the coefficients of the Hamiltonian. If `None` is provided the default value from the
             `resource_config` is used.
-        rotation_precision_bits (float, optional): Number of bits used to represent the precision for loading
+        rotation_precision_bits (int, optional): Number of bits used to represent the precision for loading
             the rotation angles for basis rotation. If `None` is provided the default value from the
             `resource_config` is used.
         select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
@@ -57,13 +57,7 @@ class ResourceQubitizeTHC(ResourceOperator):
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
     >>> res = plre.estimate_resources(plre.ResourceQubitizeTHC(compact_ham))
     >>> print(res)
-    --- Resources: ---
-     Total qubits: 147.0
-     Total gates : 1.631E+5
-     Qubit breakdown:
-      clean qubits: 10, dirty qubits: 82.0, algorithmic qubits: 55
-     Gate breakdown:
-      {'X': 2.046E+4, 'CNOT': 8.721E+4, 'Toffoli': 1.584E+4, 'Hadamard': 3.923E+4, 'Z': 160, 'Y': 200}
+
 
     """
 
@@ -90,8 +84,8 @@ class ResourceQubitizeTHC(ResourceOperator):
             raise TypeError("`select_swap_depths` must be an integer, None or iterable")
 
         self.compact_ham = compact_ham
-        self.coeff_precision = coeff_precision
-        self.rotation_precision = rotation_precision
+        self.coeff_precision_bits = coeff_precision_bits
+        self.rotation_precision_bits = rotation_precision_bits
         self.select_swap_depths = select_swap_depths
         if wires is not None:
             self.wires = Wires(wires)
@@ -111,8 +105,12 @@ class ResourceQubitizeTHC(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                   Hamiltonian for which the walk operator is being created
-                * coeff_precision (float, optional): precision for loading the coefficients of Hamiltonian
-                * rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
+                * coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
+                  the coefficients of Hamiltonian. If `None` is provided the default value from the
+                  `resource_config` is used.
+                * rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
+                  the rotation angles for basis rotation. If `None` is provided the default value from the
+                  `resource_config` is used.
                 * select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                     used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
                     ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
@@ -120,14 +118,14 @@ class ResourceQubitizeTHC(ResourceOperator):
         """
         return {
             "compact_ham": self.compact_ham,
-            "coeff_precision": self.coeff_precision,
-            "rotation_precision": self.rotation_precision,
+            "coeff_precision_bits": self.coeff_precision_bits,
+            "rotation_precision_bits": self.rotation_precision_bits,
             "select_swap_depths": self.select_swap_depths,
         }
 
     @classmethod
     def resource_rep(
-        cls, compact_ham, coeff_precision, rotation_precision, select_swap_depths
+        cls, compact_ham, coeff_precision_bits, rotation_precision_bits, select_swap_depths
     ) -> CompressedResourceOp:
         """Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
@@ -135,8 +133,12 @@ class ResourceQubitizeTHC(ResourceOperator):
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision (float, optional): precision for loading the coefficients of Hamiltonian
-            rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
+            coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
+                the coefficients of Hamiltonian. If `None` is provided the default value from the
+                `resource_config` is used.
+            rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
+                the rotation angles for basis rotation. If `None` is provided the default value from the
+                `resource_config` is used.
             select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
                 ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
@@ -155,8 +157,8 @@ class ResourceQubitizeTHC(ResourceOperator):
             raise TypeError("`select_swap_depths` must be an integer, None or iterable")
         params = {
             "compact_ham": compact_ham,
-            "coeff_precision": coeff_precision,
-            "rotation_precision": rotation_precision,
+            "coeff_precision_bits": coeff_precision_bits,
+            "rotation_precision_bits": rotation_precision_bits,
             "select_swap_depths": select_swap_depths,
         }
         return CompressedResourceOp(cls, params)
@@ -165,8 +167,8 @@ class ResourceQubitizeTHC(ResourceOperator):
     def default_resource_decomp(
         cls,
         compact_ham,
-        coeff_precision=None,
-        rotation_precision=None,
+        coeff_precision_bits=None,
+        rotation_precision_bits=None,
         select_swap_depths=None,
         **kwargs,
     ) -> list[GateCount]:
@@ -176,8 +178,12 @@ class ResourceQubitizeTHC(ResourceOperator):
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision (float, optional): precision for loading the coefficients of Hamiltonian
-            rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
+            coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
+                the coefficients of Hamiltonian. If `None` is provided the default value from the
+                `resource_config` is used.
+            rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
+                the rotation angles for basis rotation. If `None` is provided the default value from the
+                `resource_config` is used.
             select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
                 ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
@@ -193,8 +199,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         tensor_rank = compact_ham.params["tensor_rank"]
         m_register = int(np.ceil(np.log2(tensor_rank)))
-        coeff_precision = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
-        coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
+        coeff_precision_bits = coeff_precision_bits or kwargs["config"]["qubitization_coeff_bits"]
 
         if isinstance(select_swap_depths, int) or select_swap_depths is None:
             select_swap_depths = [select_swap_depths] * 2
@@ -203,7 +208,7 @@ class ResourceQubitizeTHC(ResourceOperator):
             plre.ResourceSelectTHC,
             {
                 "compact_ham": compact_ham,
-                "rotation_precision": rotation_precision,
+                "rotation_precision_bits": rotation_precision_bits,
                 "select_swap_depth": select_swap_depths[1],
             },
         )
@@ -213,7 +218,7 @@ class ResourceQubitizeTHC(ResourceOperator):
             plre.ResourcePrepTHC,
             {
                 "compact_ham": compact_ham,
-                "coeff_precision": coeff_precision,
+                "coeff_precision_bits": coeff_precision_bits,
                 "select_swap_depth": select_swap_depths[0],
             },
         )
@@ -222,7 +227,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         # reflection cost
         toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_prec_wires + 4))
+        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision_bits + 4))
 
 
         return gate_list
@@ -233,8 +238,8 @@ class ResourceQubitizeTHC(ResourceOperator):
         ctrl_num_ctrl_wires,
         ctrl_num_ctrl_values,
         compact_ham,
-        coeff_precision=None,
-        rotation_precision=None,
+        coeff_precision_bits=None,
+        rotation_precision_bits=None,
         select_swap_depths=None,
         **kwargs,
     ) -> list[GateCount]:
@@ -245,8 +250,12 @@ class ResourceQubitizeTHC(ResourceOperator):
             ctrl_num_ctrl_values (int): the number of control qubits, that are controlled when in the :math:`|0\rangle` state
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
-            coeff_precision (float, optional): precision for loading the coefficients of Hamiltonian
-            rotation_precision (float, optional): precision for loading the rotation angles for basis rotation
+            coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
+                the coefficients of Hamiltonian. If `None` is provided the default value from the
+                `resource_config` is used.
+            rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
+                the rotation angles for basis rotation. If `None` is provided the default value from the
+                `resource_config` is used.
             select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
                 ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
@@ -262,8 +271,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         tensor_rank = compact_ham.params["tensor_rank"]
         m_register = int(np.ceil(np.log2(tensor_rank)))
-        coeff_precision = coeff_precision or kwargs["config"]["precision_qubitization_prep"]
-        coeff_prec_wires = abs(math.floor(math.log2(coeff_precision)))
+        coeff_precision_bits = coeff_precision_bits or kwargs["config"]["qubitization_coeff_bits"]
 
         if isinstance(select_swap_depths, int) or select_swap_depths is None:
             select_swap_depths = [select_swap_depths] * 2
@@ -283,7 +291,7 @@ class ResourceQubitizeTHC(ResourceOperator):
             plre.ResourceSelectTHC,
             {
                 "compact_ham": compact_ham,
-                "rotation_precision": rotation_precision,
+                "rotation_precision": rotation_precision_bits,
                 "select_swap_depth": select_swap_depths[1],
             },
         )
@@ -293,7 +301,7 @@ class ResourceQubitizeTHC(ResourceOperator):
             plre.ResourcePrepTHC,
             {
                 "compact_ham": compact_ham,
-                "coeff_precision": coeff_precision,
+                "coeff_precision": coeff_precision_bits,
                 "select_swap_depth": select_swap_depths[0],
             },
         )
@@ -302,7 +310,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         # reflection cost
         toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_prec_wires + 4))
+        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_prec_bits + 4))
 
         if ctrl_num_ctrl_wires > 1:
             gate_list.append(FreeWires(1))
