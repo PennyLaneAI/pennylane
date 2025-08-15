@@ -245,7 +245,7 @@ def _adjoint_transform(qfunc: Callable, lazy=True) -> Callable:
     # default adjoint transform when capture is not enabled.
     @wraps(qfunc)
     def wrapper(*args, **kwargs):
-
+        # dequeue operators passed as arguments to the quantum function
         if qml.QueuingManager.recording():
             for arg in args:
                 qml.QueuingManager.remove(arg)
