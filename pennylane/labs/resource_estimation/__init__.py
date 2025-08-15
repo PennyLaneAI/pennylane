@@ -133,6 +133,7 @@ Templates:
     ~ResourceRegisterComparator
     ~ResourceSelectPauliRot
     ~ResourceQubitUnitary
+    ~ResourceTrotterProduct
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
     ~ResourceTrotterVibrational
@@ -237,6 +238,7 @@ from .templates import (
     ResourceRegisterComparator,
     ResourceQubitUnitary,
     ResourceSelectPauliRot,
+    ResourceTrotterProduct,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,

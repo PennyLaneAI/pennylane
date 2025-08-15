@@ -27,6 +27,7 @@ from .subroutines import (
     ResourceQubitUnitary,
 )
 from .trotter import (
+    ResourceTrotterProduct,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     ResourceTrotterVibrational,

@@ -19,9 +19,71 @@ from collections import defaultdict
 import pytest
 
 import pennylane.labs.resource_estimation as plre
-from pennylane.labs.resource_estimation import QubitManager
+from pennylane.labs.resource_estimation import GateCount, QubitManager, resource_rep
 
 # pylint: disable=no-self-use, too-many-arguments, too-many-positional-arguments
+
+
+class TestResourceTrotterProduct:
+    """Test the ResourceTrotterProduct class"""
+
+    op_data = [
+        (
+            [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()],
+            2,
+            1,
+            [
+                GateCount(resource_rep(plre.ResourceX), 2),
+                GateCount(resource_rep(plre.ResourceY), 2),
+                GateCount(resource_rep(plre.ResourceZ), 2),
+            ],
+        ),
+        (
+            [plre.ResourceX(), plre.ResourceY()],
+            10,
+            2,
+            [
+                GateCount(resource_rep(plre.ResourceX), 11),
+                GateCount(resource_rep(plre.ResourceY), 10),
+            ],
+        ),
+        (
+            [plre.ResourceRX(eps=1e-3), plre.ResourceRY(eps=1e-3), plre.ResourceZ()],
+            10,
+            4,
+            [
+                GateCount(resource_rep(plre.ResourceRX, {"eps": 1e-3}), 51),
+                GateCount(resource_rep(plre.ResourceZ), 50),
+                GateCount(resource_rep(plre.ResourceRY, {"eps": 1e-3}), 100),
+            ],
+        ),
+    ]
+
+    @pytest.mark.parametrize("op, num_steps, order, _", op_data)
+    def test_resource_params(self, op, num_steps, order, _):
+        """Test that the resource params are correct"""
+        trotter = plre.ResourceTrotterProduct(op, num_steps=num_steps, order=order)
+        assert trotter.resource_params == {
+            "first_order_expansion": op,
+            "num_steps": num_steps,
+            "order": order,
+        }
+
+    @pytest.mark.parametrize("op, num_steps, order, _", op_data)
+    def test_resource_rep(self, op, num_steps, order, _):
+        """Test that the resource params are correct"""
+        expected = plre.CompressedResourceOp(
+            plre.ResourceTrotterProduct,
+            {"first_order_expansion": op, "num_steps": num_steps, "order": order},
+        )
+        print(plre.ResourceTrotterProduct.resource_rep(op, num_steps, order), expected)
+        assert plre.ResourceTrotterProduct.resource_rep(op, num_steps, order) == expected
+
+    @pytest.mark.parametrize("op, num_steps, order, expected_res", op_data)
+    def test_resources(self, op, num_steps, order, expected_res):
+        """Test the resources method returns the correct dictionary"""
+        computed_res = plre.ResourceTrotterProduct.resource_decomp(op, num_steps, order)
+        assert computed_res == expected_res
 
 
 class TestTrotterCDF:

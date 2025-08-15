@@ -16,7 +16,7 @@
   [(#7998)](https://github.com/PennyLaneAI/pennylane/pull/7998)
   [(#8042)](https://github.com/PennyLaneAI/pennylane/pull/8042)
 
-* New transforms called :func:`~.transforms.match_relative_phase_toffoli` and 
+* New transforms called :func:`~.transforms.match_relative_phase_toffoli` and
   :func:`~.transforms.match_controlled_iX_gate` have been added to implement passes that make use
   of equivalencies to compile certain patterns to efficient Clifford+T equivalents.
   [(#7748)](https://github.com/PennyLaneAI/pennylane/pull/7748)
@@ -91,9 +91,9 @@
 
   ```pycon
   print(node())
-  0: ─╭●─────●╮─┤     
-  1: ─├○─────○┤─┤     
-  2: ─╰──╭●───╯─┤     
+  0: ─╭●─────●╮─┤
+  1: ─├○─────○┤─┤
+  2: ─╰──╭●───╯─┤
   3: ────╰X─────┤  <Z>
   ```
 
@@ -106,11 +106,11 @@
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
   [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
-  
-  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, 
+
+  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`,
   :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
-  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`, 
-  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, 
+  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`,
+  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`,
   :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
@@ -163,7 +163,7 @@
 
 * An error is no longer raised when non-integer wire labels are used in QNodes using `mcm_method="deferred"`.
   [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
-  
+
 
   ```python
   @qml.qnode(qml.device("default.qubit"), mcm_method="deferred")
@@ -176,8 +176,8 @@
   ```pycon
   >>> print(qml.draw(circuit)())
     a: ──┤↗├────┤  <Z>
-  aux: ───║───X─┤     
-          ╚═══╝      
+  aux: ───║───X─┤
+          ╚═══╝
   ```
 
 * PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
@@ -276,7 +276,7 @@
 * Added state of the art resources for the `ResourceQFT` and `ResourceAQFT` templates.
   [(#7920)](https://github.com/PennyLaneAI/pennylane/pull/7920)
 
-* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the 
+* Added an internal `dequeue()` method to the `ResourceOperator` class to simplify the
   instantiation of resource operators which require resource operators as input.
   [(#7974)](https://github.com/PennyLaneAI/pennylane/pull/7974)
 
@@ -289,13 +289,16 @@
 * The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
   [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
 
+* Added state of the art resources for the `ResourceTrotterProduct` template.
+  [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
+
 <h3>Breaking changes 💔</h3>
 
-* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
+* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`.
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
-* Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
-  This prevents the potential mutation of a global object. 
+* Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly.
+  This prevents the potential mutation of a global object.
 
   This means that functions like,
   ```python
@@ -315,14 +318,14 @@
 
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
-* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
+* The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified.
   They now accept an operation or a list of operations as quantum unitaries.
   [(#7933)](https://github.com/PennyLaneAI/pennylane/pull/7933)
 
   In past versions of PennyLane, these templates required providing the `U` and `V` unitaries as a `qml.tape.QuantumTape` and a quantum function,
   respectively, along with separate parameters and wires.
 
-  With this release, each template has been improved to accept one or more operators as  unitaries. 
+  With this release, each template has been improved to accept one or more operators as  unitaries.
   The wires and parameters of the approximate unitary `V` are inferred from the inputs, according to the order provided.
 
   ```python
@@ -395,7 +398,7 @@
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
   Instead, we recommend using the :doc:`JAX </introduction/interfaces/jax>` or :doc:`PyTorch </introduction/interfaces/torch>` interface for
   machine learning applications to benefit from enhanced support and features. Please consult the following demos for
-  more usage information: 
+  more usage information:
   [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
   [How to optimize a QML model using JAX and Optax](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
@@ -404,7 +407,7 @@
   Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
   [(#7987)](https://github.com/PennyLaneAI/pennylane/pull/7987)
 
-* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
+* Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or
   ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
   work wires are restored to their original state upon completing the decomposition.
@@ -446,7 +449,7 @@
   [(#7954)](https://github.com/PennyLaneAI/pennylane/pull/7954)
   [(#7977)](https://github.com/PennyLaneAI/pennylane/pull/7977)
 
-* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with 
+* `MeasurementProcess.expand` is deprecated. The relevant method can be replaced with
   `qml.tape.QuantumScript(mp.obs.diagonalizing_gates(), [type(mp)(eigvals=mp.obs.eigvals(), wires=mp.obs.wires)])`
   [(#7953)](https://github.com/PennyLaneAI/pennylane/pull/7953)
 
