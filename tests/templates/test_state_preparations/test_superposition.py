@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
+from pennylane.templates.state_preparations.superposition import order_states
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 PROBS_BASES = [
@@ -55,7 +56,60 @@ PROBS_BASES = [
         ],
     ),
     ([0.1, 0.9], [[0, 0, 0, 0, 0, 0, 0], [0, 1, 0, 1, 1, 1, 1]]),
-]
+
+
+
+def int_to_state(i, length):
+    return tuple(map(int, f"{i:0{length}b}"))
+
+
+@pytest.mark.parametrize(
+    "basis_states, exp_map",
+    (
+        [  # Examples where all basis states are fixed points
+            (
+                [int_to_state(i, L) for i in range(m)],
+                {int_to_state(i, L): int_to_state(i, L) for i in range(m)},
+            )
+            for L, m in [(1, 2), (2, 4), (2, 3), (3, 7), (4, 3), (4, 16)]
+        ]
+        + [  # Examples from docstring
+            (
+                [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]],
+                {
+                    (1, 1, 0, 0): (0, 0, 0, 0),
+                    (1, 0, 1, 0): (0, 0, 0, 1),
+                    (0, 1, 0, 1): (0, 0, 1, 0),
+                    (1, 0, 0, 1): (0, 0, 1, 1),
+                },
+            ),
+            (
+                [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]],
+                {
+                    (0, 0, 0, 1): (0, 0, 0, 1),
+                    (1, 1, 0, 0): (0, 0, 0, 0),
+                    (0, 1, 0, 1): (0, 0, 1, 0),
+                    (1, 0, 0, 1): (0, 0, 1, 1),
+                },
+            ),
+        ]
+        + [  # Other examples
+            (
+                [[1, 1, 0, 1], [0, 1, 0, 0], [1, 1, 1, 1], [0, 0, 1, 0], [0, 0, 0, 0]],
+                {
+                    (0, 0, 0, 0): (0, 0, 0, 0),
+                    (0, 0, 1, 0): (0, 0, 1, 0),
+                    (0, 1, 0, 0): (0, 1, 0, 0),
+                    (1, 1, 0, 1): (0, 0, 0, 1),
+                    (1, 1, 1, 1): (0, 0, 1, 1),
+                },
+            ),
+            ([[1, 1, 0], [0, 0, 1]], {(0, 0, 1): (0, 0, 1), (1, 1, 0): (0, 0, 0)}),
+        ]
+    ),
+)
+def test_order_states(basis_states, exp_map):
+    assert order_states(basis_states) == exp_map
 
 
 def test_standard_validity():

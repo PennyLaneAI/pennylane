@@ -28,76 +28,73 @@ from pennylane.decomposition import (
 from pennylane.operation import Operation
 
 
-def _assign_states(basis_list):
+def order_states(basis_states: list[list[int]]) -> dict[tuple[int], tuple[int]]:
     r"""
-    This function maps a given list of :math:`m` basis states to the first :math:`m` basis states in the
-    computational basis.
-
-    For instance, a given list of :math:`[s_0, s_1, ..., s_m]` where :math:`s` is a basis
-    state of length :math:`4` will be mapped as :math:`{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots}`.
-
-    Note that if a state in ``basis_list`` is one of the first :math:`m` basis states,
-    this state will be mapped to itself.
+    This function maps a given list of :math:`m` computational basis states to the first
+    :math:`m` computational basis states, except for input states that are among the first
+    :math:`m` computational basis states, which are mapped to themselves.
 
     Args:
-        basis_list (list): list of basis states to be mapped
+        basis_states (list[list[int]]): sequence of :math:`m` basis states to be mapped.
+            Each state is a sequence of 0s and 1s.
 
     Returns:
-        dict: dictionary mapping basis states to the first :math:`m` basis states
+        dict[tuple[int], tuple[int]]: dictionary mapping basis states to the first :math:`m` basis
+        states, except for fixed points (states in the input that already were among the
+        first :math:`m` basis states).
 
+    **Example**
 
-    ** Example **
-
-    .. code-block:: pycon
-
-        >>> basis_list = [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]]
-        >>> _assign_states(basis_list)
-        {
-        [1, 1, 0, 0]: [0, 0, 0, 0],
-        [1, 0, 1, 0]: [0, 0, 0, 1],
-        [0, 1, 0, 1]: [0, 0, 1, 0],
-        [1, 0, 0, 1]: [0, 0, 1, 1]
-        }
-
+    For instance, a given list of :math:`[s_0, s_1, ..., s_m]` where :math:`s` is a basis
+    state of length :math:`4` will be mapped as
+    :math:`\{s_0: |0000\rangle, s_1: |0001\rangle, s_2: |0010\rangle, \dots\}`.
 
     .. code-block:: pycon
 
-        >>> basis_list = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
-        >>> _assign_states(basis_list)
-        {
-        [1, 1, 0, 0]: [0, 0, 0, 0],
-        [0, 1, 0, 1]: [0, 0, 1, 0],
-        [0, 0, 0, 1]: [0, 0, 0, 1],
-        [1, 0, 0, 1]: [0, 0, 1, 1]
-        }
+        >>> basis_states = [[1, 1, 0, 0], [1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 1]]
+        >>> order_states(basis_states)
+        {(1, 1, 0, 0): (0, 0, 0, 0),
+         (1, 0, 1, 0): (0, 0, 0, 1),
+         (0, 1, 0, 1): (0, 0, 1, 0),
+         (1, 0, 0, 1): (0, 0, 1, 1)}
+
+    If a state in ``basis_states`` is one of the first :math:`m` basis states,
+    this state will be mapped to itself, i.e. it will be a fixed point of the mapping.
+
+    .. code-block:: pycon
+
+        >>> basis_states = [[1, 1, 0, 0], [0, 1, 0, 1], [0, 0, 0, 1], [1, 0, 0, 1]]
+        >>> order_states(basis_states)
+        {(0, 0, 0, 1): (0, 0, 0, 1),
+         (1, 1, 0, 0): (0, 0, 0, 0),
+         (0, 1, 0, 1): (0, 0, 1, 0),
+         (1, 0, 0, 1): (0, 0, 1, 1)}
 
     """
 
-    length = len(basis_list[0])
-    smallest_basis_lists = [tuple(map(int, f"{i:0{length}b}")) for i in range(len(basis_list))]
+    m = len(basis_states)
+    length = len(basis_states[0])
+    # Create the integers corresponding to the input basis states
+    basis_ints = [int("".join(map(str, state)), 2) for state in basis_states]
 
-    binary_dict = {}
-    used_smallest = set()
+    basis_states = [tuple(s) for s in basis_states]  # Need hashable objects, so we use tuples
+    state_map = {}  # The map for basis states to be populated
+    unmapped_states = []  # Will collect non-fixed point states
+    unmapped_ints = {i: None for i in range(m)}  # Will remove fixed point states
+    # Map fixed-point states to themselves and collect states and target ints still to be paired
+    for b_int, state in zip(basis_ints, basis_states):
+        if b_int < m:
+            state_map[state] = state
+            unmapped_ints.pop(b_int)
+        else:
+            unmapped_states.append(state)
 
-    # Assign keys that can map to themselves
-    for original in basis_list:
+    # Map non-fixed point states
+    for state, new_b_int in zip(unmapped_states, unmapped_ints):
+        # Convert the index of the state to be mapped into a state itself
+        state_map[state] = tuple(map(int, f"{new_b_int:0{length}b}"))
 
-        if original in smallest_basis_lists and tuple(original) not in used_smallest:
-
-            binary_dict[tuple(original)] = original
-            used_smallest.add(tuple(original))
-
-    # Assign remaining keys to unused binary lists
-    remaining_keys = [key for key in basis_list if tuple(key) not in binary_dict]
-    remaining_values = [
-        value for value in smallest_basis_lists if tuple(value) not in used_smallest
-    ]
-
-    for key, value in zip(remaining_keys, remaining_values):
-        binary_dict[tuple(key)] = value
-        used_smallest.add(tuple(value))
-
-    return binary_dict
+    return state_map
 
 
 def _permutation_operator(basis1, basis2, wires, work_wire):
@@ -338,7 +335,7 @@ class Superposition(Operation):
         """
 
         dic_state = dict(zip(bases, coeffs))
-        perms = _assign_states(bases)
+        perms = order_states(bases)
         new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 
         sorted_coefficients = [
@@ -393,7 +390,7 @@ class Superposition(Operation):
 
 
 def _suerposition_resources(num_wires, num_coeffs, bases):
-    perms = _assign_states(bases)
+    perms = order_states(bases)
 
     resources = Counter()
 
@@ -434,7 +431,7 @@ def _suerposition_resources(num_wires, num_coeffs, bases):
 @register_resources(_suerposition_resources)
 def _superposition_decomposition(coeffs, bases, target_wires, work_wire, wires=None):
     dic_state = dict(zip(bases, coeffs))
-    perms = _assign_states(bases)
+    perms = order_states(bases)
     new_dic_state = {perms[key]: dic_state[key] for key in dic_state if key in perms}
 
     sorted_coefficients = [
