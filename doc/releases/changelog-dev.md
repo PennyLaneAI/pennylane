@@ -11,8 +11,8 @@
       (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
       [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 
-    * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford phase gates applying
-      the full ZX-based pipeline for an arbitrary circuit
+    * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford phase gates by applying
+      dedicated simplification subroutines to Clifford gates and phase gadgets
       (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
       [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
 
