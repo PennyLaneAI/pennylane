@@ -15,7 +15,7 @@
 This module contains a transform to apply the
 `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__ simplification
 pipeline (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
-to a PennyLane arbitrary circuit.
+to a PennyLane circuit.
 """
 
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -29,7 +29,8 @@ from .helper import _needs_pyzx
 @_needs_pyzx
 @transform
 def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Reduce the number of non-Clifford phase gates applying the full ZX-based pipeline for an arbitrary circuit.
+    """Reduce the number of non-Clifford gates by applying a combination of phase gadgetization strategies
+    and Clifford gates simplification rules.
 
     This transform works performing the following simplification/optimization steps:
 
