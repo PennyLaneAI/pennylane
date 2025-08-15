@@ -291,6 +291,40 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
+  down on the complexity of post-processing due to having to handle single shot and single wire cases
+  separately. The return shape will now *always* be `(shots, num_wires)`.
+  [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
+
+  For a simple qnode:
+
+  ```pycon
+  >>> @qml.qnode(qml.device('default.qubit'))
+  ... def c():
+  ...   return qml.sample(wires=0)
+  ```
+
+  Before the change, we had:
+  
+  ```pycon
+  >>> qml.set_shots(c, shots=1)()
+  0
+  ```
+
+  and now we have:
+
+  ```pycon
+  >>> qml.set_shots(c, shots=1)()
+  array([[0]])
+  ```
+
+  Previous behavior can be recovered by squeezing the output:
+
+  ```pycon
+  >>> qml.math.squeeze(qml.set_shots(c, shots=1)())
+  0
+  ```
+
 * `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
@@ -488,6 +522,10 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
+`run_filecheck_qjit` fixtures.
+  [(#8049)](https://github.com/PennyLaneAI/pennylane/pull/8049)
 
 * Improve type hinting internally.
   [(#8086)](https://github.com/PennyLaneAI/pennylane/pull/8086)
