@@ -336,9 +336,7 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from .zx import to_zx, from_zx
-from .zx.push_hadamards import push_hadamards
-from .zx.reduce_non_clifford import reduce_non_clifford
+from .zx import to_zx, from_zx, push_hadamards, reduce_non_clifford
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 
