@@ -20,7 +20,8 @@ from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
-from pennylane.workflow.mcm_config_utils import (
+
+from .mcm_config_utils import (
     MCM_METHOD,
     POSTSELECT_MODE,
     SUPPORTED_MCM_METHODS,

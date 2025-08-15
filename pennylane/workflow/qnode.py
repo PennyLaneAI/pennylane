@@ -28,6 +28,12 @@ from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane import math, pytrees
+from pennylane.devices.mcm_config_utils import (
+    SupportedMCMMethodUserInput,
+    SupportedPostSelectModeUserInput,
+    get_canonical_mcm_method,
+    get_canonical_postselect_mode,
+)
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name
@@ -37,12 +43,6 @@ from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
 from pennylane.typing import TensorLike
 
-from .mcm_config_utils import (
-    SupportedMCMMethodUserInput,
-    SupportedPostSelectModeUserInput,
-    get_canonical_mcm_method,
-    get_canonical_postselect_mode,
-)
 from .execution import execute
 from .resolution import SupportedDiffMethods, _validate_jax_version
 
