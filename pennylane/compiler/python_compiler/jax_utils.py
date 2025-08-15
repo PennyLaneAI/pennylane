@@ -34,7 +34,7 @@ from xdsl.ir import Dialect as xDialect
 from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
-from .dialects import MBQC, Catalyst, Quantum, StableHLO
+from .dialects import MBQC, QEC, Catalyst, Quantum, StableHLO
 
 JaxJittedFunction: TypeAlias = _jax.PjitFunction  # pylint: disable=c-extension-no-member
 
