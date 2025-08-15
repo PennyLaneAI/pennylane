@@ -128,7 +128,6 @@ class ExecutionConfig:
 
         if not (
             isinstance(object.__getattribute__(self, "device_options"), (dict, MappingProxyType))
-            or object.__getattribute__(self, "device_options") is None
         ):
             raise ValueError(
                 f"Got invalid type {type(object.__getattribute__(self, 'device_options'))} for 'device_options'"
@@ -139,7 +138,6 @@ class ExecutionConfig:
                 object.__getattribute__(self, "gradient_keyword_arguments"),
                 (dict, MappingProxyType),
             )
-            or object.__getattribute__(self, "gradient_keyword_arguments") is None
         ):
             raise ValueError(
                 f"Got invalid type {type(object.__getattribute__(self, 'gradient_keyword_arguments'))} for 'gradient_keyword_arguments'"
