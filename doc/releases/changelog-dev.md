@@ -423,6 +423,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
+`run_filecheck_qjit` fixtures.
+  [(#8049)](https://github.com/PennyLaneAI/pennylane/pull/8049)
+
 * Removed unnecessary execution tests along with accuracy validation in `tests/ops/functions/test_map_wires.py`.
   [(#8032)](https://github.com/PennyLaneAI/pennylane/pull/8032)
 
