@@ -17,7 +17,7 @@ configuration options.
 """
 
 from enum import Enum
-from typing import Literal, Union
+from typing import Literal
 
 
 class MCM_METHOD(Enum):
@@ -50,7 +50,7 @@ SupportedMCMMethodUserInput = Literal[tuple(MCM_METHOD_MAP.keys())]
 SUPPORTED_MCM_METHODS = list(MCM_METHOD)
 
 
-def get_canonical_mcm_method(user_input: Union[str, MCM_METHOD, None]) -> MCM_METHOD:
+def get_canonical_mcm_method(user_input: str | MCM_METHOD | None) -> MCM_METHOD:
     """Helper function to convert user input to a canonical MCM_METHOD.
 
     Args:
@@ -102,7 +102,7 @@ SupportedPostSelectModeUserInput = Literal[tuple(POSTSELECT_MODE_MAP.keys())]
 SUPPORTED_POSTSELECT_MODES = list(POSTSELECT_MODE)
 
 
-def get_canonical_postselect_mode(user_input: Union[str, POSTSELECT_MODE, None]) -> POSTSELECT_MODE:
+def get_canonical_postselect_mode(user_input: str | POSTSELECT_MODE | None) -> POSTSELECT_MODE:
     """Helper function to convert user input to a canonical POSTSELECT_MODE.
 
     Args:

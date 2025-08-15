@@ -141,11 +141,11 @@ def _resolve_interface(interface: str | Interface, tapes: QuantumScriptBatch) ->
 
 
 def _resolve_mcm_config(
-    mcm_config: "qml.devices.MCMConfig",
-    device: "qml.devices.Device",
+    mcm_config: qml.devices.MCMConfig,
+    device: qml.devices.Device,
     interface: Interface,
     finite_shots: bool,
-) -> "qml.devices.MCMConfig":
+) -> qml.devices.MCMConfig:
     """Helper function to resolve the mid-circuit measurements configuration based on
     execution parameters"""
     updated_values: dict[str, Any] = {}
