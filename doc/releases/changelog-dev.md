@@ -585,6 +585,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Rename `ancilla` to `auxiliary` in internal documentation.
+  [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
+
 * The theoretical background section of :class:`~.BasisRotation` has been extended to explain
   the underlying Lie group/algebra homomorphism between the (dense) rotation matrix and the
   performed operations on the target qubits.

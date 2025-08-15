@@ -127,11 +127,11 @@ def device(name, *args, **kwargs):
 
     .. code-block:: python
 
-        dev = qml.device('default.qubit', wires=['ancilla', 'q11', 'q12', -1, 1])
+        dev = qml.device('default.qubit', wires=['auxiliary', 'q11', 'q12', -1, 1])
 
         def circuit():
             qml.Hadamard(wires='q11')
-            qml.Hadamard(wires=['ancilla'])
+            qml.Hadamard(wires=['auxiliary'])
             qml.CNOT(wires=['q12', -1])
             ...
 
