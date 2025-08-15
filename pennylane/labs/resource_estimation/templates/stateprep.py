@@ -520,14 +520,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
         expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
 
-        if isinstance(select_swap_depths, int) or select_swap_depths is None:
-            pass
-        elif isinstance(select_swap_depths, (list, tuple, np.ndarray)):
+        if isinstance(select_swap_depths, (list, tuple, np.ndarray)):
             if len(select_swap_depths) != expected_size:
                 raise ValueError(
                     f"Expected the length of `select_swap_depths` to be {expected_size}, got {len(select_swap_depths)}"
                 )
-        else:
+        elif not (isinstance(select_swap_depths, int) or select_swap_depths is None):
             raise TypeError("`select_swap_depths` must be an integer, None or iterable")
 
         self.selswap_depths = select_swap_depths
@@ -575,14 +573,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
             CompressedResourceOp: the operator in a compressed representation
         """
         expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
-        if isinstance(selswap_depths, int) or selswap_depths is None:
-            pass
-        elif isinstance(selswap_depths, (list, tuple, np.ndarray)):
+        if isinstance(selswap_depths, (list, tuple, np.ndarray)):
             if len(selswap_depths) != expected_size:
                 raise ValueError(
                     f"Expected the length of `selswap_depths` to be {expected_size}, got {len(selswap_depths)}"
                 )
-        else:
+        elif not (isinstance(selswap_depths, int) or selswap_depths is None):
             raise TypeError("`selswap_depths` must be an integer, None or iterable")
 
         params = {
@@ -594,7 +590,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         return CompressedResourceOp(cls, params)
 
     @classmethod
-    def _default_decomp_logic(
+    def _decomp_selection_helper(
         cls,
         use_phase_grad_trick,
         num_state_qubits,
@@ -603,7 +599,10 @@ class ResourceQROMStatePreparation(ResourceOperator):
         selswap_depths=1,
         **kwargs,
     ):
-        r"""Returns a list representing the resources of the operator. Each object in the list
+        r"""A private function which implements two variants of the decomposition of QROMStatePrep,
+        based on the value of the :code:`use_phase_grad_trick` argument.
+
+        Returns a list representing the resources of the operator. Each object in the list
         represents a gate and the number of times it occurs in the circuit.
 
         Args:
@@ -639,12 +638,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
         if isinstance(selswap_depths, int) or selswap_depths is None:
             selswap_depths = [selswap_depths] * expected_size
 
-        num_precision_wires = math.ceil(math.log2(math.pi / precision)) + 1
+        num_precision_wires = math.ceil(math.log2(math.pi / precision))
         gate_counts.append(AllocWires(num_precision_wires))
 
         for j in range(num_state_qubits):
             num_bitstrings = 2**j
-            num_bit_flips = max(2 ** (j - 1), 1)
+            num_bit_flips = num_bitstrings * num_precision_wires // 2
 
             gate_counts.append(
                 GateCount(
@@ -704,7 +703,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
                     plre.ResourceQROM.resource_rep(
                         num_bitstrings=2**num_state_qubits,
                         size_bitstring=num_precision_wires,
-                        num_bit_flips=2 ** (num_state_qubits - 1),
+                        num_bit_flips=((2**num_state_qubits) * num_precision_wires // 2),
                         clean=False,
                         select_swap_depth=selswap_depths[-1],
                     )
@@ -719,7 +718,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
                             {
                                 "num_bitstrings": 2**num_state_qubits,
                                 "size_bitstring": num_precision_wires,
-                                "num_bit_flips": 2 ** (num_state_qubits - 1),
+                                "num_bit_flips": ((2**num_state_qubits) * num_precision_wires // 2),
                                 "clean": False,
                                 "select_swap_depth": selswap_depths[-1],
                             },
@@ -778,7 +777,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return cls._default_decomp_logic(
+        return cls._decomp_selection_helper(
             use_phase_grad_trick=False,
             num_state_qubits=num_state_qubits,
             positive_and_real=positive_and_real,
@@ -821,7 +820,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
-        return cls._default_decomp_logic(
+        return cls._decomp_selection_helper(
             use_phase_grad_trick=True,
             num_state_qubits=num_state_qubits,
             positive_and_real=positive_and_real,
