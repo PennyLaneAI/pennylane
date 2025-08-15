@@ -152,6 +152,10 @@
 
 <h4>Other improvements</h4>
 
+* Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
+  representation of the program between multiple compilation passes.
+  [(#7964)](https://github.com/PennyLaneAI/pennylane/pull/7964)
+
 * The matrix factorization using :func:`~.math.decomposition.givens_decomposition` has
   been optimized to factor out the redundant sign in the diagonal phase matrix for the
   real-valued (orthogonal) rotation matrices. For example, in case the determinant of a matrix is
