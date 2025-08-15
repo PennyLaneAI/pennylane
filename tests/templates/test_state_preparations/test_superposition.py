@@ -22,8 +22,8 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as pnp
-from pennylane.templates.state_preparations.superposition import order_states
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.templates.state_preparations.superposition import order_states
 
 PROBS_BASES = [
     (
