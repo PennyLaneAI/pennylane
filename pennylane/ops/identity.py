@@ -355,7 +355,9 @@ class GlobalPhase(Operation):
         >>> qml.GlobalPhase.compute_eigvals(np.pi/2)
         array([6.123234e-17+1.j, 6.123234e-17+1.j])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(phi, 1j)
         exp = qml.math.exp(-1j * phi)
         ones = qml.math.ones(2**n_wires, like=phi)
@@ -385,7 +387,9 @@ class GlobalPhase(Operation):
         interface = qml.math.get_interface(phi)
         eye = qml.math.eye(2**n_wires, like=phi)
         exp = qml.math.exp(-1j * qml.math.cast(phi, complex))
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             eye = qml.math.cast_like(eye, 1j)
         elif interface == "torch":
             eye = eye.to(exp.device)

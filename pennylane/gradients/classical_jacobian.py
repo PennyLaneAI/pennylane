@@ -189,7 +189,9 @@ def classical_jacobian(qnode, argnum=None, expand_fn=None, trainable_only=True):
 
             jac = _jacobian(*args, **kwargs)
 
-        elif qnode.interface == "tf":
+        elif (
+            qnode.interface == "tf"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             import tensorflow as tf
 
             def _jacobian(*args, **kwargs):

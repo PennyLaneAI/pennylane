@@ -394,7 +394,7 @@ class TrotterProduct(ErrorOperation, ResourcesOperation):
         parameters = [t] + base_unitary.parameters
         if any(
             math.get_interface(param) == "tensorflow" for param in parameters
-        ):  # TODO: Add TF support
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             raise TypeError(
                 "Calculating error bound for Tensorflow objects is currently not supported"
             )

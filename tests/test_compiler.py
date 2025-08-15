@@ -753,9 +753,10 @@ class TestCatalystSample:
     def test_sample_measure(self):
         """Test that qml.sample can be used with catalyst.measure."""
 
-        dev = qml.device("lightning.qubit", wires=1, shots=1)
+        dev = qml.device("lightning.qubit", wires=1)
 
         @qml.qjit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x):
             qml.RY(x, wires=0)
@@ -794,9 +795,10 @@ class TestCatalystMCMs:
 
         shots = 8000
 
-        dq = qml.device("default.qubit", shots=shots, seed=seed)
+        dq = qml.device("default.qubit", seed=seed)
 
         @qml.defer_measurements
+        @qml.set_shots(shots)
         @qml.qnode(dq)
         def ref_func(x, y):
             qml.RX(x, wires=0)
@@ -810,9 +812,10 @@ class TestCatalystMCMs:
                 kwargs["all_outcomes"] = True
             return measure_f(**kwargs)
 
-        dev = qml.device("lightning.qubit", wires=2, shots=shots)
+        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit
+        @qml.set_shots(shots)
         @qml.qnode(dev, mcm_method="one-shot")
         def func(x, y):
             qml.RX(x, wires=0)

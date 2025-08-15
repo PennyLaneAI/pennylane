@@ -498,7 +498,6 @@ class TestCliffordCompile:
         )
 
         import jax
-        import tensorflow as tf
         import torch
 
         funres = []
@@ -515,13 +514,6 @@ class TestCliffordCompile:
             fres_jax = qcirc(A)
             grad_jax = jax.grad(qcirc, argnums=0)(A)
 
-            # Tensorflow Interface
-            A = tf.Variable(qml.numpy.array(coeffs))
-            with tf.GradientTape() as tape:
-                loss = qcirc(A)
-            grad_tflow = tape.gradient(loss, A)
-            fres_tflow = loss
-
             # PyTorch Interface
             A = torch.tensor(coeffs, requires_grad=True)
             result = qcirc(A)
@@ -529,8 +521,8 @@ class TestCliffordCompile:
             grad_torch = A.grad
             fres_torch = result
 
-            funres.append([fres_numpy, fres_jax, fres_torch, fres_tflow])
-            igrads.append([grad_numpy, grad_jax, grad_torch, grad_tflow])
+            funres.append([fres_numpy, fres_jax, fres_torch])
+            igrads.append([grad_numpy, grad_jax, grad_torch])
 
         # Compare results
         assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))

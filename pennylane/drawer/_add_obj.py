@@ -42,8 +42,9 @@ from pennylane.measurements import (
     VarianceMP,
 )
 from pennylane.operation import Operator
-from pennylane.ops import Conditional, Controlled, GlobalPhase, Identity
+from pennylane.ops import Adjoint, Conditional, Controlled, GlobalPhase, Identity
 from pennylane.tape import QuantumScript
+from pennylane.templates.subroutines import TemporaryAND
 
 
 def _add_cond_grouping_symbols(op, layer_str, config):
@@ -77,7 +78,7 @@ def _add_cond_grouping_symbols(op, layer_str, config):
     return layer_str
 
 
-def _add_grouping_symbols(op_wires, layer_str, config):
+def _add_grouping_symbols(op_wires, layer_str, config, closing=False):
     """Adds symbols indicating the extent of a given sequence of wires.
     Does nothing if the sequence has length 0 or 1."""
 
@@ -87,11 +88,18 @@ def _add_grouping_symbols(op_wires, layer_str, config):
     mapped_wires = [config.wire_map[w] for w in op_wires]
     min_w, max_w = min(mapped_wires), max(mapped_wires)
 
-    layer_str[min_w] = "╭"
-    layer_str[max_w] = "╰"
+    if closing:
+        layer_str[min_w] += "╮"
+        layer_str[max_w] += "╯"
 
-    for w in range(min_w + 1, max_w):
-        layer_str[w] = "├" if w in mapped_wires else "│"
+        for w in range(min_w + 1, max_w):
+            layer_str[w] += "┤" if w in mapped_wires else "│"
+    else:
+        layer_str[min_w] = "╭"
+        layer_str[max_w] = "╰"
+
+        for w in range(min_w + 1, max_w):
+            layer_str[w] = "├" if w in mapped_wires else "│"
 
     return layer_str
 
@@ -157,6 +165,47 @@ def _add_controlled_global_op(obj, layer_str, config):
             layer_str[val] += label
 
     return layer_str
+
+
+def _add_elbow_core(obj, layer_str, config):
+    cvals = obj.hyperparameters["control_values"]
+    mapped_wires = [config.wire_map[w] for w in obj.wires]
+    layer_str[mapped_wires[0]] += "●" if cvals[0] else "○"
+    layer_str[mapped_wires[1]] += "●" if cvals[1] else "○"
+    layer_str[mapped_wires[2]] += "─"
+    return layer_str, mapped_wires
+
+
+@_add_obj.register
+def _add_left_elbow(
+    obj: TemporaryAND, layer_str, config, tape_cache=None, skip_grouping_symbols=False
+):
+    """Updates ``layer_str`` with ``op`` operation of type ``TemporaryAND``,
+    also known as left elbow."""
+    layer_str = _add_grouping_symbols(obj.wires, layer_str, config)
+    layer_str, _ = _add_elbow_core(obj, layer_str, config)
+    return layer_str
+
+
+def _add_right_elbow(obj: TemporaryAND, layer_str, config):
+    """Updates ``layer_str`` with ``op`` operation of type ``Adjoint(TemporaryAND)``,
+    also known as right elbow."""
+    layer_str, mapped_wires = _add_elbow_core(obj, layer_str, config)
+    # Fill with "─" on intermediate wires the elbow does not act on, to shift "|" correctly
+    for w in range(min(mapped_wires) + 1, max(mapped_wires)):
+        if w not in mapped_wires:
+            layer_str[w] += "─"
+    return _add_grouping_symbols(obj.wires, layer_str, config, closing=True)
+
+
+@_add_obj.register
+def _add_adjoint(obj: Adjoint, layer_str, config, tape_cache=None, skip_grouping_symbols=False):
+    """Updates ``layer_str`` with ``op`` operation of type Adjoint. Currently
+    only differs from ``_add_op`` if the base of the adjoint op is a ``TemporaryAND``,
+    making the overall object a right elbow."""
+    if isinstance(obj.base, TemporaryAND):
+        return _add_right_elbow(obj.base, layer_str, config)
+    return _add_op(obj, layer_str, config, tape_cache, skip_grouping_symbols)
 
 
 @_add_obj.register

@@ -446,6 +446,14 @@ def construct_batch(
 
     def batch_constructor(*args, **kwargs) -> tuple[QuantumScriptBatch, PostprocessingFn]:
         """Create a batch of tapes and a post processing function."""
+        # Check if shots is being passed as parameter for deprecation warning
+        if "shots" in kwargs:
+            warnings.warn(
+                "'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
+                PennyLaneDeprecationWarning,
+                stacklevel=2,
+            )
+
         if "shots" in kwargs and qnode._shots_override_device:  # pylint: disable=protected-access
             warnings.warn(
                 "Both 'shots=' parameter and 'set_shots' transform are specified. "

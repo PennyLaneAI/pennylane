@@ -1068,7 +1068,7 @@ class TestTensorSample:
     @pytest.mark.parametrize("index_2", list(range(1, 9)))
     def test_gell_mann_obs(self, index_1, index_2, tol_stochastic):
         """Test that sampling tensor products involving Gell-Mann observables works correctly"""
-        dev = qml.device("default.qutrit", wires=2, shots=int(1e6))
+        dev = qml.device("default.qutrit", wires=2, shots=1_000_000)
 
         obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
 
@@ -1109,7 +1109,7 @@ class TestTensorSample:
         correctly"""
 
         np.random.seed(seed)
-        dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
+        dev = qml.device("default.qutrit", wires=3, shots=1_000_000)
 
         A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
 

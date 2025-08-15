@@ -17,7 +17,7 @@ Training and interfaces
 The bridge between the quantum and classical worlds is provided in PennyLane via interfaces to
 automatic differentiation libraries.
 Currently, four libraries are supported: :doc:`NumPy <interfaces/numpy>`, :doc:`PyTorch
-<interfaces/torch>`, :doc:`JAX <interfaces/jax>`, and :doc:`TensorFlow <interfaces/tf>`. PennyLane makes
+<interfaces/torch>`, and :doc:`JAX <interfaces/jax>`. PennyLane makes
 each of these libraries quantum-aware, allowing quantum circuits to be treated just
 like any other operation. Any automatic differentiation framework can be chosen with any device.
 
@@ -26,7 +26,7 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
 
 .. code-block:: python
 
-    @qml.qnode(dev, interface="tf")
+    @qml.qnode(dev, interface="torch")
     def my_quantum_circuit(...):
         ...
 
@@ -45,8 +45,8 @@ a :class:`QNode <pennylane.QNode>`, e.g.,
         import warnings
         warnings.filterwarnings("ignore", category=np.ComplexWarning)
 
-This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays, Torch Tensors,
-or TensorFlow Tensors) to be passed as parameters to the quantum circuit. It also makes
+This will allow native numerical objects of the specified library (NumPy arrays, JAX arrays and Torch Tensors) 
+to be passed as parameters to the quantum circuit. It also makes
 the gradients of the quantum circuit accessible to the classical library, enabling the
 optimization of arbitrary hybrid circuits by making use of the library's native optimizers.
 
@@ -174,6 +174,16 @@ If you are using the :ref:`PennyLane PyTorch framework <torch_interf>`, you shou
 
 TensorFlow
 ~~~~~~~~~~
+
+.. warning::
+
+    Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
+    Future versions of PennyLane are not guaranteed to work with TensorFlow.
+    Instead, we recommend using the :doc:`/introduction/interfaces/jax` or :doc:`/introduction/interfaces/torch` for
+    machine learning applications to benefit from enhanced support and features. Please consult the following demos for 
+    a comprehensive guide on JAX and PyTorch: 
+    `Turning quantum nodes into Torch Layers <https://pennylane.ai/qml/demos/tutorial_qnn_module_torch>`_ and 
+    `How to optimize a QML model using JAX and Optax <https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax>`_.
 
 When using the :ref:`PennyLane TensorFlow framework <tf_interf>`, you will need to leverage one of
 the `TensorFlow optimizers <https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Optimizer>`_
@@ -340,7 +350,7 @@ tensor([0.9658079, 0.0341921], requires_grad=True)
 
 Note that, while gradient transforms allow quantum gradient rules to be applied directly to QNodes,
 this is not a replacement --- and should not be used instead of --- standard training workflows (for example,
-``qml.grad()`` if using Autograd, ``loss.backward()`` for PyTorch, or ``tape.gradient()`` for TensorFlow).
+``qml.grad()`` if using Autograd, or ``loss.backward()`` for PyTorch).
 This is because gradient transforms do not take into account classical computation nodes, and only
 support gradients of QNodes.
 For more details on available gradient transforms, as well as learning how to define your own
@@ -492,26 +502,6 @@ At the moment, it takes into account the following parameters:
 |                  | ``"reversed-direct-hadamard"``|   :rd:`10`   |    :rd:`10`   |   :rd:`2`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
 +------------------+-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 | ``"jax"``        | ``"device"``                  |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`9`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"backprop"``                |     :gr:`5`  |   :gr:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"adjoint"``                 |      :gr:`7` |     :gr:`7`   |  :gr:`7`     | :rd:`9`      |      :gr:`7`  |  :gr:`7`       |   :gr:`7`      | :gr:`7`     | :gr:`7`     | :gr:`7`     |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"parameter-shift"``         |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :rd:`10`  |   :rd:`10`  |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"finite-diff"``             |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"spsa"``                    |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :gr:`8`   |   :gr:`8`   |   :gr:`8`   |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"hadamard"``                |   :rd:`10`   |    :rd:`10`   |   :gr:`8`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"reversed-hadamard"``       |   :rd:`10`   |    :rd:`10`   |   :rd:`2`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"direct-hadamard"``         |   :rd:`10`   |    :rd:`10`   |   :rd:`2`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
-+                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-|                  | ``"reversed-direct-hadamard"``|   :rd:`10`   |    :rd:`10`   |   :rd:`2`    |  :rd:`9`     |   :gr:`8`     |   :gr:`8`      | :gr:`8`        |   :rd:`11`  |   :rd:`10`  |   :rd:`10`  |
-+------------------+-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
-| ``"tf"``         | ``"device"``                  |  :rd:`3`     |      :rd:`3`  |    :rd:`3`   | :rd:`9`      |   :rd:`3`     |  :rd:`3`       |   :rd:`3`      | :rd:`3`     | :rd:`3`     | :rd:`3`     |
 +                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+
 |                  | ``"backprop"``                |     :gr:`5`  |   :gr:`5`     |     :gr:`5`  |     :rd:`9`  |   :gr:`5`     |    :gr:`5`     |   :gr:`5`      | :gr:`5`     | :gr:`5`     | :gr:`5`     |
 +                  +-------------------------------+--------------+---------------+--------------+--------------+---------------+----------------+----------------+-------------+-------------+-------------+

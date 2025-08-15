@@ -60,8 +60,9 @@ class TestModExp:
         self, x_wires, output_wires, base, mod, work_wires, x, k
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the ModExp template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x, k):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -208,9 +209,10 @@ class TestModExp:
         base = 3
         output_wires = [3, 4, 5]
         work_wires = [11, 10, 12, 13, 14]
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
         @jax.jit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x_list, wires=x_wires)

@@ -408,11 +408,6 @@ def _get_plxpr_defer_measurements():
         args = invals[args_slice]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
-            if jaxpr is None:
-                # If a false branch isn't provided, the jaxpr corresponding to the condition
-                # for the false branch will be None. That is the only scenario where we would
-                # reach here.
-                continue
 
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])

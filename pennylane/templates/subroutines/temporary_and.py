@@ -74,6 +74,11 @@ class TemporaryAND(Operation):
 
     .. code-block:: pycon
 
+        >>> print(qml.draw(circuit)())
+        0: ──X─╭●─────●╮─┤ ╭Sample
+        1: ──X─├●─────●┤─┤ ├Sample
+        2: ────╰──╭●───╯─┤ ├Sample
+        3: ───────╰X─────┤ ╰Sample
         >>> print(circuit())
         [1 1 0 1]
     """
@@ -88,6 +93,12 @@ class TemporaryAND(Operation):
     """tuple[int]: Number of dimensions per trainable parameter that the operator depends on."""
 
     resource_keys = set()
+
+    def __repr__(self):
+        cvals = self.hyperparameters["control_values"]
+        if all(cvals):
+            return f"TemporaryAND(wires={self.wires})"
+        return f"TemporaryAND(wires={self.wires}, control_values={cvals})"
 
     def __init__(self, wires: WiresLike, control_values=(1, 1), id=None):
         wires = Wires(wires)

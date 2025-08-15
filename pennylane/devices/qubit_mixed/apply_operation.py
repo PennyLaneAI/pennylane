@@ -422,7 +422,9 @@ def apply_pauliz(op: qml.Z, state, is_state_batched: bool = False, debugger=None
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
@@ -442,7 +444,9 @@ def apply_T(op: qml.T, state, is_state_batched: bool = False, debugger=None, **_
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
@@ -462,7 +466,9 @@ def apply_S(op: qml.S, state, is_state_batched: bool = False, debugger=None, **_
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # First, flip the left side
@@ -482,7 +488,9 @@ def apply_phaseshift(op: qml.PhaseShift, state, is_state_batched: bool = False, 
     num_wires = int((len(math.shape(state)) - is_state_batched) / 2)
     n_dim = math.ndim(state)
 
-    if n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow":
+    if (
+        n_dim >= TENSORDOT_STATE_NDIM_PERF_THRESHOLD and math.get_interface(state) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         return apply_operation_tensordot(op, state, is_state_batched=is_state_batched)
 
     # Common constants always needed

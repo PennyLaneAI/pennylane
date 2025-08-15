@@ -31,7 +31,7 @@ def test_no_interface_error_numpy(grad_fn):
         grad_fn(lambda x: x**2)(np.array(2.0))
 
 
-@pytest.mark.parametrize("interface", ("autograd", "jax", "tensorflow", "torch"))
+@pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
 class TestGrad:
     """Tests for qml.math.grad"""
 
@@ -78,7 +78,7 @@ class TestGrad:
         assert math.allclose(g, 2.0)
 
 
-@pytest.mark.parametrize("interface", ("autograd", "jax", "tensorflow", "torch"))
+@pytest.mark.parametrize("interface", ("autograd", "jax", "torch"))
 class TestJacobian:
     """Tests for the math.jacobian function."""
 
@@ -140,17 +140,6 @@ class TestJacobianPytreeOutput:
             ValueError, match="autograd can only differentiate with respect to arrays,"
         ):
             math.jacobian(f)(math.asarray(2.0, like="autograd", requires_grad=True))
-
-    def test_jacobian_tf_error(self):
-        """Test that an informative error is raised if the output of a function isnt an array with tensorflow."""
-
-        def f(x):
-            return (x,)
-
-        with pytest.raises(
-            ValueError, match="qml.math.jacobian does not work with tensorflow and non-tensor"
-        ):
-            math.jacobian(f)(math.asarray(2.0, like="tensorflow", requires_grad=True))
 
     @pytest.mark.parametrize("interface", ("torch", "jax"))
     def test_tuple_output_scalar_argnum(self, interface):

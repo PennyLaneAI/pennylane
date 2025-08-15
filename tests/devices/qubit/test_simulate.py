@@ -466,7 +466,7 @@ class TestPostselection:
             _ = simulate(tape)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "torch", "jax", "autograd"])
     def test_nan_state(self, interface):
         """Test that a state with nan values is returned if the probability of a postselection state
         is 0."""

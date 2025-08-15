@@ -284,22 +284,6 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
         return [np.concatenate(i) for i in zip(*grads)]
 
-    @staticmethod
-    def check_device(dev):
-        r"""Verifies that the device used by the objective function is non-analytic.
-
-        Args:
-            dev (.devices.Device): the device to verify
-
-        Raises:
-            ValueError: if the device is analytic
-        """
-        if not dev.shots:
-            raise ValueError(
-                "The Rosalin optimizer can only be used with devices "
-                "that estimate expectation values with a finite number of shots."
-            )
-
     def check_learning_rate(self, coeffs):
         r"""Verifies that the learning rate is less than 2 over the Lipschitz constant,
         where the Lipschitz constant is given by :math:`\sum |c_i|` for Hamiltonian
@@ -318,9 +302,12 @@ class ShotAdaptiveOptimizer(GradientDescentOptimizer):
 
     def _single_shot_qnode_gradients(self, qnode, args, kwargs):
         """Compute the single shot gradients of a QNode."""
-        self.check_device(qnode.device)
-
         tape = construct_tape(qnode)(*args, **kwargs)
+        if not tape.shots:
+            raise ValueError(
+                "The Rosalin optimizer can only be used with qnodes "
+                "that estimate expectation values with a finite number of shots."
+            )
         [expval] = tape.measurements
         coeffs, observables = (
             expval.obs.terms()

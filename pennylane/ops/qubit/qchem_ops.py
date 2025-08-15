@@ -43,7 +43,9 @@ def _single_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
         `phase_prefactor=-0.5j` : `SingleExcitationMinus`
     """
     interface = qml.math.get_interface(phi)
-    if interface == "tensorflow":
+    if (
+        interface == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         if isinstance(phase_prefactor, complex):
             phi = qml.math.cast_like(phi, 1j)
         c = qml.math.cos(phi / 2)
@@ -90,7 +92,9 @@ def _double_excitations_matrix(phi: TensorLike, phase_prefactor: TensorLike) -> 
     """
     interface = qml.math.get_interface(phi)
 
-    if interface == "tensorflow" and isinstance(phase_prefactor, complex):
+    if interface == "tensorflow" and isinstance(
+        phase_prefactor, complex
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         phi = qml.math.cast_like(phi, 1j)
 
     c = qml.math.cos(phi / 2)
@@ -1414,7 +1418,9 @@ class FermionicSWAP(Operation):
                [0.   +0.j, 0.   +0.j  , 0.   +0.j  , 0.878+0.479j]])
         """
 
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(phi, 1j)
 
         c = qml.math.cast_like(qml.math.cos(phi / 2), 1j)

@@ -186,7 +186,7 @@ class TestConfigSetup:
         processed = dev.setup_execution_config(config)
         assert processed.convert_to_numpy
 
-    @pytest.mark.parametrize("interface", ("autograd", "torch", "tf"))
+    @pytest.mark.parametrize("interface", ("autograd", "torch"))
     def test_convert_to_numpy_non_jax(self, interface):
         """Test that other interfaces are still converted to numpy."""
         config = qml.devices.ExecutionConfig(gradient_method="adjoint", interface=interface)

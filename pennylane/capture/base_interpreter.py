@@ -533,15 +533,11 @@ def handle_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
 
     for const_slice, jaxpr in zip(consts_slices, jaxpr_branches):
         consts = invals[const_slice]
-        if jaxpr is None:
-            new_jaxprs.append(None)
-            new_consts_slices.append(slice(0, 0))
-        else:
-            new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
-            new_jaxprs.append(new_jaxpr.jaxpr)
-            new_consts.extend(new_jaxpr.consts)
-            new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
-            end_const_ind += len(new_jaxpr.consts)
+        new_jaxpr = jaxpr_to_jaxpr(copy(self), jaxpr, consts, *args)
+        new_jaxprs.append(new_jaxpr.jaxpr)
+        new_consts.extend(new_jaxpr.consts)
+        new_consts_slices.append(slice(end_const_ind, end_const_ind + len(new_jaxpr.consts)))
+        end_const_ind += len(new_jaxpr.consts)
 
     new_args_slice = slice(end_const_ind, None)
     return cond_prim.bind(
@@ -694,7 +690,7 @@ def flattened_cond(self, *invals, jaxpr_branches, consts_slices, args_slice):
             raise NotImplementedError(
                 f"{self} does not yet support jitting cond with abstract conditions."
             )
-        if pred and jaxpr is not None:
+        if pred:
             return copy(self).eval(jaxpr, consts, *args)
     return ()
 

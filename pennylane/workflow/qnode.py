@@ -44,6 +44,8 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 if TYPE_CHECKING:
+    from typing import TypeAlias
+
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
     from pennylane.math import SupportedInterfaceUserInput
@@ -51,7 +53,7 @@ if TYPE_CHECKING:
     from pennylane.typing import Result
     from pennylane.workflow.resolution import SupportedDiffMethods
 
-    SupportedDeviceAPIs = LegacyDevice | Device
+    SupportedDeviceAPIs: TypeAlias = LegacyDevice | Device
 
 
 def _convert_to_interface(result, interface: Interface):
@@ -119,7 +121,10 @@ def _to_qfunc_output_type(results: Result, qfunc_output, has_partitioned_shots) 
     return pytrees.unflatten(results, qfunc_output_structure)
 
 
-def _validate_mcm_config(postselect_mode: str, mcm_method: str) -> None:
+def _validate_mcm_config(
+    postselect_mode: Literal["hw-like", "fill-shots"] | None,
+    mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None,
+) -> None:
     qml.devices.MCMConfig(postselect_mode=postselect_mode, mcm_method=mcm_method)
 
 
@@ -581,7 +586,7 @@ class QNode:
         self.diff_method = diff_method
         _validate_diff_method(self.device, self.diff_method)
 
-        self.capture_cache = LRUCache(maxsize=1000)
+        self.capture_cache: LRUCache = LRUCache(maxsize=1000)
         if isinstance(static_argnums, int):
             static_argnums = (static_argnums,)
         self.static_argnums = sorted(static_argnums)
@@ -727,7 +732,7 @@ class QNode:
         original_init_args["gradient_kwargs"] = original_init_args["gradient_kwargs"] or {}
         # nested dictionary update
         new_gradient_kwargs = kwargs.pop("gradient_kwargs", {})
-        old_gradient_kwargs = original_init_args.get("gradient_kwargs").copy()
+        old_gradient_kwargs = (original_init_args.get("gradient_kwargs", {})).copy()
         old_gradient_kwargs.update(new_gradient_kwargs)
         kwargs["gradient_kwargs"] = old_gradient_kwargs
 

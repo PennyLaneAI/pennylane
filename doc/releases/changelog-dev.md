@@ -64,6 +64,39 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
+  with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. This uses the fact that
+  no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant :math:`\pm 1`.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
+* Changed how basis states are assigned internally in `qml.Superposition`, improving its
+  decomposition slightly both regarding classical computing time and gate decomposition.
+  [(#7880)](https://github.com/PennyLaneAI/pennylane/pull/7880)
+
+* The printing and drawing of :class:`~.TemporaryAND`, also known as ``qml.Elbow``, and its adjoint
+  have been improved to be more legible and consistent with how it's depicted in circuits in the literature.
+  [(#8017)](https://github.com/PennyLaneAI/pennylane/pull/8017)
+
+  ```python
+  import pennylane as qml
+
+  @qml.draw
+  @qml.qnode(qml.device("lightning.qubit", wires=4))
+  def node():
+      qml.TemporaryAND([0, 1, 2], control_values=[1, 0])
+      qml.CNOT([2, 3])
+      qml.adjoint(qml.TemporaryAND([0, 1, 2], control_values=[1, 0]))
+      return qml.expval(qml.Z(3))
+  ```
+
+  ```pycon
+  print(node())
+  0: ─╭●─────●╮─┤     
+  1: ─├○─────○┤─┤     
+  2: ─╰──╭●───╯─┤     
+  3: ────╰X─────┤  <Z>
+  ```
+
 * Several templates now have decompositions that can be accessed within the graph-based
   decomposition system (:func:`~.decomposition.enable_graph`), allowing workflows
   that include these templates to be decomposed in a resource-efficient and performant
@@ -119,6 +152,12 @@
 
 <h4>Other improvements</h4>
 
+* The matrix factorization using :func:`~.math.decomposition.givens_decomposition` has
+  been optimized to factor out the redundant sign in the diagonal phase matrix for the
+  real-valued (orthogonal) rotation matrices. For example, in case the determinant of a matrix is
+  :math:`-1`, only a single element of the phase matrix is required.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 * Added the `NumQubitsOp` operation to the `Quantum` dialect of the Python compiler.
 [(#8063)](https://github.com/PennyLaneAI/pennylane/pull/8063)
 
@@ -140,8 +179,6 @@
   aux: ───║───X─┤     
           ╚═══╝      
   ```
-
-
 
 * PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
   [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
@@ -192,6 +229,7 @@
 * The `mbqc` xDSL dialect has been added to the Python compiler, which is used to represent
   measurement-based quantum-computing instructions in the xDSL framework.
   [(#7815)](https://github.com/PennyLaneAI/pennylane/pull/7815)
+  [(#8059)](https://github.com/PennyLaneAI/pennylane/pull/8059)
 
 * The `AllocQubitOp` and `DeallocQubitOp` operations have been added to the `Quantum` dialect in the
   Python compiler.
@@ -339,6 +377,29 @@
 
 <h3>Deprecations 👋</h3>
 
+* Setting shots on a device through the `shots=` kwarg, e.g. `qml.device("default.qubit", wires=2, shots=1000)`, is deprecated. Please use the `set_shots` transform on the `QNode` instead.
+
+  ```python
+  dev = qml.device("default.qubit", wires=2)
+
+  @qml.set_shots(1000)
+  @qml.qnode(dev)
+  def circuit(x):
+      qml.RX(x, wires=0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
+
+* Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
+  Future versions of PennyLane are not guaranteed to work with TensorFlow.
+  Instead, we recommend using the :doc:`JAX </introduction/interfaces/jax>` or :doc:`PyTorch </introduction/interfaces/torch>` interface for
+  machine learning applications to benefit from enhanced support and features. Please consult the following demos for
+  more usage information: 
+  [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
+  [How to optimize a QML model using JAX and Optax](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
+  [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
+
 * `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
   Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
   [(#7987)](https://github.com/PennyLaneAI/pennylane/pull/7987)
@@ -428,6 +489,13 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Improve type hinting internally.
+  [(#8086)](https://github.com/PennyLaneAI/pennylane/pull/8086)
+
+* The `cond` primitive with program capture no longer stores missing false branches as `None`, instead storing them
+  as jaxprs with no output.
+  [(#8080)](https://github.com/PennyLaneAI/pennylane/pull/8080)
+
 * Removed unnecessary execution tests along with accuracy validation in `tests/ops/functions/test_map_wires.py`.
   [(#8032)](https://github.com/PennyLaneAI/pennylane/pull/8032)
 
@@ -516,6 +584,11 @@
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
 
 <h3>Documentation 📝</h3>
+
+* The theoretical background section of :class:`~.BasisRotation` has been extended to explain
+  the underlying Lie group/algebra homomorphism between the (dense) rotation matrix and the
+  performed operations on the target qubits.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
 * Updated the code examples in the documentation of :func:`~.specs`.
   [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)

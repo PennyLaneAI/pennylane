@@ -428,8 +428,9 @@ class TestIntegration:
     )
     def test_mcm_one_shot(self, seed):
         """Test if mcm one-shot miss transforms."""
-        dev = qml.device("default.qubit", wires=5, shots=20, seed=seed)
+        dev = qml.device("default.qubit", wires=5, seed=seed)
 
+        @qml.set_shots(20)
         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
         def circ(x):
             qml.RX(x, wires=0)
