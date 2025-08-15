@@ -64,6 +64,11 @@
 
 <h3>Improvements 🛠</h3>
 
+* The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
+  with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. This uses the fact that
+  no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant :math:`\pm 1`.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 * Changed how basis states are assigned internally in `qml.Superposition`, improving its
   decomposition slightly both regarding classical computing time and gate decomposition.
   [(#7880)](https://github.com/PennyLaneAI/pennylane/pull/7880)
@@ -147,6 +152,12 @@
 
 <h4>Other improvements</h4>
 
+* The matrix factorization using :func:`~.math.decomposition.givens_decomposition` has
+  been optimized to factor out the redundant sign in the diagonal phase matrix for the
+  real-valued (orthogonal) rotation matrices. For example, in case the determinant of a matrix is
+  :math:`-1`, only a single element of the phase matrix is required.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
+
 * Added the `NumQubitsOp` operation to the `Quantum` dialect of the Python compiler.
 [(#8063)](https://github.com/PennyLaneAI/pennylane/pull/8063)
 
@@ -168,8 +179,6 @@
   aux: ───║───X─┤     
           ╚═══╝      
   ```
-
-
 
 * PennyLane is now compatible with `quimb` 1.11.2 after a bug affecting `default.tensor` was fixed.
   [(#7931)](https://github.com/PennyLaneAI/pennylane/pull/7931)
@@ -575,6 +584,11 @@
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
 
 <h3>Documentation 📝</h3>
+
+* The theoretical background section of :class:`~.BasisRotation` has been extended to explain
+  the underlying Lie group/algebra homomorphism between the (dense) rotation matrix and the
+  performed operations on the target qubits.
+  [(#7765)](https://github.com/PennyLaneAI/pennylane/pull/7765)
 
 * Updated the code examples in the documentation of :func:`~.specs`.
   [(#8003)](https://github.com/PennyLaneAI/pennylane/pull/8003)
