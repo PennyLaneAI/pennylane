@@ -1,0 +1,82 @@
+# Copyright 2025 Xanadu Quantum Technologies Inc.
+
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+
+#     http://www.apache.org/licenses/LICENSE-2.0
+
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+This file contains the implementation of the MLIR graph generation for the Unified Compiler framework.
+"""
+
+import io
+import subprocess
+
+from catalyst.compiler import CompileError, _get_catalyst_cli_cmd
+from xdsl.printer import Printer
+
+from ..compiler import Compiler
+
+has_graphviz = True
+
+try:
+    from graphviz import Source as GraphSource
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_graphviz = False
+
+
+# This interface can be removed once the _quantum_opt interface
+# implemented in catalyst.compiler returns the `stderr` output
+def _quantum_opt_stderr(*args, stdin=None, stderr_return=False):
+    """Raw interface to quantum-opt
+    echo ${stdin} | catalyst --tool=opt *args -
+    catalyst --tool=opt *args
+    """
+    return _catalyst(("--tool", "opt"), *args, stdin=stdin, stderr_return=stderr_return)
+
+
+def _catalyst(*args, stdin=None, stderr_return=False):
+    """Raw interface to catalyst
+    echo ${stdin} | catalyst *args -
+    catalyst *args
+    """
+    cmd = _get_catalyst_cli_cmd(*args, stdin=stdin)
+    try:
+        result = subprocess.run(cmd, input=stdin, check=True, capture_output=True, text=True)
+        if stderr_return:
+            return result.stdout, result.stderr
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        raise CompileError(f"catalyst failed with error code {e.returncode}: {e.stderr}") from e
+
+
+def _mlir_graph_callback(pass_instance, module, pass_level):
+    buffer = io.StringIO()
+    Printer(stream=buffer, print_generic_format=True).print_op(module)
+    _, dot_graph = _quantum_opt_stderr(
+        "--view-op-graph", stdin=buffer.getvalue(), stderr_return=True
+    )
+    graph = GraphSource(dot_graph)
+    pass_name = f"after_{pass_instance.name}" if pass_level else "No transforms"
+    with open(f"QNode_level_{pass_level}_{pass_name}.svg", "wb") as f:
+        f.write(graph.pipe(format="svg"))
+
+
+def generate_mlir_graph(qnode):
+    """
+    Generate an MLIR graph for the given QNode.
+    """
+
+    if not has_graphviz:
+        raise ImportError(
+            "This feature requires graphviz, a library for graph visualization. "
+            "It can be installed with:\n\npip install graphviz"
+        )  # pragma: no cover
+
+    Compiler.run(qnode.mlir_module, callback=_mlir_graph_callback)
