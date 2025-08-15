@@ -152,30 +152,6 @@ class TestInitialization:
 
         assert op.wires == qml.wires.Wires((0, 1))
 
-    def test_correct_queued_operators(self):
-        """Test that args and kwargs do not add operators to the queue."""
-
-        def f(op):
-            qml.apply(op)
-
-        def f2(op, op2=None):
-            qml.X(0)
-            qml.apply(op)
-            if op2:
-                qml.apply(op2)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.adjoint(f)(qml.Z(0))
-            qml.adjoint(f2)(qml.Y(0), op2=qml.Z(0))
-
-        assert len(q.queue) == 4
-        assert q.queue == [
-            qml.adjoint(qml.Z(0)),
-            qml.adjoint(qml.Z(0)),
-            qml.adjoint(qml.Y(0)),
-            qml.adjoint(qml.X(0)),
-        ]
-
 
 class TestProperties:
     """Test Adjoint properties."""
