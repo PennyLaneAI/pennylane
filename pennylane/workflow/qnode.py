@@ -28,12 +28,6 @@ from cachetools import Cache, LRUCache
 
 import pennylane as qml
 from pennylane import math, pytrees
-from pennylane.devices.mcm_config_utils import (
-    SupportedMCMMethodUserInput,
-    SupportedPostSelectModeUserInput,
-    get_canonical_mcm_method,
-    get_canonical_postselect_mode,
-)
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name
@@ -54,10 +48,13 @@ if TYPE_CHECKING:
 
     from pennylane.concurrency.executors import ExecBackends
     from pennylane.devices import Device, LegacyDevice
+    from pennylane.devices.mcm_config_utils import (
+        SupportedMCMMethodUserInput,
+        SupportedPostSelectModeUserInput,
+    )
     from pennylane.math import SupportedInterfaceUserInput
     from pennylane.transforms.core import TransformContainer
     from pennylane.typing import Result
-    from pennylane.workflow.resolution import SupportedDiffMethods
 
     SupportedDeviceAPIs: TypeAlias = LegacyDevice | Device
 
@@ -591,8 +588,6 @@ class QNode:
         self.static_argnums = sorted(static_argnums)
 
         # execution keyword arguments
-        postselect_mode = get_canonical_postselect_mode(postselect_mode)
-        mcm_method = get_canonical_mcm_method(mcm_method)
         self.execute_kwargs = {
             "grad_on_execution": grad_on_execution,
             "cache": cache,
