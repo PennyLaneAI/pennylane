@@ -5,6 +5,8 @@ from jax import grad, jit, vmap
 from jax import lax
 import jax.scipy.optimize
 import optax
+import time
+import pybtas
 
 def _get_BLISS_sizes(num_ob_syms, Norbs):
     avec_len = num_ob_syms
@@ -159,19 +161,24 @@ def _cost(x_vec, obt_full, eri_full, ob_sym_mats, ob_sym_vals, Nthc, Norbs, num_
 
 _cost = jit(_cost, static_argnums=(5,6,7,8,9,11))
 
-def _initialize_params(initial_guess, Nthc, Norbs, include_bliss, num_ob_syms, random_seed=42, norm_factor=0.01, iters=1000):
+def _initialize_params(initial_guess, eri, Nthc, Norbs, include_bliss, num_ob_syms, do_cp3=True, random_seed=42, norm_factor=0.01, iters=1000):
     """Initialize optimization parameters."""
     if include_bliss:
         avec_len, bvec_len, ob_mat_num_params = _get_BLISS_sizes(num_ob_syms, Norbs)
 
+    key = jax.random.PRNGKey(random_seed if random_seed is not None else 0)
+    key1, key2, key5 = jax.random.split(key, 3)
+
     if initial_guess is None:
-        key = jax.random.PRNGKey(random_seed if random_seed is not None else 0)
-        key1, key2, key5 = jax.random.split(key, 3)
-        
-        params = {
-            'etaPp': 10*norm_factor * jax.random.normal(key1, (Nthc, Norbs)),
-            'MPQ': 10*norm_factor * jax.random.normal(key2, (Nthc, Nthc)),
-        }
+        if do_cp3:
+            MPQ, etaPp = _get_cp3(eri, Nthc)
+            params = {'etaPp':etaPp, 'MPQ':MPQ}
+        else:
+            
+            params = {
+                'etaPp': 10*norm_factor * jax.random.normal(key1, (Nthc, Norbs)),
+                'MPQ': 10*norm_factor * jax.random.normal(key2, (Nthc, Nthc)),
+            }
         
         if include_bliss:
             params["avec"] = jnp.zeros(avec_len)
@@ -188,12 +195,18 @@ def _initialize_params(initial_guess, Nthc, Norbs, include_bliss, num_ob_syms, r
 
     return params
 
-def _compute_penalty_param_enhanced(eri, obt, ob_sym_list, Nthc, initial_guess, maxiter):
-    """Compute penalty parameter by using un-regularized one-norm after maxiter iterations of optax optimizer"""
-    params, _ = get_thc(eri, obt, ob_sym_list, Nthc, initial_guess=initial_guess, regularize=False, maxiter=maxiter, verbose=False)
-
+def _compute_penalty_param(eri, obt, ob_sym_list, Nthc, initial_guess, maxiter, improve_guess=False):
+    """Compute penalty parameter by using un-regularized two-norm of difference
+    Will do maxiter iterations of optax optimizer if improve_guess is set as True"""
+    if improve_guess:
+        print(f"Running initial conditions through {maxiter} iterations for computing penalty parameter...")
+        params, _ = get_thc(eri, obt, ob_sym_list, Nthc, initial_guess=initial_guess, regularize=False, maxiter=maxiter, verbose=False)
+    else:
+        params = initial_guess
+    
     etaPp = params['etaPp']
     MPQ = params['MPQ']
+
     norb = eri.shape[0]
     
     deri = eri - _unfold_thc(MPQ, etaPp)
@@ -241,11 +254,11 @@ def get_thc(eri, obt=None, ob_sym_list=[], Nthc=None, regularize=True, maxiter=1
         print(f"    - {bvec_len} two-body scalars")
         print(f"    - {num_ob_syms} one-body matrices, each with {ob_mat_num_params} free variables")
 
-    params = _initialize_params(initial_guess, Nthc, Norbs, include_bliss, num_ob_syms)
+    params = _initialize_params(initial_guess, eri, Nthc, Norbs, include_bliss, num_ob_syms)
     if regularize is True:
-        rho, params = _compute_penalty_param_enhanced(eri, obt, ob_sym_list, Nthc, params, int(np.ceil(maxiter/10)))
-        if include_bliss:
-            rho *= 2 / Norbs
+        rho, params = _compute_penalty_param(eri, obt, ob_sym_list, Nthc, params, int(np.ceil(maxiter/10)))
+        # if include_bliss:
+        #     rho *= 2 / Norbs
 
         if verbose:
             print(f"Found regularization parameter rho={rho:.2e}")
@@ -346,3 +359,44 @@ def get_thc(eri, obt=None, ob_sym_list=[], Nthc=None, regularize=True, maxiter=1
             print(f"BLISS included during optimization using {num_ob_syms} one-body symmetries")
 
     return final_params, lam
+
+def _verify_eri_symmetries(eri):
+    """Verify ERI tensor symmetries."""
+    assert np.allclose(eri, eri.transpose(1, 0, 2, 3))  # (ij|kl) == (ji|kl)
+    assert np.allclose(eri, eri.transpose(0, 1, 3, 2))  # (ij|kl) == (ij|lk)
+    assert np.allclose(eri, eri.transpose(1, 0, 3, 2))  # (ij|kl) == (ji|lk)
+    assert np.allclose(eri, eri.transpose(2, 3, 0, 1))  # (ij|kl) == (kl|ij)
+
+def _get_cp3(eri, Nthc, verify=False, first_factor_thresh=1.0e-14, random_start_thc=True, conv_eps=1.0e-4, verbose=False):
+    norb = eri.shape[0]
+    if verify:
+        _verify_eri_symmetries(eri)
+
+    # Perform SVD decomposition
+    eri_mat = eri.transpose(0, 1, 3, 2).reshape((norb**2, norb**2))
+    u, sigma, vh = np.linalg.svd(eri_mat)
+
+    if verify:
+        assert np.allclose(eri_mat, eri_mat.T)
+        assert np.allclose(u @ np.diag(sigma) @ vh, eri_mat)
+
+    # Get non-zero singular values and prepare for CP3
+    non_zero_sv = np.where(sigma >= first_factor_thresh)[0]
+    u_chol = u[:, non_zero_sv] @ np.diag(np.sqrt(sigma[non_zero_sv]))
+
+    # CP3 decomposition
+    
+    start_time = time.time()
+    beta, gamma, scale = pybtas.cp3_from_cholesky(u_chol.copy(), Nthc, random_start=random_start_thc, conv_eps=conv_eps)
+    cp3_calc_time = time.time() - start_time
+
+    thc_leaf = beta.T
+    thc_gamma = np.einsum('xr,r->xr', gamma, scale.ravel())
+    thc_central = thc_gamma.T @ thc_gamma
+
+    if verify:
+        eri_thc = _unfold_thc(thc_central, thc_leaf)
+        print("\tERI L2 CP3-THC ", np.linalg.norm(eri_thc - eri))
+        print("\tCP3 timing: ", cp3_calc_time)
+
+    return thc_central, thc_leaf

@@ -1370,7 +1370,7 @@ class ResourceMultiplexedRotation(ResourceOperator):
             in the decomposition.
         """
         precision = precision or kwargs["config"]["precision_multiplexer"]
-        num_prec_wires = abs(math.floor(math.log2(precision)))
+        num_prec_wires = precision#abs(math.floor(math.log2(precision)))
 
         parallel_rotations = parallel_rotations or kwargs["config"]["parallel_rotations"]
         gate_lst = []
@@ -1537,12 +1537,13 @@ class ResourceParallelMultiplexedRotation(ResourceOperator):
         gate_lst = []
         parallel_rotations = parallel_rotations or kwargs["config"]["parallel_rotations"]
         precision = precision or kwargs["config"]["precision_multiplexer"]
-        num_prec_wires = abs(math.floor(math.log2(precision)))
+        num_prec_wires = precision#abs(math.floor(math.log2(precision)))
         gate_lst = []
         mult_rot = resource_rep(plre.ResourceMultiplexedRotation, {"num_bit_strings": num_bit_strings, "parallel_rotations": parallel_rotations, "select_swap_depth":select_swap_depth, "one_body": one_body, "precision": precision})
 
         num_full_blocks = total_rotations // parallel_rotations  # Integer division
         num_leftover_rotations = total_rotations % parallel_rotations # Remainder
+        print("Allocating wires: ", num_prec_wires * parallel_rotations)
         gate_lst.append(AllocWires(num_prec_wires*parallel_rotations))
         if num_full_blocks > 0:
             gate_lst.append(plre.GateCount(mult_rot, num_full_blocks))
