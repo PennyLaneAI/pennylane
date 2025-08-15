@@ -317,7 +317,7 @@ class TestNaNMeasurements:
             ),
         ],
     )
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch"])
     def test_nan_float_result(self, mp, interface):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""
@@ -375,7 +375,7 @@ class TestNaNMeasurements:
     @pytest.mark.parametrize(
         "mp", [qml.probs(wires=0), qml.probs(op=qml.PauliZ(0)), qml.probs(wires=[0, 1])]
     )
-    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "autograd", "torch"])
     def test_nan_probs(self, mp, interface):
         """Test that the result of circuits with 0 probability postselections is NaN with the
         expected shape."""

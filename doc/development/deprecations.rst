@@ -9,6 +9,35 @@ deprecations are listed below.
 Pending deprecations
 --------------------
 
+* Setting shots on a device through the `shots=` kwarg is deprecated.
+  Please use the :func:`pennylane.set_shots` transform on the :class:`~.QNode` instead.
+
+  .. code-block:: python
+  
+    dev = qml.device("default.qubit", wires=2)
+    @qml.set_shots(1000)
+    @qml.qnode(dev)
+    def circuit(x):
+        qml.RX(x, wires=0)
+        return qml.expval(qml.Z(0))
+
+  - Deprecated in v0.43
+  - Will be removed in a future version
+
+* Maintenance support for the ``tensorflow`` interface has been deprecated and will be dropped in PennyLane v0.44.
+  Future versions of PennyLane are not guaranteed to work with TensorFlow.
+  Instead, we recommend using the :doc:`jax </introduction/interfaces/jax>` or :doc:`torch </introduction/interfaces/torch>` interface for
+  machine learning applications to benefit from enhanced support and features.
+  
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+  
+* ``pennylane.devices.DefaultExecutionConfig`` is deprecated and will be removed in v0.44.
+  Instead, use ``qml.devices.ExecutionConfig()`` to create a default execution configuration.
+
+  - Deprecated in v0.43
+  - Will be removed in v0.44
+
 * Specifying the ``work_wire_type`` argument in ``qml.ctrl`` and other controlled operators as ``"clean"`` or 
   ``"dirty"`` is deprecated. Use ``"zeroed"`` to indicate that the work wires are initially in the :math:`|0\rangle`
   state, and ``"borrowed"`` to indicate that the work wires can be in any arbitrary state. In both cases, the
