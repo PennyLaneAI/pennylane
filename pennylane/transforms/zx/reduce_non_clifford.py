@@ -44,7 +44,10 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
         to further optimize the phase-polynomial blocks circuit.
 
     This pipeline does not run the Third Order Duplicate and Destroy (TODD) algorithm and thus is not restricted to Clifford + T circuits.
-    The returned circuit is equivalent to the original input up to a global phase.
+
+    .. note::
+
+        The transformed output circuit is equivalent to the input up to a global phase.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
