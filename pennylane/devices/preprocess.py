@@ -169,9 +169,7 @@ def validate_device_wires(
             f"Abstract wires are not yet supported."
         )
 
-    if extra_wires := tuple(
-        w for w in set(tape.wires) - set(wires)
-    ):
+    if extra_wires := set(tape.wires) - set(wires):
         raise WireError(
             f"Cannot run circuit(s) on {name} as they contain wires "
             f"not found on the device: {extra_wires}"
