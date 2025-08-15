@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import replace
 from importlib.metadata import version
 from importlib.util import find_spec
