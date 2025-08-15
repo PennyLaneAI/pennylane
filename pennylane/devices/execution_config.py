@@ -15,7 +15,6 @@
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
 from dataclasses import dataclass, field
-from typing import Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.concurrency.executors.base import RemoteExec
@@ -50,8 +49,10 @@ class MCMConfig:
 
     def __post_init__(self):
         """Validate the configured mid-circuit measurement options."""
-        self.mcm_method = get_canonical_mcm_method(self.mcm_method)
-        self.postselect_mode = get_canonical_postselect_mode(self.postselect_mode)
+        object.__setattr__(self, "mcm_method", get_canonical_mcm_method(self.mcm_method))
+        object.__setattr__(
+            self, "postselect_mode", get_canonical_postselect_mode(self.postselect_mode)
+        )
 
 
 # pylint: disable=too-many-instance-attributes
