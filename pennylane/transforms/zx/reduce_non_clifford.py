@@ -34,14 +34,14 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
 
     This transform performs the following simplification/optimization steps:
 
-        - apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
-          simplification pipeline to the ``pyzx`` graph representation of the given input circuit;
+    - apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
+        simplification pipeline to the ``pyzx`` graph representation of the given input circuit;
 
-        - use the `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__
-          function to extract the equivalent sequence of gates and build a new optimized circuit;
+    - use the `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__
+        function to extract the equivalent sequence of gates and build a new optimized circuit;
 
-        - apply the `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass
-          to further optimize the phase-polynomial blocks circuit.
+    - apply the `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass
+        to further optimize the phase-polynomial blocks circuit.
 
     This pipeline does not run the Third Order Duplicate and Destroy (TODD) algorithm and thus is not restricted to Clifford + T circuits.
     The returned circuit is equivalent to the original input up to a global phase.
@@ -95,9 +95,9 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
 
     For more details about ZX calculus-based simplification of quantum circuits, see the following papers:
 
-        - Ross Duncan, Aleks Kissinger, Simon Perdrix, John van de Wetering (2019), "Graph-theoretic Simplification of Quantum Circuits with the ZX-calculus", <https://arxiv.org/abs/1902.03178>;
+    - Ross Duncan, Aleks Kissinger, Simon Perdrix, John van de Wetering (2019), "Graph-theoretic Simplification of Quantum Circuits with the ZX-calculus", <https://arxiv.org/abs/1902.03178>;
 
-        - Aleks Kissinger, John van de Wetering (2020), "Reducing T-count with the ZX-calculus", <https://arxiv.org/abs/1903.10477>.
+    - Aleks Kissinger, John van de Wetering (2020), "Reducing T-count with the ZX-calculus", <https://arxiv.org/abs/1903.10477>.
 
     """
     # pylint: disable=import-outside-toplevel
