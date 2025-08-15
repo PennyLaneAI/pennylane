@@ -87,9 +87,17 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 
     >>> import pennylane.labs.resource_estimation as plre
     >>> num_steps, order = (1, 2)
-    >>>
+    >>> first_order_expansion = [plre.ResourceX(), plre.ResourceY()]
     >>> res = plre.estimate_resources(plre.ResourceTrotterProduct(first_order_expansion, num_steps, order))
     >>> print(res)
+    --- Resources: ---
+     Total qubits: 1
+     Total gates : 3
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 1
+     Gate breakdown:
+      {'X': 2, 'Y': 1}
+
     """
 
     resource_keys = {"first_order_expansion", "num_steps", "order"}
