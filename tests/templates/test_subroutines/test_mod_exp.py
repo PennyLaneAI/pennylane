@@ -75,7 +75,7 @@ class TestModExp:
 
         # pylint: disable=bad-reversed-sequence
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, k)))),
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, k)[0, :]))),
             (k * (base**x)) % mod,
         )
 
@@ -222,5 +222,5 @@ class TestModExp:
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (base**x) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (base**x) % mod
         )
