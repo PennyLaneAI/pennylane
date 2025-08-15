@@ -78,7 +78,23 @@ def _run_filecheck_impl(program_str, pipeline=(), verify=False, roundtrip=False)
 
 @pytest.fixture(scope="function")
 def run_filecheck():
-    """Fixture to run filecheck on an xDSL module."""
+    """Fixture to run filecheck on an xDSL module.
+
+    This fixture uses FileCheck to verify the correctness of a parsed MLIR string. Testers
+    can provide a pass pipeline to transform the IR, and verify correctness by including
+    FileCheck directives as comments in the input program string.
+
+    Args:
+        program_str (str): The MLIR string containing the input program and FileCheck directives
+        pipeline (tuple[ModulePass]): A sequence containing all passes that should be applied
+            before running FileCheck
+        verify (bool): Whether or not to verify the IR after parsing and transforming.
+            ``False`` by default.
+        roundtrip (bool): Whether or not to use round-trip testing. This is useful for dialect
+            tests to verify that xDSL both parses and prints the IR correctly. If ``True``, we parse
+            the program string into an xDSL module, print it in generic format, and then parse the
+            generic program string back to an xDSL module. ``False`` by default.
+    """
     if not deps_available:
         pytest.skip("Cannot run lit tests without xDSL and filecheck.")
 
@@ -144,6 +160,11 @@ def run_filecheck_qjit():
     MLIR, applies any passes that are present, and uses FileCheck to check the
     output IR against FileCheck directives that may be present in the source
     function as inline comments.
+
+    Args:
+        qjit_fn (Callable): The QJIT object on which we want to run lit tests
+        verify (bool): Whether or not to verify the IR after parsing and transforming.
+            ``False`` by default.
 
     An example showing how to use the fixture is shown below. We apply the
     ``merge_rotations_pass`` and check that there is only one rotation in
