@@ -15,13 +15,11 @@
 
 from functools import wraps
 
-
 from pennylane.tape import QuantumScript
 from pennylane.typing import Callable
 
 from ..compiler import Compiler
 from .collector import QMLCollector
-
 
 # TODO: This caching mechanism should be improved,
 # because now it relies on a mutable global state
@@ -43,7 +41,7 @@ def draw(qnode, *, level: None | int = None):
 
     cache: dict[int, tuple[str, str]] = _cache_store.setdefault(qnode, {})
 
-    def draw_callback(pass_instance, module, pass_level):
+    def _draw_callback(pass_instance, module, pass_level):
         collector = QMLCollector(module)
         ops, meas = collector.collect()
         # This is just a quick way to visualize the circuit
@@ -56,7 +54,7 @@ def draw(qnode, *, level: None | int = None):
 
         # We need to compile the qnode to ensure the passes are applied.
         # This could potentially be done only once by caching the results
-        Compiler.run(qnode.mlir_module, callback=draw_callback)
+        Compiler.run(qnode.mlir_module, callback=_draw_callback)
 
         if level is not None:
             if level in cache:

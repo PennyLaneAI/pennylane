@@ -18,5 +18,6 @@ Visualization functions for PennyLane-xDSL transformations.
 
 from .collector import QMLCollector
 from .draw import draw
+from .mlir_graph import generate_mlir_graph
 
-__all__ = ["QMLCollector", "draw"]
+__all__ = ["QMLCollector", "draw", "generate_mlir_graph"]

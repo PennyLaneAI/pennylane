@@ -50,6 +50,8 @@ class TransformFunctionsExt(TransformFunctions):
     then it will try to run this pass in Catalyst.
     """
 
+    visual_callbacks: list[str] = ["_draw_callback", "_mlir_graph_callback"]
+
     def __init__(self, ctx, passes, callback=None):
         super().__init__(ctx, passes)
         self.callback = callback
@@ -72,7 +74,11 @@ class TransformFunctionsExt(TransformFunctions):
             pass_class = self.passes[pass_name]()
             pass_instance = pass_class()
             pipeline = PassPipeline((pass_instance,))
-            if self.callback and self.level == 0 and self.callback.__name__ == "draw_callback":
+            if (
+                self.callback
+                and self.level == 0
+                and self.callback.__name__ in self.visual_callbacks
+            ):
                 self.callback(pass_instance, xdsl_module, self.level)
             pipeline.apply(self.ctx, xdsl_module)
             if self.callback:
