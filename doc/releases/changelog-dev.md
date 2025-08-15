@@ -152,6 +152,9 @@
 
 <h4>Other improvements</h4>
 
+* Program capture can now handle dynamic shots, shot vectors, and shots set with `qml.set_shots`.
+  [(#7652)](https://github.com/PennyLaneAI/pennylane/pull/7652)
+
 * The matrix factorization using :func:`~.math.decomposition.givens_decomposition` has
   been optimized to factor out the redundant sign in the diagonal phase matrix for the
   real-valued (orthogonal) rotation matrices. For example, in case the determinant of a matrix is
