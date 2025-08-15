@@ -585,7 +585,7 @@
 
 <h3>Documentation 📝</h3>
 
-* Rename `ancilla` to `auxiliary`.
+* Rename `ancilla` to `auxiliary` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
 
 * The theoretical background section of :class:`~.BasisRotation` has been extended to explain
