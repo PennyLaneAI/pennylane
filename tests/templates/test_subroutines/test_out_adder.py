@@ -68,8 +68,9 @@ class TestOutAdder:
         self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutAdder template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x, y, z):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -83,7 +84,7 @@ class TestOutAdder:
 
         # pylint: disable=bad-reversed-sequence
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)))),
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)[0, :]))),
             (x + y + z) % mod,
         )
 
@@ -237,9 +238,10 @@ class TestOutAdder:
         y_wires = [2, 3, 5]
         output_wires = [6, 7, 8]
         work_wires = [11, 10]
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
         @jax.jit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
@@ -249,5 +251,5 @@ class TestOutAdder:
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x + y) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x + y) % mod
         )

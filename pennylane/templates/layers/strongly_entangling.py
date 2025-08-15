@@ -14,14 +14,21 @@
 r"""
 Contains the StronglyEntanglingLayers template.
 """
-from pennylane import math
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
+from pennylane.decomposition import add_decomps, register_resources
 
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, Rot
 from pennylane.ops.op_math import cond
 from pennylane.wires import Wires
+
+has_jax = True
+try:
+    from jax import numpy as jnp
+except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
+    has_jax = False  # pragma: no cover
 
 
 class StronglyEntanglingLayers(Operation):
@@ -137,6 +144,8 @@ class StronglyEntanglingLayers(Operation):
 
     grad_method = None
 
+    resource_keys = {"imprimitive", "n_wires", "n_layers"}
+
     def __init__(self, weights, wires, ranges=None, imprimitive=None, id=None):
         shape = math.shape(weights)[-3:]
 
@@ -169,6 +178,14 @@ class StronglyEntanglingLayers(Operation):
         self._hyperparameters = {"ranges": ranges, "imprimitive": imprimitive or CNOT}
 
         super().__init__(weights, wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "imprimitive": self.hyperparameters["imprimitive"],
+            "n_wires": len(self.wires),
+            "n_layers": math.shape(self.data)[-3],
+        }
 
     @property
     def num_params(self):
@@ -279,3 +296,58 @@ class StronglyEntanglingLayers(Operation):
             cond(n_wires > 1, imprim_true, imprim_false)()
 
         layers()
+
+
+def _strongly_entangling_resources(imprimitive, n_wires, n_layers):
+    resources = {}
+
+    resources[Rot] = n_wires * n_layers
+    if n_wires > 1:
+        resources[imprimitive] = n_wires * n_layers
+
+    return resources
+
+
+@register_resources(_strongly_entangling_resources)
+def _strongly_entangling_decomposition(weights, wires, ranges, imprimitive):
+
+    if capture.enabled() and has_jax:
+        wires = jnp.array(wires)
+        ranges = jnp.array(ranges)
+        weights = jnp.array(weights)
+
+    n_wires = len(wires)
+    n_layers = weights.shape[0]
+
+    @for_loop(n_layers)
+    def layers(l):
+        @for_loop(n_wires)
+        def rot_loop(i):
+            Rot(
+                weights[l, i, 0],
+                weights[l, i, 1],
+                weights[l, i, 2],
+                wires=wires[i],
+            )
+
+        def imprim_true():
+            @for_loop(n_wires)
+            def imprimitive_loop(i):
+                if capture.enabled() and has_jax:
+                    act_on = math.array([i, i + ranges[l]], like="jax") % n_wires
+                else:
+                    act_on = wires.subset([i, i + ranges[l]], periodic_boundary=True)
+                imprimitive(wires=act_on)
+
+            imprimitive_loop()  # pylint: disable=no-value-for-parameter
+
+        def imprim_false():
+            pass
+
+        rot_loop()  # pylint: disable=no-value-for-parameter
+        cond(n_wires > 1, imprim_true, imprim_false)()
+
+    layers()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(StronglyEntanglingLayers, _strongly_entangling_decomposition)

@@ -743,7 +743,7 @@ class TestDifferentiableZNE:
         assert qml.math.allclose(grad, grad_ideal, atol=1e-2)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     @pytest.mark.parametrize("extrapolate", [richardson_extrapolate, exponential_extrapolate])
     def test_diffability_tf(self, interface, extrapolate):
         """Testing that the mitigated qnode can be differentiated and returns the correct gradient in tf"""
