@@ -215,15 +215,15 @@ class ConvertToMBQCFormalismPattern(
         # The results include: 1, a measurement result; 2, a result qubit.
         return measure_op.results
 
-    def _measure_x_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
+    def _insert_measure_x_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert a X-basis measure op related operations to the IR."""
         return self._insert_xy_basis_measure_op(_MeasureBasis.X, qubit, op, rewriter)
 
-    def _measure_y_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
+    def _insert_measure_y_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert a Y-basis measure op related operations to the IR."""
         return self._insert_xy_basis_measure_op(_MeasureBasis.Y, qubit, op, rewriter)
 
-    def _cond_insert_arbitrary_basis_measure_op(
+    def _insert_cond_arbitrary_basis_measure_op(
         self,
         meas_parity: builtin.IntegerType,
         angle: SSAValue[builtin.Float64Type],
@@ -255,10 +255,6 @@ class ConvertToMBQCFormalismPattern(
         const_neg_angle_op = arith.NegfOp(angle)
 
         # Create a MeasureInBasisOp op for the false region
-        # TODOs: Need confirmation on if we have to insert ops created for the false and true regions to the IR.
-        # It seems that the code here [https://github.com/xdslproject/xdsl/blob/37fceab602d98efbb2ba7ecd5548aa657eed558d/tests/interpreters/test_scf_interpreter.py#L64-L74]
-        # does not explicitly insert the Ops created to the IR. Checking the result IR after applying current implementation
-        # of this pass, all Ops created in this block are inserted to the IR. Need some experts to confirm if it's the best practice.
         measure_neg_op = MeasureInBasisOp(
             in_qubit=qubit, plane=plane_op, angle=const_neg_angle_op.result
         )
@@ -288,64 +284,64 @@ class ConvertToMBQCFormalismPattern(
         self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter
     ):
         """Insert measurement ops for a Hadamard gate and return measurement results and the result graph qubits"""
-        m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
-        m2, graph_qubits_dict[2] = self._measure_y_op(graph_qubits_dict[2], op, rewriter)
-        m3, graph_qubits_dict[3] = self._measure_y_op(graph_qubits_dict[3], op, rewriter)
-        m4, graph_qubits_dict[4] = self._measure_y_op(graph_qubits_dict[4], op, rewriter)
+        m1, graph_qubits_dict[1] = self._insert_measure_x_op(graph_qubits_dict[1], op, rewriter)
+        m2, graph_qubits_dict[2] = self._insert_measure_y_op(graph_qubits_dict[2], op, rewriter)
+        m3, graph_qubits_dict[3] = self._insert_measure_y_op(graph_qubits_dict[3], op, rewriter)
+        m4, graph_qubits_dict[4] = self._insert_measure_y_op(graph_qubits_dict[4], op, rewriter)
         return [m1, m2, m3, m4], graph_qubits_dict
 
     def _s_measurements(self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert measurement ops for a S gate and return measurement results and the result graph qubits"""
-        m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
-        m2, graph_qubits_dict[2] = self._measure_x_op(graph_qubits_dict[2], op, rewriter)
-        m3, graph_qubits_dict[3] = self._measure_y_op(graph_qubits_dict[3], op, rewriter)
-        m4, graph_qubits_dict[4] = self._measure_x_op(graph_qubits_dict[4], op, rewriter)
+        m1, graph_qubits_dict[1] = self._insert_measure_x_op(graph_qubits_dict[1], op, rewriter)
+        m2, graph_qubits_dict[2] = self._insert_measure_x_op(graph_qubits_dict[2], op, rewriter)
+        m3, graph_qubits_dict[3] = self._insert_measure_y_op(graph_qubits_dict[3], op, rewriter)
+        m4, graph_qubits_dict[4] = self._insert_measure_x_op(graph_qubits_dict[4], op, rewriter)
         return [m1, m2, m3, m4], graph_qubits_dict
 
     def _cnot_measurements(self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert measurement ops for a CNOT gate and return measurement results and the result graph qubits"""
-        m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
-        m2, graph_qubits_dict[2] = self._measure_y_op(graph_qubits_dict[2], op, rewriter)
-        m3, graph_qubits_dict[3] = self._measure_y_op(graph_qubits_dict[3], op, rewriter)
-        m4, graph_qubits_dict[4] = self._measure_y_op(graph_qubits_dict[4], op, rewriter)
-        m5, graph_qubits_dict[5] = self._measure_y_op(graph_qubits_dict[5], op, rewriter)
-        m6, graph_qubits_dict[6] = self._measure_y_op(graph_qubits_dict[6], op, rewriter)
-        m8, graph_qubits_dict[8] = self._measure_y_op(graph_qubits_dict[8], op, rewriter)
-        m9, graph_qubits_dict[9] = self._measure_x_op(graph_qubits_dict[9], op, rewriter)
-        m10, graph_qubits_dict[10] = self._measure_x_op(graph_qubits_dict[10], op, rewriter)
-        m11, graph_qubits_dict[11] = self._measure_x_op(graph_qubits_dict[11], op, rewriter)
-        m12, graph_qubits_dict[12] = self._measure_y_op(graph_qubits_dict[12], op, rewriter)
-        m13, graph_qubits_dict[13] = self._measure_x_op(graph_qubits_dict[13], op, rewriter)
-        m14, graph_qubits_dict[14] = self._measure_x_op(graph_qubits_dict[14], op, rewriter)
+        m1, graph_qubits_dict[1] = self._insert_measure_x_op(graph_qubits_dict[1], op, rewriter)
+        m2, graph_qubits_dict[2] = self._insert_measure_y_op(graph_qubits_dict[2], op, rewriter)
+        m3, graph_qubits_dict[3] = self._insert_measure_y_op(graph_qubits_dict[3], op, rewriter)
+        m4, graph_qubits_dict[4] = self._insert_measure_y_op(graph_qubits_dict[4], op, rewriter)
+        m5, graph_qubits_dict[5] = self._insert_measure_y_op(graph_qubits_dict[5], op, rewriter)
+        m6, graph_qubits_dict[6] = self._insert_measure_y_op(graph_qubits_dict[6], op, rewriter)
+        m8, graph_qubits_dict[8] = self._insert_measure_y_op(graph_qubits_dict[8], op, rewriter)
+        m9, graph_qubits_dict[9] = self._insert_measure_x_op(graph_qubits_dict[9], op, rewriter)
+        m10, graph_qubits_dict[10] = self._insert_measure_x_op(graph_qubits_dict[10], op, rewriter)
+        m11, graph_qubits_dict[11] = self._insert_measure_x_op(graph_qubits_dict[11], op, rewriter)
+        m12, graph_qubits_dict[12] = self._insert_measure_y_op(graph_qubits_dict[12], op, rewriter)
+        m13, graph_qubits_dict[13] = self._insert_measure_x_op(graph_qubits_dict[13], op, rewriter)
+        m14, graph_qubits_dict[14] = self._insert_measure_x_op(graph_qubits_dict[14], op, rewriter)
 
         return [m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14], graph_qubits_dict
 
     def _rz_measurements(self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert measurement ops for a RZ gate and return measurement results and the result graph qubits"""
-        m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
-        m2, graph_qubits_dict[2] = self._measure_x_op(graph_qubits_dict[2], op, rewriter)
-        m3, graph_qubits_dict[3] = self._cond_insert_arbitrary_basis_measure_op(
+        m1, graph_qubits_dict[1] = self._insert_measure_x_op(graph_qubits_dict[1], op, rewriter)
+        m2, graph_qubits_dict[2] = self._insert_measure_x_op(graph_qubits_dict[2], op, rewriter)
+        m3, graph_qubits_dict[3] = self._insert_cond_arbitrary_basis_measure_op(
             m2, op.params[0], "XY", graph_qubits_dict[3], op, rewriter
         )
-        m4, graph_qubits_dict[4] = self._measure_x_op(graph_qubits_dict[4], op, rewriter)
+        m4, graph_qubits_dict[4] = self._insert_measure_x_op(graph_qubits_dict[4], op, rewriter)
         return [m1, m2, m3, m4], graph_qubits_dict
 
     def _rotxzx_measurements(
         self, graph_qubits_dict, op, rewriter: pattern_rewriter.PatternRewriter
     ):
         """Insert measurement ops for a RotXZX gate and return measurement results and the result graph qubits"""
-        m1, graph_qubits_dict[1] = self._measure_x_op(graph_qubits_dict[1], op, rewriter)
-        m2, graph_qubits_dict[2] = self._cond_insert_arbitrary_basis_measure_op(
+        m1, graph_qubits_dict[1] = self._insert_measure_x_op(graph_qubits_dict[1], op, rewriter)
+        m2, graph_qubits_dict[2] = self._insert_cond_arbitrary_basis_measure_op(
             m1, op.params[0], "XY", graph_qubits_dict[2], op, rewriter
         )
-        m3, graph_qubits_dict[3] = self._cond_insert_arbitrary_basis_measure_op(
+        m3, graph_qubits_dict[3] = self._insert_cond_arbitrary_basis_measure_op(
             m2, op.params[1], "XY", graph_qubits_dict[3], op, rewriter
         )
 
         m1_xor_m3 = arith.XOrIOp(m1, m3)
         rewriter.insert_op(m1_xor_m3, InsertPoint.before(op))
 
-        m4, graph_qubits_dict[4] = self._cond_insert_arbitrary_basis_measure_op(
+        m4, graph_qubits_dict[4] = self._insert_cond_arbitrary_basis_measure_op(
             m1_xor_m3.result, op.params[2], "XY", graph_qubits_dict[4], op, rewriter
         )
         return [m1, m2, m3, m4], graph_qubits_dict
@@ -389,7 +385,7 @@ class ConvertToMBQCFormalismPattern(
         """Insert a byproduct op related operations to the IR.
         Args:
             parity_res (OpResult) : Parity check result.
-            gate_name (str) : The name of gate to be corrected.
+            gate_name (str) : The name of the gate to be corrected.
             qubit (QubitType) : The result auxiliary qubit to be corrected.
             op (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
@@ -401,12 +397,7 @@ class ConvertToMBQCFormalismPattern(
         byproduct_op = CustomOp(in_qubits=qubit, gate_name=gate_name)
         true_region = [byproduct_op, scf.YieldOp(byproduct_op.results[0])]
 
-        # Create an `Identity` gate object
-        identity_op = CustomOp(in_qubits=qubit, gate_name="Identity")
-        # TODOs check if we can set false_region = [scf.YieldOp(in_qubit)]
-        # The answer is no as xDSL==0.46.0, the error msg is:
-        # "'NoneType' object has no attribute 'add_use'""
-        false_region = [identity_op, scf.YieldOp(identity_op.results[0])]
+        false_region = [scf.YieldOp(qubit)]
         cond_op = IfOp(parity_res, (QubitType(),), true_region, false_region)
         # Insert cond_op to the IR
         rewriter.insert_op(cond_op, InsertPoint.before(op))
@@ -424,8 +415,8 @@ class ConvertToMBQCFormalismPattern(
             mres (list[builtin.IntegerType]): A list of the mid-measurement results.
             op (CustomOp) : A gate operation object.
             rewriter (pattern_rewriter.PatternRewriter): A pattern rewriter.
-            additional_const_one (bool) : Whether we need to an additioanl const one to get the parity or not. Defaults to False.
-
+            additional_const_one (bool) : Whether we need to add an additional const one to get the
+                parity or not. Defaults to False.
         Returns:
             The result of parity check.
         """
