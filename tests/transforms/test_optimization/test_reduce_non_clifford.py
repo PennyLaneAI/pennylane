@@ -122,15 +122,10 @@ class TestReduceNonClifford:
 
         assert len(new_qs.operations) == 3
 
-        rot = new_qs.operations[1]
-        assert new_qs.operations[0] == qml.H(0)
-        assert isinstance(rot, qml.RZ)
-        assert new_qs.operations[2] == qml.H(0)
-
-        new_angle = rot.parameters[0]
-        exp_angle = np.mod(np.sum(params), 2 * np.pi)
-
-        assert np.isclose(new_angle, exp_angle)
+        h_0, rot, h_1 = new_qs.operations
+        assert qml.equal(h_0, qml.H(0))
+        assert qml.equal(rot, qml.RZ(np.mod(np.sum(params), 2 * np.pi), 0))
+        assert qml.equal(h_1, qml.H(0))
 
     @pytest.mark.parametrize(
         "params",
