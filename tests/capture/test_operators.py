@@ -25,7 +25,7 @@ jax = pytest.importorskip("jax")
 
 from pennylane.capture.primitives import AbstractOperator  # pylint: disable=wrong-import-position
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 def test_abstract_operator():
@@ -386,7 +386,7 @@ class TestOpmath:
         assert eqn.params == {
             "control_values": [0, 1],
             "work_wires": None,
-            "work_wire_type": "dirty",
+            "work_wire_type": "borrowed",
         }
 
         with qml.queuing.AnnotatedQueue() as q:

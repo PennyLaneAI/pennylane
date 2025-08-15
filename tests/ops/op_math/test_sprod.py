@@ -23,7 +23,7 @@ from scipy.sparse import csr_matrix
 import pennylane as qml
 import pennylane.numpy as qnp
 from pennylane import math
-from pennylane.operation import DecompositionUndefinedError, MatrixUndefinedError
+from pennylane.exceptions import DecompositionUndefinedError, MatrixUndefinedError
 from pennylane.ops.op_math import Prod, SProd, Sum, s_prod
 from pennylane.wires import Wires
 
@@ -1022,9 +1022,10 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test SProd class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         sprod_op = SProd(1.23, qml.PauliX(1))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             qml.Hadamard(1)
@@ -1037,9 +1038,10 @@ class TestIntegration:
 
     def test_measurement_process_count(self):
         """Test SProd class instance in counts measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         sprod_op = SProd(1.23, qml.PauliX(1))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             qml.Hadamard(1)

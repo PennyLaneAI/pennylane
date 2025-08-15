@@ -155,6 +155,27 @@ class TestCliffordCompile:
         )
         qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
 
+    @pytest.mark.parametrize("circuit", [circuit_1, circuit_2, circuit_3])
+    def test_decomposition_with_rs(self, circuit):
+        """Test decomposition for the Clifford transform with Ross-Selinger method."""
+
+        old_tape = qml.tape.make_qscript(circuit)()
+
+        [new_tape], tape_fn = clifford_t_decomposition(old_tape, method="gridsynth")
+
+        assert all(
+            isinstance(op, _CLIFFORD_PHASE_GATES)
+            or isinstance(getattr(op, "base", None), _CLIFFORD_PHASE_GATES)
+            for op in new_tape.operations
+        )
+
+        dev = qml.device("default.qubit")
+        transform_program = dev.preprocess_transforms()
+        res1, res2 = qml.execute(
+            [old_tape, new_tape], device=dev, transform_program=transform_program
+        )
+        qml.math.isclose(res1, tape_fn([res2]), atol=1e-2)
+
     def test_qnode_decomposition(self):
         """Test decomposition for the Clifford transform applied to a QNode."""
 
@@ -453,7 +474,7 @@ class TestCliffordCompile:
 
         with pytest.raises(
             NotImplementedError,
-            match=r"Currently we only support Solovay-Kitaev \('sk'\) decomposition",
+            match=r"Currently we only support Solovay-Kitaev \('sk'\) and Ross-Selinger \('gridsynth'\) decompositions",
         ):
             decomposed_qfunc()
 
@@ -477,7 +498,6 @@ class TestCliffordCompile:
         )
 
         import jax
-        import tensorflow as tf
         import torch
 
         funres = []
@@ -494,13 +514,6 @@ class TestCliffordCompile:
             fres_jax = qcirc(A)
             grad_jax = jax.grad(qcirc, argnums=0)(A)
 
-            # Tensorflow Interface
-            A = tf.Variable(qml.numpy.array(coeffs))
-            with tf.GradientTape() as tape:
-                loss = qcirc(A)
-            grad_tflow = tape.gradient(loss, A)
-            fres_tflow = loss
-
             # PyTorch Interface
             A = torch.tensor(coeffs, requires_grad=True)
             result = qcirc(A)
@@ -508,8 +521,8 @@ class TestCliffordCompile:
             grad_torch = A.grad
             fres_torch = result
 
-            funres.append([fres_numpy, fres_jax, fres_torch, fres_tflow])
-            igrads.append([grad_numpy, grad_jax, grad_torch, grad_tflow])
+            funres.append([fres_numpy, fres_jax, fres_torch])
+            igrads.append([grad_numpy, grad_jax, grad_torch])
 
         # Compare results
         assert all(qml.math.allclose(res1, res2, atol=1e-2) for res1, res2 in zip(*funres))
@@ -582,3 +595,26 @@ class TestCliffordCached:
             assert _map_wires(qml.X(0), wire) == qml.X(wire)
         assert _map_wires.cache_info().hits == 5
         assert _map_wires.cache_info().misses == 10
+
+
+class TestCatalyst:
+    """Unit tests for catalyst integration."""
+
+    # pylint: disable=import-outside-toplevel
+    @pytest.mark.external
+    @pytest.mark.catalyst
+    def test_catalyst_integration(self):
+        """Test that the catalyst integration is working correctly."""
+
+        import catalyst
+
+        @qml.qjit()
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        @qml.clifford_t_decomposition
+        def circuit():
+            qml.RX(math.pi, [0])
+            qml.RX(2 * math.pi, [1])
+            return (catalyst.measure(0), catalyst.measure(1))
+
+        results = circuit()
+        assert results[0] and not results[1]

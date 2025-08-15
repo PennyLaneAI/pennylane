@@ -25,7 +25,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
 
 .. code-block:: python
 
-    from pennylane.devices import Device, DefaultExecutionConfig
+    from pennylane.devices import Device, ExecutionConfig
     from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 
     class MyDevice(Device):
@@ -34,7 +34,7 @@ In order to define a custom device, you only need to override the :meth:`~.devic
         def execute(
             self,
             circuits: QuantumScriptOrBatch,
-            execution_config: "ExecutionConfig" = DefaultExecutionConfig
+            execution_config: ExecutionConfig | None = None
         ):
             # your implementation here.
 
@@ -48,7 +48,7 @@ For example:
         def execute(
             self,
             circuits: QuantumScriptOrBatch,
-            execution_config: "ExecutionConfig" = DefaultExecutionConfig
+            execution_config: ExecutionConfig | None = None
         )
             return 0.0 if isinstance(circuits, qml.tape.QuantumScript) else tuple(0.0 for c in circuits)
 
@@ -546,7 +546,7 @@ to handle a single circuit. See the documentation for each modifier for more det
     @single_tape_support
     class MyDevice(qml.devices.Device):
 
-        def execute(self, circuits, execution_config = qml.devices.DefaultExecutionConfig):
+        def execute(self, circuits, execution_config: ExecutionConfig | None = None):
             return tuple(0.0 for _ in circuits)
 
 >>> dev = MyDevice()
@@ -573,7 +573,7 @@ The device tracker stores and records information when tracking mode is turned o
 the number of executions, number of shots, number of batches, or remote simulator cost for users to interact with
 in a customizable way.
 
-Three aspects of the :class:`~pennylane.devices.Tracker` class are relevant to plugin designers:
+Three aspects of the :class:`~pennylane.Tracker` class are relevant to plugin designers:
 
 * The boolean ``active`` attribute that denotes whether or not to update and record
 * ``update`` method which accepts keyword-value pairs and stores the information

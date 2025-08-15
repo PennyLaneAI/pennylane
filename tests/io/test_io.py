@@ -21,12 +21,16 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane import queuing
+from pennylane.measurements import MeasurementValue
+from pennylane.ops import RX
+from pennylane.wires import Wires
 
 has_openqasm = True
 try:
     import openqasm3
 
-    from pennylane.io.io import from_qasm3
+    from pennylane.io.io import from_qasm3  # pylint: disable=ungrouped-imports
     from pennylane.io.qasm_interpreter import QasmInterpreter  # pylint: disable=ungrouped-imports
 except (ModuleNotFoundError, ImportError) as import_error:
     has_openqasm = False
@@ -210,7 +214,55 @@ class TestLoad:
 class TestOpenQasm:
     """Test the qml.to_openqasm and qml.from_qasm3 functions."""
 
-    dev = qml.device("default.qubit", wires=2, shots=100)
+    dev = qml.device("default.qubit", wires=2)
+
+    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
+    def test_return_from_qasm3(self):
+        circuit = """\
+            OPENQASM 3.0;
+            output bit b;
+            output float v;
+            qubit q0;
+            rx(1.2) q0;
+            measure q0 -> b;
+            v = 2.2;
+            """
+
+        # call the method
+        b, v = from_qasm3(circuit)()  # the return order is the declaration order
+        assert isinstance(b, MeasurementValue)
+        assert v == 2.2
+
+    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
+    def test_qasm3_inputs(self):
+        circuit = """\
+            OPENQASM 3.0;
+            qubit q0;
+            input float t;
+            rx(t) q0;
+            """
+
+        # call the method
+        with queuing.AnnotatedQueue() as q:
+            from_qasm3(circuit)(t=1.1)
+
+        # assertions
+        assert q.queue == [RX(1.1, Wires(["q0"]))]
+
+    @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
+    def test_invalid_qasm3(self):
+        circuit = """\
+            OPENQASM 3.0;
+            qubit q0;
+            bit output = "0";
+            rz(0.9) q0;
+            measure q0 -> output;
+            """
+
+        with pytest.raises(
+            SyntaxError, match="Something went wrong when parsing the provided OpenQASM 3.0 code"
+        ):
+            from_qasm3(circuit)()
 
     @pytest.mark.skipif(not has_openqasm, reason="requires openqasm3")
     def test_from_qasm3(self, mocker):
@@ -226,7 +278,7 @@ class TestOpenQasm:
         visit = mocker.spy(QasmInterpreter, "interpret")
 
         # call the method
-        from_qasm3(circuit)
+        from_qasm3(circuit)()
 
         # assertions
         parse.assert_called_with(circuit, permissive=True)
@@ -235,6 +287,7 @@ class TestOpenQasm:
     def test_basic_example(self):
         """Test basic usage on simple circuit with parameters."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit(theta, phi):
             qml.RX(theta, wires=0)
@@ -262,6 +315,7 @@ class TestOpenQasm:
     def test_measure_qubits_subset_only(self):
         """Test OpenQASM program includes measurements only over the qubits subset specified in the QNode."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit():
             qml.Hadamard(0)
@@ -286,6 +340,7 @@ class TestOpenQasm:
     def test_rotations_with_expval(self):
         """Test OpenQASM program includes gates that make the measured observables diagonal in the computational basis."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit():
             qml.Hadamard(0)
@@ -315,6 +370,7 @@ class TestOpenQasm:
     def test_precision(self):
         """Test OpenQASM program takes into account the desired numerical precision of the circuit's parameters."""
 
+        @qml.set_shots(100)
         @qml.qnode(self.dev)
         def circuit():
             qml.RX(np.pi, wires=0)

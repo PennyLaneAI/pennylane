@@ -21,14 +21,6 @@ from malt.core import converter
 
 import pennylane as qml
 from pennylane import grad, jacobian, measure
-
-pytestmark = pytest.mark.jax
-
-jax = pytest.importorskip("jax")
-
-# must be below jax importorskip
-# pylint: disable=wrong-import-position
-from pennylane.capture.autograph.ag_primitives import AutoGraphError
 from pennylane.capture.autograph.transformer import (
     NESTED_OPTIONS,
     STANDARD_OPTIONS,
@@ -39,16 +31,18 @@ from pennylane.capture.autograph.transformer import (
     run_autograph,
 )
 
+pytestmark = pytest.mark.capture
+
+jax = pytest.importorskip("jax")
+
+
+# must be below jax importorskip
+# pylint: disable=wrong-import-position
+from pennylane.exceptions import AutoGraphError
+
 check_cache = TRANSFORMER.has_cache
 
 # pylint: disable=too-few-public-methods, unnecessary-lambda-assignment
-
-
-@pytest.fixture(autouse=True)
-def enable_disable_plxpr():
-    qml.capture.enable()
-    yield
-    qml.capture.disable()
 
 
 class TestPennyLaneTransformer:
@@ -434,8 +428,9 @@ class TestIntegration:
     )
     def test_mcm_one_shot(self, seed):
         """Test if mcm one-shot miss transforms."""
-        dev = qml.device("default.qubit", wires=5, shots=20, seed=seed)
+        dev = qml.device("default.qubit", wires=5, seed=seed)
 
+        @qml.set_shots(20)
         @qml.qnode(dev, mcm_method="one-shot", postselect_mode="hw-like")
         def circ(x):
             qml.RX(x, wires=0)

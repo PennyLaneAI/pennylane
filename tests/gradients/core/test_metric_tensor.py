@@ -669,6 +669,7 @@ class TestMetricTensor:
         assert [[type(op) for op in tape.operations] for tape in tapes] == expected_ops
 
     @pytest.mark.autograd
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto", "autograd"])
     def test_no_trainable_params_qnode_autograd(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -705,7 +706,8 @@ class TestMetricTensor:
             qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_no_trainable_params_qnode_tf(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
         parameters"""
@@ -723,6 +725,7 @@ class TestMetricTensor:
             qml.metric_tensor(circuit)(weights)
 
     @pytest.mark.jax
+    @pytest.mark.filterwarnings("ignore:Attempted to compute the metric tensor")
     @pytest.mark.parametrize("interface", ["auto", "jax"])
     def test_no_trainable_params_qnode_jax(self, interface):
         """Test that the correct ouput and warning is generated in the absence of any trainable
@@ -1111,7 +1114,7 @@ class TestFullMetricTensor:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("ansatz, params", zip(fubini_ansatze, fubini_params))
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     @pytest.mark.parametrize("dev_name", ("default.qubit", "lightning.qubit"))
     def test_correct_output_tf(self, dev_name, ansatz, params, interface):
         import tensorflow as tf
@@ -1276,7 +1279,7 @@ class TestDifferentiabilityDiag:
         assert qml.math.allclose(jac, expected_diag_jac(*weights), atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_tf_diag(self, diff_method, tol, ansatz, weights, expected_diag_jac, interface):
         """Test metric tensor differentiability in the TF interface"""
         import tensorflow as tf
@@ -1398,7 +1401,7 @@ class TestDifferentiability:
         assert qml.math.allclose(expected_full, jac, atol=tol, rtol=0)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_tf(self, diff_method, tol, ansatz, weights, interface):
         """Test metric tensor differentiability in the TF interface"""
         import tensorflow as tf
@@ -1647,3 +1650,16 @@ def test_get_aux_wire_with_unavailable_aux():
     device_wires = qml.wires.Wires([0, "one"])
     with pytest.raises(qml.wires.WireError, match="The requested auxiliary wire does not exist"):
         _get_aux_wire("two", tape, device_wires)
+
+
+def test_metric_tensor_repeated_parametrized_op():
+    """Test that metric tensor works when an operator is repeated."""
+    op = qml.RX(0.5, 0)
+    tape1 = qml.tape.QuantumScript([op, op], [qml.expval(qml.Z(0))])
+    tape2 = qml.tape.QuantumScript([op, qml.RX(0.5, 0)], [qml.expval(qml.Z(0))])
+
+    batch1, _ = qml.metric_tensor(tape1)
+    batch2, _ = qml.metric_tensor(tape2)
+
+    for t1, t2 in zip(batch1, batch2, strict=True):
+        qml.assert_equal(t1, t2)

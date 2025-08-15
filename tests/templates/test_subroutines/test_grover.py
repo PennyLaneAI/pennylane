@@ -22,6 +22,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.ops import Hadamard, MultiControlledX, PauliZ
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def test_repr():
@@ -208,6 +209,23 @@ def test_expand(wires):
         assert actual_op.wires == qml.wires.Wires(expected_wire)
 
 
+@pytest.mark.capture
+def test_decomposition_new_capture():
+    """Tests the decomposition rule implemented with the new system."""
+    op = qml.GroverOperator(wires=(0, 1, 2))
+
+    for rule in qml.list_decomps(qml.GroverOperator):
+        _test_decomposition_rule(op, rule)
+
+
+def test_decomposition_new():
+    """Tests the decomposition rule implemented with the new system."""
+    op = qml.GroverOperator(wires=(0, 1, 2))
+
+    for rule in qml.list_decomps(qml.GroverOperator):
+        _test_decomposition_rule(op, rule)
+
+
 @pytest.mark.parametrize("n_wires", [6, 13])
 def test_findstate(n_wires):
     """Asserts can find state marked by oracle, with operation full matrix and decomposition."""
@@ -293,7 +311,7 @@ def test_jax_jit():
 
 
 @pytest.mark.jax
-@pytest.mark.usefixtures("enable_disable_plxpr")
+@pytest.mark.capture
 # pylint:disable=protected-access
 class TestDynamicDecomposition:
     """Tests that dynamic decomposition via compute_qfunc_decomposition works correctly."""
