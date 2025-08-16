@@ -210,7 +210,7 @@ def convert_to_mbqc_formalism_with_pauli_tracker(sequence):
         from pennylane.ftqc.pauli_tracker import get_byproduct_ops
 
         ops_queue = get_new_ops(inner_tape, wire_map, q_mgr, include_corrections=False)
-        byproduct_fns.append(partial(get_byproduct_ops, tape=inner_tape, wire_map=wire_map))
+        byproduct_fns.append(partial(get_byproduct_ops, tape=inner_tape, wire_map=wire_map.copy()))
         new_tapes.append(inner_tape.copy(operations=ops_queue))
 
     # new ops and measurement wires for the final tape
