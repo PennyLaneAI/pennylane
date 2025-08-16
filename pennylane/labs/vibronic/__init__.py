@@ -1,4 +1,4 @@
-# Copyright 2024 Xanadu Quantum Technologies Inc.
+# Copyright 2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,34 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-r"""
-.. currentmodule:: pennylane
+"""Module containing functionality for constructing vibronic Hamiltonians.
 
-This module contains experimental features enabling
-advanced quantum computing research.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
+.. currentmodule:: pennylane.labs.vibronic
 
 .. autosummary::
     :toctree: api
 
-    dla
-    resource_estimation
-    trotter_error
-    intermediate_reps
-    zxopt
-    vibronic
-
+    ~vibronic_pes
 """
 
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-from pennylane.labs import trotter_error
-from pennylane.labs import intermediate_reps
-from pennylane.labs import zxopt
-from pennylane.labs import vibronic
-
-__all__ = []
+from .pes_vibronic import vibronic_pes
