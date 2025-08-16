@@ -3,6 +3,12 @@
 
 <h3>New features since last release</h3>
 
+* New `~.ChangeOpBasis` class added, which allows a compute, uncompute pattern like U V U† to be represented
+  by a single operator that inherits from `~.CompositeOp`. A corresponding decomposition rule has been added to
+  support controlling the pattern by simply controlling the middle (target) operator and not U or U†.
+  [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
+  [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
+
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
