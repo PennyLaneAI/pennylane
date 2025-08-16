@@ -402,7 +402,7 @@ class ClassicalShadowMP(MeasurementTransform):
         shots: int | None = None,
         num_device_wires: int = 0,
     ) -> tuple:
-        return (2, shots, n_wires), np.int8
+        return (((2, shots, n_wires), np.int8),)
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, int, int]:
         # otherwise, the return type requires a device

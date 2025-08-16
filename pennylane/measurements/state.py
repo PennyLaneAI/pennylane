@@ -50,7 +50,7 @@ class StateMP(StateMeasurement):
     ):
         n_wires = n_wires or num_device_wires
         shape = (2**n_wires,)
-        return shape, complex
+        return ((shape, complex),)
 
     @property
     def numeric_type(self):
@@ -133,7 +133,7 @@ class DensityMatrixMP(StateMP):
     ):
         n_wires = n_wires or num_device_wires
         shape = (2**n_wires, 2**n_wires)
-        return shape, complex
+        return ((shape, complex),)
 
     def shape(self, shots: int | None = None, num_device_wires: int = 0) -> tuple[int, int]:
         dim = 2 ** len(self.wires)
