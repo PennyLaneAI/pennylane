@@ -116,7 +116,7 @@ def register_condition(
     def _decorator(_qfunc) -> DecompositionRule:
         if not isinstance(_qfunc, DecompositionRule):
             _qfunc = DecompositionRule(_qfunc)
-        _qfunc.set_condition(condition)
+        _qfunc.add_condition(condition)
         return _qfunc
 
     return _decorator(qfunc) if qfunc else _decorator
@@ -380,7 +380,7 @@ class DecompositionRule:
         else:
             self._compute_resources = resources
 
-        self._condition = None
+        self._conditions = []
         self._work_wire_spec = work_wires or {}
 
     def __call__(self, *args, **kwargs):
@@ -403,9 +403,7 @@ class DecompositionRule:
 
     def is_applicable(self, *args, **kwargs) -> bool:
         """Checks whether this decomposition rule is applicable."""
-        if self._condition is None:
-            return True
-        return self._condition(*args, **kwargs)
+        return all(condition(*args, **kwargs) for condition in self._conditions)
 
     def get_work_wire_spec(self, *args, **kwargs) -> WorkWireSpec:
         """Gets the work wire requirements of this decomposition rule"""
@@ -413,9 +411,9 @@ class DecompositionRule:
             return WorkWireSpec(**self._work_wire_spec)
         return WorkWireSpec(**self._work_wire_spec(*args, **kwargs))
 
-    def set_condition(self, condition: Callable[..., bool]) -> None:
-        """Sets the condition for this decomposition rule."""
-        self._condition = condition
+    def add_condition(self, condition: Callable[..., bool]) -> None:
+        """Adds a condition for this decomposition rule."""
+        self._conditions.append(condition)
 
     def set_resources(self, resources: Callable | dict) -> None:
         """Sets the resources for this decomposition rule."""

@@ -42,10 +42,16 @@ from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
     ctrl_decomp_bisect_rule,
-    decompose_mcx_with_many_workers,
+    decompose_mcx_many_borroed_workers,
+    decompose_mcx_many_workers_explicit,
+    decompose_mcx_many_zeroed_workers,
+    decompose_mcx_one_borrowed_worker,
+    decompose_mcx_one_worker_explicit,
+    decompose_mcx_one_zeroed_worker,
+    decompose_mcx_two_borrowed_workers,
+    decompose_mcx_two_workers_explicit,
+    decompose_mcx_two_zeroed_workers,
     decompose_mcx_with_no_worker,
-    decompose_mcx_with_one_worker,
-    decompose_mcx_with_two_workers,
     multi_control_decomp_zyz_rule,
     single_ctrl_decomp_zyz_rule,
 )
@@ -1637,9 +1643,15 @@ def _mcx_to_cnot_or_toffoli(wires, control_wires, control_values, **__):
 add_decomps(
     MultiControlledX,
     _mcx_to_cnot_or_toffoli,
-    decompose_mcx_with_many_workers,
-    decompose_mcx_with_two_workers,
-    decompose_mcx_with_one_worker,
+    decompose_mcx_many_workers_explicit,
+    decompose_mcx_many_borroed_workers,
+    decompose_mcx_many_zeroed_workers,
+    decompose_mcx_two_workers_explicit,
+    decompose_mcx_two_borrowed_workers,
+    decompose_mcx_two_zeroed_workers,
+    decompose_mcx_one_worker_explicit,
+    decompose_mcx_one_borrowed_worker,
+    decompose_mcx_one_zeroed_worker,
     decompose_mcx_with_no_worker,
 )
 add_decomps("Adjoint(MultiControlledX)", self_adjoint)
