@@ -294,6 +294,10 @@
 * The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
   [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
 
+* `Sum`, `Prod`, `SProd`, and `LinearCombination` are now represented by a reference in the text
+  drawer, with a longer label printed underneath.
+  [(#7279)](https://github.com/PennyLaneAI/pennylane/pull/7279)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
