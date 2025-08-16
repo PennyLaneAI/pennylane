@@ -163,7 +163,7 @@ class TestSetupExecutionConfig:
                 "one-shot",
                 10,
                 None,
-                'Requested MCM method "one-shot" unsupported by the device.',
+                'Requested MCM method "MCM_METHOD.ONE_SHOT" unsupported by the device.',
             ),
             (
                 EXAMPLE_TOML_FILE_ONE_SHOT,
@@ -177,7 +177,7 @@ class TestSetupExecutionConfig:
                 "tree-traversal",
                 10,
                 None,
-                'Requested MCM method "tree-traversal" unsupported by the device.',
+                'Requested MCM method "MCM_METHOD.TREE_TRAVERSAL" unsupported by the device.',
             ),
         ],
         indirect=("create_temporary_toml_file",),
