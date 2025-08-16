@@ -87,17 +87,13 @@ class TestTensor:
         x.requires_grad = False
         assert not x.requires_grad
 
-    def test_string_representation(self, capsys):
+    def test_string_representation(self):
         """Test the string representation is correct"""
         x = np.tensor([0, 1, 2])
-        print(repr(x))
-        captured = capsys.readouterr()
-        assert "tensor([0, 1, 2], requires_grad=True)" in captured.out
+        assert "tensor([0, 1, 2], requires_grad=True)" in repr(x)
 
         x.requires_grad = False
-        print(repr(x))
-        captured = capsys.readouterr()
-        assert "tensor([0, 1, 2], requires_grad=False)" in captured.out
+        assert "tensor([0, 1, 2], requires_grad=False)" in repr(x)
 
     @pytest.mark.parametrize("grad", [True, False])
     def test_indexing(self, grad):
@@ -207,12 +203,10 @@ class TestNumpyIntegration:
         x = np.fromstring(string, requires_grad=False, dtype=int, sep=",")
         assert not x.requires_grad
 
-    def test_wrapped_docstring(self, capsys):
+    def test_wrapped_docstring(self):
         """Test that wrapped NumPy functions retains the original
         docstring."""
-        print(np.sin.__doc__)
-        captured = capsys.readouterr()
-        assert "Trigonometric sine, element-wise." in captured.out
+        assert "Trigonometric sine, element-wise." in np.sin.__doc__
 
     def test_wrapped_function_on_tensor(self):
         """Test that wrapped functions work correctly"""
