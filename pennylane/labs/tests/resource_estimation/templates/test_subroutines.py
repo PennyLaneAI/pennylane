@@ -543,6 +543,28 @@ class TestResourceSelect:
 class TestResourceQROM:
     """Test the ResourceQROM class."""
 
+    def test_select_swap_depth_errors(self):
+        """Test that the correct error is raised when invalid values of
+        select_swap_depth are provided.
+        """
+        select_swap_depth = "Not A Valid Input"
+        with pytest.raises(ValueError, match="`select_swap_depth` must be None or an integer."):
+            plre.ResourceQROM(100, 10, select_swap_depth=select_swap_depth)
+
+        with pytest.raises(ValueError, match="`select_swap_depth` must be None or an integer."):
+            plre.ResourceQROM.resource_rep(100, 10, select_swap_depth=select_swap_depth)
+
+        select_swap_depth = 3
+        with pytest.raises(
+            ValueError, match="`select_swap_depth` must be 1 or a positive integer power of 2."
+        ):
+            plre.ResourceQROM(100, 10, select_swap_depth=select_swap_depth)
+
+        with pytest.raises(
+            ValueError, match="`select_swap_depth` must be 1 or a positive integer power of 2."
+        ):
+            plre.ResourceQROM.resource_rep(100, 10, select_swap_depth=select_swap_depth)
+
     @pytest.mark.parametrize(
         "num_data_points, size_data_points, num_bit_flips, depth, clean",
         (
@@ -649,7 +671,7 @@ class TestResourceQROM:
                 2,
                 5,
                 1,
-                True,  # AllocWires(3), (4 x Hadamard), (42 x X), (30 x CNOT), (20 x TempAND), (20 x Adjoint(TempAND)), FreeWires(3), (0 x CSWAP), FreeWires(0)
+                True,
                 [
                     plre.AllocWires(3),
                     GateCount(plre.ResourceHadamard.resource_rep(), 4),
@@ -665,6 +687,32 @@ class TestResourceQROM:
                     plre.FreeWires(3),
                     GateCount(plre.ResourceCSWAP.resource_rep(), 0),
                     plre.FreeWires(0),
+                ],
+            ),
+            (
+                12,
+                2,
+                5,
+                128,  # This will get turncated to 16 as the max depth
+                False,
+                [
+                    plre.AllocWires(30),
+                    GateCount(plre.ResourceX.resource_rep(), 5),
+                    GateCount(plre.ResourceCSWAP.resource_rep(), 30),
+                ],
+            ),
+            (
+                12,
+                2,
+                5,
+                16,
+                True,
+                [
+                    plre.AllocWires(30),
+                    GateCount(plre.ResourceHadamard.resource_rep(), 4),
+                    GateCount(plre.ResourceX.resource_rep(), 10),
+                    GateCount(plre.ResourceCSWAP.resource_rep(), 120),
+                    plre.FreeWires(30),
                 ],
             ),
         ),
@@ -934,13 +982,13 @@ class TestResourceSelectPauliRot:
                 "X",
                 None,
                 [
-                    AllocWires(30),
-                    GateCount(plre.ResourceQROM.resource_rep(2, 30, 30, False)),
+                    AllocWires(33),
+                    GateCount(plre.ResourceQROM.resource_rep(2, 33, 33, False)),
                     GateCount(
                         resource_rep(
                             plre.ResourceControlled,
                             {
-                                "base_cmpr_op": plre.ResourceSemiAdder.resource_rep(30),
+                                "base_cmpr_op": plre.ResourceSemiAdder.resource_rep(33),
                                 "num_ctrl_wires": 1,
                                 "num_ctrl_values": 0,
                             },
@@ -950,11 +998,11 @@ class TestResourceSelectPauliRot:
                         resource_rep(
                             plre.ResourceAdjoint,
                             {
-                                "base_cmpr_op": plre.ResourceQROM.resource_rep(2, 30, 30, False),
+                                "base_cmpr_op": plre.ResourceQROM.resource_rep(2, 33, 33, False),
                             },
                         )
                     ),
-                    FreeWires(30),
+                    FreeWires(33),
                     GateCount(resource_rep(plre.ResourceHadamard), 2),
                 ],
             ),
@@ -963,13 +1011,13 @@ class TestResourceSelectPauliRot:
                 "Y",
                 1e-3,
                 [
-                    AllocWires(10),
-                    GateCount(plre.ResourceQROM.resource_rep(4, 10, 20, False)),
+                    AllocWires(13),
+                    GateCount(plre.ResourceQROM.resource_rep(4, 13, 26, False)),
                     GateCount(
                         resource_rep(
                             plre.ResourceControlled,
                             {
-                                "base_cmpr_op": plre.ResourceSemiAdder.resource_rep(10),
+                                "base_cmpr_op": plre.ResourceSemiAdder.resource_rep(13),
                                 "num_ctrl_wires": 1,
                                 "num_ctrl_values": 0,
                             },
@@ -979,11 +1027,11 @@ class TestResourceSelectPauliRot:
                         resource_rep(
                             plre.ResourceAdjoint,
                             {
-                                "base_cmpr_op": plre.ResourceQROM.resource_rep(4, 10, 20, False),
+                                "base_cmpr_op": plre.ResourceQROM.resource_rep(4, 13, 26, False),
                             },
                         )
                     ),
-                    FreeWires(10),
+                    FreeWires(13),
                     GateCount(resource_rep(plre.ResourceHadamard), 2),
                     GateCount(resource_rep(plre.ResourceS)),
                     GateCount(
@@ -998,13 +1046,13 @@ class TestResourceSelectPauliRot:
                 "Z",
                 1e-5,
                 [
-                    AllocWires(17),
-                    GateCount(plre.ResourceQROM.resource_rep(32, 17, 272, False)),
+                    AllocWires(20),
+                    GateCount(plre.ResourceQROM.resource_rep(32, 20, 320, False)),
                     GateCount(
                         resource_rep(
                             plre.ResourceControlled,
                             {
-                                "base_cmpr_op": plre.ResourceSemiAdder.resource_rep(17),
+                                "base_cmpr_op": plre.ResourceSemiAdder.resource_rep(20),
                                 "num_ctrl_wires": 1,
                                 "num_ctrl_values": 0,
                             },
@@ -1014,11 +1062,11 @@ class TestResourceSelectPauliRot:
                         resource_rep(
                             plre.ResourceAdjoint,
                             {
-                                "base_cmpr_op": plre.ResourceQROM.resource_rep(32, 17, 272, False),
+                                "base_cmpr_op": plre.ResourceQROM.resource_rep(32, 20, 320, False),
                             },
                         )
                     ),
-                    FreeWires(17),
+                    FreeWires(20),
                 ],
             ),
         ),
