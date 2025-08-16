@@ -3,6 +3,23 @@
 
 <h3>New features since last release</h3>
 
+* Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
+  [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
+
+  ```python
+  @qml.qnode(qml.device('default.qubit'))
+  def c():
+      with qml.allocation.allocate(1) as wires:
+          qml.H(wires)
+          qml.CNOT((wires[0], 0))
+      return qml.probs(wires=0)
+
+  c()
+  ```
+  ```
+  array([0.5, 0.5])
+  ```
+
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
