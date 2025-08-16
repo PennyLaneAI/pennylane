@@ -18,10 +18,10 @@ the :doc:`transforms documentation <../code/qml_transforms>` for more details,
 as well as information on how to write your own custom transforms.
 
 In addition to quantum circuit transforms, PennyLane also
-supports experimental just-in-time compilation, via the :func:`~.qjit` decorator and
+supports just-in-time compilation via the :func:`~.qjit` decorator and
 `Catalyst <https://github.com/pennylaneai/catalyst>`__. This is more general, and
 supports full hybrid compilation --- compiling both the classical and quantum components
-of your workflow into a binary that can be run close to the accelerators.
+of your workflow into a binary that can be run close to the accelerators
 that you are using. More details can be found in :doc:`compiling workflows </introduction/compiling_workflows>`.
 
 Simplifying Operators
