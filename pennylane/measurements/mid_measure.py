@@ -349,10 +349,13 @@ def measure(
         By postselecting on ``1``, we only consider the ``1`` measurement outcome on wire 0. So, the probability of
         measuring ``1`` on wire 1 after postselection should also be 1. Executing this QNode with 10 shots:
 
-        >>> func(np.pi / 2, shots=10)
-        array([1, 1, 1, 1, 1, 1, 1])
+        >>> qml.set_shots(func, 10)(np.pi / 2)
+        array([[1],
+        [1],
+        [1],
+        [1]])
 
-        Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
+        Note that less than 10 samples are returned. This is because samples that do not meet the postselection criteria are
         thrown away.
 
         If postselection is requested on a state with zero probability of being measured, the result may contain ``NaN``

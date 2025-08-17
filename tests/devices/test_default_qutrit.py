@@ -710,7 +710,7 @@ class TestSample:
         tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
         res = dev.execute(tape)
         assert qml.math.get_dtype_name(res)[0:3] == "int"
-        assert res.shape == (10,)
+        assert res.shape == (10, 1)
 
     def test_sample_dimensions(self):
         """Tests if the samples returned by the sample function have
