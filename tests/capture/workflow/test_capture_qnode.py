@@ -179,7 +179,7 @@ def test_overriding_shots():
     )
 
     assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-        (50,), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+        (50, 1), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
     )
 
     with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
@@ -586,6 +586,9 @@ class TestDevicePreprocessing:
     def test_mcm_execution_deferred_hw_like(self, dev_name, mcm_method, seed):
         """Test that using a qnode with postselect_mode="hw-like" gives the expected results."""
 
+        if dev_name == "lightning.qubit":
+            pytest.xfail("still squeezing samples")  # [sc-96550]
+
         shots = 1000
         dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
@@ -615,6 +618,9 @@ class TestDevicePreprocessing:
 
     def test_mcms_execution_single_branch_statistics(self, dev_name, seed):
         """Test that single-branch-statistics works as expected."""
+
+        if dev_name == "lightning.qubit":
+            pytest.xfail("still squeezing samples")  # [sc-96550]
 
         shots = 1000
         dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
@@ -931,7 +937,7 @@ class TestQNodeVmapIntegration:
             == qml.measurements.SampleMP._wires_primitive
         )
 
-        assert eqn0.outvars[0].aval.shape == (3, 50)
+        assert eqn0.outvars[0].aval.shape == (3, 50, 1)
 
         with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
             res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
