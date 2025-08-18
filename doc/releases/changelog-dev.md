@@ -6,15 +6,20 @@
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
-    * :func:`~.transforms.zx.push_hadamards` to optimize phase-polynomial + Hadamard circuits pushing
-      Hadamard gates to the side to create fewer larger phase-polynomial blocks
-      (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
-      [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
+  * :func:`~.transforms.zx.push_hadamards` to optimize phase-polynomial + Hadamard circuits pushing
+    Hadamard gates to the side to create fewer larger phase-polynomial blocks
+    (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
+    [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 
-    * :func:`~.transforms.zx.todd` to optimize Clifford + T circuits using the Third Order Duplicate
-      and Destroy (TODD) algorithm
-      (see [pyzx.phase_block_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize)).
-      [(#8029)](https://github.com/PennyLaneAI/pennylane/pull/8029)
+  * :func:`~.transforms.zx.todd` to optimize Clifford + T circuits using the Third Order Duplicate
+    and Destroy (TODD) algorithm
+    (see [pyzx.phase_block_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize)).
+    [(#8029)](https://github.com/PennyLaneAI/pennylane/pull/8029)
+
+  * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford gates by applying
+    a combination of phase gadgetization strategies and Clifford gate simplification rules.
+    (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
+    [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
 
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
