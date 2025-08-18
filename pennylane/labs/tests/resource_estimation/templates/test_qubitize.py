@@ -22,32 +22,108 @@ import pennylane.labs.resource_estimation as plre
 
 
 class TestQubitizeTHC:
-    """Class for testing ResourceTestQubitize"""
+    """Test the ResourceQubitizeTHC class."""
 
-    # Expected resources were obtained from Pablo's code
-    hamiltonian_data = [(76, 145, 285, 202695)]
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, rotation_prec, selswap_depth",
+        (
+            (plre.CompactHamiltonian.thc(58, 160), 13, 13, 1),
+            (plre.CompactHamiltonian.thc(10, 50), None, None, None),
+            (plre.CompactHamiltonian.thc(4, 20), None, None, [2, 2]),
+        ),
+    )
+    def test_resource_params(self, compact_ham, coeff_prec, rotation_prec, selswap_depth):
+        """Test that the resource params are correct."""
+        op = plre.ResourceQubitizeTHC(compact_ham, coeff_prec, rotation_prec, selswap_depth)
+        assert op.resource_params == {
+            "compact_ham": compact_ham,
+            "coeff_precision_bits": coeff_prec,
+            "rotation_precision_bits": rotation_prec,
+            "select_swap_depths": selswap_depth,
+        }
 
-    @pytest.mark.parametrize("num_orbitals, tensor_rank, qubits, toffoli_count", hamiltonian_data)
-    def test_resource_trotter_thc(self, num_orbitals, tensor_rank, qubits, toffoli_count):
-        """Test the ResourceTrotterTHC class for tensor hypercontraction"""
-        compact_ham = plre.CompactHamiltonian.thc(
-            num_orbitals=num_orbitals, tensor_rank=tensor_rank
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, rotation_prec, selswap_depth",
+        (
+            (plre.CompactHamiltonian.thc(58, 160), 13, 13, 1),
+            (plre.CompactHamiltonian.thc(10, 50), None, None, None),
+            (plre.CompactHamiltonian.thc(4, 20), None, None, [2, 2]),
+        ),
+    )
+    def test_resource_rep(self, compact_ham, coeff_prec, rotation_prec, selswap_depth):
+        """Test that the compressed representation is correct."""
+        expected = plre.CompressedResourceOp(
+            plre.ResourceQubitizeTHC,
+            {
+                "compact_ham": compact_ham,
+                "coeff_precision_bits": coeff_prec,
+                "rotation_precision_bits": rotation_prec,
+                "select_swap_depths": selswap_depth,
+            },
+        )
+        assert (
+            plre.ResourceQubitizeTHC.resource_rep(
+                compact_ham, coeff_prec, rotation_prec, selswap_depth
+            )
+            == expected
         )
 
-        def circ():
+    # We are comparing the Toffoli and qubit cost here
+    # Expected number of Toffolis and qubits were obtained from https://arxiv.org/abs/2011.03494
+    @pytest.mark.parametrize(
+        "compact_ham, coeff_prec, rotation_prec, selswap_depth, expected_res",
+        (
+            (
+                plre.CompactHamiltonian.thc(58, 160),
+                13,
+                13,
+                1,
+                {"algo_qubits": 138, "ancilla_qubits": 752, "toffoli_gates": 32318},
+            ),
+            (
+                plre.CompactHamiltonian.thc(10, 50),
+                None,
+                None,
+                None,
+                {"algo_qubits": 38, "ancilla_qubits": 174, "toffoli_gates": 2300},
+            ),
+            (
+                plre.CompactHamiltonian.thc(4, 20),
+                None,
+                None,
+                [2, 2],
+                {"algo_qubits": 24, "ancilla_qubits": 109, "toffoli_gates": 984},
+            ),
+        ),
+    )
+    def test_resources(self, compact_ham, coeff_prec, rotation_prec, selswap_depth, expected_res):
+        """Test that the resources are correct."""
+
+        wo_cost = plre.estimate_resources(
             plre.ResourceQubitizeTHC(
-                compact_ham, coeff_precision=2e-5, rotation_precision=2e-5, compare_precision=1e-2
+                compact_ham,
+                coeff_precision_bits=coeff_prec,
+                rotation_precision_bits=rotation_prec,
+                select_swap_depths=selswap_depth,
             )
+        )
+        assert wo_cost.qubit_manager.algo_qubits == expected_res["algo_qubits"]
+        assert (
+            wo_cost.qubit_manager.clean_qubits + wo_cost.qubit_manager.dirty_qubits
+            == expected_res["ancilla_qubits"]
+        )
+        assert wo_cost.clean_gate_counts["Toffoli"] == expected_res["toffoli_gates"]
 
-        res = plre.estimate_resources(circ)()
-
-        assert res.qubit_manager.total_qubits == qubits
-        assert res.clean_gate_counts["Toffoli"] == toffoli_count
-
-    def test_type_error(self):
-        r"""Test that a TypeError is raised for unsupported Hamiltonian representations."""
-        compact_ham = plre.CompactHamiltonian.cdf(num_orbitals=4, num_fragments=4)
+    def test_incompatible_hamiltonian(self):
+        """Test that an error is raised for incompatible Hamiltonians."""
         with pytest.raises(
-            TypeError, match="Unsupported Hamiltonian representation for ResourceQubitizeTHC"
+            TypeError, match="Unsupported Hamiltonian representation for ResourceQubitizeTHC."
         ):
-            plre.ResourceQubitizeTHC(compact_ham)
+            plre.ResourceQubitizeTHC(plre.CompactHamiltonian.cdf(58, 160))
+
+    def test_incompatible_select_swap_depths(self):
+        """Test that an error is raised for incompatible select swap depths."""
+        with pytest.raises(
+            TypeError, match="`select_swap_depths` must be an integer, None or iterable"
+        ):
+            plre.ResourceQubitizeTHC(plre.CompactHamiltonian.thc(58, 160), select_swap_depths="a")

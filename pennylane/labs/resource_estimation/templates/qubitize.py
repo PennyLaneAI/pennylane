@@ -80,7 +80,7 @@ class ResourceQubitizeTHC(ResourceOperator):
                 raise ValueError(
                     f"Expected the length of `select_swap_depths` to be 2, got {len(select_swap_depths)}"
                 )
-        else:
+        elif not (isinstance(select_swap_depths, int) or select_swap_depths is None):
             raise TypeError("`select_swap_depths` must be an integer, None or iterable")
 
         self.compact_ham = compact_ham
@@ -153,7 +153,7 @@ class ResourceQubitizeTHC(ResourceOperator):
                 raise ValueError(
                     f"Expected the length of `select_swap_depths` to be 2, got {len(select_swap_depths)}"
                 )
-        else:
+        elif not (isinstance(select_swap_depths, int) or select_swap_depths is None):
             raise TypeError("`select_swap_depths` must be an integer, None or iterable")
         params = {
             "compact_ham": compact_ham,
@@ -174,6 +174,12 @@ class ResourceQubitizeTHC(ResourceOperator):
     ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
+
+        .. note::
+
+            This decomposition assumes an appropriately sized phase gradient state is available.
+            Users should ensure the cost of constructing such a state has been accounted for.
+            See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
 
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
@@ -243,6 +249,12 @@ class ResourceQubitizeTHC(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for the controlled version of the operator.
+
+        .. note::
+
+            This decomposition assumes an appropriately sized phase gradient state is available.
+            Users should ensure the cost of constructing such a state has been accounted for.
+            See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
 
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on
