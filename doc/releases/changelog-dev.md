@@ -11,8 +11,7 @@
     (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
     [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 
-  * :func:`~.transforms.zx.todd` to optimize Clifford + T circuits using the Third Order Duplicate
-    and Destroy (TODD) algorithm
+  * :func:`~.transforms.zx.todd` to optimize a Clifford + T circuit using the Third Order Duplicate and Destroy (TODD) algorithm
     (see [pyzx.phase_block_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize)).
     [(#8029)](https://github.com/PennyLaneAI/pennylane/pull/8029)
 
