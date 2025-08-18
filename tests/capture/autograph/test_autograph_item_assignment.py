@@ -24,6 +24,7 @@ import jax.numpy as jnp
 from jax import make_jaxpr
 from jax.core import eval_jaxpr
 
+import pennylane as qml
 from pennylane.capture.autograph import run_autograph
 
 
@@ -153,3 +154,23 @@ def test_for_loop_integration():
     result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts)
     expected = jnp.array([0, 1, 2, 3, 4])
     assert jnp.array_equal(result[0], expected)
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+def test_qnode_integration():
+    """Test QNode integration with item assignment."""
+
+    @qml.qnode(device=qml.device("default.qubit", wires=1))
+    def circuit(updated_angle):
+        angles = [1, 2, 3]
+        angles[2] = updated_angle
+
+        qml.RX(angles[2], wires=0)
+
+        return qml.expval(qml.Z(0))
+
+    ag_circuit = run_autograph(circuit)
+    updated_angle = jnp.pi
+    ag_circuit_jaxpr = make_jaxpr(ag_circuit)(updated_angle)
+    result = eval_jaxpr(ag_circuit_jaxpr.jaxpr, ag_circuit_jaxpr.consts, updated_angle)
+    assert result[0] == -1
