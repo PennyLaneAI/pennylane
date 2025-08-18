@@ -13,13 +13,14 @@
 # limitations under the License.
 """The tests for logical operations in AutoGraph"""
 
-# pylint: disable = unnecessary-lambda-assignment
+# pylint: disable = unnecessary-lambda-assignment, wrong-import-position
 
 import pytest
 
 pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
+import jax.numpy as jnp
 
 # pylint: disable=wrong-import-position
 from jax import make_jaxpr
@@ -115,6 +116,54 @@ class TestAnd:
 
         assert result[0] == (1 if arg and python_object else 0)
 
+    def test_while_loop_integration(self):
+        """Test while loop integration with logical operations and AutoGraph."""
+
+        def fn(a, b):
+            counter = 0
+            while a < b and counter < 5:
+                a += 1
+                counter += 1
+            return a
+
+        ag_fn = run_autograph(fn)
+        args = (0, 10)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == 5, f"Expected 5, got {result[0]}"
+
+    @pytest.mark.parametrize(
+        "a, b, expected",
+        [
+            (1, 2, (2, 2)),  # first branch: a > 0 and b < 5
+            (5, 5, (5, 6)),  # second branch: a == 5 and b == 5
+            (5, 6, (4, 5)),  # else branch
+        ],
+    )
+    def test_cond_integration(self, a, b, expected):
+        """Test conditional integration with logical AND and AutoGraph, covering all branches."""
+
+        def fn(a, b):
+            if a > 0 and b < 5:
+                a += 1
+            elif a == 5 and b == 5:
+                b += 1
+            else:
+                a -= 1
+                b -= 1
+            return a, b
+
+        ag_fn = run_autograph(fn)
+        args = (a, b)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert jnp.array_equal(
+            result,
+            (expected),
+        ), f"Expected {expected}, got {result}"
+
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestOr:
@@ -202,6 +251,55 @@ class TestOr:
 
         assert result[0] == (1 if arg or python_object else 0)
 
+    def test_while_loop_integration(self):
+        """Test while loop integration with logical operations and AutoGraph."""
+
+        def fn(a, b):
+            counter = 0
+            while a < b or counter < 5:
+                a += 1
+                counter += 1
+            return a
+
+        ag_fn = run_autograph(fn)
+        args = (0, 10)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == 10, f"Expected 10, got {result[0]}"
+
+    @pytest.mark.parametrize(
+        "a, b, expected",
+        [
+            (10, 4, (11, 4)),  # first branch: a > 0
+            (0, 6, (1, 6)),  # first branch: b > 5
+            (-5, 5, (-5, 6)),  # second branch: a == -5
+            (0, -5, (0, -4)),  # second branch: b == -5
+            (0, 5, (-1, 4)),  # else branch
+        ],
+    )
+    def test_cond_integration(self, a, b, expected):
+        """Test conditional integration with logical OR and AutoGraph, covering all branches."""
+
+        def fn(a, b):
+            if a > 0 or b > 5:
+                a += 1
+            elif a == -5 or b == -5:
+                b += 1
+            else:
+                a -= 1
+                b -= 1
+            return a, b
+
+        ag_fn = run_autograph(fn)
+        args = (a, b)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert jnp.array_equal(
+            result, (expected)
+        ), f"For input ({a}, {b}), expected {expected}, got {result}"
+
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestNot:
@@ -274,7 +372,7 @@ class TestNot:
         ],
     )
     def test_python_object_interaction(self, python_object):
-        """Test that logical NOT works with Python objects."""
+        """Test that logic al NOT works with Python objects."""
 
         fn = lambda: 1 if not python_object else 0
 
@@ -285,6 +383,51 @@ class TestNot:
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
         assert result[0] == (1 if not python_object else 0)
+
+    def test_while_loop_integration(self):
+        """Test while loop integration with logical operations and AutoGraph."""
+
+        def fn(a, b):
+            while not a >= b:
+                a += 1
+            return a
+
+        ag_fn = run_autograph(fn)
+        args = (0, 10)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == 10, f"Expected 10, got {result[0]}"
+
+    @pytest.mark.parametrize(
+        "a, b, expected",
+        [
+            (-1, 0, (0, 0)),  # first branch: a < 0
+            (1, 1, (1, 2)),  # first branch: b > 0
+            (1, -1, (0, -2)),  # else branch
+        ],
+    )
+    def test_cond_integration(self, a, b, expected):
+        """Test conditional integration with logical OR and AutoGraph, covering all branches."""
+
+        def fn(a, b):
+            if not a > 0:
+                a += 1
+            elif not b < 0:
+                b += 1
+            else:
+                a -= 1
+                b -= 1
+            return a, b
+
+        ag_fn = run_autograph(fn)
+        args = (a, b)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert jnp.array_equal(
+            result, (expected)
+        ), f"For input ({a}, {b}), expected {expected}, got {result}"
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
