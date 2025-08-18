@@ -76,7 +76,6 @@ class TestResourceTrotterProduct:
             plre.ResourceTrotterProduct,
             {"first_order_expansion": op, "num_steps": num_steps, "order": order},
         )
-        print(plre.ResourceTrotterProduct.resource_rep(op, num_steps, order), expected)
         assert plre.ResourceTrotterProduct.resource_rep(op, num_steps, order) == expected
 
     @pytest.mark.parametrize("op, num_steps, order, expected_res", op_data)
