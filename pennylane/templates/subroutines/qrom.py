@@ -138,7 +138,7 @@ class QROM(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [1 1 0]
+        [[1 1 0]]
 
 
     .. details::
