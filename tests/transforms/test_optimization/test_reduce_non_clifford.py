@@ -148,12 +148,12 @@ class TestReduceNonClifford:
 
         s, h, rz, ht, st = new_qs.operations
         phi = np.mod(np.sum(params), 2 * np.pi)
-        glob_phase = np.exp(-1j * np.pi)
+        # need to take into account a global phase mismatch introduced by pyzx RY decomposition
+        phi = 2 * np.pi - phi
 
         assert qml.equal(s, qml.S(0))
         assert qml.equal(h, qml.H(0))
-        assert isinstance(rz, qml.RZ)
-        assert np.allclose(rz.matrix() @ qml.RZ(phi, 0).matrix(), glob_phase * np.eye(2))
+        assert qml.equal(rz, qml.RZ(phi, 0))
         assert qml.equal(ht, qml.H(0))
         assert qml.equal(st, qml.adjoint(qml.S(0)))
 
