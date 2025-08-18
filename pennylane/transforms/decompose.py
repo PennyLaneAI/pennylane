@@ -23,7 +23,7 @@ from collections import ChainMap
 from collections.abc import Callable, Generator, Iterable, Sequence
 from functools import lru_cache, partial
 
-from pennylane import math, ops, queuing
+from pennylane import math, measurements, ops, queuing
 from pennylane.allocation import Allocate, Deallocate
 from pennylane.decomposition import DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
@@ -204,7 +204,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
                 return self.interpret_operation(op)
 
-            if enabled_graph() and self._decomp_graph_solution.is_solved_for(op):
+            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(op):
 
                 rule = self._decomp_graph_solution.decomposition(op)
                 num_wires = len(op.wires)
@@ -327,7 +327,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # a solution is found for this operator in the graph.
             if (
                 op.has_qfunc_decomposition
-                or enabled_graph()
+                or self._decomp_graph_solution
                 and self._decomp_graph_solution.is_solved_for(op)
             ):
                 return self._evaluate_jaxpr_decomposition(op)
@@ -840,7 +840,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
         max_depth_reached = True
 
     # Handle MCMs
-    if isinstance(op, qml.measurements.MidMeasureMP):
+    if isinstance(op, measurements.MidMeasureMP):
         yield op
 
     # Handle classically controlled operators
@@ -855,7 +855,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
                     acceptance_function,
                     max_expansion=max_expansion,
                     current_depth=current_depth,
-                    decomp_graph_solution=graph_solution,
+                    graph_solution=graph_solution,
                 )
             ]
 
