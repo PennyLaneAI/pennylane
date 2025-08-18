@@ -15,32 +15,32 @@
 
 import numpy as np
 import pytest
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_array
 
 from pennylane.labs.trotter_error.fragments import sparse_fragments
 from pennylane.labs.trotter_error.fragments.sparse_fragments import SparseFragment, SparseState
 
-identity = SparseFragment(csr_matrix([[1, 0], [0, 1]]))
-pauli_x = SparseFragment(csr_matrix([[0, 1], [1, 0]]))
-pauli_z = SparseFragment(csr_matrix([[1, 0], [0, -1]]))
+identity = SparseFragment(csr_array([[1, 0], [0, 1]]))
+pauli_x = SparseFragment(csr_array([[0, 1], [1, 0]]))
+pauli_z = SparseFragment(csr_array([[1, 0], [0, -1]]))
 
-state_10 = SparseState(csr_matrix([[1, 0]]))
-state_01 = SparseState(csr_matrix([[0, 1]]))
-state_11 = SparseState(csr_matrix([[1, 1]]))
-state_plus = SparseState(csr_matrix([[1 / np.sqrt(2), 1 / np.sqrt(2)]]))
-state_minus = SparseState(csr_matrix([[1 / np.sqrt(2), -1 / np.sqrt(2)]]))
+state_10 = SparseState(csr_array([[1, 0]]))
+state_01 = SparseState(csr_array([[0, 1]]))
+state_11 = SparseState(csr_array([[1, 1]]))
+state_plus = SparseState(csr_array([[1 / np.sqrt(2), 1 / np.sqrt(2)]]))
+state_minus = SparseState(csr_array([[1 / np.sqrt(2), -1 / np.sqrt(2)]]))
 
 
 def _sparse_hamiltonian(matrices):
     """Create a sparse Hamiltonian from a list of matrices."""
     frags = sparse_fragments(matrices)
-    return sum(frags[1:], frags[0]) if frags else SparseFragment(csr_matrix((2, 2)))
+    return sum(frags[1:], frags[0]) if frags else SparseFragment(csr_array((2, 2)))
 
 
 def test_sparse_fragments_basic():
     """Test that sparse_fragments returns SparseFragment objects correctly."""
 
-    matrices = [csr_matrix([[1, 0], [0, 1]]), csr_matrix([[0, 1], [1, 0]])]
+    matrices = [csr_array([[1, 0], [0, 1]]), csr_array([[0, 1], [1, 0]])]
     frags = sparse_fragments(matrices)
 
     assert len(frags) == 2
@@ -55,13 +55,13 @@ def test_sparse_fragments_empty():
 
 
 def test_sparse_fragments_type_error():
-    """Test that sparse_fragments raises TypeError for non-csr_matrix inputs."""
-    with pytest.raises(TypeError, match="Fragments must be csr_matrix objects"):
+    """Test that sparse_fragments raises TypeError for non-csr_array inputs."""
+    with pytest.raises(TypeError, match="Fragments must be csr_array objects"):
         sparse_fragments([np.array([[1, 0], [0, 1]])])
 
 
 @pytest.mark.parametrize(
-    "frag1, frag2, expected", [(identity, pauli_x, SparseFragment(csr_matrix([[1, 1], [1, 1]])))]
+    "frag1, frag2, expected", [(identity, pauli_x, SparseFragment(csr_array([[1, 1], [1, 1]])))]
 )
 def test_addition(frag1, frag2, expected):
     """Test addition of SparseFragments"""
@@ -72,7 +72,7 @@ def test_addition(frag1, frag2, expected):
 
 
 @pytest.mark.parametrize(
-    "frag1, frag2, expected", [(identity, pauli_x, SparseFragment(csr_matrix([[1, -1], [-1, 1]])))]
+    "frag1, frag2, expected", [(identity, pauli_x, SparseFragment(csr_array([[1, -1], [-1, 1]])))]
 )
 def test_subtraction(frag1, frag2, expected):
     """Test subtraction of SparseFragments"""
@@ -86,9 +86,9 @@ def test_subtraction(frag1, frag2, expected):
     "frag, scalar, expected",
     [
         (
-            SparseFragment(csr_matrix([[1, 2], [3, 4]])),
+            SparseFragment(csr_array([[1, 2], [3, 4]])),
             2.5,
-            SparseFragment(csr_matrix([[2.5, 5], [7.5, 10]])),
+            SparseFragment(csr_array([[2.5, 5], [7.5, 10]])),
         )
     ],
 )
@@ -120,7 +120,7 @@ def test_matrix_multiplication(frag1, frag2, expected):
 @pytest.mark.parametrize(
     "frag, expected",
     [
-        (SparseFragment(csr_matrix([[3, 4], [0, 0]])), 5.0),
+        (SparseFragment(csr_array([[3, 4], [0, 0]])), 5.0),
     ],
 )
 def test_norm(frag, expected):
@@ -187,8 +187,8 @@ def test_state_addition(state1, state2, expected):
 @pytest.mark.parametrize(
     "state1, state2, expected",
     [
-        (state_01, state_10, SparseState(csr_matrix([[-1, 1]]))),
-        (state_10, state_01, SparseState(csr_matrix([[1, -1]]))),
+        (state_01, state_10, SparseState(csr_array([[-1, 1]]))),
+        (state_10, state_01, SparseState(csr_array([[1, -1]]))),
     ],
 )
 def test_state_subtraction(state1, state2, expected):
@@ -199,8 +199,8 @@ def test_state_subtraction(state1, state2, expected):
 @pytest.mark.parametrize(
     "state, scalar, expected",
     [
-        (state_01, 5.0, SparseState(csr_matrix([[0, 5]]))),
-        (state_10, -5.0, SparseState(csr_matrix([[-5, 0]]))),
+        (state_01, 5.0, SparseState(csr_array([[0, 5]]))),
+        (state_10, -5.0, SparseState(csr_array([[-5, 0]]))),
     ],
 )
 def test_state_scalar_multiplication(state, scalar, expected):
@@ -228,7 +228,7 @@ def test_dot_product(x, y, expected):
 def test_fragment_equality_type_error():
     """Test equality comparison between SparseFragments"""
 
-    mat1 = csr_matrix([[1, 0], [0, 1]])
+    mat1 = csr_array([[1, 0], [0, 1]])
     frag1 = SparseFragment(mat1)
 
     with pytest.raises(TypeError, match="Cannot compare SparseFragment with type <class 'str'>"):
