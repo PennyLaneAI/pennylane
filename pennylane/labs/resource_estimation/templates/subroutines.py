@@ -811,8 +811,7 @@ class ResourceIterativeQPE(ResourceOperator):
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        The resources are obtained following the construction from `arXiv:quant-ph/0610214v3
-        <https://arxiv.org/abs/quant-ph/0610214v3>`_.
+        The resources are obtained following the construction from `arXiv:0610214v3 <https://arxiv.org/abs/quant-ph/0610214v3>`_.
 
     .. seealso:: :func:`~.iterative_qpe`
 
@@ -888,8 +887,8 @@ class ResourceIterativeQPE(ResourceOperator):
             num_iter (int): the number of mid-circuit measurements made to read out the phase
 
         Resources:
-            The resources are obtained following the construction from `arXiv:quant-ph/0610214v3
-            <https://arxiv.org/pdf/quant-ph/0610214v3>`_.
+            The resources are obtained following the construction from `arXiv:0610214v3
+            <https://arxiv.org/abs/quant-ph/0610214v3>`_.
 
         Returns:
             list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
