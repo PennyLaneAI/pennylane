@@ -135,7 +135,7 @@ class TestExecutionConfig:
     def test_invalid_device_options(self, invalid_device_options):
         """Test that invalid types for device_options raise an error."""
         with pytest.raises(
-            ValueError,
+            TypeError,
             match=r"Got invalid type .* for 'device_options'",
         ):
             _ = ExecutionConfig(device_options=invalid_device_options)
@@ -152,7 +152,7 @@ class TestExecutionConfig:
     def test_invalid_gradient_keyword_arguments(self, invalid_gradient_keyword_arguments):
         """Test that invalid types for gradient_keyword_arguments raise an error."""
         with pytest.raises(
-            ValueError,
+            TypeError,
             match=r"Got invalid type .* for 'gradient_keyword_arguments'",
         ):
             _ = ExecutionConfig(gradient_keyword_arguments=invalid_gradient_keyword_arguments)

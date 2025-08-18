@@ -126,23 +126,18 @@ class ExecutionConfig:
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
-        # Need to check instance of MappingProxyType in case we use `dataclasses.replace`
-        # and these fields are not being updated. This ensures we don't get nested mappingproxy types.
-        if not (
-            isinstance(object.__getattribute__(self, "device_options"), (dict, MappingProxyType))
-        ):
-            raise ValueError(
-                f"Got invalid type {type(object.__getattribute__(self, 'device_options'))} for 'device_options'"
-            )
-        if not (
-            isinstance(
-                object.__getattribute__(self, "gradient_keyword_arguments"),
-                (dict, MappingProxyType),
-            )
-        ):
-            raise ValueError(
-                f"Got invalid type {type(object.__getattribute__(self, 'gradient_keyword_arguments'))} for 'gradient_keyword_arguments'"
-            )
+        def _validate_and_freeze_dict(field_name: str):
+            value = getattr(self, field_name)
+            if not isinstance(value, (dict, MappingProxyType)):
+                raise TypeError(f"Got invalid type {type(value)} for '{field_name}'")
+            # Only wrap if it's not already a proxy.
+            # This handles the case when `dataclasses.replace` is used and
+            # the field is not being modified.
+            if isinstance(value, dict):
+                object.__setattr__(self, field_name, MappingProxyType(value))
+
+        _validate_and_freeze_dict("device_options")
+        _validate_and_freeze_dict("gradient_keyword_arguments")
 
         if not (
             isinstance(self.gradient_method, (str, TransformDispatcher))
@@ -159,15 +154,6 @@ class ExecutionConfig:
 
         if self.executor_backend is None:
             object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
-
-    def __getattribute__(self, name):
-        if name == "device_options":
-            val = object.__getattribute__(self, "device_options")
-            return val if isinstance(val, MappingProxyType) else MappingProxyType(val)
-        if name == "gradient_keyword_arguments":
-            val = object.__getattribute__(self, "gradient_keyword_arguments")
-            return val if isinstance(val, MappingProxyType) else MappingProxyType(val)
-        return object.__getattribute__(self, name)
 
 
 # pylint: disable=missing-function-docstring, inconsistent-return-statements
