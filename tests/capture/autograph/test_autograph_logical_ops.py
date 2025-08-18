@@ -126,13 +126,13 @@ class TestAnd:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=False)
         def circuit(x: bool, y: bool):
             if x and y:
                 qml.PauliX(0)
             return qml.expval(qml.PauliZ(0))
 
-        result = circuit(x=a, y=b)
+        result = run_autograph(circuit)(x=a, y=b)
         assert result == -1.0 if (a and b) else 1.0
 
     def test_while_loop_integration(self):
@@ -281,13 +281,13 @@ class TestOr:
 
         dev = qml.device("default.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=False)
         def circuit(x: bool, y: bool):
             if x or y:
                 qml.PauliX(0)
             return qml.expval(qml.PauliZ(0))
 
-        result = circuit(x=a, y=b)
+        result = run_autograph(circuit)(x=a, y=b)
         assert result == -1.0 if (a or b) else 1.0
 
     def test_while_loop_integration(self):
@@ -430,13 +430,13 @@ class TestNot:
 
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, autograph=False)
         def circuit(x: bool):
             if not x:
                 qml.PauliX(0)
             return qml.expval(qml.PauliZ(0))
 
-        result = circuit(x=a)
+        result = run_autograph(circuit)(x=a)
         assert result == -1.0 if (not a) else 1.0
 
     def test_while_loop_integration(self):
