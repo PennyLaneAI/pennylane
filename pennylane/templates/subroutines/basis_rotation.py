@@ -398,9 +398,6 @@ def _basis_rotation_decomp_resources(dim, is_real):
 @register_resources(_basis_rotation_decomp_resources)
 def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
 
-    def _phase_shift(_phi, _wires):
-        PhaseShift(_phi, wires=_wires)
-
     if math.is_real_obj_or_close(unitary_matrix):
         angle, unitary_matrix = _adjust_determinant(unitary_matrix)
         if angle is not None:
@@ -421,7 +418,7 @@ def _basis_rotation_decomp(unitary_matrix, wires: WiresLike, **__):
         theta = math.arccos(math.real(grot_mat[1, 1]))
         phi = math.angle(grot_mat[0, 0])
         SingleExcitation(2 * theta, wires=[wires[i], wires[j]])
-        cond(not math.allclose(phi, 0.0), _phase_shift)(phi, wires[i])
+        cond(not math.allclose(phi, 0.0), qml.PhaseShift)(phi, wires[i])
 
 
 add_decomps(BasisRotation, _basis_rotation_decomp)
