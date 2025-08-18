@@ -49,6 +49,7 @@ def test_single_integer_indexing(array_in, index, new_value, array_out):
     assert jnp.array_equal(result[0], array_out)
 
 
+@pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
     "array_in, index, new_value, array_out",
     [
@@ -72,6 +73,7 @@ def test_slicing(array_in, index, new_value, array_out):
     assert jnp.array_equal(result[0], array_out)
 
 
+@pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
     "array_in, index, new_value, array_out",
     [
@@ -101,6 +103,7 @@ def test_non_trivial_indexing(array_in, index, new_value, array_out):
     assert jnp.array_equal(result[0], array_out)
 
 
+@pytest.mark.usefixtures("enable_disable_plxpr")
 def test_non_tracing_assignment():
     """Tests item assignment if the list is not a tracer."""
 
@@ -114,3 +117,39 @@ def test_non_tracing_assignment():
     result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts)
     expected = jnp.array([0, 0, 1, 0, 0])
     assert jnp.array_equal(result, expected)
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+def test_while_loop_integration():
+    """Tests item assignment within a while loop."""
+
+    def fn():
+        x = jnp.zeros(5)
+        i = 0
+        while i < 5:
+            x[i] = i
+            i += 1
+        return x
+
+    ag_fn = run_autograph(fn)
+    ag_fn_jaxpr = make_jaxpr(ag_fn)()
+    result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts)
+    expected = jnp.array([0, 1, 2, 3, 4])
+    assert jnp.array_equal(result[0], expected)
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+def test_for_loop_integration():
+    """Tests item assignment within a for loop."""
+
+    def fn():
+        x = jnp.zeros(5)
+        for i in range(5):
+            x[i] = i
+        return x
+
+    ag_fn = run_autograph(fn)
+    ag_fn_jaxpr = make_jaxpr(ag_fn)()
+    result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts)
+    expected = jnp.array([0, 1, 2, 3, 4])
+    assert jnp.array_equal(result[0], expected)
