@@ -12,7 +12,7 @@
       [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 
     * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford gates by applying
-      a combination of phase gadgetization strategies and Clifford gates simplification rules.
+      a combination of phase gadgetization strategies and Clifford gate simplification rules.
       (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
       [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
 

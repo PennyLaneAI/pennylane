@@ -30,17 +30,17 @@ from .helper import _needs_pyzx
 @transform
 def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Reduce the number of non-Clifford gates by applying a combination of phase gadgetization strategies
-    and Clifford gates simplification rules.
+    and Clifford gate simplification rules.
 
     This transform performs the following simplification/optimization steps:
 
-    - apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
-      simplification pipeline to the ``pyzx`` graph representation of the given input circuit;
+    - Apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
+      simplification pipeline to the ``pyzx`` graph representation of the given input circuit.
 
-    - use the `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__
-      function to extract the equivalent sequence of gates and build a new optimized circuit;
+    - Use the `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__
+      function to extract the equivalent sequence of gates and build a new optimized circuit.
 
-    - apply the `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass
+    - Apply the `basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass
       to further optimize the phase-polynomial blocks in the circuit.
 
     This pipeline does not run the Third Order Duplicate and Destroy (TODD) algorithm and thus is not restricted to Clifford + T circuits.
@@ -91,8 +91,8 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
     .. note::
 
         This transform is designed to minimize non-Clifford phase gates (e.g. ``T``, ``RZ``),
-        and it's not as effective at reducing the number of two-qubit gates (e.g. ``CNOT``).
-        However, its performance varies significantly depending on the type of circuit.
+        and is not as effective at reducing the number of two-qubit gates (e.g. ``CNOT``).
+        That is, its performance varies significantly depending on the type of input circuit.
         For example, you might see a substantial increase in CNOT gates when optimizing a circuit composed primarily of Toffoli gates.
         Conversely, it tends to perform quite well on Trotterized chemistry circuits.
 
