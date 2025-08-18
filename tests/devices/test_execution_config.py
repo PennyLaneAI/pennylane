@@ -15,6 +15,9 @@
 Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 """
 
+from dataclasses import replace
+from types import MappingProxyType
+
 import pytest
 
 from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
@@ -156,6 +159,26 @@ class TestExecutionConfig:
             match=r"Got invalid type .* for 'gradient_keyword_arguments'",
         ):
             _ = ExecutionConfig(gradient_keyword_arguments=invalid_gradient_keyword_arguments)
+
+    def test_execution_config_replace_interactions(self):
+        """
+        Tests that `dataclasses.replace` interacts correctly with the
+        custom validation and transformation in `__post_init__`.
+        """
+        original_config = ExecutionConfig(
+            device_options={"hi": "bye"}, gradient_keyword_arguments={"foo": "bar"}
+        )
+
+        new_config = replace(original_config, device_options={"hi": "there"})
+
+        assert new_config.device_options == {"hi": "there"}
+        assert isinstance(new_config.device_options, MappingProxyType)
+
+        assert new_config.gradient_keyword_arguments == original_config.gradient_keyword_arguments
+        assert isinstance(new_config.gradient_keyword_arguments, MappingProxyType)
+
+        with pytest.raises(TypeError, match=r"Got invalid type .* for 'device_options'"):
+            replace(original_config, device_options=["this", "is", "a", "list"])
 
     def test_immutability(self):
         """Test that ExecutionConfig instances are immutable if frozen."""
