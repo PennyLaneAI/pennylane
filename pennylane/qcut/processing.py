@@ -390,7 +390,9 @@ def _process_tensor(results, n_prep: int, n_meas: int):
     grouped_flat = [term for group in grouped for term in group]
     order = math.argsort(grouped_flat)
 
-    if math.get_interface(intermediate_tensor) == "tensorflow":
+    if (
+        math.get_interface(intermediate_tensor) == "tensorflow"
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         # TensorFlow does not support slicing
         intermediate_tensor = math.gather(intermediate_tensor, order, axis=-1)
     else:
