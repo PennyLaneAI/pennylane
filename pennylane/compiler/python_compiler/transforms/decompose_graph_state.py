@@ -127,6 +127,10 @@ class DecomposeGraphStatePattern(RewritePattern):
         for qinsert_op in qinsert_ops:
             rewriter.insert_op(qinsert_op)
 
+        # The register that is the result of the last quantum.insert op replaces the register that
+        # was the result of the graph_state_prep op
+        rewriter.replace_all_uses_with(graph_prep_op.results[0], qinsert_ops[-1].results[0])
+
         # Finally, erase the ops that have now been replaced with quantum ops
         rewriter.erase_matched_op()
         rewriter.erase_op(graph_prep_op.adj_matrix.owner)
@@ -167,6 +171,8 @@ class NullDecomposeGraphStatePattern(RewritePattern):
 
         alloc_op = quantum.AllocOp(n_vertices)
         rewriter.insert_op(alloc_op)
+
+        rewriter.replace_all_uses_with(graph_prep_op.results[0], alloc_op.results[0])
 
         rewriter.erase_matched_op()
         rewriter.erase_op(graph_prep_op.adj_matrix.owner)

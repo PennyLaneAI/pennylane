@@ -317,6 +317,117 @@ class TestNullDecomposeGraphStatePass:
         run_filecheck(program, pipeline)
 
 
+class TestDecomposeGraphStateIntegration:
+    """Integration tests for the decompose-graph-state pass."""
+
+    def test_register_use(self, run_filecheck):
+        """Test that the uses of the register resulting from a graph_state_prep op are still correct
+        after decomposing it into its quantum ops with the decompose-graph-state pass.
+
+        We do not rigorously test the decomposition here, only that the last resulting register from
+        the decomposition (specifically, from the last quantum.insert op) is correctly picked up by
+        the ops that used the register resulting from the graph_state_prep op.
+        """
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1]> : tensor<1xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: [[graph_reg:%.+]] = quantum.alloc(2) : !quantum.reg
+
+            // CHECK:      quantum.extract [[graph_reg]][0] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT: quantum.extract [[graph_reg]][1] : !quantum.reg -> !quantum.bit
+
+            // CHECK:      quantum.custom "Hadamard"() {{%.+}} : !quantum.bit
+            // CHECK-NEXT: quantum.custom "Hadamard"() {{%.+}} : !quantum.bit
+
+            // CHECK: quantum.custom "CZ"() {{%.+}}, {{%.+}} : !quantum.bit, !quantum.bit
+
+            // CHECK:                         quantum.insert {{%.+}}[0], {{%.+}} : !quantum.reg, !quantum.bit
+            // CHECK-NEXT: [[out_qreg0:%.+]] = quantum.insert {{%.+}}[1], {{%.+}} : !quantum.reg, !quantum.bit
+
+            %adj_matrix = arith.constant dense<[1]> : tensor<1xi1>
+            %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<1xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+
+            // CHECK:      quantum.extract [[out_qreg0]][0] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT: quantum.extract [[out_qreg0]][1] : !quantum.reg -> !quantum.bit
+            %q0a = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
+            %q1a = quantum.extract %qreg[1] : !quantum.reg -> !quantum.bit
+
+            // CHECK: arith.constant
+            // CHECK: mbqc.measure_in_basis
+            %angle_0 = arith.constant 0.0 : f64
+            %m0, %q0b = mbqc.measure_in_basis [XY, %angle_0] %q0a : i1, !quantum.bit
+
+            // CHECK: arith.constant
+            // CHECK: mbqc.measure_in_basis
+            %angle_pi_2 = arith.constant 1.5707963267948966 : f64
+            %m1, %q1b = mbqc.measure_in_basis [XY, %angle_pi_2] %q1a : i1, !quantum.bit
+
+            // CHECK: [[out_qreg1:%.+]] = quantum.insert [[out_qreg0]][0], {{%.+}} : !quantum.reg, !quantum.bit
+            // CHECK: [[out_qreg2:%.+]] = quantum.insert [[out_qreg1]][1], {{%.+}} : !quantum.reg, !quantum.bit
+            %reg0 = quantum.insert %qreg[0], %q0b : !quantum.reg, !quantum.bit
+            %reg1 = quantum.insert %reg0[1], %q1b : !quantum.reg, !quantum.bit
+
+            func.return
+        }
+        """
+
+        pipeline = (DecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
+
+class TestNullDecomposeGraphStateIntegration:
+    """Integration tests for the null-decompose-graph-state pass."""
+
+    def test_register_use(self, run_filecheck):
+        """Test that the uses of the register resulting from a graph_state_prep op are still correct
+        after decomposing it into its quantum ops with the null-decompose-graph-state pass.
+
+        We do not rigorously test the decomposition here, only that the last resulting register from
+        the decomposition (specifically, from the quantum.alloc op) is correctly picked up by the
+        ops that used the register resulting from the graph_state_prep op.
+        """
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1]> : tensor<1xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: [[graph_reg:%.+]] = quantum.alloc(2) : !quantum.reg
+
+            %adj_matrix = arith.constant dense<[1]> : tensor<1xi1>
+            %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<1xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+
+            // CHECK:      quantum.extract [[graph_reg]][0] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT: quantum.extract [[graph_reg]][1] : !quantum.reg -> !quantum.bit
+            %q0a = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
+            %q1a = quantum.extract %qreg[1] : !quantum.reg -> !quantum.bit
+
+            // CHECK: arith.constant
+            // CHECK: mbqc.measure_in_basis
+            %angle_0 = arith.constant 0.0 : f64
+            %m0, %q0b = mbqc.measure_in_basis [XY, %angle_0] %q0a : i1, !quantum.bit
+
+            // CHECK: arith.constant
+            // CHECK: mbqc.measure_in_basis
+            %angle_pi_2 = arith.constant 1.5707963267948966 : f64
+            %m1, %q1b = mbqc.measure_in_basis [XY, %angle_pi_2] %q1a : i1, !quantum.bit
+
+            // CHECK: [[out_qreg1:%.+]] = quantum.insert [[graph_reg]][0], {{%.+}} : !quantum.reg, !quantum.bit
+            // CHECK: [[out_qreg2:%.+]] = quantum.insert [[out_qreg1]][1], {{%.+}} : !quantum.reg, !quantum.bit
+            %reg0 = quantum.insert %qreg[0], %q0b : !quantum.reg, !quantum.bit
+            %reg1 = quantum.insert %reg0[1], %q1b : !quantum.reg, !quantum.bit
+
+            func.return
+        }
+        """
+
+        pipeline = (NullDecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
+
 class TestAdjMatrixHelpers:
     """Test suite for the densely packed adjacency matrix helper functions."""
 
