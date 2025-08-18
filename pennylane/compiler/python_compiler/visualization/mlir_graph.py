@@ -25,6 +25,9 @@ from catalyst.compiler import CompileError, _get_catalyst_cli_cmd
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl.printer import Printer
 
+from pennylane import QNode
+from pennylane.typing import Callable
+
 from ..compiler import Compiler
 
 has_graphviz = True
@@ -35,21 +38,15 @@ except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_graphviz = False
 
 
-# This interface can be removed once the _quantum_opt interface
+# TODO: This interface can be removed once the _quantum_opt interface
 # implemented in catalyst.compiler returns the `stderr` output
 def _quantum_opt_stderr(*args, stdin=None, stderr_return=False):
-    """Raw interface to quantum-opt
-    echo ${stdin} | catalyst --tool=opt *args -
-    catalyst --tool=opt *args
-    """
+    """Raw interface to quantum-opt"""
     return _catalyst(("--tool", "opt"), *args, stdin=stdin, stderr_return=stderr_return)
 
 
 def _catalyst(*args, stdin=None, stderr_return=False):
-    """Raw interface to catalyst
-    echo ${stdin} | catalyst *args -
-    catalyst *args
-    """
+    """Raw interface to catalyst"""
     cmd = _get_catalyst_cli_cmd(*args, stdin=stdin)
     try:
         result = subprocess.run(cmd, input=stdin, check=True, capture_output=True, text=True)
@@ -61,6 +58,9 @@ def _catalyst(*args, stdin=None, stderr_return=False):
 
 
 def _mlir_graph_callback(pass_instance, module, pass_level):
+    """
+    Callback function for MLIR graph generation.
+    """
     buffer = io.StringIO()
     Printer(stream=buffer, print_generic_format=True).print_op(module)
     _, dot_graph = _quantum_opt_stderr(
@@ -78,9 +78,23 @@ def _mlir_graph_callback(pass_instance, module, pass_level):
         f.write(graph.pipe(format="svg"))
 
 
-def generate_mlir_graph(qnode):
+def generate_mlir_graph(qnode: QNode) -> Callable:
     """
-    Generate an MLIR graph for the given QNode.
+    Generate an MLIR graph for the given QNode and saves it to a file.
+
+    This function uses the callback mechanism of the unified compiler framework to generate
+    the MLIR graph in between compilation passes. The provided QNode is assumed to be decorated with xDSL compilation passes.
+    The ``qjit`` decorator is used to recompile the QNode with the passes and the provided arguments.
+
+    If no compilation passes are applied, the MLIR graph will not be generated.
+
+    Args:
+        qnode (.QNode): the input QNode that is to be visualized.
+
+
+    Returns:
+        Callable: A wrapper function that generates the MLIR graph.
+
     """
 
     if not has_graphviz:
@@ -95,11 +109,12 @@ def generate_mlir_graph(qnode):
         # with the args and kwargs provided by the user.
         # TODO: we could integrate the callback mechanism within `qjit`,
         # so that we wouldn't need to recompile the qnode twice.
-        if qnode.mlir_module is not None:
-            Compiler.run(qnode.mlir_module, callback=_mlir_graph_callback)
-        else:
+        mlir_module = qnode.mlir_module
+        if mlir_module is None:
             new_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(qnode.user_function)
             new_qnode.jit_compile(args, **kwargs)
-            Compiler.run(new_qnode.mlir_module, callback=_mlir_graph_callback)
+            mlir_module = new_qnode.mlir_module
+
+        Compiler.run(mlir_module, callback=_mlir_graph_callback)
 
     return wrapper

@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Unit test module for the merge rotations transform"""
+
+from pathlib import Path
+
 import pytest
 
 pytestmark = pytest.mark.external
@@ -19,7 +22,6 @@ pytestmark = pytest.mark.external
 pytest.importorskip("xdsl")
 pytest.importorskip("catalyst")
 
-from pathlib import Path
 
 # pylint: disable=wrong-import-position
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
@@ -41,6 +43,7 @@ class TestMLIRGraph:
 
         monkeypatch.chdir(tmp_path)
 
+        @generate_mlir_graph
         @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _():
@@ -50,7 +53,8 @@ class TestMLIRGraph:
             qml.CNOT([0, 2])
             return qml.state()
 
-        generate_mlir_graph(_)()
+        _()
+
         assert not self._collect_files(tmp_path)
 
     def test_transforms_no_args(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -58,6 +62,7 @@ class TestMLIRGraph:
 
         monkeypatch.chdir(tmp_path)
 
+        @generate_mlir_graph
         @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
         @qml.compiler.python_compiler.transforms.merge_rotations_pass
         @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
@@ -69,7 +74,7 @@ class TestMLIRGraph:
             qml.CNOT([0, 2])
             return qml.state()
 
-        generate_mlir_graph(_)()
+        _()
 
         files = self._collect_files(tmp_path)
         assert len(files) == 3
