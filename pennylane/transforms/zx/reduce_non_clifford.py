@@ -35,7 +35,7 @@ def reduce_non_clifford(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postpr
     This transform performs the following simplification/optimization steps:
 
     - Apply the `full_reduce <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce>`__
-      simplification pipeline to the ``pyzx`` graph representation of the given input circuit.
+      simplification pipeline to the ``pyzx`` graph representation (see :func:`~.to_zx`) of the given input circuit.
 
     - Use the `extract_circuit <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.extract.extract_circuit>`__
       function to extract the equivalent sequence of gates and build a new optimized circuit.
