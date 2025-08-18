@@ -707,7 +707,7 @@ class ResourceQPE(ResourceOperator):
         adj_qft_cmpr_op,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
@@ -735,7 +735,7 @@ class ResourceQPE(ResourceOperator):
             base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
                 to the operator that we will be applying controlled powers of.
             num_estimation_wires (int): the number of wires used for measuring out the phase
-            adj_qft_cmpr_op (CompressedResourceOpor None): A compressed resource operator,
+            adj_qft_cmpr_op (CompressedResourceOp, None): A compressed resource operator,
                 corresponding to the adjoint QFT.
 
         Resources:
@@ -777,7 +777,7 @@ class ResourceIterativeQPE(ResourceOperator):
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        The resources are obtained following the constuction from `arXiv:quant-ph/0610214v3
+        The resources are obtained following the construction from `arXiv:quant-ph/0610214v3
         <https://arxiv.org/pdf/quant-ph/0610214v3>`_.
 
     .. seealso:: :func:`~.iterative_qpe`
@@ -854,7 +854,7 @@ class ResourceIterativeQPE(ResourceOperator):
             num_iter (int): the number of mid-circuit measurements made to read out the phase
 
         Resources:
-            The resources are obtained following the constuction from `arXiv:quant-ph/0610214v3
+            The resources are obtained following the construction from `arXiv:quant-ph/0610214v3
             <https://arxiv.org/pdf/quant-ph/0610214v3>`_.
 
         Returns:

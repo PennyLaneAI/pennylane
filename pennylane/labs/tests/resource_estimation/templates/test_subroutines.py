@@ -547,7 +547,7 @@ class TestResourceQPE:
         ),
     )
     def test_resources(self, base_op, num_est_wires, adj_qft_op, expected_res):
-        """Test the resources method is correct"""
+        """Test that resources method is correct"""
         op = (
             plre.ResourceQPE(base_op, num_est_wires)
             if adj_qft_op is None
