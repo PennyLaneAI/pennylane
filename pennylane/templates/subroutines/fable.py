@@ -134,9 +134,9 @@ class FABLE(Operation):
 
     @property
     def resource_params(self) -> dict:
-        code = gray_code(int(2 * math.log2(len(self.params))))
+        code = gray_code(int(2 * math.log2(len(self.parameters))))
         control_wires = np.log2(code ^ np.roll(code, -1)).astype(int)
-        alphas = math.arccos(self.params).flatten()
+        alphas = math.arccos(self.parameters).flatten()
         thetas = compute_theta(alphas)
         return {
             "wires": self.wires,
@@ -205,7 +205,7 @@ class FABLE(Operation):
 
 def _fable_resources(wires, thetas, control_wires, tol):
 
-    resources = Counter({resource_rep(Hadamard): len(wires)})
+    resources = Counter({resource_rep(Hadamard): len(wires) // 2 * 2})
 
     wires_i = wires[1 : 1 + len(wires) // 2][::-1]
     wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
@@ -233,7 +233,7 @@ def _fable_resources(wires, thetas, control_wires, tol):
         else:
             nots[wire_map[control_index]] = 1
 
-    for j in range(nots):
+    for j in range(len(nots.keys())):
         resources[resource_rep(CNOT)] += 1
 
     resources[resource_rep(SWAP)] = min(len(wires_i), len(wires_j))
@@ -246,7 +246,7 @@ def _fable_decomposition(input_matrix, wires, tol=0):
     alphas = math.arccos(input_matrix).flatten()
     thetas = compute_theta(alphas)
 
-    ancilla = [wires[0]]
+    auxilliary = [wires[0]]
     wires_i = wires[1 : 1 + len(wires) // 2][::-1]
     wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
 
@@ -270,14 +270,14 @@ def _fable_decomposition(input_matrix, wires, tol=0):
         control_index = control_wires[j]
 
         def abstract_branch(nots):
-            @for_loop(len(nots))
+            @for_loop(len(nots.keys()))
             def abstract_nots_loop(k):
                 c_wire = list(nots.keys())[k]
-                CNOT(wires=[c_wire] + ancilla)
+                CNOT(wires=[c_wire] + auxilliary)
 
             abstract_nots_loop(nots)  # pylint: disable=no-value-for-parameter
 
-            RY(2 * theta, wires=ancilla)
+            RY(2 * theta, wires=auxilliary)
             nots = {}
             nots[wire_map[control_index]] = 1
 
@@ -286,15 +286,15 @@ def _fable_decomposition(input_matrix, wires, tol=0):
         def concrete_branch(nots):
             def in_tol_branch(nots):
 
-                @for_loop(len(nots))
+                @for_loop(len(nots.keys()))
                 def concrete_nots_loop(l, nots):
                     c_wire = list(nots.keys())[l]
-                    CNOT(wires=[c_wire] + ancilla)
+                    CNOT(wires=[c_wire] + auxilliary)
                     return nots
 
                 concrete_nots_loop(nots)  # pylint: disable=no-value-for-parameter
 
-                RY(2 * theta, wires=ancilla)
+                RY(2 * theta, wires=auxilliary)
                 nots = {}
 
                 return nots
@@ -319,10 +319,10 @@ def _fable_decomposition(input_matrix, wires, tol=0):
 
     theta_controls_loop(nots)  # pylint: disable=no-value-for-parameter
 
-    @for_loop(len(nots))
+    @for_loop(len(nots.keys()))
     def outer_nots_loop(m, nots):
         c_wire = list(nots.keys())[m]
-        CNOT([c_wire] + ancilla)
+        CNOT([c_wire] + auxilliary)
 
     outer_nots_loop(nots)  # pylint: disable=no-value-for-parameter
 
