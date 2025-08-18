@@ -147,11 +147,13 @@ class TestReduceNonClifford:
         assert len(new_qs.operations) == 5
 
         s, h, rz, ht, st = new_qs.operations
-        phi = 2 * np.pi - np.mod(np.sum(params), 2 * np.pi)
+        phi = np.mod(np.sum(params), 2 * np.pi)
+        glob_phase = np.exp(-1j * np.pi)
 
         assert qml.equal(s, qml.S(0))
         assert qml.equal(h, qml.H(0))
-        assert qml.equal(rz, qml.RZ(phi, 0))
+        assert isinstance(rz, qml.RZ)
+        assert np.allclose(rz.matrix() @ qml.RZ(phi, 0).matrix(), glob_phase * np.eye(2))
         assert qml.equal(ht, qml.H(0))
         assert qml.equal(st, qml.adjoint(qml.S(0)))
 
