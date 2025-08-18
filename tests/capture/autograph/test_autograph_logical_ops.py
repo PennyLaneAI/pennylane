@@ -13,6 +13,8 @@
 # limitations under the License.
 """The tests for logical operations in AutoGraph"""
 
+# pylint: disable = unnecessary-lambda-assignment
+
 import pytest
 
 pytestmark = pytest.mark.capture
@@ -40,6 +42,7 @@ class TestAnd:
 
         args = (a, b)
         ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        assert ag_fn_jaxpr.jaxpr.eqns[0].primitive == jax.lax.and_p
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
         assert result[0] == (a and b)
@@ -87,6 +90,31 @@ class TestAnd:
 
         assert result[0] == (x and val)
 
+    @pytest.mark.parametrize(
+        "python_object",
+        [
+            "",
+            "string",
+            [],
+            [1, 2],
+            {},
+            {1: "a"},
+        ],
+    )
+    @pytest.mark.parametrize("arg", [True, False])
+    def test_python_object_interaction(self, python_object, arg):
+        """Test that logical AND works with Python objects."""
+
+        fn = lambda: 1 if arg and python_object else 0
+
+        ag_fn = run_autograph(fn)
+
+        args = ()
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (1 if arg and python_object else 0)
+
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestOr:
@@ -101,6 +129,7 @@ class TestOr:
 
         args = (a, b)
         ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        assert ag_fn_jaxpr.jaxpr.eqns[0].primitive == jax.lax.or_p
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
         assert result[0] == (a or b)
@@ -148,6 +177,31 @@ class TestOr:
 
         assert result[0] == (x or val)
 
+    @pytest.mark.parametrize(
+        "python_object",
+        [
+            "",
+            "string",
+            [],
+            [1, 2],
+            {},
+            {1: "a"},
+        ],
+    )
+    @pytest.mark.parametrize("arg", [True, False])
+    def test_python_object_interaction(self, python_object, arg):
+        """Test that logical OR works with Python objects."""
+
+        fn = lambda: 1 if arg or python_object else 0
+
+        ag_fn = run_autograph(fn)
+
+        args = ()
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (1 if arg or python_object else 0)
+
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestNot:
@@ -162,6 +216,7 @@ class TestNot:
 
         args = (x,)
         ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        assert ag_fn_jaxpr.jaxpr.eqns[0].primitive == jax.lax.not_p
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
         assert result[0] == (not x)
@@ -207,6 +262,30 @@ class TestNot:
 
         assert result[0] == (not val)
 
+    @pytest.mark.parametrize(
+        "python_object",
+        [
+            "",
+            "string",
+            [],
+            [1, 2],
+            {},
+            {1: "a"},
+        ],
+    )
+    def test_python_object_interaction(self, python_object):
+        """Test that logical NOT works with Python objects."""
+
+        fn = lambda: 1 if not python_object else 0
+
+        ag_fn = run_autograph(fn)
+
+        args = ()
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (1 if not python_object else 0)
+
 
 # pylint: disable=too-few-public-methods
 @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -224,6 +303,5 @@ class TestIntegration:
         ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
-        # The result should be True if both are True or both are False
         expected_result = (a and b) or (not a and not b)
         assert result[0] == expected_result
