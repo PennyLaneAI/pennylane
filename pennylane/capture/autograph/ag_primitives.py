@@ -318,7 +318,7 @@ def _logical_op(*args, jax_fn: Callable, python_fn: Callable):
     JAX and Python. It checks if any of the arguments are undefined, and raises an error if so.
     Otherwise, it applies the specified logical operation using either JAX or Python functions."""
 
-    values = [arg() if isinstance(arg, Callable) else arg for arg in args]
+    values = [arg() if callable(arg) else arg for arg in args]
 
     if any(qml.math.is_abstract(val) for val in values):
         result = jax_fn(*values)
