@@ -122,10 +122,12 @@ class TestReduceNonClifford:
 
         assert len(new_qs.operations) == 3
 
-        h_0, rot, h_1 = new_qs.operations
-        assert qml.equal(h_0, qml.H(0))
-        assert qml.equal(rot, qml.RZ(np.mod(np.sum(params), 2 * np.pi), 0))
-        assert qml.equal(h_1, qml.H(0))
+        h, rz, ht = new_qs.operations
+        phi = np.mod(np.sum(params), 2 * np.pi)
+
+        assert qml.equal(h, qml.H(0))
+        assert qml.equal(rz, qml.RZ(phi, 0))
+        assert qml.equal(ht, qml.H(0))
 
     @pytest.mark.parametrize(
         "params",
@@ -144,17 +146,14 @@ class TestReduceNonClifford:
 
         assert len(new_qs.operations) == 5
 
-        rot = new_qs.operations[2]
-        assert new_qs.operations[0] == qml.S(0)
-        assert new_qs.operations[1] == qml.H(0)
-        assert isinstance(rot, qml.RZ)
-        assert new_qs.operations[3] == qml.H(0)
-        assert new_qs.operations[4] == qml.adjoint(qml.S(0))
+        s, h, rz, ht, st = new_qs.operations
+        phi = 2 * np.pi - np.mod(np.sum(params), 2 * np.pi)
 
-        new_angle = rot.parameters[0]
-        exp_angle = np.mod(np.sum(params), 2 * np.pi)
-
-        assert np.isclose(new_angle, 2 * np.pi - exp_angle)
+        assert qml.equal(s, qml.S(0))
+        assert qml.equal(h, qml.H(0))
+        assert qml.equal(rz, qml.RZ(phi, 0))
+        assert qml.equal(ht, qml.H(0))
+        assert qml.equal(st, qml.adjoint(qml.S(0)))
 
     @pytest.mark.parametrize(
         "params",
@@ -172,8 +171,11 @@ class TestReduceNonClifford:
         (new_qs,), _ = qml.transforms.zx.reduce_non_clifford(qs)
 
         assert len(new_qs.operations) == 1
-        rot = new_qs.operations[0]
-        assert qml.equal(rot, qml.RZ(np.mod(np.sum(params), 2 * np.pi), 0))
+
+        (rz,) = new_qs.operations
+        phi = np.mod(np.sum(params), 2 * np.pi)
+
+        assert qml.equal(rz, qml.RZ(phi, 0))
 
     @pytest.mark.parametrize(
         "angle, expected_ops",
