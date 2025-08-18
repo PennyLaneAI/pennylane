@@ -224,7 +224,7 @@ def adjoint_state_measurements(
                 math.requires_grad(p)
                 and math.get_interface(p) == "tensorflow"
                 and math.get_dtype_name(p) in {"float32", "complex64"}
-            ):
+            ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
                 raise ValueError(
                     "tensorflow with adjoint differentiation of the state requires float64 or complex128 parameters."
                 )
@@ -306,7 +306,7 @@ class DefaultQubit(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['ancilla', 'q1', 'q2']``). Default ``None`` if not specified.
+            (``['auxiliary', 'q1', 'q2']``). Default ``None`` if not specified.
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
