@@ -24,9 +24,10 @@ from pennylane.shadows import ClassicalShadow, median_of_means, pauli_expval
 
 wires = range(3)
 shots = 10000
-dev = qml.device("default.qubit", wires=wires, shots=shots)
+dev = qml.device("default.qubit", wires=wires)
 
 
+@qml.set_shots(shots)
 @qml.qnode(dev)
 def qnode(n_wires):
     """Hadamard gate on all wires"""
@@ -107,8 +108,9 @@ class TestIntegrationShadows:
         """Test that a bell state can be faithfully reconstructed"""
         wires = range(2)
 
-        dev = qml.device("default.qubit", wires=wires, shots=10000)
+        dev = qml.device("default.qubit", wires=wires)
 
+        @qml.set_shots(10000)
         @qml.qnode(dev)
         def qnode(n_wires):
             qml.Hadamard(0)
@@ -141,8 +143,9 @@ class TestIntegrationShadows:
 
 def hadamard_circuit(wires, shots=10000, interface="autograd"):
     """Hadamard circuit to put all qubits in equal superposition (locally)"""
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         for i in range(wires):
@@ -154,8 +157,9 @@ def hadamard_circuit(wires, shots=10000, interface="autograd"):
 
 def max_entangled_circuit(wires, shots=10000, interface="autograd"):
     """maximally entangled state preparation circuit"""
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         qml.Hadamard(wires=0)
@@ -168,11 +172,12 @@ def max_entangled_circuit(wires, shots=10000, interface="autograd"):
 
 def qft_circuit(wires, shots=10000, interface="autograd"):
     """Quantum Fourier Transform circuit"""
-    dev = qml.device("default.qubit", wires=wires, shots=shots)
+    dev = qml.device("default.qubit", wires=wires)
 
     one_state = np.zeros(wires)
     one_state[-1] = 1
 
+    @qml.set_shots(shots)
     @qml.qnode(dev, interface=interface)
     def circuit():
         qml.BasisState(one_state, wires=range(wires))
@@ -268,7 +273,8 @@ class TestStateReconstruction:
 
 @pytest.mark.all_interfaces
 class TestStateReconstructionInterfaces:
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_qft_reconstruction(self, interface):
         """Test that the state reconstruction is correct for a QFT state"""
         circuit = qft_circuit(3, interface=interface)
@@ -362,7 +368,8 @@ class TestExpvalEstimation:
 
 @pytest.mark.all_interfaces
 class TestExpvalEstimationInterfaces:
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_qft_expval(self, interface):
         """Test that the expval estimation is correct for a QFT state"""
         circuit = qft_circuit(3, shots=100000, interface=interface)
@@ -404,7 +411,6 @@ class TestExpvalEstimationInterfaces:
 def convert_to_interface(arr, interface):
     """Dispatch arrays for different interfaces"""
     import jax.numpy as jnp
-    import tensorflow as tf
     import torch
 
     if interface == "autograd":
@@ -412,9 +418,6 @@ def convert_to_interface(arr, interface):
 
     if interface == "jax":
         return jnp.array(arr)
-
-    if interface == "tf":
-        return tf.constant(arr)
 
     if interface == "torch":
         return torch.tensor(arr)
@@ -437,7 +440,7 @@ class TestMedianOfMeans:
             (np.array([0.2, 0.1, 0.4]), 3, 0.2),
         ],
     )
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_output(self, arr, num_batches, expected, interface):
         """Test that the output is correct"""
         arr = convert_to_interface(arr, interface)
@@ -452,7 +455,7 @@ class TestPauliExpval:
     """Test the Pauli expectation value function"""
 
     @pytest.mark.parametrize("word", [[0, 0, 1], [0, 2, -1], [-1, -1, 1]])
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_word_not_present(self, word, interface):
         """Test that the output is 0 if the Pauli word is not present in the recipes"""
         bits = convert_to_interface(np.array([[0, 0, 0]]), interface)
@@ -468,7 +471,7 @@ class TestPauliExpval:
     @pytest.mark.parametrize(
         "word, expected", [([0, 1, 2], 27), ([0, 1, -1], -9), ([-1, -1, 2], -3), ([-1, -1, -1], 1)]
     )
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_single_word_present(self, word, expected, interface):
         """Test that the output is correct if the Pauli word appears once in the recipes"""
         bits = convert_to_interface(self.single_bits, interface)
@@ -490,7 +493,7 @@ class TestPauliExpval:
             ([-1, -1, -1], [1, 1, 1]),
         ],
     )
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "tf", "torch"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_multi_word_present(self, word, expected, interface):
         """Test that the output is correct if the Pauli word appears multiple
         times in the recipes"""
