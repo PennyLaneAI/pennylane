@@ -92,3 +92,20 @@ def test_slicing_update(index):
     ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
     result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
     assert jnp.array_equal(result[0], jnp.array([6, 2, 1], dtype=result[0].dtype))
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+def test_static_array_update():
+    """Test that static arrays can be updated."""
+
+    def f():
+        my_list = jnp.empty(2, dtype=int)
+        for i in range(2):
+            my_list[i] = i
+        my_list[1] += 10
+        return my_list
+
+    ag_fn = run_autograph(f)
+    ag_fn_jaxpr = make_jaxpr(ag_fn)()
+    result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts)
+    assert jnp.array_equal(result[0], [0, 11])
