@@ -431,12 +431,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
     >>> qrom_prep = plre.ResourceQROMStatePreparation(num_state_qubits=5, precision=1e-3)
     >>> print(plre.estimate_resources(qrom_prep, gate_set=plre.StandardGateSet))
     --- Resources: ---
-     Total qubits: 19
-     Total gates : 1.116E+3
+     Total qubits: 28
+     Total gates : 2.744E+3
      Qubit breakdown:
-      clean qubits: 14, dirty qubits: 0, algorithmic qubits: 5
+      clean qubits: 23, dirty qubits: 0, algorithmic qubits: 5
      Gate breakdown:
-      {'X': 220, 'Toffoli': 104, 'CNOT': 370, 'Hadamard': 312, 'RY': 100, 'PhaseShift': 10}
+      {'X': 230, 'Toffoli': 236, 'CNOT': 1.522E+3, 'Hadamard': 732, 'S': 12, 'Adjoint(S)': 12}
 
     .. details::
         :title: Usage Details
@@ -452,12 +452,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
         >>> res = plre.estimate_resources(qrom_prep, gate_set)
         >>> print(res)
         --- Resources: ---
-         Total qubits: 11
-         Total gates : 1.137E+3
+         Total qubits: 21
+         Total gates : 2.680E+3
          Qubit breakdown:
-          clean qubits: 7, dirty qubits: 0, algorithmic qubits: 4
+          clean qubits: 17, dirty qubits: 0, algorithmic qubits: 4
          Gate breakdown:
-          {'QROM': 5, 'Adjoint(QROM)': 5, 'CNOT': 56, 'T': 1.071E+3}
+          {'QROM': 5, 'Adjoint(QROM)': 5, 'CNOT': 580, 'T': 1.832E+3, 'Hadamard': 258}
 
         The ``precision`` argument is used to allocate the target wires in the underlying QROM
         operations. It corresponds to the precision with which the rotation angles of the
@@ -476,11 +476,11 @@ class ResourceQROMStatePreparation(ResourceOperator):
         ...     if op.name == "QROM":
         ...         print(op.name, op.params)
         ...
-        QROM {'num_bitstrings': 1, 'num_bit_flips': 1, 'size_bitstring': 7, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 2, 'num_bit_flips': 1, 'size_bitstring': 7, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 4, 'num_bit_flips': 2, 'size_bitstring': 7, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 8, 'num_bit_flips': 4, 'size_bitstring': 7, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 16, 'num_bit_flips': 8, 'size_bitstring': 7, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
 
         Alternatively, we can configure each value independantly by specifying a list. Note the size
         of this list should be :code:`num_state_qubits + 1` (:code:`num_state_qubits` if the state
@@ -496,11 +496,11 @@ class ResourceQROMStatePreparation(ResourceOperator):
         ...     if op.name == "QROM":
         ...         print(op.name, op.params)
         ...
-        QROM {'num_bitstrings': 1, 'num_bit_flips': 1, 'size_bitstring': 7, 'select_swap_depth': 1, 'clean': False}
-        QROM {'num_bitstrings': 2, 'num_bit_flips': 1, 'size_bitstring': 7, 'select_swap_depth': None, 'clean': False}
-        QROM {'num_bitstrings': 4, 'num_bit_flips': 2, 'size_bitstring': 7, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 8, 'num_bit_flips': 4, 'size_bitstring': 7, 'select_swap_depth': 2, 'clean': False}
-        QROM {'num_bitstrings': 16, 'num_bit_flips': 8, 'size_bitstring': 7, 'select_swap_depth': None, 'clean': False}
+        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 1, 'clean': False}
+        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': None, 'clean': False}
+        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': None, 'clean': False}
     """
 
     resource_keys = {"num_state_qubits", "precision", "positive_and_real", "selswap_depths"}
@@ -538,12 +538,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * num_state_qubits (int): number of qubits required to represent the state-vector
-                * precision (float): The precision threshold for loading in the binary representation
-                  of the rotation angles.
-                * positive_and_real (bool): Flag that the coefficients of the statevector are all real
-                  and positive.
-                * selswap_depths (Union[None, int, Iterable(int)], optional): A parameter of :code:`QROM`
-                  used to trade-off extra qubits for reduced circuit depth.
+                * precision (float): the precision threshold for loading in the binary representation
+                  of the rotation angles
+                * positive_and_real (bool): flag that the coefficients of the statevector are all real
+                  and positive
+                * selswap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+                  used to trade-off extra qubits for reduced circuit depth
         """
 
         return {

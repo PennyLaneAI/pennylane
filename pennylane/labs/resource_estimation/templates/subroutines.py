@@ -1056,10 +1056,11 @@ class ResourceQROM(ResourceOperator):
             :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
         clean (bool, optional): Determine if allocated qubits should be reset after the computation
             (at the cost of higher gate counts). Defaults to :code`True`.
-        select_swap_depth (Union[int, None], optional): Can be :code:`None`, :code:`1` or a positive
-            integer power of two that determines if data will be loaded in parallel by adding more
-            rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-            Defaults to :code:`None`, which internally determines the optimal depth.
+        select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+            if data will be loaded in parallel by adding more rows following Figure 1.C of
+            `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
+            :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+            determines the optimal depth.
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
@@ -1171,10 +1172,11 @@ class ResourceQROM(ResourceOperator):
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): Can be :code:`None`, :code:`1` or a positive
-                integer power of two that determines if data will be loaded in parallel by adding more
-                rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                Defaults to :code:`None`, which internally determines the optimal depth.
+            select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+                if data will be loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
+                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+                determines the optimal depth.
             wires (Sequence[int], optional): the wires the operation acts on
 
         Resources:
@@ -1355,9 +1357,11 @@ class ResourceQROM(ResourceOperator):
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                Defaults to :code:`None`, which internally determines the optimal depth.
+            select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+                if data will be loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
+                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+                determines the optimal depth.
 
         Resources:
             The resources for QROM are taken from the following two papers:
@@ -1414,12 +1418,15 @@ class ResourceQROM(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_bitstrings (int): the number of bitstrings that are to be encoded
                 * size_bitstring (int): the length of each bitstring
-                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset. Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
-                * clean (bool, optional): Determine if allocated qubits should be reset after the computation (at the cost of higher gate counts). Defaults to :code`True`.
-                * select_swap_depth (Union[int, None], optional): Can be :code:`None`, :code:`1` or a
-                  positive integer power of two that determines if data will be loaded in parallel by
-                  adding more rows following Figure 1.C of
-                  `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Defaults to :code:`None`,
+                * num_bit_flips (int, optional): The total number of :math:`1`'s in the dataset.
+                  Defaults to :code:`(num_bitstrings * size_bitstring) // 2`, which is half the
+                  dataset.
+                * clean (bool, optional): Determine if allocated qubits should be reset after the
+                  computation (at the cost of higher gate counts). Defaults to :code`True`.
+                * select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that
+                  determines if data will be loaded in parallel by adding more rows following
+                  Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be
+                  :code:`None`, :code:`1` or a positive integer power of two. Defaults to :code:`None`,
                   which internally determines the optimal depth.
 
         """
@@ -1451,10 +1458,11 @@ class ResourceQROM(ResourceOperator):
                 :code:`(num_bitstrings * size_bitstring) // 2`, which is half the dataset.
             clean (bool, optional): Determine if allocated qubits should be reset after the computation
                 (at the cost of higher gate counts). Defaults to :code`True`.
-            select_swap_depth (Union[int, None], optional): Can be :code:`None`, :code:`1` or a positive
-                integer power of two that determines if data will be loaded in parallel by adding more
-                rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                Defaults to :code:`None`, which internally determines the optimal depth.
+            select_swap_depth (Union[int, None], optional): A parameter :math:`\lambda` that determines
+                if data will be loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
+                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+                determines the optimal depth.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
