@@ -14,26 +14,36 @@
 
 """This module contains the implementation of the decompose_graph_state transform,
 written using xDSL.
+
+.. note::
+
+    The transforms contained in this module make frequent use of the *densely packed adjacency
+    matrix* graph representation. For a detailed description of this graph representation, see the
+    documentation for the GraphStatePrepOp operation in the MBQC dialect in Catalyst.
 """
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Generator
+from typing import Generator, TypeAlias
 
 import numpy as np
-from xdsl import context, ir, passes, pattern_rewriter
-from xdsl.dialects import arith, builtin, func, tensor
+from xdsl import context, passes, pattern_rewriter
+from xdsl.dialects import builtin
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern
-from xdsl.rewriter import InsertPoint
 
 from pennylane.exceptions import CompileError
 
 from ..dialects import mbqc, quantum
 from .api import compiler_transform
 
+DenselyPackedAdjMatrix: TypeAlias = list[int] | list[bool]
+
 
 @dataclass(frozen=True)
 class DecomposeGraphStatePass(passes.ModulePass):
-    """Pass that ... [TODO]"""
+    """The decompose-graph-state pass replaces graph_state_prep operations with their corresponding
+    sequence of quantum operations for execution on state simulators.
+    """
 
     name = "decompose-graph-state"
 
@@ -53,42 +63,29 @@ decompose_graph_state_pass = compiler_transform(DecomposeGraphStatePass)
 
 # pylint: disable=too-few-public-methods
 class DecomposeGraphStatePattern(RewritePattern):
-    """Rewrite pattern ... [TODO]"""
-
-    def __init__(self):
-        super().__init__()
+    """Rewrite pattern for the decompose-graph-state transform."""
 
     # pylint: disable=arguments-renamed
     @pattern_rewriter.op_type_rewrite_pattern
     def match_and_rewrite(self, graph_prep_op: mbqc.GraphStatePrepOp, rewriter: PatternRewriter, /):
+        """Match and rewrite pattern for graph_state_prep ops."""
         # These are the names of the gates that realize the desired initial individual qubit state
         # and entangled state, respectively
         init_op_gate_name = graph_prep_op.init_op.data
         entangle_op_gate_name = graph_prep_op.entangle_op.data
 
-        # Parse the adjacency matrix from the result of the ConstantOp given as input to the
-        # graph_state_prep op. We assume that the adjacency matrix is stored as a
-        # DenseIntOrFPElementsAttr, whose data is accessible as a 'bytes' array.
-        adj_matrix_const_op = graph_prep_op.adj_matrix.owner
-        adj_matrix_value = adj_matrix_const_op.properties.get("value")
-        assert adj_matrix_value is not None and hasattr(
-            adj_matrix_value, "data"
-        ), f"Unable to read graph adjacency matrix from op `{adj_matrix_const_op}`"
-
-        adj_matrix_bytes = adj_matrix_value.data
-        assert isinstance(adj_matrix_bytes, builtin.BytesAttr), (
-            f"Expected graph adjacency matrix data to be of type 'builtin.BytesAttr', but got "
-            f"{type(adj_matrix_bytes).__name__}"
-        )
-
-        adj_matrix = list(adj_matrix_bytes.data)
+        adj_matrix = _parse_adj_matrix(graph_prep_op)
         n_vertices = _n_vertices_from_packed_adj_matrix(adj_matrix)
 
         alloc_op = quantum.AllocOp(n_vertices)
         rewriter.insert_op(alloc_op)
 
+        # This dictionary maps wires indices in the register to qubit SSA values
         graph_qubits_map: dict[int, quantum.QubitSSAValue] = {}
 
+        # In this section, we create the sequences of quantum.extract, quantum.custom (for the init
+        # and entangle gates) and quantum.insert ops, and gather them up into list for insertion
+        # later on.
         qextract_ops: list[quantum.ExtractOp] = []
         for i in range(n_vertices):
             qextract_op = quantum.ExtractOp(alloc_op.qreg, i)
@@ -117,6 +114,7 @@ class DecomposeGraphStatePattern(RewritePattern):
             qinsert_ops.append(qinsert_op)
             qreg = qinsert_op.out_qreg
 
+        # In this section, we iterate over the ops created above and insert them.
         for qextract_op in qextract_ops:
             rewriter.insert_op(qextract_op)
 
@@ -129,14 +127,103 @@ class DecomposeGraphStatePattern(RewritePattern):
         for qinsert_op in qinsert_ops:
             rewriter.insert_op(qinsert_op)
 
+        # Finally, erase the ops that have now been replaced with quantum ops
         rewriter.erase_matched_op()
         rewriter.erase_op(graph_prep_op.adj_matrix.owner)
 
 
-def _n_vertices_from_packed_adj_matrix(adj_matrix: list) -> int:
-    """TODO"""
-    m = len(adj_matrix)
+@dataclass(frozen=True)
+class NullDecomposeGraphStatePass(passes.ModulePass):
+    """The null-decompose-graph-state pass replaces graph_state_prep operations with a single
+    quantum-register allocation operation for execution on null devices.
+    """
 
+    name = "null-decompose-graph-state"
+
+    # pylint: disable=arguments-renamed,no-self-use
+    def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
+        """Apply the null-decompose-graph-state pass."""
+
+        greedy_applier = pattern_rewriter.GreedyRewritePatternApplier(
+            [NullDecomposeGraphStatePattern()]
+        )
+        walker = pattern_rewriter.PatternRewriteWalker(greedy_applier)
+        walker.rewrite_module(module)
+
+
+null_decompose_graph_state_pass = compiler_transform(NullDecomposeGraphStatePass)
+
+
+# pylint: disable=too-few-public-methods
+class NullDecomposeGraphStatePattern(RewritePattern):
+    """Rewrite pattern for the null-decompose-graph-state transform."""
+
+    # pylint: disable=arguments-renamed
+    @pattern_rewriter.op_type_rewrite_pattern
+    def match_and_rewrite(self, graph_prep_op: mbqc.GraphStatePrepOp, rewriter: PatternRewriter, /):
+        """Match and rewrite pattern for graph_state_prep ops."""
+        adj_matrix = _parse_adj_matrix(graph_prep_op)
+        n_vertices = _n_vertices_from_packed_adj_matrix(adj_matrix)
+
+        alloc_op = quantum.AllocOp(n_vertices)
+        rewriter.insert_op(alloc_op)
+
+        rewriter.erase_matched_op()
+        rewriter.erase_op(graph_prep_op.adj_matrix.owner)
+
+
+def _parse_adj_matrix(graph_prep_op: mbqc.GraphStatePrepOp) -> DenselyPackedAdjMatrix:
+    """Parse the adjacency matrix from the result of the ConstantOp given as input to the
+    graph_state_prep op.
+
+    We assume that the adjacency matrix is stored as a DenseIntOrFPElementsAttr, whose data is
+    accessible as a Python 'bytes' array. Converting this bytes array to a list results in integer
+    elements, whose values are typically either 0 for 'false' or 255 for 'true'.
+
+    Returns:
+        DenselyPackedAdjMatrix: The densely packed adjacency matrix as a sequence of ints. See the
+        note in the module documentation for a description of this format.
+    """
+    adj_matrix_const_op = graph_prep_op.adj_matrix.owner
+    adj_matrix_value = adj_matrix_const_op.properties.get("value")
+    assert adj_matrix_value is not None and hasattr(
+        adj_matrix_value, "data"
+    ), f"Unable to read graph adjacency matrix from op `{adj_matrix_const_op}`"
+
+    adj_matrix_bytes = adj_matrix_value.data
+    assert isinstance(adj_matrix_bytes, builtin.BytesAttr), (
+        f"Expected graph adjacency matrix data to be of type 'builtin.BytesAttr', but got "
+        f"{type(adj_matrix_bytes).__name__}"
+    )
+
+    return list(adj_matrix_bytes.data)
+
+
+def _n_vertices_from_packed_adj_matrix(adj_matrix: DenselyPackedAdjMatrix) -> int:
+    """Returns the number of vertices in the graph represented by the given densely packed adjacency
+    matrix.
+
+    Args:
+        adj_matrix (DenselyPackedAdjMatrix): The densely packed adjacency matrix given as a sequence
+            of bools or ints. See the note in the module documentation for a description of this
+            format.
+
+    Raises:
+        CompileError: If the number of elements in `adj_matrix` is not compatible with the number of
+            elements in the lower-triangular part of a square matrix, excluding the elements along
+            the diagonal.
+
+    Returns:
+        int: The number of vertices in the graph.
+
+    Example:
+        >>> _n_vertices_from_packed_adj_matrix([1, 1, 0, 0, 1, 1])
+        4
+    """
+    assert isinstance(
+        adj_matrix, Sequence
+    ), f"Expected `adj_matrix` to be a sequence, but got {type(adj_matrix).__name__}"
+    m = len(adj_matrix)
     N = (1 + np.sqrt(1 + 8 * m)) / 2
 
     if N != int(N):
@@ -148,12 +235,35 @@ def _n_vertices_from_packed_adj_matrix(adj_matrix: list) -> int:
     return int(N)
 
 
-def _edge_iter(adj_matrix: list) -> Generator[tuple[int, int], None, None]:
-    """TODO"""
+def _edge_iter(adj_matrix: DenselyPackedAdjMatrix) -> Generator[tuple[int, int], None, None]:
+    """Generate an iterator over the edges in a graph represented by the given densely packed
+    adjacency matrix.
+
+    Args:
+        adj_matrix (DenselyPackedAdjMatrix): The densely packed adjacency matrix given as a sequence
+            of bools or ints. See the note in the module documentation for a description of this
+            format.
+
+    Yields:
+        tuple[int, int]: The next edge in the graph, represented as the pair of vertices labelled
+            according to their indices in the adjacency matrix.
+
+    Example:
+        >>> for edge in _edge_iter([1, 1, 0, 0, 1, 1]):
+        ...     print(edge)
+        (0, 1)
+        (0, 2)
+        (1, 3)
+        (2, 3)
+    """
+    # Calling `_n_vertices_from_packed_adj_matrix()`` asserts that the input `adj_matrix` is in the
+    # correct format and valid.
+    _n_vertices_from_packed_adj_matrix(adj_matrix)
+
     j = 1
     k = 0
-    for i in range(len(adj_matrix)):
-        if adj_matrix[i]:
+    for entry in adj_matrix:
+        if entry:
             yield (k, j)
         k += 1
         if k == j:

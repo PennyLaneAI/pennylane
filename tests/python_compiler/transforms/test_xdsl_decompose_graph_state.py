@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit and integration tests for the Python compiler `decompose-graph-state` transform."""
+"""Unit and integration tests for the Python compiler `decompose-graph-state` transform.
+
+FileCheck notation hint:
+
+    Qubit variable names are written as q0a, q0b, q1a, etc. in the FileCheck program. The leading
+    number indicates the wire index of that qubit, and the second letter increments by one after
+    each use.
+"""
 
 # pylint: disable=wrong-import-position
 
@@ -21,28 +28,56 @@ import pytest
 pytestmark = pytest.mark.external
 
 xdsl = pytest.importorskip("xdsl")
-catalyst = pytest.importorskip("catalyst")
-from catalyst.passes import xdsl_plugin
 
-import pennylane as qml
 from pennylane.compiler.python_compiler.transforms import (
     DecomposeGraphStatePass,
-    decompose_graph_state_pass,
+    NullDecomposeGraphStatePass,
 )
+from pennylane.compiler.python_compiler.transforms.decompose_graph_state import (
+    _edge_iter,
+    _n_vertices_from_packed_adj_matrix,
+)
+from pennylane.exceptions import CompileError
 
 
 class TestDecomposeGraphStatePass:
     """Unit tests for the decompose-graph-state pass."""
 
-    def test_2_qubit_chain(self, run_filecheck):
+    def test_1_qubit(self, run_filecheck):
+        """Test the decompose-graph-state pass for a 1-qubit graph state."""
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[]> : tensor<0xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: [[graph_reg:%.+]] = quantum.alloc(1) : !quantum.reg
+            // CHECK: [[q0a:%.+]] = quantum.extract [[graph_reg]][0] : !quantum.reg -> !quantum.bit
+            // CHECK: [[q0b:%.+]] = quantum.custom "Hadamard"() [[q0a]] : !quantum.bit
+            // CHECK: [[out_reg0:%.+]] = quantum.insert [[graph_reg]][0], [[q0b]] : !quantum.reg, !quantum.bit
+
+            %adj_matrix = arith.constant dense<[]> : tensor<0xi1>
+            %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<0xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
         """
 
-        0 -- 1
+        pipeline = (DecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
 
-        0  1
-        1  0
+    def test_2_qubit_chain(self, run_filecheck):
+        """Test the decompose-graph-state pass for a 2-qubit graph state. The qubit connectivity is:
 
-        [1]
+            0 -- 1
+
+        which has the adjacency matrix representation
+
+            0  1
+            1  0
+
+        and densely packed adjacency matrix representation
+
+            [1]
         """
         program = """
         // CHECK-LABEL: circuit
@@ -51,15 +86,17 @@ class TestDecomposeGraphStatePass:
             // CHECK-NOT: mbqc.graph_state_prep
 
             // CHECK: [[graph_reg:%.+]] = quantum.alloc(2) : !quantum.reg
-            // CHECK: [[q00:%.+]] = quantum.extract [[graph_reg]][0] : !quantum.reg -> !quantum.bit
-            // CHECK: [[q10:%.+]] = quantum.extract [[graph_reg]][1] : !quantum.reg -> !quantum.bit
 
-            // CHECK: [[q01:%.+]] = quantum.custom "Hadamard"() [[q00]] : !quantum.bit
-            // CHECK: [[q11:%.+]] = quantum.custom "Hadamard"() [[q10]] : !quantum.bit
-            // CHECK: [[q20:%.+]], [[q21:%.+]] = quantum.custom "CZ"() [[q01]], [[q11]] : !quantum.bit, !quantum.bit
+            // CHECK:      [[q0a:%.+]] = quantum.extract [[graph_reg]][0] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT: [[q1a:%.+]] = quantum.extract [[graph_reg]][1] : !quantum.reg -> !quantum.bit
 
-            // CHECK: [[out_reg0:%.+]] = quantum.insert [[graph_reg]][0], [[q20]] : !quantum.reg, !quantum.bit
-            // CHECK: [[out_reg1:%.+]] = quantum.insert [[out_reg0]][1], [[q21]] : !quantum.reg, !quantum.bit
+            // CHECK:      [[q0b:%.+]] = quantum.custom "Hadamard"() [[q0a]] : !quantum.bit
+            // CHECK-NEXT: [[q1b:%.+]] = quantum.custom "Hadamard"() [[q1a]] : !quantum.bit
+
+            // CHECK: [[q0c:%.+]], [[q1c:%.+]] = quantum.custom "CZ"() [[q0b]], [[q1b]] : !quantum.bit, !quantum.bit
+
+            // CHECK:      [[out_reg00:%.+]] = quantum.insert [[graph_reg]][0], [[q0c]] : !quantum.reg, !quantum.bit
+            // CHECK-NEXT: [[out_reg01:%.+]] = quantum.insert [[out_reg00]][1], [[q1c]] : !quantum.reg, !quantum.bit
 
             %adj_matrix = arith.constant dense<[1]> : tensor<1xi1>
             %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<1xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
@@ -71,19 +108,43 @@ class TestDecomposeGraphStatePass:
         run_filecheck(program, pipeline)
 
     def test_3_qubit_chain(self, run_filecheck):
-        """
+        """Test the decompose-graph-state pass for a 3-qubit graph state. The qubit connectivity is:
 
-        0 -- 1 -- 2
+            0 -- 1 -- 2
 
-        0  1  0
-        1  0  1
-        0  1  0
+        which has the adjacency matrix representation
 
-        [1, 0, 1]
+            0  1  0
+            1  0  1
+            0  1  0
+
+        and densely packed adjacency matrix representation
+
+            [1, 0, 1]
         """
         program = """
         // CHECK-LABEL: circuit
         func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: [[graph_reg:%.+]] = quantum.alloc(3) : !quantum.reg
+
+            // CHECK:      [[q0a:%.+]] = quantum.extract [[graph_reg]][0] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT: [[q1a:%.+]] = quantum.extract [[graph_reg]][1] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT: [[q2a:%.+]] = quantum.extract [[graph_reg]][2] : !quantum.reg -> !quantum.bit
+
+            // CHECK:      [[q0b:%.+]] = quantum.custom "Hadamard"() [[q0a]] : !quantum.bit
+            // CHECK-NEXT: [[q1b:%.+]] = quantum.custom "Hadamard"() [[q1a]] : !quantum.bit
+            // CHECK-NEXT: [[q2b:%.+]] = quantum.custom "Hadamard"() [[q2a]] : !quantum.bit
+
+            // CHECK:      [[q0c:%.+]], [[q1c:%.+]] = quantum.custom "CZ"() [[q0b]], [[q1b]] : !quantum.bit, !quantum.bit
+            // CHECK-NEXT: [[q1d:%.+]], [[q2c:%.+]] = quantum.custom "CZ"() [[q1c]], [[q2b]] : !quantum.bit, !quantum.bit
+
+            // CHECK:      [[out_reg00:%.+]] = quantum.insert [[graph_reg]][0], [[q0c]] : !quantum.reg, !quantum.bit
+            // CHECK-NEXT: [[out_reg01:%.+]] = quantum.insert [[out_reg00]][1], [[q1d]] : !quantum.reg, !quantum.bit
+            // CHECK-NEXT: [[out_reg02:%.+]] = quantum.insert [[out_reg01]][2], [[q2c]] : !quantum.reg, !quantum.bit
+
             %adj_matrix = arith.constant dense<[1, 0, 1]> : tensor<3xi1>
             %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
             func.return
@@ -94,22 +155,53 @@ class TestDecomposeGraphStatePass:
         run_filecheck(program, pipeline)
 
     def test_4_qubit_square_lattice(self, run_filecheck):
-        """
+        """Test the decompose-graph-state pass for a 4-qubit graph state. The qubit connectivity is:
 
-        0 -- 1
-        |    |
-        2 -- 3
+            0 -- 1
+            |    |
+            2 -- 3
 
-        0  1  1  0
-        1  0  0  1
-        1  0  0  1
-        0  1  1  0
+        which has the adjacency matrix representation
 
-        [1, 1, 0, 0, 1, 1]
+            0  1  1  0
+            1  0  0  1
+            1  0  0  1
+            0  1  1  0
+
+        and densely packed adjacency matrix representation
+
+            [1, 1, 0, 0, 1, 1]
+
+        [(0, 1), (0, 2), (1, 3), (2, 3)]
         """
         program = """
         // CHECK-LABEL: circuit
         func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1, 1, 0, 0, 1, 1]> : tensor<6xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: [[graph_reg:%.+]] = quantum.alloc(4) : !quantum.reg
+
+            // CHECK:      [[q0a:%.+]] = quantum.extract [[graph_reg]][0] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT: [[q1a:%.+]] = quantum.extract [[graph_reg]][1] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT: [[q2a:%.+]] = quantum.extract [[graph_reg]][2] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT: [[q3a:%.+]] = quantum.extract [[graph_reg]][3] : !quantum.reg -> !quantum.bit
+
+            // CHECK:      [[q0b:%.+]] = quantum.custom "Hadamard"() [[q0a]] : !quantum.bit
+            // CHECK-NEXT: [[q1b:%.+]] = quantum.custom "Hadamard"() [[q1a]] : !quantum.bit
+            // CHECK-NEXT: [[q2b:%.+]] = quantum.custom "Hadamard"() [[q2a]] : !quantum.bit
+            // CHECK-NEXT: [[q3b:%.+]] = quantum.custom "Hadamard"() [[q3a]] : !quantum.bit
+
+            // CHECK:      [[q0c:%.+]], [[q1c:%.+]] = quantum.custom "CZ"() [[q0b]], [[q1b]] : !quantum.bit, !quantum.bit
+            // CHECK-NEXT: [[q0d:%.+]], [[q2c:%.+]] = quantum.custom "CZ"() [[q0c]], [[q2b]] : !quantum.bit, !quantum.bit
+            // CHECK-NEXT: [[q1d:%.+]], [[q3c:%.+]] = quantum.custom "CZ"() [[q1c]], [[q3b]] : !quantum.bit, !quantum.bit
+            // CHECK-NEXT: [[q2d:%.+]], [[q3d:%.+]] = quantum.custom "CZ"() [[q2c]], [[q3c]] : !quantum.bit, !quantum.bit
+
+            // CHECK:      [[out_reg00:%.+]] = quantum.insert [[graph_reg]][0], [[q0d]] : !quantum.reg, !quantum.bit
+            // CHECK-NEXT: [[out_reg01:%.+]] = quantum.insert [[out_reg00]][1], [[q1d]] : !quantum.reg, !quantum.bit
+            // CHECK-NEXT: [[out_reg02:%.+]] = quantum.insert [[out_reg01]][2], [[q2d]] : !quantum.reg, !quantum.bit
+            // CHECK-NEXT: [[out_reg03:%.+]] = quantum.insert [[out_reg02]][3], [[q3d]] : !quantum.reg, !quantum.bit
+
             %adj_matrix = arith.constant dense<[1, 1, 0, 0, 1, 1]> : tensor<6xi1>
             %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
             func.return
@@ -120,10 +212,28 @@ class TestDecomposeGraphStatePass:
         run_filecheck(program, pipeline)
 
     def test_2_qubit_chain_non_standard_init(self, run_filecheck):
-        """ """
+        """Test the decompose-graph-state pass for a 2-qubit graph state, using non-standard `init`
+        and `entangle` attributes.
+        """
         program = """
         // CHECK-LABEL: circuit
         func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1]> : tensor<1xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: [[graph_reg:%.+]] = quantum.alloc(2) : !quantum.reg
+
+            // CHECK:      [[q0a:%.+]] = quantum.extract [[graph_reg]][0] : !quantum.reg -> !quantum.bit
+            // CHECK-NEXT: [[q1a:%.+]] = quantum.extract [[graph_reg]][1] : !quantum.reg -> !quantum.bit
+
+            // CHECK:      [[q0b:%.+]] = quantum.custom "S"() [[q0a]] : !quantum.bit
+            // CHECK-NEXT: [[q1b:%.+]] = quantum.custom "S"() [[q1a]] : !quantum.bit
+
+            // CHECK: [[q0c:%.+]], [[q1c:%.+]] = quantum.custom "CNOT"() [[q0b]], [[q1b]] : !quantum.bit, !quantum.bit
+
+            // CHECK:      [[out_reg00:%.+]] = quantum.insert [[graph_reg]][0], [[q0c]] : !quantum.reg, !quantum.bit
+            // CHECK-NEXT: [[out_reg01:%.+]] = quantum.insert [[out_reg00]][1], [[q1c]] : !quantum.reg, !quantum.bit
+
             %adj_matrix = arith.constant dense<[1]> : tensor<1xi1>
             %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<1xi1>) [init "S", entangle "CNOT"] : !quantum.reg
             func.return
@@ -133,5 +243,132 @@ class TestDecomposeGraphStatePass:
         pipeline = (DecomposeGraphStatePass(),)
         run_filecheck(program, pipeline)
 
-    class TestDecomposeGraphStateIntegration:
-        pass
+
+class TestNullDecomposeGraphStatePass:
+    """Unit tests for the null-decompose-graph-state pass."""
+
+    def test_1_qubit(self, run_filecheck):
+        """Test the null-decompose-graph-state pass for a 1-qubit graph state."""
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[]> : tensor<0xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: [[graph_reg:%.+]] = quantum.alloc(1) : !quantum.reg
+            // CHECK-NOT: quantum.extract
+            // CHECK-NOT: quantum.custom "Hadamard"
+            // CHECK-NOT: quantum.custom "CZ"
+            // CHECK-NOT: quantum.insert
+
+            %adj_matrix = arith.constant dense<[]> : tensor<0xi1>
+            %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<0xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
+        """
+
+        pipeline = (NullDecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
+    def test_2_qubit_chain(self, run_filecheck):
+        """Test the null-decompose-graph-state pass for a 2-qubit graph state."""
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1]> : tensor<1xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: [[graph_reg:%.+]] = quantum.alloc(2) : !quantum.reg
+            // CHECK-NOT: quantum.extract
+            // CHECK-NOT: quantum.custom "Hadamard"
+            // CHECK-NOT: quantum.custom "CZ"
+            // CHECK-NOT: quantum.insert
+
+            %adj_matrix = arith.constant dense<[1]> : tensor<1xi1>
+            %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<1xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
+        """
+
+        pipeline = (NullDecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
+    def test_3_qubit_chain(self, run_filecheck):
+        """Test the null-decompose-graph-state pass for a 3-qubit graph state."""
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: [[graph_reg:%.+]] = quantum.alloc(3) : !quantum.reg
+            // CHECK-NOT: quantum.extract
+            // CHECK-NOT: quantum.custom "Hadamard"
+            // CHECK-NOT: quantum.custom "CZ"
+            // CHECK-NOT: quantum.insert
+
+            %adj_matrix = arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            %qreg = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
+        """
+
+        pipeline = (NullDecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
+
+class TestAdjMatrixHelpers:
+    """Test suite for the densely packed adjacency matrix helper functions."""
+
+    @pytest.mark.parametrize("n_vertices", range(1, 16))
+    def test_n_vertices(self, n_vertices: int):
+        """Test that the ``_n_vertices_from_packed_adj_matrix`` function returns correct results
+        when given a valid densely packed adjacency matrix as input.
+
+        This test performs the inverse operation of _n_vertices_from_packed_adj_matrix by computing
+        the number of elements in the densely packed adjacency matrix from the given number of
+        vertices, `n_vertices`, generates a null list of this length, and checks the function output
+        given this list is the same as `n_vertices`.
+        """
+        n_elements = int(n_vertices * (n_vertices - 1) / 2)
+        adj_matrix = [0] * n_elements
+        n_observed = _n_vertices_from_packed_adj_matrix(adj_matrix)
+
+        assert n_observed == n_vertices
+
+    @pytest.mark.parametrize("n", [2, 4, 5, 7, 8, 9])
+    def test_n_vertices_raises_on_invalid(self, n):
+        """Test that the ``_n_vertices_from_packed_adj_matrix`` function raises a CompileError when
+        given an invalid densely packed adjacency matrix as input.
+        """
+        with pytest.raises(CompileError, match="densely packed adjacency matrix"):
+            adj_matrix = [0] * n
+            _ = _n_vertices_from_packed_adj_matrix(adj_matrix)
+
+    @pytest.mark.parametrize(
+        "adj_matrix, expected_edges",
+        [
+            ([], []),
+            ([0], []),
+            ([1], [(0, 1)]),
+            ([1, 0, 0], [(0, 1)]),
+            ([1, 1, 0], [(0, 1), (0, 2)]),
+            ([1, 1, 1], [(0, 1), (0, 2), (1, 2)]),
+            ([False], []),
+            ([True], [(0, 1)]),
+        ],
+    )
+    def test_edge_iter(self, adj_matrix, expected_edges):
+        """Test that the ``_edge_iter`` generator function yields correct results when given a valid
+        densely packed adjacency matrix as input."""
+        edges = list(_edge_iter(adj_matrix))
+        assert edges == expected_edges
+
+    @pytest.mark.parametrize("n", [2, 4, 5, 7, 8, 9])
+    def test_edge_iter_raises_on_invalid(self, n):
+        """Test that the ``_edge_iter`` generator function raises a CompileError when given an
+        invalid densely packed adjacency matrix as input.
+        """
+        with pytest.raises(CompileError, match="densely packed adjacency matrix"):
+            adj_matrix = [0] * n
+            _ = list(_edge_iter(adj_matrix))
