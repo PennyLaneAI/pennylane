@@ -96,7 +96,8 @@ class Select(Operation):
             utilized during the decomposition of the operator into native operations.
             For details, see the section on the unary iterator decomposition below.
         partial (bool): Whether the state on the wires provided in ``control`` are compatible with
-            a partial Select decomposition. See the note below for details.
+            a `partial Select <https://pennylane.ai/compilation/partial-select>`__ decomposition.
+            See the note below for details.
         id (str or None): String representing the operation (optional)
 
     .. note::
@@ -112,6 +113,8 @@ class Select(Operation):
         ``control`` wires satisfies :math:`\langle j|\psi\rangle=0` for all :math:`j\in [K, 2^c)`,
         where :math:`K` is the number of operators (``len(ops)``) and :math:`c` is the number of
         control wires (``len(control)``).
+        If you are unsure whether this condition is satisfied, set ``partial=False`` to guarantee
+        a correct, even though more expensive, decomposition.
         For more details on the partial Select decomposition, see
         `its compilation page <https://pennylane.ai/compilation/partial-select>`__.
 

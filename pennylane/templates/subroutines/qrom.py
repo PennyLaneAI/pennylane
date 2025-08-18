@@ -430,7 +430,10 @@ def _qrom_decomposition_resources(
     if num_control_select_wires > 0:
         select_ops = {
             resource_rep(
-                Select, num_control_wires=num_control_select_wires, op_reps=tuple(new_ops_reps)
+                Select,
+                num_control_wires=num_control_select_wires,
+                op_reps=tuple(new_ops_reps),
+                partial=False,
             ): 1
         }
     else:
