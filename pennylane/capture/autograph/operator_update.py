@@ -13,7 +13,7 @@
 # limitations under the License.
 """Converter for array element operator assignment."""
 
-# pylint: disable=no-member
+# pylint: disable=no-member, too-few-public-methods
 
 import gast
 from malt.core import converter
