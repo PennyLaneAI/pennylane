@@ -34,7 +34,7 @@ class TestEdgeHermitian:
     @pytest.mark.parametrize("theta,phi", list(zip(THETA, PHI)))
     def test_hermitian_two_wires_identity_expectation_only_hermitian(self, shots, theta, phi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -43,6 +43,7 @@ class TestEdgeHermitian:
         Identity = np.array([[1, 0], [0, 1]])
         obs = np.kron(np.kron(Identity, Identity), A)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             qml.RY(theta, wires=[0])
@@ -62,7 +63,7 @@ class TestEdgeHermitian:
     @pytest.mark.parametrize("theta,phi", list(zip(THETA, PHI)))
     def test_hermitian_two_wires_identity_expectation_with_tensor(self, shots, theta, phi):
         """Test that a tensor product involving an Hermitian matrix for two wires and the identity works correctly"""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
         A = np.array(
             [[1.02789352, 1.61296440 - 0.3498192j], [1.61296440 + 0.3498192j, 1.23920938 + 0j]]
@@ -71,6 +72,7 @@ class TestEdgeHermitian:
         Identity = np.array([[1, 0], [0, 1]])
         obs = np.kron(Identity, A)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             qml.RY(theta, wires=[0])
@@ -91,7 +93,7 @@ class TestEdgeHermitian:
     @pytest.mark.parametrize("w1, w2", list(itertools.permutations(range(4), 2)))
     def test_hermitian_two_wires_permuted(self, w1, w2, shots, theta, seed):
         """Test that an hermitian expectation with various wires permuted works"""
-        dev = qml.device("default.qubit", wires=4, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=4, seed=seed)
         theta = 0.543
 
         A = np.array(
@@ -103,6 +105,7 @@ class TestEdgeHermitian:
             ]
         )
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             qml.RX(theta, wires=[w1])
