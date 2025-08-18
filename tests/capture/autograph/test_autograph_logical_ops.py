@@ -48,21 +48,6 @@ class TestAnd:
 
         assert result[0] == (a and b)
 
-    @pytest.mark.parametrize("a, b", [(True, True), (True, False), (False, True), (False, False)])
-    def test_qnode_integration(self, a, b):
-        """Test that the logical AND operation can be used in a PennyLane circuit."""
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x: bool, y: bool):
-            if x and y:
-                qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
-
-        result = circuit(x=a, y=b)
-        assert result == -1.0 if (a and b) else 1.0
-
     @pytest.mark.parametrize("val", (0, 0.0, 0.0j))
     @pytest.mark.parametrize("x", [True, False])
     def test_falsy_values(self, x, val):
@@ -115,6 +100,40 @@ class TestAnd:
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
         assert result[0] == (1 if arg and python_object else 0)
+
+    @pytest.mark.parametrize("x", [True, False])
+    def test_static_dynamic_arg_mixed(self, x):
+        """Tests that the logical operation works if provided with static and dynamic arguments."""
+
+        def fn(dynamic_arg):
+            x = 1
+            static_arg = x >= 0
+            if static_arg and dynamic_arg:
+                return 1
+            return 0
+
+        ag_fn = run_autograph(fn)
+
+        args = (x,)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (x and True)
+
+    @pytest.mark.parametrize("a, b", [(True, True), (True, False), (False, True), (False, False)])
+    def test_qnode_integration(self, a, b):
+        """Test that the logical AND operation can be used in a PennyLane circuit."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x: bool, y: bool):
+            if x and y:
+                qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        result = circuit(x=a, y=b)
+        assert result == -1.0 if (a and b) else 1.0
 
     def test_while_loop_integration(self):
         """Test while loop integration with logical operations and AutoGraph."""
@@ -184,21 +203,6 @@ class TestOr:
 
         assert result[0] == (a or b)
 
-    @pytest.mark.parametrize("a, b", [(True, True), (True, False), (False, True), (False, False)])
-    def test_qnode_integration(self, a, b):
-        """Test that the logical OR operation can be used in a PennyLane circuit."""
-
-        dev = qml.device("default.qubit", wires=2)
-
-        @qml.qnode(dev)
-        def circuit(x: bool, y: bool):
-            if x or y:
-                qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
-
-        result = circuit(x=a, y=b)
-        assert result == -1.0 if (a or b) else 1.0
-
     @pytest.mark.parametrize("val", (0, 0.0, 0.0j))
     @pytest.mark.parametrize("x", [True, False])
     def test_falsy_values(self, x, val):
@@ -251,6 +255,40 @@ class TestOr:
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
         assert result[0] == (1 if arg or python_object else 0)
+
+    @pytest.mark.parametrize("x", [True, False])
+    def test_static_dynamic_arg_mixed(self, x):
+        """Tests that the logical operation works if provided with static and dynamic arguments."""
+
+        def fn(dynamic_arg):
+            x = 1
+            static_arg = x >= 0
+            if static_arg or dynamic_arg:
+                return 1
+            return 0
+
+        ag_fn = run_autograph(fn)
+
+        args = (x,)
+        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+
+        assert result[0] == (x or True)
+
+    @pytest.mark.parametrize("a, b", [(True, True), (True, False), (False, True), (False, False)])
+    def test_qnode_integration(self, a, b):
+        """Test that the logical OR operation can be used in a PennyLane circuit."""
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev)
+        def circuit(x: bool, y: bool):
+            if x or y:
+                qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        result = circuit(x=a, y=b)
+        assert result == -1.0 if (a or b) else 1.0
 
     def test_while_loop_integration(self):
         """Test while loop integration with logical operations and AutoGraph."""
@@ -321,21 +359,6 @@ class TestNot:
 
         assert result[0] == (not x)
 
-    @pytest.mark.parametrize("a", [True, False])
-    def test_qnode_integration(self, a):
-        """Test that the logical NOT operation can be used in a PennyLane circuit."""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit(x: bool):
-            if not x:
-                qml.PauliX(0)
-            return qml.expval(qml.PauliZ(0))
-
-        result = circuit(x=a)
-        assert result == -1.0 if (not a) else 1.0
-
     @pytest.mark.parametrize("val", (0, 0.0, 0.0j))
     def test_falsy_values(self, val):
         """Test that falsy values also work."""
@@ -385,6 +408,49 @@ class TestNot:
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
         assert result[0] == (1 if not python_object else 0)
+
+    @pytest.mark.parametrize("x", [True, False])
+    def test_static_and_dynamic_args(self, x):
+        """Test that static and dynamic arguments can be used."""
+
+        def fn_dyn(dynamic_arg):
+            if not dynamic_arg:
+                return 1
+            return 0
+
+        def fn_static():
+            static_arg = False
+            if not static_arg:
+                return 1
+            return 0
+
+        ag_fn_dyn = run_autograph(fn_dyn)
+        args = (x,)
+        ag_fn_dyn_jaxpr = make_jaxpr(ag_fn_dyn)(*args)
+        result = eval_jaxpr(ag_fn_dyn_jaxpr.jaxpr, ag_fn_dyn_jaxpr.consts, *args)
+
+        assert result[0] == (1 if not x else 0)
+
+        ag_fn_static = run_autograph(fn_static)
+        ag_fn_static_jaxpr = make_jaxpr(ag_fn_static)()
+        result = eval_jaxpr(ag_fn_static_jaxpr.jaxpr, ag_fn_static_jaxpr.consts)
+
+        assert result[0] == 1
+
+    @pytest.mark.parametrize("a", [True, False])
+    def test_qnode_integration(self, a):
+        """Test that the logical NOT operation can be used in a PennyLane circuit."""
+
+        dev = qml.device("default.qubit", wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x: bool):
+            if not x:
+                qml.PauliX(0)
+            return qml.expval(qml.PauliZ(0))
+
+        result = circuit(x=a)
+        assert result == -1.0 if (not a) else 1.0
 
     def test_while_loop_integration(self):
         """Test while loop integration with logical operations and AutoGraph."""
