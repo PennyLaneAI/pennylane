@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Wrapper class for Scipy sparse matrices."""
-
 
 from __future__ import annotations
 
@@ -22,7 +20,6 @@ from typing import Dict, List, Sequence
 import numpy as np
 import scipy as sp
 from scipy.sparse import csr_array
-
 
 from pennylane.labs.trotter_error import Fragment
 from pennylane.labs.trotter_error.abstract import AbstractState
