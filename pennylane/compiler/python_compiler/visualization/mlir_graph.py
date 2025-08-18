@@ -17,8 +17,12 @@ This file contains the implementation of the MLIR graph generation for the Unifi
 
 import io
 import subprocess
+from functools import wraps
+from pathlib import Path
 
+from catalyst import qjit
 from catalyst.compiler import CompileError, _get_catalyst_cli_cmd
+from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl.printer import Printer
 
 from ..compiler import Compiler
@@ -63,8 +67,14 @@ def _mlir_graph_callback(pass_instance, module, pass_level):
         "--view-op-graph", stdin=buffer.getvalue(), stderr_return=True
     )
     graph = GraphSource(dot_graph)
-    pass_name = f"after_{pass_instance.name}" if pass_level else "No transforms"
-    with open(f"QNode_level_{pass_level}_{pass_name}.svg", "wb") as f:
+
+    out_dir = Path("mlir_generated_graphs")
+    out_dir.mkdir(exist_ok=True)
+
+    pass_name = f"after_{pass_instance.name}" if pass_level else "no_transforms"
+    out_file = out_dir / f"QNode_level_{pass_level}_{pass_name}.svg"
+
+    with open(out_file, "wb") as f:
         f.write(graph.pipe(format="svg"))
 
 
@@ -79,4 +89,17 @@ def generate_mlir_graph(qnode):
             "It can be installed with:\n\npip install graphviz"
         )  # pragma: no cover
 
-    Compiler.run(qnode.mlir_module, callback=_mlir_graph_callback)
+    @wraps(qnode)
+    def wrapper(*args, **kwargs):
+        # We re-compile the qnode to ensure the passes are applied
+        # with the args and kwargs provided by the user.
+        # TODO: we could integrate the callback mechanism within `qjit`,
+        # so that we wouldn't need to recompile the qnode twice.
+        if qnode.mlir_module is not None:
+            Compiler.run(qnode.mlir_module, callback=_mlir_graph_callback)
+        else:
+            new_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(qnode.user_function)
+            new_qnode.jit_compile(args, **kwargs)
+            Compiler.run(new_qnode.mlir_module, callback=_mlir_graph_callback)
+
+    return wrapper
