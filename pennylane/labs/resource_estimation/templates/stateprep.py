@@ -314,8 +314,8 @@ class ResourceMPSPrep(ResourceOperator):
             dict: A dictionary containing the resource parameters:
                 * num_mps_matrices (int): the number of matrices in the MPS representation
                 * max_bond_dim (int): the bond dimension of the MPS representation
-                * precision (Union[None, float], optional): The precision used when loading the
-                  MPS matricies.
+                * precision (Union[None, float], optional): the precision used when loading the
+                  MPS matrices
         """
         return {
             "num_mps_matrices": self.num_mps_matrices,
@@ -326,12 +326,12 @@ class ResourceMPSPrep(ResourceOperator):
     @classmethod
     def resource_rep(cls, num_mps_matrices, max_bond_dim, precision=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             num_mps_matrices (int): the number of matrices in the MPS representation
             max_bond_dim (int): the bond dimension of the MPS representation
-            precision (Union[None, float], optional): The precision used when loading the MPS matricies.
+            precision (Union[None, float], optional): the precision used when loading the MPS matrices
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -357,11 +357,11 @@ class ResourceMPSPrep(ResourceOperator):
         Args:
             num_mps_matrices (int): the number of matrices in the MPS representation
             max_bond_dim (int): the bond dimension of the MPS representation
-            precision (Union[None, float], optional): The precision used when loading
-                the MPS matricies.
+            precision (Union[None, float], optional): the precision used when loading
+                the MPS matrices
 
         Resources:
-            The resources for MPSPrep are according to the decomposition, which uses the generic
+            The resources for MPSPrep are estimated according to the decomposition, which uses the generic
             :class:`~.labs.resource_estimation.ResourceQubitUnitary`. The decomposition is based on
             the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
 
@@ -407,16 +407,16 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
     Args:
         num_state_qubits (int): number of qubits required to represent the state-vector
-        precision (float): The precision threshold for loading in the binary representation
-            of the rotation angles.
-        positive_and_real (bool): Flag that the coefficients of the statevector are all real
-            and positive.
-        select_swap_depths (Union[None, int, Iterable(int)], optional): A parameter of :code:`QROM`
-            used to trade-off extra qubits for reduced circuit depth.
+        precision (float): the precision threshold for loading in the binary representation
+            of the rotation angles
+        positive_and_real (bool): flag that the coefficients of the statevector are all real
+            and positive
+        select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+            used to trade-off extra qubits for reduced circuit depth
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        The resources for QROMStatePreparation are according to the decomposition as described
+        The resources for QROMStatePreparation are computed according to the decomposition described
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
         :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
         These rotations gates are implmented using an inplace controlled-adder operation
@@ -560,7 +560,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         cls, num_state_qubits, precision=None, positive_and_real=False, selswap_depths=1
     ):
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             num_state_qubits (int): number of qubits required to represent the state-vector
