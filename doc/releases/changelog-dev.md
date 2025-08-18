@@ -64,7 +64,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* PennyLane `autograph` supports standard python `arr[i] = x` instead of jax `arr = arr.at[i].set(x)`.
+* PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
   [(#8027)](https://github.com/PennyLaneAI/pennylane/pull/8027)
 
 * The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
