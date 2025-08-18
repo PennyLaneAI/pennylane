@@ -212,3 +212,11 @@ class TestOptimizeTCount:
         # test that the states are equivalent up to a global phase
         check = qml.math.fidelity_statevector(state1, state2)
         assert np.isclose(check, 1)
+
+        u1 = qml.matrix(original_circ, wire_order=range(num_wires))()
+        u2 = qml.matrix(reduced_circ, wire_order=range(num_wires))()
+
+        # test that the unitaries are equivalent up to a global phase
+        prod = u1 @ np.conj(u2.T)
+        glob_phase = prod[0, 0]
+        assert np.allclose(prod, glob_phase * np.eye(2**num_wires))
