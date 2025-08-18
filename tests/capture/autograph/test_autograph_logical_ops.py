@@ -49,7 +49,7 @@ class TestAnd:
         assert result[0] == (a and b)
 
     @pytest.mark.parametrize("a, b", [(True, True), (True, False), (False, True), (False, False)])
-    def test_circuit(self, a, b):
+    def test_qnode_integration(self, a, b):
         """Test that the logical AND operation can be used in a PennyLane circuit."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -184,7 +184,7 @@ class TestOr:
         assert result[0] == (a or b)
 
     @pytest.mark.parametrize("a, b", [(True, True), (True, False), (False, True), (False, False)])
-    def test_circuit(self, a, b):
+    def test_qnode_integration(self, a, b):
         """Test that the logical OR operation can be used in a PennyLane circuit."""
 
         dev = qml.device("default.qubit", wires=2)
@@ -320,7 +320,7 @@ class TestNot:
         assert result[0] == (not x)
 
     @pytest.mark.parametrize("a", [True, False])
-    def test_circuit(self, a):
+    def test_qnode_integration(self, a):
         """Test that the logical NOT operation can be used in a PennyLane circuit."""
 
         dev = qml.device("default.qubit", wires=1)
