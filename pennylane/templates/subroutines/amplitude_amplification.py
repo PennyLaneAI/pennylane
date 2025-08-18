@@ -281,7 +281,9 @@ def _amplitude_amplification_decomposition(*_, **kwargs):
     if fixed_point:
 
         def alpha(iter):
-            return np.real(2 * np.arctan(1 / (np.tan(2 * np.pi * (iter + 1) / iters) * np.sqrt(1 - gamma ** 2))))
+            return np.real(
+                2 * np.arctan(1 / (np.tan(2 * np.pi * (iter + 1) / iters) * np.sqrt(1 - gamma**2)))
+            )
 
         def beta(iter):
             return -alpha(-(iter + 1))
