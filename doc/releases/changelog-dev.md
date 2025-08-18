@@ -134,6 +134,7 @@
   `qml.cond(condition, qml.X)(0)` is now valid code and will return nothing, even though `qml.X` is
   technically a callable that returns an `X` operator.
   [(#8060)](https://github.com/PennyLaneAI/pennylane/pull/8060)
+  [(#8101)](https://github.com/PennyLaneAI/pennylane/pull/8101)
 
 * With program capture, an error is now raised if the conditional predicate is not a scalar.
   [(#8066)](https://github.com/PennyLaneAI/pennylane/pull/8066)

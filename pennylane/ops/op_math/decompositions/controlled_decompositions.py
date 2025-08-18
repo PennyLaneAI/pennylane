@@ -15,6 +15,8 @@
 """This submodule defines functions to decompose controlled operations."""
 
 
+from typing import Literal
+
 import numpy as np
 
 from pennylane import control_flow, math, ops, queuing
@@ -830,19 +832,19 @@ def _single_control_zyz(phi, theta, omega, wires):
     """Implements Lemma 5.1 from https://arxiv.org/pdf/quant-ph/9503016"""
 
     # Operator A
-    ops.cond(_not_zero(phi), _RZ)(phi, wires=wires[-1])
-    ops.cond(_not_zero(theta), _RY)(theta / 2, wires=wires[-1])
+    ops.cond(_not_zero(phi), ops.RZ)(phi, wires=wires[-1])
+    ops.cond(_not_zero(theta), ops.RY)(theta / 2, wires=wires[-1])
 
     ops.CNOT(wires)
 
     # Operator B
-    ops.cond(_not_zero(theta), _RY)(-theta / 2, wires=wires[-1])
-    ops.cond(_not_zero(phi + omega), _RZ)(-(phi + omega) / 2, wires=wires[-1])
+    ops.cond(_not_zero(theta), ops.RY)(-theta / 2, wires=wires[-1])
+    ops.cond(_not_zero(phi + omega), ops.RZ)(-(phi + omega) / 2, wires=wires[-1])
 
     ops.CNOT(wires)
 
     # Operator C
-    ops.cond(_not_zero(omega - phi), _RZ)((omega - phi) / 2, wires=wires[-1])
+    ops.cond(_not_zero(omega - phi), ops.RZ)((omega - phi) / 2, wires=wires[-1])
 
 
 def _multi_control_zyz(
@@ -851,42 +853,31 @@ def _multi_control_zyz(
     """Implements Lemma 7.9 from https://arxiv.org/pdf/quant-ph/9503016"""
 
     # Operator A
-    ops.cond(_not_zero(phi), _CRZ)(phi, wires=wires[-2:])
-    ops.cond(_not_zero(theta), _CRY)(theta / 2, wires=wires[-2:])
+    ops.cond(_not_zero(phi), ops.CRZ)(phi, wires=wires[-2:])
+    ops.cond(_not_zero(theta), ops.CRY)(theta / 2, wires=wires[-2:])
 
     ops.ctrl(
         ops.X(wires[-1]), control=wires[:-2], work_wires=work_wires, work_wire_type=work_wire_type
     )
 
     # Operator B
-    ops.cond(_not_zero(theta), _CRY)(-theta / 2, wires=wires[-2:])
-    ops.cond(_not_zero(phi + omega), _CRZ)(-(phi + omega) / 2, wires=wires[-2:])
+    ops.cond(_not_zero(theta), ops.CRY)(-theta / 2, wires=wires[-2:])
+    ops.cond(_not_zero(phi + omega), ops.CRZ)(-(phi + omega) / 2, wires=wires[-2:])
 
     ops.ctrl(
         ops.X(wires[-1]), control=wires[:-2], work_wires=work_wires, work_wire_type=work_wire_type
     )
 
     # Operator C
-    ops.cond(_not_zero(omega - phi), _CRZ)((omega - phi) / 2, wires=wires[-2:])
+    ops.cond(_not_zero(omega - phi), ops.CRZ)((omega - phi) / 2, wires=wires[-2:])
 
 
-def _RZ(phi, wires):
-    ops.RZ(phi, wires=wires)
-
-
-def _RY(phi, wires):
-    ops.RY(phi, wires=wires)
-
-
-def _CRZ(phi, wires):
-    ops.CRZ(phi, wires=wires)
-
-
-def _CRY(phi, wires):
-    ops.CRY(phi, wires=wires)
-
-
-def _ctrl_global_phase(phase, control_wires, work_wires=None, work_wire_type="borrowed"):
+def _ctrl_global_phase(
+    phase,
+    control_wires,
+    work_wires=None,
+    work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
+):
     ops.ctrl(
         ops.GlobalPhase(-phase),
         control=control_wires,
