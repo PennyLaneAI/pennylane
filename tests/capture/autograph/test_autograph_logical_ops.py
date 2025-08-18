@@ -488,7 +488,7 @@ class TestNot:
 @pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize("a, b", [(True, True), (True, False), (False, True), (False, False)])
 def test_combined_operations(a, b):
-    """Test combining logical operations with arithmetic operations."""
+    """Test how all of the logical operations coexist together."""
 
     fn = lambda x, y: (x and y) or (not x and not y)
     ag_fn = run_autograph(fn)
