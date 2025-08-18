@@ -16,25 +16,14 @@ which collects and maps PennyLane operations and measurements from xDSL."""
 
 import inspect
 
-from xdsl import context, passes, pattern_rewriter
-from xdsl.dialects import builtin, func
-from xdsl.dialects.builtin import (
-    DenseIntOrFPElementsAttr,
-    Float64Type,
-    FloatAttr,
-    IntegerAttr,
-    IntegerType,
-)
-from xdsl.dialects.stablehlo import ConstantOp as StableHLOConstantOp
+from xdsl.dialects.builtin import DenseIntOrFPElementsAttr
 from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
 from xdsl.ir import SSAValue
 
 import pennylane as qml
-from pennylane import measurements, ops
-from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
+from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import CustomOp
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import StateOp
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all

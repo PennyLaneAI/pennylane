@@ -18,11 +18,8 @@ from typing import Any, Callable, Union
 
 from xdsl.dialects import builtin, func
 from xdsl.dialects.builtin import (
-    DenseIntOrFPElementsAttr,
-    Float64Type,
     FloatAttr,
     IntegerAttr,
-    IntegerType,
 )
 from xdsl.ir import SSAValue
 
@@ -46,7 +43,7 @@ class QMLCollector:
     # Several TODO for this pass/collector:
     # - Add support for qml.ctrl
     # - Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.),
-    #   both in the visualization and in the gate set.
+    # - Add support for measurement operations (e.g., qml.probs, qml.expval, etc.)
     # - Add support for complex parameters (e.g., complex numbers, arrays, etc.)
     # - Add support for dynamic wires and parameters
 
@@ -59,7 +56,7 @@ class QMLCollector:
         self.params_to_ssa_params: dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
         self.quantum_register: SSAValue | None = None
 
-    # TODO: Implement support for additional ops and measurements
+    # pylint: disable=protected-access
     SUPPORTED_OPS = {
         StateOp: lambda self, xdsl_obj: self._handle_measurement(xdsl_obj),
         CustomOp: lambda self, xdsl_obj: self._handle_custom_op(xdsl_obj),

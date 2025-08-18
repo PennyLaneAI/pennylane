@@ -106,12 +106,13 @@
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
   [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
+  [(#8002)](https://github.com/PennyLaneAI/pennylane/pull/8002)
   
   The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, 
   :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
   :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`, 
   :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, 
-  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`
+  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.Qubitization`, and :class:`~.Superposition`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
@@ -134,6 +135,7 @@
   `qml.cond(condition, qml.X)(0)` is now valid code and will return nothing, even though `qml.X` is
   technically a callable that returns an `X` operator.
   [(#8060)](https://github.com/PennyLaneAI/pennylane/pull/8060)
+  [(#8101)](https://github.com/PennyLaneAI/pennylane/pull/8101)
 
 * With program capture, an error is now raised if the conditional predicate is not a scalar.
   [(#8066)](https://github.com/PennyLaneAI/pennylane/pull/8066)
@@ -260,6 +262,7 @@
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
+  [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
 
 * A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
   [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
@@ -627,6 +630,9 @@
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
 
 <h3>Documentation 📝</h3>
+
+* Rename `ancilla` to `auxiliary` in internal documentation.
+  [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
 
 * Small typos in the docstring for `qml.noise.partial_wires` have been corrected.
   [(#8052)](https://github.com/PennyLaneAI/pennylane/pull/8052)
