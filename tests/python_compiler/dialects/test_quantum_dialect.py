@@ -14,8 +14,6 @@
 
 """Unit test module for pennylane/compiler/python_compiler/dialects/quantum.py."""
 
-import io
-
 import pytest
 
 # pylint: disable=wrong-import-position
@@ -110,7 +108,7 @@ def test_all_attributes_names(attr):
     assert attr.name == expected_name
 
 
-def test_assembly_format():
+def test_assembly_format(run_filecheck):
     program = """
     // CHECK: quantum.alloc(1) : !quantum.reg
     %qreg_alloc_static = quantum.alloc(1) : !quantum.reg
@@ -172,30 +170,4 @@ def test_assembly_format():
     %mres2, %out_qubit2 = quantum.measure %qubit postselect 0 : i1, !quantum.bit
     """
 
-    ctx = xdsl.context.Context()
-    from xdsl.dialects import builtin, func, test
-
-    ctx.load_dialect(builtin.Builtin)
-    ctx.load_dialect(func.Func)
-    ctx.load_dialect(test.Test)
-    ctx.load_dialect(Quantum)
-
-    module = xdsl.parser.Parser(ctx, program).parse_module()
-
-    from filecheck.finput import FInput
-    from filecheck.matcher import Matcher
-    from filecheck.options import parse_argv_options
-    from filecheck.parser import Parser, pattern_for_opts
-
-    opts = parse_argv_options(["filecheck", __file__])
-    matcher = Matcher(
-        opts,
-        FInput("no-name", str(module)),
-        Parser(opts, io.StringIO(program), *pattern_for_opts(opts)),
-    )
-
-    assert matcher.run() == 0
-
-
-if __name__ == "__main__":
-    pytest.main(["-x", __file__])
+    run_filecheck(program, roundtrip=True)

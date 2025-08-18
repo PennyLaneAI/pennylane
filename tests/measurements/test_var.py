@@ -27,8 +27,9 @@ class TestVar:
     def test_value(self, tol, shots):
         """Test that the var function works"""
 
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -55,8 +56,9 @@ class TestVar:
     ):  # pylint: disable=too-many-arguments
         """Test that variances for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit", wires=2, shots=shots)
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -152,8 +154,9 @@ class TestVar:
     @pytest.mark.parametrize("shots", [None, 1000, [1000, 1111]])
     def test_projector_var(self, state, shots):
         """Tests that the variance of a ``Projector`` object is computed correctly."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             qml.Hadamard(0)

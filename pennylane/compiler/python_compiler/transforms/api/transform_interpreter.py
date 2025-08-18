@@ -30,7 +30,8 @@ from collections.abc import Callable
 
 from catalyst.compiler import _quantum_opt  # pylint: disable=protected-access
 from xdsl.context import Context
-from xdsl.dialects import builtin, transform
+from xdsl.dialects import builtin
+from xdsl.dialects.transform import NamedSequenceOp
 from xdsl.interpreter import Interpreter, PythonValues, impl, register_impls
 from xdsl.interpreters.transform import TransformFunctions
 from xdsl.parser import Parser
@@ -38,6 +39,8 @@ from xdsl.passes import ModulePass, PassPipeline
 from xdsl.printer import Printer
 from xdsl.rewriter import Rewriter
 from xdsl.utils.exceptions import PassFailedException
+
+from ...dialects.transform import ApplyRegisteredPassOp
 
 
 # pylint: disable=too-few-public-methods
@@ -54,51 +57,54 @@ class TransformFunctionsExt(TransformFunctions):
 
     def __init__(self, ctx, passes, callback=None):
         super().__init__(ctx, passes)
+        # The signature of the callback function is assumed to be
+        # def callback(previous_pass: ModulePass, module: ModuleOp, level: int) -> None
+        # This is slightly different from the one used in xDSL:
+        # def callback(previous_pass: ModulePass, module: ModuleOp, next_pass: ModulePass) -> None:
         self.callback = callback
         self.level = 0
 
-    @impl(transform.ApplyRegisteredPassOp)
+    @impl(ApplyRegisteredPassOp)
     def run_apply_registered_pass_op(  # pragma: no cover
         self,
         _interpreter: Interpreter,
-        op: transform.ApplyRegisteredPassOp,
+        op: ApplyRegisteredPassOp,
         args: PythonValues,
     ) -> PythonValues:
         """Try to run the pass in xDSL, if it can't run on catalyst"""
 
         pass_name = op.pass_name.data  # pragma: no cover
-        xdsl_module = args[0]
+        module = args[0]
 
         if pass_name in self.passes:
             # pragma: no cover
             pass_class = self.passes[pass_name]()
-            pass_instance = pass_class()
+            pass_instance = pass_class(**op.options.data)
             pipeline = PassPipeline((pass_instance,))
             if (
                 self.callback
                 and self.level == 0
                 and self.callback.__name__ in self.visual_callbacks
             ):
-                self.callback(pass_instance, xdsl_module, self.level)
-            pipeline.apply(self.ctx, xdsl_module)
+                self.callback(pass_instance, module, self.level)
+            pipeline.apply(self.ctx, module)
             if self.callback:
                 self.level += 1
-                self.callback(pass_instance, xdsl_module, self.level)
-            return (xdsl_module,)
+                self.callback(pass_instance, module, self.level)
+            return (module,)
 
         # pragma: no cover
         buffer = io.StringIO()
-        Printer(stream=buffer, print_generic_format=True).print_op(xdsl_module)
+
+        Printer(stream=buffer, print_generic_format=True).print_op(module)
         schedule = f"--{pass_name}"
         modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
 
         data = Parser(self.ctx, modified).parse_module()
         rewriter = Rewriter()
-        rewriter.replace_op(xdsl_module, data)
+        rewriter.replace_op(module, data)
         if self.callback:
-            prev = None  # We don't know which one
-            next = None  # We don't know which one
-            self.callback(prev, data, next)
+            self.callback(None, data, self.level)
         return (data,)
 
 
@@ -116,12 +122,10 @@ class TransformInterpreterPass(ModulePass):
         self.callback = callback
 
     @staticmethod
-    def find_transform_entry_point(
-        root: builtin.ModuleOp, entry_point: str
-    ) -> transform.NamedSequenceOp:
+    def find_transform_entry_point(root: builtin.ModuleOp, entry_point: str) -> NamedSequenceOp:
         """Find the entry point of the program"""
         for op in root.walk():
-            if isinstance(op, transform.NamedSequenceOp) and op.sym_name.data == entry_point:
+            if isinstance(op, NamedSequenceOp) and op.sym_name.data == entry_point:
                 return op
         raise PassFailedException(  # pragma: no cover
             f"{root} could not find a nested named sequence with name: {entry_point}"

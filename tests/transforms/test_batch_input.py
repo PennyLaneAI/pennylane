@@ -266,9 +266,10 @@ def test_multi_returns():
 
 def test_shot_vector():
     """Test that batching works for a simple circuit with a shot vector"""
-    dev = qml.device("default.qubit", wires=2, shots=(100, (200, 3), 300))
+    dev = qml.device("default.qubit", wires=2)
 
     @partial(qml.batch_input, argnum=1)
+    @qml.set_shots((100, (200, 3), 300))
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
         qml.RY(weights[0], wires=0)
@@ -291,9 +292,10 @@ def test_shot_vector():
 def test_multi_returns_shot_vector():
     """Test that batching works for a simple circuit with multiple returns
     and with a shot vector"""
-    dev = qml.device("default.qubit", wires=2, shots=(100, (200, 3), 300))
+    dev = qml.device("default.qubit", wires=2)
 
     @partial(qml.batch_input, argnum=1)
+    @qml.set_shots((100, (200, 3), 300))
     @qml.qnode(dev, diff_method="parameter-shift")
     def circuit(inputs, weights):
         qml.RY(weights[0], wires=0)

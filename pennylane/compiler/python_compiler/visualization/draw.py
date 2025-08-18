@@ -15,6 +15,8 @@
 
 from functools import wraps
 
+from catalyst import qjit
+from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from pennylane.tape import QuantumScript
 from pennylane.typing import Callable
 
@@ -38,7 +40,6 @@ def draw(qnode, *, level: None | int = None):
         level (None, int): An indication of what passes to apply before drawing.
 
     """
-
     cache: dict[int, tuple[str, str]] = _cache_store.setdefault(qnode, {})
 
     def _draw_callback(pass_instance, module, pass_level):
@@ -51,10 +52,16 @@ def draw(qnode, *, level: None | int = None):
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-
-        # We need to compile the qnode to ensure the passes are applied.
+        # We need to compile the qnode to ensure the passes are applied
+        # with the args and kwargs provided.
         # This could potentially be done only once by caching the results
-        Compiler.run(qnode.mlir_module, callback=_draw_callback)
+        # TODO: there should be a way to handle (re)compilation more efficiently
+        if qnode.mlir_module is not None:
+            Compiler.run(qnode.mlir_module, callback=_draw_callback)
+        else:
+            new_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(qnode.user_function)
+            new_qnode(*args, **kwargs)
+            Compiler.run(new_qnode.mlir_module, callback=_draw_callback)
 
         if level is not None:
             if level in cache:
