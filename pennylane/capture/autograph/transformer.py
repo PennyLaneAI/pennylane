@@ -192,7 +192,6 @@ def run_autograph(fn):
         ] 0 b 1 a
       in (c,) }
     """
-
     user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
     new_fn, module, source_map = TRANSFORMER.transform(fn, user_context)

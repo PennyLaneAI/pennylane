@@ -15,6 +15,8 @@
 """PyTests for the integration between AutoGraph and PennyLane for the
 source-to-source transformation feature."""
 
+# pylint: disable = wrong-import-position, wrong-import-order, ungrouped-imports
+
 import numpy as np
 import pytest
 from malt.core import converter
@@ -28,13 +30,14 @@ from pennylane.capture.autograph.transformer import (
     TRANSFORMER,
     PennyLaneTransformer,
     autograph_source,
+    disable_autograph,
     run_autograph,
 )
 
 pytestmark = pytest.mark.capture
 
 jax = pytest.importorskip("jax")
-
+from jax import make_jaxpr
 
 # must be below jax importorskip
 # pylint: disable=wrong-import-position
@@ -566,3 +569,54 @@ class TestCodePrinting:
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
+
+
+class TestDisableAutograph:
+    """Test ways of disabling autograph conversion"""
+
+    def test_disable_autograph_decorator(self):
+        """Test disabling autograph with decorator."""
+
+        @disable_autograph
+        def f():
+            x = 2
+            if x > 1:
+                y = x**2
+            else:
+                y = x**3
+            return y
+
+        def g(x: int, n: int):
+            for _ in range(n):
+                x = x + f()
+            return x
+
+        g_ag = run_autograph(g)
+        g_ag_jaxpr = make_jaxpr(g_ag)(1, 3)
+        # If autograph was disabled, the cond primitive will not be captured.
+        assert "cond" not in str(g_ag_jaxpr.jaxpr)
+        assert g_ag(1, 3) == 13  # 1 + 4 * 3
+
+    def test_disable_autograph_context_manager(self):
+        """Test disabling autograph with context manager."""
+
+        def f():
+            x = 2
+            if x > 1:
+                y = x**2
+            else:
+                y = x**3
+            return y
+
+        def g(x: int, n: int):
+            for _ in range(n):
+                with disable_autograph:
+                    x += f()
+            return x
+
+        g_ag = run_autograph(g)
+        g_ag_jaxpr = make_jaxpr(g_ag)(1, 3)
+        # If autograph was disabled, the cond primitive will not be captured.
+        assert "cond" not in str(g_ag_jaxpr.jaxpr)
+
+        assert g_ag(1, 3) == 13  # 1 + 4 * 3
