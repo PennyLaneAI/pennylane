@@ -1047,7 +1047,7 @@ class ResourceSelect(ResourceOperator):
 
 
 class ResourceQROM(ResourceOperator):
-    """Resource class for the QROM template.
+    r"""Resource class for the QROM template.
 
     Args:
         num_bitstrings (int): the number of bitstrings that are to be encoded
