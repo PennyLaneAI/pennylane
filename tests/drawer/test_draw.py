@@ -900,8 +900,12 @@ class TestMidCircuitMeasurements:
 
 
 class TestLevelExpansionStrategy:
+    """Tests for the level expansion strategy in the draw function."""
+
     @pytest.fixture
     def transforms_circuit(self):
+        """Fixture for a circuit with transforms applied."""
+
         @qml.transforms.merge_rotations
         @qml.transforms.cancel_inverses
         @qml.qnode(qml.device("default.qubit"), diff_method="parameter-shift")
