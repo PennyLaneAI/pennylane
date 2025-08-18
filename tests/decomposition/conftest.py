@@ -147,6 +147,14 @@ def _t_ps(wires, **__):
 
 decompositions["T"] = [_t_ps]
 
+
+@qml.register_resources({qml.RZ: 3, qml.RY: 2, qml.CNOT: 2})
+def _crot(*_, **__):
+    raise NotImplementedError
+
+
+decompositions["CRot"] = [_crot]
+
 ################################################
 # Custom Decompositions For Symbolic Operators #
 ################################################

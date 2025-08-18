@@ -779,7 +779,7 @@ class TestSnapshot:
         op = qml.Snapshot("tag", qml.sample(wires=0), shots=50)
         _ = apply_operation(op, initial_state, debugger=debugger)
 
-        assert debugger.snapshots["tag"].shape == (50,)
+        assert debugger.snapshots["tag"].shape == (50, 1)
 
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
