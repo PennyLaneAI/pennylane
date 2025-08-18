@@ -409,27 +409,14 @@ class TestNot:
 
         assert result[0] == (1 if not python_object else 0)
 
-    @pytest.mark.parametrize("x", [True, False])
-    def test_static_and_dynamic_args(self, x):
-        """Test that static and dynamic arguments can be used."""
-
-        def fn_dyn(dynamic_arg):
-            if not dynamic_arg:
-                return 1
-            return 0
+    def test_static_args(self):
+        """Test that static arguments can be used."""
 
         def fn_static():
             static_arg = False
             if not static_arg:
                 return 1
             return 0
-
-        ag_fn_dyn = run_autograph(fn_dyn)
-        args = (x,)
-        ag_fn_dyn_jaxpr = make_jaxpr(ag_fn_dyn)(*args)
-        result = eval_jaxpr(ag_fn_dyn_jaxpr.jaxpr, ag_fn_dyn_jaxpr.consts, *args)
-
-        assert result[0] == (1 if not x else 0)
 
         ag_fn_static = run_autograph(fn_static)
         ag_fn_static_jaxpr = make_jaxpr(ag_fn_static)()
