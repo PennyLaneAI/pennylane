@@ -29,7 +29,63 @@ from .helper import _needs_pyzx
 @_needs_pyzx
 @transform
 def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """TODO"""
+    """Reduce the number of T gates in a Clifford + T circuit by using some basic commutation and
+    cancellation rules, combined with a dedicated phase-polynomial optimization strategy based on the
+    `Third Order Duplicate and Destroy (TODD) <https://arxiv.org/abs/1712.01557>`__ algorithm.
+
+    This transform applies the full pipeline for T-count optimization to the given Clifford + T circuit.
+    First, some ZX-based commutation and cancellation rules are applied to simplify the circuit.
+    Then, the circuit is cut into phase-polynomial blocks and the TODD algorithm is used to optimize each of these phase polynomials.
+    Depending on the number of qubits and T gates in the original circuit, it might take a long time to run.
+
+    .. note::
+
+        The transformed output circuit is equivalent to the input up to a global phase.
+
+    The implementation is based on the
+    `pyzx.full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__ pass.
+
+    Args:
+        tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
+
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
+        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    Raises:
+        ModuleNotFoundError: if the required ``pyzx`` package is not installed.
+        TypeError: if the input quantum circuit is not a Clifford + T circuit.
+
+    **Example:**
+
+    .. code-block:: python3
+
+        import pennylane as qml
+        import pennylane.transforms.zx as zx
+
+        dev = qml.device("default.qubit")
+
+        @zx.optimize_t_count
+        @qml.qnode(dev)
+        def circuit():
+            qml.T(0)
+            qml.CNOT([0, 1])
+            qml.S(0)
+            qml.T(0)
+            qml.T(1)
+            qml.CNOT([0, 2])
+            qml.T(1)
+            return qml.state()
+
+
+    .. code-block:: pycon
+
+        >>> print(qml.draw(circuit)())
+        0: ──Z─╭●────╭●─┤  State
+        1: ────╰X──S─│──┤  State
+        2: ──────────╰X─┤  State
+
+    """
     # pylint: disable=import-outside-toplevel
     import pyzx
 
