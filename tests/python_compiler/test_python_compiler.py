@@ -19,7 +19,7 @@ from dataclasses import dataclass
 # pylint: disable=wrong-import-position
 import pytest
 
-pytestmark = pytest.mark.external
+pytestmark = pytest.mark.catalyst
 
 catalyst = pytest.importorskip("catalyst")
 jax = pytest.importorskip("jax")
@@ -51,6 +51,17 @@ from pennylane.compiler.python_compiler.transforms.api import (
     available_passes,
     compiler_transform,
 )
+
+
+@dataclass(frozen=True)
+class HelloWorldPass(passes.ModulePass):
+    name = "hello-world"
+
+    def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
+        print("hello world")
+
+
+hello_world_pass = compiler_transform(HelloWorldPass)
 
 
 def test_compiler():
@@ -164,28 +175,8 @@ def test_raises_error_when_pass_does_not_exists():
 
 def test_decorator():
     """Test that the decorator has modified the available_passes dictionary"""
-
-    @dataclass(frozen=True)
-    class PrintModule(passes.ModulePass):
-        """A pass that prints the module"""
-
-        name = "print-module"
-
-        def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
-            print("hello")
-
-    compiler_transform(PrintModule)
-    assert "print-module" in available_passes
-    assert available_passes["print-module"]() == PrintModule
-
-
-@compiler_transform
-@dataclass(frozen=True)
-class _HelloWorld(passes.ModulePass):
-    name = "hello-world"
-
-    def apply(self, _ctx: Context, _module: builtin.ModuleOp) -> None:
-        print("hello world")
+    assert "hello-world" in available_passes
+    assert available_passes["hello-world"]() == HelloWorldPass
 
 
 def test_integration_for_transform_interpreter(capsys):
@@ -215,121 +206,120 @@ def test_integration_for_transform_interpreter(capsys):
     assert captured.out.strip() == "hello world"
 
 
-@pytest.mark.capture
-def test_integration_catalyst_no_passes_with_capture():
-    """Test that the xDSL plugin can be used even when no passes are applied
-    when capture is enabled."""
+class TestCatalystIntegration:
+    """Tests for integration of the Python compiler with Catalyst"""
 
-    assert capture_enabled()
+    @pytest.mark.capture
+    def test_integration_catalyst_no_passes_with_capture(self):
+        """Test that the xDSL plugin can be used even when no passes are applied
+        when capture is enabled."""
 
-    @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
-    def f(x):
-        qml.RX(x, 0)
-        return qml.expval(qml.Z(0))
+        assert capture_enabled()
 
-    out = f(1.5)
-    assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
 
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
 
-def test_integration_catalyst_no_passes_no_capture():
-    """Test that the xDSL plugin can be used even when no passes are applied
-    when capture is disabled."""
+    def test_integration_catalyst_no_passes_no_capture(self):
+        """Test that the xDSL plugin can be used even when no passes are applied
+        when capture is disabled."""
 
-    assert not capture_enabled()
+        assert not capture_enabled()
 
-    @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
-    def f(x):
-        qml.RX(x, 0)
-        return qml.expval(qml.Z(0))
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
 
-    out = f(1.5)
-    assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
 
+    @pytest.mark.capture
+    def test_integration_catalyst_xdsl_pass_with_capture(self, capsys):
+        """Test that a pass is run via the transform interpreter when using with a
+        qjit workflow and capture is enabled."""
 
-@pytest.mark.capture
-def test_integration_catalyst_xdsl_pass_with_capture(capsys):
-    """Test that a pass is run via the transform interpreter when using with a
-    qjit workflow and capture is enabled."""
+        assert capture_enabled()
 
-    assert capture_enabled()
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @hello_world_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
 
-    @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-    @_HelloWorld
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
-    def f(x):
-        qml.RX(x, 0)
-        return qml.expval(qml.Z(0))
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+        captured = capsys.readouterr()
+        assert captured.out.strip() == "hello world"
 
-    out = f(1.5)
-    assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
-    captured = capsys.readouterr()
-    assert captured.out.strip() == "hello world"
+    def test_integration_catalyst_xdsl_pass_no_capture(self, capsys):
+        """Test that a pass is run via the transform interpreter when using with a
+        qjit workflow and capture is disabled."""
 
+        assert not capture_enabled()
 
-def test_integration_catalyst_xdsl_pass_no_capture(capsys):
-    """Test that a pass is run via the transform interpreter when using with a
-    qjit workflow and capture is disabled."""
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @apply_pass("hello-world")
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            return qml.expval(qml.Z(0))
 
-    assert not capture_enabled()
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+        captured = capsys.readouterr()
+        assert captured.out.strip() == "hello world"
 
-    @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-    @apply_pass("hello-world")
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
-    def f(x):
-        qml.RX(x, 0)
-        return qml.expval(qml.Z(0))
+    @pytest.mark.capture
+    def test_integration_catalyst_mixed_passes_with_capture(self, capsys):
+        """Test that both Catalyst and Python compiler passes can be used with qjit
+        when capture is enabled."""
 
-    out = f(1.5)
-    assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
-    captured = capsys.readouterr()
-    assert captured.out.strip() == "hello world"
+        assert capture_enabled()
 
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @hello_world_pass
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.Z(0))
 
-@pytest.mark.capture
-def test_integration_catalyst_mixed_passes_with_capture(capsys):
-    """Test that both Catalyst and Python compiler passes can be used with qjit
-    when capture is enabled."""
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+        captured = capsys.readouterr()
+        assert captured.out.strip() == "hello world"
 
-    assert capture_enabled()
+    def test_integration_catalyst_mixed_passes_no_capture(self, capsys):
+        """Test that both Catalyst and Python compiler passes can be used with qjit
+        when capture is disabled."""
 
-    @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-    @_HelloWorld
-    @qml.transforms.cancel_inverses
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
-    def f(x):
-        qml.RX(x, 0)
-        qml.X(0)
-        qml.X(0)
-        return qml.expval(qml.Z(0))
+        assert not capture_enabled()
 
-    out = f(1.5)
-    assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
-    captured = capsys.readouterr()
-    assert captured.out.strip() == "hello world"
+        @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
+        @apply_pass("hello-world")
+        @catalyst_cancel_inverses
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def f(x):
+            qml.RX(x, 0)
+            qml.X(0)
+            qml.X(0)
+            return qml.expval(qml.Z(0))
 
+        out = f(1.5)
+        assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
+        captured = capsys.readouterr()
+        assert captured.out.strip() == "hello world"
 
-def test_integration_catalyst_mixed_passes_no_capture(capsys):
-    """Test that both Catalyst and Python compiler passes can be used with qjit
-    when capture is disabled."""
-
-    assert not capture_enabled()
-
-    @catalyst.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
-    @apply_pass("hello-world")
-    @catalyst_cancel_inverses
-    @qml.qnode(qml.device("lightning.qubit", wires=2))
-    def f(x):
-        qml.RX(x, 0)
-        qml.X(0)
-        qml.X(0)
-        return qml.expval(qml.Z(0))
-
-    out = f(1.5)
-    assert jax.numpy.allclose(out, jax.numpy.cos(1.5))
-    captured = capsys.readouterr()
-    assert captured.out.strip() == "hello world"
 
 class TestCallbackIntegration:
     """Test the integration of the callback functionality"""
