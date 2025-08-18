@@ -6,10 +6,15 @@
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
-    * :func:`~.transforms.push_hadamards` to optimize phase-polynomial + Hadamard circuits pushing
+    * :func:`~.transforms.zx.push_hadamards` to optimize phase-polynomial + Hadamard circuits pushing
       Hadamard gates to the side to create fewer larger phase-polynomial blocks
       (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
       [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
+
+    * :func:`~.transforms.zx.optimize_t_count` to reduce the number of T gates in a Clifford + T circuit by applying
+      the full pipeline which combines ZX-based commutation and cancellation rules and the TODD algorithm
+      (see [pyzx.full_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize)).
+      [(#8088)](https://github.com/PennyLaneAI/pennylane/pull/8088)
 
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
