@@ -287,21 +287,17 @@ class TestNot:
         assert result[0] == (1 if not python_object else 0)
 
 
-# pylint: disable=too-few-public-methods
 @pytest.mark.usefixtures("enable_disable_plxpr")
-class TestIntegration:
-    """Tests the integration of logical operations with other functions."""
+@pytest.mark.parametrize("a, b", [(True, True), (True, False), (False, True), (False, False)])
+def test_combined_operations(a, b):
+    """Test combining logical operations with arithmetic operations."""
 
-    @pytest.mark.parametrize("a, b", [(True, True), (True, False), (False, True), (False, False)])
-    def test_combined_operations(self, a, b):
-        """Test combining logical operations with arithmetic operations."""
+    fn = lambda x, y: (x and y) or (not x and not y)
+    ag_fn = run_autograph(fn)
 
-        fn = lambda x, y: (x and y) or (not x and not y)
-        ag_fn = run_autograph(fn)
+    args = (a, b)
+    ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+    result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
-        args = (a, b)
-        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
-        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
-
-        expected_result = (a and b) or (not a and not b)
-        assert result[0] == expected_result
+    expected_result = (a and b) or (not a and not b)
+    assert result[0] == expected_result
