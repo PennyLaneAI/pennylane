@@ -26,7 +26,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 
-# pylint: disable=arguments-differ
+# pylint: disable=arguments-differ, too-many-arguments
 
 
 class ResourceSelectTHC(ResourceOperator):
@@ -55,7 +55,9 @@ class ResourceSelectTHC(ResourceOperator):
     >>> print(res)
     """
 
-    def __init__(self, compact_ham, rotation_precision_bits=None, select_swap_depth=None, wires=None):
+    def __init__(
+        self, compact_ham, rotation_precision_bits=None, select_swap_depth=None, wires=None
+    ):
 
         if compact_ham.method_name != "thc":
             raise TypeError(
@@ -157,7 +159,9 @@ class ResourceSelectTHC(ResourceOperator):
         # Resource state
         gate_list.append(AllocWires(rotation_precision_bits))
 
-        phase_grad = resource_rep(plre.ResourcePhaseGradient, {"num_wires": rotation_precision_bits})
+        phase_grad = resource_rep(
+            plre.ResourcePhaseGradient, {"num_wires": rotation_precision_bits}
+        )
         gate_list.append(GateCount(phase_grad, 1))
 
         swap = resource_rep(plre.ResourceCSWAP)
@@ -236,7 +240,13 @@ class ResourceSelectTHC(ResourceOperator):
 
     @classmethod
     def default_controlled_resource_decomp(
-        cls, ctrl_num_ctrl_wires, ctrl_num_ctrl_values, compact_ham, rotation_precision_bits=None, select_swap_depth=None, **kwargs
+        cls,
+        ctrl_num_ctrl_wires,
+        ctrl_num_ctrl_values,
+        compact_ham,
+        rotation_precision_bits=None,
+        select_swap_depth=None,
+        **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for the controlled version of the operator.
 
@@ -273,7 +283,7 @@ class ResourceSelectTHC(ResourceOperator):
 
         if ctrl_num_ctrl_wires > 1:
             mcx = resource_rep(
-                re.ResourceMultiControlledX,
+                plre.ResourceMultiControlledX,
                 {
                     "num_ctrl_wires": ctrl_num_ctrl_wires,
                     "num_ctrl_values": ctrl_num_ctrl_values,
@@ -285,7 +295,9 @@ class ResourceSelectTHC(ResourceOperator):
         # Resource state
         gate_list.append(AllocWires(rotation_precision_bits))
 
-        phase_grad = resource_rep(plre.ResourcePhaseGradient, {"num_wires": rotation_precision_bits})
+        phase_grad = resource_rep(
+            plre.ResourcePhaseGradient, {"num_wires": rotation_precision_bits}
+        )
         gate_list.append(GateCount(phase_grad, 1))
 
         swap = resource_rep(plre.ResourceCSWAP)

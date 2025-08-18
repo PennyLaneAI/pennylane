@@ -383,7 +383,7 @@ class ResourcePrepTHC(ResourceOperator):
 
         coeff_precision_bits = coeff_precision_bits or kwargs["config"]["qubitization_coeff_bits"]
 
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1)/2
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
         m_register = int(math.ceil(math.log2(tensor_rank + 1)))
 
@@ -453,7 +453,11 @@ class ResourcePrepTHC(ResourceOperator):
 
         comparator = resource_rep(
             plre.ResourceRegisterComparator,
-            {"first_register": coeff_precision_bits, "second_register": coeff_precision_bits, "geq": False},
+            {
+                "first_register": coeff_precision_bits,
+                "second_register": coeff_precision_bits,
+                "geq": False,
+            },
         )
         gate_list.append(plre.GateCount(comparator))
 

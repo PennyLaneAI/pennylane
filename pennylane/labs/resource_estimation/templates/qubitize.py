@@ -93,7 +93,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         else:
             num_orb = compact_ham.params["num_orbitals"]
             tensor_rank = compact_ham.params["tensor_rank"]
-            self.num_wires = num_orb*2 +  2 * int(np.ceil(math.log2(tensor_rank+1))) + 6
+            self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
             self.wires = None
         super().__init__(wires=wires)
 
@@ -229,7 +229,6 @@ class ResourceQubitizeTHC(ResourceOperator):
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision_bits + 4))
 
-
         return gate_list
 
     @classmethod
@@ -278,7 +277,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         if ctrl_num_ctrl_wires > 1:
             mcx = resource_rep(
-                re.ResourceMultiControlledX,
+                plre.ResourceMultiControlledX,
                 {
                     "num_ctrl_wires": ctrl_num_ctrl_wires,
                     "num_ctrl_values": ctrl_num_ctrl_values,
@@ -295,7 +294,14 @@ class ResourceQubitizeTHC(ResourceOperator):
                 "select_swap_depth": select_swap_depths[1],
             },
         )
-        gate_list.append(GateCount(resource_rep(plre.ResourceControlled, {"base_cmpr_op": select, "num_ctrl_wires":1, "num_ctrl_values":0})))
+        gate_list.append(
+            GateCount(
+                resource_rep(
+                    plre.ResourceControlled,
+                    {"base_cmpr_op": select, "num_ctrl_wires": 1, "num_ctrl_values": 0},
+                )
+            )
+        )
 
         prep = resource_rep(
             plre.ResourcePrepTHC,
@@ -310,7 +316,7 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         # reflection cost
         toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_prec_bits + 4))
+        gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision_bits + 4))
 
         if ctrl_num_ctrl_wires > 1:
             gate_list.append(FreeWires(1))
