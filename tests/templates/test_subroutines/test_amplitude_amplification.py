@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.amplitude_amplification import _get_fixed_point_angles
 
 
@@ -330,3 +331,23 @@ def test_fixed_point_angles_function(iters, p_min):
 
     assert all(isinstance(x, float) for x in alphas)
     assert all(isinstance(x, float) for x in betas)
+
+
+@pytest.mark.parametrize(
+    "n_wires, items, iters",
+    (
+        (3, [0, 2], 1),
+        (3, [1, 2], 2),
+        (5, [4, 5, 7, 12], 3),
+        (5, [0, 1, 2, 3, 4], 4),
+    ),
+)
+def test_decomposition_new(n_wires, items, iters):
+    """Tests the decomposition rule implemented with the new system."""
+    U = generator(wires=range(n_wires))
+    O = oracle(items, wires=range(n_wires))
+
+    op = qml.AmplitudeAmplification(U, O, iters)
+
+    for rule in qml.list_decomps(qml.AmplitudeAmplification):
+        _test_decomposition_rule(op, rule)

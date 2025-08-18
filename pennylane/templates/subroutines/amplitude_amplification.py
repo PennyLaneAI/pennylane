@@ -18,9 +18,17 @@ This submodule contains the template for Amplitude Amplification.
 
 # pylint: disable-msg=too-many-arguments,too-many-positional-arguments
 import copy
+from collections import Counter
 
 import numpy as np
 
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
 from pennylane.ops import Hadamard, PhaseShift
 from pennylane.ops.op_math import ctrl
@@ -108,10 +116,23 @@ class AmplitudeAmplification(Operation):
 
     grad_method = None
 
+    resource_keys = {"num_wires", "fixed_point", "O", "iters", "num_reflection_wires", "U"}
+
     def _flatten(self):
         data = (self.hyperparameters["U"], self.hyperparameters["O"])
         metadata = tuple(item for item in self.hyperparameters.items() if item[0] not in ["O", "U"])
         return data, metadata
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "num_wires": len(self.wires),
+            "fixed_point": self.hyperparameters["fixed_point"],
+            "O": self.hyperparameters["O"],
+            "iters": self.hyperparameters["iters"],
+            "num_reflection_wires": len(self.hyperparameters["reflection_wires"]),
+            "U": self.hyperparameters["U"],
+        }
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -202,3 +223,90 @@ class AmplitudeAmplification(Operation):
             context.remove(op)
         context.append(self)
         return self
+
+
+def _amplitude_amplification_resources(num_wires, fixed_point, O, iters, num_reflection_wires, U):
+    resources = Counter()
+
+    if fixed_point:
+
+        for iter in range(iters // 2):
+            resources[resource_rep(Hadamard)] += 4
+            resources[
+                controlled_resource_rep(
+                    O.__class__,
+                    O.resource_params,
+                    num_control_wires=1,
+                )
+            ] += 2
+            resources[resource_rep(PhaseShift)] += 1
+            resources[
+                resource_rep(
+                    Reflection,
+                    base_class=U.__class__,
+                    base_params=U.resource_params,
+                    num_wires=num_wires,
+                    num_reflection_wires=num_reflection_wires,
+                )
+            ] += 1
+    else:
+        for _ in range(iters):
+            resources[resource_rep(O.__class__, **O.resource_params)] += 1
+            resources[
+                resource_rep(
+                    Reflection,
+                    base_class=U.__class__,
+                    base_params=U.resource_params,
+                    num_wires=num_wires,
+                    num_reflection_wires=num_reflection_wires,
+                )
+            ] += 1
+
+    return resources
+
+
+@register_resources(_amplitude_amplification_resources)
+def _amplitude_amplification_decomposition(*_, **kwargs):
+    U = kwargs["U"]
+    O = kwargs["O"]
+    iters = kwargs["iters"]
+    fixed_point = kwargs["fixed_point"]
+    work_wire = kwargs["work_wire"]
+    p_min = kwargs["p_min"]
+    reflection_wires = kwargs["reflection_wires"]
+
+    delta = np.sqrt(1 - p_min)
+    gamma = np.cos(np.arccos(1 / delta, dtype=np.complex128) / iters, dtype=np.complex128) ** -1
+
+    if fixed_point:
+
+        def alpha(iter):
+            return np.real(2 * np.arctan(1 / (np.tan(2 * np.pi * (iter + 1) / iters) * np.sqrt(1 - gamma ** 2))))
+
+        def beta(iter):
+            return -alpha(-(iter + 1))
+
+        @for_loop(iters // 2)
+        def half_iter_loop(iter):
+            Hadamard(wires=work_wire)
+            ctrl(O, control=work_wire)
+            Hadamard(wires=work_wire)
+            PhaseShift(beta(iter), wires=work_wire)
+            Hadamard(wires=work_wire)
+            ctrl(O, control=work_wire)
+            Hadamard(wires=work_wire)
+
+            Reflection(U, -alpha(iter), reflection_wires=reflection_wires)
+
+        half_iter_loop()  # pylint: disable=no-value-for-parameter
+    else:
+
+        @for_loop(iters)
+        def iter_loop(_):
+            apply(O)
+            Reflection(U, np.pi, reflection_wires=reflection_wires)
+
+        iter_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(AmplitudeAmplification, _amplitude_amplification_decomposition)
