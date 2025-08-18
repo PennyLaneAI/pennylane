@@ -131,6 +131,7 @@ class TestAnd:
         ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
+        # Counter makes loop bail earlier.
         assert result[0] == 5, f"Expected 5, got {result[0]}"
 
     @pytest.mark.parametrize(
@@ -266,6 +267,7 @@ class TestOr:
         ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
         result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
 
+        # Despite the counter constraint, a will continue to increment.
         assert result[0] == 10, f"Expected 10, got {result[0]}"
 
     @pytest.mark.parametrize(
