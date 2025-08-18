@@ -36,7 +36,10 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     This transform optimizes Clifford + T circuits by cutting them into phase-polynomial blocks,
     and using the TODD algorithm to optimize each of these phase polynomials.
     Depending on the number of qubits and T gates in the original circuit, it might take a long time to run.
-    The returned circuit is equivalent to the original input up to a global phase.
+
+    .. note::
+
+        The transformed output circuit is equivalent to the input up to a global phase.
 
     The implementation is based on the
     `pyzx.phase_block_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize>`__ pass.
