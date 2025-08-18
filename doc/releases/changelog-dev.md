@@ -152,6 +152,10 @@
 
 <h4>Other improvements</h4>
 
+* Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
+  representation of the program between multiple compilation passes.
+  [(#7964)](https://github.com/PennyLaneAI/pennylane/pull/7964)
+
 * The matrix factorization using :func:`~.math.decomposition.givens_decomposition` has
   been optimized to factor out the redundant sign in the diagonal phase matrix for the
   real-valued (orthogonal) rotation matrices. For example, in case the determinant of a matrix is
@@ -255,6 +259,7 @@
 
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+  [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
 
 * A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
   [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
@@ -623,6 +628,9 @@
 
 <h3>Documentation 📝</h3>
 
+* Small typos in the docstring for `qml.noise.partial_wires` have been corrected.
+  [(#8052)](https://github.com/PennyLaneAI/pennylane/pull/8052)
+
 * The theoretical background section of :class:`~.BasisRotation` has been extended to explain
   the underlying Lie group/algebra homomorphism between the (dense) rotation matrix and the
   performed operations on the target qubits.
@@ -702,6 +710,7 @@ Ali Asadi,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
+Isaac De Vlugt,
 Diksha Dhawan,
 Marcus Edwards,
 Lillian Frederiksen,
