@@ -511,10 +511,10 @@ def _mcx_two_workers_resource(num_control_wires, work_wire_type, **__):
 @register_resources(_mcx_two_workers_resource)
 def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
     r"""
-    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` auxiliary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
-    zeroed ancillae, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using borrowed
-    ancillae as described in Sec. 5 of [1].
+    zeroed auxiliary qubits, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using borrowed
+    auxiliary qubits as described in Sec. 5 of [1].
 
     References:
         1. Khattar and Gidney, Rise of conditionally clean ancillae for optimizing quantum circuits
@@ -598,9 +598,9 @@ def _mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
 @register_resources(_mcx_one_worker_resource)
 def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", **__):
     r"""
-    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit. It
-    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is zeroed
-    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is borrowed as described in
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` auxiliary qubit. It
+    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is zeroed
+    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is borrowed as described in
     Sec. 5.1 of [1].
 
     References:
@@ -1001,7 +1001,7 @@ def _controlled_x(target_wire, control, work_wires, work_wire_type):
 # pylint: disable=no-value-for-parameter
 def _n_parallel_ccx_x(control_wires_x, control_wires_y, target_wires):
     r"""
-    Construct a quantum circuit for creating n-condionally zeroed ancillae using 3n qubits. This
+    Construct a quantum circuit for creating n-condionally zeroed auxiliary qubits using 3n qubits. This
     implements Fig. 4a of [1]. Each wire is of the same size :math:`n`.
 
     Args:

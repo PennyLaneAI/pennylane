@@ -89,7 +89,7 @@ class ControlledQubitUnitary(ControlledOp):
             control on (default is the all 1s state).
         unitary_check (bool): whether to check whether an array U is unitary when creating the
             operator (default False).
-        work_wires (Union[Wires, Sequence[int], or int]): ancillary wire(s) that may be utilized during
+        work_wires (Union[Wires, Sequence[int], or int]): auxiliary wire(s) that may be utilized during
             the decomposition of the operator into native operations.
 
     **Example**
@@ -1767,7 +1767,9 @@ class CRX(ControlledOp):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
@@ -1974,7 +1976,9 @@ class CRY(ControlledOp):
         c = qml.math.cos(theta / 2)
         s = qml.math.sin(theta / 2)
 
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             c = qml.math.cast_like(c, 1j)
             s = qml.math.cast_like(s, 1j)
 
@@ -2150,7 +2154,9 @@ class CRZ(ControlledOp):
                 [0.0+0.0j, 0.0+0.0j, 0.9689-0.2474j,       0.0+0.0j],
                 [0.0+0.0j, 0.0+0.0j,       0.0+0.0j, 0.9689+0.2474j]])
         """
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
             if qml.math.ndim(p) == 0:
                 return qml.math.diag([1, 1, p, qml.math.conj(p)])
@@ -2195,7 +2201,9 @@ class CRZ(ControlledOp):
         >>> qml.CRZ.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 0.9689-0.2474j, 0.9689+0.2474j])
         """
-        if qml.math.get_interface(theta) == "tensorflow":
+        if (
+            qml.math.get_interface(theta) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = qml.math.exp(-0.5j * qml.math.cast_like(theta, 1j))
             ones = qml.math.ones_like(phase)
             return stack_last([ones, ones, phase, qml.math.conj(phase)])
@@ -2383,7 +2391,9 @@ class CRot(ControlledOp):
         s = qml.math.sin(theta / 2)
 
         # If anything is not tensorflow, it has to be casted
-        if interface == "tensorflow":
+        if (
+            interface == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phi = qml.math.cast_like(qml.math.asarray(phi, like=interface), 1j)
             omega = qml.math.cast_like(qml.math.asarray(omega, like=interface), 1j)
             c = qml.math.cast_like(qml.math.asarray(c, like=interface), 1j)
@@ -2575,7 +2585,9 @@ class ControlledPhaseShift(ControlledOp):
                     [0.0+0.0j, 0.0+0.0j, 1.0+0.0j, 0.0000+0.0000j],
                     [0.0+0.0j, 0.0+0.0j, 0.0+0.0j, 0.8776+0.4794j]])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
             if qml.math.ndim(p) == 0:
                 return qml.math.diag([1, 1, 1, p])
@@ -2620,7 +2632,9 @@ class ControlledPhaseShift(ControlledOp):
         >>> qml.ControlledPhaseShift.compute_eigvals(torch.tensor(0.5))
         tensor([1.0000+0.0000j, 1.0000+0.0000j, 1.0000+0.0000j, 0.8776+0.4794j])
         """
-        if qml.math.get_interface(phi) == "tensorflow":
+        if (
+            qml.math.get_interface(phi) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             phase = qml.math.exp(1j * qml.math.cast_like(phi, 1j))
             ones = qml.math.ones_like(phase)
             return stack_last([ones, ones, ones, phase])
