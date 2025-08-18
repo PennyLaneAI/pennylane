@@ -92,7 +92,7 @@ class ExecutionConfig:
     device_options: dict = field(default_factory=dict)
     """Various options for the device executing a quantum circuit"""
 
-    interface: Interface = Interface.NUMPY
+    interface: str | Interface | None = Interface.NUMPY
     """The machine learning framework to use"""
 
     derivative_order: int = 1

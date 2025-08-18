@@ -180,13 +180,23 @@ class TestExecutionConfig:
         with pytest.raises(TypeError, match=r"Got invalid type .* for 'device_options'"):
             replace(original_config, device_options=["this", "is", "a", "list"])
 
-    def test_immutability(self):
-        """Test that ExecutionConfig instances are immutable if frozen."""
-        config = ExecutionConfig(grad_on_execution=True)
+    def test_immutability_of_fields_with_custom_handling(self):
+        """Test fields with custom logic are immutable."""
+        config = ExecutionConfig()
         with pytest.raises(AttributeError, match="cannot assign to field 'grad_on_execution'"):
             config.grad_on_execution = False
 
-        assert config.grad_on_execution is True
+        with pytest.raises(AttributeError, match="cannot assign to field 'interface'"):
+            config.interface = "torch"
+
+        with pytest.raises(AttributeError, match="cannot assign to field 'gradient_method'"):
+            config.gradient_method = None
+
+        with pytest.raises(AttributeError, match="cannot assign to field 'mcm_config'"):
+            config.mcm_config = {}
+
+        with pytest.raises(AttributeError, match="cannot assign to field 'executor_backend'"):
+            config.executor_backend = None
 
     @pytest.mark.parametrize(
         "config",
