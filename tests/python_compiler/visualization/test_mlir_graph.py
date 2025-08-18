@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Unit test module for the merge rotations transform"""
+"""Unit test module for the MLIR graph generation in the Python Compiler visualization module."""
 
 from pathlib import Path
 
