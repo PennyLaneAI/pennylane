@@ -62,6 +62,7 @@ class Testdraw:
 
         return circ
 
+    # pylint: disable=implicit-str-concat
     @pytest.mark.parametrize(
         "level, expected",
         [
