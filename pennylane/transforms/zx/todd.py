@@ -33,7 +33,7 @@ def todd(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     Apply the `Third Order Duplicate and Destroy (TODD) <https://arxiv.org/abs/1712.01557>`__ algorithm to reduce
     the number of T gates in the given Clifford + T circuit.
 
-    This transform optimizes Clifford + T circuits by cutting them into phase-polynomial blocks,
+    This transform optimizes a Clifford + T circuit by cutting it into phase-polynomial blocks,
     and using the TODD algorithm to optimize each of these phase polynomials.
     Depending on the number of qubits and T gates in the original circuit, it might take a long time to run.
 
