@@ -317,7 +317,7 @@ class TestShots:
         )
 
         assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-            (50,), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+            (50, 1), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
         )
 
         with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
@@ -343,9 +343,9 @@ class TestShots:
         assert eqn0.invars[2].val == 20
 
         assert len(eqn0.outvars) == 3
-        assert eqn0.outvars[0].aval.shape == (10,)
-        assert eqn0.outvars[1].aval.shape == (10,)
-        assert eqn0.outvars[2].aval.shape == (20,)
+        assert eqn0.outvars[0].aval.shape == (10, 1)
+        assert eqn0.outvars[1].aval.shape == (10, 1)
+        assert eqn0.outvars[2].aval.shape == (20, 1)
 
     def test_shot_vector_multiple_returns_pytree(self):
         """Test that shot vectors and multiple returns returns the correct shapes."""
@@ -360,7 +360,7 @@ class TestShots:
             assert isinstance(out, tuple)
             for i, d in enumerate(out):
                 assert isinstance(d, dict)
-                assert d["sample"].shape == (10 + i,)
+                assert d["sample"].shape == (10 + i, 1)
                 assert d["expval"].shape == ()
             return out
 
@@ -369,9 +369,9 @@ class TestShots:
         assert len(eqn0.outvars) == 4
         # for some reason flattening the pytree puts the expval first
         assert eqn0.outvars[0].aval.shape == ()
-        assert eqn0.outvars[1].aval.shape == (10,)
+        assert eqn0.outvars[1].aval.shape == (10, 1)
         assert eqn0.outvars[2].aval.shape == ()
-        assert eqn0.outvars[3].aval.shape == (11,)
+        assert eqn0.outvars[3].aval.shape == (11, 1)
 
     def test_error_dynamic_shots_dynamic_shapes_not_enabled(self):
         """Test that an error is raised if dynamic shots is not enabled."""
@@ -409,6 +409,31 @@ class TestShots:
 
         assert eqn0.outvars[0].aval.shape[0] is eqn0.invars[0]
         assert eqn0.outvars[1].aval.shape == ()
+
+    @pytest.mark.usefixtures("enable_disable_dynamic_shapes")
+    def test_dynamic_shots_shot_vector(self):
+        """Test that a shot vector can be used with a shot vector."""
+
+        @qml.qnode(qml.device("default.qubit", wires=2))
+        def c():
+            return qml.sample(wires=0)
+
+        def w(shots1, shots2):
+            out = qml.set_shots(c, (shots1, 2, shots2))()
+            return out
+
+        jaxpr = jax.make_jaxpr(w)(5, 6)
+        eqn = jaxpr.eqns[-1]
+        assert eqn.params["shots_len"] == 3
+        assert len(eqn.outvars) == 3
+
+        assert isinstance(eqn.outvars[0].aval, jax.core.DShapedArray)
+        assert eqn.outvars[0].aval.shape[0] is eqn.invars[0]
+        assert isinstance(eqn.outvars[2].aval, jax.core.DShapedArray)
+        assert eqn.outvars[2].aval.shape[0] is eqn.invars[2]
+
+        assert isinstance(eqn.outvars[1].aval, jax.core.ShapedArray)
+        assert eqn.outvars[1].aval.shape == (2, 1)
 
 
 class TestUserTransforms:
