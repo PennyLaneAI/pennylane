@@ -61,7 +61,7 @@ class ResourceSelectTHC(ResourceOperator):
 
         if compact_ham.method_name != "thc":
             raise TypeError(
-                f"Unsupported Hamiltonian representation for ResourceQubitizeTHC."
+                f"Unsupported Hamiltonian representation for ResourceSelectTHC."
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
         self.compact_ham = compact_ham
@@ -127,6 +127,12 @@ class ResourceSelectTHC(ResourceOperator):
         r"""Returns a list representing the resources of the operator. Each object represents a quantum gate
         and the number of times it occurs in the decomposition.
 
+        .. note::
+
+            This decomposition assumes an appropriately sized phase gradient state is available.
+            Users should ensure the cost of constructing such a state has been accounted for.
+            See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
+
         Args:
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
@@ -156,14 +162,6 @@ class ResourceSelectTHC(ResourceOperator):
 
         gate_list = []
 
-        # Resource state
-        gate_list.append(AllocWires(rotation_precision_bits))
-
-        phase_grad = resource_rep(
-            plre.ResourcePhaseGradient, {"num_wires": rotation_precision_bits}
-        )
-        gate_list.append(GateCount(phase_grad, 1))
-
         swap = resource_rep(plre.ResourceCSWAP)
         gate_list.append(GateCount(swap, 4 * num_orb))
 
@@ -185,7 +183,7 @@ class ResourceSelectTHC(ResourceOperator):
             {
                 "base_cmpr_op": resource_rep(
                     plre.ResourceSemiAdder,
-                    {"max_register_size": rotation_precision_bits},
+                    {"max_register_size": rotation_precision_bits - 1},
                 ),
                 "num_ctrl_wires": 1,
                 "num_ctrl_values": 0,
@@ -235,7 +233,10 @@ class ResourceSelectTHC(ResourceOperator):
         cz = resource_rep(plre.ResourceCZ)
         gate_list.append(plre.GateCount(cz, 1))
 
+        toffoli = resource_rep(plre.ResourceToffoli)
+        gate_list.append(plre.GateCount(toffoli, 2))
         gate_list.append(FreeWires(rotation_precision_bits * (num_orb - 1)))
+
         return gate_list
 
     @classmethod
@@ -249,6 +250,12 @@ class ResourceSelectTHC(ResourceOperator):
         **kwargs,
     ) -> list[GateCount]:
         r"""Returns a list representing the resources for the controlled version of the operator.
+
+        .. note::
+
+            This decomposition assumes an appropriately sized phase gradient state is available.
+            Users should ensure the cost of constructing such a state has been accounted for.
+            See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
 
         Args:
             ctrl_num_ctrl_wires (int): the number of qubits the operation is controlled on

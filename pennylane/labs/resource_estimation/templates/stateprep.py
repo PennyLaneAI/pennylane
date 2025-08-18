@@ -291,7 +291,7 @@ class ResourcePrepTHC(ResourceOperator):
 
         if compact_ham.method_name != "thc":
             raise TypeError(
-                f"Unsupported Hamiltonian representation for ResourceQubitizeTHC."
+                f"Unsupported Hamiltonian representation for ResourcePrepTHC."
                 f"This method works with thc Hamiltonian, {compact_ham.method_name} provided"
             )
         self.compact_ham = compact_ham
