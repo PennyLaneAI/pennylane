@@ -16,6 +16,8 @@
 Binary elementwise operations for the StableHLO dialect.
 """
 
+# pylint: disable=too-few-public-methods
+
 import abc
 from typing import Generic, TypeVar
 

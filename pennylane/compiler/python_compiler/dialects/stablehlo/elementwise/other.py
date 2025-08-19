@@ -16,6 +16,8 @@
 Other elementwise operations for the StableHLO dialect.
 """
 
+# pylint: disable=too-few-public-methods
+
 from typing import ClassVar
 
 import xdsl.dialects.stablehlo as xstablehlo
