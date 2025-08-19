@@ -66,6 +66,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.unitary_to_rot
     ~transforms.zx.push_hadamards
     ~transforms.zx.reduce_non_clifford
+    ~transforms.zx.todd
 
 There are also utility functions and decompositions available that assist with
 both transforms, and decompositions within the larger PennyLane codebase.
@@ -336,7 +337,7 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from .zx import to_zx, from_zx, push_hadamards, reduce_non_clifford
+from .zx import to_zx, from_zx, push_hadamards, reduce_non_clifford, todd
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 
