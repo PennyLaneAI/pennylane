@@ -17,9 +17,9 @@ from functools import wraps
 
 from catalyst import qjit
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
+from xdsl.dialects.builtin import ModuleOp
 
 from pennylane import QNode
-from pennylane import draw as qml_draw
 from pennylane.tape import QuantumScript
 from pennylane.typing import Callable
 
@@ -31,6 +31,17 @@ from .collector import QMLCollector
 _cache_store: dict[Callable, dict[int, tuple[str, str]]] = {}
 
 
+def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
+    """Ensure the QNode is compiled and return its MLIR module."""
+    if hasattr(qnode, "mlir_module"):
+        return qnode.mlir_module
+
+    func = getattr(qnode, "user_function", qnode)
+    jitted_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(func)
+    jitted_qnode.jit_compile(args, **kwargs)
+    return jitted_qnode.mlir_module
+
+
 def draw(qnode: QNode, *, level: None | int = None) -> Callable:
     """
     Draw the QNode at the specified level.
@@ -40,7 +51,7 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
     will be used as a fallback.
 
     The provided QNode is assumed to be decorated with xDSL compilation passes.
-    If no passes are applied, the original QNode is visualized.
+    If no passes are applied, the QNode is not visualized.
 
     Args:
         qnode (.QNode): the input QNode that is to be visualized. The QNode is assumed to be compiled with ``qjit``.
@@ -61,27 +72,12 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        # We re-compile the qnode to ensure the passes are applied
-        # with the args and kwargs provided by the user.
-        # TODO: we could integrate the callback mechanism within `qjit`,
-        # so that we wouldn't need to recompile the qnode twice.
-        mlir_module = qnode.mlir_module if hasattr(qnode, "mlir_module") else None
-        if mlir_module is None:
-            func = qnode.user_function if hasattr(qnode, "user_function") else qnode
-            jitted_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(func)
-            jitted_qnode.jit_compile(args, **kwargs)
-            mlir_module = jitted_qnode.mlir_module
-
+        mlir_module = _get_mlir_module(qnode, args, kwargs)
         Compiler.run(mlir_module, callback=_draw_callback)
 
-        if level in cache:
-            return cache[level][0]
+        if not cache:
+            return None
 
-        if cache:
-            # Fallback to the highest level if the requested level is not available.
-            # This is done for compatibility with qml.draw.
-            return cache[max(cache.keys())][0]
-
-        return qml_draw(qnode.user_function, level=level)
+        return cache.get(level, cache[max(cache.keys())])[0]
 
     return wrapper

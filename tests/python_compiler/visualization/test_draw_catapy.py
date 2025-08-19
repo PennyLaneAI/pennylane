@@ -80,6 +80,7 @@ class Testdraw:
             ),
             (2, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
             (None, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
+            (50, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
         ],
     )
     def test_multiple_levels(self, transforms_circuit_xdsl, level, qjit, expected):
@@ -91,6 +92,17 @@ class Testdraw:
             )
 
         assert draw(transforms_circuit_xdsl, level=level)() == expected
+
+    def test_no_passes(self):
+        """Test that if no xDSL passes are applied, the circuit is not visualized."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.RX(0.1, 0)
+            qml.RX(2.0, 0)
+            return qml.state()
+
+        assert draw(circ)() is None
 
 
 if __name__ == "__main__":
