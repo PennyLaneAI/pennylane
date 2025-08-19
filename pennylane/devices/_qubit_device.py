@@ -26,7 +26,6 @@ import itertools
 import logging
 import warnings
 from collections import defaultdict
-from typing import Union
 
 import numpy as np
 
@@ -100,7 +99,7 @@ class QubitDevice(Device):
     Args:
         wires (int, Iterable[Number, str]]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int, list[int]): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. If ``None``, the device calculates probability, expectation values,
             and variances analytically. If an integer, it specifies the number of samples to estimate these quantities.
@@ -158,7 +157,7 @@ class QubitDevice(Device):
         "Prod",
     }
 
-    measurement_map = defaultdict(lambda: "")  # e.g. {SampleMP: "sample"}
+    measurement_map = defaultdict(str)  # e.g. {SampleMP: "sample"}
     """Mapping used to override the logic of measurement processes. The dictionary maps a
     measurement class to a string containing the name of a device's method that overrides the
     measurement process. The method defined by the device should have the following arguments:
@@ -543,7 +542,7 @@ class QubitDevice(Device):
 
     def _measure(
         self,
-        measurement: Union[SampleMeasurement, StateMeasurement],
+        measurement: SampleMeasurement | StateMeasurement,
         shot_range=None,
         bin_size=None,
     ):
@@ -660,7 +659,7 @@ class QubitDevice(Device):
             elif isinstance(m, SampleMP):
                 samples = self.sample(obs, shot_range=shot_range, bin_size=bin_size, counts=False)
                 dtype = int if isinstance(obs, SampleMP) else None
-                result = self._asarray(qml.math.squeeze(samples), dtype=dtype)
+                result = self._asarray(samples, dtype=dtype)
 
             elif isinstance(m, CountsMP):
                 result = self.sample(m, shot_range=shot_range, bin_size=bin_size, counts=True)

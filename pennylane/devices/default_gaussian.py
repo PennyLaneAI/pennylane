@@ -359,7 +359,7 @@ def vacuum_state(wires, hbar=2.0):
     Returns:
         array: the vacuum state
     """
-    means = np.zeros((2 * wires))
+    means = np.zeros(2 * wires)
     cov = np.identity(2 * wires) * hbar / 2
     state = [cov, means]
     return state
@@ -395,7 +395,7 @@ def squeezed_state(r, phi, hbar=2.0):
     Returns:
         array: the squeezed state
     """
-    means = np.zeros((2))
+    means = np.zeros(2)
     state = [squeezed_cov(r, phi, hbar), means]
     return state
 
@@ -645,7 +645,7 @@ class DefaultGaussian(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. If ``None``, the results are analytically computed and hence deterministic.
         hbar (float): (default 2) the value of :math:`\hbar` in the commutation

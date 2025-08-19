@@ -25,7 +25,7 @@ from functools import lru_cache
 import numpy as np
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.measurements import (
     ExpectationMP,
     MeasurementProcess,
@@ -40,7 +40,7 @@ from pennylane.operation import Operation, Operator, StatePrepBase
 from pennylane.ops import LinearCombination, Prod, SProd, Sum
 from pennylane.queuing import QueuingManager
 from pennylane.tape import QuantumScript, expand_tape_state_prep
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 from .tracker import Tracker
 
@@ -123,7 +123,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
     Args:
         wires (int or Iterable[Number, str]]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (int): Number of circuit evaluations/random samples used to estimate
             expectation values of observables. Defaults to 1000 if not specified.
     """
@@ -376,7 +376,7 @@ class Device(abc.ABC, metaclass=_LegacyMeta):
 
         return Wires(ordered_subset_lst)
 
-    @lru_cache()
+    @lru_cache
     def map_wires(self, wires):
         """Map the wire labels of wires using this device's wire map.
 

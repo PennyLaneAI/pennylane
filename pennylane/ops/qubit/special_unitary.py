@@ -18,7 +18,7 @@ its utility functions.
 # pylint: disable=arguments-differ, import-outside-toplevel
 from functools import lru_cache, reduce
 from itertools import product
-from typing import Literal, Optional
+from typing import Literal
 
 import numpy as np
 
@@ -410,7 +410,7 @@ class SpecialUnitary(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    def __init__(self, theta: TensorLike, wires: WiresLike, id: Optional[str] = None):
+    def __init__(self, theta: TensorLike, wires: WiresLike, id: str | None = None):
         num_wires = 1 if isinstance(wires, int) else len(wires)
         self.hyperparameters["num_wires"] = num_wires
         theta_shape = qml.math.shape(theta)
@@ -571,7 +571,10 @@ class SpecialUnitary(Operation):
             rjac, ijac = torch.autograd.functional.jacobian(split_matrix, theta)
             jac = rjac + 1j * ijac
 
-        elif interface in ("tensorflow", "tf"):
+        elif interface in (
+            "tensorflow",
+            "tf",
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             import tensorflow as tf
 
             with tf.GradientTape(persistent=True) as tape:

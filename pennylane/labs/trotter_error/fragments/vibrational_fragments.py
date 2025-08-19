@@ -13,7 +13,7 @@
 # limitations under the License.
 """The realspace vibrational Hamiltonian"""
 
-from typing import List, Sequence
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -22,7 +22,7 @@ from pennylane.labs.trotter_error.realspace import RealspaceCoeffs, RealspaceOpe
 
 def vibrational_fragments(
     modes: int, freqs: np.ndarray, taylor_coeffs: Sequence[np.ndarray], frag_method="harmonic"
-) -> List[RealspaceSum]:
+) -> list[RealspaceSum]:
     """Returns a list of fragments summing to a vibrational Hamiltonian.
 
     Args:

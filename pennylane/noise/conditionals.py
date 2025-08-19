@@ -21,11 +21,13 @@ from inspect import isclass, signature
 from pennylane import math, measurements
 from pennylane import ops as qops
 from pennylane.boolean_fn import BooleanFn
+from pennylane.exceptions import WireError
 from pennylane.operation import Operation
 from pennylane.ops import Adjoint, Controlled, Exp, LinearCombination, adjoint, ctrl
-from pennylane.ops.functions import simplify
+from pennylane.ops.functions import map_wires, simplify
+from pennylane.queuing import QueuingManager
 from pennylane.templates import ControlledSequence
-from pennylane.wires import WireError, Wires
+from pennylane.wires import Wires
 
 # pylint: disable = too-many-branches
 
@@ -662,32 +664,32 @@ def partial_wires(operation, *args, **kwargs):
 
     >>> func = qml.noise.partial_wires(qml.RX(1.2, [12]))
     >>> func(2)
-    qml.RX(1.2, wires=[2])
+    RX(1.2, wires=[2])
     >>> func(qml.RY(1.0, ["wires"]))
-    qml.RX(1.2, wires=["wires"])
+    RX(1.2, wires=["wires"])
 
     Additionally, an :class:`Operation <pennylane.operation.Operation>` class can
     also be provided, while providing required positional arguments via ``args``:
 
     >>> func = qml.noise.partial_wires(qml.RX, 3.2, [20])
     >>> func(qml.RY(1.0, [0]))
-    qml.RX(3.2, wires=[0])
+    RX(3.2, wires=[0])
 
     Moreover, one can use ``kwargs`` instead of positional arguments:
 
     >>> func = qml.noise.partial_wires(qml.RX, phi=1.2)
     >>> func(qml.RY(1.0, [2]))
-    qml.RX(1.2, wires=[2])
+    RX(1.2, wires=[2])
     >>> rfunc = qml.noise.partial_wires(qml.RX(1.2, [12]), phi=2.3)
     >>> rfunc(qml.RY(1.0, ["light"]))
-    qml.RX(2.3, wires=["light"])
+    RX(2.3, wires=["light"])
 
     Finally, one may also use this with an instance of
     :class:`MeasurementProcess <pennylane.measurement.MeasurementProcess>`
 
     >>> func = qml.noise.partial_wires(qml.expval(qml.Z(0)))
     >>> func(qml.RX(1.2, wires=[9]))
-    qml.expval(qml.Z(9))
+    expval(Z(9))
     """
     if callable(operation):
         op_class, op_type = _process_callable(operation)
@@ -757,7 +759,8 @@ def partial_wires(operation, *args, **kwargs):
                     return tuple(operation(**op_args, wires=wire) for wire in op_wires)
 
         if is_mappable and operation.wires is not None:
-            return operation.map_wires(dict(zip(operation.wires, op_args.pop("wires"))))
+            wire_map = dict(zip(operation.wires, op_args.pop("wires")))
+            return map_wires(operation, wire_map, queue=QueuingManager.recording())
 
         if "wires" not in parameters or (
             "MeasFunc" in op_type and any(x in op_args for x in ["obs", "H"])

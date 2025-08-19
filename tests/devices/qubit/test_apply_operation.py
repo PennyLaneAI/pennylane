@@ -779,7 +779,7 @@ class TestSnapshot:
         op = qml.Snapshot("tag", qml.sample(wires=0), shots=50)
         _ = apply_operation(op, initial_state, debugger=debugger)
 
-        assert debugger.snapshots["tag"].shape == (50,)
+        assert debugger.snapshots["tag"].shape == (50, 1)
 
     def test_batched_state(self, ml_framework):
         """Test that batched states create batched snapshots."""
@@ -1408,7 +1408,7 @@ class TestLargeTFCornerCases:
         dev = qml.device("default.qubit", wires=8)
 
         @qml.qnode(dev, interface="tf")
-        def ancillary_qcnn_circuit(inputs):
+        def auxiliary_qcnn_circuit(inputs):
             qml.AmplitudeEmbedding(features=inputs, wires=range(4), normalize=True)
             qml.CNOT(wires=[0, 1])
             qml.PauliZ(1)
@@ -1420,7 +1420,7 @@ class TestLargeTFCornerCases:
 
         batch_size = 3
         params = np.random.rand(batch_size, 16)
-        result = ancillary_qcnn_circuit(tf.Variable(params))
+        result = auxiliary_qcnn_circuit(tf.Variable(params))
         assert qml.math.shape(result) == (4, batch_size)
 
     def test_pauliz_large_batched_state_tf(self):

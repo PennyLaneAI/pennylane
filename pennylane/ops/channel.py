@@ -17,7 +17,8 @@ This module contains the available built-in noisy
 quantum channels supported by PennyLane, as well as their conventions.
 """
 import warnings
-from typing import Any, Hashable, Iterable
+from collections.abc import Hashable, Iterable
+from typing import Any
 
 from pennylane import math as np
 from pennylane.operation import Channel
@@ -330,7 +331,9 @@ class DepolarizingChannel(Channel):
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
             raise ValueError("p must be in the interval [0,1]")
 
-        if np.get_interface(p) == "tensorflow":
+        if (
+            np.get_interface(p) == "tensorflow"
+        ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
             p = np.cast_like(p, 1j)
 
         K0 = np.sqrt(1 - p + np.eps) * np.convert_like(np.eye(2, dtype=complex), p)
@@ -543,7 +546,7 @@ class PauliError(Channel):
     * Number of parameters: 3
 
     Args:
-        operators (str): The Pauli operators acting on the specified (groups of) wires
+        operators (str): The Pauli operators (``'I'``, ``'X'``, ``'Y'``, or ``'Z'``) acting on the specified (groups of) wires
         p (float): The probability of the operator being applied
         wires (Sequence[int] or int): The wires the channel acts on
         id (str or None): String representing the operation (optional)
@@ -573,8 +576,8 @@ class PauliError(Channel):
         super().__init__(p, wires=wires, id=id)
 
         # check if the specified operators are legal
-        if not set(operators).issubset({"X", "Y", "Z"}):
-            raise ValueError("The specified operators need to be either of 'X', 'Y' or 'Z'")
+        if not set(operators).issubset({"X", "Y", "Z", "I"}):
+            raise ValueError("The specified operators need to be either of 'I', 'X', 'Y' or 'Z'.")
 
         # check if probabilities are legal
         if not np.is_abstract(p) and not 0.0 <= p <= 1.0:
@@ -638,6 +641,7 @@ class PauliError(Channel):
                 p = np.cast_like(p, 1j)
 
         ops = {
+            "I": np.convert_like(np.cast_like(np.eye(2), p), p),
             "X": np.convert_like(np.cast_like(np.array([[0, 1], [1, 0]]), p), p),
             "Y": np.convert_like(np.cast_like(np.array([[0, -1j], [1j, 0]]), p), p),
             "Z": np.convert_like(np.cast_like(np.array([[1, 0], [0, -1]]), p), p),

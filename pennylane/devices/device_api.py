@@ -16,12 +16,14 @@ This module contains the Abstract Base Class for the next generation of devices.
 """
 
 import abc
+import warnings
 from collections.abc import Iterable
 from dataclasses import replace
 from numbers import Number
-from typing import Optional, Union, overload
+from typing import overload
 
 import pennylane as qml
+from pennylane.exceptions import PennyLaneDeprecationWarning
 from pennylane.measurements import Shots
 from pennylane.tape import QuantumScript, QuantumScriptOrBatch
 from pennylane.tape.qscript import QuantumScriptBatch
@@ -34,7 +36,7 @@ from .capabilities import (
     observable_stopping_condition_factory,
     validate_mcm_method,
 )
-from .execution_config import DefaultExecutionConfig, ExecutionConfig
+from .execution_config import ExecutionConfig
 from .preprocess import (
     decompose,
     validate_device_wires,
@@ -135,12 +137,12 @@ class Device(abc.ABC):
 
     """
 
-    config_filepath: Optional[str] = None
+    config_filepath: str | None = None
     """A device can use a `toml` file to specify the capabilities of the backend device. If this
     is provided, the file will be loaded into a :class:`~.DeviceCapabilities` object assigned to
     the :attr:`capabilities` attribute."""
 
-    capabilities: Optional[DeviceCapabilities] = None
+    capabilities: DeviceCapabilities | None = None
     """A :class:`~.DeviceCapabilities` object describing the capabilities of the backend device."""
 
     def __init_subclass__(cls, **kwargs):
@@ -167,7 +169,7 @@ class Device(abc.ABC):
         return type(self).__name__
 
     tracker: Tracker = Tracker()
-    """A :class:`~pennylane.devices.Tracker` that can store information about device executions, shots, batches,
+    """A :class:`~pennylane.Tracker` that can store information about device executions, shots, batches,
     intermediate results, or any additional device dependent information.
 
     A plugin developer can store information in the tracker by:
@@ -187,6 +189,11 @@ class Device(abc.ABC):
     def __init__(self, wires=None, shots=None) -> None:
         # each instance should have its own Tracker.
         self.tracker = Tracker()
+        if shots is not None and shots != Shots():
+            warnings.warn(
+                "Setting shots on device is deprecated. Please use the `set_shots` transform on the respective QNode instead.",
+                PennyLaneDeprecationWarning,
+            )
         self._shots = Shots(shots)
 
         if wires is not None:
@@ -228,11 +235,9 @@ class Device(abc.ABC):
     @shots.setter
     def shots(self, _):
         raise AttributeError(
-            (
-                "Shots can no longer be set on a device instance. "
-                "You can set shots on a call to a QNode, on individual tapes, or "
-                "create a new device instance instead."
-            )
+            "Shots can no longer be set on a device instance. "
+            "You can set shots on a call to a QNode, on individual tapes, or "
+            "create a new device instance instead."
         )
 
     @property
@@ -250,7 +255,7 @@ class Device(abc.ABC):
 
     def preprocess(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ) -> tuple[TransformProgram, ExecutionConfig]:
         """Device preprocessing function.
 
@@ -344,12 +349,14 @@ class Device(abc.ABC):
             Only then is the classical postprocessing called on the result object.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         execution_config = self.setup_execution_config(execution_config)
         transform_program = self.preprocess_transforms(execution_config)
         return transform_program, execution_config
 
     def setup_execution_config(
-        self, config: Optional[ExecutionConfig] = None, circuit: Optional[QuantumScript] = None
+        self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
     ) -> ExecutionConfig:
         """Sets up an ``ExecutionConfig`` that configures the execution behaviour.
 
@@ -395,7 +402,7 @@ class Device(abc.ABC):
         return config
 
     def preprocess_transforms(
-        self, execution_config: Optional[ExecutionConfig] = None
+        self, execution_config: ExecutionConfig | None = None
     ) -> TransformProgram:
         """Returns the transform program to preprocess a circuit for execution.
 
@@ -581,21 +588,23 @@ class Device(abc.ABC):
     @abc.abstractmethod
     @overload
     def execute(
-        self, circuits: QuantumScript, execution_config: ExecutionConfig = DefaultExecutionConfig
+        self, circuits: QuantumScript, execution_config: ExecutionConfig | None = None
     ) -> Result: ...
+
     @abc.abstractmethod
     @overload
     def execute(
         self,
         circuits: QuantumScriptBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ) -> ResultBatch: ...
+
     @abc.abstractmethod
     def execute(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
-    ) -> Union[Result, ResultBatch]:
+        execution_config: ExecutionConfig | None = None,
+    ) -> Result | ResultBatch:
         """Execute a circuit or a batch of circuits and turn it into results.
 
         Args:
@@ -668,8 +677,8 @@ class Device(abc.ABC):
 
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Determine whether or not a device provided derivative is potentially available.
 
@@ -760,7 +769,7 @@ class Device(abc.ABC):
     def compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
         """Calculate the jacobian of either a single or a batch of circuits on the device.
 
@@ -790,7 +799,7 @@ class Device(abc.ABC):
     def execute_and_compute_derivatives(
         self,
         circuits: QuantumScriptOrBatch,
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
         """Compute the results and jacobians of circuits at the same time.
 
@@ -809,6 +818,8 @@ class Device(abc.ABC):
         diff gradients, calculating the result and gradient at the same can save computational work.
 
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return self.execute(circuits, execution_config), self.compute_derivatives(
             circuits, execution_config
         )
@@ -817,7 +828,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
         r"""The jacobian vector product used in forward mode calculation of derivatives.
 
@@ -856,7 +867,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumScriptOrBatch,
         tangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
         """Execute a batch of circuits and compute their jacobian vector products.
 
@@ -870,14 +881,16 @@ class Device(abc.ABC):
 
         .. seealso:: :meth:`~pennylane.devices.Device.execute` and :meth:`~.Device.compute_jvp`
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return self.execute(circuits, execution_config), self.compute_jvp(
             circuits, tangents, execution_config
         )
 
     def supports_jvp(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Whether or not a given device defines a custom jacobian vector product.
 
@@ -894,7 +907,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
         r"""The vector jacobian product used in reverse-mode differentiation.
 
@@ -934,7 +947,7 @@ class Device(abc.ABC):
         self,
         circuits: QuantumScriptOrBatch,
         cotangents: tuple[Number, ...],
-        execution_config: ExecutionConfig = DefaultExecutionConfig,
+        execution_config: ExecutionConfig | None = None,
     ):
         r"""Calculate both the results and the vector jacobian product used in reverse-mode differentiation.
 
@@ -950,14 +963,16 @@ class Device(abc.ABC):
 
         .. seealso:: :meth:`~pennylane.devices.Device.execute` and :meth:`~.Device.compute_vjp`
         """
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return self.execute(circuits, execution_config), self.compute_vjp(
             circuits, cotangents, execution_config
         )
 
     def supports_vjp(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Whether or not a given device defines a custom vector jacobian product.
 
@@ -974,7 +989,7 @@ class Device(abc.ABC):
         jaxpr: "jax.extend.core.Jaxpr",
         consts: list[TensorLike],
         *args,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ) -> list[TensorLike]:
         """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
 
@@ -997,7 +1012,7 @@ class Device(abc.ABC):
         jaxpr: "jax.extend.core.Jaxpr",
         args,
         tangents,
-        execution_config: Optional[ExecutionConfig] = None,
+        execution_config: ExecutionConfig | None = None,
     ):
         """An **experimental** method for computing the results and jvp for PLXPR.
         See the ``capture`` module for more details.
@@ -1044,12 +1059,10 @@ def _default_mcm_method(capabilities: DeviceCapabilities, shots_present: bool) -
     supports_one_shot = "one-shot" in capabilities.supported_mcm_methods
     has_device_support = "device" in capabilities.supported_mcm_methods
 
-    # In finite shots mode, the one-shot method is the default even if there is device support.
-    # This is to ensure consistency with old behaviour. Although I'm not too sure about this.
-    if supports_one_shot and shots_present:
-        return "one-shot"
-
     if has_device_support:
         return "device"
+
+    if supports_one_shot and shots_present:
+        return "one-shot"
 
     return "deferred"

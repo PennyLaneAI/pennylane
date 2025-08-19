@@ -16,7 +16,8 @@ Contains the BasisEmbedding template.
 """
 # pylint: disable-msg=too-many-branches,too-many-arguments,protected-access
 
-from pennylane.ops.qubit.state_preparation import BasisState
+from pennylane.decomposition import add_decomps
+from pennylane.ops.qubit.state_preparation import BasisState, _basis_state_decomp
 
 
 class BasisEmbedding(BasisState):
@@ -69,3 +70,6 @@ class BasisEmbedding(BasisState):
 
     def __init__(self, features, wires, id=None):
         super().__init__(features, wires=wires, id=id)
+
+
+add_decomps(BasisEmbedding, _basis_state_decomp)

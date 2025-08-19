@@ -12,15 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Contains a function to construct an execution configuration from a QNode instance."""
+from __future__ import annotations
+
 import functools
+from typing import TYPE_CHECKING
 
 import pennylane as qml
 from pennylane.math import Interface
 
 from .resolution import _resolve_execution_config
 
+if TYPE_CHECKING:
+    from .qnode import QNode
 
-def construct_execution_config(qnode: "qml.QNode", resolve: bool = True):
+
+def construct_execution_config(qnode: QNode, resolve: bool = True):
     """Constructs the execution configuration of a QNode instance.
 
     Args:

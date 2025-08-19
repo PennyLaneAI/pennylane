@@ -41,7 +41,7 @@ from pennylane.capture.primitives import (  # pylint: disable=wrong-import-posit
     AbstractMeasurement,
 )
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 
 def _get_shapes_for(*measurements, shots=qml.measurements.Shots(None), num_device_wires=0):
@@ -437,9 +437,7 @@ class TestSample:
             *jaxpr.out_avals, shots=qml.measurements.Shots(50), num_device_wires=4
         )
         assert len(shapes) == 1
-        shape = (
-            (50, dim1_len) if isinstance(wires, (list, jax.numpy.ndarray, np.ndarray)) else (50,)
-        )
+        shape = (50, dim1_len)
         assert shapes[0] == jax.core.ShapedArray(
             shape, jax.numpy.int64 if jax.config.jax_enable_x64 else jax.numpy.int32
         )

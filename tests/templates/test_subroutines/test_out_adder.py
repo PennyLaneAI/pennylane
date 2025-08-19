@@ -19,6 +19,7 @@ import pytest
 
 import pennylane as qml
 from pennylane import numpy as np
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def test_standard_validity_OutAdder():
@@ -67,8 +68,9 @@ class TestOutAdder:
         self, x_wires, y_wires, output_wires, mod, work_wires, x, y, z
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutAdder template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x, y, z):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -82,7 +84,7 @@ class TestOutAdder:
 
         # pylint: disable=bad-reversed-sequence
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)))),
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y, z)[0, :]))),
             (x + y + z) % mod,
         )
 
@@ -204,6 +206,18 @@ class TestOutAdder:
         for op1, op2 in zip(adder_decomposition, op_list):
             qml.assert_equal(op1, op2)
 
+    @pytest.mark.parametrize("mod", [7, 8])
+    def test_decomposition_new(self, mod):
+        """Tests the decomposition rule implemented with the new system."""
+
+        x_wires = [2, 3, 4]
+        y_wires = [5, 6, 7]
+        output_wires = [8, 9, 10]
+        work_wires = [0, 1]
+        op = qml.OutAdder(x_wires, y_wires, output_wires, mod, work_wires)
+        for rule in qml.list_decomps(qml.OutAdder):
+            _test_decomposition_rule(op, rule)
+
     def test_work_wires_added_correctly(self):
         """Test that no work wires are added if work_wire = None"""
         wires = qml.OutAdder(x_wires=[1, 2], y_wires=[3, 4], output_wires=[5, 6]).wires
@@ -224,9 +238,10 @@ class TestOutAdder:
         y_wires = [2, 3, 5]
         output_wires = [6, 7, 8]
         work_wires = [11, 10]
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
         @jax.jit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
@@ -236,5 +251,5 @@ class TestOutAdder:
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x + y) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x + y) % mod
         )

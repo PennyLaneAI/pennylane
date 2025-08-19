@@ -23,8 +23,8 @@ from scipy.stats import unitary_group
 
 import pennylane as qml
 from pennylane import numpy as np
-from pennylane.exceptions import DeviceError
-from pennylane.wires import WireError, Wires
+from pennylane.exceptions import DeviceError, WireError
+from pennylane.wires import Wires
 
 U_thadamard_01 = np.multiply(
     1 / np.sqrt(2),
@@ -710,7 +710,7 @@ class TestSample:
         tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
         res = dev.execute(tape)
         assert qml.math.get_dtype_name(res)[0:3] == "int"
-        assert res.shape == (10,)
+        assert res.shape == (10, 1)
 
     def test_sample_dimensions(self):
         """Tests if the samples returned by the sample function have
@@ -1068,7 +1068,7 @@ class TestTensorSample:
     @pytest.mark.parametrize("index_2", list(range(1, 9)))
     def test_gell_mann_obs(self, index_1, index_2, tol_stochastic):
         """Test that sampling tensor products involving Gell-Mann observables works correctly"""
-        dev = qml.device("default.qutrit", wires=2, shots=int(1e6))
+        dev = qml.device("default.qutrit", wires=2, shots=1_000_000)
 
         obs = qml.GellMann(wires=0, index=index_1) @ qml.GellMann(wires=1, index=index_2)
 
@@ -1109,7 +1109,7 @@ class TestTensorSample:
         correctly"""
 
         np.random.seed(seed)
-        dev = qml.device("default.qutrit", wires=3, shots=int(1e6))
+        dev = qml.device("default.qutrit", wires=3, shots=1_000_000)
 
         A = np.array([[2, -0.5j, -1j], [0.5j, 1, -6], [1j, -6, 0]])
 
@@ -1234,9 +1234,9 @@ class TestWiresIntegration:
         "wires1, wires2",
         [
             (["a", "c", "d"], [2, 3, 0]),
-            ([-1, -2, -3], ["q1", "ancilla", 2]),
+            ([-1, -2, -3], ["q1", "auxiliary", 2]),
             (["a", "c"], [3, 0]),
-            ([-1, -2], ["ancilla", 2]),
+            ([-1, -2], ["auxiliary", 2]),
             (["a"], ["nothing"]),
         ],
     )

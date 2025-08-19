@@ -23,7 +23,7 @@ import pytest
 import pennylane as qml
 from pennylane.exceptions import CaptureError, QuantumFunctionError
 
-pytestmark = [pytest.mark.jax, pytest.mark.usefixtures("enable_disable_plxpr")]
+pytestmark = [pytest.mark.jax, pytest.mark.capture]
 
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
@@ -91,7 +91,7 @@ def test_error_if_overridden_shot_vector():
 def test_error_if_no_device_wires():
     """Test that a NotImplementedError is raised if the device does not provide wires."""
 
-    dev = qml.device("default.qubit")
+    dev = qml.device("default.qubit", wires=None)
 
     @qml.qnode(dev)
     def circuit():
@@ -179,7 +179,7 @@ def test_overriding_shots():
     )
 
     assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-        (50,), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+        (50, 1), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
     )
 
     with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
@@ -318,6 +318,7 @@ def test_qnode_closure_variables():
 
     jaxpr = jax.make_jaxpr(circuit)(1)
     assert len(jaxpr.eqns[0].invars) == 2  # one closure variable, one arg
+    assert jaxpr.eqns[0].params["n_consts"] == 1
 
     out = jax.core.eval_jaxpr(jaxpr.jaxpr, [jnp.array(0.5)], 0)
     assert qml.math.allclose(out, jnp.cos(0.5))
@@ -585,6 +586,9 @@ class TestDevicePreprocessing:
     def test_mcm_execution_deferred_hw_like(self, dev_name, mcm_method, seed):
         """Test that using a qnode with postselect_mode="hw-like" gives the expected results."""
 
+        if dev_name == "lightning.qubit":
+            pytest.xfail("still squeezing samples")  # [sc-96550]
+
         shots = 1000
         dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
@@ -615,6 +619,9 @@ class TestDevicePreprocessing:
     def test_mcms_execution_single_branch_statistics(self, dev_name, seed):
         """Test that single-branch-statistics works as expected."""
 
+        if dev_name == "lightning.qubit":
+            pytest.xfail("still squeezing samples")  # [sc-96550]
+
         shots = 1000
         dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
 
@@ -627,89 +634,6 @@ class TestDevicePreprocessing:
         # pylint: disable = not-an-iterable
         results = circuit()
         assert all(sample == 0 for sample in results) or all(sample == 1 for sample in results)
-
-
-def _interpret1(jaxpr, consts, *args):
-    args = [jnp.array([2]) * a for a in args]
-    return qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
-
-
-# pylint: disable=unused-argument
-def _dummy_transform1(jaxpr, consts, targs, tkwargs, *args):
-    return jax.make_jaxpr(partial(_interpret1, jaxpr, consts))(*args)
-
-
-@partial(qml.transform, plxpr_transform=_dummy_transform1)
-def transform1(tape):
-    raise NotImplementedError
-
-
-def _interpret2(jaxpr, consts, *args):
-    args = [jnp.array([3.0, 3.0]) * a for a in args]
-    return qml.capture.PlxprInterpreter().eval(jaxpr, consts, *args)
-
-
-# pylint: disable=unused-argument
-def _dummy_transform2(jaxpr, consts, targs, tkwargs, *args):
-    return jax.make_jaxpr(partial(_interpret2, jaxpr, consts))(*args)
-
-
-@partial(qml.transform, plxpr_transform=_dummy_transform2)
-def transform2(tape):
-    raise NotImplementedError
-
-
-class JaxprDevice(qml.devices.Device):
-
-    def __init__(self, wires, shots=None):
-        super().__init__(wires=wires, shots=shots)
-        self.jaxpr_history = []
-        self.consts_history = []
-        self.args_history = []
-
-    def preprocess_transforms(self, execution_config=None):
-        program = qml.transforms.core.TransformProgram()
-        program.add_transform(transform1)
-        program.add_transform(transform2)
-        return program
-
-    def execute(self, circuits, execution_config=None):
-        raise NotImplementedError
-
-    def eval_jaxpr(self, jaxpr, consts, *args, execution_config=None):
-        self.jaxpr_history.append(jaxpr)
-        self.consts_history.append(consts)
-        self.args_history.append(args)
-        return qml.device("default.qubit", wires=self.wires).eval_jaxpr(
-            jaxpr, consts, *args, execution_config=execution_config
-        )
-
-
-def test_device_preprocessing_consts():
-    """Test that device preprocessing can add consts to the jaxpr multiple times."""
-
-    dev = JaxprDevice(wires=2)
-
-    @qml.qnode(dev)
-    def c(x):
-        qml.RX(x, 0)
-        return qml.expval(qml.Z(0))
-
-    _ = c(jnp.array(0.5))
-
-    jaxpr = dev.jaxpr_history[-1]
-    assert len(jaxpr.constvars) == 0
-    assert len(jaxpr.invars) == 3
-
-    assert jaxpr.invars[0].aval.shape == (2,)  # [3.0, 3.0]
-    assert jaxpr.invars[1].aval.shape == (1,)  # [2]
-
-    assert len(dev.consts_history[-1]) == 0
-    assert len(dev.args_history[-1]) == 3
-
-    assert jnp.allclose(dev.args_history[-1][0], jnp.array([3.0, 3.0]))
-    assert jnp.allclose(dev.args_history[-1][1], jnp.array([2.0]))
-    assert jnp.allclose(dev.args_history[-1][2], jnp.array(0.5))
 
 
 class TestDifferentiation:
@@ -983,7 +907,7 @@ class TestQNodeVmapIntegration:
             qml.RX(const, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.warns(UserWarning, match="Argument at index 0 has size > 1 "):
+        with pytest.warns(UserWarning, match="Constant argument at index 0 is not scalar. "):
             jax.make_jaxpr(jax.vmap(circuit))(jnp.array([0.1, 0.2]))
 
     def test_vmap_overriding_shots(self):
@@ -1013,7 +937,7 @@ class TestQNodeVmapIntegration:
             == qml.measurements.SampleMP._wires_primitive
         )
 
-        assert eqn0.outvars[0].aval.shape == (3, 50)
+        assert eqn0.outvars[0].aval.shape == (3, 50, 1)
 
         with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
             res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
@@ -1646,9 +1570,7 @@ class TestQNodeAutographIntegration:
 class TestStaticArgnums:
     """Unit tests for `QNode.static_argnums`."""
 
-    @pytest.mark.parametrize(
-        "sort_static_argnums", [True, pytest.param(False, marks=pytest.mark.xfail)]
-    )
+    @pytest.mark.parametrize("sort_static_argnums", [True, False])
     def test_qnode_static_argnums(self, sort_static_argnums):
         """Test that a QNode's static argnums are used to capture the QNode's quantum function."""
         # Testing using `jax.jit` with `static_argnums` is done in the `TestCaptureCaching` class

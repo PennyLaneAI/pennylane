@@ -15,20 +15,20 @@
 Contains the general execute function, for executing tapes on devices with auto-
 differentiation support.
 """
+from __future__ import annotations
 
 import inspect
 import logging
-from typing import Callable, Literal, Optional, Union
+import warnings
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Literal
 
 from cachetools import Cache
 
 import pennylane as qml
-from pennylane.concurrency.executors import RemoteExec
-from pennylane.math import Interface, InterfaceLike
-from pennylane.tape import QuantumScriptBatch
-from pennylane.transforms.core import TransformDispatcher, TransformProgram
-from pennylane.typing import ResultBatch
-from pennylane.workflow.resolution import SupportedDiffMethods
+from pennylane.exceptions import _TF_DEPRECATION_MSG, PennyLaneDeprecationWarning
+from pennylane.math.interface_utils import Interface
+from pennylane.transforms.core import TransformProgram
 
 from ._setup_transform_program import _setup_transform_program
 from .resolution import _resolve_execution_config, _resolve_interface
@@ -38,23 +38,33 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+if TYPE_CHECKING:
+    from pennylane.concurrency.executors import ExecBackends
+    from pennylane.math import InterfaceLike
+    from pennylane.tape import QuantumScriptBatch
+    from pennylane.transforms.core import TransformDispatcher
+    from pennylane.typing import ResultBatch
+    from pennylane.workflow.qnode import SupportedDeviceAPIs
+    from pennylane.workflow.resolution import SupportedDiffMethods
+
+
 # pylint: disable=too-many-arguments
 def execute(
     tapes: QuantumScriptBatch,
-    device: Union["qml.devices.LegacyDevice", "qml.devices.Device"],
-    diff_method: Optional[Union[Callable, SupportedDiffMethods, TransformDispatcher]] = None,
-    interface: Optional[InterfaceLike] = Interface.AUTO,
+    device: SupportedDeviceAPIs,
+    diff_method: Callable | SupportedDiffMethods | TransformDispatcher | None = None,
+    interface: InterfaceLike | None = Interface.AUTO,
     *,
-    transform_program: TransformProgram = None,
-    grad_on_execution: Literal[True, False, "best"] = "best",
-    cache: Union[None, bool, dict, Cache, Literal["auto"]] = "auto",
+    grad_on_execution: bool | Literal["best"] = "best",
+    cache: bool | dict | Cache | Literal["auto"] | None = "auto",
     cachesize: int = 10000,
     max_diff: int = 1,
-    device_vjp: Union[bool, None] = False,
-    postselect_mode: Literal[None, "hw-like", "fill-shots"] = None,
-    mcm_method: Literal[None, "deferred", "one-shot", "tree-traversal"] = None,
-    gradient_kwargs: dict = None,
-    executor_backend: Optional[RemoteExec] = None,
+    device_vjp: bool | None = False,
+    postselect_mode: Literal["hw-like", "fill-shots"] | None = None,
+    mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
+    gradient_kwargs: dict | None = None,
+    transform_program: TransformProgram | None = None,
+    executor_backend: ExecBackends | str | None = None,
 ) -> ResultBatch:
     """A function for executing a batch of tapes on a device with compatibility for auto-differentiation.
 
@@ -63,7 +73,7 @@ def execute(
         device (pennylane.devices.LegacyDevice): Device to use to execute the batch of tapes.
             If the device does not provide a ``batch_execute`` method,
             by default the tapes will be executed in serial.
-        diff_method (None, str, TransformDispatcher): The gradient transform function to use
+        diff_method (Optional[str | TransformDispatcher]): The gradient transform function to use
             for backward passes. If "device", the device will be queried directly
             for the gradient (if supported).
         interface (str, Interface): The interface that will be used for classical auto-differentiation.
@@ -89,17 +99,17 @@ def execute(
             (classical) computational overhead during the backward pass.
         device_vjp=False (Optional[bool]): whether or not to use the device-provided Jacobian
             product if it is available.
-        postselect_mode (str): Configuration for handling shots with mid-circuit measurement
+        postselect_mode (Optional[str]): Configuration for handling shots with mid-circuit measurement
             postselection. Use ``"hw-like"`` to discard invalid shots and ``"fill-shots"`` to
             keep the same number of shots. Default is ``None``.
-        mcm_method (str): Strategy to use when executing circuits with mid-circuit measurements.
+        mcm_method (Optional[str]): Strategy to use when executing circuits with mid-circuit measurements.
             ``"deferred"`` is ignored. If mid-circuit measurements are found in the circuit,
             the device will use ``"tree-traversal"`` if specified and the ``"one-shot"`` method
             otherwise. For usage details, please refer to the
             :doc:`dynamic quantum circuits page </introduction/dynamic_quantum_circuits>`.
-        gradient_kwargs (dict): dictionary of keyword arguments to pass when
+        gradient_kwargs (Optional[dict]): dictionary of keyword arguments to pass when
             determining the gradients of tapes.
-        executor_backend (RemoteExec, None): concurrent task-based executor for function dispatch.
+        executor_backend (Optional[str | ExecBackends]): concurrent task-based executor for function dispatch.
             If supported by a device, the configured executor provides an abstraction for task-based function execution, which can provide speed-ups for computationally demanding execution. Defaults to ``None``.
 
 
@@ -203,6 +213,9 @@ def execute(
     ### Specifying and preprocessing variables ###
 
     interface = _resolve_interface(interface, tapes)
+
+    if interface in {Interface.TF, Interface.TF_AUTOGRAPH}:  # pragma: no cover
+        warnings.warn(_TF_DEPRECATION_MSG, PennyLaneDeprecationWarning, stacklevel=4)
 
     config = qml.devices.ExecutionConfig(
         interface=interface,

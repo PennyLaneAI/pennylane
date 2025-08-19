@@ -20,10 +20,9 @@ import os
 import warnings
 from collections.abc import Callable, Generator, Sequence
 from copy import copy
-from typing import Optional, Type
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError
+from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
@@ -31,7 +30,6 @@ from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
-from pennylane.wires import WireError
 
 from .execution_config import MCMConfig
 
@@ -47,10 +45,10 @@ def _operator_decomposition_gen(  # pylint: disable = too-many-positional-argume
     op: qml.operation.Operator,
     acceptance_function: Callable[[qml.operation.Operator], bool],
     decomposer: Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]],
-    max_expansion: Optional[int] = None,
+    max_expansion: int | None = None,
     current_depth=0,
     name: str = "device",
-    error: Optional[Type[Exception]] = None,
+    error: type[Exception] | None = None,
 ) -> Generator[qml.operation.Operator, None, None]:
     """A generator that yields the next operation that is accepted."""
     if error is None:
@@ -110,8 +108,29 @@ def no_sampling(
 
 
 @transform
+def no_analytic(
+    tape: QuantumScript, name: str = "device"
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Raises an error if the tape does not have finite shots.
+    Args:
+        tape (QuantumTape or .QNode or Callable): a quantum circuit
+        name (str): name to use in error message.
+    Returns:
+        qnode (QNode) or quantum function (Callable) or tuple[List[.QuantumTape], function]:
+        The unaltered input circuit. The output type is explained in :func:`qml.transform <pennylane.transform>`.
+
+
+    This transform can be added to forbid analytic results. This is relevant for devices
+    that can only return samples and/or counts based results.
+    """
+    if not tape.shots:
+        raise DeviceError(f"Analytic execution is not supported with {name}")
+    return (tape,), null_postprocessing
+
+
+@transform
 def validate_device_wires(
-    tape: QuantumScript, wires: Optional[qml.wires.Wires] = None, name: str = "device"
+    tape: QuantumScript, wires: qml.wires.Wires | None = None, name: str = "device"
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Validates that all wires present in the tape are in the set of provided wires. Adds the
     device wires to measurement processes like :class:`~.measurements.StateMP` that are broadcasted
@@ -302,11 +321,11 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     stopping_condition: Callable[[qml.operation.Operator], bool],
     stopping_condition_shots: Callable[[qml.operation.Operator], bool] = None,
     skip_initial_state_prep: bool = True,
-    decomposer: Optional[
+    decomposer: None | (
         Callable[[qml.operation.Operator], Sequence[qml.operation.Operator]]
-    ] = None,
+    ) = None,
     name: str = "device",
-    error: Optional[Type[Exception]] = None,
+    error: type[Exception] | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
@@ -606,7 +625,7 @@ def measurements_from_samples(tape):
            [1, 0]])
 
     >>> fn((res,))
-    (-0.2, array([0.6, 0.4]))
+    [-0.2, array([0.6, 0.4])]
     """
     if not tape.shots:
         return (tape,), null_postprocessing
@@ -620,31 +639,19 @@ def measurements_from_samples(tape):
     diagonalized_tape, measured_wires = _get_diagonalized_tape_and_wires(tape)
     new_tape = diagonalized_tape.copy(measurements=[qml.sample(wires=measured_wires)])
 
-    def unsqueezed(samples):
-        """If the samples have been squeezed to remove the 'extra' dimension in the case where
-        shots=1 or wires=1, unsqueeze to restore the raw samples format expected by mp.process_samples
-        """
-
-        # if we stop squeezing out the extra dimension for shots=1 or wires=1 when sampling (as is
-        # already the case in Catalyst), this problem goes away
-
-        if len(samples.shape) == 1:
-            samples = qml.math.array([[s] for s in samples], like=samples)
-        return samples
-
     def postprocessing_fn(results):
         """A processing function to get measurement values from samples."""
         samples = results[0]
         if tape.shots.has_partitioned_shots:
             results_processed = []
             for s in samples:
-                res = [m.process_samples(unsqueezed(s), measured_wires) for m in tape.measurements]
+                res = [m.process_samples(s, measured_wires) for m in tape.measurements]
                 if len(tape.measurements) == 1:
                     res = res[0]
                 results_processed.append(res)
         else:
             results_processed = [
-                m.process_samples(unsqueezed(samples), measured_wires) for m in tape.measurements
+                m.process_samples(samples, measured_wires) for m in tape.measurements
             ]
             if len(tape.measurements) == 1:
                 results_processed = results_processed[0]
@@ -686,7 +693,7 @@ def measurements_from_counts(tape):
     >>> measurements = [qml.expval(qml.Y(0)), qml.probs(wires=[1])]
     >>> tape = qml.tape.QuantumScript(ops, measurements, shots=10)
 
-    We can apply the transform to diagonalize and convert the two measurements to a single sample:
+    We can apply the transform to diagonalize and convert the two measurements to a single `counts` measurement:
 
     >>> (new_tape, ), fn = qml.devices.preprocess.measurements_from_counts(tape)
     >>> new_tape.measurements
@@ -708,7 +715,7 @@ def measurements_from_counts(tape):
     And these can be post-processed to get the originally requested measurements:
 
     >>> fn((res,))
-    (-0.19999999999999996, array([0.7, 0.3]))
+    [-0.19999999999999996, array([0.7, 0.3])]
     """
     if tape.shots.total_shots is None:
         return (tape,), null_postprocessing

@@ -24,9 +24,8 @@ import logging
 import numpy as np
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError
+from pennylane.exceptions import DeviceError, WireError
 from pennylane.logging import debug_logger, debug_logger_init
-from pennylane.wires import WireError
 
 from .._version import __version__
 from ._qutrit_device import QutritDevice
@@ -90,7 +89,7 @@ class DefaultQutrit(QutritDevice):
     Args:
         wires (int, Iterable[Number, str]): Number of subsystems represented by the device,
             or iterable that contains unique labels for the subsystems as numbers (i.e., ``[-1, 0, 2]``)
-            or strings (``['ancilla', 'q1', 'q2']``). Default 1 if not specified.
+            or strings (``['auxiliary', 'q1', 'q2']``). Default 1 if not specified.
         shots (None, int): How many times the circuit should be evaluated (or sampled) to estimate
             the expectation values. Defaults to ``None`` if not specified, which means that the device
             returns analytical results.
@@ -181,7 +180,7 @@ class DefaultQutrit(QutritDevice):
             "TSWAP": self._apply_tswap,
         }
 
-    @functools.lru_cache()
+    @functools.lru_cache
     def map_wires(self, wires):
         # temporarily overwrite this method to bypass
         # wire map that produces Wires objects

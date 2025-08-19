@@ -158,10 +158,10 @@ If needed, developers can also override the implementation method of the primiti
     def _(*args, **kwargs):
         return type.__call__(MyCustomOp, *args, **kwargs)
 """
-from typing import Callable, Type
+from typing import Type
+from collections.abc import Callable
 
 from .switches import disable, enable, enabled, pause
-from .promote_consts import promote_consts
 from .capture_meta import CaptureMeta, ABCCaptureMeta
 from .flatfn import FlatFn
 from .make_plxpr import make_plxpr, run_autograph

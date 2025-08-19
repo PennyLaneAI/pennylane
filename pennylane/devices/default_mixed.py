@@ -22,7 +22,6 @@ import logging
 import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import replace
-from typing import Optional, Union
 
 import pennylane as qml
 from pennylane.devices.qubit_mixed import simulate
@@ -180,7 +179,7 @@ class DefaultMixed(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['ancilla', 'q1', 'q2']``).
+            (``['auxiliary', 'q1', 'q2']``).
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
@@ -242,8 +241,8 @@ class DefaultMixed(Device):
     @debug_logger
     def supports_derivatives(
         self,
-        execution_config: Optional[ExecutionConfig] = None,
-        circuit: Optional[QuantumScript] = None,
+        execution_config: ExecutionConfig | None = None,
+        circuit: QuantumScript | None = None,
     ) -> bool:
         """Check whether or not derivatives are available for a given configuration and circuit.
 
@@ -265,8 +264,10 @@ class DefaultMixed(Device):
     def execute(
         self,
         circuits: QuantumScript,
-        execution_config: Optional[ExecutionConfig] = None,
-    ) -> Union[Result, ResultBatch]:
+        execution_config: ExecutionConfig | None = None,
+    ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(
             simulate(
                 c,
@@ -298,7 +299,7 @@ class DefaultMixed(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
-        execution_config.interface = get_canonical_interface_name(execution_config.interface)
+        updated_values["interface"] = get_canonical_interface_name(execution_config.interface)
 
         # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy

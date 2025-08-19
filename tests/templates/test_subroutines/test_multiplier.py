@@ -19,6 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.templates.subroutines.multiplier import _mul_out_k_mod
 
 
@@ -90,8 +91,9 @@ class TestMultiplier:
         self, k, x_wires, mod, work_wires, x
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the Multiplier template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -103,7 +105,7 @@ class TestMultiplier:
 
         # pylint: disable=bad-reversed-sequence
         assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)))), (x * k) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x)[0, :]))), (x * k) % mod
         )
 
     @pytest.mark.parametrize(
@@ -191,6 +193,17 @@ class TestMultiplier:
         for op1, op2 in zip(multiplier_decomposition, op_list):
             qml.assert_equal(op1, op2)
 
+    @pytest.mark.parametrize(
+        ("k", "x_wire", "mod", "work_wires"), [(3, [1], 1, [2, 3, 4]), (3, [1], 2, [2, 3, 4])]
+    )
+    def test_decomposition_new(
+        self, k, x_wire, mod, work_wires
+    ):  # pylint: disable=too-many-arguments
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.Multiplier(k, x_wire, mod, work_wires)
+        for rule in qml.list_decomps(qml.Multiplier):
+            _test_decomposition_rule(op, rule)
+
     @pytest.mark.jax
     def test_jit_compatible(self):
         """Test that the template is compatible with the JIT compiler."""
@@ -203,9 +216,10 @@ class TestMultiplier:
         mod = 7
         x_wires = [0, 1, 2]
         work_wires = [4, 5, 6, 7, 8]
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
         @jax.jit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
@@ -214,5 +228,5 @@ class TestMultiplier:
 
         # pylint: disable=bad-reversed-sequence
         assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x * k) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :]))), (x * k) % mod
         )

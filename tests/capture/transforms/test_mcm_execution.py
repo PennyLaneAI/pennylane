@@ -25,8 +25,7 @@ from pennylane.devices.qubit import sampling
 from pennylane.transforms.defer_measurements import DeferMeasurementsInterpreter
 
 pytestmark = [
-    pytest.mark.jax,
-    pytest.mark.usefixtures("enable_disable_plxpr"),
+    pytest.mark.capture,
     pytest.mark.integration,
 ]
 
@@ -405,18 +404,12 @@ class TestExecutionFiniteShots:
         res = dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, execution_config=config)
 
         if postselect_mode == "fill-shots":
-            if n_iters == 1:
-                assert qml.math.shape(res[0]) == (100,)
-            else:
-                assert qml.math.shape(res[0]) == (100, n_iters)
+            assert qml.math.shape(res[0]) == (100, n_iters)
 
         if postselect_mode == "hw-like":
             shape = qml.math.shape(res[0])
             # Other tests have verified that the _number_ of samples
             # will be consisent with the expected behaviour of hw-like
             # execution, so we only verify the n_mcms dimension
-            if n_iters == 1:
-                assert len(shape) == 1
-            else:
-                assert len(shape) == 2
-                assert shape[1] == n_iters
+            assert len(shape) == 2
+            assert shape[1] == n_iters

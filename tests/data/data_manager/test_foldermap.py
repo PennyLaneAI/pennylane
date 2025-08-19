@@ -165,9 +165,9 @@ class TestFolderMapView:
         """Test that the ``find()`` method returns the expected results
         for a range of arguments."""
 
-        assert set(foldermap.find("qchem", **kwds)) == set(
+        assert set(foldermap.find("qchem", **kwds)) == {
             (Description(desc), DataPath(path)) for desc, path in expect
-        )
+        }
 
     def test_find_not_top_level(self):
         """Test that a RuntimeError is raised if calling
