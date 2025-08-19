@@ -23,7 +23,7 @@ jax = pytest.importorskip("jax")
 
 from functools import partial
 
-from pennylane.capture import expand_plxpr_transforms
+from pennylane.capture import expand_plxpr_transforms, run_autograph
 from pennylane.capture.primitives import cond_prim, for_loop_prim, qnode_prim, while_loop_prim
 from pennylane.operation import Operation
 from pennylane.transforms.decompose import DecomposeInterpreter
@@ -812,6 +812,7 @@ class TestDynamicDecomposeInterpreter:
             CustomOpAutograph(x, wires=wire)
             return qml.expval(qml.Z(wires=wire))
 
+        circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(circuit)(x, wire)
 
         assert jaxpr.eqns[0].primitive == qnode_prim
@@ -839,6 +840,7 @@ class TestDynamicDecomposeInterpreter:
             return qml.expval(qml.Z(wires=wire))
 
         # Autograph requires to capture the function first
+        circuit_comparison = run_autograph(circuit_comparison)
         jaxpr_comparison = jax.make_jaxpr(circuit_comparison)(x, wire)
         result_comparison = jax.core.eval_jaxpr(
             jaxpr_comparison.jaxpr, jaxpr_comparison.consts, x, wire
