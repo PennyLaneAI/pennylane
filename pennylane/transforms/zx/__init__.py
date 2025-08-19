@@ -15,3 +15,4 @@
 from .converter import to_zx, from_zx
 from .optimize_t_count import optimize_t_count
 from .push_hadamards import push_hadamards
+from .reduce_non_clifford import reduce_non_clifford

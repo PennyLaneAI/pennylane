@@ -6,15 +6,20 @@
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
-    * :func:`~.transforms.zx.push_hadamards` to optimize phase-polynomial + Hadamard circuits pushing
-      Hadamard gates to the side to create fewer larger phase-polynomial blocks
-      (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
-      [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
+  * :func:`~.transforms.zx.push_hadamards` to optimize phase-polynomial + Hadamard circuits pushing
+    Hadamard gates to the side to create fewer larger phase-polynomial blocks
+    (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
+    [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 
-    * :func:`~.transforms.zx.optimize_t_count` to reduce the number of T gates in a Clifford + T circuit by applying
-      a sequence of passes that combine ZX-based commutation and cancellation rules and the TODD algorithm
-      (see [pyzx.full_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize)).
-      [(#8088)](https://github.com/PennyLaneAI/pennylane/pull/8088)
+  * :func:`~.transforms.zx.optimize_t_count` to reduce the number of T gates in a Clifford + T circuit by applying
+    a sequence of passes that combine ZX-based commutation and cancellation rules and the TODD algorithm
+    (see [pyzx.full_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize)).
+    [(#8088)](https://github.com/PennyLaneAI/pennylane/pull/8088)
+
+  * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford gates by applying
+    a combination of phase gadgetization strategies and Clifford gate simplification rules.
+    (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
+    [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
 
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
@@ -664,6 +669,10 @@
 
 * Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
+
+* Updated description of `alpha` parameter in `ClassicalShadow.entropy`.
+  Trimmed the outdated part of discussion regarding different choices of `alpha`.
+  [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 <h3>Bug fixes 🐛</h3>
 

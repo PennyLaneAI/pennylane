@@ -30,7 +30,7 @@ from .helper import _needs_pyzx
 @transform
 def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """
-    Pushes Hadamard gates as far as possible to one side to cancel them and reduce the number of large phase-polynomial blocks,
+    Push Hadamard gates as far as possible to one side to cancel them and create fewer larger phase-polynomial blocks,
     improving the effectiveness of phase-polynomial optimization techniques.
 
     This transform optimizes circuits composed of phase-polynomial blocks and Hadamard gates.
