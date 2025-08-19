@@ -232,6 +232,546 @@ class TestResourceSemiAdder:
         assert op.resource_decomp(**op.resource_params) == expected_res
 
 
+class TestResourceControlledSequence:
+    """Test the ResourceControlledSequence class."""
+
+    @pytest.mark.parametrize(
+        "base_op, num_ctrl_wires",
+        (
+            (plre.ResourceQFT(5), 5),
+            (plre.ResourceRZ(eps=1e-3), 10),
+            (
+                plre.ResourceMultiRZ(
+                    3,
+                    1e-5,
+                ),
+                3,
+            ),
+        ),
+    )
+    def test_resource_params(self, base_op, num_ctrl_wires):
+        """Test the resource params"""
+        op = plre.ResourceControlledSequence(base_op, num_ctrl_wires)
+        expected_params = {
+            "base_cmpr_op": base_op.resource_rep_from_op(),
+            "num_ctrl_wires": num_ctrl_wires,
+        }
+
+        assert op.resource_params == expected_params
+
+    @pytest.mark.parametrize(
+        "base_op, num_ctrl_wires",
+        (
+            (plre.ResourceQFT(5), 5),
+            (plre.ResourceRZ(eps=1e-3), 10),
+            (
+                plre.ResourceMultiRZ(
+                    3,
+                    1e-5,
+                ),
+                3,
+            ),
+        ),
+    )
+    def test_resource_rep(self, base_op, num_ctrl_wires):
+        """Test the resource rep method"""
+        base_cmpr_op = base_op.resource_rep_from_op()
+        expected = plre.CompressedResourceOp(
+            plre.ResourceControlledSequence,
+            {
+                "base_cmpr_op": base_cmpr_op,
+                "num_ctrl_wires": num_ctrl_wires,
+            },
+        )
+
+        assert (
+            plre.ResourceControlledSequence.resource_rep(base_cmpr_op, num_ctrl_wires) == expected
+        )
+
+    @pytest.mark.parametrize(
+        "base_op, num_ctrl_wires, expected_res",
+        (
+            (
+                plre.ResourceQFT(5),
+                5,
+                [
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceQFT.resource_rep(5),
+                                1,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceQFT.resource_rep(5),
+                                2,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceQFT.resource_rep(5),
+                                4,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceQFT.resource_rep(5),
+                                8,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceQFT.resource_rep(5),
+                                16,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                ],
+            ),
+            (
+                plre.ResourceRZ(eps=1e-3),
+                3,
+                [
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRZ.resource_rep(eps=1e-3),
+                                1,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRZ.resource_rep(eps=1e-3),
+                                2,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRZ.resource_rep(eps=1e-3),
+                                4,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                ],
+            ),
+            (
+                plre.ResourceChangeBasisOp(
+                    compute_op=plre.ResourceAQFT(3, 5),
+                    base_op=plre.ResourceRZ(),
+                ),
+                3,
+                [
+                    GateCount(plre.ResourceAQFT.resource_rep(3, 5)),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRZ.resource_rep(),
+                                1,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRZ.resource_rep(),
+                                2,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRZ.resource_rep(),
+                                4,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceAdjoint.resource_rep(plre.ResourceAQFT.resource_rep(3, 5))
+                    ),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, base_op, num_ctrl_wires, expected_res):
+        """Test resources"""
+        op = plre.ResourceControlledSequence(base_op, num_ctrl_wires)
+        assert op.default_resource_decomp(**op.resource_params) == expected_res
+
+
+class TestResourceQPE:
+    """Test the ResourceQPE class."""
+
+    @pytest.mark.parametrize(
+        "base_op, num_est_wires, adj_qft_op",
+        (
+            (plre.ResourceRX(eps=1e-5), 5, None),
+            (plre.ResourceX(), 3, plre.ResourceQFT(3)),
+            (plre.ResourceRZ(), 4, plre.ResourceAdjoint(plre.ResourceAQFT(3, 4))),
+        ),
+    )
+    def test_resource_params(self, base_op, num_est_wires, adj_qft_op):
+        """Test the resource_params method"""
+        base_cmpr_op = base_op.resource_rep_from_op()
+
+        if adj_qft_op is None:
+            op = plre.ResourceQPE(base_op, num_est_wires)
+            adj_qft_cmpr_op = None
+        else:
+            op = plre.ResourceQPE(base_op, num_est_wires, adj_qft_op)
+            adj_qft_cmpr_op = adj_qft_op.resource_rep_from_op()
+
+        assert op.resource_params == {
+            "base_cmpr_op": base_cmpr_op,
+            "num_estimation_wires": num_est_wires,
+            "adj_qft_cmpr_op": adj_qft_cmpr_op,
+        }
+
+    @pytest.mark.parametrize(
+        "base_cmpr_op, num_est_wires, adj_qft_cmpr_op",
+        (
+            (plre.ResourceRX.resource_rep(eps=1e-5), 5, None),
+            (plre.ResourceX.resource_rep(), 3, plre.ResourceQFT.resource_rep(3)),
+            (
+                plre.ResourceRZ.resource_rep(),
+                4,
+                plre.ResourceAdjoint.resource_rep(plre.ResourceAQFT.resource_rep(3, 4)),
+            ),
+        ),
+    )
+    def test_resource_rep(self, base_cmpr_op, num_est_wires, adj_qft_cmpr_op):
+        """Test the resource_rep method"""
+        if adj_qft_cmpr_op is None:
+            adj_qft_cmpr_op = plre.ResourceAdjoint.resource_rep(
+                plre.ResourceQFT.resource_rep(num_est_wires)
+            )
+
+        expected = plre.CompressedResourceOp(
+            plre.ResourceQPE,
+            {
+                "base_cmpr_op": base_cmpr_op,
+                "num_estimation_wires": num_est_wires,
+                "adj_qft_cmpr_op": adj_qft_cmpr_op,
+            },
+        )
+
+        assert (
+            plre.ResourceQPE.resource_rep(base_cmpr_op, num_est_wires, adj_qft_cmpr_op) == expected
+        )
+
+    @pytest.mark.parametrize(
+        "base_op, num_est_wires, adj_qft_op, expected_res",
+        (
+            (
+                plre.ResourceRX(eps=1e-5),
+                5,
+                None,
+                [
+                    GateCount(plre.ResourceHadamard.resource_rep(), 5),
+                    GateCount(
+                        plre.ResourceControlledSequence.resource_rep(
+                            plre.ResourceRX.resource_rep(eps=1e-5),
+                            5,
+                        ),
+                    ),
+                    GateCount(plre.ResourceAdjoint.resource_rep(plre.ResourceQFT.resource_rep(5))),
+                ],
+            ),
+            (
+                plre.ResourceX(),
+                3,
+                plre.ResourceQFT(3),
+                [
+                    GateCount(plre.ResourceHadamard.resource_rep(), 3),
+                    GateCount(
+                        plre.ResourceControlledSequence.resource_rep(
+                            plre.ResourceX.resource_rep(),
+                            3,
+                        ),
+                    ),
+                    GateCount(plre.ResourceQFT.resource_rep(3)),
+                ],
+            ),
+            (
+                plre.ResourceRZ(),
+                4,
+                plre.ResourceAdjoint(plre.ResourceAQFT(3, 4)),
+                [
+                    GateCount(plre.ResourceHadamard.resource_rep(), 4),
+                    GateCount(
+                        plre.ResourceControlledSequence.resource_rep(
+                            plre.ResourceRZ.resource_rep(),
+                            4,
+                        ),
+                    ),
+                    GateCount(
+                        plre.ResourceAdjoint.resource_rep(plre.ResourceAQFT.resource_rep(3, 4)),
+                    ),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, base_op, num_est_wires, adj_qft_op, expected_res):
+        """Test that resources method is correct"""
+        op = (
+            plre.ResourceQPE(base_op, num_est_wires)
+            if adj_qft_op is None
+            else plre.ResourceQPE(base_op, num_est_wires, adj_qft_op)
+        )
+        assert op.default_resource_decomp(**op.resource_params) == expected_res
+
+
+class TestResourceIterativeQPE:
+    """Test the ResourceIterativeQPE class."""
+
+    @pytest.mark.parametrize(
+        "base_op, num_iter",
+        (
+            (plre.ResourceRX(eps=1e-5), 5),
+            (plre.ResourceQubitUnitary(4, 1e-5), 7),
+            (
+                plre.ResourceChangeBasisOp(
+                    plre.ResourceRY(eps=1e-3),
+                    plre.ResourceRZ(eps=1e-5),
+                ),
+                3,
+            ),
+        ),
+    )
+    def test_resource_params(self, base_op, num_iter):
+        """Test the resource_params method"""
+        op = plre.ResourceIterativeQPE(base_op, num_iter)
+        expected = {
+            "base_cmpr_op": base_op.resource_rep_from_op(),
+            "num_iter": num_iter,
+        }
+        assert op.resource_params == expected
+
+    @pytest.mark.parametrize(
+        "base_op, num_iter",
+        (
+            (plre.ResourceRX(eps=1e-5), 5),
+            (plre.ResourceQubitUnitary(4, 1e-5), 7),
+            (
+                plre.ResourceChangeBasisOp(
+                    plre.ResourceRY(eps=1e-3),
+                    plre.ResourceRZ(eps=1e-5),
+                ),
+                3,
+            ),
+        ),
+    )
+    def test_resource_rep(self, base_op, num_iter):
+        """Test the resource_rep method"""
+        base_cmpr_op = base_op.resource_rep_from_op()
+        expected = plre.CompressedResourceOp(
+            plre.ResourceIterativeQPE, {"base_cmpr_op": base_cmpr_op, "num_iter": num_iter}
+        )
+        assert plre.ResourceIterativeQPE.resource_rep(base_cmpr_op, num_iter) == expected
+
+    @pytest.mark.parametrize(
+        "base_op, num_iter, expected_res",
+        (
+            (
+                plre.ResourceRX(eps=1e-5),
+                5,
+                [
+                    GateCount(plre.ResourceHadamard.resource_rep(), 10),
+                    AllocWires(1),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRX.resource_rep(eps=1e-5),
+                                1,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRX.resource_rep(eps=1e-5),
+                                2,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRX.resource_rep(eps=1e-5),
+                                4,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRX.resource_rep(eps=1e-5),
+                                8,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRX.resource_rep(eps=1e-5),
+                                16,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(plre.ResourcePhaseShift.resource_rep(), 10),
+                    FreeWires(1),
+                ],
+            ),
+            (
+                plre.ResourceQubitUnitary(7, 1e-5),
+                4,
+                [
+                    GateCount(plre.ResourceHadamard.resource_rep(), 8),
+                    AllocWires(1),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceQubitUnitary.resource_rep(7, 1e-5),
+                                1,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceQubitUnitary.resource_rep(7, 1e-5),
+                                2,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceQubitUnitary.resource_rep(7, 1e-5),
+                                4,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceQubitUnitary.resource_rep(7, 1e-5),
+                                8,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(plre.ResourcePhaseShift.resource_rep(), 6),
+                    FreeWires(1),
+                ],
+            ),
+            (
+                plre.ResourceChangeBasisOp(
+                    plre.ResourceRY(eps=1e-3),
+                    plre.ResourceRZ(eps=1e-5),
+                ),
+                3,
+                [
+                    GateCount(plre.ResourceHadamard.resource_rep(), 6),
+                    AllocWires(1),
+                    GateCount(plre.ResourceRY.resource_rep(eps=1e-3)),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRZ.resource_rep(eps=1e-5),
+                                1,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRZ.resource_rep(eps=1e-5),
+                                2,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            plre.ResourcePow.resource_rep(
+                                plre.ResourceRZ.resource_rep(eps=1e-5),
+                                4,
+                            ),
+                            1,
+                            0,
+                        )
+                    ),
+                    GateCount(
+                        plre.ResourceAdjoint.resource_rep(plre.ResourceRY.resource_rep(eps=1e-3)),
+                    ),
+                    GateCount(plre.ResourcePhaseShift.resource_rep(), 3),
+                    FreeWires(1),
+                ],
+            ),
+        ),
+    )
+    def test_resources(self, base_op, num_iter, expected_res):
+        """Test the resources method"""
+        op = plre.ResourceIterativeQPE(base_op, num_iter)
+        assert op.default_resource_decomp(**op.resource_params) == expected_res
+
+
 class TestResourceQFT:
     """Test the ResourceQFT class."""
 
