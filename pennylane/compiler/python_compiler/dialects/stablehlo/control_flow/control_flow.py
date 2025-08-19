@@ -34,6 +34,7 @@ from xdsl.irdl import (
     operand_def,
     region_def,
     traits_def,
+    var_operand_def,
     var_result_def,
 )
 from xdsl.traits import (
@@ -86,4 +87,48 @@ class IfOp(IRDLOperation):
         RecursivelySpeculatable(),
         SingleBlockImplicitTerminator(ReturnOp),
         # TODO: InferTypeOpInterface
+        # TODO: OpAsmOpInterface
+    )
+
+    # TODO: Add custom assembly format
+
+
+@irdl_op_definition
+class WhileOp(IRDLOperation):
+    """
+    Produces the output from executing `body` function 0 or more times while the
+    `cond` function outputs `true`.
+
+    See:
+    https://github.com/openxla/stablehlo/blob/main/docs/spec.md#while
+
+    Example:
+    ```mlir
+    %results0, %results1 = stablehlo.while(%arg0 = %init_i, %arg1 = %init_sum) : tensor<i64>, tensor<i64>
+    cond {
+      %cond = stablehlo.compare LT, %arg0, %ten : (tensor<i64>, tensor<i64>) -> tensor<i1>
+      stablehlo.return %cond : tensor<i1>
+    } do {
+      %new_sum = stablehlo.add %arg1, %one : tensor<i64>
+      %new_i = stablehlo.add %arg0, %one : tensor<i64>
+      stablehlo.return %new_i, %new_sum : tensor<i64>, tensor<i64>
+    }
+    """
+
+    name = "stablehlo.while"
+
+    operand = var_operand_def(AnyTensorType)
+
+    results = var_result_def(AnyTensorType)
+
+    cond = region_def("single_block")
+
+    body = region_def("single_block")
+
+    traits = traits_def(
+        RecursiveMemoryEffect(),
+        RecursivelySpeculatable(),
+        SingleBlockImplicitTerminator(ReturnOp),
+        # TODO: InferTypeOpInterface
+        # TODO: OpAsmOpInterface
     )
