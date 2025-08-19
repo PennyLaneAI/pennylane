@@ -11,19 +11,19 @@
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
-  * :func:`~.transforms.zx.optimize_t_count` to reduce the number of T gates in a Clifford + T circuit by applying
-    a sequence of passes that combine ZX-based commutation and cancellation rules and the TODD algorithm
-    (see [pyzx.full_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize)).
-    [(#8088)](https://github.com/PennyLaneAI/pennylane/pull/8088)
-
   * :func:`~.transforms.zx.push_hadamards` to optimize a phase-polynomial + Hadamard circuit by pushing
     Hadamard gates as far as possible to one side to create fewer larger phase-polynomial blocks
     (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
     [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 
-  * :func:`~.transforms.zx.todd` to optimize a Clifford + T circuit using the Third Order Duplicate and Destroy (TODD) algorithm
+  * :func:`~.transforms.zx.todd` to optimize a Clifford + T circuit by using the Third Order Duplicate and Destroy (TODD) algorithm
     (see [pyzx.phase_block_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize)).
     [(#8029)](https://github.com/PennyLaneAI/pennylane/pull/8029)
+
+  * :func:`~.transforms.zx.optimize_t_count` to reduce the number of T gates in a Clifford + T circuit by applying
+    a sequence of passes that combine ZX-based commutation and cancellation rules and the TODD algorithm
+    (see [pyzx.full_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize)).
+    [(#8088)](https://github.com/PennyLaneAI/pennylane/pull/8088)
 
   * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford gates by applying
     a combination of phase gadgetization strategies and Clifford gate simplification rules.
