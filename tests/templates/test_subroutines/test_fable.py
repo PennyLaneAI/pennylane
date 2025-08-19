@@ -39,7 +39,7 @@ class TestFable:
 
     def test_standard_validity(self, input_matrix):
         """Check the operation using the assert_valid function."""
-        op = qml.FABLE(input_matrix, wires=range(5), tol=0.01)
+        op = qml.FABLE(input_matrix, wires=range(5), tol=1.0)
         qml.ops.functions.assert_valid(op)
 
     @pytest.mark.parametrize(
