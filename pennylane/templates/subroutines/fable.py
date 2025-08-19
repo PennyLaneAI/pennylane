@@ -134,7 +134,7 @@ class FABLE(Operation):
 
     @property
     def resource_params(self) -> dict:
-        code = gray_code(int(2 * math.log2(len(self.parameters))))
+        code = gray_code(int(2 * math.log2(len(self.parameters[0]))))
         control_wires = np.log2(code ^ np.roll(code, -1)).astype(int)
         alphas = math.arccos(self.parameters).flatten()
         thetas = compute_theta(alphas)
@@ -299,7 +299,7 @@ def _fable_decomposition(input_matrix, wires, tol=0):
 
                 return nots
 
-            nots = cond(math.abs(2 * theta) > tol, in_tol_branch)(nots)
+            nots = cond(math.abs(2 * theta) > tol, in_tol_branch)(nots) or nots
 
             def del_branch(nots):
                 del nots[wire_map[control_index]]
@@ -317,7 +317,7 @@ def _fable_decomposition(input_matrix, wires, tol=0):
 
         return nots
 
-    theta_controls_loop(nots)  # pylint: disable=no-value-for-parameter
+    nots = theta_controls_loop(nots)  # pylint: disable=no-value-for-parameter
 
     @for_loop(len(nots.keys()))
     def outer_nots_loop(m, nots):

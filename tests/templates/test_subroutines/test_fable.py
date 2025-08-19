@@ -417,20 +417,15 @@ class TestFable:
     @pytest.mark.parametrize(
         ("input", "wires", "tol"),
         [
-            (np.random.random((2, 2)), 3, 0),
-            (
-                    np.array(
-                        [
-                            [-0.51192128, -0.51192128, 0.6237114, 0.6237114],
-                            [0.97041007, 0.97041007, 0.99999329, 0.99999329],
-                            [0.82429855, 0.82429855, 0.98175843, 0.98175843],
-                            [0.99675093, 0.99675093, 0.83514837, 0.83514837],
-                        ]
-                    ),
-                    5,
-                    0.5
-            ),
-            (np.random.random((8, 8)), 7, 1.0),
+            (np.random.random((1, 2)), 3, 0),
+            (np.random.random((1, 1)), 3, 1),
+            (np.random.random((2, 1)), 3, 0),
+            (np.random.random((3, 2)), 5, 1),
+            (np.random.random((2, 3)), 5, 1),
+            (np.random.random((3, 4)), 5, 1),
+            (np.random.random((3, 5)), 7, 1),
+            (np.random.random((3, 7)), 7, 1),
+            (np.random.random((5, 5)), 7, 1),
         ],
     )
     def test_decomposition_new(self, input, wires, tol):
