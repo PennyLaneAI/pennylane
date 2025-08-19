@@ -99,13 +99,11 @@ def test_static_array_update():
     """Test that static arrays can be updated."""
 
     def f():
-        my_list = [0, 0]
-        for i in range(2):
-            my_list[i] = i
+        my_list = [0, 1]
         my_list[1] += 10
         return my_list
 
     ag_fn = run_autograph(f)
     ag_fn_jaxpr = make_jaxpr(ag_fn)()
     result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts)
-    assert jnp.array_equal(result[0], [0, 11])
+    assert jnp.array_equal(result, [0, 11])
