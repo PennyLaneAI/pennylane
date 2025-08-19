@@ -330,7 +330,6 @@
   ```
 
   Before the change, we had:
-
   ```pycon
   >>> qml.set_shots(c, shots=1)()
   0
