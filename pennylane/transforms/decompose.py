@@ -287,6 +287,17 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     subfuns, params = eq.primitive.get_bind_params(eq.params)
                     outvals = eq.primitive.bind(*subfuns, *invals, **params)
 
+                    if (
+                        self._num_available_work_wires is not None
+                        and eq.primitive.name == "allocate"
+                    ):
+                        self._num_available_work_wires -= params["num_wires"]
+                    if (
+                        self._num_available_work_wires is not None
+                        and eq.primitive.name == "deallocate"
+                    ):
+                        self._num_available_work_wires += len(invals)
+
                 if not eq.primitive.multiple_results:
                     outvals = [outvals]
 
@@ -322,12 +333,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             with queuing.QueuingManager.stop_recording():
                 op = eqn.primitive.impl(*invals, **eqn.params)
-
-            if isinstance(self._num_available_work_wires, int) and isinstance(op, Allocate):
-                self._num_available_work_wires -= len(op.wires)
-
-            if isinstance(self._num_available_work_wires, int) and isinstance(op, Deallocate):
-                self._num_available_work_wires += len(op.wires)
 
             if not eqn.outvars[0].__class__.__name__ == "DropVar":
                 return op
