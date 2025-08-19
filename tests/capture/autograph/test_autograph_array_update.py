@@ -99,7 +99,7 @@ def test_static_array_update():
     """Test that static arrays can be updated."""
 
     def f():
-        my_list = jnp.empty(2, dtype=int)
+        my_list = [0, 0]
         for i in range(2):
             my_list[i] = i
         my_list[1] += 10
