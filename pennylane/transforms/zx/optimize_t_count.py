@@ -29,14 +29,14 @@ from .helper import _needs_pyzx
 @_needs_pyzx
 @transform
 def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """Reduce the number of T gates in a Clifford + T circuit by using some basic commutation and
+    """Reduce the number of T gates in a Clifford + T circuit by using basic commutation and
     cancellation rules, combined with a dedicated phase-polynomial optimization strategy based on the
     `Third Order Duplicate and Destroy (TODD) <https://arxiv.org/abs/1712.01557>`__ algorithm.
 
     This transform applies a sequence of passes for T-count optimization to the given Clifford + T circuit.
     First, some ZX-based commutation and cancellation rules are applied to simplify the circuit.
     Then, the circuit is cut into phase-polynomial blocks and the TODD algorithm is used to optimize each of these phase polynomials.
-    Depending on the number of qubits and T gates in the original circuit, it might take a long time to run.
+    For circuits with many qubits and T gates, this transform may exhibit long run-times.
 
     .. note::
 
