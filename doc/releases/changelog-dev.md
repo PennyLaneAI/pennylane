@@ -545,6 +545,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Remove `autograph` keyword argument from `QNode` constructor.
+  [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
+
 * Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
 `run_filecheck_qjit` fixtures.
   [(#8049)](https://github.com/PennyLaneAI/pennylane/pull/8049)
