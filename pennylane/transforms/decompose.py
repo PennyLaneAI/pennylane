@@ -101,7 +101,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     "to enable the new system."
                 )
 
-            self._graph_solution = None
+            self._decomp_graph_solution = None
             self._target_gate_names = None
             self._fixed_decomps, self._alt_decomps = fixed_decomps, alt_decomps
             self._num_available_work_wires = num_available_work_wires
@@ -188,7 +188,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                         op,
                         self.stopping_condition,
                         max_expansion=max_expansion,
-                        graph_solution=self._graph_solution,
+                        graph_solution=self._decomp_graph_solution,
                         num_available_work_wires=self._num_available_work_wires,
                     )
                 )
@@ -204,11 +204,11 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
                 return self.interpret_operation(op)
 
-            if self._graph_solution and self._graph_solution.is_solved_for(
+            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
                 op, num_work_wires=self._num_available_work_wires
             ):
 
-                rule = self._graph_solution.decomposition(
+                rule = self._decomp_graph_solution.decomposition(
                     op, num_work_wires=self._num_available_work_wires
                 )
                 num_wires = len(op.wires)
@@ -251,7 +251,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             for const, constvar in zip(consts, jaxpr.constvars, strict=True):
                 self._env_map[constvar] = const
 
-            if enabled_graph() and not self._graph_solution:
+            if enabled_graph() and not self._decomp_graph_solution:
 
                 with pause():
 
@@ -260,7 +260,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     operations = collector.state["ops"]
 
                 if operations:
-                    self._graph_solution = _construct_and_solve_decomp_graph(
+                    self._decomp_graph_solution = _construct_and_solve_decomp_graph(
                         operations,
                         self._gate_set,
                         self._num_available_work_wires,
@@ -337,8 +337,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # a solution is found for this operator in the graph.
             if (
                 op.has_qfunc_decomposition
-                or self._graph_solution
-                and self._graph_solution.is_solved_for(op, self._num_available_work_wires)
+                or self._decomp_graph_solution
+                and self._decomp_graph_solution.is_solved_for(op, self._num_available_work_wires)
             ):
                 return self._evaluate_jaxpr_decomposition(op)
 
