@@ -3,13 +3,23 @@
 
 <h3>New features since last release</h3>
 
+* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
+  simplifications in the decomposition of ``Select`` under the assumption that the state of the
+  control wires has no overlap with computational basis states that are not used by ``Select``.
+  [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
+
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
-    * :func:`~.transforms.push_hadamards` to optimize phase-polynomial + Hadamard circuits pushing
-      Hadamard gates to the side to create fewer larger phase-polynomial blocks
+    * :func:`~.transforms.zx.push_hadamards` to optimize a phase-polynomial + Hadamard circuit by pushing
+      Hadamard gates as far as possible to one side to create fewer larger phase-polynomial blocks
       (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
       [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
+
+    * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford gates by applying
+      a combination of phase gadgetization strategies and Clifford gate simplification rules.
+      (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
+      [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
 
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
@@ -106,12 +116,13 @@
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
   [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
+  [(#8002)](https://github.com/PennyLaneAI/pennylane/pull/8002)
   
   The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, 
   :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
   :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`, 
   :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, 
-  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`
+  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.Qubitization`, and :class:`~.Superposition`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
@@ -134,6 +145,7 @@
   `qml.cond(condition, qml.X)(0)` is now valid code and will return nothing, even though `qml.X` is
   technically a callable that returns an `X` operator.
   [(#8060)](https://github.com/PennyLaneAI/pennylane/pull/8060)
+  [(#8101)](https://github.com/PennyLaneAI/pennylane/pull/8101)
 
 * With program capture, an error is now raised if the conditional predicate is not a scalar.
   [(#8066)](https://github.com/PennyLaneAI/pennylane/pull/8066)
@@ -657,6 +669,10 @@
 
 * Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
+
+* Updated description of `alpha` parameter in `ClassicalShadow.entropy`.
+  Trimmed the outdated part of discussion regarding different choices of `alpha`.
+  [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 <h3>Bug fixes 🐛</h3>
 
