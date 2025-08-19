@@ -41,8 +41,8 @@ DenselyPackedAdjMatrix: TypeAlias = list[int] | list[bool]
 
 @dataclass(frozen=True)
 class DecomposeGraphStatePass(passes.ModulePass):
-    """The decompose-graph-state pass replaces graph_state_prep operations with their corresponding
-    sequence of quantum operations for execution on state simulators.
+    """The decompose-graph-state pass replaces ``graph_state_prep`` operations with their
+    corresponding sequence of quantum operations for execution on state simulators.
     """
 
     name = "decompose-graph-state"
@@ -77,6 +77,7 @@ class DecomposeGraphStatePattern(RewritePattern):
         adj_matrix = _parse_adj_matrix(graph_prep_op)
         n_vertices = _n_vertices_from_packed_adj_matrix(adj_matrix)
 
+        # Allocate a register with as many qubits as vertices in the graph
         alloc_op = quantum.AllocOp(n_vertices)
         rewriter.insert_op(alloc_op)
 
@@ -138,7 +139,7 @@ class DecomposeGraphStatePattern(RewritePattern):
 
 @dataclass(frozen=True)
 class NullDecomposeGraphStatePass(passes.ModulePass):
-    """The null-decompose-graph-state pass replaces graph_state_prep operations with a single
+    """The null-decompose-graph-state pass replaces ``graph_state_prep`` operations with a single
     quantum-register allocation operation for execution on null devices.
     """
 
@@ -169,11 +170,15 @@ class NullDecomposeGraphStatePattern(RewritePattern):
         adj_matrix = _parse_adj_matrix(graph_prep_op)
         n_vertices = _n_vertices_from_packed_adj_matrix(adj_matrix)
 
+        # Allocate a register with as many qubits as vertices in the graph
         alloc_op = quantum.AllocOp(n_vertices)
         rewriter.insert_op(alloc_op)
 
+        # The newly allocated register replaces the register that was the result of the
+        # graph_state_prep op
         rewriter.replace_all_uses_with(graph_prep_op.results[0], alloc_op.results[0])
 
+        # Finally, erase the ops that have now been replaced with quantum ops
         rewriter.erase_matched_op()
         rewriter.erase_op(graph_prep_op.adj_matrix.owner)
 
@@ -210,9 +215,9 @@ def _n_vertices_from_packed_adj_matrix(adj_matrix: DenselyPackedAdjMatrix) -> in
     matrix.
 
     Args:
-        adj_matrix (DenselyPackedAdjMatrix): The densely packed adjacency matrix given as a sequence
-            of bools or ints. See the note in the module documentation for a description of this
-            format.
+        adj_matrix (DenselyPackedAdjMatrix): The densely packed adjacency matrix, given as a
+            sequence of bools or ints. See the note in the module documentation for a description of
+            this format.
 
     Raises:
         CompileError: If the number of elements in `adj_matrix` is not compatible with the number of
@@ -246,9 +251,9 @@ def _edge_iter(adj_matrix: DenselyPackedAdjMatrix) -> Generator[tuple[int, int],
     adjacency matrix.
 
     Args:
-        adj_matrix (DenselyPackedAdjMatrix): The densely packed adjacency matrix given as a sequence
-            of bools or ints. See the note in the module documentation for a description of this
-            format.
+        adj_matrix (DenselyPackedAdjMatrix): The densely packed adjacency matrix, given as a
+            sequence of bools or ints. See the note in the module documentation for a description of
+            this format.
 
     Yields:
         tuple[int, int]: The next edge in the graph, represented as the pair of vertices labelled
@@ -263,7 +268,7 @@ def _edge_iter(adj_matrix: DenselyPackedAdjMatrix) -> Generator[tuple[int, int],
         (2, 3)
     """
     # Calling `_n_vertices_from_packed_adj_matrix()`` asserts that the input `adj_matrix` is in the
-    # correct format and valid.
+    # correct format and is valid.
     _n_vertices_from_packed_adj_matrix(adj_matrix)
 
     j = 1
