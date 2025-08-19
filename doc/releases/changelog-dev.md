@@ -3,6 +3,11 @@
 
 <h3>New features since last release</h3>
 
+* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
+  simplifications in the decomposition of ``Select`` under the assumption that the state of the
+  control wires has no overlap with computational basis states that are not used by ``Select``.
+  [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
+
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
@@ -668,6 +673,10 @@
 
 * Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
+
+* Updated description of `alpha` parameter in `ClassicalShadow.entropy`.
+  Trimmed the outdated part of discussion regarding different choices of `alpha`.
+  [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 <h3>Bug fixes 🐛</h3>
 
