@@ -93,9 +93,9 @@ class SampleMP(SampleMeasurement):
         dtype = float if sample_eigvals else int
 
         if sample_eigvals:
-            return (shots,), dtype
+            return (((shots,), dtype),)
         dim = num_device_wires if n_wires == 0 else n_wires
-        return (shots, dim), dtype
+        return (((shots, dim), dtype),)
 
     @property
     def numeric_type(self):

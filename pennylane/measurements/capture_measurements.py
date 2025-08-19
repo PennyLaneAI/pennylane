@@ -49,11 +49,16 @@ def _get_abstract_measurement():
         """
 
         def __init__(
-            self, abstract_eval: Callable, n_wires: int | None = None, has_eigvals: bool = False
+            self,
+            abstract_eval: Callable,
+            n_wires: int | None = None,
+            has_eigvals: bool = False,
+            num_outputs: int = 1,
         ):
             self._abstract_eval = abstract_eval
             self._n_wires = n_wires
             self.has_eigvals: bool = has_eigvals
+            self.num_outputs = num_outputs
 
         def abstract_eval(self, num_device_wires: int, shots: int) -> tuple[tuple, type]:
             """Calculate the shape and dtype for an evaluation with specified number of device
@@ -220,6 +225,11 @@ def create_measurement_wires_primitive(
     def _(*args, has_eigvals=False, **_):
         abstract_eval = measurement_type._abstract_eval  # pylint: disable=protected-access
         n_wires = len(args) - 1 if has_eigvals else len(args)
-        return abstract_type(abstract_eval, n_wires=n_wires, has_eigvals=has_eigvals)
+        return abstract_type(
+            abstract_eval,
+            n_wires=n_wires,
+            has_eigvals=has_eigvals,
+            num_outputs=measurement_type._num_outputs,  # pylint: disable=protected-access
+        )
 
     return primitive

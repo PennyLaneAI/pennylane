@@ -178,8 +178,11 @@ def _get_shapes_for(*measurements, shots=None, num_device_wires=0, batch_shape=(
 
     for s in shots:
         for m in measurements:
-            shape, dtype = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
-            shapes.append(jax.core.ShapedArray(batch_shape + shape, dtype_map.get(dtype, dtype)))
+            shapes_and_dtypes = m.aval.abstract_eval(shots=s, num_device_wires=num_device_wires)
+            for shape, dtype in shapes_and_dtypes:
+                shapes.append(
+                    jax.core.ShapedArray(batch_shape + shape, dtype_map.get(dtype, dtype))
+                )
 
     return shapes
 
@@ -596,5 +599,18 @@ def capture_qnode(qnode: "qml.QNode", *args, **kwargs) -> "qml.typing.Result":
         qfunc_jaxpr=qfunc_jaxpr.jaxpr,
         n_consts=len(qfunc_jaxpr.consts),
     )
-
+    res = _packup_res(res, qfunc_jaxpr.jaxpr.outvars)
     return jax.tree_util.tree_unflatten(out_tree, res)
+
+
+def _packup_res(res, outvars):
+    new_res = []
+    res_iter = iter(res)
+    for var in outvars:
+        num_res = var.aval.num_outputs
+        if num_res == 1:
+            new_res.append(next(res_iter))
+        else:
+            to_add = tuple(next(res_iter) for _ in range(num_res))
+            new_res.append(to_add)
+    return new_res

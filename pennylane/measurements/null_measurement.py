@@ -42,7 +42,7 @@ class NullMeasurement(SampleMeasurement, StateMeasurement):
 
     @classmethod
     def _abstract_eval(cls, *_, **__):
-        return (), float
+        return (((), float),)
 
     def shape(self, *_, **__):
         return ()
