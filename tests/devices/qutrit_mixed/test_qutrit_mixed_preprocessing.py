@@ -311,7 +311,6 @@ class TestPreprocessingIntegration:
             if req_warn:
                 assert len(warning) != 0
                 for warn in list(warning):
-                    print(type(warn.message))
                     assert "is not affected by readout error" in warn.message.args[0]
             else:
                 assert len(warning) == 0
