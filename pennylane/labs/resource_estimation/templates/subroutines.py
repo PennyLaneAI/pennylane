@@ -699,7 +699,6 @@ class ResourceQPE(ResourceOperator):
         self.queue()
 
         base_cmpr_op = base.resource_rep_from_op()
-
         adj_qft_cmpr_op = None if adj_qft_op is None else adj_qft_op.resource_rep_from_op()
 
         self.base_cmpr_op = base_cmpr_op
