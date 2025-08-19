@@ -48,24 +48,10 @@ class TestAnd:
 
         assert result[0] == (a and b)
 
-    @pytest.mark.parametrize("val", (0, 0.0, 0.0j))
+    @pytest.mark.parametrize("val", (0, 0.0, 0.0j, 1, 1.0, 1 + 0.0j))
     @pytest.mark.parametrize("x", [True, False])
-    def test_falsy_values(self, x, val):
-        """Test that falsy values also work."""
-
-        fn = lambda x, y: x and y
-        ag_fn = run_autograph(fn)
-
-        args = (x, val)
-        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
-        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
-
-        assert result[0] == (x and val)
-
-    @pytest.mark.parametrize("val", (1, 1.0, 1 + 0.0j))
-    @pytest.mark.parametrize("x", [True, False])
-    def test_truthy_values(self, x, val):
-        """Test that truthy values also work."""
+    def test_truthy_and_falsy_values(self, x, val):
+        """Test that truthy and falsy values also work."""
 
         fn = lambda x, y: x and y
         ag_fn = run_autograph(fn)
@@ -203,24 +189,10 @@ class TestOr:
 
         assert result[0] == (a or b)
 
-    @pytest.mark.parametrize("val", (0, 0.0, 0.0j))
+    @pytest.mark.parametrize("val", (0, 0.0, 0.0j, 1, 1.0, 1 + 0.0j))
     @pytest.mark.parametrize("x", [True, False])
-    def test_falsy_values(self, x, val):
-        """Test that falsy values also work."""
-
-        fn = lambda x, y: x or y
-        ag_fn = run_autograph(fn)
-
-        args = (x, val)
-        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
-        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
-
-        assert result[0] == (x or val)
-
-    @pytest.mark.parametrize("val", (1, 1.0, 1 + 0.0j))
-    @pytest.mark.parametrize("x", [True, False])
-    def test_truthy_values(self, x, val):
-        """Test that truthy values also work."""
+    def test_truthy_and_falsy_values(self, x, val):
+        """Test that truthy and falsy values also work."""
 
         fn = lambda x, y: x or y
         ag_fn = run_autograph(fn)
@@ -359,22 +331,9 @@ class TestNot:
 
         assert result[0] == (not x)
 
-    @pytest.mark.parametrize("val", (0, 0.0, 0.0j))
-    def test_falsy_values(self, val):
-        """Test that falsy values also work."""
-
-        fn = lambda x: not x
-        ag_fn = run_autograph(fn)
-
-        args = (val,)
-        ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
-        result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
-
-        assert result[0] == (not val)
-
-    @pytest.mark.parametrize("val", (1, 1.0, 1 + 0.0j))
-    def test_truthy_values(self, val):
-        """Test that truthy values also work."""
+    @pytest.mark.parametrize("val", (0, 0.0, 0.0j, 1, 1.0, 1 + 0.0j))
+    def test_truthy_and_falsy_values(self, val):
+        """Test that truthy and falsy values also work."""
 
         fn = lambda x: not x
         ag_fn = run_autograph(fn)
