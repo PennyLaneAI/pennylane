@@ -791,6 +791,15 @@ class TestProperties:
         op_label = sprod_op.label(decimals=decimal)
         assert label == op_label
 
+    def test_label_large_op(self):
+        """Test that sprod uses the large ops cache."""
+
+        op = qml.s_prod(2, qml.sum(*(qml.X(i) for i in range(5))))
+        cache = {"large_ops": [(None, "bla")]}
+        label = op.label(cache=cache)
+        assert label == "H1"
+        assert cache["large_ops"][1] == (op, "2*(X+X+X+X+X)")
+
     def test_label_cache(self):
         """Test label method with cache keyword arg."""
         base = qml.QubitUnitary(np.eye(2), wires=0)

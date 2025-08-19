@@ -633,14 +633,14 @@ class TestLinearCombination:
     def test_label(self):
         """Tests the label method of LinearCombination when <=3 coefficients."""
         H = qml.ops.LinearCombination((-0.8,), (Z(0),))
-        assert H.label() == "𝓗"
-        assert H.label(decimals=2) == "𝓗\n(-0.80)"
+        assert H.label() == "(-0.8*Z)"
+        assert H.label(decimals=2) == "(-0.80*Z)"
 
     def test_label_many_coefficients(self):
         """Tests the label method of LinearCombination when >3 coefficients."""
         H = LinearCombination([0.1] * 5, [X(i) for i in range(5)])
-        assert H.label() == "𝓗"
-        assert H.label(decimals=2) == "𝓗"
+        assert H.label() == "(0.1*X)+(0.1*X)+(0.1*X)+(0.1*X)+(0.1*X)"
+        assert H.label(decimals=2) == "(0.10*X)+(0.10*X)+(0.10*X)+(0.10*X)+(0.10*X)"
 
     LINEARCOMBINATION_STR = (
         (qml.ops.LinearCombination([0.5, 0.5], [X(0), X(1)]), "0.5 * X(0) + 0.5 * X(1)"),
