@@ -71,8 +71,8 @@ resource_config = {
     "precision_qubit_unitary": 1e-9,
     "precision_qrom_state_prep": 1e-9,
     "precision_alias_sampling": 1e-9,
-    "qubitization_rotation_bits":15,
-    "qubitization_coeff_bits":15,
+    "qubitization_rotation_bits": 15,
+    "qubitization_coeff_bits": 15,
 }
 
 

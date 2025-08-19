@@ -600,11 +600,11 @@ class ResourceRegisterComparator(ResourceOperator):
         if first_register == second_register:
 
             for op in two_qubit_compare:
-                gate_list.append(op*(first_register-1))
+                gate_list.append(op * (first_register - 1))
             gate_list.append(GateCount(one_qubit_compare, 1))
 
             for op in two_qubit_compare:
-                gate_list.append(_apply_adj(op)*(first_register-1))
+                gate_list.append(_apply_adj(op) * (first_register - 1))
 
             gate_list.append(
                 GateCount(
@@ -620,11 +620,11 @@ class ResourceRegisterComparator(ResourceOperator):
         diff = abs(first_register - second_register)
 
         for op in two_qubit_compare:
-            gate_list.append(op*(compare_register-1))
+            gate_list.append(op * (compare_register - 1))
         gate_list.append(GateCount(one_qubit_compare, 1))
 
         for op in two_qubit_compare:
-            gate_list.append(_apply_adj(op)*(compare_register-1))
+            gate_list.append(_apply_adj(op) * (compare_register - 1))
 
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": one_qubit_compare}), 1)
