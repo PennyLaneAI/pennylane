@@ -465,12 +465,12 @@ class TestIntegration:
                     assert qml.math.shape(prob_res_0) == (2,)
                     assert qml.math.shape(prob_res_1) == (4,)
                     assert isinstance(counts_res, dict)
-                    assert qml.math.shape(sample_res) == (shots[i],)
+                    assert qml.math.shape(sample_res) == (shots[i], 1)
                 else:
                     assert qml.math.shape(prob_res_0) == (2, 2)
                     assert qml.math.shape(prob_res_1) == (2, 4)
                     assert all(isinstance(_res, dict) for _res in counts_res)
-                    assert qml.math.shape(sample_res) == (2, shots[i])
+                    assert qml.math.shape(sample_res) == (2, shots[i], 1)
 
                 expval_res = res[i][4:]
                 assert qml.math.allclose(expval_res, expected_results, atol=0.05)
@@ -483,12 +483,12 @@ class TestIntegration:
                 assert qml.math.shape(prob_res_0) == (2,)
                 assert qml.math.shape(prob_res_1) == (4,)
                 assert isinstance(counts_res, dict)
-                assert qml.math.shape(sample_res) == (shots,)
+                assert qml.math.shape(sample_res) == (shots, 1)
             else:
                 assert qml.math.shape(prob_res_0) == (2, 2)
                 assert qml.math.shape(prob_res_1) == (2, 4)
                 assert all(isinstance(_res, dict) for _res in counts_res)
-                assert qml.math.shape(sample_res) == (2, shots)
+                assert qml.math.shape(sample_res) == (2, shots, 1)
 
             expval_res = res[4:]
             assert qml.math.allclose(expval_res, expected_results, atol=0.05)

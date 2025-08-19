@@ -160,7 +160,7 @@ class FABLE(Operation):
         alphas = math.arccos(input_matrix).flatten()
         thetas = compute_theta(alphas)
 
-        ancilla = [wires[0]]
+        auxiliary = [wires[0]]
         wires_i = wires[1 : 1 + len(wires) // 2][::-1]
         wires_j = wires[1 + len(wires) // 2 : len(wires)][::-1]
 
@@ -175,16 +175,16 @@ class FABLE(Operation):
         for theta, control_index in zip(thetas, control_wires):
             if math.is_abstract(theta):
                 for c_wire in nots:
-                    op_list.append(CNOT(wires=[c_wire] + ancilla))
-                op_list.append(RY(2 * theta, wires=ancilla))
+                    op_list.append(CNOT(wires=[c_wire] + auxiliary))
+                op_list.append(RY(2 * theta, wires=auxiliary))
                 nots = {}
                 nots[wire_map[control_index]] = 1
                 continue
 
             if math.abs(2 * theta) > tol:
                 for c_wire in nots:
-                    op_list.append(CNOT(wires=[c_wire] + ancilla))
-                op_list.append(RY(2 * theta, wires=ancilla))
+                    op_list.append(CNOT(wires=[c_wire] + auxiliary))
+                op_list.append(RY(2 * theta, wires=auxiliary))
                 nots = {}
             if wire_map[control_index] in nots:
                 del nots[wire_map[control_index]]
@@ -192,7 +192,7 @@ class FABLE(Operation):
                 nots[wire_map[control_index]] = 1
 
         for c_wire in nots:
-            op_list.append(CNOT([c_wire] + ancilla))
+            op_list.append(CNOT([c_wire] + auxiliary))
 
         for w_i, w_j in zip(wires_i, wires_j):
             op_list.append(SWAP(wires=[w_i, w_j]))

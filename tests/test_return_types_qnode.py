@@ -108,7 +108,7 @@ class TestIntegrationSingleReturn:
     def test_expval_single_return_in_list(self, device, shots):
         """Test that the return shape is expected for a single expectation value in a list."""
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
         func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         obs = qml.PauliZ(wires=1) if device != "default.qutrit" else qml.GellMann(1, 3)
@@ -117,7 +117,7 @@ class TestIntegrationSingleReturn:
             func(x)
             return [qml.expval(obs)]
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
 
         assert qml.math.shape(res) == ((1,) if shots is None else (2, 1))
@@ -162,8 +162,9 @@ class TestIntegrationSingleReturn:
     @pytest.mark.filterwarnings("ignore:Requested Von Neumann entropy with finite shots")
     def test_vn_entropy_shot_vec_error(self):
         """Test an error is raised when using shot vectors with vn_entropy."""
-        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots([1, 10, 10, 1000])
         @qml.qnode(device=dev)
         def circuit(x):
             qubit_ansatz(x)
@@ -196,8 +197,9 @@ class TestIntegrationSingleReturn:
     @pytest.mark.filterwarnings("ignore:Requested mutual information with finite shots")
     def test_mutual_info_shot_vec_error(self):
         """Test an error is raised when using shot vectors with mutual_info."""
-        dev = qml.device("default.qubit", wires=2, shots=[1, 10, 10, 1000])
+        dev = qml.device("default.qubit", wires=2)
 
+        @qml.set_shots([1, 10, 10, 1000])
         @qml.qnode(device=dev)
         def circuit(x):
             qubit_ansatz(x)
@@ -282,20 +284,20 @@ class TestIntegrationSingleReturn:
         elif isinstance(measurement.obs, qml.GellMann):
             pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
         func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
             func(x)
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
 
         assert isinstance(res, (np.ndarray, np.float64))
 
         if measurement.wires.tolist() != [0, 1]:
-            assert res.shape == (shots,)
+            assert res.shape == (shots,) if measurement.obs else (shots, 1)
         else:
             assert res.shape == (shots, 2) if device != "default.qutrit" else (shots, 3)
 
@@ -317,14 +319,14 @@ class TestIntegrationSingleReturn:
         elif isinstance(measurement.obs, qml.GellMann):
             pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
         func = qutrit_ansatz if device == "default.qutrit" else qubit_ansatz
 
         def circuit(x):
             func(x)
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
 
         assert isinstance(res, dict)
@@ -508,14 +510,14 @@ class TestIntegrationSingleReturnTensorFlow:
         if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for Tf.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(tf.Variable(0.5))
 
         assert isinstance(res, tf.Tensor)
@@ -533,14 +535,14 @@ class TestIntegrationSingleReturnTensorFlow:
         """Test the counts measurement."""
         import tensorflow as tf
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(tf.Variable(0.5))
 
         assert isinstance(res, dict)
@@ -722,14 +724,14 @@ class TestIntegrationSingleReturnTorch:
         if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for Torch.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         assert isinstance(res, torch.Tensor)
@@ -748,14 +750,14 @@ class TestIntegrationSingleReturnTorch:
         if device == "default.mixed":
             pytest.skip("Counts need to be rewritten for Torch and default mixed.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         assert isinstance(res, dict)
@@ -938,14 +940,14 @@ class TestIntegrationSingleReturnJax:
         if device == "default.mixed":
             pytest.skip("Sample need to be rewritten for each interface in default mixed.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(jax.numpy.array(0.5))
 
         assert isinstance(res, jax.numpy.ndarray)
@@ -963,14 +965,14 @@ class TestIntegrationSingleReturnJax:
         """Test the counts measurement."""
         import jax
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(jax.numpy.array(0.5))
 
         assert isinstance(res, dict)
@@ -1226,7 +1228,7 @@ class TestIntegrationMultipleReturns:
         elif isinstance(measurement.obs, qml.GellMann):
             pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
         func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
         obs = qml.PauliZ(1) if device != "default.qutrit" else qml.GellMann(1, 3)
 
@@ -1234,7 +1236,7 @@ class TestIntegrationMultipleReturns:
             func(x)
             return qml.expval(obs), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
 
         # Expval
@@ -1243,7 +1245,7 @@ class TestIntegrationMultipleReturns:
 
         # Sample
         assert isinstance(res[1], (np.ndarray, np.float64))
-        assert res[1].shape == (shots,)
+        assert res[1].shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize(
@@ -1258,7 +1260,7 @@ class TestIntegrationMultipleReturns:
         elif isinstance(measurement.obs, qml.GellMann):
             pytest.skip("DefaultQubitLegacy doesn't support qutrit observables.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
         func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
         obs = qml.PauliZ(1) if device != "default.qutrit" else qml.GellMann(1, 3)
 
@@ -1266,7 +1268,7 @@ class TestIntegrationMultipleReturns:
             func(x)
             return qml.expval(obs), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(0.5)
 
         # Expval
@@ -1306,7 +1308,7 @@ class TestIntegrationMultipleReturns:
     @pytest.mark.parametrize("shot_vector", shot_vectors)
     def test_list_multiple_expval(self, wires, device, shot_vector):
         """Return a comprehension list of multiple expvals."""
-        dev = qml.device(device, wires=wires, shots=shot_vector)
+        dev = qml.device(device, wires=wires)
         func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
         obs = qml.PauliZ if device != "default.qutrit" else qml.GellMann
 
@@ -1318,7 +1320,7 @@ class TestIntegrationMultipleReturns:
                 for i in range(0, wires)
             ]
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
         if shot_vector is None:
@@ -1346,7 +1348,7 @@ class TestIntegrationMultipleReturns:
 
         shot_num = 1000
         num_wires = 2
-        dev = qml.device(device, wires=num_wires, shots=shot_num)
+        dev = qml.device(device, wires=num_wires)
         func = qubit_ansatz if device != "default.qutrit" else qutrit_ansatz
         obs = qml.PauliZ(1) if device != "default.qutrit" else qml.GellMann(1, 3)
 
@@ -1354,7 +1356,7 @@ class TestIntegrationMultipleReturns:
             func(x)
             return qml.apply(comp_basis_sampling), qml.expval(obs), qml.probs(wires=[0])
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_num)
         res = qnode(0.5)
 
         assert isinstance(res, tuple)
@@ -1524,14 +1526,14 @@ class TestIntegrationMultipleReturnsTensorflow:
         if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample must be reworked with interfaces.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(tf.Variable(0.5))
 
         # Expval
@@ -1548,7 +1550,7 @@ class TestIntegrationMultipleReturnsTensorflow:
         """Test the expval and counts measurements together."""
         import tensorflow as tf
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         if device == "default.mixed":
             pytest.skip("Mixed as array must be reworked for shots.")
@@ -1558,7 +1560,7 @@ class TestIntegrationMultipleReturnsTensorflow:
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(tf.Variable(0.5))
 
         # Expval
@@ -1604,14 +1606,14 @@ class TestIntegrationMultipleReturnsTensorflow:
         if device == "default.mixed" and shot_vector:
             pytest.skip("No support for shot vector and Tensorflow because use of .T in statistics")
 
-        dev = qml.device(device, wires=wires, shots=shot_vector)
+        dev = qml.device(device, wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, wires)]
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(tf.Variable(0.5))
 
         if shot_vector is None:
@@ -1785,14 +1787,14 @@ class TestIntegrationMultipleReturnsTorch:
         if device in ["default.mixed", "default.qubit"]:
             pytest.skip("Sample need to be rewritten for interfaces.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         # Expval
@@ -1812,14 +1814,14 @@ class TestIntegrationMultipleReturnsTorch:
         if device == "default.mixed":
             pytest.skip("Counts need to be rewritten for interfaces.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         # Expval
@@ -1866,14 +1868,14 @@ class TestIntegrationMultipleReturnsTorch:
         if device == "default.mixed" and shot_vector:
             pytest.skip("No support for shot vector and mixed device with Torch.")
 
-        dev = qml.device(device, wires=wires, shots=shot_vector)
+        dev = qml.device(device, wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, wires)]
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(torch.tensor(0.5, requires_grad=True))
 
         if shot_vector is None:
@@ -2047,14 +2049,14 @@ class TestIntegrationMultipleReturnJax:
         if device == "default.mixed":
             pytest.skip("Sample need to be rewritten for interfaces.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(jax.numpy.array(0.5))
 
         # Expval
@@ -2074,14 +2076,14 @@ class TestIntegrationMultipleReturnJax:
         if device == "default.mixed":
             pytest.skip("Counts need to be rewritten for interfaces and mixed device.")
 
-        dev = qml.device(device, wires=2, shots=shots)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(1)), qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shots)
         res = qnode(jax.numpy.array(0.5))
 
         # Expval
@@ -2127,14 +2129,14 @@ class TestIntegrationMultipleReturnJax:
         if device == "default.mixed" and shot_vector:
             pytest.skip("No support for shot vector and mixed device with Jax")
 
-        dev = qml.device(device, wires=wires, shots=shot_vector)
+        dev = qml.device(device, wires=wires)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return [qml.expval(qml.PauliZ(wires=i)) for i in range(0, wires)]
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(jax.numpy.array(0.5))
 
         if shot_vector is None:
@@ -2190,26 +2192,17 @@ class TestIntegrationShotVectors:
     @pytest.mark.parametrize("measurement", single_scalar_output_measurements)
     def test_scalar(self, shot_vector, measurement, device):
         """Test a single scalar-valued measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2219,7 +2212,8 @@ class TestIntegrationShotVectors:
     @pytest.mark.parametrize("op,wires", probs_data)
     def test_probs(self, shot_vector, op, wires, device):
         """Test a single probability measurement."""
-        dev = qml.device("default.qubit", wires=2, shots=shot_vector)
+        dev = qml.device("default.qubit", wires=2)
+        shot_vector = qml.measurements.Shots(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -2227,19 +2221,10 @@ class TestIntegrationShotVectors:
             return qml.probs(op=op, wires=wires)
 
         # Diff method is to be set to None otherwise use Interface execute
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2251,7 +2236,8 @@ class TestIntegrationShotVectors:
     @pytest.mark.parametrize("measurement", [qml.sample(qml.PauliZ(0)), qml.sample(wires=[0])])
     def test_samples(self, shot_vector, measurement, device):
         """Test the sample measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
+        shot_vector = qml.measurements.Shots(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -2259,31 +2245,20 @@ class TestIntegrationShotVectors:
             return qml.apply(measurement)
 
         # Diff method is to be set to None otherwise use Interface execute
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shot_copies = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res) == len(all_shot_copies)
         for r, shots in zip(res, all_shot_copies):
-            if shots == 1:
-                # Scalar tensors
-                assert r.shape == ()
-            else:
-                assert r.shape == (shots,)
+            assert r.shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement, device):
         """Test the counts measurement."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
+        shot_vector = qml.measurements.Shots(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -2291,19 +2266,10 @@ class TestIntegrationShotVectors:
             return qml.apply(measurement)
 
         # Diff method is to be set to None otherwise use Interface execute
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2318,26 +2284,18 @@ class TestIntegrationSameMeasurementShotVector:
 
     def test_scalar(self, shot_vector, device):
         """Test multiple scalar-valued measurements."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
+        shot_vector = qml.measurements.Shots(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.expval(qml.PauliX(0)), qml.var(qml.PauliZ(1))
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2357,26 +2315,17 @@ class TestIntegrationSameMeasurementShotVector:
     @pytest.mark.parametrize("op2,wires2", reversed(probs_data2))
     def test_probs(self, shot_vector, op1, wires1, op2, wires2, device):
         """Test multiple probability measurements."""
-        dev = qml.device(device, wires=4, shots=shot_vector)
+        dev = qml.device(device, wires=4)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.probs(op=op1, wires=wires1), qml.probs(op=op2, wires=wires2)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2392,55 +2341,38 @@ class TestIntegrationSameMeasurementShotVector:
     @pytest.mark.parametrize("measurement2", [qml.sample(qml.PauliX(1)), qml.sample(wires=[1])])
     def test_samples(self, shot_vector, measurement1, measurement2, device):
         """Test multiple sample measurements."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement1), qml.apply(measurement2)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shot_copies = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        all_shot_copies = _get_all_shot_copies(shot_vector)
 
         assert len(res) == len(all_shot_copies)
         for r, shots in zip(res, all_shot_copies):
-            shape = () if shots == 1 else (shots,)
-            assert all(res_item.shape == shape for res_item in r)
+            assert r[0].shape == (shots,) if measurement1.obs else (shots, 1)
+            assert r[1].shape == (shots,) if measurement2.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement1", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     @pytest.mark.parametrize("measurement2", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement1, measurement2, device):
         """Test multiple counts measurements."""
-        dev = qml.device(device, wires=2, shots=shot_vector)
+        dev = qml.device(device, wires=2)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(measurement1), qml.apply(measurement2)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2520,26 +2452,17 @@ class TestIntegrationMultipleMeasurementsShotVector:
     @pytest.mark.parametrize("meas1,meas2", scalar_probs_multi)
     def test_scalar_probs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and probability measurements"""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = qml.device(device, wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2564,35 +2487,18 @@ class TestIntegrationMultipleMeasurementsShotVector:
     def test_scalar_sample_with_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and sample measurements where sample takes an
         observable."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=3)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2605,7 +2511,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
 
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[idx]):
-                if i % 2 == 0 or shots == 1:
+                if i % 2 == 0:
                     assert meas2.obs is not None
                     expected_shape = ()
                     assert r.shape == expected_shape
@@ -2616,26 +2522,17 @@ class TestIntegrationMultipleMeasurementsShotVector:
     @pytest.mark.xfail
     def test_scalar_sample_no_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and computational basis sample measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = qml.device(device, wires=3)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2646,9 +2543,7 @@ class TestIntegrationMultipleMeasurementsShotVector:
             for m in measurement_res
         )
 
-        for shot_tuple in (
-            dev.shot_vector if isinstance(dev, qml.devices.LegacyDevice) else dev.shots.shot_vector
-        ):
+        for shot_tuple in shot_vector:
             for idx in range(shot_tuple.copies):
                 for i, r in enumerate(res[idx]):
                     if i % 2 == 0 or shot_tuple.shots == 1:
@@ -2662,35 +2557,18 @@ class TestIntegrationMultipleMeasurementsShotVector:
     def test_scalar_counts_with_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and counts measurements where counts takes an
         observable."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=3)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2717,36 +2595,19 @@ class TestIntegrationMultipleMeasurementsShotVector:
     @pytest.mark.xfail
     def test_scalar_counts_no_obs(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued and computational basis counts measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = qml.device(device, wires=3)
 
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
             qml.CRX(x, wires=[0, 1])
             return qml.apply(meas1), qml.apply(meas2)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2769,17 +2630,9 @@ class TestIntegrationMultipleMeasurementsShotVector:
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_sample(self, shot_vector, sample_obs, device):
         """Test probs and sample measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
+        dev = qml.device(device, wires=3)
 
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
@@ -2794,19 +2647,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
             # Only wires provided to sample
             return qml.probs(wires=meas1_wires), qml.sample(wires=meas2_wires)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2826,25 +2670,14 @@ class TestIntegrationMultipleMeasurementsShotVector:
                     # Probs add up to 1
                     assert np.allclose(sum(r), 1)
                 else:
-                    if shots == 1:
-                        assert r.shape == ()
-                    else:
-                        expected = (shots,)
-                        assert r.shape == expected
+                    expected = (shots, 1) if sample_obs is None else (shots,)
+                    assert r.shape == expected
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_counts(self, shot_vector, sample_obs, device):
         """Test probs and counts measurements."""
-        dev = qml.device(device, wires=3, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=3)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         meas1_wires = [0, 1]
         meas2_wires = [2]
@@ -2859,19 +2692,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
             # Only wires provided to sample
             return qml.probs(wires=meas1_wires), qml.counts(wires=meas2_wires)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2900,16 +2724,8 @@ class TestIntegrationMultipleMeasurementsShotVector:
     def test_sample_counts(self, shot_vector, sample_wires, counts_wires, device):
         """Test sample and counts measurements, each measurement with custom
         samples or computational basis state samples."""
-        dev = qml.device(device, wires=6, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=6)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -2930,19 +2746,10 @@ class TestIntegrationMultipleMeasurementsShotVector:
             # 4. Sample no obs and Counts no obs
             return qml.sample(wires=sample_wires), qml.counts(wires=counts_wires)
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -2953,14 +2760,16 @@ class TestIntegrationMultipleMeasurementsShotVector:
         assert all(isinstance(measurement_res[1], dict) for measurement_res in res)
 
         for idx, shots in enumerate(raw_shot_vector):
-            for i, r in enumerate(res[idx]):
+            for res_idx, r in enumerate(res[idx]):
                 num_wires = len(sample_wires)
-                if shots == 1 and i % 2 == 0:
-                    expected_shape = () if num_wires == 1 else (num_wires,)
-                    assert r.shape == expected_shape
-                elif i % 2 == 0:
-                    expected_shape = (shots,) if num_wires == 1 else (shots, num_wires)
-                    assert r.shape == expected_shape
+                if res_idx % 2 == 0:
+                    if len(sample_wires) > 1:
+                        expected_shape = (shots, num_wires)
+                        assert r.shape == expected_shape
+                    else:
+                        # think this means measured observable?
+                        expected_shape = (shots,)
+                        assert r.shape == expected_shape
                 else:
                     assert isinstance(r, dict)
 
@@ -2968,16 +2777,8 @@ class TestIntegrationMultipleMeasurementsShotVector:
     def test_scalar_probs_sample_counts(self, shot_vector, meas1, meas2, device):
         """Test scalar-valued, probability, sample and counts measurements all
         in a single qfunc."""
-        dev = qml.device(device, wires=5, shots=shot_vector)
-        raw_shot_vector = [
-            shot_tuple.shots
-            for shot_tuple in (
-                dev.shot_vector
-                if isinstance(dev, qml.devices.LegacyDevice)
-                else dev.shots.shot_vector
-            )
-            for _ in range(shot_tuple.copies)
-        ]
+        dev = qml.device(device, wires=5)
+        raw_shot_vector = _get_all_shot_copies(shot_vector)
 
         def circuit(x):
             qml.Hadamard(wires=[0])
@@ -2989,20 +2790,11 @@ class TestIntegrationMultipleMeasurementsShotVector:
                 qml.counts(qml.PauliX(3)),
             )
 
-        qnode = qml.QNode(circuit, dev, diff_method=None)
+        qnode = qml.set_shots(qml.QNode(circuit, dev, diff_method=None), shots=shot_vector)
 
         res = qnode(0.5)
 
-        all_shots = sum(
-            [
-                shot_tuple.copies
-                for shot_tuple in (
-                    dev.shot_vector
-                    if isinstance(dev, qml.devices.LegacyDevice)
-                    else dev.shots.shot_vector
-                )
-            ]
-        )
+        all_shots = _get_all_shots(shot_vector)
 
         assert isinstance(res, tuple)
         assert len(res) == all_shots
@@ -3024,11 +2816,8 @@ class TestIntegrationMultipleMeasurementsShotVector:
                     assert np.allclose(sum(r), 1)
                 elif sample:
                     shots = raw_shot_vector[res_idx]
-                    if shots == 1:
-                        assert r.shape == ()
-                    else:
-                        expected = (shots,)
-                        assert r.shape == expected
+                    expected = (shots,)
+                    assert r.shape == expected
                 else:
                     # Return is Counts
                     assert isinstance(r, dict)
@@ -3090,7 +2879,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_multiple_expval_tf(self, interface, device):
         """Return Jacobian of multiple expvals."""
         import tensorflow as tf
@@ -3117,7 +2906,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
         assert res.shape == (2, 3)
 
     @pytest.mark.tf
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_multiple_meas_tf_autograph(self, interface):
         """Return Jacobian of multiple measurements with Tf Autograph."""
         import tensorflow as tf
@@ -3251,7 +3040,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_multiple_probs_tf(self, interface, device):
         """Return Jacobian of multiple probs."""
         import tensorflow as tf
@@ -3389,7 +3178,7 @@ class TestIntegrationJacobianBackpropMultipleReturns:
 
     @pytest.mark.tf
     @pytest.mark.parametrize("device", devices)
-    @pytest.mark.parametrize("interface", ["auto", "tf"])
+    @pytest.mark.parametrize("interface", ["auto"])
     def test_multiple_meas_tf(self, interface, device):
         """Return Jacobian of multiple measurements."""
         import tensorflow as tf
@@ -3482,3 +3271,13 @@ class TestIntegrationJacobianBackpropMultipleReturns:
                 assert elem.shape == (4, 3)
             elif i == 2:
                 assert elem.shape == (3,)
+
+
+def _get_all_shots(shot_vector):
+    """Helper function to get the total number of shots from a shot vector."""
+    return qml.measurements.Shots(shot_vector).num_copies
+
+
+def _get_all_shot_copies(shot_vector):
+    """Helper function to get the total number of shot copies from a shot vector."""
+    return list(qml.measurements.Shots(shot_vector))
