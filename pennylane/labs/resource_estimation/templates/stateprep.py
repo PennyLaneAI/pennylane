@@ -267,8 +267,8 @@ class ResourcePrepTHC(ResourceOperator):
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
             Hamiltonian for which the state is being prepared
         coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-            the coefficients of Hamiltonian. If `None` is provided the default value from the
-            `resource_config` is used.
+            the coefficients of Hamiltonian. If :code:`None` is provided the default value from the
+            :code:`resource_config` is used.
         select_swap_depth (int, optional): A natural number that determines if data
             will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
             Defaults to :code:`None`, which internally determines the optimal depth.
@@ -317,8 +317,8 @@ class ResourcePrepTHC(ResourceOperator):
                 * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                     Hamiltonian for which the state is being prepared
                 * coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                    the coefficients of Hamiltonian. If `None` is provided the default value from the
-                    `resource_config` is used.
+                    the coefficients of Hamiltonian. If :code:`None` is provided the default value from the
+                    :code:`resource_config` is used.
                 * select_swap_depth (int, optional): A natural number that determines if data
                     will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                     Defaults to :code:`None`, which internally determines the optimal depth.
@@ -340,8 +340,8 @@ class ResourcePrepTHC(ResourceOperator):
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the state is being prepared
             coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If `None` is provided the default value from the
-                `resource_config` is used.
+                the coefficients of Hamiltonian. If :code:`None` is provided the default value from the
+                :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                 Defaults to :code:`None`, which internally determines the optimal depth.
@@ -367,8 +367,8 @@ class ResourcePrepTHC(ResourceOperator):
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If `None` is provided the default value from the
-                `resource_config` is used.
+                the coefficients of Hamiltonian. If :code:`None` is provided the default value from the
+                :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
@@ -489,8 +489,8 @@ class ResourcePrepTHC(ResourceOperator):
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If `None` is provided the default value from the
-                `resource_config` is used.
+                the coefficients of Hamiltonian. If :code:`None` is provided the default value from the
+                :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of
                 `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.

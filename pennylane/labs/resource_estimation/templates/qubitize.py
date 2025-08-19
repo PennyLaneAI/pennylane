@@ -36,11 +36,11 @@ class ResourceQubitizeTHC(ResourceOperator):
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
             Hamiltonian for which the walk operator is being created
         coeff_precision_bits (int, optional): Number of bits used to represent the precision for loading
-            the coefficients of the Hamiltonian. If `None` is provided the default value from the
-            `resource_config` is used.
+            the coefficients of the Hamiltonian. If :code:`None` is provided the default value from the
+            :code:`resource_config` is used.
         rotation_precision_bits (int, optional): Number of bits used to represent the precision for loading
-            the rotation angles for basis rotation. If `None` is provided the default value from the
-            `resource_config` is used.
+            the rotation angles for basis rotation. If :code:`None` is provided the default value from the
+            :code:`resource_config` is used.
         select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
             used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
             ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
@@ -112,11 +112,11 @@ class ResourceQubitizeTHC(ResourceOperator):
                 * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                   Hamiltonian for which the walk operator is being created
                 * coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                  the coefficients of Hamiltonian. If `None` is provided the default value from the
-                  `resource_config` is used.
+                  the coefficients of Hamiltonian. If :code:`None` is provided the default value from the
+                  :code:`resource_config` is used.
                 * rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                  the rotation angles for basis rotation. If `None` is provided the default value from the
-                  `resource_config` is used.
+                  the rotation angles for basis rotation. If :code:`None` is provided the default value from the
+                  :code:`resource_config` is used.
                 * select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                     used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
                     ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
@@ -140,11 +140,11 @@ class ResourceQubitizeTHC(ResourceOperator):
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If `None` is provided the default value from the
-                `resource_config` is used.
+                the coefficients of Hamiltonian. If :code:`None` is provided the default value from the
+                :code:`resource_config` is used.
             rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If `None` is provided the default value from the
-                `resource_config` is used.
+                the rotation angles for basis rotation. If :code:`None` is provided the default value from the
+                :code:`resource_config` is used.
             select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
                 ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
@@ -161,6 +161,7 @@ class ResourceQubitizeTHC(ResourceOperator):
                 )
         elif not (isinstance(select_swap_depths, int) or select_swap_depths is None):
             raise TypeError("`select_swap_depths` must be an integer, None or iterable")
+
         params = {
             "compact_ham": compact_ham,
             "coeff_precision_bits": coeff_precision_bits,
@@ -191,11 +192,11 @@ class ResourceQubitizeTHC(ResourceOperator):
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If `None` is provided the default value from the
-                `resource_config` is used.
+                the coefficients of Hamiltonian. If :code:`None` is provided the default value from the
+                :code:`resource_config` is used.
             rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If `None` is provided the default value from the
-                `resource_config` is used.
+                the rotation angles for basis rotation. If :code:`None` is provided the default value from the
+                :code:`resource_config` is used.
             select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
                 ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
@@ -268,11 +269,11 @@ class ResourceQubitizeTHC(ResourceOperator):
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian for which the walk operator is being created
             coeff_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the coefficients of Hamiltonian. If `None` is provided the default value from the
-                `resource_config` is used.
+                the coefficients of Hamiltonian. If :code:`None` is provided the default value from the
+                :code:`resource_config` is used.
             rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If `None` is provided the default value from the
-                `resource_config` is used.
+                the rotation angles for basis rotation. If :code:`None` is provided the default value from the
+                :code:`resource_config` is used.
             select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
                 ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
