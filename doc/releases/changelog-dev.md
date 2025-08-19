@@ -529,6 +529,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
+  [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
+
 * Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
 `run_filecheck_qjit` fixtures.
   [(#8049)](https://github.com/PennyLaneAI/pennylane/pull/8049)
