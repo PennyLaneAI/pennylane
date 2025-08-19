@@ -84,7 +84,7 @@ class FABLE(Operation):
     grad_method = None
     """Gradient computation method."""
 
-    resource_keys = {"num_wires", "thetas_abstract", "num_control_wires", "tol"}
+    resource_keys = {"wires", "thetas", "control_wires", "tol"}
 
     def __init__(self, input_matrix, wires, tol=0, id=None):
         wires = Wires(wires)
