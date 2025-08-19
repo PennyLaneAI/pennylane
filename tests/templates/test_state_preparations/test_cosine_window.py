@@ -61,7 +61,7 @@ class TestDecomposition:
         ],
     )
     @pytest.mark.capture
-    def test_decomposition_new(self, wires):
+    def test_decomposition_new_capture(self, wires):
         """Tests the decomposition rule implemented with the new system."""
         op = qml.CosineWindow(wires=wires)
 
@@ -126,7 +126,7 @@ class TestRepresentation:
         wires = [0, 1, 2]
         template = qml.CosineWindow(wires=wires, id="a")
         assert template.id == "a"
-        assert template.wires == qml.wires.Wires(wires)
+        assert template.wires == Wires(wires)
 
     def test_label(self):
         """Test label method returns CosineWindow"""

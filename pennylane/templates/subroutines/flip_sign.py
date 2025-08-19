@@ -23,7 +23,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import X, Z, ctrl, cond
+from pennylane.ops import X, Z, cond, ctrl
 
 
 class FlipSign(Operation):
