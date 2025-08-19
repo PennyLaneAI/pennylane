@@ -3,7 +3,7 @@
 
 <h3>New features since last release</h3>
 
-* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for
+* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
   [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
@@ -117,11 +117,11 @@
   [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
   [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
   [(#8002)](https://github.com/PennyLaneAI/pennylane/pull/8002)
-
-  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`,
+  
+  The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, 
   :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
-  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`,
-  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`,
+  :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`, 
+  :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, 
   :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.Qubitization`, and :class:`~.Superposition`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
@@ -164,7 +164,7 @@
 
 <h4>Other improvements</h4>
 
-* Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate
+* Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
   representation of the program between multiple compilation passes.
   [(#7964)](https://github.com/PennyLaneAI/pennylane/pull/7964)
 
@@ -350,7 +350,7 @@
   0
   ```
 
-* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`.
+* `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
 * Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly.

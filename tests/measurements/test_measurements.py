@@ -648,7 +648,7 @@ class TestMeasurementTransform:
         def circuit():
             return CountTapesMP(wires=[0])
 
-        assert circuit() == 1
+        assert circuit() == [True]
 
 
 class TestMeasurementProcess:

@@ -83,7 +83,7 @@ class ControlledQubitUnitary(ControlledOp):
             control on (default is the all 1s state).
         unitary_check (bool): whether to check whether an array U is unitary when creating the
             operator (default False).
-        work_wires (Union[Wires, Sequence[int], or int]): ancillary wire(s) that may be utilized during
+        work_wires (Union[Wires, Sequence[int], or int]): auxiliary wire(s) that may be utilized during
             the decomposition of the operator into native operations.
 
     **Example**
