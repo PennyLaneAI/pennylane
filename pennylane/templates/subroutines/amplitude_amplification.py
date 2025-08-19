@@ -245,7 +245,7 @@ def _amplitude_amplification_resources(num_wires, fixed_point, O, iters, num_ref
                     Reflection,
                     base_class=U.__class__,
                     base_params=U.resource_params,
-                    num_wires=num_wires,
+                    num_wires=len(U.wires),
                     num_reflection_wires=num_reflection_wires,
                 )
             ] += 1
@@ -257,7 +257,7 @@ def _amplitude_amplification_resources(num_wires, fixed_point, O, iters, num_ref
                     Reflection,
                     base_class=U.__class__,
                     base_params=U.resource_params,
-                    num_wires=num_wires,
+                    num_wires=len(U.wires),
                     num_reflection_wires=num_reflection_wires,
                 )
             ] += 1

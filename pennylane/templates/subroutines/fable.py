@@ -282,7 +282,7 @@ def _fable_decomposition(input_matrix, wires, tol=0):
             nots = {}  # pragma: no cover
             nots[wire_map[control_index]] = 1  # pragma: no cover
 
-            return nots
+            return nots  # pragma: no cover
 
         def concrete_branch(nots):
             def in_tol_branch(nots):
