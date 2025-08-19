@@ -34,10 +34,9 @@ class Testdraw:
     """Unit tests for the draw function in the Python Compiler visualization module."""
 
     @pytest.fixture
-    def transforms_circuit(self):
+    def transforms_circuit_xdsl(self):
         """Fixture for a circuit with xDSL transforms applied."""
 
-        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
         @qml.compiler.python_compiler.transforms.merge_rotations_pass
         @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
@@ -63,6 +62,7 @@ class Testdraw:
         return circ
 
     # pylint: disable=implicit-str-concat
+    @pytest.mark.parametrize("qjit", [True, False])
     @pytest.mark.parametrize(
         "level, expected",
         [
@@ -79,13 +79,18 @@ class Testdraw:
                 "2: ──RZ────────────────────╰X─╰X─┤  State",
             ),
             (2, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
+            (None, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
         ],
     )
-    def test_multiple_levels(self, transforms_circuit, level, expected):
+    def test_multiple_levels(self, transforms_circuit_xdsl, level, qjit, expected):
         """Test that multiple levels of transformation are applied correctly."""
 
-        out1 = draw(transforms_circuit, level=level)()
-        assert out1 == expected
+        if qjit:
+            transforms_circuit_xdsl = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(
+                transforms_circuit_xdsl
+            )
+
+        assert draw(transforms_circuit_xdsl, level=level)() == expected
 
 
 if __name__ == "__main__":
