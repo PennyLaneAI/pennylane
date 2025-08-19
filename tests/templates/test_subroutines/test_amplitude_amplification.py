@@ -342,20 +342,20 @@ def test_fixed_point_angles_function(iters, p_min):
 
 
 @pytest.mark.parametrize(
-    "n_wires, items, iters",
+    "n_wires, items, iters, fixed",
     (
-        (3, [0, 2], 1),
-        (3, [1, 2], 2),
-        (5, [4, 5, 7, 12], 3),
-        (5, [0, 1, 2, 3, 4], 4),
+        (3, [0, 2], 1, True),
+        (3, [1, 2], 2, False),
+        (5, [4, 5, 7, 12], 3, False),
+        (5, [0, 1, 2, 3, 4], 4, False),
     ),
 )
-def test_decomposition_new(n_wires, items, iters):
+def test_decomposition_new(n_wires, items, iters, fixed):
     """Tests the decomposition rule implemented with the new system."""
     U = generator(wires=range(n_wires))
     O = oracle(items, wires=range(n_wires))
 
-    op = qml.AmplitudeAmplification(U, O, iters)
+    op = qml.AmplitudeAmplification(U, O, iters, work_wire=n_wires, fixed_point=fixed)
 
     for rule in qml.list_decomps(qml.AmplitudeAmplification):
         _test_decomposition_rule(op, rule)
