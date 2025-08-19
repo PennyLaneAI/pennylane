@@ -18,16 +18,77 @@ Tests the ``DecomposeInterpreter`` with the new graph-based decomposition system
 
 # pylint: disable=no-name-in-module, too-few-public-methods, wrong-import-position, protected-access
 
+from collections import defaultdict
+
 import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.operation import Operation
 
 jax = pytest.importorskip("jax")
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 
 pytestmark = [pytest.mark.jax, pytest.mark.capture]
+
+
+class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+    """A custom operation."""
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self):
+        return {}
+
+
+@qml.register_resources({qml.Toffoli: 2, qml.CRot: 1}, work_wires={"burnable": 2})
+def _decomp_with_work_wire(wires, **__):
+    with qml.allocation.allocate(2, require_zeros=True, restored=False) as work_wires:
+        qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
+        qml.Toffoli(wires=[wires[1], work_wires[0], work_wires[1]])
+        qml.CRot(0.1, 0.2, 0.3, wires=[work_wires[1], wires[2]])
+
+
+@qml.register_resources({qml.Toffoli: 4, qml.CRot: 3})
+def _decomp_without_work_wire(wires, **__):
+    qml.Toffoli(wires=wires)
+    qml.CRot(0.1, 0, 0, wires=[wires[0], wires[1]])
+    qml.Toffoli(wires=wires[::-1])
+    qml.CRot(0, 0.2, 0, wires=[wires[1], wires[2]])
+    qml.Toffoli(wires=wires)
+    qml.CRot(0, 0, 0.3, wires=[wires[2], wires[0]])
+    qml.Toffoli(wires=wires[::1])
+
+
+class LargeOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-methods
+    """A larger custom operation."""
+
+    resource_keys = set()
+
+    @property
+    def resource_params(self):
+        return {}
+
+
+@qml.register_resources({qml.Toffoli: 2, CustomOpDynamicWireDecomp: 2}, work_wires={"zeroed": 1})
+def _decomp2_with_work_wire(wires, **__):
+    with qml.allocation.allocate(1, require_zeros=True, restored=True) as work_wires:
+        qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
+        CustomOpDynamicWireDecomp(wires=[work_wires[0], wires[2], wires[3]])
+        qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
+        CustomOpDynamicWireDecomp(wires=[wires[1], wires[2], wires[3]])
+
+
+@qml.register_resources({qml.Toffoli: 4, CustomOpDynamicWireDecomp: 2})
+def _decomp2_without_work_wire(wires, **__):
+    qml.Toffoli(wires=[wires[0], wires[1], wires[2]])
+    CustomOpDynamicWireDecomp(wires=[wires[1], wires[2], wires[3]])
+    qml.Toffoli(wires=[wires[1], wires[2], wires[3]])
+    qml.Toffoli(wires=[wires[2], wires[3], wires[4]])
+    CustomOpDynamicWireDecomp(wires=[wires[2], wires[3], wires[4]])
+    qml.Toffoli(wires=[wires[2], wires[1], wires[0]])
 
 
 @pytest.mark.usefixtures("enable_graph_decomposition")
@@ -345,3 +406,77 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.RZ(qml.math.array(-0.1, like="jax"), wires=[1]),
             qml.CNOT(wires=[0, 1]),
         ]
+
+    @pytest.mark.integration
+    @pytest.mark.parametrize(
+        "num_work_wires, expected_gate_count",
+        [
+            (
+                None,
+                {
+                    qml.Toffoli: 2 + 2 * 2 + 2,
+                    qml.RZ: 2 * 3 + 3,
+                    qml.RY: 2 * 2 + 2,
+                    qml.CNOT: 2 * 2 + 2,
+                },
+            ),
+            (
+                0,
+                {
+                    qml.Toffoli: 4 + 2 * 4 + 4,
+                    qml.RZ: 2 * 3 * 3 + 3 * 3,
+                    qml.RY: 2 * 3 * 2 + 3 * 2,
+                    qml.CNOT: 2 * 3 * 2 + 3 * 2,
+                },
+            ),
+            (
+                1,
+                {
+                    qml.Toffoli: 2 + 2 * 4 + 4,
+                    qml.RZ: 2 * 3 * 3 + 3 * 3,
+                    qml.RY: 2 * 3 * 2 + 3 * 2,
+                    qml.CNOT: 2 * 3 * 2 + 3 * 2,
+                },
+            ),
+            (
+                2,
+                {
+                    qml.Toffoli: 4 + 2 * 2 + 2,
+                    qml.RZ: 2 * 3 + 3,
+                    qml.RY: 2 * 2 + 2,
+                    qml.CNOT: 2 * 2 + 2,
+                },
+            ),
+            (
+                3,
+                {
+                    qml.Toffoli: 2 + 2 * 2 + 2,
+                    qml.RZ: 2 * 3 + 3,
+                    qml.RY: 2 * 2 + 2,
+                    qml.CNOT: 2 * 2 + 2,
+                },
+            ),
+        ],
+    )
+    def test_dynamic_work_wire_allocation(
+        self, num_work_wires, expected_gate_count
+    ):  # pylint: disable=unused-argument
+        """Tests that the decompose transform supports dynamic wire allocation."""
+
+        @DecomposeInterpreter(
+            gate_set={qml.Toffoli, qml.RZ, qml.RY, qml.CNOT},
+            num_available_work_wires=num_work_wires,
+            alt_decomps={
+                CustomOpDynamicWireDecomp: [_decomp_without_work_wire, _decomp_with_work_wire],
+                LargeOpDynamicWireDecomp: [_decomp2_without_work_wire, _decomp2_with_work_wire],
+            },
+        )
+        def f():
+            LargeOpDynamicWireDecomp(wires=[0, 1, 2, 3, 4])
+            CustomOpDynamicWireDecomp(wires=[0, 1, 2])
+
+        # TODO: find a way to actually test that the plxpr is in fact correct. This is currently
+        # not possible because resolve_dynamic_wires isn't implemented for plxpr, and plxpr that
+        # contains dynamic wires cannot be converted to tapes either.
+        plxpr = jax.make_jaxpr(f)()
+        assert plxpr
