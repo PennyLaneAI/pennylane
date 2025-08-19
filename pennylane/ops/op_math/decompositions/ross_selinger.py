@@ -284,9 +284,10 @@ def rs_decomposition(
             return (decomposition_info, g_phase, phase)
 
         # If QJIT is active, use the compressed normal form.
-        if is_qjit:
+        if not is_qjit:
+            decomposed_gates, g_phase, phase = eval_ross_algorithm(angle)
+        else:
             # circular import issue when import outside of the function
-
             api_extensions = AvailableCompilers.names_entrypoints["catalyst"]["ops"].load()
 
             # JAX arrays are static, so we need to specify the maximum size of the output array.
@@ -306,8 +307,6 @@ def rs_decomposition(
             )(angle, upper_bounded_size)
 
             decomposed_gates = _jit_rs_decomposition(op.wires[0], decomposed_info)
-        else:
-            decomposed_gates, g_phase, phase = eval_ross_algorithm(angle)
 
         # Remove inverses if any in the decomposition and handle trivial case
         new_tape = qml.tape.QuantumScript(decomposed_gates)
