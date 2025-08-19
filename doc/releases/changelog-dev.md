@@ -180,7 +180,6 @@
 * An error is no longer raised when non-integer wire labels are used in QNodes using `mcm_method="deferred"`.
   [(#7934)](https://github.com/PennyLaneAI/pennylane/pull/7934)
 
-
   ```python
   @qml.qnode(qml.device("default.qubit"), mcm_method="deferred")
   def circuit():
