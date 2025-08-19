@@ -42,7 +42,6 @@ from .elementwise.other import (
 
 # Import all elementwise operations from organized files
 from .elementwise.unary import (
-    AbsOp,
     ConvertOp,
     CosineOp,
     ExponentialMinusOneOp,
@@ -67,7 +66,6 @@ from .elementwise.unary import (
 
 # Operations to add to the dialect
 OPERATIONS = [
-    AbsOp,
     ClampOp,
     CompareOp,
     ComplexOp,
