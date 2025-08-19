@@ -78,6 +78,29 @@
 
 <h3>Improvements 🛠</h3>
 
+* Logical operations (`and`, `or` and `not`) are now supported with the `autograph` module. Users can
+  now use these logical operations in control flow when designing quantum circuits with experimental
+  program capture enabled.
+
+  ```python
+  import pennylane as qml
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit(param):
+      if param >= 0 and param <= 1:
+          qml.H(0)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit(0.5)
+  Array([0.70710677+0.j, 0.70710677+0.j], dtype=complex64)
+  ```
+
+  [(#8006)](https://github.com/PennyLaneAI/pennylane/pull/8006)
+
 * The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
   with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. This uses the fact that
   no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant :math:`\pm 1`.
