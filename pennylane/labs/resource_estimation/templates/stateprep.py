@@ -284,6 +284,13 @@ class ResourcePrepTHC(ResourceOperator):
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
     >>> res = plre.estimate_resources(plre.ResourcePrepTHC(compact_ham))
     >>> print(res)
+    --- Resources: ---
+     Total qubits: 185
+     Total gates : 1.485E+4
+     Qubit breakdown:
+      clean qubits: 28, dirty qubits: 145, algorithmic qubits: 12
+     Gate breakdown:
+      {'Hadamard': 797, 'Toffoli': 467, 'CNOT': 1.307E+4, 'X': 512}
 
     """
 
@@ -313,8 +320,7 @@ class ResourcePrepTHC(ResourceOperator):
                     the coefficients of Hamiltonian. If `None` is provided the default value from the
                     `resource_config` is used.
                 * select_swap_depth (int, optional): A natural number that determines if data
-                    will be loaded in parallel by adding more rows following Figure 1.C of
-                    `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+                    will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                     Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
@@ -337,8 +343,7 @@ class ResourcePrepTHC(ResourceOperator):
                 the coefficients of Hamiltonian. If `None` is provided the default value from the
                 `resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                 Defaults to :code:`None`, which internally determines the optimal depth.
 
         Returns:
@@ -365,12 +370,11 @@ class ResourcePrepTHC(ResourceOperator):
                 the coefficients of Hamiltonian. If `None` is provided the default value from the
                 `resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`.
+                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`.
                 Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
-        The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+            The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -487,12 +491,11 @@ class ResourcePrepTHC(ResourceOperator):
                 the coefficients of Hamiltonian. If `None` is provided the default value from the
                 `resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`.
+                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`.
                 Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
-        The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+            The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object

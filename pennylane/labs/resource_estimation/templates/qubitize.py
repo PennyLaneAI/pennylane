@@ -43,7 +43,7 @@ class ResourceQubitizeTHC(ResourceOperator):
             `resource_config` is used.
         select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
             used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
-            ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
+            ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
             respectively.
         wires (list[int] or optional): the wires on which the operator acts
 
@@ -57,7 +57,13 @@ class ResourceQubitizeTHC(ResourceOperator):
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
     >>> res = plre.estimate_resources(plre.ResourceQubitizeTHC(compact_ham))
     >>> print(res)
-
+    --- Resources: ---
+     Total qubits: 371
+     Total gates : 4.885E+4
+     Qubit breakdown:
+      clean qubits: 313, dirty qubits: 0, algorithmic qubits: 58
+     Gate breakdown:
+      {'Toffoli': 3.156E+3, 'CNOT': 3.646E+4, 'X': 1.201E+3, 'Hadamard': 7.913E+3, 'S': 80, 'Z': 41}
 
     """
 
@@ -113,7 +119,7 @@ class ResourceQubitizeTHC(ResourceOperator):
                   `resource_config` is used.
                 * select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                     used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
-                    ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
+                    ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
                     respectively.
         """
         return {
@@ -141,7 +147,7 @@ class ResourceQubitizeTHC(ResourceOperator):
                 `resource_config` is used.
             select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
-                ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
+                ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
                 respectively.
 
         Returns:
@@ -192,7 +198,7 @@ class ResourceQubitizeTHC(ResourceOperator):
                 `resource_config` is used.
             select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
-                ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
+                ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
                 respectively.
 
         Returns:
@@ -269,7 +275,7 @@ class ResourceQubitizeTHC(ResourceOperator):
                 `resource_config` is used.
             select_swap_depths (Union[None, int, Iterable(int)],optional): A parameter of :code:`QROM`
                 used to trade-off extra qubits for reduced circuit depth. A list can be used to configure the
-                ``select_swap_depth`` individually for ``ResourcePrepTHC` and `ResourceSelectTHC` circuits,
+                ``select_swap_depth`` individually for :code:`ResourcePrepTHC` and :code:`ResourceSelectTHC` circuits,
                 respectively.
 
         Returns:

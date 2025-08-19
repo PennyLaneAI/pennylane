@@ -53,6 +53,13 @@ class ResourceSelectTHC(ResourceOperator):
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
     >>> res = plre.estimate_resources(plre.ResourceSelectTHC(compact_ham))
     >>> print(res)
+    --- Resources: ---
+     Total qubits: 371
+     Total gates : 1.959E+4
+     Qubit breakdown:
+      clean qubits: 313, dirty qubits: 0, algorithmic qubits: 58
+     Gate breakdown:
+      {'Toffoli': 2.220E+3, 'CNOT': 1.057E+4, 'X': 268, 'Hadamard': 6.406E+3, 'S': 80, 'Z': 41}
     """
 
     def __init__(
