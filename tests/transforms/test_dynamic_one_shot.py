@@ -519,8 +519,8 @@ class TestInterfaces:
             for r, e1, e2 in zip(processed_results, expected1, expected2):
                 # Expected result is 2-list since we have two measurements in the tape
                 assert qml.math.allclose(qml.math.squeeze(r[0]), e1)
-                assert qml.math.allclose(r[1], e2)
+                assert qml.math.allclose(qml.math.squeeze(r[1]), e2)
         else:
             # Expected result is 2-list since we have two measurements in the tape
             assert qml.math.allclose(qml.math.squeeze(processed_results[0]), expected1)
-            assert qml.math.allclose(processed_results[1], expected2)
+            assert qml.math.allclose(qml.math.squeeze(processed_results[1]), expected2)

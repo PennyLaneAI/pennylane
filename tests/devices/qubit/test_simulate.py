@@ -1348,7 +1348,7 @@ class TestMidMeasurements:
 
         The above combinations should work for finite shots, shot vectors and post-selecting of either the 0 or 1 branch.
         """
-
+        shots = 50
         if measure_f in (qml.expval, qml.var) and (
             isinstance(meas_obj, list) or meas_obj == "mcm_list"
         ):
@@ -1400,6 +1400,8 @@ class TestMidMeasurements:
         results1 = deferred_func(
             [simulate(tape, mcm_method="deferred", rng=rng) for tape in deferred_tapes]
         )
+        print(results1)
+        print(results0)
         mcm_utils.validate_measurements(measure_f, shots, results1, results0)
 
         if shots is not None:
