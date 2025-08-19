@@ -290,7 +290,7 @@ def make_one_qubit_unitary_decomposition(su2_rule, su2_resource):
             U = U.todense()
         U, global_phase = math.convert_to_su2(U, return_global_phase=True)
         su2_rule(U, wires=wires)
-        ops.cond(math.logical_not(math.allclose(global_phase, 0)), _global_phase)(global_phase)
+        ops.cond(math.logical_not(math.allclose(global_phase, 0)), ops.GlobalPhase)(-global_phase)
 
     return _impl
 
@@ -390,7 +390,7 @@ def two_qubit_decomp_rule(U, wires, **__):
         elifs=[(num_cnots == 1, _decompose_1_cnot)],
     )(U, wires, initial_phase)
     total_phase = initial_phase + additional_phase
-    ops.cond(math.logical_not(math.allclose(total_phase, 0)), _global_phase)(total_phase)
+    ops.cond(math.logical_not(math.allclose(total_phase, 0)), ops.GlobalPhase)(-total_phase)
 
 
 def _multi_qubit_decomp_resource(num_wires):
@@ -933,12 +933,6 @@ def _cossin_decomposition(U, p):
             return cossin(U, p=p, q=p, separate=True)
 
     return cossin_decomposition(U, p)
-
-
-def _global_phase(phase):
-    """Calls the GlobalPhase with a negative sign. Used in a ``cond`` call which requires
-    no variable to be returned."""
-    ops.GlobalPhase(-phase)
 
 
 def _is_jax_jit(U):
