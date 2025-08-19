@@ -244,3 +244,26 @@ def test_invalid_ir_operand_result_shape_mismatch(run_filecheck):
         Exception, match="all non-scalar operands/results must have the same shape and base type"
     ):
         run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_control_flow_operations(run_filecheck):
+    """Test the IfOp operation."""
+    program = r"""
+    // CHECK:   %[[pred:.*]] = "test.op"() : () -> tensor<i1>
+    %pred = "test.op"() : () -> tensor<i1>
+    
+    // CHECK:   %[[result:.*]] = "stablehlo.if"(%[[pred]]) ({
+    // CHECK:     "stablehlo.return"(%[[pred]]) : (tensor<i1>) -> ()
+    // CHECK:   }, {
+    // CHECK:     "stablehlo.return"(%[[pred]]) : (tensor<i1>) -> ()
+    // CHECK:   }) : (tensor<i1>) -> tensor<i1>
+    %result = "stablehlo.if"(%pred) ({
+        "stablehlo.return"(%pred) : (tensor<i1>) -> ()
+    }, {
+        "stablehlo.return"(%pred) : (tensor<i1>) -> ()
+    }) : (tensor<i1>) -> tensor<i1>
+    
+    // CHECK: }
+    """
+
+    run_filecheck(program, roundtrip=True, verify=True)
