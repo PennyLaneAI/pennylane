@@ -593,6 +593,7 @@ class TestDisableAutograph:
 
         g_ag = run_autograph(g)
         g_ag_jaxpr = make_jaxpr(g_ag)(1, 3)
+        assert "for_loop" in str(g_ag_jaxpr.jaxpr)
         # If autograph was disabled, the cond primitive will not be captured.
         assert "cond" not in str(g_ag_jaxpr.jaxpr)
         assert g_ag(1, 3) == 13  # 1 + 4 * 3
@@ -616,6 +617,7 @@ class TestDisableAutograph:
 
         g_ag = run_autograph(g)
         g_ag_jaxpr = make_jaxpr(g_ag)(1, 3)
+        assert "for_loop" in str(g_ag_jaxpr.jaxpr)
         # If autograph was disabled, the cond primitive will not be captured.
         assert "cond" not in str(g_ag_jaxpr.jaxpr)
 
