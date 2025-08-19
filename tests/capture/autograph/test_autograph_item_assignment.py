@@ -209,24 +209,6 @@ def test_qnode_with_python_array_assignment():
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
-def test_item_assignment_is_differentiable():
-    """Test that item assignment is differentiable."""
-
-    def fn(x, val):
-        x[0] = val
-        return jnp.sum(x)
-
-    ag_fn = run_autograph(fn)
-    array_in = jnp.ones(5)
-    value_in = 5.0
-    args = (array_in, value_in)
-    grad_jaxpr = make_jaxpr(jax.grad(ag_fn, argnums=1))(*args)
-    result = eval_jaxpr(grad_jaxpr.jaxpr, grad_jaxpr.consts, *args)
-
-    assert jnp.allclose(result[0], 1.0)
-
-
-@pytest.mark.usefixtures("enable_disable_plxpr")
 def test_qnode_with_jax_array_assignment():
     """Test a QNode where a JAX array argument is modified."""
 
@@ -250,6 +232,24 @@ def test_qnode_with_jax_array_assignment():
     grad = jax.grad(ag_circuit, argnums=1)(angles_in, new_angle)
     # d/dx cos(x) = -sin(x), at x=pi, -sin(pi) = 0
     assert jnp.allclose(grad, 0.0)
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+def test_item_assignment_is_differentiable():
+    """Test that item assignment is differentiable."""
+
+    def fn(x, val):
+        x[0] = val
+        return jnp.sum(x)
+
+    ag_fn = run_autograph(fn)
+    array_in = jnp.ones(5)
+    value_in = 5.0
+    args = (array_in, value_in)
+    grad_jaxpr = make_jaxpr(jax.grad(ag_fn, argnums=1))(*args)
+    result = eval_jaxpr(grad_jaxpr.jaxpr, grad_jaxpr.consts, *args)
+
+    assert jnp.allclose(result[0], 1.0)
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
