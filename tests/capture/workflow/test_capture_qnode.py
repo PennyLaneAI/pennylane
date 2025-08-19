@@ -28,6 +28,8 @@ pytestmark = [pytest.mark.jax, pytest.mark.capture]
 jax = pytest.importorskip("jax")
 jnp = jax.numpy
 
+from pennylane.capture.autograph import run_autograph  # pylint: disable=wrong-import-position
+
 # must be below jax importorskip
 from pennylane.capture.primitives import qnode_prim  # pylint: disable=wrong-import-position
 from pennylane.tape.plxpr_conversion import (  # pylint: disable=wrong-import-position
@@ -190,7 +192,7 @@ def test_overriding_shots():
 def test_providing_keyword_argument():
     """Test that keyword arguments can be provided to the qnode."""
 
-    @qml.qnode(qml.device("default.qubit", wires=1), autograph=False)
+    @qml.qnode(qml.device("default.qubit", wires=1))
     def circuit(*, n_iterations=0):
         for _ in range(n_iterations):
             qml.X(0)
@@ -1421,13 +1423,14 @@ class TestQNodeAutographIntegration:
         """Tests that native Python for loops can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(n):
             for i in range(n):
                 qml.H(i)
             return qml.state()
 
         if autograph:
+            circuit = run_autograph(circuit)
             expected_state = [1 / qml.math.sqrt(8)] * (2**3)
             assert qml.math.allclose(circuit(3), expected_state)
         else:
@@ -1445,7 +1448,7 @@ class TestQNodeAutographIntegration:
         """Tests that native Python while loops can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(n):
             i = 0
             while i < n:
@@ -1454,6 +1457,7 @@ class TestQNodeAutographIntegration:
             return qml.state()
 
         if autograph:
+            circuit = run_autograph(circuit)
             expected_state = [1 / qml.math.sqrt(8)] * (2**3)
             assert qml.math.allclose(circuit(3), expected_state)
         else:
@@ -1471,7 +1475,7 @@ class TestQNodeAutographIntegration:
         """Test that native Python conditional statements can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(x):
             if x > 1:
                 qml.Hadamard(0)
@@ -1480,6 +1484,7 @@ class TestQNodeAutographIntegration:
             return qml.state()
 
         if autograph:
+            circuit = run_autograph(circuit)
             assert qml.math.allclose(circuit(0), [1, 0])
             assert qml.math.allclose(circuit(2), [qml.numpy.sqrt(2) / 2, qml.numpy.sqrt(2) / 2])
         else:
@@ -1497,7 +1502,7 @@ class TestQNodeAutographIntegration:
         """Test that a native Pennylane for loop can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(n: int):
             @qml.for_loop(n)
             def loop(i):
@@ -1506,6 +1511,7 @@ class TestQNodeAutographIntegration:
             loop()
             return qml.state()
 
+        circuit = run_autograph(circuit) if autograph else circuit
         expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
         assert qml.math.allclose(circuit(2), expected_state)
 
@@ -1517,7 +1523,7 @@ class TestQNodeAutographIntegration:
 
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(n: int):
             @qml.while_loop(lambda i: i < n)
             def loop(i):
@@ -1527,6 +1533,7 @@ class TestQNodeAutographIntegration:
             loop(0)
             return qml.state()
 
+        circuit = run_autograph(circuit) if autograph else circuit
         expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
         assert qml.math.allclose(circuit(2), expected_state)
 
@@ -1535,7 +1542,7 @@ class TestQNodeAutographIntegration:
         """Test that a native Pennylane while loop can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(n: int):
             def condition(i):
                 return i < n
@@ -1548,6 +1555,7 @@ class TestQNodeAutographIntegration:
             loop(0)
             return qml.state()
 
+        circuit = run_autograph(circuit) if autograph else circuit
         expected_state = [0.5, 0, 0.5, 0, 0.5, 0, 0.5, 0.0]
         assert qml.math.allclose(circuit(2), expected_state)
 
@@ -1556,7 +1564,7 @@ class TestQNodeAutographIntegration:
         """Test that a native Pennylane conditional statement can be used with the QNode."""
         dev = qml.device("default.qubit", wires=[0, 1, 2])
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit():
             qml.X(0)
             m0 = qml.measure(0)
@@ -1564,6 +1572,7 @@ class TestQNodeAutographIntegration:
 
             return qml.state()
 
+        circuit = run_autograph(circuit) if autograph else circuit
         assert qml.math.allclose(circuit(), [0, 0, 0, 0, 0, 0, 0, 1])
 
 
@@ -1634,7 +1643,7 @@ class TestStaticArgnums:
 
         dev = qml.device("default.qubit", wires=5)
 
-        @qml.qnode(dev, static_argnums=3, autograph=True)
+        @qml.qnode(dev, static_argnums=3)
         def circuit(x, y, z, n):
 
             if z > 5:
@@ -1658,6 +1667,7 @@ class TestStaticArgnums:
             return qml.state()
 
         args = (1.5, 2.5, 3.5, 5)
+        circuit = run_autograph(circuit)
         res = circuit(*args)
         with qml.capture.pause():
             assert qml.math.allclose(res, circuit(*args))
@@ -2025,7 +2035,7 @@ class TestQNodeCaptureCaching:
 
         dev = qml.device("default.qubit", wires=5)
 
-        @qml.qnode(dev, autograph=True)
+        @qml.qnode(dev)
         def circuit(x, y, z, n):
 
             if z > 5:
@@ -2056,4 +2066,4 @@ class TestQNodeCaptureCaching:
         ns = list(range(5))
 
         for x, y, z, n in product(xs, ys, zs, ns):
-            self.check_execution_results(circuit, x, y, z, n)
+            self.check_execution_results(run_autograph(circuit), x, y, z, n)
