@@ -576,7 +576,7 @@ class TestCaptureCircuitsForLoop:
             pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(upper_bound, arg):
 
             # for loop with dynamic bounds

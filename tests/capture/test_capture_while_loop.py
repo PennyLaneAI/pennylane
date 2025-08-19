@@ -103,7 +103,7 @@ class TestCaptureCircuitsWhileLoop:
             pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit():
 
             @qml.while_loop(lambda i: i < 3)
@@ -131,7 +131,7 @@ class TestCaptureCircuitsWhileLoop:
             pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=1)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(arg):
 
             qml.Hadamard(wires=0)
@@ -189,7 +189,7 @@ class TestCaptureCircuitsWhileLoop:
             pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
         dev = qml.device("default.qubit", wires=3)
 
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(upper_bound, arg):
 
             # while loop with dynamic bounds
@@ -274,7 +274,7 @@ class TestCaptureCircuitsWhileLoop:
         if autograph:
             pytest.xfail(reason="Autograph bug with lambda functions as condition, see sc-82837")
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def inner_func(x):
 
             @qml.while_loop(lambda i: i < 3)
