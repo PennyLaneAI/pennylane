@@ -36,6 +36,8 @@ class SameOperandsAndResultShape(OpTrait):
     # ElementwiseUnaryOperation operations when upstreaming to xdsl.
 
     def verify(self, op: "Operation") -> None:
+        """Verify that the operation has the same shape for all operands and results."""
+
         if len(op.results) < 1 or len(op.operands) < 1:
             raise VerifyException(f"'{op.name}' requires at least one result or operand")
 
@@ -59,6 +61,8 @@ class SameOperandsElementType(OpTrait):
     # ElementwiseUnaryOperation operations when upstreaming to xdsl.
 
     def verify(self, op: "Operation") -> None:
+        """Verify that the operation has the same element type for all operands."""
+
         if len(op.operands) < 1:
             return
 
@@ -114,6 +118,7 @@ class Elementwise(OpTrait):
     """
 
     def verify(self, op: Operation) -> None:
+        """Verify that the operation is elementwise."""
 
         # Check if a type is mappable (vector or tensor)
         def is_mappable_type(attr_type: Attribute) -> bool:
