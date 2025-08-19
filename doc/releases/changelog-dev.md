@@ -307,6 +307,10 @@
 * The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
   [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
 
+* Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
+  `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
+  [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
