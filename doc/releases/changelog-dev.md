@@ -65,7 +65,8 @@
 <h3>Improvements 🛠</h3>
 
 * Logical operations (`and`, `or` and `not`) are now supported with the `autograph` module. Users can
-  now use these logical operations in control flow when designing quantum circuits.
+  now use these logical operations in control flow when designing quantum circuits with experimental
+  program capture enabled.
 
   ```python
   import pennylane as qml
