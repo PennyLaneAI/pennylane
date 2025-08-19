@@ -36,6 +36,12 @@ from .trotter import (
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
 )
+
+from .stateprep import (
+    ResourceMPSPrep,
+    ResourceQROMStatePreparation,
+)
+
 from .qubitize import ResourceQubitizeTHC
 from .compact_hamiltonian import CompactHamiltonian
 from .comparators import (

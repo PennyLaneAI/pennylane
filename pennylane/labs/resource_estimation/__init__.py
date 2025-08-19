@@ -149,6 +149,8 @@ State Preparation:
 .. autosummary::
     :toctree: api
 
+    ~ResourceMPSPrep
+    ~ResourceQROMStatePreparation
     ~ResourceUniformStatePrep
     ~ResourceAliasSampling
 
@@ -248,6 +250,8 @@ from .templates import (
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
     ResourceQubitizeTHC,
+    ResourceMPSPrep,
+    ResourceQROMStatePreparation,
     ResourceUniformStatePrep,
     ResourceAliasSampling,
     ResourceQPE,
