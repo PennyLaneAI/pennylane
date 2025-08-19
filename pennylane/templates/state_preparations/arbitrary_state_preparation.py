@@ -19,16 +19,10 @@ import functools
 from collections import Counter
 
 import pennylane as qml
-from pennylane import capture, register_resources
+from pennylane import register_resources
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, resource_rep
 from pennylane.operation import Operation
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 @functools.lru_cache
@@ -163,7 +157,7 @@ class ArbitraryStatePreparation(Operation):
 
 def _arbitrary_state_preparation_resources(num_wires):
     resources = Counter()
-    for i, pauli_word in enumerate(_state_preparation_pauli_words(num_wires)):
+    for pauli_word in _state_preparation_pauli_words(num_wires):
         resources[resource_rep(qml.PauliRot, pauli_word=pauli_word)] += 1
     return resources
 

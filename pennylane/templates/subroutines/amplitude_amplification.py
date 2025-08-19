@@ -230,7 +230,7 @@ def _amplitude_amplification_resources(num_wires, fixed_point, O, iters, num_ref
 
     if fixed_point:
 
-        for iter in range(iters // 2):
+        for _ in range(iters // 2):
             resources[resource_rep(Hadamard)] += 4
             resources[
                 controlled_resource_rep(

@@ -270,7 +270,7 @@ def _AQFT_decomposition(wires, order):
         wire2 = wires[-k - 1]
         SWAP(wires=[wire1, wire2])
 
-    half_wire_loop()  # pylint disable=no-value-for-parameter
+    half_wire_loop()  # pylint: disable=no-value-for-parameter
 
 
 add_decomps(AQFT, _AQFT_decomposition)

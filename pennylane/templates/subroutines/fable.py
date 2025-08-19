@@ -215,7 +215,7 @@ def _fable_resources(wires, thetas, control_wires, tol):
     nots = {}
     for theta, control_index in zip(thetas, control_wires):
         if math.is_abstract(theta):
-            for c_wire in nots:
+            for _ in nots:
                 resources[resource_rep(CNOT)] += 1
             resources[resource_rep(RY)] += 1
             nots = {}
@@ -223,7 +223,7 @@ def _fable_resources(wires, thetas, control_wires, tol):
             continue
 
         if math.abs(2 * theta) > tol:
-            for c_wire in nots:
+            for _ in nots:
                 resources[resource_rep(CNOT)] += 1
             resources[resource_rep(RY)] += 1
             nots = {}
@@ -233,7 +233,7 @@ def _fable_resources(wires, thetas, control_wires, tol):
         else:
             nots[wire_map[control_index]] = 1
 
-    for j in range(len(nots.keys())):
+    for _ in range(len(nots.keys())):
         resources[resource_rep(CNOT)] += 1
 
     resources[resource_rep(SWAP)] = min(len(wires_i), len(wires_j))
@@ -313,7 +313,7 @@ def _fable_decomposition(input_matrix, wires, tol=0):
 
             return nots
 
-        nots = cond(math.is_abstract(theta), abstract_branch, concrete_branch)(nots)
+        nots = cond(is_abstract(theta), abstract_branch, concrete_branch)(nots)
 
         return nots
 
