@@ -59,30 +59,42 @@ class TestResourceTrotterProduct:
         ),
     ]
 
-    @pytest.mark.parametrize("op, num_steps, order, _", op_data)
-    def test_resource_params(self, op, num_steps, order, _):
+    @pytest.mark.parametrize("ops, num_steps, order, _", op_data)
+    def test_resource_params(self, ops, num_steps, order, _):
         """Test that the resource params are correct"""
-        trotter = plre.ResourceTrotterProduct(op, num_steps=num_steps, order=order)
+        trotter = plre.ResourceTrotterProduct(ops, num_steps=num_steps, order=order)
         assert trotter.resource_params == {
-            "first_order_expansion": op,
+            "first_order_expansion": tuple(op.resource_rep_from_op() for op in ops),
             "num_steps": num_steps,
             "order": order,
         }
 
-    @pytest.mark.parametrize("op, num_steps, order, _", op_data)
-    def test_resource_rep(self, op, num_steps, order, _):
+    @pytest.mark.parametrize("ops, num_steps, order, _", op_data)
+    def test_resource_rep(self, ops, num_steps, order, _):
         """Test that the resource params are correct"""
+        cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
         expected = plre.CompressedResourceOp(
             plre.ResourceTrotterProduct,
-            {"first_order_expansion": op, "num_steps": num_steps, "order": order},
+            {"first_order_expansion": cmpr_ops, "num_steps": num_steps, "order": order},
         )
-        assert plre.ResourceTrotterProduct.resource_rep(op, num_steps, order) == expected
+        assert plre.ResourceTrotterProduct.resource_rep(cmpr_ops, num_steps, order) == expected
 
-    @pytest.mark.parametrize("op, num_steps, order, expected_res", op_data)
-    def test_resources(self, op, num_steps, order, expected_res):
+    @pytest.mark.parametrize("ops, num_steps, order, expected_res", op_data)
+    def test_resources(self, ops, num_steps, order, expected_res):
         """Test the resources method returns the correct dictionary"""
-        computed_res = plre.ResourceTrotterProduct.resource_decomp(op, num_steps, order)
+        cmpr_ops = tuple(op.resource_rep_from_op() for op in ops)
+        computed_res = plre.ResourceTrotterProduct.resource_decomp(cmpr_ops, num_steps, order)
         assert computed_res == expected_res
+
+    def test_attribute_error(self):
+        """Test that a AttributeError is raised for unsupported operators."""
+        with pytest.raises(
+            ValueError,
+            match="All components of first_order_expansion must be instances of `ResourceOperator` in order to obtain resources.",
+        ):
+            plre.ResourceTrotterProduct(
+                [plre.ResourceX(), plre.ResourceY(), plre.AllocWires(4)], num_steps=10, order=3
+            )
 
 
 class TestTrotterCDF:
