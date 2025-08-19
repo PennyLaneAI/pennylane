@@ -78,16 +78,42 @@ def test_slicing(array_in, index, new_value, array_out):
 @pytest.mark.parametrize(
     "array_in, index, new_value, array_out",
     [
+        # Slice and set to non singleton value
         (jnp.array([1, 2, 3, 4]), slice(1, 3), jnp.array([99, 88]), jnp.array([1, 99, 88, 4])),
+        # Use array for indexing
         (jnp.array([1, 2, 3, 4]), jnp.array([0, 3]), 7, jnp.array([7, 2, 3, 7])),
+        # Use boolean mask
         (
             jnp.array([1, 5, 2, 6]),
             jnp.array([False, True, False, True]),
             0,
             jnp.array([1, 0, 2, 0]),
         ),
+        # Index a two dimensional array
         (jnp.array([[1, 2], [3, 4]]), 0, 9, jnp.array([[9, 9], [3, 4]])),
+        # Index with tuple
         (jnp.array([[1, 2], [3, 4]]), (1, 0), 9, jnp.array([[1, 2], [9, 4]])),
+        # 3D array assignment
+        (
+            jnp.zeros((2, 2, 2)),
+            (0, 1, 0),
+            5.0,
+            jnp.array([[[0.0, 0.0], [5.0, 0.0]], [[0.0, 0.0], [0.0, 0.0]]]),
+        ),
+        # Ellipsis to select the last column
+        (
+            jnp.ones((3, 4)),
+            (..., -1),
+            99.0,
+            jnp.array([[1.0, 1.0, 1.0, 99.0], [1.0, 1.0, 1.0, 99.0], [1.0, 1.0, 1.0, 99.0]]),
+        ),
+        # Complex numbers
+        (
+            jnp.array([1 + 1j, 2 + 2j]),
+            0,
+            3 - 3j,
+            jnp.array([3 - 3j, 2 + 2j]),
+        ),
     ],
 )
 def test_non_trivial_indexing(array_in, index, new_value, array_out):
@@ -157,20 +183,84 @@ def test_for_loop_integration():
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
-def test_qnode_integration():
-    """Test QNode integration with item assignment."""
+def test_qnode_with_python_array_assignment():
+    """Test a QNode where a python array argument is modified."""
 
-    @qml.qnode(device=qml.device("default.qubit", wires=1))
-    def circuit(updated_angle):
-        angles = [1, 2, 3]
-        angles[2] = updated_angle
+    dev = qml.device("default.qubit", wires=1)
 
-        qml.RX(angles[2], wires=0)
-
+    @qml.qnode(dev)
+    def circuit(new_val):
+        angles = [0.1, 0.2, 0.3]
+        angles[0] = new_val
+        qml.RX(angles[0], wires=0)
         return qml.expval(qml.Z(0))
 
     ag_circuit = run_autograph(circuit)
-    updated_angle = jnp.pi
-    ag_circuit_jaxpr = make_jaxpr(ag_circuit)(updated_angle)
-    result = eval_jaxpr(ag_circuit_jaxpr.jaxpr, ag_circuit_jaxpr.consts, updated_angle)
-    assert result[0] == -1
+    new_angle = jnp.pi
+
+    # Test forward pass
+    res = ag_circuit(new_angle)
+    assert jnp.allclose(res, -1.0)
+
+    # Test gradient
+    grad = jax.grad(ag_circuit, argnums=0)(new_angle)
+    # d/dx cos(x) = -sin(x), at x=pi, -sin(pi) = 0
+    assert jnp.allclose(grad, 0.0)
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+def test_item_assignment_is_differentiable():
+    """Test that item assignment is differentiable."""
+
+    def fn(x, val):
+        x[0] = val
+        return jnp.sum(x)
+
+    ag_fn = run_autograph(fn)
+    array_in = jnp.ones(5)
+    value_in = 5.0
+    args = (array_in, value_in)
+    grad_jaxpr = make_jaxpr(jax.grad(ag_fn, argnums=1))(*args)
+    result = eval_jaxpr(grad_jaxpr.jaxpr, grad_jaxpr.consts, *args)
+
+    assert jnp.allclose(result[0], 1.0)
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+def test_qnode_with_jax_array_assignment():
+    """Test a QNode where a JAX array argument is modified."""
+
+    dev = qml.device("default.qubit", wires=1)
+
+    @qml.qnode(dev)
+    def circuit(angles, new_val):
+        angles[0] = new_val
+        qml.RX(angles[0], wires=0)
+        return qml.expval(qml.Z(0))
+
+    ag_circuit = run_autograph(circuit)
+    angles_in = jnp.array([0.1, 0.2, 0.3])
+    new_angle = jnp.pi
+
+    # Test forward pass
+    res = ag_circuit(angles_in, new_angle)
+    assert jnp.allclose(res, -1.0)
+
+    # Test gradient
+    grad = jax.grad(ag_circuit, argnums=1)(angles_in, new_angle)
+    # d/dx cos(x) = -sin(x), at x=pi, -sin(pi) = 0
+    assert jnp.allclose(grad, 0.0)
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+def test_shape_mismatch_raises_error():
+    """Test that assigning an array of the wrong shape raises an error."""
+
+    def fn(x):
+        x[0:2] = jnp.array([1, 2, 3])
+        return x
+
+    ag_fn = run_autograph(fn)
+    array_in = jnp.zeros(5)
+    with pytest.raises(ValueError, match="Incompatible shapes"):
+        _ = make_jaxpr(ag_fn)(array_in)
