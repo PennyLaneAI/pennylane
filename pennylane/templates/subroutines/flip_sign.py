@@ -23,7 +23,7 @@ from pennylane.decomposition import (
     resource_rep,
 )
 from pennylane.operation import Operation
-from pennylane.ops import X, Z, ctrl
+from pennylane.ops import X, Z, ctrl, cond
 
 
 class FlipSign(Operation):
@@ -176,13 +176,11 @@ def _flip_sign_resources(num_wires, arr_bin):
 
 @register_resources(_flip_sign_resources)
 def _flip_sign_decomposition(wires, arr_bin):
-    if arr_bin[-1] == 0:
-        X(wires[-1])
+    cond(arr_bin[-1] == 0, X)(wires[-1])
 
     ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
 
-    if arr_bin[-1] == 0:
-        X(wires[-1])
+    cond(arr_bin[-1] == 0, X)(wires[-1])
 
 
 add_decomps(FlipSign, _flip_sign_decomposition)
