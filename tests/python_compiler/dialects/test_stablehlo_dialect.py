@@ -176,3 +176,71 @@ def test_all_other_operations(run_filecheck):
     """
 
     run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_invalid_ir_shape_mismatch(run_filecheck):
+    """Test that operations with shape mismatches are properly rejected."""
+    program = r"""
+    %tf32_2x3 = "test.op"() : () -> tensor<2x3xf32>
+    %tf64_3x2 = "test.op"() : () -> tensor<3x2xf64>
+    
+    // This should fail verification due to shape mismatch
+    %convert = "stablehlo.convert"(%tf32_2x3) : (tensor<2x3xf32>) -> tensor<3x2xf64>
+    """
+
+    with pytest.raises(
+        Exception, match="all non-scalar operands/results must have the same shape and base type"
+    ):
+        run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_invalid_ir_type_mismatch(run_filecheck):
+    """Test that operations with type mismatches are properly rejected."""
+    program = r"""
+    %ti32 = "test.op"() : () -> tensor<2x3xi32>
+    
+    // This should fail verification due to type mismatch (cosine expects float/complex)
+    %cos = "stablehlo.cosine"(%ti32) : (tensor<2x3xi32>) -> tensor<2x3xi32>
+    """
+
+    with pytest.raises(Exception, match="operand at position 0 does not verify"):
+        run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_invalid_ir_missing_operands(run_filecheck):
+    """Test that operations with missing operands are properly rejected."""
+    program = r"""
+    %result = "stablehlo.convert"() : () -> tensor<2x3xf64>
+    """
+
+    with pytest.raises(Exception, match="Expected 1 operand"):
+        run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_invalid_ir_trait_verification_failure(run_filecheck):
+    """Test that operations that violate trait constraints are properly rejected."""
+    program = r"""
+    %tf32_2x3 = "test.op"() : () -> tensor<2x3xf32>
+    %tf64_3x2 = "test.op"() : () -> tensor<3x2xf64>
+    
+    // This should fail verification due to shape mismatch between operands
+    %complex = "stablehlo.complex"(%tf32_2x3, %tf64_3x2) : (tensor<2x3xf32>, tensor<3x2xf64>) -> tensor<2x3xcomplex<f32>>
+    """
+
+    with pytest.raises(Exception, match="requires the same shape"):
+        run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_invalid_ir_operand_result_shape_mismatch(run_filecheck):
+    """Test that operations with operand vs result shape mismatches are properly rejected."""
+    program = r"""
+    %tf32_2x3 = "test.op"() : () -> tensor<2x3xf32>
+    
+    // This should fail verification due to shape mismatch between operand and result
+    %convert = "stablehlo.convert"(%tf32_2x3) : (tensor<2x3xf32>) -> tensor<3x2xf64>
+    """
+
+    with pytest.raises(
+        Exception, match="all non-scalar operands/results must have the same shape and base type"
+    ):
+        run_filecheck(program, roundtrip=True, verify=True)
