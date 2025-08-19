@@ -121,10 +121,7 @@ class TestTODD:
         """Test that an error is raised when the input circuit is not Clifford + T."""
         qs = QuantumScript(ops=[gate])
 
-        with pytest.raises(
-            TypeError,
-            match=r"The input quantum circuit must be a Clifford \+ T circuit.",
-        ):
+        with pytest.raises(TypeError, match=r"The input circuit must be a Clifford \+ T circuit."):
             qml.transforms.zx.todd(qs)
 
     @pytest.mark.parametrize(
