@@ -12,7 +12,7 @@
       [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 
     * :func:`~.transforms.zx.optimize_t_count` to reduce the number of T gates in a Clifford + T circuit by applying
-      the full pipeline which combines ZX-based commutation and cancellation rules and the TODD algorithm
+      a sequence of passes that combine ZX-based commutation and cancellation rules and the TODD algorithm
       (see [pyzx.full_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize)).
       [(#8088)](https://github.com/PennyLaneAI/pennylane/pull/8088)
 
