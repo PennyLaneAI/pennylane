@@ -116,7 +116,7 @@ class AmplitudeAmplification(Operation):
 
     grad_method = None
 
-    resource_keys = {"num_wires", "fixed_point", "O", "iters", "num_reflection_wires", "U"}
+    resource_keys = {"fixed_point", "O", "iters", "num_reflection_wires", "U"}
 
     def _flatten(self):
         data = (self.hyperparameters["U"], self.hyperparameters["O"])
@@ -126,7 +126,6 @@ class AmplitudeAmplification(Operation):
     @property
     def resource_params(self) -> dict:
         return {
-            "num_wires": len(self.wires),
             "fixed_point": self.hyperparameters["fixed_point"],
             "O": self.hyperparameters["O"],
             "iters": self.hyperparameters["iters"],
@@ -225,7 +224,7 @@ class AmplitudeAmplification(Operation):
         return self
 
 
-def _amplitude_amplification_resources(num_wires, fixed_point, O, iters, num_reflection_wires, U):
+def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wires, U):
     resources = Counter()
 
     if fixed_point:
