@@ -188,7 +188,7 @@ class MeasurementValue(Generic[T]):
         def merged_fn(*x):
             merged_measurements = list(set(self.measurements).union(set(other.measurements)))
             merged_measurements.sort(key=lambda m: m.id)
-            
+
             sub_args_1 = (x[i] for i in [merged_measurements.index(m) for m in self.measurements])
             sub_args_2 = (x[i] for i in [merged_measurements.index(m) for m in other.measurements])
 
