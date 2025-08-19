@@ -656,6 +656,7 @@
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
 
 * Updated description of `alpha` parameter in `ClassicalShadow.entropy`.
+  Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 <h3>Bug fixes 🐛</h3>
