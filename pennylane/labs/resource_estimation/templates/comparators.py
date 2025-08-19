@@ -14,6 +14,7 @@
 r"""Resource operators for PennyLane subroutine templates."""
 
 from pennylane.labs import resource_estimation as plre
+from pennylane.labs.resource_estimation.ops.op_math.symbolic import _apply_adj
 from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
@@ -21,7 +22,6 @@ from pennylane.labs.resource_estimation.resource_operator import (
     ResourceOperator,
     resource_rep,
 )
-from pennylane.labs.resource_estimation.ops.op_math.symbolic import _apply_adj
 
 # pylint: disable=arguments-differ,unused-argument
 

@@ -370,7 +370,8 @@ class ResourcePrepTHC(ResourceOperator):
                 the coefficients of Hamiltonian. If `None` is provided the default value from the
                 `resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`.
+                will be loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                 Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
@@ -491,7 +492,8 @@ class ResourcePrepTHC(ResourceOperator):
                 the coefficients of Hamiltonian. If `None` is provided the default value from the
                 `resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`.
+                will be loaded in parallel by adding more rows following Figure 1.C of
+                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
                 Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
