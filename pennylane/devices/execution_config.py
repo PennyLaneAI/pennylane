@@ -16,12 +16,14 @@ Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
 from dataclasses import dataclass, field
 from types import MappingProxyType
-from typing import Literal
+from typing import Literal, TypeAlias
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
+
+ImmutableDict: TypeAlias = MappingProxyType
 
 
 @dataclass(frozen=True)
@@ -128,13 +130,13 @@ class ExecutionConfig:
 
         def _validate_and_freeze_dict(field_name: str):
             value = getattr(self, field_name)
-            if not isinstance(value, (dict, MappingProxyType)):
+            if not isinstance(value, (dict, ImmutableDict)):
                 raise TypeError(f"Got invalid type {type(value)} for '{field_name}'")
             # Only wrap if it's not already a proxy.
             # This handles the case when `dataclasses.replace` is used and
             # the field is not being modified.
             if isinstance(value, dict):
-                object.__setattr__(self, field_name, MappingProxyType(value))
+                object.__setattr__(self, field_name, ImmutableDict(value))
 
         _validate_and_freeze_dict("device_options")
         _validate_and_freeze_dict("gradient_keyword_arguments")
