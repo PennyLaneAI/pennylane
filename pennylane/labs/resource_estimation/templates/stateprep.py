@@ -419,7 +419,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         The resources for QROMStatePreparation are computed according to the decomposition described
         in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
         :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
-        These rotations gates are implmented using an inplace controlled-adder operation
+        These rotations gates are implemented using an in-place controlled-adder operation
         (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to a phase gradient.
 
     .. seealso:: :class:`~.QROMStatePreparation`
@@ -482,7 +482,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
         QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
         QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
 
-        Alternatively, we can configure each value independantly by specifying a list. Note the size
+        Alternatively, we can configure each value independently by specifying a list. Note the size
         of this list should be :code:`num_state_qubits + 1` (:code:`num_state_qubits` if the state
         is positive and real).
 
@@ -562,12 +562,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
 
         Args:
             num_state_qubits (int): number of qubits required to represent the state-vector
-            precision (float): The precision threshold for loading in the binary representation
-                of the rotation angles.
-            positive_and_real (bool): Flag that the coefficients of the statevector are all real
-                and positive.
-            selswap_depths (Union[None, int, Iterable(int)], optional): A parameter of :code:`QROM`
-                used to trade-off extra qubits for reduced circuit depth.
+            precision (float): the precision threshold for loading in the binary representation
+                of the rotation angles
+            positive_and_real (bool): flag that the coefficients of the statevector are all real
+                and positive
+            selswap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+                used to trade-off extra qubits for reduced circuit depth
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -609,12 +609,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
             use_phase_grad_trick (bool): a flag which determines if the phase gradient trick is used
                 instead of controlled-RY gates and phaseshifts.
             num_state_qubits (int): number of qubits required to represent the state-vector
-            positive_and_real (bool): Flag that the coefficients of the statevector are all real
-                and positive.
-            precision (float): The precision threshold for loading in the binary representation
-                of the rotation angles.
-            select_swap_depths (Union[None, int, Iterable(int)], optional): A parameter of :code:`QROM`
-                used to trade-off extra qubits for reduced circuit depth.
+            positive_and_real (bool): flag that the coefficients of the statevector are all real
+                and positive
+            precision (float): the precision threshold for loading in the binary representation
+                of the rotation angles
+            select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+                used to trade-off extra qubits for reduced circuit depth
 
         Resources:
             The resources for QROMStatePreparation are according to the decomposition as described
