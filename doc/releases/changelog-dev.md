@@ -73,7 +73,7 @@
 
   qml.capture.enable()
 
-  @qml.qnode(qml.device("default.qubit", wires=1), autograph=True)
+  @qml.qnode(qml.device("default.qubit", wires=1))
   def circuit(param):
       if param >= 0 and param <= 1:
           qml.H(0)
