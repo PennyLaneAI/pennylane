@@ -14,13 +14,18 @@
 """
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
+from __future__ import annotations
+
+import typing
 from dataclasses import dataclass, field
 from typing import Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
-from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.math import Interface, get_canonical_interface_name
-from pennylane.transforms.core import TransformDispatcher
+
+if typing.TYPE_CHECKING:
+    from pennylane.concurrency.executors.base import RemoteExec
+    from pennylane.transforms.core import TransformDispatcher
 
 
 @dataclass(frozen=True)
@@ -132,7 +137,10 @@ class ExecutionConfig:
             object.__setattr__(self, "gradient_keyword_arguments", {})
 
         if not (
-            isinstance(self.gradient_method, (str, TransformDispatcher))
+            isinstance(self.gradient_method, str)
+            or hasattr(
+                self.gradient_method, "expand_transform"
+            )  # Duck typing for TransformDispatcher
             or self.gradient_method is None
         ):
             raise ValueError(
