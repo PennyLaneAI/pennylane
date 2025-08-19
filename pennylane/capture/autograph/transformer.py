@@ -306,6 +306,63 @@ class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
         instead of
         with DisableAutograph()
 
+    **Example**
+
+    We can see this works by considering a simple example. In this case, we expect to see a `cond` primitive captured in the jaxpr from the function `f`.
+
+    .. code-block::
+
+        import pennylane as qml
+        import jax
+
+        from jax import make_jaxpr
+        from pennylane.capture.autograph import disable_autograph, run_autograph
+
+        qml.capture.enable()
+
+        def f(x):
+            if x > 1:
+                return x**2
+            return x
+
+        def g():
+            x = 2
+            return f(x)
+
+    >>> make_jaxpr(run_autograph(g))()
+    { lambda ; . let
+        _:bool[] a:i32[] = cond[
+        args_slice=slice(2, None, None)
+        consts_slices=[slice(2, 2, None), slice(2, 2, None)]
+        jaxpr_branches=[{ lambda ; . let  in (True:bool[], 4:i32[]) }, { lambda ; . let  in (True:bool[], 2:i32[]) }]
+        ] True:bool[] True:bool[]
+    in (a,) }
+
+    Now if we add the decorator the function is evaluated and not captured in the jaxpr,
+
+    .. code-block:: python
+
+        @disable_autograph
+        def f(x):
+            if x > 1:
+                return x**2
+            return x
+
+    >>> make_jaxpr(run_autograph(g))()
+    { lambda ; . let  in (4:i32[],) }
+
+    Or we can also use the context manager,
+
+    .. code-block:: python
+
+        def g():
+            x = 2
+            with disable_autograph:
+                return f(x)
+
+    >>> make_jaxpr(run_autograph(g))()
+    { lambda ; . let  in (4:i32[],) }
+
     """
 
     def __init__(self):
