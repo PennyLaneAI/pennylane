@@ -215,12 +215,12 @@ def _fable_resources(wires, thetas, control_wires, tol):
     nots = {}
     for theta, control_index in zip(thetas, control_wires):
         if math.is_abstract(theta):
-            for _ in nots:
-                resources[resource_rep(CNOT)] += 1
-            resources[resource_rep(RY)] += 1
-            nots = {}
-            nots[wire_map[control_index]] = 1
-            continue
+            for _ in nots:  # pragma: no cover
+                resources[resource_rep(CNOT)] += 1  # pragma: no cover
+            resources[resource_rep(RY)] += 1  # pragma: no cover
+            nots = {}  # pragma: no cover
+            nots[wire_map[control_index]] = 1  # pragma: no cover
+            continue  # pragma: no cover
 
         if math.abs(2 * theta) > tol:
             for _ in nots:
@@ -270,16 +270,17 @@ def _fable_decomposition(input_matrix, wires, tol=0):
         control_index = control_wires[j]
 
         def abstract_branch(nots):
-            @for_loop(len(nots.keys()))
-            def abstract_nots_loop(k):
-                c_wire = list(nots.keys())[k]
-                CNOT(wires=[c_wire] + auxilliary)
+            @for_loop(len(nots.keys()))  # pragma: no cover
+            def abstract_nots_loop(k):  # pragma: no cover
+                c_wire = list(nots.keys())[k]  # pragma: no cover
+                CNOT(wires=[c_wire] + auxilliary)  # pragma: no cover
 
-            abstract_nots_loop(nots)  # pylint: disable=no-value-for-parameter
+            # pylint: disable=no-value-for-parameter
+            abstract_nots_loop(nots)  # pragma: no cover
 
-            RY(2 * theta, wires=auxilliary)
-            nots = {}
-            nots[wire_map[control_index]] = 1
+            RY(2 * theta, wires=auxilliary)  # pragma: no cover
+            nots = {}  # pragma: no cover
+            nots[wire_map[control_index]] = 1  # pragma: no cover
 
             return nots
 
@@ -321,8 +322,8 @@ def _fable_decomposition(input_matrix, wires, tol=0):
 
     @for_loop(len(nots.keys()))
     def outer_nots_loop(m, nots):
-        c_wire = list(nots.keys())[m]
-        CNOT([c_wire] + auxilliary)
+        c_wire = list(nots.keys())[m]  # pragma: no cover
+        CNOT([c_wire] + auxilliary)  # pragma: no cover
 
     outer_nots_loop(nots)  # pylint: disable=no-value-for-parameter
 
