@@ -308,7 +308,8 @@ class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
 
     **Example**
 
-    We can see this works by considering a simple example. In this case, we expect to see a `cond` primitive captured in the jaxpr from the function `f`.
+    We can see this works by considering a simple example.
+    In this case, we expect to see a ``cond`` primitive captured in the jaxpr from the function ``f``.
 
     .. code-block::
 
