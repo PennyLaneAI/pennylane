@@ -1206,7 +1206,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceCRY.resource_rep(eps=1e-9),
+                        plre.ResourceCRY.resource_rep(),
                         160,
                     ),
                     GateCount(
@@ -1230,7 +1230,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourcePhaseShift.resource_rep(eps=1e-9),
+                        plre.ResourcePhaseShift.resource_rep(),
                         32,
                     ),
                     FreeWires(32),
@@ -1324,7 +1324,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceCRY.resource_rep(eps=1e-5),
+                        plre.ResourceCRY.resource_rep(),
                         76,
                     ),
                     GateCount(
@@ -1348,7 +1348,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourcePhaseShift.resource_rep(eps=1e-5),
+                        plre.ResourcePhaseShift.resource_rep(),
                         19,
                     ),
                     FreeWires(19),
@@ -1422,7 +1422,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceCRY.resource_rep(eps=1e-4),
+                        plre.ResourceCRY.resource_rep(),
                         45,
                     ),
                     GateCount(
@@ -1446,7 +1446,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourcePhaseShift.resource_rep(eps=1e-4),
+                        plre.ResourcePhaseShift.resource_rep(),
                         15,
                     ),
                     FreeWires(15),
@@ -1520,7 +1520,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceCRY.resource_rep(eps=1e-4),
+                        plre.ResourceCRY.resource_rep(),
                         45,
                     ),
                     FreeWires(15),
@@ -1594,7 +1594,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourceCRY.resource_rep(eps=1e-4),
+                        plre.ResourceCRY.resource_rep(),
                         45,
                     ),
                     GateCount(
@@ -1618,7 +1618,7 @@ class TestQROMStatePrep:
                         )
                     ),
                     GateCount(
-                        plre.ResourcePhaseShift.resource_rep(eps=1e-4),
+                        plre.ResourcePhaseShift.resource_rep(),
                         15,
                     ),
                     FreeWires(15),

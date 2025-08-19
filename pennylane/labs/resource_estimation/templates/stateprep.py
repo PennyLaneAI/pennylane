@@ -694,7 +694,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
             )  # map RY rotations to RZ for phase grad
 
         else:
-            cry = plre.ResourceCRY.resource_rep(eps=precision)
+            cry = plre.ResourceCRY.resource_rep()
             gate_counts.append(GateCount(cry, num_precision_wires * num_state_qubits))
 
         if not positive_and_real:
@@ -739,7 +739,7 @@ class ResourceQROMStatePreparation(ResourceOperator):
                     )
                 )
             else:
-                phase_shift = plre.ResourcePhaseShift.resource_rep(eps=precision)
+                phase_shift = plre.ResourcePhaseShift.resource_rep()
                 gate_counts.append(GateCount(phase_shift, num_precision_wires))
 
         gate_counts.append(FreeWires(num_precision_wires))
