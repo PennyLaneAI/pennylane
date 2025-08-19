@@ -104,7 +104,7 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
             the resources are given as :math:`(n - 1)^2` Toffoli gates, and :math:`n` CNOT gates.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -194,7 +194,7 @@ class ResourcePhaseGradient(ResourceOperator):
             a Z-gate, S-gate and a T-gate.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -293,7 +293,7 @@ class ResourceOutMultiplier(ResourceOperator):
             <https://journals.aps.org/prxquantum/abstract/10.1103/PRXQuantum.2.040332>`_.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -389,7 +389,7 @@ class ResourceSemiAdder(ResourceOperator):
             <https://quantum-journal.org/papers/q-2018-06-18-74/pdf/>`_.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -432,7 +432,7 @@ class ResourceSemiAdder(ResourceOperator):
             <https://quantum-journal.org/papers/q-2018-06-18-74/pdf/>`_.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -481,10 +481,10 @@ class ResourceControlledSequence(ResourceOperator):
     r"""Resource class for the ControlledSequence gate.
 
     This operator represents a sequence of controlled gates, one for each control wire, with the
-    base operator (:code:`base_op`) raised to decreasing powers of 2.
+    base operator (:code:`base`) raised to decreasing powers of 2.
 
     Args:
-        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
+        base (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
             will be applying controlled powers of.
         num_control_wires (int): the number of controlled wires to run the sequence over
         wires (Sequence[int], optional): the wires the operation acts on
@@ -506,7 +506,7 @@ class ResourceControlledSequence(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> ctrl_seq = plre.ResourceControlledSequence(
-    ...     base_op = plre.ResourceRX(),
+    ...     base = plre.ResourceRX(),
     ...     num_control_wires = 3,
     ... )
     >>> gate_set={"CRX"}
@@ -522,24 +522,24 @@ class ResourceControlledSequence(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "num_ctrl_wires"}
 
-    def __init__(self, base_op: ResourceOperator, num_control_wires, wires=None) -> None:
-        self.dequeue(op_to_remove=base_op)
+    def __init__(self, base: ResourceOperator, num_control_wires, wires=None) -> None:
+        self.dequeue(op_to_remove=base)
         self.queue()
-        base_cmpr_op = base_op.resource_rep_from_op()
+        base_cmpr_op = base.resource_rep_from_op()
 
         self.base_cmpr_op = base_cmpr_op
         self.num_ctrl_wires = num_control_wires
 
-        if wires and base_op.wires:
-            self.wires = Wires.all_wires([wires, base_op.wires])
+        if wires and base.wires:
+            self.wires = Wires.all_wires([wires, base.wires])
             self.num_wires = len(self.wires)
-        elif (base_op.wires is None) and (wires is not None):
+        elif (base.wires is None) and (wires is not None):
             self.wires = wires
-            num_base_wires = base_op.num_wires
+            num_base_wires = base.num_wires
             self.num_wires = num_control_wires + num_base_wires
         else:
-            self.wires = None or base_op.wires
-            num_base_wires = base_op.num_wires
+            self.wires = None or base.wires
+            num_base_wires = base.num_wires
             self.num_wires = num_control_wires + num_base_wires
 
     @property
@@ -591,7 +591,7 @@ class ResourceControlledSequence(ResourceOperator):
                 t: ──╰U⁴──╰U²──╰U¹────┤
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -623,8 +623,7 @@ class ResourceQPE(ResourceOperator):
     r"""Resource class for QuantumPhaseEstimation (QPE).
 
     Args:
-        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
-            will be applying controlled powers of.
+        base (~.pennylane.labs.resource_estimation.ResourceOperator): the phase estimation operator
         num_estimation_wires (int): the number of wires used for measuring out the phase
         adj_qft_op (Union[~.pennylane.labs.resource_estimation.ResourceOperator, None]): An optional
             argument to set the subroutine used to perform the adjoint QFT operation.
@@ -651,22 +650,56 @@ class ResourceQPE(ResourceOperator):
       clean qubits: 0, dirty qubits: 0, algorithmic qubits: 6
      Gate breakdown:
       {'Hadamard': 5, 'CRX': 5, 'Adjoint(QFT(5))': 1}
+
+    .. details::
+        :title: Usage Details
+
+        Additionally, we can customize the implementation of the QFT operator we wish to use within
+        the textbook QPE algorithm. This allows users to optimize the implementation of QPE by using
+        more efficient implementations of the QFT.
+
+        For example, consider the cost using the default QFT implmentation below:
+
+        >>> qpe = plre.ResourceQPE(plre.ResourceRX(eps=1e-3), 5, adj_qft_op=None)
+        >>> print(plre.estimate_resources(qpe))
+        --- Resources: ---
+         Total qubits: 6
+         Total gates : 1.586E+3
+         Qubit breakdown:
+          clean qubits: 0, dirty qubits: 0, algorithmic qubits: 6
+         Gate breakdown:
+          {'Hadamard': 20, 'CNOT': 36, 'T': 1.530E+3}
+
+        Now we use the :class:`~.pennylane.labs.resource_estimation.ResourceAQFT` class:
+
+        >>> aqft = plre.ResourceAQFT(order=3, num_wires=5)
+        >>> adj_aqft = plre.ResourceAdjoint(aqft)
+        >>> qpe = plre.ResourceQPE(plre.ResourceRX(eps=1e-3), 5, adj_qft_op=adj_aqft)
+        >>> print(plre.estimate_resources(qpe))
+        --- Resources: ---
+         Total qubits: 8
+         Total gates : 321
+         Qubit breakdown:
+          clean qubits: 2, dirty qubits: 0, algorithmic qubits: 6
+         Gate breakdown:
+          {'Hadamard': 38, 'CNOT': 34, 'T': 222, 'Toffoli': 7, 'X': 4, 'S': 8, 'Z': 8}
     """
 
     resource_keys = {"base_cmpr_op", "num_estimation_wires", "adj_qft_cmpr_op"}
 
     def __init__(
         self,
-        base_op: ResourceOperator,
+        base: ResourceOperator,
         num_estimation_wires: int,
         adj_qft_op: ResourceOperator = None,
         wires=None,
     ):
-        remove_ops = [base_op, adj_qft_op] if adj_qft_op is not None else [base_op]
+        remove_ops = [base, adj_qft_op] if adj_qft_op is not None else [base]
         self.dequeue(remove_ops)
         self.queue()
 
-        base_cmpr_op = base_op.resource_rep_from_op()
+        base_cmpr_op = base.resource_rep_from_op()
+
         adj_qft_cmpr_op = None if adj_qft_op is None else adj_qft_op.resource_rep_from_op()
 
         self.base_cmpr_op = base_cmpr_op
@@ -678,7 +711,7 @@ class ResourceQPE(ResourceOperator):
             self.num_wires = len(self.wires)
         else:
             self.wires = None
-            self.num_wires = self.num_estimation_wires + base_op.num_wires
+            self.num_wires = self.num_estimation_wires + base.num_wires
 
     @property
     def resource_params(self) -> dict:
@@ -687,10 +720,11 @@ class ResourceQPE(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
-                  to the operator that we will be applying controlled powers of.
+                  to the phase estimation operator.
                 * num_estimation_wires (int): the number of wires used for measuring out the phase
-                * adj_qft_cmpr_op (CompressedResourceOpor None): A compressed resource operator,
-                  corresponding to the adjoint QFT.
+                * adj_qft_cmpr_op (Union[CompressedResourceOp, None]): An optional compressed
+                  resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
+                  default :class:`~.pennylane.labs.resource_estimation.ResourceQFT` will be used.
         """
 
         return {
@@ -707,14 +741,15 @@ class ResourceQPE(ResourceOperator):
         adj_qft_cmpr_op,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
-        the Operator that are needed to compute a resource estimation.
+        the Operator that are needed to compute the resources.
 
         Args:
             base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
-                to the operator that we will be applying controlled powers of.
+                to the phase estimation operator.
             num_estimation_wires (int): the number of wires used for measuring out the phase
-            adj_qft_cmpr_op (CompressedResourceOpor None): A compressed resource operator,
-                corresponding to the adjoint QFT.
+            adj_qft_cmpr_op (Union[CompressedResourceOp, None]): An optional compressed
+                resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
+                default :class:`~.pennylane.labs.resource_estimation.ResourceQFT` will be used.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -733,10 +768,11 @@ class ResourceQPE(ResourceOperator):
 
         Args:
             base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
-                to the operator that we will be applying controlled powers of.
+                to the phase estimation operator.
             num_estimation_wires (int): the number of wires used for measuring out the phase
-            adj_qft_cmpr_op (CompressedResourceOpor None): A compressed resource operator,
-                corresponding to the adjoint QFT.
+            adj_qft_cmpr_op (Union[CompressedResourceOp, None]): An optional compressed
+                resource operator, corresponding to the adjoint QFT routine. If :code:`None`, the
+                default :class:`~.pennylane.labs.resource_estimation.ResourceQFT` will be used.
 
         Resources:
             The resources are obtained from the standard decomposition of QPE as presented
@@ -771,14 +807,12 @@ class ResourceIterativeQPE(ResourceOperator):
     r"""Resource class for Iterative Quantum Phase Estimation (IQPE).
 
     Args:
-        base_op (~.pennylane.labs.resource_estimation.ResourceOperator): The operator that we
-            will be applying controlled powers of.
+        base (~.pennylane.labs.resource_estimation.ResourceOperator): the phase estimation operator
         num_iter (int): the number of mid-circuit measurements made to read out the phase
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-        The resources are obtained following the constuction from `arXiv:quant-ph/0610214v3
-        <https://arxiv.org/pdf/quant-ph/0610214v3>`_.
+        The resources are obtained following the construction from `arXiv:0610214v3 <https://arxiv.org/abs/quant-ph/0610214v3>`_.
 
     .. seealso:: :func:`~.iterative_qpe`
 
@@ -800,19 +834,19 @@ class ResourceIterativeQPE(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "num_iter"}
 
-    def __init__(self, base_op, num_iter, wires=None):
-        self.dequeue(base_op)
+    def __init__(self, base, num_iter, wires=None):
+        self.dequeue(base)
         self.queue()
 
-        self.base_cmpr_op = base_op.resource_rep_from_op()
+        self.base_cmpr_op = base.resource_rep_from_op()
         self.num_iter = num_iter
 
         if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
-            self.wires = base_op.wires or None
-            self.num_wires = base_op.num_wires
+            self.wires = base.wires or None
+            self.num_wires = base.num_wires
 
         super().__init__(wires=wires)
 
@@ -823,7 +857,7 @@ class ResourceIterativeQPE(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
-                  to the operator that we will be applying controlled powers of.
+                  to the phase estimation operator.
                 * num_iter (int): the number of mid-circuit measurements made to read out the phase
         """
         return {"base_cmpr_op": self.base_cmpr_op, "num_iter": self.num_iter}
@@ -835,7 +869,7 @@ class ResourceIterativeQPE(ResourceOperator):
 
         Args:
             base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
-                to the operator that we will be applying controlled powers of.
+                to the phase estimation operator.
             num_iter (int): the number of mid-circuit measurements made to read out the phase
 
         Returns:
@@ -850,15 +884,15 @@ class ResourceIterativeQPE(ResourceOperator):
 
         Args:
             base_cmpr_op (CompressedResourceOp): A compressed resource operator, corresponding
-                to the operator that we will be applying controlled powers of.
+                to the phase estimation operator.
             num_iter (int): the number of mid-circuit measurements made to read out the phase
 
         Resources:
-            The resources are obtained following the constuction from `arXiv:quant-ph/0610214v3
-            <https://arxiv.org/pdf/quant-ph/0610214v3>`_.
+            The resources are obtained following the construction from `arXiv:0610214v3
+            <https://arxiv.org/abs/quant-ph/0610214v3>`_.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -953,7 +987,7 @@ class ResourceQFT(ResourceOperator):
             <https://www.cambridge.org/highereducation/books/quantum-computation-and-quantum-information/01E10196D0A682A6AEFFEA52D53BE9AE#overview>`_.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -992,7 +1026,7 @@ class ResourceQFT(ResourceOperator):
             Specifically, following the figure titled "8 qubit Quantum Fourier Transform with gradient shifts"
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1114,7 +1148,7 @@ class ResourceAQFT(ResourceOperator):
             operations.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1235,7 +1269,7 @@ class ResourceBasisRotation(ResourceOperator):
             of the :class:`~.ResourcePhaseShift` gate.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1357,7 +1391,7 @@ class ResourceSelect(ResourceOperator):
             to select.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1398,7 +1432,7 @@ class ResourceSelect(ResourceOperator):
             controlled on the associated bitstring.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1732,7 +1766,7 @@ class ResourceQROM(ResourceOperator):
             unitaries to select.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -1926,7 +1960,7 @@ class ResourceQubitUnitary(ResourceOperator):
             * 3-qubit unitary or more, the cost is given according to the reference above, recursively.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2079,7 +2113,7 @@ class ResourceSelectPauliRot(ResourceOperator):
             :code:`RY` or :code:`RZ`) depending on the :code:`rotation_axis`.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
@@ -2123,7 +2157,7 @@ class ResourceSelectPauliRot(ResourceOperator):
                 This method assumes a phase gradient state is prepared on an auxiliary register.
 
         Returns:
-            list[GateCount]: A list of GateCount objects, where each object
+            list[~.pennylane.labs.resource_estimation.GateCount]: A list of GateCount objects, where each object
             represents a specific quantum gate and the number of times it appears
             in the decomposition.
         """
