@@ -457,8 +457,6 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     """Process the quantum function of a QNode to create a Jaxpr."""
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-    # pylint: disable=protected-access
-    qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
     flat_fn = FlatFn(qfunc)
 
     try:

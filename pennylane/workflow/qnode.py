@@ -307,9 +307,6 @@ class QNode:
             on supported options for your chosen gradient transform.
         static_argnums (int | Sequence[int]): *Only applicable when the experimental capture mode is enabled.*
             An ``int`` or collection of ``int``\ s that specify which positional arguments to treat as static.
-        autograph (bool): *Only applicable when the experimental capture mode is enabled.* Whether to use AutoGraph to
-            convert Python control flow to native PennyLane control flow. For more information, refer to
-            :doc:`Autograph </development/autograph>`. Defaults to ``True``.
         executor_backend (ExecBackends | str): The backend executor for concurrent function execution. This argument
             allows for selective control of how to run data-parallel/task-based parallel functions via a defined execution
             environment. All supported options can be queried using
@@ -533,7 +530,6 @@ class QNode:
         mcm_method: Literal["deferred", "one-shot", "tree-traversal"] | None = None,
         gradient_kwargs: dict | None = None,
         static_argnums: int | Iterable[int] = (),
-        autograph: bool = True,
         executor_backend: ExecBackends | str | None = None,
     ):
         self._init_args = locals()
@@ -577,7 +573,6 @@ class QNode:
             self._qfunc_uses_shots_arg = False
 
         # input arguments
-        self._autograph = autograph
         self.func = func
         self.device = device
         self._interface = get_canonical_interface_name(interface)
