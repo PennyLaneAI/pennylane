@@ -23,7 +23,7 @@ from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
-ImmutableDict: TypeAlias = MappingProxyType
+ReadOnlyDict: TypeAlias = MappingProxyType
 
 
 @dataclass(frozen=True)
@@ -130,13 +130,13 @@ class ExecutionConfig:
 
         def _validate_and_freeze_dict(field_name: str):
             value = getattr(self, field_name)
-            if not isinstance(value, (dict, ImmutableDict)):
+            if not isinstance(value, (dict, ReadOnlyDict)):
                 raise TypeError(f"Got invalid type {type(value)} for '{field_name}'")
             # Only wrap if it's not already a proxy.
             # This handles the case when `dataclasses.replace` is used and
             # the field is not being modified.
             if isinstance(value, dict):
-                object.__setattr__(self, field_name, ImmutableDict(value))
+                object.__setattr__(self, field_name, ReadOnlyDict(value))
 
         _validate_and_freeze_dict("device_options")
         _validate_and_freeze_dict("gradient_keyword_arguments")
