@@ -3,13 +3,27 @@
 
 <h3>New features since last release</h3>
 
+* A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
+  simplifications in the decomposition of ``Select`` under the assumption that the state of the
+  control wires has no overlap with computational basis states that are not used by ``Select``.
+  [(#7658)](https://github.com/PennyLaneAI/pennylane/pull/7658)
+
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
-    * :func:`~.transforms.push_hadamards` to optimize phase-polynomial + Hadamard circuits pushing
-      Hadamard gates to the side to create fewer larger phase-polynomial blocks
-      (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
-      [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
+  * :func:`~.transforms.zx.push_hadamards` to optimize a phase-polynomial + Hadamard circuit by pushing
+    Hadamard gates as far as possible to one side to create fewer larger phase-polynomial blocks
+    (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
+    [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
+
+  * :func:`~.transforms.zx.todd` to optimize a Clifford + T circuit using the Third Order Duplicate and Destroy (TODD) algorithm
+    (see [pyzx.phase_block_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize)).
+    [(#8029)](https://github.com/PennyLaneAI/pennylane/pull/8029)
+
+  * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford gates by applying
+    a combination of phase gadgetization strategies and Clifford gate simplification rules.
+    (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
+    [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
 
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
@@ -93,6 +107,29 @@
   ```
 
   [(#8027)](https://github.com/PennyLaneAI/pennylane/pull/8027)
+
+* Logical operations (`and`, `or` and `not`) are now supported with the `autograph` module. Users can
+  now use these logical operations in control flow when designing quantum circuits with experimental
+  program capture enabled.
+
+  ```python
+  import pennylane as qml
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit(param):
+      if param >= 0 and param <= 1:
+          qml.H(0)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit(0.5)
+  Array([0.70710677+0.j, 0.70710677+0.j], dtype=complex64)
+  ```
+
+  [(#8006)](https://github.com/PennyLaneAI/pennylane/pull/8006)
 
 * The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
   with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. This uses the fact that
@@ -326,6 +363,10 @@
 
 * The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
   [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
+
+* Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
+  `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
+  [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
 
 <h3>Breaking changes 💔</h3>
 
@@ -689,6 +730,10 @@
 
 * Fixed :math:`\LaTeX` rendering in the documentation for `qml.TrotterProduct` and `qml.trotterize`.
   [(#8014)](https://github.com/PennyLaneAI/pennylane/pull/8014)
+
+* Updated description of `alpha` parameter in `ClassicalShadow.entropy`.
+  Trimmed the outdated part of discussion regarding different choices of `alpha`.
+  [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 <h3>Bug fixes 🐛</h3>
 
