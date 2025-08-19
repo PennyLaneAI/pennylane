@@ -84,24 +84,6 @@ class ElementwiseUnaryOperation(IRDLOperation, abc.ABC, Generic[T_IN, T_OUT]):
 
 
 @irdl_op_definition
-class AbsOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatTensorType]):
-    """
-    Performs element-wise abs operation on `operand` tensor and produces a
-    `result` tensor.
-
-    See:
-    https://github.com/openxla/stablehlo/blob/main/docs/spec.md#abs
-
-    Example:
-    ```mlir
-    %result = stablehlo.abs %operand : tensor<3xi32>
-    ```
-    """
-
-    name = "stablehlo.abs"
-
-
-@irdl_op_definition
 class ConvertOp(ElementwiseUnaryOperation[AnyTensorType, AnyTensorType]):
     """
     Performs an element-wise conversion from one element type to another on
