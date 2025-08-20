@@ -17,6 +17,8 @@ Unit tests for the optimization transform ``undo_swaps``.
 import random
 from collections import Counter
 
+import pytest
+
 from pennylane.wires import Wires
 
 import pennylane as qml
@@ -25,6 +27,23 @@ from pennylane import queuing
 
 class TestQubitReuse:
     """Test that check the main functionalities of the `qubit_reuse` transform"""
+
+    def test_raises_if_includes_MCMs(self):
+        """Tests that we raise an error if the circuit already includes MCMs"""
+
+        dev = qml.device("default.qubit")
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT(wires=[0, 1])
+            mcm = qml.measure(0)
+            qml.cond(mcm, qml.CNOT)(wires=[2, 4])
+            qml.CNOT(wires=[3, 4])
+            return qml.expval(qml.PauliZ(0))
+
+        with pytest.raises(ValueError, match="Cannot transform a circuit already containing mid-circuit measurements"):
+            qml.transforms.qubit_reuse(circuit)()
 
     def test_transform_circuit(self):
         """A simple test case."""

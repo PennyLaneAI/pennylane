@@ -384,7 +384,7 @@ def generate_dynamic_circuit(qubit_reuse_sequence, tape):
 
 @transform
 def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """TODO: Update docstring
+    """Minimizes the number of qubits in circuits by introducing mid-circuit measurements and qubit re-use.
 
     Args:
         tape (QNode or QuantumTape or Callable): A quantum circuit.
@@ -404,7 +404,9 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     G = pennylane_to_networkx(tape)
 
     # TODO: Check G doesn't have cycles
-    # TODO: Check G doesn't have mid-circuit measurements
+    for node in G.nodes:
+        if 'MidMeasureMP' in node:
+            raise ValueError("Cannot transform a circuit already containing mid-circuit measurements using GiDNET.")
 
     in_nodes, out_nodes = [], []
     node_attrs = nx.get_node_attributes(G, "type")
