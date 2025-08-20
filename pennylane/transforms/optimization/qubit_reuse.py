@@ -23,7 +23,6 @@ from networkx.exception import NetworkXNoCycle
 
 from pennylane import numpy as np
 from pennylane.measurements import MidMeasureMP
-from pennylane.operation import Operator
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.transforms import transform
 from pennylane.typing import PostprocessingFn
@@ -441,7 +440,12 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     if np.all(C == 0):
         return None  # Irreducible circuit
 
-    # TODO: this is supposed to include shots*log(n)
+    # the re-use seqs are computed in this loop, which is executed log(n) times.
+    # log(n) is chosen based on empirical evidence reported in (Uchehara, 2024), consistently achieving the highest
+    # performance (in terms of circuit width) across different circuit sizes.
+    #
+    # Uchehara, G., Aamodt, T. M., and Di Matteo, O., “Graph-based identification of qubit network (GidNET) for qubit reuse”,
+    # arXiv e-prints, Art. no. arXiv:2410.08817, 2024. doi:10.48550/arXiv.2410.08817.
     for _ in range(int(np.log(n))):
         C_prime = np.copy(C)
         R_prime = []
