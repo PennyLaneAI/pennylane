@@ -61,7 +61,13 @@ def test_update_array_with_operations(op, expected):
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 @pytest.mark.parametrize(
-    "array_in", [jnp.array([4, 2, 1], dtype=int), jnp.array([3, 2, 1], dtype=int)]
+    "array_in",
+    [
+        # Set-up array to get int
+        jnp.array([4, 2, 1], dtype=int),
+        # Set-up array to get a float
+        jnp.array([3, 2, 1], dtype=int),
+    ],
 )
 def test_div_update(array_in):
     """Tests that the /= operator works with arrays."""
@@ -77,40 +83,12 @@ def test_div_update(array_in):
     assert jnp.array_equal(result[0], jnp.array([array_in[0] / 2, 2, 1], dtype=result[0].dtype))
 
 
-@pytest.mark.usefixtures("enable_disable_plxpr")
-def test_unsupported_modulo_op_update():
-    """Tests that an unsupported operator works with arrays."""
-
-    def fn(x):
-        x[0] %= 2
-        return x
-
-    ag_fn = run_autograph(fn)
-    args = (jnp.array([4, 2, 1], dtype=int),)
-    with pytest.raises(TypeError, match="JAX arrays are immutable"):
-        _ = make_jaxpr(ag_fn)(*args)
-
-
-@pytest.mark.usefixtures("enable_disable_plxpr")
-def test_unsupported_slice_op_update():
-    """Tests that an unsupported operator works with arrays."""
-
-    def fn(x):
-        x[slice(1, 2)] += 2
-        return x
-
-    ag_fn = run_autograph(fn)
-    args = (jnp.array([4, 2, 1], dtype=int),)
-    with pytest.raises(TypeError, match="JAX arrays are immutable"):
-        _ = make_jaxpr(ag_fn)(*args)
-
-
-@pytest.mark.usefixtures("enable_disable_plxpr")
-@pytest.mark.parametrize("index", (slice(0, 1),))
-def test_slicing_update(index):
+def test_slicing_update():
     """Test that slicing indices can be used to update arrays."""
 
     def fn(x):
+        # For some reason slicing is allowed if you don't directly use an object
+        index = slice(0, 1)
         x[index] += 2
         x[1:2] += 2
         return x
@@ -136,3 +114,44 @@ def test_static_array_update():
     ag_fn_jaxpr = make_jaxpr(ag_fn)()
     result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts)
     assert jnp.array_equal(result, [0, 11])
+
+
+@pytest.mark.usefixtures("enable_disable_plxpr")
+class TestUnsupportedArrayUpdates:
+    """Test that errors are thrown for unsupported cases"""
+
+    def test_modulo_op_update(self):
+        """Tests that an unsupported operator works with arrays."""
+
+        def fn(x):
+            x[0] %= 2
+            return x
+
+        ag_fn = run_autograph(fn)
+        args = (jnp.array([4, 2, 1], dtype=int),)
+        with pytest.raises(TypeError, match="JAX arrays are immutable"):
+            _ = make_jaxpr(ag_fn)(*args)
+
+    def test_update_with_slice_index(self):
+        """Tests that an unsupported operator works with arrays."""
+
+        def fn(x):
+            x[slice(1, 2)] += 2
+            return x
+
+        ag_fn = run_autograph(fn)
+        args = (jnp.array([4, 2, 1], dtype=int),)
+        with pytest.raises(TypeError, match="JAX arrays are immutable"):
+            _ = make_jaxpr(ag_fn)(*args)
+
+    def test_multi_dimensional_index(self):
+        """Test that TypeError is raised when using multi-dim indexing."""
+
+        def fn(x):
+            x[0, 1] += 5
+            return x
+
+        args = (jnp.array([[1, 2], [3, 4]]),)
+        ag_fn = run_autograph(fn)
+        with pytest.raises(TypeError, match="JAX arrays are immutable"):
+            _ = make_jaxpr(ag_fn)(*args)
