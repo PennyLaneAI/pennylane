@@ -13,9 +13,11 @@
 # limitations under the License.
 r"""Resource operators for state preparation templates."""
 import math
+from typing import Dict
 
+import pennylane.numpy as np
 from pennylane.labs import resource_estimation as plre
-from pennylane.labs.resource_estimation.qubit_manager import AllocWires
+from pennylane.labs.resource_estimation.qubit_manager import AllocWires, FreeWires
 from pennylane.labs.resource_estimation.resource_operator import (
     CompressedResourceOp,
     GateCount,
@@ -23,8 +25,9 @@ from pennylane.labs.resource_estimation.resource_operator import (
     resource_rep,
 )
 
+# pylint: disable=arguments-differ, protected-access, non-parent-init-called, too-many-arguments, unused-argument
 
-# pylint: disable=arguments-differ, unused-argument
+
 class ResourceUniformStatePrep(ResourceOperator):
     r"""Resource class for preparing a uniform superposition.
 
@@ -258,3 +261,570 @@ class ResourceAliasSampling(ResourceOperator):
         gate_lst.append(GateCount(resource_rep(plre.ResourceCSWAP), logl))
 
         return gate_lst
+
+
+class ResourceMPSPrep(ResourceOperator):
+    r"""Resource class for the MPSPrep template.
+
+    The resource operation for preparing an initial state from a matrix product state (MPS)
+    representation.
+
+    Args:
+        num_mps_matrices (int): the number of matrices in the MPS representation
+        max_bond_dim (int): the bond dimension of the MPS representation
+        precision (Union[None, float], optional): the precision used when loading the MPS matricies
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources for MPSPrep are according to the decomposition, which uses the generic
+        :class:`~.labs.resource_estimation.ResourceQubitUnitary`. The decomposition is based on
+        the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
+
+    .. seealso:: :class:`~.MPSPrep`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> mps = plre.ResourceMPSPrep(num_mps_matrices=10, max_bond_dim=2**3)
+    >>> print(plre.estimate_resources(mps, gate_set={"CNOT", "RZ", "RY"}))
+    --- Resources: ---
+     Total qubits: 13
+     Total gates : 1.654E+3
+     Qubit breakdown:
+      clean qubits: 3, dirty qubits: 0, algorithmic qubits: 10
+     Gate breakdown:
+      {'RZ': 728, 'CNOT': 774, 'RY': 152}
+    """
+
+    resource_keys = {"num_mps_matrices", "max_bond_dim", "precision"}
+
+    def __init__(self, num_mps_matrices, max_bond_dim, precision=None, wires=None):
+        self.num_wires = num_mps_matrices
+        self.precision = precision
+        self.max_bond_dim = max_bond_dim
+        self.num_mps_matrices = num_mps_matrices
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> Dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_mps_matrices (int): the number of matrices in the MPS representation
+                * max_bond_dim (int): the bond dimension of the MPS representation
+                * precision (Union[None, float], optional): the precision used when loading the
+                  MPS matrices
+        """
+        return {
+            "num_mps_matrices": self.num_mps_matrices,
+            "max_bond_dim": self.max_bond_dim,
+            "precision": self.precision,
+        }
+
+    @classmethod
+    def resource_rep(cls, num_mps_matrices, max_bond_dim, precision=None) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_mps_matrices (int): the number of matrices in the MPS representation
+            max_bond_dim (int): the bond dimension of the MPS representation
+            precision (Union[None, float], optional): the precision used when loading the MPS matrices
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        params = {
+            "num_mps_matrices": num_mps_matrices,
+            "max_bond_dim": max_bond_dim,
+            "precision": precision,
+        }
+        return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def default_resource_decomp(
+        cls,
+        num_mps_matrices,
+        max_bond_dim,
+        precision=None,
+        **kwargs,
+    ) -> list[GateCount]:
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            num_mps_matrices (int): the number of matrices in the MPS representation
+            max_bond_dim (int): the bond dimension of the MPS representation
+            precision (Union[None, float], optional): the precision used when loading
+                the MPS matrices
+
+        Resources:
+            The resources for MPSPrep are estimated according to the decomposition, which uses the generic
+            :class:`~.labs.resource_estimation.ResourceQubitUnitary`. The decomposition is based on
+            the routine described in `arXiv:2310.18410 <https://arxiv.org/pdf/2310.18410>`_.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        precision = precision or kwargs["config"]["precision_mps_prep"]
+        num_work_wires = min(
+            math.ceil(math.log2(max_bond_dim)), math.ceil(num_mps_matrices / 2)  # truncate bond dim
+        )
+
+        gate_lst = [AllocWires(num_work_wires)]
+
+        for index in range(1, num_mps_matrices + 1):
+            qubit_unitary_wires = min(index + 1, num_work_wires + 1, (num_mps_matrices - index) + 2)
+            qubit_unitary = plre.ResourceQubitUnitary.resource_rep(
+                num_wires=qubit_unitary_wires, precision=precision
+            )
+            gate_lst.append(GateCount(qubit_unitary))
+
+        gate_lst.append(FreeWires(num_work_wires))
+        return gate_lst
+
+    @classmethod
+    def tracking_name(cls, num_mps_matrices, max_bond_dim, precision) -> str:
+        return f"MPSPrep({num_mps_matrices}, {max_bond_dim}, {precision})"
+
+
+class ResourceQROMStatePreparation(ResourceOperator):
+    r"""Resource class for the QROMStatePreparation template.
+
+    This operation implements the state preparation method described
+    in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
+    :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+
+    .. note::
+
+        This decomposition assumes an appropriately sized phase gradient state is available.
+        Users should ensure the cost of constructing such a state has been accounted for.
+        See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
+
+    Args:
+        num_state_qubits (int): number of qubits required to represent the state-vector
+        precision (float): the precision threshold for loading in the binary representation
+            of the rotation angles
+        positive_and_real (bool): flag that the coefficients of the statevector are all real
+            and positive
+        select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+            used to trade-off extra qubits for reduced circuit depth
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources for QROMStatePreparation are computed according to the decomposition described
+        in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
+        :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+        These rotations gates are implemented using an in-place controlled-adder operation
+        (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to a phase gradient.
+
+    .. seealso:: :class:`~.QROMStatePreparation`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> qrom_prep = plre.ResourceQROMStatePreparation(num_state_qubits=5, precision=1e-3)
+    >>> print(plre.estimate_resources(qrom_prep, gate_set=plre.StandardGateSet))
+    --- Resources: ---
+     Total qubits: 28
+     Total gates : 2.744E+3
+     Qubit breakdown:
+      clean qubits: 23, dirty qubits: 0, algorithmic qubits: 5
+     Gate breakdown:
+      {'X': 230, 'Toffoli': 236, 'CNOT': 1.522E+3, 'Hadamard': 732, 'S': 12, 'Adjoint(S)': 12}
+
+    .. details::
+        :title: Usage Details
+
+        This operation uses the :code:`QROM` subroutine to dynamically load the rotation angles.
+
+        >>> gate_set = {"QROM", "Hadamard", "CNOT", "T", "Adjoint(QROM)"}
+        >>> qrom_prep = plre.ResourceQROMStatePreparation(
+        ...     num_state_qubits = 4,
+        ...     precision = 1e-2,
+        ...     select_swap_depths = 2,  # default value is 1
+        ... )
+        >>> res = plre.estimate_resources(qrom_prep, gate_set)
+        >>> print(res)
+        --- Resources: ---
+         Total qubits: 21
+         Total gates : 2.680E+3
+         Qubit breakdown:
+          clean qubits: 17, dirty qubits: 0, algorithmic qubits: 4
+         Gate breakdown:
+          {'QROM': 5, 'Adjoint(QROM)': 5, 'CNOT': 580, 'T': 1.832E+3, 'Hadamard': 258}
+
+        The ``precision`` argument is used to allocate the target wires in the underlying QROM
+        operations. It corresponds to the precision with which the rotation angles of the
+        template are encoded. This means that the binary representation of the angle is truncated up to
+        the :math:`m`-th digit, where :math:`m` is the number of precision wires allocated. See  Eq. 5
+        in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_ for more details.
+
+        The ``select_swap_depths`` parameter allows a user to configure the ``select_swap_depth`` of
+        each individual :class:`~.labs.resource_estimation.ResourceQROM` used. The
+        ``select_swap_depths`` argument can be one of :code:`(int, None, Iterable(int, None))`.
+
+        If an integer or :code:`None` is passed (the default value for this parameter is 1), then that
+        is used as the ``select_swap_depth`` for all :code:`QROM` operations in the resource decomposition.
+
+        >>> for op in res.gate_types:
+        ...     if op.name == "QROM":
+        ...         print(op.name, op.params)
+        ...
+        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+
+        Alternatively, we can configure each value independently by specifying a list. Note the size
+        of this list should be :code:`num_state_qubits + 1` (:code:`num_state_qubits` if the state
+        is positive and real).
+
+        >>> qrom_prep = plre.ResourceQROMStatePreparation(
+        ...     num_state_qubits = 4,
+        ...     precision = 1e-2,
+        ...     select_swap_depths = [1, None, 2, 2, None],
+        ... )
+        >>> res = plre.estimate_resources(qrom_prep, gate_set)
+        >>> for op in res.gate_types:
+        ...     if op.name == "QROM":
+        ...         print(op.name, op.params)
+        ...
+        QROM {'num_bitstrings': 1, 'num_bit_flips': 4, 'size_bitstring': 9, 'select_swap_depth': 1, 'clean': False}
+        QROM {'num_bitstrings': 2, 'num_bit_flips': 9, 'size_bitstring': 9, 'select_swap_depth': None, 'clean': False}
+        QROM {'num_bitstrings': 4, 'num_bit_flips': 18, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 8, 'num_bit_flips': 36, 'size_bitstring': 9, 'select_swap_depth': 2, 'clean': False}
+        QROM {'num_bitstrings': 16, 'num_bit_flips': 72, 'size_bitstring': 9, 'select_swap_depth': None, 'clean': False}
+    """
+
+    resource_keys = {"num_state_qubits", "precision", "positive_and_real", "selswap_depths"}
+
+    def __init__(
+        self,
+        num_state_qubits,
+        precision=None,
+        positive_and_real=False,
+        select_swap_depths=1,
+        wires=None,
+    ):
+        # Overriding the default init method to allow for CompactState as an input.
+        self.num_wires = num_state_qubits
+        self.precision = precision
+        self.positive_and_real = positive_and_real
+
+        expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
+
+        if isinstance(select_swap_depths, (list, tuple, np.ndarray)):
+            if len(select_swap_depths) != expected_size:
+                raise ValueError(
+                    f"Expected the length of `select_swap_depths` to be {expected_size}, got {len(select_swap_depths)}"
+                )
+        elif not (isinstance(select_swap_depths, int) or select_swap_depths is None):
+            raise TypeError("`select_swap_depths` must be an integer, None or iterable")
+
+        self.selswap_depths = select_swap_depths
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self) -> dict:
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_state_qubits (int): number of qubits required to represent the state-vector
+                * precision (float): the precision threshold for loading in the binary representation
+                  of the rotation angles
+                * positive_and_real (bool): flag that the coefficients of the statevector are all real
+                  and positive
+                * selswap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+                  used to trade-off extra qubits for reduced circuit depth
+        """
+
+        return {
+            "num_state_qubits": self.num_wires,
+            "precision": self.precision,
+            "positive_and_real": self.positive_and_real,
+            "selswap_depths": self.selswap_depths,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls, num_state_qubits, precision=None, positive_and_real=False, selswap_depths=1
+    ):
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Args:
+            num_state_qubits (int): number of qubits required to represent the state-vector
+            precision (float): the precision threshold for loading in the binary representation
+                of the rotation angles
+            positive_and_real (bool): flag that the coefficients of the statevector are all real
+                and positive
+            selswap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+                used to trade-off extra qubits for reduced circuit depth
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
+        if isinstance(selswap_depths, (list, tuple, np.ndarray)):
+            if len(selswap_depths) != expected_size:
+                raise ValueError(
+                    f"Expected the length of `selswap_depths` to be {expected_size}, got {len(selswap_depths)}"
+                )
+        elif not (isinstance(selswap_depths, int) or selswap_depths is None):
+            raise TypeError("`selswap_depths` must be an integer, None or iterable")
+
+        params = {
+            "num_state_qubits": num_state_qubits,
+            "precision": precision,
+            "positive_and_real": positive_and_real,
+            "selswap_depths": selswap_depths,
+        }
+        return CompressedResourceOp(cls, params)
+
+    @classmethod
+    def _decomp_selection_helper(
+        cls,
+        use_phase_grad_trick,
+        num_state_qubits,
+        positive_and_real,
+        precision=None,
+        selswap_depths=1,
+        **kwargs,
+    ):
+        r"""A private function which implements two variants of the decomposition of QROMStatePrep,
+        based on the value of the :code:`use_phase_grad_trick` argument.
+
+        Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            use_phase_grad_trick (bool): a flag which determines if the phase gradient trick is used
+                instead of controlled-RY gates and phaseshifts.
+            num_state_qubits (int): number of qubits required to represent the state-vector
+            positive_and_real (bool): flag that the coefficients of the statevector are all real
+                and positive
+            precision (float): the precision threshold for loading in the binary representation
+                of the rotation angles
+            select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
+                used to trade-off extra qubits for reduced circuit depth
+
+        Resources:
+            The resources for QROMStatePreparation are according to the decomposition as described
+            in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
+            :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+
+            Controlled-RY (and phase shifts) gates are used to apply all of the rotations coherently. If
+            :code:`use_phase_grad_trick == True` then these rotations gates are implmented using an
+            inplace controlled semi-adder operation (see figure 4. of
+            `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_).
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        gate_counts = []
+        precision = precision or kwargs["config"]["precision_qrom_state_prep"]
+
+        expected_size = num_state_qubits if positive_and_real else num_state_qubits + 1
+        if isinstance(selswap_depths, int) or selswap_depths is None:
+            selswap_depths = [selswap_depths] * expected_size
+
+        num_precision_wires = math.ceil(math.log2(math.pi / precision))
+        gate_counts.append(AllocWires(num_precision_wires))
+
+        for j in range(num_state_qubits):
+            num_bitstrings = 2**j
+            num_bit_flips = num_bitstrings * num_precision_wires // 2
+
+            gate_counts.append(
+                GateCount(
+                    plre.ResourceQROM.resource_rep(
+                        num_bitstrings=num_bitstrings,
+                        size_bitstring=num_precision_wires,
+                        num_bit_flips=num_bit_flips,
+                        clean=False,
+                        select_swap_depth=selswap_depths[j],
+                    )
+                )
+            )
+
+            gate_counts.append(
+                GateCount(
+                    plre.ResourceAdjoint.resource_rep(
+                        plre.resource_rep(
+                            plre.ResourceQROM,
+                            {
+                                "num_bitstrings": num_bitstrings,
+                                "num_bit_flips": num_bit_flips,
+                                "size_bitstring": num_precision_wires,
+                                "clean": False,
+                                "select_swap_depth": selswap_depths[j],
+                            },
+                        ),
+                    )
+                )
+            )
+
+        if use_phase_grad_trick:
+            semi_adder = plre.ResourceSemiAdder.resource_rep(max_register_size=num_precision_wires)
+            h = plre.ResourceHadamard.resource_rep()
+            s = plre.ResourceS.resource_rep()
+            s_dagg = plre.ResourceAdjoint.resource_rep(base_cmpr_op=s)
+            gate_counts.append(
+                GateCount(
+                    plre.ResourceControlled.resource_rep(
+                        base_cmpr_op=semi_adder, num_ctrl_wires=1, num_ctrl_values=0
+                    ),
+                    count=num_state_qubits,
+                )
+            )
+            gate_counts.append(GateCount(h, 2 * num_precision_wires))
+            gate_counts.append(GateCount(s, num_precision_wires))
+            gate_counts.append(
+                GateCount(s_dagg, num_precision_wires)
+            )  # map RY rotations to RZ for phase grad
+
+        else:
+            cry = plre.ResourceCRY.resource_rep()
+            gate_counts.append(GateCount(cry, num_precision_wires * num_state_qubits))
+
+        if not positive_and_real:
+            gate_counts.append(
+                GateCount(
+                    plre.ResourceQROM.resource_rep(
+                        num_bitstrings=2**num_state_qubits,
+                        size_bitstring=num_precision_wires,
+                        num_bit_flips=((2**num_state_qubits) * num_precision_wires // 2),
+                        clean=False,
+                        select_swap_depth=selswap_depths[-1],
+                    )
+                )
+            )
+
+            gate_counts.append(
+                GateCount(
+                    plre.ResourceAdjoint.resource_rep(
+                        plre.resource_rep(
+                            plre.ResourceQROM,
+                            {
+                                "num_bitstrings": 2**num_state_qubits,
+                                "size_bitstring": num_precision_wires,
+                                "num_bit_flips": ((2**num_state_qubits) * num_precision_wires // 2),
+                                "clean": False,
+                                "select_swap_depth": selswap_depths[-1],
+                            },
+                        ),
+                    )
+                )
+            )
+
+            if use_phase_grad_trick:
+                semi_adder = plre.ResourceSemiAdder.resource_rep(
+                    max_register_size=num_precision_wires
+                )
+                gate_counts.append(
+                    GateCount(
+                        plre.ResourceControlled.resource_rep(
+                            base_cmpr_op=semi_adder, num_ctrl_wires=1, num_ctrl_values=0
+                        ),
+                    )
+                )
+            else:
+                phase_shift = plre.ResourcePhaseShift.resource_rep()
+                gate_counts.append(GateCount(phase_shift, num_precision_wires))
+
+        gate_counts.append(FreeWires(num_precision_wires))
+        return gate_counts
+
+    @classmethod
+    def controlled_ry_resource_decomp(
+        cls,
+        num_state_qubits,
+        positive_and_real,
+        precision=None,
+        selswap_depths=1,
+        **kwargs,
+    ):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        Args:
+            num_state_qubits (int): number of qubits required to represent the state-vector
+            positive_and_real (bool): Flag that the coefficients of the statevector are all real
+                and positive.
+            precision (float): The precision threshold for loading in the binary representation
+                of the rotation angles.
+            select_swap_depths (Union[None, int, Iterable(int)], optional): A parameter of :code:`QROM`
+                used to trade-off extra qubits for reduced circuit depth.
+
+        Resources:
+            The resources for QROMStatePreparation are according to the decomposition as described
+            in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
+            :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+            Controlled-RY (and phase shifts) gates are used to apply all of the rotations coherently.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        return cls._decomp_selection_helper(
+            use_phase_grad_trick=False,
+            num_state_qubits=num_state_qubits,
+            positive_and_real=positive_and_real,
+            precision=precision,
+            selswap_depths=selswap_depths,
+            **kwargs,
+        )
+
+    @classmethod
+    def default_resource_decomp(
+        cls, num_state_qubits, positive_and_real, precision=None, selswap_depths=1, **kwargs
+    ):
+        r"""Returns a list representing the resources of the operator. Each object in the list
+        represents a gate and the number of times it occurs in the circuit.
+
+        .. note::
+
+            This decomposition assumes an appropriately sized phase gradient state is available.
+            Users should ensure the cost of constructing such a state has been accounted for.
+            See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
+
+        Args:
+            num_state_qubits (int): number of qubits required to represent the state-vector
+            positive_and_real (bool): Flag that the coefficients of the statevector are all real
+                and positive.
+            precision (float): The precision threshold for loading in the binary representation
+                of the rotation angles.
+            select_swap_depths (Union[None, int, Iterable(int)], optional): A parameter of :code:`QROM`
+                used to trade-off extra qubits for reduced circuit depth.
+
+        Resources:
+            The resources for QROMStatePreparation are according to the decomposition as described
+            in `arXiv:0208112 <https://arxiv.org/abs/quant-ph/0208112>`_, using
+            :class:`~.labs.resource_estimation.ResourceQROM` to dynamically load the rotation angles.
+            These rotations gates are implmented using an inplace controlled-adder operation
+            (see figure 4. of `arXiv:2409.07332 <https://arxiv.org/pdf/2409.07332>`_) to phase gradient.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+        return cls._decomp_selection_helper(
+            use_phase_grad_trick=True,
+            num_state_qubits=num_state_qubits,
+            positive_and_real=positive_and_real,
+            precision=precision,
+            selswap_depths=selswap_depths,
+            **kwargs,
+        )
