@@ -135,9 +135,6 @@
 
   [(#8027)](https://github.com/PennyLaneAI/pennylane/pull/8027)
 
-* PennyLane `autograph` supports in-place array updates like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
-  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
-
 * Logical operations (`and`, `or` and `not`) are now supported with the `autograph` module. Users can
   now use these logical operations in control flow when designing quantum circuits with experimental
   program capture enabled.
