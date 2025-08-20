@@ -14,6 +14,7 @@
 """
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
+import re
 
 # pylint:disable=protected-access, unused-argument
 import pytest
@@ -180,7 +181,10 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(change_op_basis_op)
 
-        with pytest.raises(DeviceError):
+        with pytest.raises(
+            DeviceError,
+            match=re.escape("Measurement expval(RX(1.23, wires=[0]) @ I(1) @ (Adjoint(RX(1.23, wires=[0])))) not accepted for analytic simulation on default.qubit"),
+        ):
             my_circ()
 
     def test_params_can_be_considered_trainable(self):
