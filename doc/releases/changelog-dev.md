@@ -487,6 +487,7 @@
   [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
   [How to optimize a QML model using JAX and Optax](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
+  [(#8106)](https://github.com/PennyLaneAI/pennylane/pull/8106)
 
 * `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
   Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
