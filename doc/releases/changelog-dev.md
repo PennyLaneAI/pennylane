@@ -650,9 +650,6 @@
 
 <h3>Documentation 📝</h3>
 
-* Several references in the documentation to TensorFlow have been removed due to it now being deprecated.
-  [(#8106)](https://github.com/PennyLaneAI/pennylane/pull/8106)
-
 * Rename `ancilla` to `auxiliary` in internal documentation.
   [(#8005)](https://github.com/PennyLaneAI/pennylane/pull/8005)
 
