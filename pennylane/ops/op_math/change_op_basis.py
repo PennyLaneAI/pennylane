@@ -44,9 +44,7 @@ def change_op_basis(compute_op, target_op, uncompute_op=None):
         ~ops.op_math.ChangeOpBasis: the operator representing the compute, uncompute pattern.
     """
 
-    ops_simp = ChangeOpBasis(compute_op, target_op, uncompute_op)
-
-    return ops_simp
+    return ChangeOpBasis(compute_op, target_op, uncompute_op)
 
 
 class ChangeOpBasis(CompositeOp):
