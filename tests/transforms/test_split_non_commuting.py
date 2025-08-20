@@ -14,12 +14,14 @@
 
 """Tests for the transform ``qml.transforms.split_non_commuting``"""
 from functools import partial
+from unittest.mock import MagicMock
 
 import numpy as np
 import pytest
 
 import pennylane as qml
 from pennylane.transforms import split_non_commuting
+from pennylane.transforms.split_non_commuting import ShotDistributionFunction
 
 # Two qubit-wise commuting groups: [[0, 3], [1, 2, 4]]
 # Four groups based on wire overlaps: [[0, 2], [1], [3], [4]]
@@ -968,13 +970,14 @@ ham = qml.Hamiltonian(
 )
 ham_expval = qml.expval(ham)
 total_shots = 30000
+coeffs_per_group = [[10, 20], [0.1, 0.2], [100]]
 
 
 class TestShotDistribution:
     """
     Test shot distribution for the `split_non_commuting` transform.
-    At the moment, this feature is available only for the single hamiltonian case
-    and with "default" or "qwc" grouping_strategy.
+    At the moment, this feature is available only for the single hamiltonian
+    measurement case and with "default" or "qwc" grouping_strategy.
     """
 
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
@@ -989,9 +992,10 @@ class TestShotDistribution:
     def test_single_hamiltonian_sampling_strategy(
         self, grouping_strategy, shot_distribution, expected_shots
     ):
-        """Test built-in shot distribution sampling strategies for the single hamiltonian case."""
+        """Test built-in shot distribution strategies for the single hamiltonian case."""
 
         initial_tape = qml.tape.QuantumScript(measurements=[ham_expval], shots=total_shots)
+
         tapes, _ = split_non_commuting(
             initial_tape,
             grouping_strategy=grouping_strategy,
@@ -999,10 +1003,25 @@ class TestShotDistribution:
             seed=42,
         )
 
-        assert len(tapes) == 3
-        for tape, shots in zip(tapes, expected_shots):
+        # check that for all output tapes the number of shots is computed as expected
+        for tape, shots in zip(tapes, expected_shots, strict=True):
             assert tape.shots.total_shots == shots
 
-    def test_single_hamiltonian_custom_function(self):
-        """TODO"""
-        assert True
+    @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
+    @pytest.mark.parametrize("seed", [42, None])
+    def test_single_hamiltonian_custom_function(self, grouping_strategy, seed):
+        """Test custom shot distribution mock function for the single hamiltonian case."""
+
+        initial_tape = qml.tape.QuantumScript(measurements=[ham_expval], shots=total_shots)
+
+        shot_distribution_mock_func = MagicMock(spec=ShotDistributionFunction)
+
+        _ = split_non_commuting(
+            initial_tape,
+            grouping_strategy=grouping_strategy,
+            shot_distribution=shot_distribution_mock_func,
+            seed=seed,
+        )
+
+        # check that the shot_distribution function gets called exactly once with the expected signature
+        shot_distribution_mock_func.assert_called_once_with(total_shots, coeffs_per_group, seed)
