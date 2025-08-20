@@ -203,12 +203,12 @@ class CountsMP(SampleMeasurement):
             # Flatten broadcasting axis
             flattened_samples = np.reshape(samples, (-1, shape[-1]))
             print(flattened_samples)
-            if self.mv is None:
+            if isinstance(self.mv, MeasurementValue):
+                samples = flattened_samples
+            else:
                 flattened_samples = flattened_samples.astype(np.int8)
                 samples = list(map(convert, flattened_samples))
                 samples = np.reshape(np.array(samples), new_shape)
-            else:
-                samples = flattened_samples
 
             if self.all_outcomes:
 
