@@ -14,6 +14,8 @@
 """
 Unit tests for the `zx.push_hadamards` transform.
 """
+import sys
+
 import numpy as np
 import pytest
 
@@ -21,6 +23,19 @@ import pennylane as qml
 from pennylane.tape import QuantumScript
 
 pytest.importorskip("pyzx")
+
+
+def test_import_pyzx_error(monkeypatch):
+    """Test that a ModuleNotFoundError is raised by the push_hadamards transform
+    when the pyzx external package is not installed."""
+
+    with monkeypatch.context() as m:
+        m.setitem(sys.modules, "pyzx", None)
+
+        qs = QuantumScript(ops=[], measurements=[])
+
+        with pytest.raises(ModuleNotFoundError, match="The `pyzx` package is required."):
+            qml.transforms.zx.push_hadamards(qs)
 
 
 @pytest.mark.external
@@ -92,6 +107,7 @@ class TestPushHadamards:
         (qml.RX, qml.RY),
     )
     def test_rotation_gates_error(self, rot_gate):
+        """Test that an error is raised when the input circuit contains RX or RY rotation gates."""
         qs = QuantumScript(ops=[rot_gate(0.5, wires=0)])
 
         with pytest.raises(
