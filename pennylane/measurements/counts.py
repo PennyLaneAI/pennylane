@@ -24,6 +24,7 @@ from pennylane.operation import Operator
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires
 
+from .capture_measurements import _get_abstract_measurement
 from .measurement_value import MeasurementValue
 from .measurements import SampleMeasurement
 from .process_samples import process_raw_samples
@@ -300,6 +301,28 @@ class CountsMP(SampleMeasurement):
             outcome_binary = binary_pattern.format(outcome)
             if outcome_binary not in outcome_counts:
                 outcome_counts[outcome_binary] = 0
+
+
+if CountsMP._wires_primitive is not None:
+
+    CountsMP._wires_primitive.multiple_results = True
+
+    def keys_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
+        n_wires = n_wires or num_device_wires
+        return (2**n_wires,), int
+
+    def values_eval(n_wires=None, has_eigvals=False, shots=None, num_device_wires=0):
+        n_wires = n_wires or num_device_wires
+        return (2**n_wires,), int
+
+    abstract_mp = _get_abstract_measurement()
+
+    @CountsMP._wires_primitive.def_abstract_eval
+    def _(*args, has_eigvals=False, **_):
+        n_wires = len(args) - 1 if has_eigvals else len(args)
+        keys = abstract_mp(keys_eval, n_wires=n_wires, has_eigvals=has_eigvals)
+        values = abstract_mp(values_eval, n_wires=n_wires, has_eigvals=has_eigvals)
+        return keys, values
 
 
 def counts(
