@@ -78,7 +78,7 @@
 
 <h3>Improvements 🛠</h3>
 
-* PennyLane `autograph` supports standard python for updating arrays. 
+* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
   Users can now use this when designing quantum circuits with experimental program capture enabled.
 
   ```python
