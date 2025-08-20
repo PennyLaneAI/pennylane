@@ -18,7 +18,6 @@ This submodule contains the template for Amplitude Amplification.
 
 # pylint: disable-msg=too-many-arguments,too-many-positional-arguments
 import copy
-from collections import Counter
 
 import numpy as np
 
@@ -225,41 +224,39 @@ class AmplitudeAmplification(Operation):
 
 
 def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wires, U):
-    resources = Counter()
+    resources = {}
 
-    if fixed_point:
+    if fixed_point and iters // 2 > 0:
 
-        for _ in range(iters // 2):
-            resources[resource_rep(Hadamard)] += 4
-            resources[
-                controlled_resource_rep(
-                    O.__class__,
-                    O.resource_params,
-                    num_control_wires=1,
-                )
-            ] += 2
-            resources[resource_rep(PhaseShift)] += 1
-            resources[
-                resource_rep(
-                    Reflection,
-                    base_class=U.__class__,
-                    base_params=U.resource_params,
-                    num_wires=len(U.wires),
-                    num_reflection_wires=num_reflection_wires,
-                )
-            ] += 1
-    else:
-        for _ in range(iters):
-            resources[resource_rep(O.__class__, **O.resource_params)] += 1
-            resources[
-                resource_rep(
-                    Reflection,
-                    base_class=U.__class__,
-                    base_params=U.resource_params,
-                    num_wires=len(U.wires),
-                    num_reflection_wires=num_reflection_wires,
-                )
-            ] += 1
+        resources[resource_rep(Hadamard)] = 4 * (iters // 2)
+        resources[
+            controlled_resource_rep(
+                O.__class__,
+                O.resource_params,
+                num_control_wires=1,
+            )
+        ] = 2 * (iters // 2)
+        resources[resource_rep(PhaseShift)] = iters // 2
+        resources[
+            resource_rep(
+                Reflection,
+                base_class=U.__class__,
+                base_params=U.resource_params,
+                num_wires=len(U.wires),
+                num_reflection_wires=num_reflection_wires,
+            )
+        ] = iters // 2
+    elif not fixed_point and iters > 0:
+        resources[resource_rep(O.__class__, **O.resource_params)] = iters
+        resources[
+            resource_rep(
+                Reflection,
+                base_class=U.__class__,
+                base_params=U.resource_params,
+                num_wires=len(U.wires),
+                num_reflection_wires=num_reflection_wires,
+            )
+        ] = iters
 
     return resources
 
