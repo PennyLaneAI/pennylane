@@ -212,7 +212,7 @@ Internally, the QNode translates the quantum function into one or more quantum t
 and classical processing routines that, taken together, execute the quantum computation.
 
 The crucial property of a QNode is that it is differentiable by classical autodifferentiation
-frameworks such as autograd, jax, and PyTorch.
+frameworks such as autograd, JAX, and PyTorch.
 
 >>> jax.grad(qnode)
 [-0.4794  0.]
