@@ -265,14 +265,7 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
 
 
 @register_resources(_amplitude_amplification_resources)
-def _amplitude_amplification_decomposition(*_, **kwargs):
-    U = kwargs["U"]
-    O = kwargs["O"]
-    iters = kwargs["iters"]
-    fixed_point = kwargs["fixed_point"]
-    work_wire = kwargs["work_wire"]
-    p_min = kwargs["p_min"]
-    reflection_wires = kwargs["reflection_wires"]
+def _amplitude_amplification_decomposition(*_, U, O, iters, fixed_point, work_wire, p_min, reflection_wires, **__):
 
     delta = np.sqrt(1 - p_min)
     gamma = np.cos(np.arccos(1 / delta, dtype=np.complex128) / iters, dtype=np.complex128) ** -1
