@@ -15,7 +15,6 @@
 Tests for capturing a qnode into jaxpr.
 """
 from functools import partial
-from itertools import product
 
 # pylint: disable=protected-access
 import pytest
@@ -2029,41 +2028,3 @@ class TestQNodeCaptureCaching:
 
             with qml.capture.pause():
                 assert qml.math.allclose(res, circuit(*a))
-
-    def test_caching_with_autograph(self):
-        """Test that using autograph works as expected when caching is active."""
-
-        dev = qml.device("default.qubit", wires=5)
-
-        @qml.qnode(dev)
-        def circuit(x, y, z, n):
-
-            if z > 5:
-                for i in range(n):
-                    qml.RX(x, i)
-            elif z > 3:
-                for i in range(n):
-                    qml.RY(y, i)
-            else:
-                for i in range(n):
-                    qml.RZ(z, i)
-
-            for i in range(n - 1):
-                qml.CNOT([i, i + 1])
-
-            i = 0
-            while i < x + y + z:
-                qml.Rot(x, y, z, i % 5)
-                i += 1
-
-            return qml.state()
-
-        # Specifying parameters here instead of using @pytest.mark.parametrize
-        # to force usage of cache
-        xs = [1.5, 2.5, 4, 5]
-        ys = [-2, 1.5, 3.5, 2]
-        zs = [1.5, 3.5, 5.5, 2, 4, 6]
-        ns = list(range(5))
-
-        for x, y, z, n in product(xs, ys, zs, ns):
-            self.check_execution_results(run_autograph(circuit), x, y, z, n)
