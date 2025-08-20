@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Test suite for the xdsl_extras module."""
+"""Test the constraints defined within the xdsl_extras module."""
 
 import pytest
 
