@@ -22,7 +22,6 @@ import pytest
 import pennylane as qml
 from pennylane.exceptions import WireError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
-from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
@@ -75,6 +74,7 @@ class TestDecomposition:
     def test_integration_decompose_interpreter(self):
         """Tests that a simple circuit is correctly decomposed into different gate sets."""
         import jax
+        from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         def f():
             qml.CosineWindow(wires=[0, 1])
