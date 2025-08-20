@@ -20,7 +20,7 @@ Creating a test
 Every test has to be added to the PennyLane `test folder <https://github.com/PennyLaneAI/pennylane/tree/master/tests>`__.
 The test folder follows the structure of the PennyLane module folder. Therefore, tests needs to be added to the corresponding subfolder of the functionality they are testing.
 
-Most tests typically will not require the use of an interface or autodifferentiation framework (such as Autograd, Torch, and Jax). Tests without an interface will be marked
+Most tests typically will not require the use of an interface or autodifferentiation framework (such as Autograd, PyTorch, and JAX). Tests without an interface will be marked
 as a ``core`` test automatically by pytest (the functionality for this is located in ``conftest.py``). For such general tests, you can follow the structure of the example below,
 where it is recommended that you follow general `pytest guidelines <https://docs.pytest.org/>`__:
 
