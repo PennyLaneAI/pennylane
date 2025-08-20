@@ -14,31 +14,26 @@
 """This module contains functions to calculate potential energy surfaces
 per normal modes on a grid."""
 
-import numpy as np
-import scipy as sp
-
+from itertools import combinations
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import numpy as np
 import pyscf
+import scipy as sp
+from pyscf import cc, gto, mcscf, scf, tdscf
+from pyscf.fci import direct_spin0
 from pyscf.hessian import thermo
-
+from pyscf.symm.geom import SymmSys
 from scipy.spatial.transform import Rotation
 
-from itertools import combinations
-
-from pyscf import gto, scf, mcscf, tdscf, cc
-from pyscf.fci import direct_spin0
-from pyscf.symm.geom import SymmSys
-
-# from gpu4pyscf.dft import rks, uks
-
 from pennylane import concurrency, qchem
-
 from pennylane.qchem.vibrational.vibrational_class import (
     VibrationalPES,
     optimize_geometry,
 )
+
+# from gpu4pyscf.dft import rks, uks
 
 
 def _run_casscf(
@@ -280,5 +275,117 @@ def _run_eom_ccsd(
     excitation_energies = energies_eomcc
 
     energies = [mycc.e_tot] + [gs_energy + e for e in [excitation_energies]]
+
+    return energies
+
+
+def _run_tddft_mixed(
+    symbols,
+    coords,
+    basis="6-31g*",
+    functional="cam-b3lyp",
+    nroots=3,
+    conv_tol=1e-7,
+    max_cycle=50,
+    restrict_spin="singlet",
+    spin=0,
+    point_group=None,
+    use_gpu=False,
+    active_occ=5,
+    active_vir=4,
+):
+    """
+    Run TDDFT calculation and return energies.
+
+    Args:
+        mol: PySCF Mole object
+
+    Returns:
+        List of TDDFT energies in Hartree, including ground state
+    """
+
+    coords = [[symbol, tuple(np.array(coords)[i])] for i, symbol in enumerate(symbols)]
+
+    mol = gto.Mole()
+    mol.atom = coords
+    mol.unit = "Angstrom"
+    mol.basis = basis
+    mol.spin = spin
+    if point_group:
+        mol.symmetry = point_group.lower()
+        mol.symmetry_subgroup = point_group.lower()
+
+    mol.build()
+
+    # Run DFT based on spin
+    if mol.spin == 0:
+        if use_gpu:
+            mf = rks.RKS(mol)
+        else:
+            mf = scf.RKS(mol)
+    else:
+        if use_gpu:
+            mf = uks.UKS(mol)
+        else:
+            mf = scf.UKS(mol)
+    mf.xc = functional
+
+    mf.verbose = 0
+    mf.kernel()
+
+    # Get ground state energy
+    gs_energy = mf.e_tot
+
+    # Run TDDFT
+    if use_gpu:
+        td = mf.TDA()
+    else:
+        td = tdscf.TDA(mf)
+    td.nstates = nroots - 1
+    td.conv_tol = conv_tol
+    td.max_cycle = max_cycle
+
+    nocc = mol.nelectron // 2
+    td.occ_orbitals = np.arange(nocc - active_occ, nocc)
+    td.vir_orbitals = np.arange(nocc, nocc + active_vir)
+
+    if restrict_spin == "singlet":
+        if mol.spin != 0:
+            raise ValueError("Cannot restrict to singlet for open-shell system")
+        td.singlet = True
+        td.kernel()
+        td.analyze(verbose=0)
+        excitation_energies = (
+            td.e / 27.2114
+        )  # Get excitation energies (in eV) and convert to Hartree
+        energies = [gs_energy] + [gs_energy + e for e in excitation_energies]
+
+    if restrict_spin == "triplet":
+        td.singlet = False
+        td.kernel()
+        td.analyze(verbose=0)
+        excitation_energies = (
+            td.e / 27.2114
+        )  # Get excitation energies (in eV) and convert to Hartree
+        energies = [gs_energy] + [gs_energy + e for e in excitation_energies]
+
+    if restrict_spin == "mixed" and nroots > 2:
+        td.nstates = (nroots - 1) // 2
+
+        td.singlet = True
+        td.kernel()
+        td.analyze(verbose=0)
+        excitation_energies = (
+            td.e / 27.2114
+        )  # Get excitation energies (in eV) and convert to Hartree
+        energies = [gs_energy] + [gs_energy + e for e in excitation_energies]
+
+        td.singlet = False
+        td.kernel()
+        td.analyze(verbose=0)
+        excitation_energies = (
+            td.e / 27.2114
+        )  # Get excitation energies (in eV) and convert to Hartree
+        energies = energies + [gs_energy + e for e in excitation_energies]
 
     return energies

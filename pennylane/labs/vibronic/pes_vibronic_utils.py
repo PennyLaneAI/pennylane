@@ -14,25 +14,20 @@
 """This module contains functions to calculate potential energy surfaces
 per normal modes on a grid."""
 
-import numpy as np
-import scipy as sp
-
+from itertools import combinations
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import numpy as np
 import pyscf
+import scipy as sp
+from pyscf import cc, gto, mcscf, scf, tdscf
+from pyscf.fci import direct_spin0
 from pyscf.hessian import thermo
-
+from pyscf.symm.geom import SymmSys
 from scipy.spatial.transform import Rotation
 
-from itertools import combinations
-
-from pyscf import gto, scf, mcscf, tdscf, cc
-from pyscf.fci import direct_spin0
-from pyscf.symm.geom import SymmSys
-
 from pennylane import concurrency, qchem
-
 from pennylane.qchem.vibrational.vibrational_class import (
     VibrationalPES,
     optimize_geometry,
@@ -343,6 +338,10 @@ def _generate_2d_grid(frequencies, normal_modes, eq_geometry, displacements):
     grid_points = []
     n_modes = len(frequencies)
 
+    displaced_coords = _displace_geometry(eq_geometry, normal_modes, frequencies, [], [])
+
+    grid_points.append({"mode_indices": [], "displacements": [], "coordinates": displaced_coords})
+
     modes_to_use = range(n_modes)
 
     for i, j in combinations(modes_to_use, 2):
@@ -382,6 +381,10 @@ def _generate_3d_grid(frequencies, normal_modes, eq_geometry, displacements):
     grid_points = []
     n_modes = len(frequencies)
 
+    displaced_coords = _displace_geometry(eq_geometry, normal_modes, frequencies, [], [])
+
+    grid_points.append({"mode_indices": [], "displacements": [], "coordinates": displaced_coords})
+
     modes_to_use = range(n_modes)
 
     for i, j, k in combinations(modes_to_use, 3):
@@ -401,3 +404,52 @@ def _generate_3d_grid(frequencies, normal_modes, eq_geometry, displacements):
                         }
                     )
     return grid_points
+
+
+def harmonic_analysis(molecule, rotate=True, method="rhf", functional="b3lyp"):
+    r"""Computes harmonic vibrational frequencies and normal modes of a molecule.
+
+    Args:
+        molecule (Molecule): Molecule object
+        rotate (bool): If ``True``, the molecule will be rotated such that the normal modes are
+            aligned with symmetry operators. Default is ``True``.
+        method (str): Electronic structure method that can be either restricted or unrestricted
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively, or density functional theory,
+            ``'dft'``. Default is ``'rhf'``.
+        functional (str): The exchange-correlation functional used for density functional theory
+            calculations. Default is ``'b3lyp'``.
+
+    Returns:
+        tuple: A tuple containing the following:
+         - list[float]: normal mode frequencies in ``cm^-1``
+         - TensorLike[float]: corresponding displacement vectors for each normal mode
+    """
+    geom = [
+        [symbol, tuple(np.array(molecule.coordinates)[i])]
+        for i, symbol in enumerate(molecule.symbols)
+    ]
+    spin = int((molecule.mult - 1) / 2)
+    mol = pyscf.gto.Mole(
+        atom=geom, symmetry="C1", spin=spin, charge=molecule.charge, unit=molecule.unit
+    )
+    mol.basis = molecule.basis_name
+    mol.build()
+
+    freqs, vectors = _harmonic_analysis(mol, rotate, method=method, functional=functional)
+
+    return freqs, vectors
+
+
+def generate_grid(
+    molecule, freqs, vectors, coupling_level=1, n_points=5, grid_range=2.0, grid_type="uniform"
+):
+    grid = _grid_points(grid_type, grid_range, n_points)
+
+    eq_geometry = molecule.coordinates * BOHR_TO_ANG
+
+    if coupling_level == 1:
+        return _generate_1d_grid(freqs, vectors, eq_geometry, grid)
+    elif coupling_level == 2:
+        return _generate_2d_grid(freqs, vectors, eq_geometry, grid)
+    else:
+        return None

@@ -14,39 +14,33 @@
 """This module contains functions to calculate potential energy surfaces
 per normal modes on a grid."""
 
-import numpy as np
-import scipy as sp
-
+from itertools import combinations
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+import numpy as np
 import pyscf
+import scipy as sp
+from pyscf import cc, gto, mcscf, scf, tdscf
+from pyscf.fci import direct_spin0
 from pyscf.hessian import thermo
-
+from pyscf.symm.geom import SymmSys
 from scipy.spatial.transform import Rotation
 
-from itertools import combinations
-
-from pyscf import gto, scf, mcscf, tdscf, cc
-from pyscf.fci import direct_spin0
-from pyscf.symm.geom import SymmSys
-
 from pennylane import concurrency, qchem
-
 from pennylane.qchem.vibrational.vibrational_class import (
     VibrationalPES,
     optimize_geometry,
 )
 
+from .pes_solver import _run_casscf, _run_eom_ccsd, _run_tddft, _run_tddft_mixed
 from .pes_vibronic_utils import (
-    _harmonic_analysis,
-    _grid_points,
     _generate_1d_grid,
     _generate_2d_grid,
     _generate_3d_grid,
+    _grid_points,
+    _harmonic_analysis,
 )
-from .pes_solver import _run_casscf, _run_tddft, _run_eom_ccsd
-
 
 # constants
 # TODO: Make this code work in atomic units only.
@@ -264,3 +258,71 @@ def vibronic_pes(
             grid,
             pes_data=[energy_1, energy_2, energy_3],
         )
+
+
+def pes_mode(
+    molecule,
+    freqs,
+    vectors,
+    geometry_grid,
+    method_excited="tddft",
+    functional="cam-b3lyp",
+    nroots=3,
+    conv_tol=1e-7,
+    max_cycle=50,
+    restrict_spin="singlet",
+    spin=0,
+    point_group=None,
+    use_gpu=False,
+    active_occ=5,
+    active_vir=4,
+    num_workers=1,
+    backend="serial",
+):
+    r"""Computes one-mode potential energy surface data.
+
+    Args:
+        molecule (Molecule): Molecule object
+        ...
+
+    Returns:
+        TensorLike[float]: The potential energy surface data with the shape (n_modes x n_roots, n_points).
+    """
+
+    if method_excited == "tddft":
+        arguments = [
+            (
+                molecule.symbols,
+                i["coordinates"],
+                molecule.basis_name,
+                functional,
+                nroots,
+                conv_tol,
+                max_cycle,
+                restrict_spin,
+                spin,
+                point_group,
+                use_gpu,
+                active_occ,
+                active_vir,
+            )
+            for i in geometry_grid
+        ]
+
+        executor_class = concurrency.backends.get_executor(backend)
+        with executor_class(max_workers=num_workers) as executor:
+            energies_raw = np.array(list(executor.starmap(_run_tddft_mixed, arguments)))
+
+        energies = []
+        n_points = len(
+            set(
+                num
+                for pair in [item["displacements"] for item in geometry_grid]
+                for num in pair
+                if num != 0.0
+            )
+        )
+        for col in energies_raw.T:
+            energies.append(np.insert(col[1:].reshape(-1, n_points), n_points // 2, col[0], axis=1))
+
+    return np.vstack(energies)
