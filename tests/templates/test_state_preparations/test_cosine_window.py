@@ -22,6 +22,8 @@ import pytest
 import pennylane as qml
 from pennylane.exceptions import WireError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
+from pennylane.tape.plxpr_conversion import CollectOpsandMeas
+from pennylane.transforms.decompose import DecomposeInterpreter
 from pennylane.wires import Wires
 
 
@@ -67,6 +69,30 @@ class TestDecomposition:
 
         for rule in qml.list_decomps(qml.CosineWindow):
             _test_decomposition_rule(op, rule)
+
+    @pytest.mark.integration
+    @pytest.mark.capture
+    def test_integration_decompose_interpreter(self):
+        """Tests that a simple circuit is correctly decomposed into different gate sets."""
+        import jax
+
+        def f():
+            qml.CosineWindow(wires=[0, 1])
+
+        decomposed_f = DecomposeInterpreter(gate_set={ "Hadamard", "RZ", "PhaseShift", "ControlledPhaseShift", "SWAP" })(f)
+        jaxpr = jax.make_jaxpr(decomposed_f)()
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        assert collector.state["ops"] == [
+            qml.Hadamard(1),
+            qml.RZ(3.141592653589793, wires=[1]),
+            qml.SWAP(wires=[0, 1]),
+            qml.H(1),
+            qml.ControlledPhaseShift(-1.5707963267948966, wires=Wires([1, 0])),
+            qml.Hadamard(0),
+            qml.PhaseShift(1.5707963267948966, wires=[0]),
+            qml.PhaseShift(0.7853981633974483, wires=[1])
+        ]
 
     def test_correct_gates_single_wire(self):
         """Test that the correct gates are applied."""
