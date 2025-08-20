@@ -69,7 +69,7 @@ def test_update_array_with_operations(op, expected):
         jnp.array([3, 2, 1], dtype=int),
     ],
 )
-def test_div_update(array_in):
+def test_update_array_with_div_operation(array_in):
     """Tests that the /= operator works with arrays."""
 
     def fn(x):
