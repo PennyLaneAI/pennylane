@@ -166,7 +166,7 @@ The slowest tests are marked with ``slow`` and can be deselected by:
 
     python -m pytest -m "not slow" tests
 
-The ``pytest -m`` option supports Boolean combinations of markers. It is therefore possible to run both Jax and PyTorch
+The ``pytest -m`` option supports Boolean combinations of markers. It is therefore possible to run both JAX and PyTorch
 tests by writing:
 
 .. code-block:: bash
