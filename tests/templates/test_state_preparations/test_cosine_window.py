@@ -79,7 +79,9 @@ class TestDecomposition:
         def f():
             qml.CosineWindow(wires=[0, 1])
 
-        decomposed_f = DecomposeInterpreter(gate_set={ "Hadamard", "RZ", "PhaseShift", "ControlledPhaseShift", "SWAP" })(f)
+        decomposed_f = DecomposeInterpreter(
+            gate_set={"Hadamard", "RZ", "PhaseShift", "ControlledPhaseShift", "SWAP"}
+        )(f)
         jaxpr = jax.make_jaxpr(decomposed_f)()
         collector = CollectOpsandMeas()
         collector.eval(jaxpr.jaxpr, jaxpr.consts)
@@ -91,7 +93,7 @@ class TestDecomposition:
             qml.ControlledPhaseShift(-1.5707963267948966, wires=Wires([1, 0])),
             qml.Hadamard(0),
             qml.PhaseShift(1.5707963267948966, wires=[0]),
-            qml.PhaseShift(0.7853981633974483, wires=[1])
+            qml.PhaseShift(0.7853981633974483, wires=[1]),
         ]
 
     def test_correct_gates_single_wire(self):
