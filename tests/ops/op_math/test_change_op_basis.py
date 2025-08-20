@@ -117,24 +117,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         op2 = qml.change_op_basis(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
         assert op1.hash != op2.hash
 
-    PROD_TERMS_OP_PAIRS = (  # not all operands have pauli representation
-        (
-            qml.change_op_basis(qml.Hadamard(0), X(1), qml.Hadamard(0)),
-            [1.0],
-            [qml.change_op_basis(qml.Hadamard(0), X(1), qml.Hadamard(0))],
-        ),  # trivial change_op_basis
-        (
-            qml.change_op_basis(X(0), X(1), X(0)),
-            [1.0],
-            [qml.change_op_basis(X(0), X(1), X(0))],
-        ),  # trivial change_op_basis
-        (
-            qml.change_op_basis(qml.Hadamard(0), X(1)),
-            [1.0],
-            [qml.change_op_basis(qml.Hadamard(0), X(1), qml.Hadamard(0))],
-        ),  # change_op_basis without adjoint provided
-    )
-
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
         x = qml.numpy.array([1.0, 2.0, 3.0])
