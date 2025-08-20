@@ -577,7 +577,7 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Update `autoray.NumpyMimic` with `autoray.AutoNamespace` in `math` to accommodate newly released `autoray==0.8.0`.
+* Pin `autoray==0.7.2` in CI due to breaking changes in `v0.8.0`.
   [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
 
 * Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and

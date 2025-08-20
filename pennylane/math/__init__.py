@@ -175,8 +175,8 @@ def is_real_obj_or_close(obj):
     return not get_dtype_name(obj).startswith("complex")
 
 
-class NumpyMimic(ar.autoray.AutoNamespace):
-    """Subclass of the Autoray AutoNamespace class in order to support
+class NumpyMimic(ar.autoray.NumpyMimic):
+    """Subclass of the Autoray NumpyMimic class in order to support
     the NumPy fft submodule"""
 
     # pylint: disable=too-few-public-methods
@@ -188,7 +188,7 @@ class NumpyMimic(ar.autoray.AutoNamespace):
 
 
 numpy_mimic = NumpyMimic()
-numpy_fft = ar.autoray.AutoNamespace("fft")
+numpy_fft = ar.autoray.NumpyMimic("fft")
 
 # small constant for numerical stability that the user can modify
 eps = 1e-14
