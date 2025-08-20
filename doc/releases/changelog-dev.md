@@ -577,6 +577,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
+  [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
+
 * Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
 `run_filecheck_qjit` fixtures.
   [(#8049)](https://github.com/PennyLaneAI/pennylane/pull/8049)
