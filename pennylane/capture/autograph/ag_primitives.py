@@ -44,6 +44,9 @@ __all__ = [
     "for_stmt",
     "while_stmt",
     "converted_call",
+    "and_",
+    "or_",
+    "not_",
     "set_item",
     "update_item_with_op",
 ]
@@ -355,6 +358,39 @@ def while_stmt(loop_test, loop_body, get_state, set_state, symbol_names, _opts):
 
     results = _call_pennylane_while(loop_test, loop_body, get_state, set_state, symbol_names)
     set_state(results)
+
+
+def _logical_op(*args, jax_fn: Callable, python_fn: Callable):
+    """A helper function to implement logical operations in a way that is compatible with both
+    JAX and Python. It checks if any of the arguments are undefined, and raises an error if so.
+    Otherwise, it applies the specified logical operation using either JAX or Python functions."""
+
+    values = [arg() if callable(arg) else arg for arg in args]
+
+    if any(qml.math.is_abstract(val) for val in values):
+        result = jax_fn(*values)
+    else:
+        result = python_fn(*values)
+
+    return result
+
+
+def and_(a, b):
+    """A wrapper for the AutoGraph 'and' operator. It returns the result of the logical 'and'
+    operation between two values, `a` and `b`. If either value is undefined, it raises an error."""
+    return _logical_op(a, b, jax_fn=jax.numpy.logical_and, python_fn=lambda x, y: x and y)
+
+
+def or_(a, b):
+    """A wrapper for the AutoGraph 'or' operator. It returns the result of the logical 'or'
+    operation between two values, `a` and `b`. If either value is undefined, it raises an error."""
+    return _logical_op(a, b, jax_fn=jax.numpy.logical_or, python_fn=lambda x, y: x or y)
+
+
+def not_(a):
+    """A wrapper for the AutoGraph 'not' operator. It returns the result of the logical 'not'
+    operation on a value `a`. If `a` is undefined, it raises an error."""
+    return _logical_op(a, jax_fn=jax.numpy.logical_not, python_fn=lambda x: not x)
 
 
 # Prevent autograph from converting PennyLane and Catalyst library code, this can lead to many
