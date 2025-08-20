@@ -78,6 +78,33 @@
 
 <h3>Improvements 🛠</h3>
 
+* PennyLane `autograph` supports standard python for updating arrays. 
+  Users can now use this when designing quantum circuits with experimental program capture enabled.
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3))
+  def circuit(val):
+    angles = jnp.zeros(3)
+    angles[0:3] += val
+
+    for i, angle in enumerate(angles):
+        qml.RX(angle, i)
+
+    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  ```
+
+  ```pycon
+  >>> circuit(jnp.pi)
+  (Array(-1, dtype=float32),
+   Array(-1, dtype=float32),
+   Array(-1, dtype=float32)) 
+  ```
+
 * PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
   Users can now use standard python assignment when designing circuits with experimental program capture enabled.
 
