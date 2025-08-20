@@ -131,12 +131,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize(
         "factors",
         (
-            [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])],
+            [qml.PauliX(wires=0), qml.PauliZ(wires=0)],
             [qml.PauliX(wires=0), qml.RZ(0.612, "r")],
-            [
-                qml.Hamiltonian([-0.3], [qml.PauliZ(wires=1)]),
-                qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]),
-            ],
+            [qml.PauliZ(wires=0), qml.PauliX(wires=0)],
             [MyOp(3.1, 0), qml.CNOT([0, 2])],
         ),
     )
@@ -150,12 +147,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize(
         "factors",
         (
-            [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])],
+            [qml.PauliX(wires=0), qml.PauliZ(wires=0)],
             [qml.PauliX(wires=0), qml.RZ(0.612, "r")],
-            [
-                qml.Hamiltonian([-0.3], [qml.PauliZ(wires=1)]),
-                qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]),
-            ],
+            [qml.PauliZ(wires=0), qml.PauliX(wires=0)],
             [MyOp(3.1, 0), qml.CNOT([0, 2])],
         ),
     )
