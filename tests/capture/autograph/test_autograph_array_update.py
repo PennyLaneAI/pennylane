@@ -88,9 +88,9 @@ def test_slicing_update():
 
     def fn(x):
         # For some reason slicing is allowed if you don't directly use an object
-        index = slice(0, 1)
+        index = slice(0, 3, 1)
         x[index] += 2
-        x[1:2] += 2
+        x[0:3:1] += 2
         return x
 
     array_in = jnp.array([4, 2, 1], dtype=int)
@@ -98,7 +98,7 @@ def test_slicing_update():
     args = (array_in,)
     ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
     result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
-    assert jnp.array_equal(result[0], jnp.array([6, 4, 1], dtype=result[0].dtype))
+    assert jnp.array_equal(result[0], jnp.array([8, 6, 5], dtype=result[0].dtype))
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
