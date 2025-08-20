@@ -60,6 +60,10 @@ from .elementwise.other import (
     SelectOp,
 )
 
+from .control_flow.control_flow import (
+    IfOp,
+)
+
 # Import the main StableHLO dialect
 from .dialect import StableHLO
 
@@ -67,7 +71,7 @@ from .dialect import StableHLO
 __all__ = [
     # Main dialect
     "StableHLO",
-    # Unary operations
+    # Elementwise unary operations
     "ConvertOp",
     "CosineOp",
     "ExponentialMinusOneOp",
@@ -88,17 +92,19 @@ __all__ = [
     "SqrtOp",
     "TanOp",
     "TanhOp",
-    # Binary operations
+    # Elementwise binary operations
     "ComplexOp",
     "DivideOp",
     "MaximumOp",
     "MinimumOp",
     "PowerOp",
     "RemainderOp",
-    # Other operations
+    # Elementwise other operations
     "ClampOp",
     "CompareOp",
     "MapOp",
     "ReducePrecisionOp",
     "SelectOp",
+    # Control flow operations
+    "IfOp",
 ]
