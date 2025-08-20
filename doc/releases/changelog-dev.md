@@ -712,7 +712,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* An error is now raised if counts are calculated from sequences of processed mid circuit measurements.
+* An error is now raised if counts and probs are calculated from
+  sequences of processed mid circuit measurements.
   [(#8109)](https://github.com/PennyLaneAI/pennylane/pull/8109)
 
 * Simplifying operators raised to integer powers no longer causes recursion errors.
