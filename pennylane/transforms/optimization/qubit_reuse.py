@@ -18,6 +18,8 @@ from collections import defaultdict
 from itertools import product
 
 import networkx as nx
+from networkx.algorithms.cycles import find_cycle
+from networkx.exception import NetworkXNoCycle
 
 from pennylane import numpy as np
 from pennylane.measurements import MidMeasureMP
@@ -403,7 +405,15 @@ def qubit_reuse(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocessing
     """
     G = pennylane_to_networkx(tape)
 
-    # TODO: Check G doesn't have cycles
+    cycles = True
+    try:
+        find_cycle(G)
+    except NetworkXNoCycle:
+        cycles = False
+
+    if cycles:
+        raise ValueError("Cannot transform a circuit corresponding to a graph containing cycles with GidNET.")
+
     for node in G.nodes:
         if 'MidMeasureMP' in node:
             raise ValueError("Cannot transform a circuit already containing mid-circuit measurements using GiDNET.")
