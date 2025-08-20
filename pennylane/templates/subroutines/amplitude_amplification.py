@@ -245,7 +245,9 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
                 num_wires=len(U.wires),
                 num_reflection_wires=num_reflection_wires,
             )
-        ] = iters // 2
+        ] = (
+            iters // 2
+        )
     elif not fixed_point and iters > 0:
         resources[resource_rep(O.__class__, **O.resource_params)] = iters
         resources[
@@ -262,7 +264,9 @@ def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wir
 
 
 @register_resources(_amplitude_amplification_resources)
-def _amplitude_amplification_decomposition(*_, U, O, iters, fixed_point, work_wire, p_min, reflection_wires, **__):
+def _amplitude_amplification_decomposition(
+    *_, U, O, iters, fixed_point, work_wire, p_min, reflection_wires, **__
+):
 
     delta = np.sqrt(1 - p_min)
     gamma = np.cos(np.arccos(1 / delta, dtype=np.complex128) / iters, dtype=np.complex128) ** -1
