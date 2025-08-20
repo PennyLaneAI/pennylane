@@ -55,7 +55,7 @@ class ElementwiseBinaryOperation(IRDLOperation, abc.ABC, Generic[T_IN, T_OUT]):
     This class provides a flexible template for binary operations that can work
     with different tensor types.
 
-    For more informtation about the semantics, see:
+    For more information about the semantics, see:
     https://openxla.org/xla/operation_semantics#element-wise_binary_arithmetic_operations
     """
 
