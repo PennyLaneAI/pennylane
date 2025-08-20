@@ -74,6 +74,7 @@ class TestDecomposition:
     def test_integration_decompose_interpreter(self):
         """Tests that a simple circuit is correctly decomposed into different gate sets."""
         import jax
+
         from pennylane.tape.plxpr_conversion import CollectOpsandMeas
 
         def f():
