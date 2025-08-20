@@ -117,7 +117,9 @@ def prod(*ops, id=None, lazy=True):
 
             # dequeue operators passed as arguments to the quantum function
             leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
-            _ = [qml.QueuingManager.remove(l) for l in leaves if isinstance(l, Operator)]
+            for l in leaves:
+                if isinstance(l, Operator):
+                    qml.QueuingManager.remove(l)
 
             qs = qml.tape.make_qscript(fn)(*args, **kwargs)
             if len(qs.operations) == 1:
