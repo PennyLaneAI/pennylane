@@ -74,6 +74,9 @@ class ExpectationMP(SampleMeasurement, StateMeasurement):
                 samples=samples, wire_order=wire_order, shot_range=shot_range, bin_size=bin_size
             )
 
+        if self.mv is not None:
+            samples = math.squeeze(samples)
+
         # With broadcasting, we want to take the mean over axis 1, which is the -1st/-2nd with/
         # without bin_size. Without broadcasting, axis 0 is the -1st/-2nd with/without bin_size
         axis = -1 if bin_size is None else -2

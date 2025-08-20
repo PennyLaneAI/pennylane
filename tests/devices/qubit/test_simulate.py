@@ -1348,7 +1348,6 @@ class TestMidMeasurements:
 
         The above combinations should work for finite shots, shot vectors and post-selecting of either the 0 or 1 branch.
         """
-        shots = 50
         if measure_f in (qml.expval, qml.var) and (
             isinstance(meas_obj, list) or meas_obj == "mcm_list"
         ):
