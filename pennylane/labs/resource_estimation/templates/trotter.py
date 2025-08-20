@@ -120,11 +120,18 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         self.order = order
 
         if wires:
-            self.num_wires = len(wires)
+            self.wires = Wires(wires)
+            self.num_wires = len(self.wires)
         else:
-            self.num_wires = max(op.num_wires for op in first_order_expansion)
-
-        super().__init__(wires=wires)
+            ops_wires = [op.wires for op in first_order_expansion if op.wires is not None]
+            if len(ops_wires) == 0:
+                self.wires = None
+                self.num_wires = max(op.num_wires for op in first_order_expansion)
+            else:
+                self.wires = Wires.all_wires(ops_wires)
+                max_single_op_wires = max(op.num_wires for op in first_order_expansion)
+                max_all_op_wires = len(self.wires)
+                self.num_wires = max(max_all_op_wires, max_single_op_wires)
 
     @property
     def resource_params(self) -> dict:
