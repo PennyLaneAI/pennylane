@@ -980,6 +980,21 @@ class TestShotDistribution:
     measurement case and with "default" or "qwc" grouping_strategy.
     """
 
+    @pytest.mark.parametrize("grouping_strategy", ["default", "qwc", "wires", None])
+    def test_none_shot_distribution(self, grouping_strategy):
+        """Test standard behaviour with no shot distribution strategy."""
+
+        initial_tape = qml.tape.QuantumScript(measurements=[ham_expval], shots=total_shots)
+
+        tapes, _ = split_non_commuting(
+            initial_tape,
+            grouping_strategy=grouping_strategy,
+            shot_distribution=None,
+        )
+
+        for tape in tapes:
+            assert tape.shots.total_shots == total_shots
+
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
     @pytest.mark.parametrize(
         ["shot_distribution", "expected_shots"],
