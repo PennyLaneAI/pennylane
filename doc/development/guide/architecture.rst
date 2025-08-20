@@ -271,7 +271,7 @@ coded entirely in the framework's language (such as a PyTorch quantum simulator)
 |
 
 Most devices, however, are blackboxes with regards to the autodifferentiation framework.
-This means that when the execution on the device begins, autograd, jax, and PyTorch
+This means that when the execution on the device begins, autograd, JAX, and PyTorch
 tensors need to be converted to formats that the device understands - which is in most cases
 a representation as NumPy arrays. Likewise, the results of the execution have to be translated
 back to differentiable tensors. These two conversions happen at what PennyLane calls the
