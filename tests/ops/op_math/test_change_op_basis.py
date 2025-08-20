@@ -16,7 +16,6 @@ Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
 
 # pylint:disable=protected-access, unused-argument
-import gate_data as gd  # a file containing matrix rep of each gate
 import pytest
 
 import pennylane as qml
@@ -27,48 +26,6 @@ from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
-
-no_mat_ops = (
-    qml.Barrier,
-    qml.WireCut,
-)
-
-non_param_ops = (
-    (qml.Identity, gd.I),
-    (qml.Hadamard, gd.H),
-    (qml.PauliX, gd.X),
-    (qml.PauliY, gd.Y),
-    (qml.PauliZ, gd.Z),
-    (qml.S, gd.S),
-    (qml.T, gd.T),
-    (qml.SX, gd.SX),
-    (qml.CNOT, gd.CNOT),
-    (qml.CZ, gd.CZ),
-    (qml.CY, gd.CY),
-    (qml.SWAP, gd.SWAP),
-    (qml.ISWAP, gd.ISWAP),
-    (qml.SISWAP, gd.SISWAP),
-    (qml.CSWAP, gd.CSWAP),
-    (qml.Toffoli, gd.Toffoli),
-)
-
-param_ops = (
-    (qml.RX, gd.Rotx),
-    (qml.RY, gd.Roty),
-    (qml.RZ, gd.Rotz),
-    (qml.PhaseShift, gd.Rphi),
-    (qml.Rot, gd.Rot3),
-    (qml.U1, gd.U1),
-    (qml.U2, gd.U2),
-    (qml.U3, gd.U3),
-    (qml.CRX, gd.CRotx),
-    (qml.CRY, gd.CRoty),
-    (qml.CRZ, gd.CRotz),
-    (qml.CRot, gd.CRot3),
-    (qml.IsingXX, gd.IsingXX),
-    (qml.IsingYY, gd.IsingYY),
-    (qml.IsingZZ, gd.IsingZZ),
-)
 
 ops = (
     (qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0)),
