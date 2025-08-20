@@ -156,7 +156,12 @@ class ArbitraryStatePreparation(Operation):
 
 
 def _arbitrary_state_preparation_resources(num_wires):
-    return dict(Counter(resource_rep(qml.PauliRot, pauli_word=pauli_word) for pauli_word in _state_preparation_pauli_words(num_wires)))
+    return dict(
+        Counter(
+            resource_rep(qml.PauliRot, pauli_word=pauli_word)
+            for pauli_word in _state_preparation_pauli_words(num_wires)
+        )
+    )
 
 
 @register_resources(_arbitrary_state_preparation_resources)
