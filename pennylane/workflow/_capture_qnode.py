@@ -117,7 +117,6 @@ from jax.interpreters import ad, batching, mlir
 
 import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
-from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
 from pennylane.typing import TensorLike
 
@@ -459,20 +458,9 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
     flat_fn = FlatFn(qfunc)
 
-    try:
-        qfunc_jaxpr = jax.make_jaxpr(
-            flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
-        )(*args)
-    except (
-        jax.errors.TracerArrayConversionError,
-        jax.errors.TracerIntegerConversionError,
-        jax.errors.TracerBoolConversionError,
-    ) as exc:
-        raise CaptureError(
-            "Autograph must be used when Python control flow is dependent on a dynamic "
-            "variable (a function input). Please ensure that autograph=True or use native control "
-            "flow functions like for_loop, while_loop, etc."
-        ) from exc
+    qfunc_jaxpr = jax.make_jaxpr(
+        flat_fn, abstracted_axes=abstracted_axes, static_argnums=qnode.static_argnums
+    )(*args)
 
     assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
     return qfunc_jaxpr, flat_fn.out_tree
