@@ -969,7 +969,7 @@ ham = qml.Hamiltonian(
     ],
 )
 ham_expval = qml.expval(ham)
-total_shots = 30000
+total_shots = 1000
 coeffs_per_group = [[10, 20], [0.1, 0.2], [100]]
 
 
@@ -992,6 +992,8 @@ class TestShotDistribution:
             shot_distribution=None,
         )
 
+        assert sum(tape.shots.total_shots for tape in tapes) == total_shots * len(tapes)
+
         for tape in tapes:
             assert tape.shots.total_shots == total_shots
 
@@ -999,9 +1001,9 @@ class TestShotDistribution:
     @pytest.mark.parametrize(
         ["shot_distribution", "expected_shots"],
         [
-            ("uniform", (10000, 10000, 10000)),
-            ("weighted", (6907, 69, 23023)),
-            ("weighted_random", (6836, 71, 23093)),  # requires fixed seed=42
+            ("uniform", (334, 333, 333)),
+            ("weighted", (231, 2, 767)),
+            ("weighted_random", (221, 3, 776)),  # requires fixed seed=42
         ],
     )
     def test_single_hamiltonian_sampling_strategy(
@@ -1017,6 +1019,9 @@ class TestShotDistribution:
             shot_distribution=shot_distribution,
             seed=42,
         )
+
+        # check that the original total number of shots is conserved
+        assert sum(tape.shots.total_shots for tape in tapes) == total_shots
 
         # check that for all output tapes the number of shots is computed as expected
         for tape, shots in zip(tapes, expected_shots, strict=True):

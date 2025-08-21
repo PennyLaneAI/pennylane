@@ -53,17 +53,20 @@ ShotDistributionFunction = Callable[
 def _uniform_deterministic_sampling(total_shots, coeffs_per_group, seed):
     # pylint: disable=unused-argument
     num_groups = len(coeffs_per_group)
-    shots = total_shots / num_groups
-    shots_per_group = np.array([shots] * num_groups)
-    return shots_per_group
+    shots, remainder = total_shots // num_groups, total_shots % num_groups
+    shots_per_group = np.full(num_groups, shots)
+    shots_per_group[:remainder] += 1
+    return shots_per_group.astype(int)
 
 
 def _weighted_deterministic_sampling(total_shots, coeffs_per_group, seed):
     # pylint: disable=unused-argument
     sum_per_group = np.array([np.sum(np.abs(coeffs)) for coeffs in coeffs_per_group])
     prob_shots = sum_per_group / np.sum(sum_per_group)
-    shots_per_group = total_shots * prob_shots
-    return shots_per_group
+    shots_per_group = np.floor(total_shots * prob_shots)
+    remainder = int(total_shots - np.sum(shots_per_group))
+    shots_per_group[:remainder] += 1
+    return shots_per_group.astype(int)
 
 
 def _weighted_random_sampling(total_shots, coeffs_per_group, seed):
@@ -71,7 +74,7 @@ def _weighted_random_sampling(total_shots, coeffs_per_group, seed):
     prob_shots = sum_per_group / np.sum(sum_per_group)
     distribution = multinomial(n=total_shots, p=prob_shots, seed=seed)
     shots_per_group = distribution.rvs()[0]
-    return shots_per_group
+    return shots_per_group.astype(int)
 
 
 shot_distribution_str2fn = {
