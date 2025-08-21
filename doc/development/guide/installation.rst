@@ -46,15 +46,12 @@ of Python packaged for scientific computation.
 Interface dependencies
 ~~~~~~~~~~~~~~~~~~~~~~
 
-For development of the TensorFlow, PyTorch, and JAX interfaces, there are additional
+For development of the PyTorch and JAX interfaces, there are additional
 requirements which must be installed manually:
 
 * **JAX interface**: ``jax`` and ``jaxlib`` == 0.6.0
 
 * **PyTorch interface**: ``pytorch``
-
-* **TensorFlow interface**: ``tensorflow`` < 2.17
-
 
 Installation
 ------------
