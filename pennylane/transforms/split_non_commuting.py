@@ -63,10 +63,9 @@ def _weighted_deterministic_sampling(total_shots, coeffs_per_group, seed):
 
 
 def _weighted_random_sampling(total_shots, coeffs_per_group, seed):
-    np.random.seed(seed)
     sum_per_group = np.array([np.sum(np.abs(coeffs)) for coeffs in coeffs_per_group])
     prob_shots = sum_per_group / np.sum(sum_per_group)
-    distribution = multinomial(n=total_shots, p=prob_shots)
+    distribution = multinomial(n=total_shots, p=prob_shots, seed=seed)
     shots_per_group = distribution.rvs()[0]
     return shots_per_group
 
