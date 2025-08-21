@@ -799,6 +799,5 @@ def diagonalize_mcms(tape):
             new_mp.mv.measurements = mps
             new_measurements.append(new_mp)
 
-    new_tape = tape.copy(operations=new_operations)
-
+    new_tape = tape.copy(operations=new_operations, measurements=new_measurements)
     return (new_tape,), null_postprocessing
