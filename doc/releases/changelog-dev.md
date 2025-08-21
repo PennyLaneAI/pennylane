@@ -716,6 +716,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* An error is now raised if sequences of classically processed mid circuit measurements
+  are used as input to :func:`pennylane.counts` or :func:`pennylane.probs`.
+  [(#8109)](https://github.com/PennyLaneAI/pennylane/pull/8109)
+
 * Simplifying operators raised to integer powers no longer causes recursion errors.
   [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
 
