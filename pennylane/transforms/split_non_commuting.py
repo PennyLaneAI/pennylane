@@ -21,6 +21,7 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import partial, wraps
+from typing import Literal
 
 import numpy as np
 from scipy.stats import multinomial
@@ -104,8 +105,10 @@ def shot_vector_support(initial_postprocessing: PostprocessingFn) -> Postprocess
 @transform
 def split_non_commuting(
     tape: QuantumScript,
-    grouping_strategy: str | None = "default",
-    shot_distribution: ShotDistributionFunction | str | None = None,
+    grouping_strategy: Literal["default", "wires", "qwc"] | None = "default",
+    shot_distribution: (
+        ShotDistributionFunction | Literal["uniform", "weighted", "weighted_random"] | None
+    ) = None,
     seed: np.random.Generator | int | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
