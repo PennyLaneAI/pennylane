@@ -39,7 +39,7 @@ class TestFable:
 
     def test_standard_validity(self, input_matrix):
         """Check the operation using the assert_valid function."""
-        op = qml.FABLE(input_matrix, wires=range(5), tol=1.0)
+        op = qml.FABLE(input_matrix, wires=range(5), tol=0.01)
         qml.ops.functions.assert_valid(op)
 
     @pytest.mark.parametrize(
@@ -431,6 +431,17 @@ class TestFable:
     def test_decomposition_new(self, input, wires, tol):
         """Tests the decomposition rule implemented with the new system."""
         op = qml.FABLE(input_matrix=input, wires=range(wires), tol=tol)
+
+        for rule in qml.list_decomps(qml.FABLE):
+            _test_decomposition_rule(op, rule)
+
+    def test_decomposition_new_fixed_input(self):
+        """Check the operation using the assert_valid function."""
+        matrix = np.array(
+            [[0.8488749045779405, 0.6727547394771869], [0.21985217715701366, 0.9938695727819239]]
+        )
+
+        op = qml.FABLE(matrix, wires=range(3), tol=0)
 
         for rule in qml.list_decomps(qml.FABLE):
             _test_decomposition_rule(op, rule)

@@ -276,7 +276,10 @@ def _fable_decomposition(input_matrix, wires, tol=0):
 
             return nots
 
-        nots = cond(math.abs(2 * theta) > tol, in_tol_branch)(nots) or nots
+        def trivial_branch(nots):
+            return nots
+
+        nots = cond(math.abs(2 * theta) > tol, in_tol_branch, trivial_branch)(nots)
 
         def del_branch(nots):
             del nots[wire_map[control_index]]
