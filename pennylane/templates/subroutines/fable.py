@@ -214,13 +214,6 @@ def _fable_resources(wires, thetas, control_wires, tol):
 
     nots = {}
     for theta, control_index in zip(thetas, control_wires):
-        if math.is_abstract(theta):
-            for _ in nots:  # pragma: no cover
-                resources[resource_rep(CNOT)] += 1  # pragma: no cover
-            resources[resource_rep(RY)] += 1  # pragma: no cover
-            nots = {}  # pragma: no cover
-            nots[wire_map[control_index]] = 1  # pragma: no cover
-            continue  # pragma: no cover
 
         if math.abs(2 * theta) > tol:
             for _ in nots:
@@ -269,52 +262,32 @@ def _fable_decomposition(input_matrix, wires, tol=0):
         theta = thetas[j]
         control_index = control_wires[j]
 
-        def abstract_branch(nots):
-            @for_loop(len(nots.keys()))  # pragma: no cover
-            def abstract_nots_loop(k):  # pragma: no cover
-                c_wire = list(nots.keys())[k]  # pragma: no cover
-                CNOT(wires=[c_wire] + auxilliary)  # pragma: no cover
+        def in_tol_branch(nots):
 
-            # pylint: disable=no-value-for-parameter
-            abstract_nots_loop(nots)  # pragma: no cover
-
-            RY(2 * theta, wires=auxilliary)  # pragma: no cover
-            nots = {}  # pragma: no cover
-            nots[wire_map[control_index]] = 1  # pragma: no cover
-
-            return nots  # pragma: no cover
-
-        def concrete_branch(nots):
-            def in_tol_branch(nots):
-
-                @for_loop(len(nots.keys()))
-                def concrete_nots_loop(l, nots):
-                    c_wire = list(nots.keys())[l]
-                    CNOT(wires=[c_wire] + auxilliary)
-                    return nots
-
-                concrete_nots_loop(nots)  # pylint: disable=no-value-for-parameter
-
-                RY(2 * theta, wires=auxilliary)
-                nots = {}
-
+            @for_loop(len(nots.keys()))
+            def concrete_nots_loop(l, nots):
+                c_wire = list(nots.keys())[l]
+                CNOT(wires=[c_wire] + auxilliary)
                 return nots
 
-            nots = cond(math.abs(2 * theta) > tol, in_tol_branch)(nots) or nots
+            concrete_nots_loop(nots)  # pylint: disable=no-value-for-parameter
 
-            def del_branch(nots):
-                del nots[wire_map[control_index]]
-                return nots
-
-            def add_branch(nots):
-                nots[wire_map[control_index]] = 1
-                return nots
-
-            nots = cond(wire_map[control_index] in nots, del_branch, add_branch)(nots)
+            RY(2 * theta, wires=auxilliary)
+            nots = {}
 
             return nots
 
-        nots = cond(is_abstract(theta), abstract_branch, concrete_branch)(nots)
+        nots = cond(math.abs(2 * theta) > tol, in_tol_branch)(nots) or nots
+
+        def del_branch(nots):
+            del nots[wire_map[control_index]]
+            return nots
+
+        def add_branch(nots):
+            nots[wire_map[control_index]] = 1
+            return nots
+
+        nots = cond(wire_map[control_index] in nots, del_branch, add_branch)(nots)
 
         return nots
 
