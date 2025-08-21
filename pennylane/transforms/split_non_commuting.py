@@ -99,7 +99,7 @@ def split_non_commuting(
     tape: QuantumScript,
     grouping_strategy: str | None = "default",
     shot_distribution: ShotDistributionFunction | str | None  = None,
-    seed: int = None,
+    seed: None | int | np.random.Generator = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
