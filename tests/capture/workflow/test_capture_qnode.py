@@ -610,7 +610,7 @@ class TestDevicePreprocessing:
             )
         else:
             assert len(res) == shots
-            counts = qml.numpy.bincount(res)
+            counts = qml.numpy.bincount(qml.math.squeeze(res))
             assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
     def test_mcms_execution_single_branch_statistics(self, dev_name, seed):
