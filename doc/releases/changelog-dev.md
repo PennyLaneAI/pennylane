@@ -608,6 +608,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
+  [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
+
 * Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
   [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
 
