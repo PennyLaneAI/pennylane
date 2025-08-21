@@ -1028,21 +1028,39 @@ class TestShotDistribution:
 
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
     @pytest.mark.parametrize("seed", [42, None])
-    def test_single_hamiltonian_custom_function(self, grouping_strategy, seed):
-        """Test custom shot distribution mock function for the single hamiltonian case."""
+    def test_single_hamiltonian_mock_function(self, grouping_strategy, seed):
+        """Test shot distribution mock function for the single hamiltonian case."""
 
         total_shots = 1000
         initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=total_shots)
 
-        shot_distribution_mock_func = MagicMock(spec=ShotDistributionFunction)
+        mock_shot_distribution = MagicMock(spec=ShotDistributionFunction)
 
         _ = split_non_commuting(
             initial_tape,
             grouping_strategy=grouping_strategy,
-            shot_distribution=shot_distribution_mock_func,
+            shot_distribution=mock_shot_distribution,
             seed=seed,
         )
 
         # check that the shot_distribution function gets called exactly once with the expected signature
         coeffs_per_group = [[10, 20], [0.1, 0.2], [100]]
-        shot_distribution_mock_func.assert_called_once_with(total_shots, coeffs_per_group, seed)
+        mock_shot_distribution.assert_called_once_with(total_shots, coeffs_per_group, seed)
+
+    @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
+    def test_single_hamiltonian_custom_function(self, grouping_strategy):
+        """Test shot distribution custom function for the single hamiltonian case."""
+
+        initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=10)
+
+        def custom_shot_distribution(_, coeffs_per_group, __):
+            return [1] * len(coeffs_per_group)
+
+        tapes, _ = split_non_commuting(
+            initial_tape,
+            grouping_strategy=grouping_strategy,
+            shot_distribution=custom_shot_distribution,
+        )
+
+        for tape in tapes:
+            assert tape.shots.total_shots == 1
