@@ -98,7 +98,7 @@ def shot_vector_support(initial_postprocessing: PostprocessingFn) -> Postprocess
 def split_non_commuting(
     tape: QuantumScript,
     grouping_strategy: str | None = "default",
-    shot_distribution: ShotDistributionFunction | str = None,
+    shot_distribution: ShotDistributionFunction | str | None  = None,
     seed: int = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
