@@ -30,10 +30,9 @@ from pennylane.typing import Callable
 
 from ..compiler import Compiler
 
-has_graphviz = True
-
 try:
     from graphviz import Source as GraphSource
+    has_graphviz = True
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_graphviz = False
 
