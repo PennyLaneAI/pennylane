@@ -333,6 +333,13 @@ def split_non_commuting(
     if len(tape.measurements) == 0:
         return [tape], null_postprocessing
 
+    if isinstance(shot_distribution, Callable):
+        shot_distribution_fn = shot_distribution
+    elif isinstance(shot_distribution, str):
+        shot_distribution_fn = shot_distribution_str2fn[shot_distribution]
+    else:
+        shot_distribution_fn = None
+
     # Special case for a single measurement of a Sum, in which case
     # the grouping information can be computed and cached in the observable.
     if (
@@ -347,12 +354,6 @@ def split_non_commuting(
             or tape.measurements[0].obs.grouping_indices is not None
         )
     ):
-        if isinstance(shot_distribution, Callable):
-            shot_distribution_fn = shot_distribution
-        elif isinstance(shot_distribution, str):
-            shot_distribution_fn = shot_distribution_str2fn[shot_distribution]
-        else:
-            shot_distribution_fn = None
         return _split_ham_with_grouping(tape, shot_distribution_fn=shot_distribution_fn, seed=seed)
 
     single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
