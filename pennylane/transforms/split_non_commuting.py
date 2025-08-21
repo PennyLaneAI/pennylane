@@ -132,7 +132,7 @@ def split_non_commuting(
             or ``None`` to disable grouping.
 
     Returns:
-        qnode (QNode) or tuple[List[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or tuple[list[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     .. note::
         This transform splits expectation values of sums into separate terms, and also distributes the terms into
@@ -481,10 +481,10 @@ def _split_using_qwc_grouping(
 
     Args:
         tape (~qml.tape.QuantumScript): The tape to be split.
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[TensorLike]]]): A dictionary
+        single_term_obs_mps (list[MeasurementProcess, tuple[list[int], list[TensorLike]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
-        offsets (List[TensorLike]): Offsets associated with each original measurement in the tape.
+        offsets (list[TensorLike]): Offsets associated with each original measurement in the tape.
 
     """
 
@@ -550,10 +550,10 @@ def _split_using_wires_grouping(
 
     Args:
         tape (~qml.tape.QuantumScript): The tape to be split.
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float | TensorLike]]]): A dictionary
-        of measurements of each unique single-term observable, mapped to the indices of the
-        original measurements it belongs to, and its coefficients.
-        offsets (List[float | TensorLike]): Offsets associated with each original measurement in the tape.
+        single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]]): A dictionary
+            of measurements of each unique single-term observable, mapped to the indices of the
+            original measurements it belongs to, and its coefficients.
+        offsets (list[float | TensorLike]): Offsets associated with each original measurement in the tape.
 
     """
 
@@ -631,10 +631,10 @@ def _split_all_multi_term_obs_mps(tape: qml.tape.QuantumScript):
         tape (~qml.tape.QuantumScript): The tape with measurements to split.
 
     Returns:
-        single_term_obs_mps (Dict[MeasurementProcess, Tuple[List[int], List[float | TensorLike]]]): A
-            dictionary for measurements of each unique single-term observable, mapped to the
+        single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]]): A dictionary
+            for measurements of each unique single-term observable, mapped to the
             indices of the original measurements it belongs to, and its coefficients.
-        offsets (List[float | TensorLike]): Offsets associated with each original measurement in the tape.
+        offsets (list[float | TensorLike]): Offsets associated with each original measurement in the tape.
 
     """
 
@@ -697,8 +697,10 @@ def _processing_fn_no_grouping(
     Args:
         res (ResultBatch): The results from executing the tapes. Assumed to have a shape
             of (n_groups [,n_shots] [,n_mps] [,batch_size])
-        single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]]):
-        offsets (List[float | TensorLike]): Offsets associated with each original measurement in the tape.
+        single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[float | TensorLike]]]): A dictionary
+            of measurements of each unique single-term observable, mapped to the indices of the
+            original measurements it belongs to, and its coefficients.
+        offsets (list[float | TensorLike]): Offsets associated with each original measurement in the tape.
         shots (Shots): The shots settings of the original tape.
 
     """
@@ -740,8 +742,8 @@ def _processing_fn_with_grouping(
         single_term_obs_mps (dict[MeasurementProcess, SingleTermMP]):
             A dictionary of measurements of each unique single-term observable,
             mapped to the corresponding single-term observable objects.
-        offsets (List[float | TensorLike]): Offsets associated with each original measurement in the tape.
-        group_sizes (List[int]): The number of tapes in each group.
+        offsets (list[float | TensorLike]): Offsets associated with each original measurement in the tape.
+        group_sizes (list[int]): The number of tapes in each group.
         shots (Shots): The shots setting of the original tape.
 
     Returns:
