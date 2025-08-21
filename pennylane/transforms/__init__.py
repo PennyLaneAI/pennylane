@@ -64,6 +64,7 @@ A set of transforms to perform basic circuit compilation tasks.
     ~transforms.transpile
     ~transforms.undo_swaps
     ~transforms.unitary_to_rot
+    ~transforms.zx.optimize_t_count
     ~transforms.zx.push_hadamards
     ~transforms.zx.reduce_non_clifford
     ~transforms.zx.todd
@@ -337,7 +338,14 @@ from .tape_expand import (
     set_decomposition,
 )
 from .transpile import transpile
-from .zx import to_zx, from_zx, push_hadamards, reduce_non_clifford, todd
+from .zx import (
+    to_zx,
+    from_zx,
+    optimize_t_count,
+    push_hadamards,
+    reduce_non_clifford,
+    todd,
+)
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
 

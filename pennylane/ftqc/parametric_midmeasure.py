@@ -327,7 +327,7 @@ def _measure_impl(
     # Create a UUID and a map between MP and MV to support serialization
     measurement_id = str(uuid.uuid4())
     mp = measurement_class(wires=wires, id=measurement_id, **kwargs)
-    return MeasurementValue([mp], processing_fn=lambda v: v)
+    return MeasurementValue([mp])
 
 
 class ParametricMidMeasureMP(MidMeasureMP):
@@ -751,8 +751,16 @@ def diagonalize_mcms(tape):
                 curr_idx += 1
 
                 # add conditional diagonalizing gates + computational basis MCM to the tape
-                expr_true = MeasurementValue(mps, processing_fn=true_cond.meas_val.processing_fn)
-                expr_false = MeasurementValue(mps, processing_fn=false_cond.meas_val.processing_fn)
+                p_fn = (
+                    true_cond.meas_val.processing_fn if true_cond.meas_val.has_processing else None
+                )
+                expr_true = MeasurementValue(mps, processing_fn=p_fn)
+                f_fn = (
+                    false_cond.meas_val.processing_fn
+                    if false_cond.meas_val.has_processing
+                    else None
+                )
+                expr_false = MeasurementValue(mps, processing_fn=f_fn)
 
                 with QueuingManager.stop_recording():
                     diag_gates_true = [
