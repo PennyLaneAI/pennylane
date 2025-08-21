@@ -379,6 +379,7 @@
   down on the complexity of post-processing due to having to handle single shot and single wire cases
   separately. The return shape will now *always* be `(shots, num_wires)`.
   [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
+  [(#8118)](https://github.com/PennyLaneAI/pennylane/pull/8118)
 
   For a simple qnode:
 
@@ -607,6 +608,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
+  [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
 
 * Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
   [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
