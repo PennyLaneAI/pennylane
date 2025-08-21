@@ -73,19 +73,19 @@ class TestSelectTHC:
                 plre.CompactHamiltonian.thc(58, 160),
                 13,
                 1,
-                {"algo_qubits": 138, "ancilla_qubits": 752, "toffoli_gates": 5998},
+                {"algo_qubits": 138, "ancilla_qubits": 752, "toffoli_gates": 5997},
             ),
             (
                 plre.CompactHamiltonian.thc(10, 50),
                 None,
                 None,
-                {"algo_qubits": 38, "ancilla_qubits": 163, "toffoli_gates": 1140},
+                {"algo_qubits": 38, "ancilla_qubits": 163, "toffoli_gates": 1139},
             ),
             (
                 plre.CompactHamiltonian.thc(4, 20),
                 None,
                 2,
-                {"algo_qubits": 24, "ancilla_qubits": 73, "toffoli_gates": 426},
+                {"algo_qubits": 24, "ancilla_qubits": 73, "toffoli_gates": 425},
             ),
         ),
     )

@@ -388,7 +388,7 @@ class ResourcePrepTHC(ResourceOperator):
 
         coeff_precision_bits = coeff_precision_bits or kwargs["config"]["qubitization_coeff_bits"]
 
-        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
         coeff_register = int(math.ceil(math.log2(num_coeff)))
         m_register = int(math.ceil(math.log2(tensor_rank + 1)))
 
@@ -399,12 +399,16 @@ class ResourcePrepTHC(ResourceOperator):
         gate_list.append(AllocWires(coeff_register + 2 * m_register + 2 * coeff_precision_bits + 6))
 
         hadamard = resource_rep(plre.ResourceHadamard)
+
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
         # Figure - 3
+
+        # Inquality tests
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
 
+        # Reflection on 5 registers
         ccz = resource_rep(plre.ResourceCCZ)
         gate_list.append(
             plre.GateCount(
@@ -419,17 +423,20 @@ class ResourcePrepTHC(ResourceOperator):
 
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
+        # Rotate and invert the rotation of ancilla to obtain amplitude of success
         gate_list.append(AllocWires(coeff_precision_bits))
         gate_list.append(plre.GateCount(toffoli, 2 * (coeff_precision_bits - 3)))
         gate_list.append(FreeWires(coeff_precision_bits))
 
+        # Reflecting about the success amplitude
         gate_list.append(plre.GateCount(ccz, 2 * m_register - 1))
 
-        hadamard = resource_rep(plre.ResourceHadamard)
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
+        # Inequality tests
         gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
 
+        # Checking that inequality is satisfied
         mcx = resource_rep(
             plre.ResourceMultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0}
         )
@@ -442,9 +449,10 @@ class ResourcePrepTHC(ResourceOperator):
         # Figure- 4(Subprepare Circuit)
         gate_list.append(plre.GateCount(hadamard, coeff_precision_bits + 1))
 
-        # Contiguous register cost
+        # Contiguous register cost Eq.29
         gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
 
+        # QROM for keep values Eq.31
         qrom_coeff = resource_rep(
             plre.ResourceQROM,
             {
@@ -456,6 +464,7 @@ class ResourcePrepTHC(ResourceOperator):
         )
         gate_list.append(plre.GateCount(qrom_coeff, 1))
 
+        # Inequality test between alt and keep registers
         comparator = resource_rep(
             plre.ResourceRegisterComparator,
             {
@@ -470,9 +479,11 @@ class ResourcePrepTHC(ResourceOperator):
         gate_list.append(plre.GateCount(cz, 2))
         gate_list.append(plre.GateCount(x, 2))
 
+        # Swap \mu and \nu registers with alt registers
         cswap = resource_rep(plre.ResourceCSWAP)
         gate_list.append(plre.GateCount(cswap, 2 * m_register))
 
+        # Swap \mu and \nu registers controlled on |+> state and success of inequality
         gate_list.append(plre.GateCount(cswap, m_register))
         gate_list.append(plre.GateCount(toffoli, 1))
 
@@ -518,9 +529,12 @@ class ResourcePrepTHC(ResourceOperator):
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
         # Figure - 3
+
+        # Inquality tests
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
 
+        # Reflection on 5 registers
         ccz = resource_rep(plre.ResourceCCZ)
         gate_list.append(
             plre.GateCount(
@@ -535,17 +549,20 @@ class ResourcePrepTHC(ResourceOperator):
 
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
+        # Rotate and invert the rotation of ancilla to obtain amplitude of success
         gate_list.append(AllocWires(coeff_precision_bits))
         gate_list.append(plre.GateCount(toffoli, 2 * (coeff_precision_bits - 3)))
         gate_list.append(FreeWires(coeff_precision_bits))
 
+        # Reflecting about the success amplitude
         gate_list.append(plre.GateCount(ccz, 2 * m_register - 1))
 
-        hadamard = resource_rep(plre.ResourceHadamard)
         gate_list.append(plre.GateCount(hadamard, 2 * m_register))
 
+        # Inequality tests
         gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
 
+        # Checking that inequality is satisfied
         mcx = resource_rep(
             plre.ResourceMultiControlledX, {"num_ctrl_wires": 3, "num_ctrl_values": 0}
         )
@@ -561,6 +578,7 @@ class ResourcePrepTHC(ResourceOperator):
         # Contiguous register cost
         gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
 
+        # Adjoint of QROM for keep values Eq.32
         qrom_adj = resource_rep(
             plre.ResourceAdjoint,
             {
@@ -581,12 +599,17 @@ class ResourcePrepTHC(ResourceOperator):
         gate_list.append(plre.GateCount(cz, 2))
         gate_list.append(plre.GateCount(x, 2))
 
+        # Swap \mu and \nu registers with alt registers
         cswap = resource_rep(plre.ResourceCSWAP)
         gate_list.append(plre.GateCount(cswap, 2 * m_register))
 
+        # Swap \mu and \nu registers controlled on |+> state and success of inequality
         gate_list.append(plre.GateCount(cswap, m_register))
         gate_list.append(plre.GateCount(toffoli, 1))
 
         # Free Prepare Wires
+        # 6 ancillas account for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
+        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
         gate_list.append(FreeWires(coeff_register + 2 * m_register + 2 * coeff_precision_bits + 6))
+
         return gate_list

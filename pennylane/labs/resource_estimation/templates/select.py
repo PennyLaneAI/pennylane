@@ -169,10 +169,11 @@ class ResourceSelectTHC(ResourceOperator):
 
         gate_list = []
 
+        # 4 swaps on state registers controlled on spin qubits
         swap = resource_rep(plre.ResourceCSWAP)
         gate_list.append(GateCount(swap, 4 * num_orb))
 
-        # For 2-body integrals
+        # QROM to load rotation angles for 2-body integrals
         gate_list.append(AllocWires(rotation_precision_bits * (num_orb - 1)))
         qrom_twobody = resource_rep(
             plre.ResourceQROM,
@@ -185,6 +186,7 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(GateCount(qrom_twobody))
 
+        # Cost for rotations by adding the rotations into the phase gradient state
         semiadder = resource_rep(
             plre.ResourceControlled,
             {
@@ -198,14 +200,16 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(GateCount(semiadder, num_orb - 1))
 
+        # Adjoint of QROM for 2-body integrals Eq. 34
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_twobody}))
         )
+        # Adjoint of semiadder for 2-body integrals
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": semiadder}), num_orb - 1)
         )
 
-        # For one body integrals
+        # QROM to load rotation angles for one body integrals
         qrom_onebody = resource_rep(
             plre.ResourceQROM,
             {
@@ -217,8 +221,10 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(GateCount(qrom_onebody))
 
+        # Cost for rotations by adding the rotations into the phase gradient state
         gate_list.append(GateCount(semiadder, num_orb - 1))
 
+        # Clifford cost for rotations
         h = resource_rep(plre.ResourceHadamard)
         s = resource_rep(plre.ResourceS)
         s_dagg = resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": s})
@@ -227,9 +233,12 @@ class ResourceSelectTHC(ResourceOperator):
         gate_list.append(GateCount(s, 2 * num_orb))
         gate_list.append(GateCount(s_dagg, 2 * num_orb))
 
+        # Adjoint of QROM for one body integrals Eq. 35
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_onebody}))
         )
+
+        # Adjoint of semiadder for one body integrals
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": semiadder}), num_orb - 1)
         )
@@ -240,8 +249,9 @@ class ResourceSelectTHC(ResourceOperator):
         cz = resource_rep(plre.ResourceCZ)
         gate_list.append(plre.GateCount(cz, 1))
 
+        # 1 Toffoli to apply the cswap between the spin registers
         toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(plre.GateCount(toffoli, 2))
+        gate_list.append(plre.GateCount(toffoli, 1))
         gate_list.append(FreeWires(rotation_precision_bits * (num_orb - 1)))
 
         return gate_list
@@ -306,18 +316,11 @@ class ResourceSelectTHC(ResourceOperator):
             gate_list.append(AllocWires(1))
             gate_list.append(GateCount(mcx, 2))
 
-        # Resource state
-        gate_list.append(AllocWires(rotation_precision_bits))
-
-        phase_grad = resource_rep(
-            plre.ResourcePhaseGradient, {"num_wires": rotation_precision_bits}
-        )
-        gate_list.append(GateCount(phase_grad, 1))
-
+        # 4 swaps on state registers controlled on spin qubits
         swap = resource_rep(plre.ResourceCSWAP)
         gate_list.append(GateCount(swap, 4 * num_orb))
 
-        # For 2-body integrals
+        # QROM for loading rotation angles for 2-body integrals
         gate_list.append(AllocWires(rotation_precision_bits * (num_orb - 1)))
         qrom_twobody = resource_rep(
             plre.ResourceQROM,
@@ -330,6 +333,7 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(GateCount(qrom_twobody))
 
+        # Cost for rotations by adding the rotations into the phase gradient state
         semiadder = resource_rep(
             plre.ResourceControlled,
             {
@@ -343,14 +347,16 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(GateCount(semiadder, num_orb - 1))
 
+        # Adjoint of QROM for 2-body integrals Eq. 34
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_twobody}))
         )
+        # Adjoint of semiadder for 2-body integrals
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": semiadder}), num_orb - 1)
         )
 
-        # For one body integrals
+        # QROM for loading rotation angles for one body integrals
         qrom_onebody = resource_rep(
             plre.ResourceQROM,
             {
@@ -362,8 +368,10 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(GateCount(qrom_onebody))
 
+        # Cost for rotations by adding the rotations into the phase gradient state
         gate_list.append(GateCount(semiadder, num_orb - 1))
 
+        # Clifford cost for rotations
         h = resource_rep(plre.ResourceHadamard)
         s = resource_rep(plre.ResourceS)
         s_dagg = resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": s})
@@ -372,9 +380,11 @@ class ResourceSelectTHC(ResourceOperator):
         gate_list.append(GateCount(s, 2 * num_orb))
         gate_list.append(GateCount(s_dagg, 2 * num_orb))
 
+        # Adjoint of QROM for one body integrals Eq. 35
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_onebody}))
         )
+        # Adjoint of semiadder for one body integrals
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": semiadder}), num_orb - 1)
         )
@@ -393,8 +403,11 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(plre.GateCount(ccz, 1))
 
+        # 1 Toffoli to apply the cswap between the spin registers
+        toffoli = resource_rep(plre.ResourceToffoli)
+        gate_list.append(plre.GateCount(toffoli, 1))
+
         gate_list.append(FreeWires(rotation_precision_bits * (num_orb - 1)))
-        gate_list.append(FreeWires(rotation_precision_bits))
 
         if ctrl_num_ctrl_wires > 1:
             gate_list.append(FreeWires(1))
