@@ -16,9 +16,14 @@
     (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
     [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 
-  * :func:`~.transforms.zx.todd` to optimize a Clifford + T circuit using the Third Order Duplicate and Destroy (TODD) algorithm
+  * :func:`~.transforms.zx.todd` to optimize a Clifford + T circuit by using the Third Order Duplicate and Destroy (TODD) algorithm
     (see [pyzx.phase_block_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize)).
     [(#8029)](https://github.com/PennyLaneAI/pennylane/pull/8029)
+
+  * :func:`~.transforms.zx.optimize_t_count` to reduce the number of T gates in a Clifford + T circuit by applying
+    a sequence of passes that combine ZX-based commutation and cancellation rules and the TODD algorithm
+    (see [pyzx.full_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize)).
+    [(#8088)](https://github.com/PennyLaneAI/pennylane/pull/8088)
 
   * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford gates by applying
     a combination of phase gadgetization strategies and Clifford gate simplification rules.
@@ -539,6 +544,7 @@
   [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
   [How to optimize a QML model using JAX and Optax](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
+  [(#8106)](https://github.com/PennyLaneAI/pennylane/pull/8106)
 
 * `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
   Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
@@ -628,6 +634,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
+  [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
 
 * Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
 `run_filecheck_qjit` fixtures.
@@ -764,6 +773,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* An error is now raised if sequences of classically processed mid circuit measurements
+  are used as input to :func:`pennylane.counts` or :func:`pennylane.probs`.
+  [(#8109)](https://github.com/PennyLaneAI/pennylane/pull/8109)
+
 * Simplifying operators raised to integer powers no longer causes recursion errors.
   [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
 
@@ -808,6 +821,9 @@
 
 * Fixes `SemiAdder` to work when inputs are defined with a single wire.
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
+
+* Fixes a bug where `qml.prod` applied on a quantum function does not dequeue operators passed as arguments to the function.
+  [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
 
 <h3>Contributors ✍️</h3>
 
