@@ -30,21 +30,33 @@ import pennylane as qml
 from pennylane.compiler.python_compiler.visualization import generate_mlir_graph
 
 
+@pytest.fixture(autouse=True)
+def _chdir_tmp(monkeypatch, tmp_path: Path):
+    """Ensure all tests run inside a temp directory."""
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+def collect_files(tmp_path: Path) -> set[str]:
+    """Return the set of generated SVG files."""
+    out_dir = tmp_path / "mlir_generated_graphs"
+    return {f.name for f in out_dir.glob("*.svg")}
+
+
+def assert_files(tmp_path: Path, expected: set[str]):
+    """Check that the generated files match the expected set."""
+    files = collect_files(tmp_path)
+    assert files == expected, f"Expected {expected}, got {files}"
+
+
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestMLIRGraph:
     "Test the MLIR graph generation"
 
-    def _collect_files(self, tmp_path: Path) -> set[str]:
-        out_dir = tmp_path / "mlir_generated_graphs"
-        return {f.name for f in out_dir.glob("*.svg")}
-
-    def test_no_transforms(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    @pytest.mark.parametrize("qjit", [True, False])
+    def test_no_transforms(self, tmp_path: Path, qjit: bool):
         "Test the MLIR graph is not generated when no transforms are applied"
 
-        monkeypatch.chdir(tmp_path)
-
-        @generate_mlir_graph
-        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _():
             qml.RX(0.1, 0)
@@ -53,17 +65,16 @@ class TestMLIRGraph:
             qml.CNOT([0, 2])
             return qml.state()
 
-        _()
+        if qjit:
+            _ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(_)
 
-        assert not self._collect_files(tmp_path)
+        generate_mlir_graph(_)()
+        assert collect_files(tmp_path) == set()
 
-    def test_transforms_no_args(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-        "Test the MLIR graph generation with no arguments to the QNode"
+    @pytest.mark.parametrize("qjit", [True, False])
+    def test_transforms_no_args(self, tmp_path: Path, qjit: bool):
+        "Test the MLIR graph generation with no arguments to the QNode with and without qjit"
 
-        monkeypatch.chdir(tmp_path)
-
-        @generate_mlir_graph
-        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
         @qml.compiler.python_compiler.transforms.merge_rotations_pass
         @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
@@ -74,39 +85,153 @@ class TestMLIRGraph:
             qml.CNOT([0, 2])
             return qml.state()
 
-        _()
+        if qjit:
+            _ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(_)
 
-        files = self._collect_files(tmp_path)
-        assert len(files) == 3
-        assert files == {
-            "QNode_level_0_no_transforms.svg",
-            "QNode_level_1_after_xdsl-merge-rotations.svg",
-            "QNode_level_2_after_xdsl-cancel-inverses.svg",
-        }
+        generate_mlir_graph(_)()
+        assert_files(
+            tmp_path,
+            {
+                "QNode_level_0_no_transforms.svg",
+                "QNode_level_1_after_xdsl-merge-rotations.svg",
+                "QNode_level_2_after_xdsl-cancel-inverses.svg",
+            },
+        )
 
-    def test_transforms_args(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-        "Test the MLIR graph generation with arguments to the QNode"
+    @pytest.mark.parametrize("qjit", [True, False])
+    def test_transforms_args(self, tmp_path: Path, qjit: bool):
+        "Test the MLIR graph generation with arguments to the QNode with and without qjit"
 
-        monkeypatch.chdir(tmp_path)
-
-        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
         @qml.compiler.python_compiler.transforms.merge_rotations_pass
         @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def _(x, y, w1, w2):
+            qml.RX(x, w1)
+            qml.RX(y, w2)
+            return qml.state()
+
+        if qjit:
+            _ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(_)
+
+        generate_mlir_graph(_)(0.1, 0.2, 0, 1)
+        assert_files(
+            tmp_path,
+            {
+                "QNode_level_0_no_transforms.svg",
+                "QNode_level_1_after_xdsl-merge-rotations.svg",
+                "QNode_level_2_after_xdsl-cancel-inverses.svg",
+            },
+        )
+
+    def test_cond(self, tmp_path: Path):
+        "Test the MLIR graph generation for a conditional"
+
+        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def _(pred, arg1, arg2):
+            """Quantum circuit with conditional branches."""
+
+            qml.RX(0.10, wires=0)
+
+            def true_fn(arg1, arg2):
+                qml.RY(arg1, wires=0)
+                qml.RX(arg2, wires=0)
+                qml.RZ(arg1, wires=0)
+
+            def false_fn(arg1, arg2):
+                qml.RX(arg1, wires=0)
+                qml.RX(arg2, wires=0)
+
+            qml.cond(pred > 0, true_fn, false_fn)(arg1, arg2)
+            qml.RX(0.10, wires=0)
+            return qml.expval(qml.Z(wires=0))
+
+        generate_mlir_graph(_)(0.5, 0.1, 0.2)
+        assert_files(
+            tmp_path,
+            {
+                "QNode_level_0_no_transforms.svg",
+                "QNode_level_1_after_xdsl-merge-rotations.svg",
+            },
+        )
+
+    def test_cond_with_mcm(self, tmp_path: Path):
+        "Test the MLIR graph generation for a conditional with MCM"
+
+        def true_fn(arg):
+            qml.RX(arg, 0)
+
+        def false_fn(arg):
+            qml.RY(3 * arg, 0)
+
+        @qml.compiler.python_compiler.transforms.merge_rotations_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _(x, y):
+            """Quantum circuit with conditional branches."""
+
             qml.RX(x, 0)
-            qml.RX(y, 0)
+            m = qml.measure(0)
+
+            qml.cond(m, true_fn, false_fn)(y)
+            return qml.expval(qml.Z(0))
+
+        generate_mlir_graph(_)(0.5, 0.1)
+        assert_files(
+            tmp_path,
+            {
+                "QNode_level_0_no_transforms.svg",
+                "QNode_level_1_after_xdsl-merge-rotations.svg",
+            },
+        )
+
+    def test_for_loop(self, tmp_path: Path):
+        "Test the MLIR graph generation for a for loop"
+
+        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def _():
+            @qml.for_loop(0, 100)
+            def loop(_):
+                qml.RX(0.1, 0)
+                qml.RX(0.1, 0)
+
+            # pylint: disable=no-value-for-parameter
+            loop()
             return qml.state()
 
-        generate_mlir_graph(_)(0.1, 0.2)
+        generate_mlir_graph(_)()
+        assert_files(
+            tmp_path,
+            {
+                "QNode_level_0_no_transforms.svg",
+                "QNode_level_1_after_xdsl-merge-rotations.svg",
+            },
+        )
 
-        files = self._collect_files(tmp_path)
-        assert len(files) == 3
-        assert files == {
-            "QNode_level_0_no_transforms.svg",
-            "QNode_level_1_after_xdsl-merge-rotations.svg",
-            "QNode_level_2_after_xdsl-cancel-inverses.svg",
-        }
+    def test_while_loop(self, tmp_path: Path):
+        "Test the MLIR graph generation for a while loop"
+
+        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def _(x):
+            def cond_fn(x):
+                return x < 2
+
+            @qml.while_loop(cond_fn)
+            def loop(x):
+                return x**2
+
+            loop(x)
+            return qml.expval(qml.PauliZ(0))
+
+        generate_mlir_graph(_)(0.5)
+        assert_files(
+            tmp_path,
+            {
+                "QNode_level_0_no_transforms.svg",
+                "QNode_level_1_after_xdsl-merge-rotations.svg",
+            },
+        )
 
 
 if __name__ == "__main__":

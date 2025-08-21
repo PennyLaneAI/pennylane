@@ -20,18 +20,18 @@ import subprocess
 from functools import wraps
 from pathlib import Path
 
-from catalyst import qjit
 from catalyst.compiler import CompileError, _get_catalyst_cli_cmd
-from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 from xdsl.printer import Printer
 
 from pennylane import QNode
 from pennylane.typing import Callable
 
 from ..compiler import Compiler
+from .draw import _get_mlir_module
 
 try:
     from graphviz import Source as GraphSource
+
     has_graphviz = True
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_graphviz = False
@@ -108,12 +108,7 @@ def generate_mlir_graph(qnode: QNode) -> Callable:
         # with the args and kwargs provided by the user.
         # TODO: we could integrate the callback mechanism within `qjit`,
         # so that we wouldn't need to recompile the qnode twice.
-        mlir_module = qnode.mlir_module
-        if mlir_module is None:
-            new_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(qnode.user_function)
-            new_qnode.jit_compile(args, **kwargs)
-            mlir_module = new_qnode.mlir_module
-
+        mlir_module = _get_mlir_module(qnode, args, kwargs)
         Compiler.run(mlir_module, callback=_mlir_graph_callback)
 
     return wrapper
