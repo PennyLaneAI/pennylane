@@ -381,7 +381,7 @@ def gather_mcm_qjit(measurement, samples, is_valid, postselect_mode=None):  # pr
     if isinstance(measurement, (CountsMP, ProbabilityMP)):
         interface = qml.math.get_interface(is_valid)
         sum_valid = qml.math.sum(is_valid)
-        count_1 = qml.math.sum(meas * is_valid)
+        count_1 = qml.math.sum(qml.math.squeeze(meas) * is_valid)
         if isinstance(measurement, CountsMP):
             return qml.math.array([0, 1], like=interface), qml.math.array(
                 [sum_valid - count_1, count_1], like=interface

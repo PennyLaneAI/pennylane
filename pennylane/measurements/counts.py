@@ -199,10 +199,8 @@ class CountsMP(SampleMeasurement):
                 return "".join(str(s) for s in sample)
 
             new_shape = samples.shape[:-1]
-            print(new_shape)
             # Flatten broadcasting axis
             flattened_samples = np.reshape(samples, (-1, shape[-1]))
-            print(flattened_samples)
             if isinstance(self.mv, MeasurementValue):
                 samples = flattened_samples
             else:
@@ -232,19 +230,15 @@ class CountsMP(SampleMeasurement):
         if not batched:
             samples = samples[None]
 
-        print(outcomes)
         # generate empty outcome dict, populate values with state counts
         base_dict = {k: math.int64(0) for k in outcomes}
         outcome_dicts = [base_dict.copy() for _ in range(shape[0])]
-        print("here: ", samples)
         results = [math.unique(batch, return_counts=True) for batch in samples]
 
         for result, outcome_dict in zip(results, outcome_dicts):
             states, _counts = result
             for state, count in zip(math.unwrap(states), _counts):
                 outcome_dict[state] = count
-
-        print(outcome_dict)
 
         def outcome_to_eigval(outcome: str):
             return self.eigvals()[int(outcome, 2)]
