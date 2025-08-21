@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Unit and integration tests for the Python compiler `measurements_from_samples` transform."""
+"""Unit and integration tests for the Unified compiler `measurements_from_samples` transform."""
 
 # pylint: disable=wrong-import-position
 
