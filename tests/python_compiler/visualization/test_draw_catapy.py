@@ -34,10 +34,9 @@ class Testdraw:
     """Unit tests for the draw function in the Python Compiler visualization module."""
 
     @pytest.fixture
-    def transforms_circuit(self):
+    def transforms_circuit_xdsl(self):
         """Fixture for a circuit with xDSL transforms applied."""
 
-        @qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])
         @qml.compiler.python_compiler.transforms.merge_rotations_pass
         @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
@@ -63,6 +62,7 @@ class Testdraw:
         return circ
 
     # pylint: disable=implicit-str-concat
+    @pytest.mark.parametrize("qjit", [True, False])
     @pytest.mark.parametrize(
         "level, expected",
         [
@@ -79,13 +79,42 @@ class Testdraw:
                 "2: ──RZ────────────────────╰X─╰X─┤  State",
             ),
             (2, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
+            (None, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
+            (50, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
         ],
     )
-    def test_multiple_levels(self, transforms_circuit, level, expected):
+    def test_multiple_levels(self, transforms_circuit_xdsl, level, qjit, expected):
         """Test that multiple levels of transformation are applied correctly."""
 
-        out1 = draw(transforms_circuit, level=level)()
-        assert out1 == expected
+        if qjit:
+            transforms_circuit_xdsl = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(
+                transforms_circuit_xdsl
+            )
+
+        assert draw(transforms_circuit_xdsl, level=level)() == expected
+
+    def test_no_passes(self):
+        """Test that if no xDSL passes are applied, the circuit is not visualized."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.RX(0.1, 0)
+            qml.RX(2.0, 0)
+            return qml.state()
+
+        assert draw(circ)() is None
+
+    def test_adjoint(self):
+        """Test that the adjoint operation is visualized correctly."""
+
+        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.adjoint(qml.RX(0.1, wires=0))
+            qml.adjoint(qml.Hadamard(wires=0))
+            return qml.state()
+
+        assert draw(circ)() == "0: ──RX†──H†─┤  State"
 
 
 if __name__ == "__main__":

@@ -13,9 +13,9 @@
 # limitations under the License.
 """
 This module contains a transform to apply the
-`basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__
+`full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__
 pass (available through the external `pyzx <https://pyzx.readthedocs.io/en/latest/index.html>`__ package)
-to a PennyLane phase-polynomial + Hadamard circuit.
+to a PennyLane Clifford + T circuit.
 """
 
 from pennylane.tape import QuantumScript, QuantumScriptBatch
@@ -28,23 +28,22 @@ from .helper import _needs_pyzx
 
 @_needs_pyzx
 @transform
-def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
-    """
-    Push Hadamard gates as far as possible to one side to cancel them and create fewer larger phase-polynomial blocks,
-    improving the effectiveness of phase-polynomial optimization techniques.
+def optimize_t_count(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Reduce the number of T gates in a Clifford + T circuit by using basic commutation and
+    cancellation rules, combined with a dedicated phase-polynomial optimization strategy based on the
+    `Third Order Duplicate and Destroy (TODD) <https://arxiv.org/abs/1712.01557>`__ algorithm.
 
-    This transform optimizes circuits composed of phase-polynomial blocks and Hadamard gates.
-    This strategy works by commuting Hadamard gates through the circuit.
-    To preserve the overall unitary, this process relies on commutation rules that can transform the gates a
-    Hadamard moves past. For instance, pushing a Hadamard through a CNOT gate will convert the latter into a
-    CZ gate. Consequently, the final optimized circuit may have, in some cases, a significantly different
-    internal gate structure.
+    This transform applies a sequence of passes for T-count optimization to the given Clifford + T circuit.
+    First, some ZX-based commutation and cancellation rules are applied to simplify the circuit.
+    Then, the circuit is cut into phase-polynomial blocks and the TODD algorithm is used to optimize each of these phase polynomials.
+    For circuits with many qubits and T gates, this transform may exhibit long run-times.
 
-    The transform also applies some basic simplification rules to phase-polynomial blocks themselves to merge phase
-    gates together when possible (e.g. T^4 = S^2 = Z).
+    .. note::
+
+        The transformed output circuit is equivalent to the input up to a global phase.
 
     The implementation is based on the
-    `pyzx.basic_optimization <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization>`__ pass.
+    `pyzx.full_optimize <https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize>`__ pass.
 
     Args:
         tape (QNode or QuantumScript or Callable): the input circuit to be transformed.
@@ -55,7 +54,7 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
     Raises:
         ModuleNotFoundError: if the required ``pyzx`` package is not installed.
-        TypeError: if the input quantum circuit is not a phase-polynomial + Hadamard circuit.
+        TypeError: if the input quantum circuit is not a Clifford + T circuit.
 
     **Example:**
 
@@ -66,26 +65,25 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
 
         dev = qml.device("default.qubit")
 
-        @zx.push_hadamards
+        @zx.optimize_t_count
         @qml.qnode(dev)
         def circuit():
             qml.T(0)
-            qml.Hadamard(0)
-            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.S(0)
+            qml.T(0)
             qml.T(1)
-            qml.Hadamard(1)
-            qml.CNOT([1, 2])
-            qml.Hadamard(1)
-            qml.Hadamard(2)
+            qml.CNOT([0, 2])
+            qml.T(1)
             return qml.state()
 
 
     .. code-block:: pycon
 
         >>> print(qml.draw(circuit)())
-        0: ──T────┤  State
-        1: ──T─╭X─┤  State
-        2: ──H─╰●─┤  State
+        0: ──Z─╭●────╭●─┤  State
+        1: ────╰X──S─│──┤  State
+        2: ──────────╰X─┤  State
 
     """
     # pylint: disable=import-outside-toplevel
@@ -95,14 +93,11 @@ def push_hadamards(tape: QuantumScript) -> tuple[QuantumScriptBatch, Postprocess
     pyzx_circ = pyzx.Circuit.from_graph(pyzx_graph)
 
     try:
-        pyzx_circ = pyzx.basic_optimization(pyzx_circ.to_basic_gates())
-
-    except TypeError:
-
+        pyzx_circ = pyzx.full_optimize(pyzx_circ)
+    except TypeError as e:
         raise TypeError(
-            "The input quantum circuit must be a phase-polynomial + Hadamard circuit. "
-            "RX and RY rotation gates are not supported."
-        ) from None
+            "The input circuit must be a Clifford + T circuit. Consider using `qml.clifford_t_decomposition` first."
+        ) from e
 
     qscript = from_zx(pyzx_circ.to_graph())
     new_tape = tape.copy(operations=qscript.operations)

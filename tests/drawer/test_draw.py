@@ -954,6 +954,7 @@ class TestLevelExpansionStrategy:
         ],
     )
     def test_equivalent_levels(self, transforms_circuit, var1, var2, expected):
+        """Test that drawing the circuit at different levels produces equivalent results."""
         order = [2, 1, 0]
         weights = pnp.array([[1.0, 20]])
 

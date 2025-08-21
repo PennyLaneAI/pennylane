@@ -17,6 +17,7 @@ from functools import wraps
 
 from catalyst import qjit
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
+from xdsl.dialects.builtin import ModuleOp
 
 from pennylane import QNode
 from pennylane.tape import QuantumScript
@@ -25,9 +26,20 @@ from pennylane.typing import Callable
 from ..compiler import Compiler
 from .collector import QMLCollector
 
-# TODO: This caching mechanism should be improved,
+# This caching mechanism should be improved,
 # because now it relies on a mutable global state
 _cache_store: dict[Callable, dict[int, tuple[str, str]]] = {}
+
+
+def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
+    """Ensure the QNode is compiled and return its MLIR module."""
+    if hasattr(qnode, "mlir_module"):
+        return qnode.mlir_module
+
+    func = getattr(qnode, "user_function", qnode)
+    jitted_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(func)
+    jitted_qnode.jit_compile(args, **kwargs)
+    return jitted_qnode.mlir_module
 
 
 def draw(qnode: QNode, *, level: None | int = None) -> Callable:
@@ -37,6 +49,9 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
     This function can be used to visualize the QNode at different stages of the transformation pipeline
     when xDSL compilation passes are applied. If the specified level is not available, the highest level
     will be used as a fallback.
+
+    The provided QNode is assumed to be decorated with xDSL compilation passes.
+    If no passes are applied, the QNode is not visualized.
 
     Args:
         qnode (.QNode): the input QNode that is to be visualized. The QNode is assumed to be compiled with ``qjit``.
@@ -52,28 +67,17 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
     def _draw_callback(pass_instance, module, pass_level):
         collector = QMLCollector(module)
         ops, meas = collector.collect()
-        # This is just a quick way to visualize the circuit
-        # using PennyLane's built-in drawing capabilities of QuantumScript
         tape = QuantumScript(ops, meas)
         cache[pass_level] = (tape.draw(), pass_instance.name if pass_level else "No transforms")
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
-        # We re-compile the qnode to ensure the passes are applied
-        # with the args and kwargs provided by the user.
-        # TODO: we could integrate the callback mechanism within `qjit`,
-        # so that we wouldn't need to recompile the qnode twice.
-        mlir_module = qnode.mlir_module
-        if mlir_module is None:
-            jitted_qnode = qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(qnode.user_function)
-            jitted_qnode.jit_compile(args, **kwargs)
-            mlir_module = jitted_qnode.mlir_module
-
+        mlir_module = _get_mlir_module(qnode, args, kwargs)
         Compiler.run(mlir_module, callback=_draw_callback)
 
-        if level in cache:
-            return cache[level][0]
+        if not cache:
+            return None
 
-        return cache[-1][0]
+        return cache.get(level, cache[max(cache.keys())])[0]
 
     return wrapper
