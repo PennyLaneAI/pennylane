@@ -161,8 +161,9 @@ def _harmonic_analysis(
         spin = int((molecule.mult - 1) / 2)
         charge = molecule.charge
         basis = molecule.basis_name
+        unit = molecule.unit
         molecule = pyscf.gto.Mole(
-            atom=geom, symmetry="C1", spin=spin, charge=charge, unit="Bohr", basis=basis
+            atom=geom, symmetry="C1", spin=spin, charge=charge, unit=unit, basis=basis
         )
         molecule.build()
 
