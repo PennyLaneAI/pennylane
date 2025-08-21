@@ -556,10 +556,9 @@ class TestDevicePreprocessing:
         """Test that using a qnode with postselect_mode="fill-shots" gives the expected results."""
 
         shots = 1000
-        dev = qml.device(dev_name, wires=3, seed=seed)
+        dev = qml.device(dev_name, wires=3, shots=shots, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
 
-        @qml.set_shots(shots=shots)
         @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="fill-shots")
         def circuit():
             qml.Hadamard(0)
