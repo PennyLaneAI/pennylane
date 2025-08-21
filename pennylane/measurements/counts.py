@@ -428,11 +428,11 @@ def counts(
 
     if isinstance(op, Sequence):
         if not all(
-            math.is_abstract(o) or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
+            math.is_abstract(o) or (isinstance(o, MeasurementValue) and not o.has_processing)
             for o in op
         ):
             raise QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "Only sequences of unprocessed MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
                 "collecting statistics for a sequence of mid-circuit measurements."
             )

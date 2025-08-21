@@ -217,7 +217,7 @@ def init_auxiliary_tape(circuit: qml.tape.QuantumScript):
         if "MidCircuitMeasure" in str(type(op)):  # pragma: no cover
             new_measurements.append(qml.sample(op.out_classical_tracers[0]))
         elif isinstance(op, MidMeasureMP):
-            new_measurements.append(qml.sample(MeasurementValue([op], lambda res: res)))
+            new_measurements.append(qml.sample(MeasurementValue([op])))
     return qml.tape.QuantumScript(
         circuit.operations,
         new_measurements,
