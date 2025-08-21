@@ -22,7 +22,6 @@ import numpy as np
 from pennylane import math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import add_decomps, register_resources, resource_rep
-from pennylane.math import is_abstract
 from pennylane.operation import Operation
 from pennylane.ops import CNOT, RY, SWAP, Hadamard, cond
 from pennylane.templates.state_preparations.mottonen import compute_theta, gray_code
