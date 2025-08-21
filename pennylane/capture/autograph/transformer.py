@@ -373,18 +373,21 @@ class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
 # Singleton instance of DisableAutograph
 disable_autograph = DisableAutograph()
 
+# converter.Feature.LISTS permits overloading the 'set_item' function in 'ag_primitives.py'
+OPTIONAL_FEATURES = [converter.Feature.BUILTIN_FUNCTIONS, converter.Feature.LISTS]
+
 TOPLEVEL_OPTIONS = converter.ConversionOptions(
     recursive=True,
     user_requested=True,
     internal_convert_user_code=True,
-    optional_features=[converter.Feature.BUILTIN_FUNCTIONS],
+    optional_features=OPTIONAL_FEATURES,
 )
 
 NESTED_OPTIONS = converter.ConversionOptions(
     recursive=True,
     user_requested=False,
     internal_convert_user_code=True,
-    optional_features=[converter.Feature.BUILTIN_FUNCTIONS],
+    optional_features=OPTIONAL_FEATURES,
 )
 
 STANDARD_OPTIONS = converter.STANDARD_OPTIONS
