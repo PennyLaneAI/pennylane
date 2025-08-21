@@ -297,8 +297,8 @@ def _fable_decomposition(input_matrix, wires, tol=0):
 
     @for_loop(len(nots.keys()))
     def outer_nots_loop(m, nots):
-        c_wire = list(nots.keys())[m]  # pragma: no cover
-        CNOT([c_wire] + auxilliary)  # pragma: no cover
+        c_wire = list(nots.keys())[m]
+        CNOT([c_wire] + auxilliary)
 
     outer_nots_loop(nots)  # pylint: disable=no-value-for-parameter
 
