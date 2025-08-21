@@ -33,10 +33,10 @@ from xdsl.dialects.transform import AnyOpType
 from xdsl.utils.exceptions import VerifyException
 from xdsl.utils.test_value import create_ssa_value
 
-from pennylane.compiler.python_compiler.dialects import transform
-from pennylane.compiler.python_compiler.dialects.transform import ApplyRegisteredPassOp
-from pennylane.compiler.python_compiler.jax_utils import xdsl_from_docstring
-from pennylane.compiler.python_compiler.transforms.api import (
+from pennylane.compiler.unified_compiler.dialects import transform
+from pennylane.compiler.unified_compiler.dialects.transform import ApplyRegisteredPassOp
+from pennylane.compiler.unified_compiler.jax_utils import xdsl_from_docstring
+from pennylane.compiler.unified_compiler.transforms.api import (
     ApplyTransformSequence,
     compiler_transform,
 )

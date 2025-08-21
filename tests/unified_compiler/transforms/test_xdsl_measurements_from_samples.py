@@ -28,7 +28,7 @@ catalyst = pytest.importorskip("catalyst")
 from catalyst.passes import xdsl_plugin
 
 import pennylane as qml
-from pennylane.compiler.python_compiler.transforms import (
+from pennylane.compiler.unified_compiler.transforms import (
     MeasurementsFromSamplesPass,
     measurements_from_samples_pass,
 )

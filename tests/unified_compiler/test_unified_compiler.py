@@ -37,14 +37,14 @@ from xdsl.interpreters import Interpreter
 
 import pennylane as qml
 from pennylane.capture import enabled as capture_enabled
-from pennylane.compiler.python_compiler import Compiler
-from pennylane.compiler.python_compiler.dialects import transform
-from pennylane.compiler.python_compiler.jax_utils import (
+from pennylane.compiler.unified_compiler import Compiler
+from pennylane.compiler.unified_compiler.dialects import transform
+from pennylane.compiler.unified_compiler.jax_utils import (
     jax_from_docstring,
     module,
     xdsl_from_docstring,
 )
-from pennylane.compiler.python_compiler.transforms.api import (
+from pennylane.compiler.unified_compiler.transforms.api import (
     ApplyTransformSequence,
     TransformFunctionsExt,
     TransformInterpreterPass,
