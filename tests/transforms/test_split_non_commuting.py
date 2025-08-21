@@ -968,9 +968,6 @@ ham = qml.Hamiltonian(
         qml.Z(0) @ qml.Z(1) @ qml.Z(2),
     ],
 )
-ham_expval = qml.expval(ham)
-total_shots = 1000
-coeffs_per_group = [[10, 20], [0.1, 0.2], [100]]
 
 
 class TestShotDistribution:
@@ -984,7 +981,8 @@ class TestShotDistribution:
     def test_none_shot_distribution(self, grouping_strategy):
         """Test standard behaviour with no shot distribution strategy."""
 
-        initial_tape = qml.tape.QuantumScript(measurements=[ham_expval], shots=total_shots)
+        total_shots = 1000
+        initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=total_shots)
 
         tapes, _ = split_non_commuting(
             initial_tape,
@@ -1011,7 +1009,8 @@ class TestShotDistribution:
     ):
         """Test built-in shot distribution strategies for the single hamiltonian case."""
 
-        initial_tape = qml.tape.QuantumScript(measurements=[ham_expval], shots=total_shots)
+        total_shots = 1000
+        initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=total_shots)
 
         tapes, _ = split_non_commuting(
             initial_tape,
@@ -1032,7 +1031,8 @@ class TestShotDistribution:
     def test_single_hamiltonian_custom_function(self, grouping_strategy, seed):
         """Test custom shot distribution mock function for the single hamiltonian case."""
 
-        initial_tape = qml.tape.QuantumScript(measurements=[ham_expval], shots=total_shots)
+        total_shots = 1000
+        initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=total_shots)
 
         shot_distribution_mock_func = MagicMock(spec=ShotDistributionFunction)
 
@@ -1044,4 +1044,5 @@ class TestShotDistribution:
         )
 
         # check that the shot_distribution function gets called exactly once with the expected signature
+        coeffs_per_group = [[10, 20], [0.1, 0.2], [100]]
         shot_distribution_mock_func.assert_called_once_with(total_shots, coeffs_per_group, seed)
