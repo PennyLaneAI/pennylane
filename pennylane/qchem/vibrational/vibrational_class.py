@@ -147,7 +147,7 @@ def _harmonic_analysis(scf_result, method="rhf"):
     return harmonic_res["freq_wavenumber"], harmonic_res["norm_mode"]
 
 
-def _single_point(molecule, method="rhf"):
+def _single_point(molecule, method="rhf", functional="b3lyp"):
     r"""Runs electronic structure calculation.
 
     Args:
@@ -162,7 +162,7 @@ def _single_point(molecule, method="rhf"):
     pyscf = _import_pyscf()
 
     method = method.strip().lower()
-    if method not in ["rhf", "uhf"]:
+    if method not in ["rhf", "uhf", "rks", "uks"]:
         raise ValueError(f"Specified electronic structure method, {method}, is not available.")
 
     geom = [
@@ -175,8 +175,14 @@ def _single_point(molecule, method="rhf"):
     mol.build()
     if method == "rhf":
         scf_obj = pyscf.scf.RHF(mol).run(verbose=0)
-    else:
+    elif method == "uhf":
         scf_obj = pyscf.scf.UHF(mol).run(verbose=0)
+    elif method == "rks":
+        scf_obj = pyscf.dft.RKS(mol).run(verbose=0)
+        scf_obj.xc = functional
+    else:
+        scf_obj = pyscf.dft.UKS(mol).run(verbose=0)
+        scf_obj.xc = functional
     return scf_obj
 
 
@@ -192,7 +198,7 @@ def _import_geometric():
     return geometric
 
 
-def optimize_geometry(molecule, method="rhf"):
+def optimize_geometry(molecule, method="rhf", functional="b3lyp"):
     r"""Computes the equilibrium geometry of a molecule.
 
     Args:
@@ -220,7 +226,7 @@ def optimize_geometry(molecule, method="rhf"):
     geometric = _import_geometric()
     from pyscf.geomopt.geometric_solver import optimize
 
-    scf_res = _single_point(molecule, method)
+    scf_res = _single_point(molecule, method, functional)
     geom_eq = optimize(scf_res, maxsteps=100)
 
     if molecule.unit == "angstrom":
