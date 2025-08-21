@@ -522,5 +522,5 @@ The documentation can then be found in the :file:`doc/_build/html/` directory.
 
 .. note::
 
-    To build the interfaces documentation, PyTorch and TensorFlow will need to
+    To build the interfaces documentation, PyTorch will need to
     be installed, see :ref:`install_interfaces`.

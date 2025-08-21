@@ -487,6 +487,7 @@
   [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
   [How to optimize a QML model using JAX and Optax](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
+  [(#8106)](https://github.com/PennyLaneAI/pennylane/pull/8106)
 
 * `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
   Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
@@ -576,6 +577,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
+  [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
 
 * Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
 `run_filecheck_qjit` fixtures.
@@ -756,6 +760,9 @@
 
 * Fixes `SemiAdder` to work when inputs are defined with a single wire.
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
+
+* Fixes a bug where `qml.prod` applied on a quantum function does not dequeue operators passed as arguments to the function.
+  [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
 
 <h3>Contributors ✍️</h3>
 
