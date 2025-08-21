@@ -38,7 +38,27 @@ except ImportError:  # pragma: no cover
     has_jax = False
 
 
-__all__ = ["if_stmt", "for_stmt", "while_stmt", "converted_call", "and_", "or_", "not_"]
+__all__ = [
+    "if_stmt",
+    "for_stmt",
+    "while_stmt",
+    "converted_call",
+    "and_",
+    "or_",
+    "not_",
+    "set_item",
+]
+
+
+def set_item(target, i, x):
+    """An implementation of the AutoGraph 'set_item' function."""
+
+    if qml.math.is_abstract(target):
+        target = target.at[i].set(x)
+    else:
+        target[i] = x
+
+    return target
 
 
 def _assert_results(results, var_names):
