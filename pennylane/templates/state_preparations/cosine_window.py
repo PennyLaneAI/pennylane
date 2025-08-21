@@ -164,7 +164,7 @@ def _cosine_window_decomposition(wires):
     qml.RZ(np.pi, wires=wires[-1])
     qml.adjoint(qml.QFT)(wires=wires)
 
-    if has_jax and capture.enabled():
+    if capture.enabled():
         wires = jnp.array(list(wires.labels))
 
     @for_loop(len(wires))
