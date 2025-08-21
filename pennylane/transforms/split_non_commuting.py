@@ -43,7 +43,11 @@ class SingleTermMP:
     idx_in_group: int
 
 
-ShotDistributionFunction = Callable[[int, list[list[TensorLike]], int], Sequence[int]]
+ShotDistributionFunction = Callable[
+    # total_shots, coeffs_per_group, seed -> shots_per_tape
+    [int, list[list[TensorLike]], np.random.Generator | int | None],
+    Sequence[int],
+]
 
 
 def _uniform_deterministic_sampling(total_shots, coeffs_per_group, seed):
@@ -98,8 +102,8 @@ def shot_vector_support(initial_postprocessing: PostprocessingFn) -> Postprocess
 def split_non_commuting(
     tape: QuantumScript,
     grouping_strategy: str | None = "default",
-    shot_distribution: ShotDistributionFunction | str | None  = None,
-    seed: None | int | np.random.Generator = None,
+    shot_distribution: ShotDistributionFunction | str | None = None,
+    seed: np.random.Generator | int | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
 
