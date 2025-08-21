@@ -153,7 +153,7 @@ def _single_point(molecule, method="rhf", functional="b3lyp"):
     Args:
         molecule (:func:`~pennylane.qchem.molecule.Molecule`): Molecule object.
         method (str): Electronic structure method that can be either restricted and unrestricted
-            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively. Default is ``'rhf'``.
+            Hartree-Fock,  ``'rhf'`` and ``'uhf'``, respectively or DFT. Default is ``'rhf'``.
 
     Returns:
         pyscf.scf object from electronic structure calculation
