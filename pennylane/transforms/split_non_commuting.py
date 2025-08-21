@@ -481,7 +481,7 @@ def _split_using_qwc_grouping(
 
     Args:
         tape (~qml.tape.QuantumScript): The tape to be split.
-        single_term_obs_mps (list[MeasurementProcess, tuple[list[int], list[TensorLike]]]): A dictionary
+        single_term_obs_mps (dict[MeasurementProcess, tuple[list[int], list[TensorLike]]]): A dictionary
             of measurements of each unique single-term observable, mapped to the indices of the
             original measurements it belongs to, and its coefficients.
         offsets (list[TensorLike]): Offsets associated with each original measurement in the tape.
