@@ -149,6 +149,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
         (recommended for most cases) upon exiting the scope.
 
     .. code-block:: python
+    
         import pennylane as qml
     
         @qml.qnode(qml.device("default.qubit"))
@@ -257,6 +258,7 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
     that allocation and safe deallocation are controlled within a localized scope.
 
     .. code-block:: python
+
         import pennylane as qml
 
         @qml.qnode(qml.device("default.qubit")) 
@@ -280,11 +282,13 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
     handling: 
 
     .. code-block:: python
+
         new_wires = qml.allocate(2, state="zero", restored=True)
         qml.H(new_wires[0])
         qml.H(new_wires[1])
         qml.deallocate(new_wires)
     
+        
     .. details:: 
         :title: Usage details 
 
