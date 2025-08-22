@@ -61,7 +61,7 @@ ShotDistributionFunction = Callable[
 def _uniform_deterministic_sampling(total_shots, coeffs_per_group, _):
     """Uniform deterministic splitting of the total number of shots for each commuting group."""
     num_groups = len(coeffs_per_group)
-    shots, remainder = total_shots // num_groups, total_shots % num_groups
+    shots, remainder = divmod(total_shots, num_groups)
     shots_per_group = np.full(num_groups, shots)
     shots_per_group[:remainder] += 1
     return shots_per_group.astype(int)
