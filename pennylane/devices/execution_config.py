@@ -147,6 +147,13 @@ class ExecutionConfig:
         if self.executor_backend is None:
             object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
 
+    def __str__(self):
+        """Pretty print the execution config in constructor-style format."""
+        field_strs = []
+        for k, v in self.__dict__.items():
+            field_strs.append(f"    {k}={repr(v)},")
+        return "ExecutionConfig(\n" + "\n".join(field_strs) + "\n)"
+
 
 # pylint: disable=missing-function-docstring, inconsistent-return-statements
 def __getattr__(name):

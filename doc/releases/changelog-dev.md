@@ -431,7 +431,6 @@
           execution_config = ExecutionConfig()
   ...
   ```
-
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
 
 * The `qml.HilbertSchmidt` and `qml.LocalHilbertSchmidt` templates have been updated and their UI has been remarkably simplified. 
@@ -811,6 +810,7 @@ Ali Asadi,
 Utkarsh Azad,
 Joey Carter,
 Yushao Chen,
+Po-Ying Chiu,
 Isaac De Vlugt,
 Diksha Dhawan,
 Marcus Edwards,
