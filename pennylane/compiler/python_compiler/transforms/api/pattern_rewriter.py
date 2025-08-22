@@ -17,11 +17,12 @@ from collections.abc import Sequence
 from numbers import Number
 
 from xdsl.dialects import arith, builtin, stablehlo, tensor
-from xdsl.ir import Operation, SSAValue
+from xdsl.ir import Operation as xOperation
+from xdsl.ir import SSAValue
 from xdsl.pattern_rewriter import PatternRewriter, PatternRewriterListener, PatternRewriteWalker
 from xdsl.rewriter import InsertPoint
 
-from pennylane import measurements, ops
+from pennylane import math, measurements, ops
 from pennylane.operation import Operator
 
 from ...dialects import mbqc, quantum
@@ -126,7 +127,7 @@ class StateManagement:
             self[wire] = op.qubit
         return wire
 
-    def update_from_op(self, op: Operation):
+    def update_from_op(self, op: xOperation):
         """Update the wire mapping from an operation's outputs"""
         if isinstance(op, quantum.ExtractOp):
             _ = self.get_static_wire(op, update=True)
@@ -165,6 +166,9 @@ def _get_bfs_out_qubits(op):
     return out_qubits
 
 
+_named_observables = (ops.PauliX, ops.PauliY, ops.PauliZ, ops.Identity, ops.Hadamard)
+
+
 # TODO: Integration StateManagement with rewriting
 
 
@@ -176,11 +180,11 @@ class PLPatternRewriter(PatternRewriter):
     quantum compilation passes.
     """
 
-    def __init__(self, current_operation: Operation):
+    def __init__(self, current_operation: xOperation):
         super().__init__(current_operation)
         self.wire_manager = StateManagement()
 
-    def erase_quantum_gate_op(self, op: Operation, update_qubits: bool = True) -> None:
+    def erase_quantum_gate_op(self, op: xOperation, update_qubits: bool = True) -> None:
         """Erase a quantum gate.
 
         Safely erase a quantum gate from the module being transformed. This method automatically
@@ -206,8 +210,8 @@ class PLPatternRewriter(PatternRewriter):
 
         self.erase_op(op)
 
-    def create_constant(self, cst: Number, insert_point: InsertPoint):
-        """Create a ConstantOp and insert it into the IR. The corresponding SSA value is returned."""
+    def create_scalar_constant(self, cst: Number, insert_point: InsertPoint) -> xOperation:
+        """Create a scalar ConstantOp and insert it into the IR. The corresponding SSA value is returned."""
         data = [cst]
         if isinstance(cst, float):
             elem_type = builtin.Float64Type()
@@ -218,7 +222,7 @@ class PLPatternRewriter(PatternRewriter):
         else:
             elem_type = builtin.IntegerType(64)
 
-        type_ = builtin.TensorType(elem_type, [1])
+        type_ = builtin.TensorType(elem_type, [])
         constAttr = builtin.DenseIntOrFPElementsAttr.from_list(type_, data)
         constantOp = arith.ConstantOp(constAttr)
         indexOp = arith.ConstantOp.from_int_and_width(0, 64)
@@ -230,9 +234,9 @@ class PLPatternRewriter(PatternRewriter):
         self.insert_op(indexOp, insert_point)
         self.insert_op(extractOp, insert_point)
 
-        return extractOp.result
+        return extractOp
 
-    def iter_qubit_successors(self, op: Operation, traversal_type="bfs"):
+    def iter_qubit_successors(self, op: xOperation, traversal_type="bfs"):
         """Iterator function to do a breadth-first traversal over the output qubits
         of an operation. First returned value is the original operation."""
         if traversal_type not in ("bfs", "dfs"):
@@ -272,54 +276,151 @@ class PLPatternRewriter(PatternRewriter):
         raise RuntimeError("reeeeeeeee")
 
     def insert_gate(
-        self, gate: Operator, insert_point: InsertPoint, params: SSAValue | None = None
-    ):
+        self, gate: Operator, insert_point: InsertPoint, params: Sequence[SSAValue] | None = None
+    ) -> xOperation:
         """Insert a PL gate into the IR at the provided insertion point."""
         gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate)
+        op_args = {"adjoint": adjoint}
 
-        # TODO: Add branches for MultiRZ, GlobalPhase, and QubitUnitary
-        params = params or tuple(
-            self.create_constant(d, insert_point=insert_point) for d in gate.data
+        if isinstance(gate, ops.QubitUnitary):
+            if not params:
+                mat = gate.matrix()
+                mat_attr = builtin.DenseIntOrFPElementsAttr.from_list(
+                    builtin.TensorType(
+                        builtin.ComplexType(builtin.Float64Type()), shape=math.shape(mat)
+                    ),
+                    mat,
+                )
+                tensorOp = stablehlo.ConstantOp(value=mat_attr)
+                self.insert_op(tensorOp, insertion_point=insert_point)
+                insert_point = InsertPoint.after(tensorOp)
+                params = [tensorOp.results[0]]
+
+        elif not params:
+            params = []
+            for d in gate.data:
+                constOp = self.create_scalar_constant(d, insert_point)
+                params.append(constOp.results[0])
+                insert_point = InsertPoint.after(constOp)
+
+        match type(gate):
+            case ops.GlobalPhase:
+                op_class = quantum.GlobalPhaseOp
+                assert len(params) == 1
+                op_args["params"] = params[0]
+            case ops.MultiRZ:
+                op_class = quantum.MultiRZOp
+                assert len(params) == 1
+                op_args["theta"] = params[0]
+            case ops.QubitUnitary:
+                op_class = quantum.QubitUnitaryOp
+                assert len(params) == 1
+                op_args["matrix"] = params[0]
+            case _:
+                op_class = quantum.CustomOp
+                op_args["gate_name"] = gate.name
+                op_args["params"] = params
+
+        if not isinstance(gate, ops.GlobalPhase):
+            op_args["in_qubits"] = tuple(self.wire_manager[w] for w in gate.wires)
+        op_args["in_ctrl_qubits"] = (
+            tuple(self.wire_manager[w] for w in ctrl_wires) if ctrl_wires else None
         )
-        in_qubits = tuple(self.wire_manager[w] for w in gate.wires)
-        in_ctrl_qubits = tuple(self.wire_manager[w] for w in ctrl_wires) if ctrl_wires else None
         in_ctrl_values = None
 
         if ctrl_vals:
             true_cst = None
             false_cst = None
             if any(ctrl_vals):
-                true_cst = self.create_constant(True, insert_point=insert_point)
+                true_cst = self.create_scalar_constant(True, insert_point=insert_point)
+                insert_point = InsertPoint.after(true_cst)
             if not all(ctrl_vals):
-                false_cst = self.create_constant(False, insert_point=insert_point)
-            in_ctrl_values = tuple(true_cst if v else false_cst for v in ctrl_vals)
+                false_cst = self.create_scalar_constant(False, insert_point=insert_point)
+                insert_point = InsertPoint.after(false_cst)
+            in_ctrl_values = tuple(
+                true_cst.results[0] if v else false_cst.results[0] for v in ctrl_vals
+            )
+        op_args["in_ctrl_values"] = in_ctrl_values
 
-        customOp = quantum.CustomOp(
-            in_qubits=in_qubits,
-            gate_name=gate.name,
-            params=params,
-            in_ctrl_qubits=in_ctrl_qubits,
-            in_ctrl_values=in_ctrl_values,
-            adjoint=adjoint,
-        )
-        self.insert_op(customOp, insertion_point=insert_point)
+        gateOp = op_class(**op_args)
+        self.insert_op(gateOp, insertion_point=insert_point)
 
         for iq, oq in zip(
-            customOp.in_qubits + customOp.in_ctrl_qubits,
-            customOp.out_qubits + customOp.out_ctrl_qubits,
+            getattr(gateOp, "in_qubits", ()) + tuple(gateOp.in_ctrl_qubits),
+            getattr(gateOp, "out_qubits", ()) + tuple(gateOp.out_ctrl_qubits),
             strict=True,
         ):
-            iq.replace_by_if(oq, lambda use: use.operation != customOp)
-            self.notify_op_modified(customOp)
+            iq.replace_by_if(oq, lambda use: use.operation != gateOp)
+            self.notify_op_modified(gateOp)
             self.wire_manager.update_qubit(iq, oq)
 
-    def insert_observable(self, obs: Operator, insert_point: InsertPoint):
-        """Insert a PL observable into the IR at the provided insertion point."""
+        return gateOp
 
-    def insert_measurement(self, mp: measurements.MeasurementProcess, insert_point: InsertPoint):
+    def insert_observable(self, obs: Operator, insert_point: InsertPoint) -> xOperation:
+        """Insert a PL observable into the IR at the provided insertion point."""
+        if isinstance(obs, ops.Hermitian):
+            mat = obs.matrix()
+            mat_attr = builtin.DenseIntOrFPElementsAttr.from_list(
+                builtin.TensorType(
+                    builtin.ComplexType(builtin.Float64Type()), shape=math.shape(mat)
+                ),
+                mat,
+            )
+            tensorOp = stablehlo.ConstantOp(value=mat_attr)
+            self.insert_op(tensorOp, insertion_point=insert_point)
+            insert_point = InsertPoint.after(tensorOp)
+            in_qubits = tuple(self.wire_manager[w] for w in obs.wires)
+            hermitianOp = quantum.HermitianOp(
+                operands=(tensorOp.results[0], in_qubits), result_types=(quantum.ObservableType(),)
+            )
+            self.insert_op(hermitianOp, insertion_point=insert_point)
+            return hermitianOp
+
+        if isinstance(obs, _named_observables):
+            in_qubit = self.wire_manager[obs.wires[0]]
+            namedObsOp = quantum.NamedObsOp(
+                in_qubit, quantum.NamedObservableAttr(getattr(quantum.NamedObservable, obs.name))
+            )
+            self.insert_op(namedObsOp, insertion_point=InsertPoint)
+            return namedObsOp
+
+        if isinstance(obs, ops.Prod):
+            operands = []
+            for o in obs.operands:
+                cur_obs = self.insert_observable(o, insert_point)
+                operands.append(cur_obs.results[0])
+                insert_point = InsertPoint.after(cur_obs)
+            prodOp = quantum.TensorOp(operands=operands, result_types=(quantum.ObservableType(),))
+            self.insert_op(prodOp, insertion_point=insert_point)
+            return prodOp
+
+        if isinstance(obs, ops.LinearCombination):
+            coeffs = builtin.DenseIntOrFPElementsAttr.from_list(
+                builtin.TensorType(builtin.Float64Type(), shape=(len(obs.coeffs),)), obs.coeffs
+            )
+            tensorOp = stablehlo.ConstantOp(value=coeffs)
+            self.insert_op(tensorOp, insertion_point=insert_point)
+            insert_point = InsertPoint.after(tensorOp)
+
+            _ops = []
+            for o in obs.ops:
+                cur_obs = self.insert_observable(o, insert_point)
+                _ops.append(cur_obs.results[0])
+                insert_point = InsertPoint.after(cur_obs)
+
+            hamiltonianOp = quantum.HamiltonianOp(
+                operands=(tensorOp.results[0], _ops), result_types=(quantum.ObservableType(),)
+            )
+            return hamiltonianOp
+
+        raise RuntimeError("reeeeeeee")
+
+    def insert_measurement(
+        self, mp: measurements.MeasurementProcess, insert_point: InsertPoint
+    ) -> None:
         """Insert a PL measurement into the IR at the provided insertion point."""
 
-    def insert_mid_measure(self, mcm: measurements.MidMeasureMP, insert_point: InsertPoint):
+    def insert_mid_measure(self, mcm: measurements.MidMeasureMP, insert_point: InsertPoint) -> None:
         """Insert a PL measurement into the IR at the provided insertion point."""
 
 
