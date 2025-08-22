@@ -43,6 +43,7 @@ from xdsl.utils.exceptions import PassFailedException
 from ...dialects.transform import ApplyRegisteredPassOp
 
 
+# pylint: disable=too-few-public-methods
 @register_impls
 class TransformFunctionsExt(TransformFunctions):
     """
