@@ -345,15 +345,15 @@ def split_non_commuting(
     if len(tape.measurements) == 0:
         return [tape], null_postprocessing
 
-    shot_distribution_fn = None
-    if isinstance(shot_distribution, Callable):
+    if shot_distribution is None:
+        shot_distribution_fn = None
+    elif isinstance(shot_distribution, Callable):
         shot_distribution_fn = shot_distribution
     elif isinstance(shot_distribution, str):
         shot_distribution_fn = shot_distribution_str2fn.get(shot_distribution)
     else:
         raise TypeError(
-            f"shot_distribution must be a str or a callable, "
-            f"not {type(shot_distribution)}"
+            f"`shot_distribution` must be a callable or str or None, not {type(shot_distribution)}."
         )
 
     # Special case for a single measurement of a Sum, in which case
