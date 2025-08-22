@@ -15,6 +15,7 @@
 Contains the Grover Operation template.
 """
 import numpy as np
+from jax._src.interpreters.partial_eval import DynamicJaxprTracer
 
 from pennylane import capture, math
 from pennylane.control_flow import for_loop
@@ -265,7 +266,7 @@ def _grover_operator_resources(num_wires, num_work_wires):
 def _grover_decomposition(wires, work_wires, n_wires):  # pylint: disable=arguments-differ
     ctrl_values = [0] * (n_wires - 1)
 
-    if has_jax and capture.enabled():
+    if has_jax and capture.enabled() and not isinstance(wires, DynamicJaxprTracer):
         wires = jnp.array(wires)
 
     @for_loop(len(wires) - 1)

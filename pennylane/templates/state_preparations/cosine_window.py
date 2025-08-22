@@ -15,6 +15,7 @@ r"""
 Contains the CosineWindow template.
 """
 import numpy as np
+from jax._src.interpreters.partial_eval import DynamicJaxprTracer
 
 import pennylane as qml
 from pennylane import capture, math, register_resources
@@ -164,7 +165,7 @@ def _cosine_window_decomposition(wires):
     qml.RZ(np.pi, wires=wires[-1])
     qml.adjoint(qml.QFT)(wires=wires)
 
-    if capture.enabled():
+    if capture.enabled() and not isinstance(wires, DynamicJaxprTracer):
         wires = jnp.array(list(wires.labels))
 
     @for_loop(len(wires))

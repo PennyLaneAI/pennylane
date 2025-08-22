@@ -19,6 +19,7 @@ import warnings
 from collections import Counter
 
 import numpy as np
+from jax._src.interpreters.partial_eval import DynamicJaxprTracer
 
 from pennylane import capture
 from pennylane.control_flow import for_loop
@@ -239,7 +240,8 @@ def _AQFT_decomposition(wires, order):
 
     if has_jax and capture.enabled():
         shifts = jnp.array(shifts)
-        wires = jnp.array(list(wires.labels))
+        if not isinstance(wires, DynamicJaxprTracer):
+            wires = jnp.array(list(wires.labels))
 
     @for_loop(len(wires))
     def wire_loop(i):
