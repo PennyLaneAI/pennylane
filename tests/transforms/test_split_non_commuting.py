@@ -995,6 +995,17 @@ class TestShotDistribution:
         for tape in tapes:
             assert tape.shots.total_shots == total_shots
 
+    @pytest.mark.parametrize("shot_distribution", [0, 1.2, [], {}])
+    def test_type_error_shot_distribution(self, shot_distribution):
+        """Test an error is raised for shot_distribution incorrect type."""
+
+        initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=10)
+
+        with pytest.raises(
+            TypeError, match="`shot_distribution` must be a callable or str or None,"
+        ):
+            _, _ = split_non_commuting(initial_tape, shot_distribution=shot_distribution)
+
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
     @pytest.mark.parametrize(
         ["shot_distribution", "expected_shots"],
