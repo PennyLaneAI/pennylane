@@ -134,10 +134,14 @@ def split_non_commuting(
             over the disjoint groups of commuting observables, can be ``"uniform"``, ``"weighted"``,
             ``"weighted_random"`` or a custom callable. ``None`` to disable any shot distribution strategy.
         seed (Generator or int or None): A seed-like parameter used only when the shot distribution
-            strategy involves a non-deterministic sampling process (e.g. "weighted_random").
+            strategy involves a non-deterministic sampling process (e.g. ``"weighted_random"``).
 
     Returns:
-        qnode (QNode) or tuple[list[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
+        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+
+    Raises:
+        TypeError: if ``shot_distribution`` is not a str or Callable or None.
 
     .. note::
         This transform splits expectation values of sums into separate terms, and also distributes the terms into

@@ -1004,7 +1004,7 @@ class TestShotDistribution:
         with pytest.raises(
             TypeError, match="`shot_distribution` must be a callable or str or None,"
         ):
-            _, _ = split_non_commuting(initial_tape, shot_distribution=shot_distribution)
+            _ = split_non_commuting(initial_tape, shot_distribution=shot_distribution)
 
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
     @pytest.mark.parametrize(
