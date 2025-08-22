@@ -1408,7 +1408,7 @@ class TestLargeTFCornerCases:
         dev = qml.device("default.qubit", wires=8)
 
         @qml.qnode(dev, interface="tf")
-        def ancillary_qcnn_circuit(inputs):
+        def auxiliary_qcnn_circuit(inputs):
             qml.AmplitudeEmbedding(features=inputs, wires=range(4), normalize=True)
             qml.CNOT(wires=[0, 1])
             qml.PauliZ(1)
@@ -1420,7 +1420,7 @@ class TestLargeTFCornerCases:
 
         batch_size = 3
         params = np.random.rand(batch_size, 16)
-        result = ancillary_qcnn_circuit(tf.Variable(params))
+        result = auxiliary_qcnn_circuit(tf.Variable(params))
         assert qml.math.shape(result) == (4, batch_size)
 
     def test_pauliz_large_batched_state_tf(self):

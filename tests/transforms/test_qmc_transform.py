@@ -241,7 +241,7 @@ class TestQuantumMonteCarlo:
         r_rotations = np.array([2 * np.arcsin(np.sqrt(func(i))) for i in range(M)])
 
         A_wires = [0, "a", -1.1, -10, "bbb"]
-        target_wire = "Ancilla"
+        target_wire = "Auxiliary"
         wires = A_wires + [target_wire]
         estimation_wires = ["bob", -3, 42, "penny", "lane"]
 
