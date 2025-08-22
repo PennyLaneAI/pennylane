@@ -13,13 +13,14 @@
 # limitations under the License.
 """Unit tests for the ``DecomposeInterpreter`` class"""
 # pylint:disable=protected-access,unused-argument, wrong-import-position
+
+import numpy as np
 import pytest
 
 import pennylane as qml
 
 jax = pytest.importorskip("jax")
 
-import numpy as np
 
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
