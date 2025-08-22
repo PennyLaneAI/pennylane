@@ -483,7 +483,7 @@ decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
     lambda num_control_wires, **_: _mcx_many_workers_resource(num_control_wires, "borrowed"),
     work_wires=lambda num_control_wires, **_: {"borrowed": num_control_wires - 2},
 )
-def _mcx_many_borroed_workers(wires, **kwargs):
+def _mcx_many_borrowed_workers(wires, **kwargs):
     num_control_wires = len(wires) - 1
     num_work_wires = num_control_wires - 2
     with allocation.allocate(num_work_wires, require_zeros=False, restored=True) as work_wires:
