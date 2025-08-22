@@ -130,6 +130,11 @@ def split_non_commuting(
         grouping_strategy (str): The strategy to use for computing disjoint groups of
             commuting observables, can be ``"default"``, ``"wires"``, ``"qwc"``,
             or ``None`` to disable grouping.
+        shot_distribution (str or Callable or None): The strategy to use for shot distribution
+            over the disjoint groups of commuting observables, can be ``"uniform"``, ``"weighted"``,
+            ``"weighted_random"`` or a custom callable. ``None`` to disable any shot distribution strategy.
+        seed (Generator or int or None): A seed-like parameter used only when the shot distribution
+            strategy involves a non-deterministic sampling process (e.g. "weighted_random").
 
     Returns:
         qnode (QNode) or tuple[list[QuantumScript], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
