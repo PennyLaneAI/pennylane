@@ -158,8 +158,8 @@ def _cosine_window_decomposition(wires):
     qml.RZ(np.pi, wires=wires[-1])
     qml.adjoint(qml.QFT)(wires=wires)
 
-    if capture.enabled() and not isinstance(wires, DynamicJaxprTracer):
-        wires = jnp.array(list(wires.labels))
+    if capture.enabled():
+        wires = qml.math.array(wires, like="jax")
 
     @for_loop(len(wires))
     def wires_loop(ind):
