@@ -33,7 +33,6 @@ from xdsl.dialects.builtin import (
     I64,
     ComplexType,
     Float64Type,
-    FloatAttr,
     IntegerAttr,
     IntegerType,
     MemRefType,
@@ -526,7 +525,7 @@ class GlobalPhaseOp(IRDLOperation):
     def __init__(
         self,
         *,
-        params: float | SSAValue[Float64Type],
+        params: SSAValue[Float64Type],
         in_ctrl_qubits: (
             QubitSSAValue | Operation | Sequence[QubitSSAValue | Operation] | None
         ) = None,
@@ -538,8 +537,6 @@ class GlobalPhaseOp(IRDLOperation):
             | None
         ) = None,
     ):
-        if isinstance(params, float):
-            params = FloatAttr(data=params, type=Float64Type())
         in_ctrl_qubits = () if in_ctrl_qubits is None else in_ctrl_qubits
         in_ctrl_values = () if in_ctrl_values is None else in_ctrl_values
 
