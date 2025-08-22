@@ -291,8 +291,6 @@ def _run_tddft_mixed(
     spin=0,
     point_group=None,
     use_gpu=False,
-    active_occ=5,
-    active_vir=4,
 ):
     """
     Run TDDFT calculation and return energies.
@@ -344,10 +342,6 @@ def _run_tddft_mixed(
     td.nstates = nroots - 1
     td.conv_tol = conv_tol
     td.max_cycle = max_cycle
-
-    nocc = mol.nelectron // 2
-    td.occ_orbitals = np.arange(nocc - active_occ, nocc)
-    td.vir_orbitals = np.arange(nocc, nocc + active_vir)
 
     if restrict_spin == "singlet":
         if mol.spin != 0:
