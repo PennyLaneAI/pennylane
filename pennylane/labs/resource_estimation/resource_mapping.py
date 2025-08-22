@@ -19,6 +19,7 @@ from functools import singledispatch
 from pennylane.labs.resource_estimation import ResourceOperator
 from pennylane.operation import Operation
 import pennylane.ops as qops
+import pennylane.templates as qtemps
 import pennylane.labs.resource_estimation.ops as re_ops
 
 
@@ -82,12 +83,6 @@ def _(op: qops.S):
 def _(op: qops.SWAP):
     return re_ops.ResourceSWAP()
 
-
-@map_to_resource_op.register
-def _(op: qops.CSWAP):
-    return re_ops.ResourceCSWAP()
-
-
 @map_to_resource_op.register
 def _(op: qops.T):
     return re_ops.ResourceT()
@@ -102,13 +97,65 @@ def _(op: qops.Y):
     return re_ops.ResourceY()
 
 @map_to_resource_op.register
+def _(op: qops.Z):
+    return re_ops.ResourceZ()
+
+#### controlled_ops
+
+@map_to_resource_op.register
+def _(op: qops.CCZ):
+    return re_ops.ResourceCCZ()
+
+@map_to_resource_op.register
+def _(op: qops.CH):
+    return re_ops.ResourceCH()
+
+@map_to_resource_op.register
+def _(op: qops.CNOT):
+    return re_ops.ResourceCNOT()
+
+@map_to_resource_op.register
+def _(op: qops.ControlledPhaseShift):
+    return re_ops.ResourceControlledPhaseShift()
+
+@map_to_resource_op.register
+def _(op: qops.CRot):
+    return re_ops.ResourceCRot()
+
+@map_to_resource_op.register
+def _(op: qops.CRX):
+    return re_ops.ResourceCRX()
+
+@map_to_resource_op.register
+def _(op: qops.CRY):
+    return re_ops.ResourceCRY()
+
+@map_to_resource_op.register
+def _(op: qops.CRZ):
+    return re_ops.ResourceCRZ()
+
+
+@map_to_resource_op.register
+def _(op: qops.CSWAP):
+    return re_ops.ResourceCSWAP()
+
+@map_to_resource_op.register
 def _(op: qops.CY):
     return re_ops.ResourceCY()
 
 @map_to_resource_op.register
-def _(op: qops.Z):
-    return re_ops.ResourceZ()
-
-@map_to_resource_op.register
 def _(op: qops.CZ):
     return re_ops.ResourceCZ()
+
+@map_to_resource_op.register
+def _(op: qops.MultiControlledX):
+    return re_ops.ResourceMultiControlledX()
+
+@map_to_resource_op.register
+def _(op: qtemps.TemporaryAND):
+    return re_ops.ResourceTempAND()
+
+@map_to_resource_op.register
+def _(op: qops.Toffoli):
+    return re_ops.ResourceToffoli()
+
