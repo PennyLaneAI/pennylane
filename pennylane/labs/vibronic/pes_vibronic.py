@@ -303,8 +303,6 @@ def pes_mode(
                 spin,
                 point_group,
                 use_gpu,
-                active_occ,
-                active_vir,
             )
             for i in geometry_grid
         ]
