@@ -379,6 +379,7 @@
   down on the complexity of post-processing due to having to handle single shot and single wire cases
   separately. The return shape will now *always* be `(shots, num_wires)`.
   [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
+  [(#8118)](https://github.com/PennyLaneAI/pennylane/pull/8118)
 
   For a simple qnode:
 
