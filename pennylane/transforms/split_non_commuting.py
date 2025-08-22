@@ -71,8 +71,8 @@ def _weighted_deterministic_sampling(total_shots, coeffs_per_group, _):
     """Weighted deterministic splitting of the total number of shots for each commuting group.
     For each group, the weight is proportional to the L1 norm of the group's coefficients.
     """
-    sum_per_group = [np.linalg.norm(coeffs, ord=1) for coeffs in coeffs_per_group]
-    prob_shots = sum_per_group / np.sum(sum_per_group)
+    norm_per_group = [np.linalg.norm(coeffs, ord=1) for coeffs in coeffs_per_group]
+    prob_shots = np.array(norm_per_group) / np.sum(norm_per_group)
     shots_per_group = np.floor(total_shots * prob_shots)
     remainder = int(total_shots - np.sum(shots_per_group))
     shots_per_group[:remainder] += 1
@@ -83,8 +83,8 @@ def _weighted_random_sampling(total_shots, coeffs_per_group, seed):
     """Weighted random sampling of the number of shots for each commuting group.
     For each group, the weight is proportional to the L1 norm of the group's coefficients.
     """
-    sum_per_group = np.array([np.sum(np.abs(coeffs)) for coeffs in coeffs_per_group])
-    prob_shots = sum_per_group / np.sum(sum_per_group)
+    norm_per_group = [np.linalg.norm(coeffs, ord=1) for coeffs in coeffs_per_group]
+    prob_shots = np.array(norm_per_group) / np.sum(norm_per_group)
     distribution = multinomial(n=total_shots, p=prob_shots, seed=seed)
     shots_per_group = distribution.rvs()[0]
     return shots_per_group.astype(int)
