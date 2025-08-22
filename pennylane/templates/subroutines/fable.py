@@ -14,6 +14,7 @@
 """
 This module contains the template for the Fast Approximate BLock Encoding (FABLE) technique.
 """
+# pylint: disable=no-value-for-parameter
 import warnings
 from collections import Counter
 
@@ -252,7 +253,7 @@ def _fable_decomposition(input_matrix, wires, tol=0):
         w = wires_i[i]
         Hadamard(w)
 
-    wires_i_hadamard_loop()  # pylint: disable=no-value-for-parameter
+    wires_i_hadamard_loop()
 
     nots = {}
 
@@ -269,7 +270,7 @@ def _fable_decomposition(input_matrix, wires, tol=0):
                 CNOT(wires=[c_wire] + auxilliary)
                 return nots
 
-            concrete_nots_loop(nots)  # pylint: disable=no-value-for-parameter
+            concrete_nots_loop(nots)
 
             RY(2 * theta, wires=auxilliary)
             nots = {}
@@ -293,14 +294,14 @@ def _fable_decomposition(input_matrix, wires, tol=0):
 
         return nots
 
-    nots = theta_controls_loop(nots)  # pylint: disable=no-value-for-parameter
+    nots = theta_controls_loop(nots)
 
     @for_loop(len(nots.keys()))
     def outer_nots_loop(m, nots):
         c_wire = list(nots.keys())[m]
         CNOT([c_wire] + auxilliary)
 
-    outer_nots_loop(nots)  # pylint: disable=no-value-for-parameter
+    outer_nots_loop(nots)
 
     @for_loop(min(len(wires_i), len(wires_j)))
     def swap_loop(n):
@@ -308,9 +309,9 @@ def _fable_decomposition(input_matrix, wires, tol=0):
         w_j = wires_j[n]
         SWAP(wires=[w_i, w_j])
 
-    swap_loop()  # pylint: disable=no-value-for-parameter
+    swap_loop()
 
-    wires_i_hadamard_loop()  # pylint: disable=no-value-for-parameter
+    wires_i_hadamard_loop()
 
 
 add_decomps(FABLE, _fable_decomposition)
