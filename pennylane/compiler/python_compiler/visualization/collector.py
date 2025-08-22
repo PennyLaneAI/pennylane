@@ -30,7 +30,11 @@ from pennylane.compiler.python_compiler.dialects.quantum import StateOp
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 
-from .xdsl_conversion import resolve_constant_wire, xdsl_to_qml_meas, xdsl_to_qml_op
+from .xdsl_conversion import (
+    dispatch_wires_extract,
+    xdsl_to_qml_meas,
+    xdsl_to_qml_op,
+)
 
 
 class QMLCollector:
@@ -82,7 +86,7 @@ class QMLCollector:
             self.quantum_register = op.qreg
 
         elif isinstance(op, ExtractOpPL):
-            wire = resolve_constant_wire(op.idx)
+            wire = dispatch_wires_extract(op)
             if wire not in self.wire_to_ssa_qubits:
                 self.wire_to_ssa_qubits[wire] = op.qubit
                 # We update the reverse mapping as well for completeness,
