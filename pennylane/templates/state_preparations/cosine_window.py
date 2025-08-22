@@ -24,13 +24,6 @@ from pennylane.exceptions import WireError
 from pennylane.operation import StatePrepBase
 from pennylane.wires import Wires
 
-has_jax = True
-try:
-    from jax import numpy as jnp
-    from jax._src.interpreters.partial_eval import DynamicJaxprTracer
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
-
 
 class CosineWindow(StatePrepBase):
     r"""CosineWindow(wires)
