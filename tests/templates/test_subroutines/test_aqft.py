@@ -95,7 +95,7 @@ class TestAQFT:
     @pytest.mark.parametrize("order,wires", [(o, w) for w in range(2, 10) for o in range(1, w)])
     @pytest.mark.capture
     def test_decomposition_new_capture(self, order, wires):
-        """Tests the decomposition rule implemented with the new system."""
+        """Tests the decomposition rule implemented with the new system when program capture is enabled."""
         op = qml.AQFT(order=order, wires=range(wires))
 
         for rule in qml.list_decomps(qml.AQFT):
