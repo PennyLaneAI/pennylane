@@ -345,12 +345,16 @@ def split_non_commuting(
     if len(tape.measurements) == 0:
         return [tape], null_postprocessing
 
+    shot_distribution_fn = None
     if isinstance(shot_distribution, Callable):
         shot_distribution_fn = shot_distribution
     elif isinstance(shot_distribution, str):
-        shot_distribution_fn = shot_distribution_str2fn[shot_distribution]
+        shot_distribution_fn = shot_distribution_str2fn.get(shot_distribution)
     else:
-        shot_distribution_fn = None
+        raise TypeError(
+            f"shot_distribution must be a str or a callable, "
+            f"not {type(shot_distribution)}"
+        )
 
     # Special case for a single measurement of a Sum, in which case
     # the grouping information can be computed and cached in the observable.
