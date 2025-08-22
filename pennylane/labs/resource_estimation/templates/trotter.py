@@ -66,9 +66,9 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
     Resources:
         The resources are defined according to the recursive formula presented above.
         The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
-        number of Trotter steps (`num_steps`) and the order of the approximation (`m`) and is given by:
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_j} = 2 * num_steps \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
         Thus, reducing the counts for those terms to:
@@ -76,8 +76,8 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         .. math::
 
             \begin{align}
-                C_{O_{0}} &= num_steps \cdot 5^{\frac{m}{2} - 1} + 1,  \\
-                C_{O_{N}} &= num_steps \cdot 5^{\frac{m}{2} - 1}.
+                C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
+                C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
             \end{align}
 
     .. seealso:: :class:`~.TrotterProduct`
@@ -249,13 +249,14 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
-        The resources are defined according to the recursive formula presented above. Specifically, each
-        operator in a single step expansion of the exponentiation is called a number of times given by the formula:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
-        Furthermore, the first and last terms of the Hamiltonian appear in pairs due to the symmetric form
-        of the recursive formula. Those counts are further simplified by grouping like terms as:
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        Thus, reducing the counts for those terms to:
 
         .. math::
 
@@ -263,6 +264,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
                 C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
                 C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
             \end{align}
+
 
         The resources for a single step expansion of compressed double factorized Hamiltonian are calculated
         based on `arXiv:2506.15784 <https://arxiv.org/abs/2506.15784>`_.
@@ -530,13 +532,14 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
-        The resources are defined according to the recursive formula presented above. Specifically, each
-        operator in the single step expansion of the exponentiation is called a number of times given by the formula:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
-        Furthermore, the first and last terms of the Hamiltonian appear in pairs due to the symmetric form
-        of the recursive formula. Those counts are further simplified by grouping like terms as:
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        Thus, reducing the counts for those terms to:
 
         .. math::
 
@@ -544,6 +547,7 @@ class ResourceTrotterTHC(ResourceOperator):  # pylint: disable=too-many-ancestor
                 C_{O_{0}} &= n \cdot 5^{\frac{m}{2} - 1} + 1,  \\
                 C_{O_{N}} &= n \cdot 5^{\frac{m}{2} - 1}.
             \end{align}
+
 
         The resources for a single step expansion of tensor hypercontracted Hamiltonian are calculated
         based on `arXiv:2407.04432 <https://arxiv.org/abs/2407.04432>`_
@@ -809,13 +813,14 @@ class ResourceTrotterVibrational(ResourceOperator):
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
-        The resources are defined according to the recursive formula presented above. Specifically, each
-        operator in a single step expansion of the exponentiation is called a number of times given by the formula:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
-        Furthermore, the first and last terms of the Hamiltonian appear in pairs due to the symmetric form
-        of the recursive formula. Those counts are further simplified by grouping like terms as:
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        Thus, reducing the counts for those terms to:
 
         .. math::
 
@@ -1173,13 +1178,14 @@ class ResourceTrotterVibronic(ResourceOperator):
         wires (list[int] or optional): the wires on which the operator acts.
 
     Resources:
-        The resources are defined according to the recursive formula presented above. Specifically, each
-        operator in a single step expansion of the exponentiation is called a number of times given by the formula:
+        The resources are defined according to the recursive formula presented above.
+        The number of times an operator, :math:`e^{itO_{j}}`, is applied depends on the
+        number of Trotter steps (`n`) and the order of the approximation (`m`) and is given by:
 
-        .. math:: C_{O_{j}} = 2n \cdot 5^{\frac{m}{2} - 1}
+        .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
-        Furthermore, the first and last terms of the Hamiltonian appear in pairs due to the symmetric form
-        of the recursive formula. Those counts are further simplified by grouping like terms as:
+        Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
+        Thus, reducing the counts for those terms to:
 
         .. math::
 
