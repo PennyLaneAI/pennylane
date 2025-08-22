@@ -81,7 +81,7 @@ def _weighted_deterministic_sampling(total_shots, coeffs_per_group, _):
 
 def _weighted_random_sampling(total_shots, coeffs_per_group, seed):
     """Weighted random sampling of the number of shots for each commuting group.
-    For each group, the weight is proportional to the total sum of the group's coefficients absolute values.
+    For each group, the weight is proportional to the L1 norm of the group's coefficients.
     """
     sum_per_group = np.array([np.sum(np.abs(coeffs)) for coeffs in coeffs_per_group])
     prob_shots = sum_per_group / np.sum(sum_per_group)
