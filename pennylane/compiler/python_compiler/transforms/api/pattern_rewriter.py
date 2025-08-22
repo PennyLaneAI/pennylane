@@ -16,9 +16,10 @@
 from collections.abc import Sequence
 from numbers import Number
 
-from xdsl.dialects import arith, builtin, stablehlo, tensor
+from xdsl.builder import ImplicitBuilder
+from xdsl.dialects import arith, builtin, scf, stablehlo, tensor
 from xdsl.ir import Operation as xOperation
-from xdsl.ir import SSAValue
+from xdsl.ir import Region, SSAValue
 from xdsl.pattern_rewriter import PatternRewriter, PatternRewriterListener, PatternRewriteWalker
 from xdsl.rewriter import InsertPoint
 
@@ -222,7 +223,7 @@ class PLPatternRewriter(PatternRewriter):
         else:
             elem_type = builtin.IntegerType(64)
 
-        type_ = builtin.TensorType(elem_type, [])
+        type_ = builtin.TensorType(elem_type, [1])
         constAttr = builtin.DenseIntOrFPElementsAttr.from_list(type_, data)
         constantOp = arith.ConstantOp(constAttr)
         indexOp = arith.ConstantOp.from_int_and_width(0, 64)
@@ -283,6 +284,7 @@ class PLPatternRewriter(PatternRewriter):
         op_args = {"adjoint": adjoint}
 
         if isinstance(gate, ops.QubitUnitary):
+            # Create static matrix
             if not params:
                 mat = gate.matrix()
                 mat_attr = builtin.DenseIntOrFPElementsAttr.from_list(
@@ -296,6 +298,7 @@ class PLPatternRewriter(PatternRewriter):
                 insert_point = InsertPoint.after(tensorOp)
                 params = [tensorOp.results[0]]
 
+        # Create static parameters
         elif not params:
             params = []
             for d in gate.data:
@@ -303,6 +306,8 @@ class PLPatternRewriter(PatternRewriter):
                 params.append(constOp.results[0])
                 insert_point = InsertPoint.after(constOp)
 
+        # Different gate types may be represented in MLIR by different operations, which may
+        # take slightly different arguments
         match type(gate):
             case ops.GlobalPhase:
                 op_class = quantum.GlobalPhaseOp
@@ -321,6 +326,8 @@ class PLPatternRewriter(PatternRewriter):
                 op_args["gate_name"] = gate.name
                 op_args["params"] = params
 
+        # Add qubits/control qubits to args. GlobalPhaseOp does not take qubits, only
+        # control qubits
         if not isinstance(gate, ops.GlobalPhase):
             op_args["in_qubits"] = tuple(self.wire_manager[w] for w in gate.wires)
         op_args["in_ctrl_qubits"] = (
@@ -328,6 +335,7 @@ class PLPatternRewriter(PatternRewriter):
         )
         in_ctrl_values = None
 
+        # Add ctrl values to args
         if ctrl_vals:
             true_cst = None
             false_cst = None
@@ -345,6 +353,7 @@ class PLPatternRewriter(PatternRewriter):
         gateOp = op_class(**op_args)
         self.insert_op(gateOp, insertion_point=insert_point)
 
+        # Use getattr for in/out_qubits because GlobalPhaseOp does not have in/out_qubits
         for iq, oq in zip(
             getattr(gateOp, "in_qubits", ()) + tuple(gateOp.in_ctrl_qubits),
             getattr(gateOp, "out_qubits", ()) + tuple(gateOp.out_ctrl_qubits),
@@ -359,6 +368,7 @@ class PLPatternRewriter(PatternRewriter):
     def insert_observable(self, obs: Operator, insert_point: InsertPoint) -> xOperation:
         """Insert a PL observable into the IR at the provided insertion point."""
         if isinstance(obs, ops.Hermitian):
+            # Create static matrix
             mat = obs.matrix()
             mat_attr = builtin.DenseIntOrFPElementsAttr.from_list(
                 builtin.TensorType(
@@ -369,6 +379,7 @@ class PLPatternRewriter(PatternRewriter):
             tensorOp = stablehlo.ConstantOp(value=mat_attr)
             self.insert_op(tensorOp, insertion_point=insert_point)
             insert_point = InsertPoint.after(tensorOp)
+
             in_qubits = tuple(self.wire_manager[w] for w in obs.wires)
             hermitianOp = quantum.HermitianOp(
                 operands=(tensorOp.results[0], in_qubits), result_types=(quantum.ObservableType(),)
@@ -395,6 +406,7 @@ class PLPatternRewriter(PatternRewriter):
             return prodOp
 
         if isinstance(obs, ops.LinearCombination):
+            # Create static tensor for coefficients
             coeffs = builtin.DenseIntOrFPElementsAttr.from_list(
                 builtin.TensorType(builtin.Float64Type(), shape=(len(obs.coeffs),)), obs.coeffs
             )
@@ -422,6 +434,34 @@ class PLPatternRewriter(PatternRewriter):
 
     def insert_mid_measure(self, mcm: measurements.MidMeasureMP, insert_point: InsertPoint) -> None:
         """Insert a PL measurement into the IR at the provided insertion point."""
+        in_qubit = self.wire_manager[mcm.wires[0]]
+        midMeasureOp = quantum.MeasureOp(in_qubit=in_qubit, postselect=mcm.postselect)
+        self.insert_op(midMeasureOp, insertion_point=insert_point)
+        in_qubit.replace_by_if(lambda use: use.operation != midMeasureOp)
+        self.notify_op_modified(midMeasureOp)
+
+        # If reseting, we need to insert a conditional statement that applies a PauliX
+        # if we measured |1>
+        if mcm.reset:
+            # TODO: Need to change this scf.if to use qregs instead of qubits
+            true_region = Region()
+            with ImplicitBuilder(true_region):
+                gate = quantum.CustomOp(gate_name="PauliX", in_qubits=(midMeasureOp.out_qubit,))
+                _ = scf.YieldOp(gate.out_qubits[0])
+
+            false_region = Region()
+            with ImplicitBuilder(false_region):
+                _ = scf.YieldOp(midMeasureOp.out_qubit)
+
+            ifOp = scf.IfOp(
+                cond=midMeasureOp.mres,
+                return_types=(quantum.QubitType(),),
+                true_region=true_region,
+                false_region=false_region,
+            )
+            self.insert_op(ifOp, InsertPoint.after(midMeasureOp))
+            midMeasureOp.out_qubit.replace_by_if(lambda use: use.operation != ifOp)
+            self.notify_op_modified(ifOp)
 
 
 # pylint: disable=too-few-public-methods
