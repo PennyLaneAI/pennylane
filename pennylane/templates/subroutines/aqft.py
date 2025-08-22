@@ -20,7 +20,7 @@ from collections import Counter
 
 import numpy as np
 
-from pennylane import capture
+from pennylane import capture, math
 from pennylane.control_flow import for_loop
 from pennylane.decomposition import (
     add_decomps,
@@ -30,13 +30,6 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
-
-has_jax = True
-try:
-    from jax import numpy as jnp
-    from jax._src.interpreters.partial_eval import DynamicJaxprTracer
-except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
-    has_jax = False  # pragma: no cover
 
 
 class AQFT(Operation):
@@ -238,10 +231,9 @@ def _AQFT_decomposition(wires, order):
     n_wires = len(wires)
     shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
 
-    if has_jax and capture.enabled():
-        shifts = jnp.array(shifts)
-        if not isinstance(wires, DynamicJaxprTracer):
-            wires = jnp.array(list(wires.labels))
+    if capture.enabled():
+        shifts = math.array(shifts, like="jax")
+        wires = math.array(wires, like="jax")
 
     @for_loop(len(wires))
     def wire_loop(i):
