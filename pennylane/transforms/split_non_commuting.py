@@ -69,7 +69,7 @@ def _uniform_deterministic_sampling(total_shots, coeffs_per_group, _):
 
 def _weighted_deterministic_sampling(total_shots, coeffs_per_group, _):
     """Weighted deterministic splitting of the total number of shots for each commuting group.
-    For each group, the weight is proportional to the total sum of the group's coefficients absolute values.
+    For each group, the weight is proportional to the L1 norm of the group's coefficients.
     """
     sum_per_group = [np.linalg.norm(coeffs, ord=1) for coeffs in coeffs_per_group]
     prob_shots = sum_per_group / np.sum(sum_per_group)
