@@ -27,6 +27,7 @@ from pennylane.labs.resource_estimation import GateCount, QubitManager, resource
 class TestResourceTrotterProduct:
     """Test the ResourceTrotterProduct class"""
 
+    # Expected resources were obtained manually using the recursion expression
     op_data = [
         (
             [plre.ResourceX(), plre.ResourceY(), plre.ResourceZ()],

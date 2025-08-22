@@ -27,7 +27,7 @@ from pennylane.labs.resource_estimation.resource_operator import (
 )
 from pennylane.wires import Wires
 
-# pylint: disable=arguments-differ, too-many-arguments
+# pylint: disable=arguments-differ, too-many-arguments, super-init-not-called
 
 
 class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ancestors
@@ -60,7 +60,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
         first_order_expansion (list[~pennylane.labs.resource_estimation.ResourceOperator]): A list of operators
             constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
         num_steps (int): number of Trotter steps to perform
-        order (int): order of the approximation, must be 1 or even.
+        order (int): order of the Suzuki-Trotter approximation, must be 1 or even
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
@@ -139,10 +139,10 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * first_order_expansion (list[~pennylane.labs.resource_estimation.CompressedResourceOp]): A list of operators,
-                    in the compressed representation, constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
+                * first_order_expansion (list[CompressedResourceOp]): A list of operators,
+                  in the compressed representation, constituting the first order expansion of the Hamiltonian to be approximately exponentiated.
                 * num_steps (int): number of Trotter steps to perform
-                * order (int): order of the approximation, must be 1 or even.
+                * order (int): order of the Suzuki-Trotter approximation, must be 1 or even
 
         """
         return {
@@ -161,7 +161,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
                 in the compressed representation, constituting
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
-            order (int): order of the approximation, must be 1 or even.
+            order (int): order of the Suzuki-Trotter approximation, must be 1 or even
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -185,7 +185,7 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
                 in the compressed representation, constituting
                 the first order expansion of the Hamiltonian to be approximately exponentiated.
             num_steps (int): number of Trotter steps to perform
-            order (int): order of the approximation, must be 1 or even.
+            order (int): order of the Suzuki-Trotter approximation, must be 1 or even
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
