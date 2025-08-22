@@ -491,7 +491,7 @@ def _mcx_many_borrowed_workers(wires, **kwargs):
         _mcx_many_workers(wires, **kwargs)
 
 
-decompose_mcx_many_borroed_workers = flip_zero_control(_mcx_many_borroed_workers)
+decompose_mcx_many_borrowed_workers = flip_zero_control(_mcx_many_borrowed_workers)
 
 
 def _mcx_two_workers_condition(num_control_wires, num_work_wires, **__):

@@ -42,7 +42,7 @@ from .controlled_decompositions import decompose_mcx
 from .decompositions.controlled_decompositions import (
     controlled_two_qubit_unitary_rule,
     ctrl_decomp_bisect_rule,
-    decompose_mcx_many_borroed_workers,
+    decompose_mcx_many_borrowed_workers,
     decompose_mcx_many_workers_explicit,
     decompose_mcx_many_zeroed_workers,
     decompose_mcx_one_borrowed_worker,
@@ -1644,7 +1644,7 @@ add_decomps(
     MultiControlledX,
     _mcx_to_cnot_or_toffoli,
     decompose_mcx_many_workers_explicit,
-    decompose_mcx_many_borroed_workers,
+    decompose_mcx_many_borrowed_workers,
     decompose_mcx_many_zeroed_workers,
     decompose_mcx_two_workers_explicit,
     decompose_mcx_two_borrowed_workers,
