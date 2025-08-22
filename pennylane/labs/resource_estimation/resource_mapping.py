@@ -18,6 +18,8 @@ from functools import singledispatch
 
 from pennylane.labs.resource_estimation import ResourceOperator
 from pennylane.operation import Operation
+import pennylane.ops as qops
+import pennylane.labs.resource_estimation.ops as re_ops
 
 
 @singledispatch
@@ -42,3 +44,71 @@ def map_to_resource_op(op: Operation) -> ResourceOperator:
     raise NotImplementedError(
         "Operation doesn't have a resource equivalent and doesn't define a decomposition."
     )
+
+@map_to_resource_op.register
+def _(op: qops.GlobalPhase):
+    return re_ops.ResourceGlobalPhase()
+
+
+@map_to_resource_op.register
+def _(op: qops.Hadamard):
+    return re_ops.ResourceHadamard()
+
+
+@map_to_resource_op.register
+def _(op: qops.Identity):
+    return re_ops.ResourceIdentity()
+
+
+@map_to_resource_op.register
+def _(op: qops.RX):
+    return re_ops.ResourceRX()
+
+@map_to_resource_op.register
+def _(op: qops.RY):
+    return re_ops.ResourceRY()
+
+
+@map_to_resource_op.register
+def _(op: qops.RZ):
+    return re_ops.ResourceRZ()
+
+
+@map_to_resource_op.register
+def _(op: qops.S):
+    return re_ops.ResourceS()
+
+@map_to_resource_op.register
+def _(op: qops.SWAP):
+    return re_ops.ResourceSWAP()
+
+
+@map_to_resource_op.register
+def _(op: qops.CSWAP):
+    return re_ops.ResourceCSWAP()
+
+
+@map_to_resource_op.register
+def _(op: qops.T):
+    return re_ops.ResourceT()
+
+
+@map_to_resource_op.register
+def _(op: qops.X):
+    return re_ops.ResourceX()
+
+@map_to_resource_op.register
+def _(op: qops.Y):
+    return re_ops.ResourceY()
+
+@map_to_resource_op.register
+def _(op: qops.CY):
+    return re_ops.ResourceCY()
+
+@map_to_resource_op.register
+def _(op: qops.Z):
+    return re_ops.ResourceZ()
+
+@map_to_resource_op.register
+def _(op: qops.CZ):
+    return re_ops.ResourceCZ()
