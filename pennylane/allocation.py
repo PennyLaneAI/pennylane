@@ -148,8 +148,10 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
         The :func:`~.allocate` function can be used as a context manager with automatic deallocation 
         (recommended for most cases) upon exiting the scope.
 
+    **Example**
+
     .. code-block:: python
-    
+
         import pennylane as qml
     
         @qml.qnode(qml.device("default.qubit"))
@@ -223,7 +225,7 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
             Whether or not the dynamically allocated wires are returned to the same state they 
             started in. ``restored=True`` indicates that the user promises to restore the 
             dynamically allocated wires to their original state before being deallocated. 
-            `restored=False`` indicates that the user does not promise to restore the dynamically 
+            ``restored=False`` indicates that the user does not promise to restore the dynamically 
             allocated wires before before being deallocated. The default value is ``False``.
 
     Returns:
@@ -237,7 +239,7 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
     .. seealso::
         :func:`~.deallocate`
 
-    **Examples**
+    **Example**
   
     Using ``allocate`` to dynamically request more than 1 wire returns an array of wires 
     (``DynamicRegister``) that can be indexed into:
