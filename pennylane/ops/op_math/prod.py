@@ -114,6 +114,13 @@ def prod(*ops, id=None, lazy=True):
 
         @wraps(fn)
         def wrapper(*args, **kwargs):
+
+            # dequeue operators passed as arguments to the quantum function
+            leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+            for l in leaves:
+                if isinstance(l, Operator):
+                    qml.QueuingManager.remove(l)
+
             qs = qml.tape.make_qscript(fn)(*args, **kwargs)
             if len(qs.operations) == 1:
                 if qml.QueuingManager.recording():
