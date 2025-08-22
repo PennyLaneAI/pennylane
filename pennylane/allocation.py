@@ -136,45 +136,49 @@ class Deallocate(Operator):
 
 
 def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate:
-    """Frees quantum memory that has previously been allocated with :func:`~.allocate`.
-    Upon freeing quantum memory, that memory is available to be allocated thereafter.
-
-    .. warning::
-        This feature is experimental, and any workflows that include calls to ``deallocate`` cannot
-        be executed on any device.
+    """Deallocates wires that were previously allocated with :func:`~.allocate`. Upon deallocating,
+    the wires are available to be allocated thereafter for efficient resource usage.
 
     Args:
         wires (DynamicWire, Wires, Sequence[DynamicWire]): one or more dynamic wires.
 
     .. seealso:: :func:`~.allocate`
 
-    Using :func:`~.allocate` as a context manager is the recommended syntax, as it will automatically
-    deallocate all dynamic wires at the end of the scope.
+    .. note::
+        The :func:`~.allocate` function can be used as a context manager with automatic deallocation 
+        (recommended for most cases) upon exiting the scope.
 
     .. code-block:: python
-
+        import pennylane as qml
+    
+        @qml.qnode(qml.device("default.qubit"))
         def c():
             qml.H(0)
 
-            wires = qml.allocation.allocate(1, require_zeros=True, restored=True)
-            qml.CNOT((0, wires[0]))
-            qml.CNOT((0, wires[0]))
-            qml.allocation.deallocate(wires)
+            wire = qml.allocate(state="zero", restored=True)
+            qml.CNOT((0, wire))
+            qml.CNOT((0, wire))
+            qml.deallocate(wire)
 
-            new_wires = qml.allocation.allocate(1)
-            qml.SWAP((0, new_wires[0]))
-            qml.allocation.deallocate(new_wires)
+            new_wire = qml.allocate(state="zero", restored=True)
+            qml.SWAP((0, new_wire))
+            qml.allocation.deallocate(new_wire)
+            
+            return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(c)())
-                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤
-    <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤
-    <DynamicWire>: ──Allocate───────────────────╰SWAP──Deallocate─┤
+                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  <Z>
+    <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤     
+    <DynamicWire>: ──Allocate───────────────────╰SWAP──Deallocate─┤  
 
-    Here, two dynamic wires are allocated in the circuit originally. When we are determining
-    what concrete values to use for dynamic wires, we can see that the first dynamic wire is already
-    deallocated back into the zero state. This allows us to use it for the second allocation used in
-    the ``SWAP`` gate.
+    Here, two dynamic wires are allocated in the circuit originally. When PennyLane determines
+    what concrete values to use for dynamic wires to send to the device for execution, we can see 
+    that the first dynamic wire is already deallocated back into the zero state. This allows us to 
+    use it for the second allocation used in the ``SWAP`` gate.
 
+    >>> print(qml.draw(c, level="device")())
+    0: ──H─╭●─╭●─╭SWAP─┤  <Z>
+    1: ────╰X─╰X─╰SWAP─┤     
     """
     if capture_enabled():
         if not isinstance(wires, Sequence):
