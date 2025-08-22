@@ -19,7 +19,6 @@ import warnings
 from collections import Counter
 
 import numpy as np
-from jax._src.interpreters.partial_eval import DynamicJaxprTracer
 
 from pennylane import capture
 from pennylane.control_flow import for_loop
@@ -35,6 +34,7 @@ from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
 has_jax = True
 try:
     from jax import numpy as jnp
+    from jax._src.interpreters.partial_eval import DynamicJaxprTracer
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
 

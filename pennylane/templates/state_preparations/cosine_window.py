@@ -15,7 +15,6 @@ r"""
 Contains the CosineWindow template.
 """
 import numpy as np
-from jax._src.interpreters.partial_eval import DynamicJaxprTracer
 
 import pennylane as qml
 from pennylane import capture, math, register_resources
@@ -28,6 +27,7 @@ from pennylane.wires import Wires
 has_jax = True
 try:
     from jax import numpy as jnp
+    from jax._src.interpreters.partial_eval import DynamicJaxprTracer
 except (ModuleNotFoundError, ImportError) as import_error:  # pragma: no cover
     has_jax = False  # pragma: no cover
 
