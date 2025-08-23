@@ -33,7 +33,7 @@ _cache_store: dict[Callable, dict[int, tuple[str, str]]] = {}
 
 def _get_mlir_module(qnode: QNode, args, kwargs) -> ModuleOp:
     """Ensure the QNode is compiled and return its MLIR module."""
-    if hasattr(qnode, "mlir_module"):
+    if hasattr(qnode, "mlir_module") and qnode.mlir_module is not None:
         return qnode.mlir_module
 
     func = getattr(qnode, "user_function", qnode)
