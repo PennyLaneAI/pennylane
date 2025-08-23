@@ -247,7 +247,7 @@ class PlxprInterpreter:
 
         .. code-block:: python
 
-            my_primitive = jax.extend.core.Primitive("my_primitve")
+            my_primitive = jax.extend.core.Primitive("my_primitive")
 
             @Interpreter_Type.register(my_primitive)
             def handle_my_primitive(self: Interpreter_Type, *invals, **params)
