@@ -256,7 +256,7 @@ class ResourceTrotterCDF(ResourceOperator):  # pylint: disable=too-many-ancestor
         .. math:: C_{O_j} = 2 * n \cdot 5^{\frac{m}{2} - 1}
 
         Furthermore, because of the symmetric form of the recursive formula, the first and last terms get grouped.
-        Thus, reducing the counts for those terms to:
+        This reduces the counts for those terms to:
 
         .. math::
 
