@@ -20,13 +20,7 @@ Control flow operations for the StableHLO dialect.
 
 from typing import TypeVar
 
-from xdsl.dialects.builtin import (
-    I1,
-    AnyFloat,
-    AnyTensorType,
-    ComplexType,
-    TensorType,
-)
+from xdsl.dialects.builtin import AnyTensorType
 from xdsl.dialects.stablehlo import ReturnOp
 from xdsl.irdl import (
     IRDLOperation,
@@ -38,17 +32,14 @@ from xdsl.irdl import (
     var_result_def,
 )
 from xdsl.traits import (
+    Pure,
     RecursivelySpeculatable,
     RecursiveMemoryEffect,
     SingleBlockImplicitTerminator,
 )
 
-# Type aliases
-I1TensorType = TensorType[I1]
-FloatTensorType = TensorType[AnyFloat]
-FloatOrComplexType = AnyFloat | ComplexType
-FloatOrComplexTensorType = TensorType[FloatOrComplexType]
-ComplexTensorType = TensorType[ComplexType]
+# Import our custom StableHLO types
+from .types import HLO_PredTensor, HLO_TensorOrPerAxisQuantizedTensorOrToken, HLO_TensorOrToken
 
 # Generic type variables for templating
 T_IN = TypeVar("T_IN", bound=AnyTensorType)
@@ -74,9 +65,9 @@ class IfOp(IRDLOperation):
 
     name = "stablehlo.if"
 
-    pred = operand_def(I1TensorType)
+    pred = operand_def(HLO_PredTensor)
 
-    results = var_result_def(AnyTensorType)
+    results = var_result_def(HLO_TensorOrPerAxisQuantizedTensorOrToken)
 
     true_branch = region_def("single_block")
 
@@ -117,9 +108,9 @@ class WhileOp(IRDLOperation):
 
     name = "stablehlo.while"
 
-    operand = var_operand_def(AnyTensorType)
+    operand = var_operand_def(HLO_TensorOrPerAxisQuantizedTensorOrToken)
 
-    results = var_result_def(AnyTensorType)
+    results = var_result_def(HLO_TensorOrPerAxisQuantizedTensorOrToken)
 
     cond = region_def("single_block")
 
@@ -132,3 +123,38 @@ class WhileOp(IRDLOperation):
         # TODO: InferTypeOpInterface
         # TODO: OpAsmOpInterface
     )
+
+
+@irdl_op_definition
+class OptimizationBarrierOp(IRDLOperation):
+    """
+    Ensures that the operations that produce the `operand` are executed before any
+    operations that depend on the `result` and prevents compiler transformations
+    from moving operations across the barrier. Other than that, the operation is
+    an identity, i.e. `result` = `operand`.
+
+    See:
+    https://github.com/openxla/stablehlo/blob/main/docs/spec.md#optimization_barrier
+
+    Example:
+    ```mlir
+    %result0, %result1 = stablehlo.optimization_barrier %operand0, %operand1 : tensor<f32>, tensor<f32>
+    ```
+    """
+
+    name = "stablehlo.optimization_barrier"
+
+    operand = var_operand_def(HLO_TensorOrToken)
+
+    results = var_result_def(HLO_TensorOrToken)
+
+    traits = traits_def(
+        Pure(),
+        # TODO: HLO_PairwiseSameOperandAndResultType
+        # TODO: InferTypeOpInterface
+    )
+
+    # TODO: Add custom assembly format
+    # assembly_format = """
+    #   attr-dict ($operand^ `:` custom<PairwiseOpType>(type($operand), type($result))):(`(` `)`)?
+    # """
