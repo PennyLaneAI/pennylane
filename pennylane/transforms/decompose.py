@@ -189,6 +189,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                         self.stopping_condition,
                         max_expansion=max_expansion,
                         graph_solution=self._decomp_graph_solution,
+                        num_available_work_wires=self._num_available_work_wires,
                     )
                 )
 
@@ -203,9 +204,13 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
                 return self.interpret_operation(op)
 
-            if enabled_graph() and self._decomp_graph_solution.is_solved_for(op):
+            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
+                op, num_work_wires=self._num_available_work_wires
+            ):
 
-                rule = self._decomp_graph_solution.decomposition(op)
+                rule = self._decomp_graph_solution.decomposition(
+                    op, num_work_wires=self._num_available_work_wires
+                )
                 num_wires = len(op.wires)
 
                 def compute_qfunc_decomposition(*_args, **_kwargs):
@@ -282,6 +287,17 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
                     subfuns, params = eq.primitive.get_bind_params(eq.params)
                     outvals = eq.primitive.bind(*subfuns, *invals, **params)
 
+                    if (
+                        self._num_available_work_wires is not None
+                        and eq.primitive.name == "allocate"
+                    ):
+                        self._num_available_work_wires -= params["num_wires"]
+                    if (
+                        self._num_available_work_wires is not None
+                        and eq.primitive.name == "deallocate"
+                    ):
+                        self._num_available_work_wires += len(invals)
+
                 if not eq.primitive.multiple_results:
                     outvals = [outvals]
 
@@ -326,8 +342,8 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # a solution is found for this operator in the graph.
             if (
                 op.has_qfunc_decomposition
-                or enabled_graph()
-                and self._decomp_graph_solution.is_solved_for(op)
+                or self._decomp_graph_solution
+                and self._decomp_graph_solution.is_solved_for(op, self._num_available_work_wires)
             ):
                 return self._evaluate_jaxpr_decomposition(op)
 
@@ -866,8 +882,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
 
 
 def _resolve_gate_set(
-    gate_set: set[type | str] | dict[type | str, float] = None,
-    stopping_condition: Callable[[Operator], bool] = None,
+    gate_set: set[type | str] | dict[type | str, float] | Callable | None = None,
+    stopping_condition: Callable[[Operator], bool] | None = None,
 ) -> tuple[set[type | str] | dict[type | str, float], Callable[[Operator], bool]]:
     """Resolve the gate set and the stopping condition from arguments.
 
