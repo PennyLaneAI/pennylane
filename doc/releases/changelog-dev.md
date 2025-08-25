@@ -3,6 +3,12 @@
 
 <h3>New features since last release</h3>
 
+* A new keyword argument ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
+  It allows to specify a strategy for shot distribution accross the non-commuting groups of observables for the single
+  Hamiltonian case. The ``shot_dist`` argument must be a string (``"uniform"``, ``"weighted"``, ``"weighted_random"``)
+  or a user-defined function implementing a custom shot distribution strategy.
+  [(#7988)](https://github.com/PennyLaneAI/pennylane/pull/7988)
+
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
