@@ -31,7 +31,7 @@ from pennylane.ops.op_math import adjoint
 from .composite import CompositeOp, handle_recursion_error
 
 
-def change_op_basis(compute_op, target_op, uncompute_op=None):
+def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
     """Construct an operator that represents the product of the
     operators provided.
 
