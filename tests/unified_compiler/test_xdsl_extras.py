@@ -27,8 +27,8 @@ from xdsl.ir import Dialect
 from xdsl.irdl import IRDLOperation, irdl_op_definition, operand_def, result_def
 from xdsl.utils.exceptions import VerifyException
 
-from pennylane.compiler.python_compiler.jax_utils import QuantumParser
-from pennylane.compiler.python_compiler.xdsl_extras import (
+from pennylane.compiler.unified_compiler.jax_utils import QuantumParser
+from pennylane.compiler.unified_compiler.xdsl_extras import (
     MemRefRankConstraint,
     TensorRankConstraint,
 )
