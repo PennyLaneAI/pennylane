@@ -23,18 +23,23 @@ pytest.importorskip("xdsl")
 # pylint: disable=wrong-import-position
 from xdsl.context import Context
 from xdsl.dialects import builtin, test
+from xdsl.dialects.builtin import MemRefType, TensorType, TupleType, i1, i32
+from xdsl.dialects.stablehlo import TokenType
 from xdsl.ir import Dialect
 from xdsl.irdl import (
+    BaseAttr,
     IRDLOperation,
     irdl_op_definition,
     operand_def,
     result_def,
 )
+from xdsl.irdl.constraints import ConstraintContext
 from xdsl.utils.exceptions import VerifyException
 
 from pennylane.compiler.python_compiler.jax_utils import QuantumParser
 from pennylane.compiler.python_compiler.xdsl_extras import (
     MemRefRankConstraint,
+    NestedTupleOfConstraint,
     TensorRankConstraint,
 )
 
@@ -281,3 +286,53 @@ class TestTensorRankConstraint:
 
         with pytest.raises(VerifyException, match="memref<2xi64> should be of type TensorType"):
             xdsl_module.verify()
+
+
+class TestNestedTupleOfConstraint:
+    """Tests for the NestedTupleOfConstraint class."""
+
+    constraint = NestedTupleOfConstraint([TensorType, TokenType])
+
+    def test_nested_tuple_of_constraint(self):
+        """Test that the properties of NestedTupleOfConstraint object are correct."""
+        assert self.constraint.elem_constraints == (BaseAttr(TensorType), BaseAttr(TokenType))
+
+    def test_nested_tuple_of_constraint_verify_valid(self):
+        """Test that verifying a valid tuple of tensor and token types passes."""
+        tensor = TensorType(i32, [2])
+        token = TokenType()
+        tup = TupleType([tensor, token])
+        self.constraint.verify(tup, ConstraintContext())
+
+    def test_nested_tuple_of_constraint_accepts_two_tensors(self):
+        """Test that any mix of allowed types is accepted."""
+        tensor1 = TensorType(i32, [2])
+        tensor2 = TensorType(i1, [1])
+        tup = TupleType([tensor1, tensor2])
+        self.constraint.verify(tup, ConstraintContext())
+
+    def test_nested_tuple_of_constraint_accepts_reversed_order(self):
+        """Test that the order of the tuple is not enforced."""
+        tensor = TensorType(i32, [2])
+        token = TokenType()
+        tup = TupleType([token, tensor])
+        self.constraint.verify(tup, ConstraintContext())
+
+    def test_nested_tuple_of_constraint_accepts_nested(self):
+        """Test that nested tuples are accepted."""
+        tensor1 = TensorType(i32, [2])
+        tensor2 = TensorType(i1, [1])
+        token = TokenType()
+        inner = TupleType([token, tensor2])
+        outer = TupleType([tensor1, inner])
+        self.constraint.verify(outer, ConstraintContext())
+
+    def test_nested_tuple_of_constraint_rejects_disallowed_type(self):
+        """Test that a tuple with a disallowed type raises a VerifyException."""
+        tensor = TensorType(i32, [2])
+        memref = MemRefType(i32, [2])
+        tup = TupleType([tensor, memref])
+        with pytest.raises(
+            VerifyException, match="tuple leaf 1 failed all allowed constraints: memref<2xi32>"
+        ):
+            self.constraint.verify(tup, ConstraintContext())
