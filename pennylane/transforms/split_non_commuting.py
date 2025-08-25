@@ -18,6 +18,7 @@ Contains the tape transform that splits a tape into tapes measuring commuting ob
 
 # pylint: disable=too-many-boolean-expressions
 
+import warnings
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from functools import partial, wraps
@@ -382,6 +383,11 @@ def split_non_commuting(
         )
     ):
         return _split_ham_with_grouping(tape, shot_dist_fn=shot_dist_fn, seed=seed)
+
+    if shot_dist is not None:
+        warnings.warn(
+            f"shot_dist='{shot_dist}' is not supported for multiple measurements.", UserWarning
+        )
 
     single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
 

@@ -1012,6 +1012,23 @@ class TestShotDistribution:
         with pytest.raises(ValueError, match="Unknown shot_dist='unknown'. Available options are"):
             _ = split_non_commuting(initial_tape, shot_dist="unknown")
 
+    @pytest.mark.parametrize("grouping_strategy", ["default", "qwc", "wires", None])
+    @pytest.mark.parametrize("shot_dist", ["uniform", "weighted", "weighted_random"])
+    def test_warning_multiple_measurements(self, grouping_strategy, shot_dist):
+        """Test a warning is raised for the multiple measurements case."""
+
+        initial_tape = qml.tape.QuantumScript(
+            measurements=[qml.expval(ham), qml.expval(ham)], shots=10
+        )
+
+        with pytest.warns(
+            UserWarning,
+            match=f"shot_dist='{shot_dist}' is not supported for multiple measurements.",
+        ):
+            _ = split_non_commuting(
+                initial_tape, grouping_strategy=grouping_strategy, shot_dist=shot_dist
+            )
+
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
     @pytest.mark.parametrize(
         ["shot_dist", "expected_shots"],
