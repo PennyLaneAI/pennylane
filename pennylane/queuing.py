@@ -594,8 +594,8 @@ def process_queue(
             lists[obj._queue_category].append(obj)
         else:
             warnings.warn(
-                PennyLaneDeprecationWarning,
-                "Preventing an object from getting queued with `_queue_category=None` is deprecated.",
+                category=PennyLaneDeprecationWarning,
+                message="Preventing an object from getting queued with `_queue_category=None` is deprecated.",
             )
 
     return lists["_ops"], lists["_measurements"]
