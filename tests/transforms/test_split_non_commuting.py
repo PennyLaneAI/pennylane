@@ -1010,22 +1010,18 @@ class TestShotDistribution:
         [
             ("uniform", (334, 333, 333)),
             ("weighted", (231, 2, 767)),
-            ("weighted_random", (221, 3, 776)),  # requires fixed seed=42
         ],
     )
     def test_single_hamiltonian_sampling_strategy(
         self, grouping_strategy, shot_dist, expected_shots
     ):
-        """Test built-in shot distribution strategies for the single hamiltonian case."""
+        """Test built-in deterministic shot distribution strategies for the single hamiltonian case."""
 
         total_shots = 1000
         initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=total_shots)
 
         tapes, _ = split_non_commuting(
-            initial_tape,
-            grouping_strategy=grouping_strategy,
-            shot_dist=shot_dist,
-            seed=42,
+            initial_tape, grouping_strategy=grouping_strategy, shot_dist=shot_dist
         )
 
         # check that the original total number of shots is conserved
@@ -1034,6 +1030,29 @@ class TestShotDistribution:
         # check that for all output tapes the number of shots is computed as expected
         for tape, shots in zip(tapes, expected_shots, strict=True):
             assert tape.shots.total_shots == shots
+
+    @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
+    def test_single_hamiltonian_random_sampling_strategy(self, grouping_strategy):
+        """Test built-in random shot distribution strategy for the single hamiltonian case."""
+
+        total_shots = 1000
+        initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=total_shots)
+
+        tapes, _ = split_non_commuting(
+            initial_tape,
+            grouping_strategy=grouping_strategy,
+            shot_dist="weighted_random",
+            seed=42,
+        )
+
+        # check that the original total number of shots is conserved
+        assert sum(tape.shots.total_shots for tape in tapes) == total_shots
+
+        shots_per_tape = [tape.shots.total_shots for tape in tapes]
+        expected_shots = [231, 2, 767]
+
+        # check that the number of shots for each tape is close enough to the expected number
+        assert np.allclose(shots_per_tape, expected_shots, rtol=0.1, atol=5)
 
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
     @pytest.mark.parametrize("seed", [42, None])
