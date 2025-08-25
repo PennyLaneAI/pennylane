@@ -32,9 +32,7 @@ from xdsl.dialects.builtin import (
     Float64Type,
     IntegerAttr,
     IntegerType,
-    MemRefType,
     StringAttr,
-    TensorType,
     i1,
 )
 from xdsl.ir import Dialect, EnumAttribute, Operation, SpacedOpaqueSyntaxAttribute, SSAValue
@@ -50,7 +48,7 @@ from xdsl.irdl import (
 from xdsl.utils.exceptions import VerifyException
 from xdsl.utils.str_enum import StrEnum  # StrEnum is standard in Python>=3.11
 
-from ..xdsl_extras import MemRefRankConstraint, TensorRankConstraint
+from ..xdsl_extras import MemRefConstraint, TensorConstraint
 from .quantum import QubitType, QuregType
 
 QubitSSAValue: TypeAlias = SSAValue[QubitType]
@@ -142,8 +140,7 @@ class GraphStatePrepOp(IRDLOperation):
         """
 
     adj_matrix = operand_def(
-        (TensorType.constr(i1) & TensorRankConstraint(1))
-        | (MemRefType.constr(i1) & MemRefRankConstraint(1))
+        TensorConstraint(element_type=i1, rank=1) | MemRefConstraint(element_type=i1, rank=1)
     )
 
     init_op = prop_def(StringAttr)
