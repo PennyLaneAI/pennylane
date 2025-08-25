@@ -60,7 +60,6 @@ class FrozenMapping(MutableMapping):
     def __hash__(self):
         """Makes the object hashable, allowing it to be used in sets and as a dict key."""
         if self._hash is None:
-            # FIX: Corrected 'froznet' to 'frozenset'
             self._hash = hash(frozenset(self._data.items()))
         return self._hash
 
