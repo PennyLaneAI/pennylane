@@ -140,6 +140,7 @@ def split_non_commuting(
 
     Raises:
         TypeError: if ``shot_dist`` is not a str or Callable or None.
+        ValueError: if ``shot_dist`` is a str but not an available strategy.
 
     .. note::
         This transform splits expectation values of sums into separate terms, and also distributes the terms into
