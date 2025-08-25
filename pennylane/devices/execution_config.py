@@ -15,12 +15,15 @@
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
 from dataclasses import dataclass, field
-from typing import Literal
+from types import MappingProxyType
+from typing import Literal, TypeAlias
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
+
+ReadOnlyDict: TypeAlias = MappingProxyType
 
 
 @dataclass(frozen=True)
@@ -85,13 +88,13 @@ class ExecutionConfig:
     gradient_method: str | TransformDispatcher | None = None
     """The method used to compute the gradient of the quantum circuit being executed"""
 
-    gradient_keyword_arguments: dict | None = None
+    gradient_keyword_arguments: dict = field(default_factory=dict)
     """Arguments used to control a gradient transform"""
 
-    device_options: dict | None = None
+    device_options: dict = field(default_factory=dict)
     """Various options for the device executing a quantum circuit"""
 
-    interface: Interface = Interface.NUMPY
+    interface: str | Interface | None = Interface.NUMPY
     """The machine learning framework to use"""
 
     derivative_order: int = 1
@@ -125,11 +128,18 @@ class ExecutionConfig:
                 f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
             )
 
-        if self.device_options is None:
-            object.__setattr__(self, "device_options", {})
+        def _validate_and_freeze_dict(field_name: str):
+            value = getattr(self, field_name)
+            if not isinstance(value, (dict, ReadOnlyDict)):
+                raise TypeError(f"Got invalid type {type(value)} for '{field_name}'")
+            # Only wrap if it's not already a proxy.
+            # This handles the case when `dataclasses.replace` is used and
+            # the field is not being modified.
+            if isinstance(value, dict):
+                object.__setattr__(self, field_name, ReadOnlyDict(value))
 
-        if self.gradient_keyword_arguments is None:
-            object.__setattr__(self, "gradient_keyword_arguments", {})
+        _validate_and_freeze_dict("device_options")
+        _validate_and_freeze_dict("gradient_keyword_arguments")
 
         if not (
             isinstance(self.gradient_method, (str, TransformDispatcher))
