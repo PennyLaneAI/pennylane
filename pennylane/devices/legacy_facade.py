@@ -152,7 +152,11 @@ class LegacyDeviceFacade(Device):
     Shots(total_shots=None, shot_vector=())
     >>> tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=5)
     >>> new_dev.execute(tape)
-    array([0, 0, 0, 0, 0])
+    array([[0],
+       [0],
+       [0],
+       [0],
+       [0]])
 
     """
 

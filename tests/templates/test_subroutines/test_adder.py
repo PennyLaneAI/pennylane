@@ -121,7 +121,8 @@ class TestAdder:
             mod = 2 ** len(x_wires)
 
         # pylint: disable=bad-reversed-sequence
-        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x))))
+        out = list(circuit(x)[0, :])
+        result = sum(bit * (2**i) for i, bit in enumerate(reversed(out)))
         assert np.allclose(result, (x + k) % mod)
 
     @pytest.mark.parametrize(
@@ -261,5 +262,5 @@ class TestAdder:
             return qml.sample(wires=x_wires)
 
         # pylint: disable=bad-reversed-sequence
-        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit())))
+        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :])))
         assert jax.numpy.allclose(result, (x + k) % mod)

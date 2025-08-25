@@ -241,7 +241,7 @@ class TestSingleReturnExecute:
         )
 
         assert isinstance(res[0], (np.ndarray, np.float64))
-        assert res[0].shape == (shots,)
+        assert res[0].shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, measurement, interface, shots):
@@ -473,7 +473,7 @@ class TestMultipleReturns:
 
         # Sample
         assert isinstance(res[0][1], (np.ndarray, np.float64))
-        assert res[0][1].shape == (shots,)
+        assert res[0][1].shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("device", devices)
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
@@ -626,11 +626,7 @@ class TestShotVector:
 
         assert len(res[0]) == len(all_shot_copies)
         for r, shots in zip(res[0], all_shot_copies):
-            if shots == 1:
-                # Scalar tensors
-                assert r.shape == ()
-            else:
-                assert r.shape == (shots,)
+            assert r.shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, shot_vector, measurement, device):
@@ -742,8 +738,11 @@ class TestSameMeasurementShotVector:
 
         assert len(res[0]) == len(all_shot_copies)
         for r, shots in zip(res[0], all_shot_copies):
-            shape = () if shots == 1 else (shots,)
-            assert all(res_item.shape == shape for res_item in r)
+            expected1 = (shots,) if measurement1.obs else (shots, 1)
+            assert r[0].shape == expected1
+
+            expected2 = (shots,) if measurement2.obs else (shots, 1)
+            assert r[1].shape == expected2
 
     @pytest.mark.parametrize("measurement1", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     @pytest.mark.parametrize("measurement2", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
@@ -906,7 +905,7 @@ class TestMixMeasurementsShotVector:
 
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[0][idx]):
-                if i % 2 == 0 or shots == 1:
+                if i % 2 == 0:
                     assert meas2.obs is not None
                     expected_shape = ()
                     assert r.shape == expected_shape
@@ -1072,11 +1071,8 @@ class TestMixMeasurementsShotVector:
                     # Probs add up to 1
                     assert np.allclose(sum(r), 1)
                 else:
-                    if shots == 1:
-                        assert r.shape == ()
-                    else:
-                        expected = (shots,)
-                        assert r.shape == expected
+                    expected = (shots,) if sample_obs else (shots, 1)
+                    assert r.shape == expected
 
     @pytest.mark.parametrize("sample_obs", [qml.PauliZ, None])
     def test_probs_counts(self, shot_vector, sample_obs, device):
@@ -1177,10 +1173,8 @@ class TestMixMeasurementsShotVector:
         for idx, shots in enumerate(raw_shot_vector):
             for i, r in enumerate(res[0][idx]):
                 num_wires = len(sample_wires)
-                if shots == 1 and i % 2 == 0:
-                    expected_shape = () if num_wires == 1 else (num_wires,)
-                    assert r.shape == expected_shape
-                elif i % 2 == 0:
+                if i % 2 == 0:
+                    # uses observable if num_wires==1
                     expected_shape = (shots,) if num_wires == 1 else (shots, num_wires)
                     assert r.shape == expected_shape
                 else:
@@ -1231,11 +1225,8 @@ class TestMixMeasurementsShotVector:
                     assert np.allclose(sum(r), 1)
                 elif sample:
                     shots = raw_shot_vector[res_idx]
-                    if shots == 1:
-                        assert r.shape == ()
-                    else:
-                        expected = (shots,)
-                        assert r.shape == expected
+                    expected = (shots,)
+                    assert r.shape == expected
                 else:
                     # Return is Counts
                     assert isinstance(r, dict)

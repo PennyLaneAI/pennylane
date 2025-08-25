@@ -225,7 +225,7 @@ class TestSingleReturnExecute:
         )
 
         assert isinstance(res[0], np.ndarray)
-        assert res[0].shape == (shots,)
+        assert res[0].shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_counts(self, measurement, interface, shots):
@@ -449,7 +449,7 @@ class TestMultipleReturns:
 
         # Sample
         assert isinstance(res[0][1], np.ndarray)
-        assert res[0][1].shape == (shots,)
+        assert res[0][1].shape == (shots,) if measurement.obs else (shots, 1)
 
     @pytest.mark.parametrize("measurement", [qml.counts(qml.PauliZ(0)), qml.counts(wires=[0])])
     def test_expval_counts(self, measurement, shots):
