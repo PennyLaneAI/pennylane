@@ -65,7 +65,7 @@ class ContainerConstraint(AttrConstraint, ABC):
             Default is ``None``, which indicates that any element type is allowed.
         shape (IRDLAttrConstraint | Sequence[int] | None): The constraint for the shape.
             Default is ``None``, which indicates that any shape is allowed.
-        shape (IRDLAttrConstraint | Sequence[int] | int | None): The constraint for the
+        rank (IRDLAttrConstraint | Collection[int] | int | None): The constraint for the
             rank. Default is ``None``, which indicates that any rank is allowed.
     """
 
