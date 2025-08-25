@@ -38,7 +38,7 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
     Args:
         compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
         target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations. Default is uncompute_op=qml.adjoint(compute_op).
+        uncompute_op (None | :class:`~.operation.Operator`): An optional single operator or a product that applies quantum operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute, uncompute pattern.
