@@ -20,7 +20,7 @@ from dataclasses import replace
 
 import pytest
 
-from pennylane.devices.execution_config import ExecutionConfig, MCMConfig
+from pennylane.devices.execution_config import ExecutionConfig, FrozenMapping, MCMConfig
 from pennylane.gradients import param_shift
 from pennylane.math import Interface
 
@@ -42,6 +42,34 @@ def test_default_execution_config_deprecation():
         from pennylane.devices.execution_config import (  # pylint: disable=unused-import, import-outside-toplevel, no-name-in-module
             DefaultExecutionConfig,
         )
+
+
+class TestFrozenMapping:
+    """Tests all of the dunders for FrozenMapping."""
+
+    def test_frozen_mapping(self):
+        """Test that FrozenMapping is immutable."""
+        fm = FrozenMapping(a=1, b=2)
+        with pytest.raises(TypeError, match="FrozenMapping is immutable"):
+            fm["a"] = 3
+        with pytest.raises(TypeError, match="FrozenMapping is immutable"):
+            del fm["b"]
+
+    def test_frozen_mapping_methods(self):
+        """Test the methods of FrozenMapping."""
+        fm = FrozenMapping(a=1, b=2)
+        assert list(fm.keys()) == ["a", "b"]
+        assert list(fm.values()) == [1, 2]
+        assert list(fm.items()) == [("a", 1), ("b", 2)]
+        assert fm.get("a") == 1
+        assert fm.get("c") is None
+
+        with pytest.raises(TypeError, match="FrozenMapping is immutable"):
+            fm["a"] = 3
+        with pytest.raises(TypeError, match="FrozenMapping is immutable"):
+            del fm["b"]
+
+        assert repr(fm) == "FrozenMapping({'a': 1, 'b': 2})"
 
 
 class TestExecutionConfig:
