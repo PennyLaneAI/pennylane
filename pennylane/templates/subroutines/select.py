@@ -829,12 +829,95 @@ def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires)
 
 
 def _select_decomp_unary_not_partial(ops, control, work_wires):
+    """Decompose Select operator into unary iterator, without applying the partial Select
+    reduction. The control structure is simpler without the Select reduction, so that we do
+    not use the same recursive structure as for ``_select_decomp_unary`` but a simple ``for`` loop
+    instead.
+
+    Denote the number of control qubits as ``c`` and the number of operators as ``K``.
+    Arrange the control wires and ``c-1`` work wires as ``["c0", "c1", "w0", "c2", "w1", ...]``.
+
+    We begin with a ladder of ``TemporaryAND`` operators:
+
+    ```
+    c0: ─╭○──────────
+    c1: ─├○──────────
+    w0: ─╰──╭●───────
+    c2: ────├○───────
+    w1: ────╰──╭●────
+     :         :
+     :            :
+    wp: ──────────╰──
+    t0: ─────────────
+     :
+    tn: ─────────────
+    ```
+
+    Then we iterate over the target operators and perform the following steps for each, except
+    for the last operator.
+
+    1. Apply the operator, controlled on the last wire ``"wp"`` of the control structure, to the
+       target wires ``["t0", ... "tn"]``.
+    2. For the ``k``-th operator (in 0-based indexing), find the position ``a`` of the most
+       significant bit that flips when incrementing ``k`` to ``k+1``. It will be the position of
+       the last bit that is ``0`` in the bit string of ``k``.
+    3. Apply right elbows, starting from the lower end of the control structure up to ``a`` (exclusive).
+    4. Apply gates that result from merging a right with the next left elbow. This is always a
+       ``CNOT`` on the first and last gate of the elbows, but might be complemented with
+       ``X`` gates or a second ``CNOT`` gate if ``a=1`` or ``a=0``, respectively.
+    5. Apply left elbows corresponding to the right elbows applied in step 3, but starting at
+       position ``a`` (exclusive).
+
+    As an example, let ``c=4`` and the operator ``SWAP(["t0", "t1"])`` be the ``k=3``-rd operator
+    that is applied, the following subcircuit is appended (using that ``k=0011_2`` and
+    ``k+1=0100_2``, so that ``a=1`` is the position of the most significant flipped bit)
+
+    ```
+    c0: ─────────────╭●──────────
+    c1: ─────────────│───────────
+    w0: ──────────●╮─╰X──╭●──────
+    c2: ──────────●┤─────├○──────
+    w1: ───────●╮──╯─────╰──╭●───
+    c3: ───────●┤───────────├○───
+    w2: ─╭●─────╯───────────╰────
+    t0: ─├SWAP───────────────────
+    t1: ─╰SWAP───────────────────
+         1.      3.  4.   5.
+    ```
+
+    To conclude, we control-apply the last target operator, which was excluded from the loop above,
+    and apply a ladder of right elbows across the full control structure, starting at the
+    low end:
+
+    ```
+    c0: ──────────●╮── *
+    c1: ──────────○┤── *
+    w0: ───────●╮──╯──
+    c2: ───────●┤───── *
+    w1: ────●╮──╯─────
+     :       :
+     :    :
+    wp: ──╯───────────
+    t0: ──────────────
+     :
+    tn: ──────────────
+    ```
+
+    The value of the control node (filled or open) on the control wires (marked with an
+    asterisk (*), i.e. without the work wires) depends on the total number ``K`` of operators
+    and can be computed as
+
+    ```
+    control_values = np.binary_repr(K-1, width=c)
+    ```
+    """
+
     c = len(control)
     K = len(ops)
     if c == 1:
         # Don't need unary iterator, just control-apply the one/two operator(s) directly.
         new_ops = [
-            ctrl(op, control=control[-1], control_values=[i], work_wires=work_wires)
+            ctrl(op, control=control, control_values=[i], work_wires=work_wires)
             for i, op in enumerate(ops)
         ]
         return new_ops
@@ -861,21 +944,21 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
         TemporaryAND(triple, control_values=((0, 0) if i == 0 else (1, 0)))
         for i, triple in enumerate(unary_triples)
     ]
+
     first_bit_has_flipped = False
     for k, op in enumerate(ops[:-1]):
         # For all but the last target operator, do the following:
-        # - apply target operator, always controlled on last unary iteration wire
-        # - find the most significant bit that flips when incrementing from k to k+1
-        #   (this can be done by finding the last bit that is 0 in the bitstring for k)
-        # - apply the ladder of right elbows up to the most significant flipped bit (exclusive)
-        # - apply gates that result from merging a right and left elbow (``inter_ops``)
-        # - apply the ladder of elbows starting at the most significant flipped bit (exclusive)
+        # 1. apply target operator, always controlled on last unary iteration wire
         ops_decomp.append(ctrl(op, control=aux_control[-1], work_wires=rest_work_wires))
 
+        # 2. find the most significant bit ``a`` that flips when incrementing from k to k+1
         first_flip_bit = c - 1 - list(np.binary_repr(k, width=c)[::-1]).index("0")
+
+        # 3. apply the ladder of right elbows up to the most significant flipped bit (exclusive)
         sub_triples = unary_triples[max(first_flip_bit, 1) : c - 1]
         ops_decomp.extend([adjoint(TemporaryAND(triple)) for triple in reversed(sub_triples)])
 
+        # 4. apply gates that result from merging a right and left elbow (``inter_ops``)
         if first_flip_bit == 1:
             c0, c1, c2 = unary_triples[0]
             if first_bit_has_flipped:
@@ -888,24 +971,22 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
             first_bit_has_flipped = True
         else:
             inter_ops = [CNOT(unary_triples[first_flip_bit - 1][::2])]
-
         ops_decomp.extend(inter_ops)
+
+        # 5. apply the ladder of elbows starting at the most significant flipped bit (exclusive)
         ops_decomp.extend([TemporaryAND(triple, control_values=(1, 0)) for triple in sub_triples])
+
     # For the last target operator, apply controlled target op and then the "closing"
     # ladder of right elbows
-    closing_ctrl_bits = [((K - 1) % 2 ** (i + 1)) >= 2**i for i in range(c)]
+    closing_ctrl_bits = list(map(int, np.binary_repr(K - 1, width=c)))
     ops_decomp.append(ctrl(ops[-1], control=aux_control[-1], work_wires=rest_work_wires))
     ops_decomp.extend(
         [
             adjoint(TemporaryAND(triple, control_values=(1, val)))
-            for val, triple in zip(closing_ctrl_bits, unary_triples[c - 2 : 0 : -1])
+            for val, triple in zip(closing_ctrl_bits[2:], reversed(unary_triples[: c - 1]))
         ]
     )
-    ops_decomp.append(
-        adjoint(
-            TemporaryAND(unary_triples[0], control_values=tuple(reversed(closing_ctrl_bits[-2:])))
-        )
-    )
+    ops_decomp.append(adjoint(TemporaryAND(unary_triples[0], control_values=closing_ctrl_bits[:2])))
     return ops_decomp
 
 
