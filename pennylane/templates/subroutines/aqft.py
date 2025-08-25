@@ -207,19 +207,17 @@ class AQFT(Operation):
 
 def _AQFT_resources(num_wires, order):
 
-    resources = Counter()
+    resources = {}
 
     resources[resource_rep(Hadamard)] = num_wires
 
-    for i in range(num_wires):
-
-        resources[
-            controlled_resource_rep(
-                PhaseShift,
-                {},
-                num_control_wires=1,
-            )
-        ] += min(num_wires - 1 - i, order)
+    resources[
+        controlled_resource_rep(
+            PhaseShift,
+            {},
+            num_control_wires=1,
+        )
+    ] = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
 
     resources[resource_rep(SWAP)] = num_wires // 2
 
