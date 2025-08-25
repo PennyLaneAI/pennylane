@@ -577,8 +577,163 @@ class TestUnaryIterator:
         decomp = qml.list_decomps(qml.Select)[1]
         assert decomp is _select_decomp_unary
 
-    def test_expected_operators():
-        pass
+    @pytest.mark.parametrize(
+        "c, K, expected_ops, expected_ops_partial",
+        [
+            (1, 1, [qml.ctrl(qml.SWAP([0, 1]), ["c0"], [0])], [qml.SWAP([0, 1])]),
+            (1, 2, [qml.ctrl(qml.SWAP([0, 1]), ["c0"], [0]), qml.CY(["c0", 1])], None),
+            (
+                2,
+                1,
+                [
+                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qml.ctrl(qml.SWAP([0, 1]), ["w0"]),
+                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (0, 0))),
+                ],
+                [qml.SWAP([0, 1])],
+            ),
+            (
+                2,
+                2,
+                [
+                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qml.ctrl(qml.SWAP([0, 1]), ["w0"]),
+                    qml.X("c0"),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.X("c0"),
+                    qml.CY(["w0", 1]),
+                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (0, 1))),
+                ],
+                [
+                    qml.ctrl(qml.SWAP([0, 1]), ["c1"], [0], work_wires=["w0"]),
+                    qml.ctrl(qml.Y(1), ["c1"], work_wires=["w0"]),
+                ],
+            ),
+            (
+                2,
+                3,
+                [
+                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qml.ctrl(qml.SWAP([0, 1]), ["w0"]),
+                    qml.X("c0"),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.X("c0"),
+                    qml.CY(["w0", 1]),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.CNOT(["c1", "w0"]),
+                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w0"], [1], work_wires=["c0", "c1"]),
+                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (1, 0))),
+                ],
+                [
+                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qml.ctrl(qml.SWAP([0, 1]), ["w0"]),
+                    qml.X("c0"),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.X("c0"),
+                    qml.CY(["w0", 1]),
+                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (0, 1))),
+                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["c0"]),
+                ],
+            ),
+            (
+                2,
+                4,
+                [
+                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qml.ctrl(qml.SWAP([0, 1]), ["w0"]),
+                    qml.X("c0"),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.X("c0"),
+                    qml.CY(["w0", 1]),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.CNOT(["c1", "w0"]),
+                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w0"], [1], work_wires=["c0", "c1"]),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.CNOT(["w0", 0]),
+                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (1, 1))),
+                ],
+                None,
+            ),
+            (
+                3,
+                7,
+                [
+                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qml.ctrl(qml.SWAP([0, 1]), ["w1"]),
+                    qml.CNOT(["w0", "w1"]),
+                    qml.CY(["w1", 1]),
+                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
+                    qml.X("c0"),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.X("c0"),
+                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w1"], work_wires=["c0", "c1", "c2"]),
+                    qml.CNOT(["w0", "w1"]),
+                    qml.CNOT(["w1", 0]),
+                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.CNOT(["c1", "w0"]),
+                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qml.CZ(["w1", 1]),
+                    qml.CNOT(["w0", "w1"]),
+                    qml.ctrl(qml.X(0) @ qml.Z(1), ["w1"], work_wires=["c0", "c1", "c2"]),
+                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"])),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qml.CH(["w1", 1]),
+                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 0))),
+                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (1, 1))),
+                ],
+                [
+                    qml.Elbow(["c0", "c1", "w0"], (0, 0)),
+                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qml.ctrl(qml.SWAP([0, 1]), ["w1"]),
+                    qml.CNOT(["w0", "w1"]),
+                    qml.CY(["w1", 1]),
+                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
+                    qml.X("c0"),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.X("c0"),
+                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qml.ctrl(qml.CRZ(0.4, [1, 0]), ["w1"], work_wires=["c0", "c1", "w0", "c2"]),
+                    qml.CNOT(["w0", "w1"]),
+                    qml.CNOT(["w1", 0]),
+                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"], (1, 1))),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.CNOT(["c1", "w0"]),
+                    qml.Elbow(["w0", "c2", "w1"], (1, 0)),
+                    qml.CZ(["w1", 1]),
+                    qml.CNOT(["w0", "w1"]),
+                    qml.ctrl(qml.X(0) @ qml.Z(1), ["w1"], work_wires=["c0", "c1", "w0", "c2"]),
+                    qml.adjoint(qml.Elbow(["w0", "c2", "w1"])),
+                    qml.CNOT(["c0", "w0"]),
+                    qml.CH(["w0", 1]),
+                    qml.adjoint(qml.Elbow(["c0", "c1", "w0"], (1, 1))),
+                ],
+            ),
+        ],
+    )
+    def test_expected_operators(self, c, K, expected_ops, expected_ops_partial, partial):
+        ops = [
+            qml.SWAP([0, 1]),
+            qml.Y(1),
+            qml.CRZ(0.4, [1, 0]),
+            qml.X(0),
+            qml.Z(1),
+            qml.X(0) @ qml.Z(1),
+            qml.H(1),
+        ][:K]
+        control = [f"c{i}" for i in range(c)]
+        work_wires = [f"w{i}" for i in range(c - 1)]
+        decomp = _select_decomp_unary(ops, control, work_wires, partial=partial)
+
+        if partial and expected_ops_partial is not None:
+            expected = expected_ops_partial
+        else:
+            expected = expected_ops
+        for op, exp_op in zip(decomp, expected, strict=True):
+            qml.assert_equal(op, exp_op)
 
     @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
     def test_no_ops(self, num_controls, partial):

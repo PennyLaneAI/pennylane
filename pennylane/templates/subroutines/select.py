@@ -931,7 +931,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
         )
 
     unary_work_wires = work_wires[: c - 1]
-    rest_work_wires = work_wires[c - 1 :]
+    new_work_wires = work_wires[c - 1 :] + control
     aux_control = [control[0]]
     for ctrl_wire, work_wire in zip(control[1:], unary_work_wires, strict=False):
         aux_control.append(ctrl_wire)
@@ -949,7 +949,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     for k, op in enumerate(ops[:-1]):
         # For all but the last target operator, do the following:
         # 1. apply target operator, always controlled on last unary iteration wire
-        ops_decomp.append(ctrl(op, control=aux_control[-1], work_wires=rest_work_wires))
+        ops_decomp.append(ctrl(op, control=aux_control[-1], work_wires=new_work_wires))
 
         # 2. find the most significant bit ``a`` that flips when incrementing from k to k+1
         first_flip_bit = c - 1 - list(np.binary_repr(k, width=c)[::-1]).index("0")
@@ -979,7 +979,7 @@ def _select_decomp_unary_not_partial(ops, control, work_wires):
     # For the last target operator, apply controlled target op and then the "closing"
     # ladder of right elbows
     closing_ctrl_bits = list(map(int, np.binary_repr(K - 1, width=c)))
-    ops_decomp.append(ctrl(ops[-1], control=aux_control[-1], work_wires=rest_work_wires))
+    ops_decomp.append(ctrl(ops[-1], control=aux_control[-1], work_wires=new_work_wires))
     ops_decomp.extend(
         [
             adjoint(TemporaryAND(triple, control_values=(1, val)))
