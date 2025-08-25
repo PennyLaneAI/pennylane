@@ -178,24 +178,18 @@ def _controlled_change_op_basis_resources(
     **__,
 ):  # pylint: disable=unused-argument, too-many-arguments
     resources = defaultdict(int)
-    resources[
-        resource_rep(type(base_params["compute_op"]), **base_params["compute_op"].resource_params)
-    ] += 1
+    resources[base_params["compute_op"]] += 1
     resources[
         controlled_resource_rep(
-            type(base_params["target_op"]),
-            base_params["target_op"].resource_params,
+            base_params["target_op"].op_type,
+            base_params["target_op"].params,
             num_control_wires=num_control_wires,
             num_zero_control_values=num_zero_control_values,
             num_work_wires=num_work_wires,
             work_wire_type=work_wire_type,
         )
     ] += 1
-    resources[
-        resource_rep(
-            type(base_params["uncompute_op"]), **base_params["uncompute_op"].resource_params
-        )
-    ] += 1
+    resources[base_params["uncompute_op"]] += 1
     return resources
 
 
@@ -210,20 +204,20 @@ def _controlled_change_op_basis_decomposition(
     base,
     **__,
 ):  # pylint: disable=unused-argument, too-many-arguments
-    base.resource_params["compute_op"]._unflatten(  # pylint: disable=protected-access
-        *base.resource_params["compute_op"]._flatten()  # pylint: disable=protected-access
+    base.operands[0]._unflatten(  # pylint: disable=protected-access
+        *base.operands[0]._flatten()  # pylint: disable=protected-access
     )
     ctrl(
-        base.resource_params["target_op"]._unflatten(  # pylint: disable=protected-access
-            *base.resource_params["target_op"]._flatten()  # pylint: disable=protected-access
+        base.operands[1]._unflatten(  # pylint: disable=protected-access
+            *base.operands[1]._flatten()  # pylint: disable=protected-access
         ),
         control=control_wires,
         control_values=control_values,
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    base.resource_params["uncompute_op"]._unflatten(  # pylint: disable=protected-access
-        *base.resource_params["uncompute_op"]._flatten()  # pylint: disable=protected-access
+    base.operands[2]._unflatten(  # pylint: disable=protected-access
+        *base.operands[2]._flatten()  # pylint: disable=protected-access
     )
 
 
