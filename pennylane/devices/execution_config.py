@@ -14,15 +14,20 @@
 """
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
+from __future__ import annotations
+
 from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
-from pennylane.concurrency.executors.base import RemoteExec
-from pennylane.math import Interface, get_canonical_interface_name
+from pennylane.math.interface_utils import get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
+
+if TYPE_CHECKING:
+    from pennylane.concurrency.executors.base import RemoteExec
+    from pennylane.math.interface_utils import Interface
 
 
 class FrozenMapping(MutableMapping):
