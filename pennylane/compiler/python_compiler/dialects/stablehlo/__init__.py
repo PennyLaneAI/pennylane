@@ -60,8 +60,10 @@ from .elementwise_other import (
     SelectOp,
 )
 
-from .control_flow.control_flow import (
+from .control_flow import (
     IfOp,
+    WhileOp,
+    OptimizationBarrierOp,
 )
 
 # Import the main StableHLO dialect
@@ -107,4 +109,6 @@ __all__ = [
     "SelectOp",
     # Control flow operations
     "IfOp",
+    "WhileOp",
+    "OptimizationBarrierOp",
 ]
