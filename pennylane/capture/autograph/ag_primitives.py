@@ -55,9 +55,9 @@ __all__ = [
 
 
 def set_item(
-    target: DynamicJaxprTracer | list,
-    i: int | DynamicJaxprTracer,
-    x: Number | DynamicJaxprTracer,
+    target: "DynamicJaxprTracer" | list,
+    i: int | "DynamicJaxprTracer",
+    x: Number | "DynamicJaxprTracer",
 ):
     """An implementation of the AutoGraph 'set_item' function."""
 
@@ -70,9 +70,9 @@ def set_item(
 
 
 def update_item_with_op(
-    target: DynamicJaxprTracer | list,
-    index: Number | DynamicJaxprTracer,
-    x: Number | DynamicJaxprTracer,
+    target: "DynamicJaxprTracer" | list,
+    index: Number | "DynamicJaxprTracer",
+    x: Number | "DynamicJaxprTracer",
     op: str,
 ):
     """An implementation of the AutoGraph 'update_item_with_op' function."""
