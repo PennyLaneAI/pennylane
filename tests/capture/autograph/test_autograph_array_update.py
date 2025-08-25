@@ -116,6 +116,20 @@ def test_static_array_update():
     assert jnp.array_equal(result, [0, 11])
 
 
+def test_dynamic_index():
+    """Tests that a dynamic index can be used."""
+
+    def fn(x, i):
+        x[i] += 2
+        return x
+
+    ag_fn = run_autograph(fn)
+    args = (jnp.array([4, 2, 1], dtype=int), 0)
+    ag_fn_jaxpr = make_jaxpr(ag_fn)(*args)
+    result = eval_jaxpr(ag_fn_jaxpr.jaxpr, ag_fn_jaxpr.consts, *args)
+    assert jnp.array_equal(result[0], jnp.array([6, 2, 1], dtype=result[0].dtype))
+
+
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class TestUnsupportedArrayUpdates:
     """Test that errors are thrown for unsupported cases"""
