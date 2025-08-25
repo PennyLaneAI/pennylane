@@ -252,12 +252,11 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             coeff *= base.scalar
             base = base.base
-        is_pauli_rot = qml.pauli.is_pauli_word(self.base) and math.real(self.coeff) == 0
+
+        imag_coeff = not math.is_abstract(coeff) and math.allclose(math.real(coeff), 0)
+        is_pauli_rot = base.pauli_rep is not None and len(base.pauli_rep) == 1 and imag_coeff
         is_hamiltonian = isinstance(base, LinearCombination)
-        is_sum_of_pauli_words = isinstance(base, Sum) and all(
-            qml.pauli.is_pauli_word(o) for o in base
-        )
-        return is_pauli_rot or is_hamiltonian or is_sum_of_pauli_words
+        return is_pauli_rot or is_hamiltonian or self.base.pauli_rep is not None
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators. Decomposes into
@@ -272,7 +271,8 @@ class Exp(ScalarSymbolicOp, Operation):
             list[PauliRot]: decomposition of the operator
         """
         with queuing.QueuingManager.stop_recording():
-            d = self._recursive_decomposition(self.base, self.coeff)
+            base = self.base.simplify()  # for things like products of scalar products
+            d = self._recursive_decomposition(base, self.coeff)
 
         if queuing.QueuingManager.recording():
             for op in d:
@@ -290,10 +290,6 @@ class Exp(ScalarSymbolicOp, Operation):
         Returns:
             List[Operator]: decomposition
         """
-        # Change base to `Sum`/`Prod`
-        if isinstance(base, LinearCombination):
-            base = qml.dot(base.coeffs, base.ops)
-
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
