@@ -238,7 +238,7 @@ class TestInitialization:
         def f2():
             return qml.state()
 
-        assert f2.shots == 10
+        assert f2.shots == qml.measurements.Shots(10)
 
     def test_cache_initialization_maxdiff_1(self):
         """Test that when max_diff = 1, the cache initializes to false."""

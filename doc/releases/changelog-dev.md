@@ -15,7 +15,7 @@
 
   ```pycon
   >>> circuit.shots
-  1000
+  Shots(total=1000)
   >>> circuit()
   np.float64(-0.004)
   ```
@@ -25,7 +25,7 @@
   ```pycon
   >>> new_circ = qml.set_shots(circuit, shots=123)
   >>> new_circ.shots
-  123
+  Shots(total=123)
   ```
 
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
