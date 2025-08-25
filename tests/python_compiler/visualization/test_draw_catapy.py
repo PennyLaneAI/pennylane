@@ -133,16 +133,52 @@ class Testdraw:
 
         assert draw(transforms_circuit, level=level)() == expected
 
-    def test_no_passes(self):
-        """Test that if no passes are applied, the circuit is not visualized."""
+    # pylint: disable=implicit-str-concat
+    @pytest.mark.parametrize("qjit", [True, False])
+    @pytest.mark.parametrize(
+        "level, expected",
+        [
+            (
+                0,
+                "0: ──RX──RX──H──H─╭●─╭●──RZ──RZ─╭●─╭●─┤  State\n"
+                "1: ──RY──RY───────╰X─╰X──H───H──│──│──┤  State\n"
+                "2: ──RZ──RZ─────────────────────╰X─╰X─┤  State",
+            ),
+            (
+                1,
+                "0: ──RX──RX──H──H─╭●─╭●──RZ──RZ─╭●─╭●─┤  State\n"
+                "1: ──RY──RY───────╰X─╰X──H───H──│──│──┤  State\n"
+                "2: ──RZ──RZ─────────────────────╰X─╰X─┤  State",
+            ),
+            (
+                2,
+                "0: ──RX──RX──H──H─╭●─╭●──RZ──RZ─╭●─╭●─┤  State\n"
+                "1: ──RY──RY───────╰X─╰X──H───H──│──│──┤  State\n"
+                "2: ──RZ──RZ─────────────────────╰X─╰X─┤  State",
+            ),
+            (
+                None,
+                "0: ──RX──RX──H──H─╭●─╭●──RZ──RZ─╭●─╭●─┤  State\n"
+                "1: ──RY──RY───────╰X─╰X──H───H──│──│──┤  State\n"
+                "2: ──RZ──RZ─────────────────────╰X─╰X─┤  State",
+            ),
+            (
+                50,
+                "0: ──RX──RX──H──H─╭●─╭●──RZ──RZ─╭●─╭●─┤  State\n"
+                "1: ──RY──RY───────╰X─╰X──H───H──│──│──┤  State\n"
+                "2: ──RZ──RZ─────────────────────╰X─╰X─┤  State",
+            ),
+        ],
+    )
+    def test_no_passes(self, transforms_circuit, level, qjit, expected):
+        """Test that if no passes are applied, the circuit is still visualized."""
 
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def circ():
-            qml.RX(0.1, 0)
-            qml.RX(2.0, 0)
-            return qml.state()
+        if qjit:
+            transforms_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(
+                transforms_circuit
+            )
 
-        assert draw(circ)() is None
+        assert draw(transforms_circuit, level=level)() == expected
 
     def test_adjoint(self):
         """Test that the adjoint operation is visualized correctly."""
