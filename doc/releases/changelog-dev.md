@@ -3,6 +3,19 @@
 
 <h3>New features since last release</h3>
 
+* `~.QNode` has a new property `shots` that can be set from initialization `QNode(shots=...)`.
+  Now, users can easily configure the default number of shots for a QNode as
+
+  ```python
+  @qml.qnode(qml.device("default.qubit", wires=2), shots=1000)
+  def circuit():
+      qml.H(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  which is equivalent to a direct call to `qml.set_shots(1000)`.
+  [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
+
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.

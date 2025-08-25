@@ -439,7 +439,7 @@ def construct_batch(
     _validate_level(level)
     is_torch_layer = type(qnode).__name__ == "TorchLayer"
     has_shots_param = "shots" in inspect.signature(qnode.func).parameters
-    default_shots = qnode._shots  # pylint:disable=protected-access
+    default_shots = qnode.shots
 
     user_program = qnode.transform_program
     num_user_transforms = len(user_program)
