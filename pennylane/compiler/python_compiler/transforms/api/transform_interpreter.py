@@ -64,47 +64,54 @@ class TransformFunctionsExt(TransformFunctions):
         self.callback = callback
         self.level = 0
 
+    def _maybe_callback(self, previous_pass, module):
+        """Run callback if defined."""
+        if not self.callback:
+            return
+        if self.level == 0 and self.callback.__name__ in self.visual_callbacks:
+            self.callback(previous_pass, module, self.level)
+
+    def _post_pass_callback(self, previous_pass, module):
+        """Increment level and run callback if defined."""
+        if not self.callback:
+            return
+        self.level += 1
+        self.callback(previous_pass, module, self.level)
+
     @impl(ApplyRegisteredPassOp)
-    def run_apply_registered_pass_op(  # pragma: no cover
+    def run_apply_registered_pass_op(
         self,
         _interpreter: Interpreter,
         op: ApplyRegisteredPassOp,
         args: PythonValues,
     ) -> PythonValues:
-        """Try to run the pass in xDSL, if it can't run on catalyst"""
+        """Try to run the pass in xDSL, if not found then run it in Catalyst."""
 
-        pass_name = op.pass_name.data  # pragma: no cover
+        pass_name = op.pass_name.data
         module = args[0]
 
+        # ---- xDSL path ----
         if pass_name in self.passes:
-            # pragma: no cover
             pass_class = self.passes[pass_name]()
             pass_instance = pass_class(**op.options.data)
             pipeline = PassPipeline((pass_instance,))
-            if (
-                self.callback
-                and self.level == 0
-                and self.callback.__name__ in self.visual_callbacks
-            ):
-                self.callback(pass_instance, module, self.level)
+            self._maybe_callback(pass_instance, module)
             pipeline.apply(self.ctx, module)
-            if self.callback:
-                self.level += 1
-                self.callback(pass_instance, module, self.level)
+            self._post_pass_callback(pass_instance, module)
             return (module,)
 
-        # pragma: no cover
+        # ---- Catalyst path ----
         buffer = io.StringIO()
-
         Printer(stream=buffer, print_generic_format=True).print_op(module)
+
         schedule = f"--{pass_name}"
+        self._maybe_callback(pass_name, module)
         modified = _quantum_opt(schedule, "-mlir-print-op-generic", stdin=buffer.getvalue())
 
         data = Parser(self.ctx, modified).parse_module()
         rewriter = Rewriter()
         rewriter.replace_op(module, data)
-        if self.callback:
-            self.callback(None, data, self.level)
+        self._post_pass_callback(pass_name, data)
         return (data,)
 
 

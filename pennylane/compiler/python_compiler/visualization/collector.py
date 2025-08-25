@@ -30,7 +30,11 @@ from pennylane.compiler.python_compiler.dialects.quantum import StateOp
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 
-from .xdsl_conversion import resolve_constant_wire, xdsl_to_qml_meas, xdsl_to_qml_op
+from .xdsl_conversion import (
+    dispatch_wires_extract,
+    xdsl_to_qml_meas,
+    xdsl_to_qml_op,
+)
 
 
 class QMLCollector:
@@ -82,7 +86,7 @@ class QMLCollector:
             self.quantum_register = op.qreg
 
         elif isinstance(op, ExtractOpPL):
-            wire = resolve_constant_wire(op.idx)
+            wire = dispatch_wires_extract(op)
             if wire not in self.wire_to_ssa_qubits:
                 self.wire_to_ssa_qubits[wire] = op.qubit
                 # We update the reverse mapping as well for completeness,
@@ -97,29 +101,27 @@ class QMLCollector:
         self.params_to_ssa_params.clear()
         self.quantum_register = None
 
-    def collect(self) -> tuple[list[Operator], list[MeasurementProcess]]:
+    def collect(self, reset: bool = True) -> tuple[list[Operator], list[MeasurementProcess]]:
         """Collect PennyLane ops and measurements from the module."""
 
-        self.clear_mappings()
+        if reset:
+            self.clear_mappings()
 
         collected_ops: list[Operator] = []
         collected_meas: list[MeasurementProcess] = []
 
-        for funcOp in self.module.walk():
+        for func_op in self.module.walk():
 
-            if not isinstance(funcOp, func.FuncOp):
+            if not isinstance(func_op, func.FuncOp):
                 continue
 
-            for op in funcOp.body.walk():
+            for op in func_op.body.walk():
 
                 self._process_qubit_mapping(op)
-                handler = self.SUPPORTED_OPS.get(type(op))
+                handler = self.SUPPORTED_OPS.get(type(op), None)
 
                 if handler:
                     qml_obj = handler(self, op)
-                    if isinstance(op, StateOp):
-                        collected_meas.append(qml_obj)
-                    else:
-                        collected_ops.append(qml_obj)
+                    (collected_meas if isinstance(op, StateOp) else collected_ops).append(qml_obj)
 
         return collected_ops, collected_meas

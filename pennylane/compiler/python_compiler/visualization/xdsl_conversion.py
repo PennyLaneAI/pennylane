@@ -16,7 +16,10 @@ which collects and maps PennyLane operations and measurements from xDSL."""
 
 import inspect
 
-from xdsl.dialects.builtin import DenseIntOrFPElementsAttr
+from xdsl.dialects.builtin import (
+    DenseIntOrFPElementsAttr,
+    IntegerAttr,
+)
 from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
 from xdsl.ir import SSAValue
 
@@ -89,11 +92,22 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
         return _extract_dense_constant_value(op)
     if op.name == "arith.addf":
         return resolve_constant_params(op.operands[0]) + resolve_constant_params(op.operands[1])
+    if op.name == "arith.constant":
+        return op.value.value.data  # used by Catalyst
     raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
+
+
+def dispatch_wires_extract(op: ExtractOpPL):
+    """Dispatch the wire resolution for the given extract operation."""
+    if op.idx_attr is not None:  # used by Catalyst
+        return resolve_constant_wire(op.idx_attr)
+    return resolve_constant_wire(op.idx)  # used by xDSL
 
 
 def resolve_constant_wire(ssa: SSAValue) -> int:
     """Resolve the wire for the given SSA qubit."""
+    if isinstance(ssa, IntegerAttr):  # used by Catalyst
+        return ssa.value.data
     op = ssa.owner
     if isinstance(op, TensorExtractOp):
         return resolve_constant_wire(op.tensor)
@@ -106,7 +120,7 @@ def resolve_constant_wire(ssa: SSAValue) -> int:
     if isinstance(op, CustomOp):
         return resolve_constant_wire(op.in_qubits[ssa.index])
     if isinstance(op, ExtractOpPL):
-        return resolve_constant_wire(op.idx)
+        return dispatch_wires_extract(op)
     raise NotImplementedError(f"Cannot resolve wire for op: {op}")
 
 
