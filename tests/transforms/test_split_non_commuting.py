@@ -1001,8 +1001,16 @@ class TestShotDistribution:
 
         initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=10)
 
-        with pytest.raises(TypeError, match="`shot_dist` must be a callable or str or None,"):
+        with pytest.raises(TypeError, match="shot_dist must be a callable or str or None,"):
             _ = split_non_commuting(initial_tape, shot_dist=shot_dist)
+
+    def test_value_error_shot_dist(self):
+        """Test an error is raised for an unknown shot_dist strategy."""
+
+        initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=10)
+
+        with pytest.raises(ValueError, match="Unknown shot_dist='unknown'. Available options are"):
+            _ = split_non_commuting(initial_tape, shot_dist="unknown")
 
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
     @pytest.mark.parametrize(
