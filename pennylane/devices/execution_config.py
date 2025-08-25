@@ -65,7 +65,6 @@ class FrozenMapping(MutableMapping):
     def __hash__(self):
         """Makes the object hashable, allowing it to be used in sets and as a dict key."""
         if self._hash is None:
-            # FIX: Corrected 'froznet' to 'frozenset'
             self._hash = hash(frozenset(self._data.items()))
         return self._hash
 
@@ -81,7 +80,6 @@ class FrozenMapping(MutableMapping):
         """Supports copy.deepcopy() by returning a mutable dict with deep-copied contents."""
         if memo is None:
             memo = {}
-        # Return a mutable dict, not a new FrozenMapping instance
         return deepcopy(self._data, memo)
 
 
