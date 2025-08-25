@@ -1,4 +1,4 @@
-# Copyright 2018-2023 Xanadu Quantum Technologies Inc.
+# Copyright 2018-2025 Xanadu Quantum Technologies Inc.
 
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,16 +14,42 @@
 """
 Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 """
+from collections.abc import MutableMapping
 from dataclasses import dataclass, field
-from types import MappingProxyType
-from typing import Literal, TypeAlias
+from typing import Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.concurrency.executors.base import RemoteExec
 from pennylane.math import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
-ReadOnlyDict: TypeAlias = MappingProxyType
+
+class FrozenMapping(MutableMapping):
+    """
+    Custom immutable mapping.
+    Inherit from MutableMapping to ensure all mutable methods are implemented.
+    """
+
+    def __init__(self, *args, **kwargs):
+        self._data = dict(*args, **kwargs)
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+    def __setitem__(self, key, value):
+        raise TypeError("FrozenMapping is immutable")
+
+    def __delitem__(self, key):
+        raise TypeError("FrozenMapping is immutable")
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self._data})"
 
 
 @dataclass(frozen=True)
@@ -130,13 +156,13 @@ class ExecutionConfig:
 
         def _validate_and_freeze_dict(field_name: str):
             value = getattr(self, field_name)
-            if not isinstance(value, (dict, ReadOnlyDict)):
+            if not isinstance(value, (dict, FrozenMapping)):
                 raise TypeError(f"Got invalid type {type(value)} for '{field_name}'")
             # Only wrap if it's not already a proxy.
             # This handles the case when `dataclasses.replace` is used and
             # the field is not being modified.
             if isinstance(value, dict):
-                object.__setattr__(self, field_name, ReadOnlyDict(value))
+                object.__setattr__(self, field_name, FrozenMapping(value))
 
         _validate_and_freeze_dict("device_options")
         _validate_and_freeze_dict("gradient_keyword_arguments")

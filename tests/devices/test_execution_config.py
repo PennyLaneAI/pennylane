@@ -15,8 +15,8 @@
 Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 """
 
+from copy import copy
 from dataclasses import replace
-from types import MappingProxyType
 
 import pytest
 
@@ -172,10 +172,8 @@ class TestExecutionConfig:
         new_config = replace(original_config, device_options={"hi": "there"})
 
         assert new_config.device_options == {"hi": "there"}
-        assert isinstance(new_config.device_options, MappingProxyType)
 
         assert new_config.gradient_keyword_arguments == original_config.gradient_keyword_arguments
-        assert isinstance(new_config.gradient_keyword_arguments, MappingProxyType)
 
         with pytest.raises(TypeError, match=r"Got invalid type .* for 'device_options'"):
             replace(original_config, device_options=["this", "is", "a", "list"])
@@ -210,18 +208,18 @@ class TestExecutionConfig:
     def test_dict_immutability(self, config):
         """Test that the device_options and gradient_keyword_arguments are immutable."""
 
-        og_device_options = config.device_options.copy()
-        og_gradient_keyword_arguments = config.gradient_keyword_arguments.copy()
+        og_device_options = copy(config.device_options)
+        og_gradient_keyword_arguments = copy(config.gradient_keyword_arguments)
 
         with pytest.raises(
             TypeError,
-            match="'mappingproxy' object does not support item assignment",
+            match=r".* is immutable",
         ):
             config.device_options["hi"] = "there"
 
         with pytest.raises(
             TypeError,
-            match="'mappingproxy' object does not support item assignment",
+            match=r".* is immutable",
         ):
             config.gradient_keyword_arguments["foo"] = "buzz"
 
