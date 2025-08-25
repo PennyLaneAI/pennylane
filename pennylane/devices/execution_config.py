@@ -43,10 +43,14 @@ class FrozenMapping(MutableMapping):
         return len(self._data)
 
     def __setitem__(self, key, value):
-        raise TypeError("FrozenMapping is immutable")
+        raise TypeError(
+            "FrozenMapping is immutable. To update this field please use `dataclasses.replace`. "
+        )
 
     def __delitem__(self, key):
-        raise TypeError("FrozenMapping is immutable")
+        raise TypeError(
+            "FrozenMapping is immutable. To update this field please use `dataclasses.replace`. "
+        )
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self._data})"
@@ -158,7 +162,6 @@ class ExecutionConfig:
             value = getattr(self, field_name)
             if not isinstance(value, (dict, FrozenMapping)):
                 raise TypeError(f"Got invalid type {type(value)} for '{field_name}'")
-            # Only wrap if it's not already a proxy.
             # This handles the case when `dataclasses.replace` is used and
             # the field is not being modified.
             if isinstance(value, dict):
