@@ -320,7 +320,7 @@ class TestIntegration:
             qml.ctrl(qml.X(0), 1)
             return qml.expval(qml.Z(0))
 
-        plxpr = qml.capture.make_plxpr(circ)()
+        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
     def test_adjoint_wrapper(self):
