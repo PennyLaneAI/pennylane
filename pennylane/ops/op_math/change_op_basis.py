@@ -202,7 +202,7 @@ def _controlled_change_op_basis_decomposition(
     work_wire_type,
     base,
     **__,
-):  # pylint: too-many-positional-arguments
+):
     base.operands[0]._unflatten(  # pylint: disable=protected-access
         *base.operands[0]._flatten()  # pylint: disable=protected-access
     )
