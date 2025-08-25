@@ -23,7 +23,7 @@ filecheck = pytest.importorskip("filecheck")
 
 pytestmark = pytest.mark.external
 
-from pennylane.compiler.python_compiler.dialects import QEC
+from pennylane.compiler.unified_compiler.dialects import QEC
 
 all_ops = list(QEC.operations)
 all_attrs = list(QEC.attributes)

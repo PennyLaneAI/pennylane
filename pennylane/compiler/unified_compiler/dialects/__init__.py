@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This submodule contains xDSL dialects for the Python compiler."""
+"""This submodule contains xDSL dialects for the Unified compiler."""
 
 from .catalyst import Catalyst
 from .mbqc import MBQC

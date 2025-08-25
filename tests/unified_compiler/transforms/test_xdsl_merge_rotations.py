@@ -23,7 +23,7 @@ pytest.importorskip("catalyst")
 from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 
 import pennylane as qml
-from pennylane.compiler.python_compiler.transforms import MergeRotationsPass, merge_rotations_pass
+from pennylane.compiler.unified_compiler.transforms import MergeRotationsPass, merge_rotations_pass
 
 
 class TestMergeRotationsPass:
