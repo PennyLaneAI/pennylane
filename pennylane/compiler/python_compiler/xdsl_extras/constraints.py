@@ -58,7 +58,7 @@ class ContainerConstraint(AttrConstraint, ABC):
 
     .. note::
 
-        Either the ``shape`` or ``rank`` constraint must be provided, not both.
+        Only one of the ``shape`` or ``rank`` constraint may be provided, not both.
 
     Args:
         element_type (IRDLAttrConstraint | None): The constraint for the element type.
@@ -85,7 +85,7 @@ class ContainerConstraint(AttrConstraint, ABC):
         shape_constr = None
 
         if shape is not None and rank is not None:
-            raise ValueError("Only one of 'shape' or 'rank' must be provided.")
+            raise ValueError("Only one of 'shape' or 'rank' may be provided.")
 
         if shape is None and rank is None:
             shape_constr = AnyAttr()
