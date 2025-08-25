@@ -22,12 +22,11 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
-from pennylane.math.interface_utils import get_canonical_interface_name
+from pennylane.math.interface_utils import Interface, get_canonical_interface_name
 from pennylane.transforms.core import TransformDispatcher
 
 if TYPE_CHECKING:
     from pennylane.concurrency.executors.base import RemoteExec
-    from pennylane.math.interface_utils import Interface
 
 
 class FrozenMapping(MutableMapping):
