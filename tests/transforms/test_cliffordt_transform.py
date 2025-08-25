@@ -604,6 +604,25 @@ class TestCliffordCached:
         assert _map_wires.cache_info().hits == 5
         assert _map_wires.cache_info().misses == 10
 
+    # pylint: disable=protected-access, import-outside-toplevel, reimported
+    def test_cached_with_rtol(self):
+        """Test that the cached version of the circuit is equivalent to the
+        original one with a relative threshold for epsilon."""
+
+        import pennylane.transforms.decompositions.clifford_t_transform as clt2
+
+        clt2._CLIFFORD_T_CACHE = None
+
+        cache1 = _CachedCallable(method="gridsynth", epsilon=1e-5, cache_size=100)
+
+        assert cache1.compatible(
+            method="gridsynth", epsilon=1e-3, cache_size=100, cache_eps_rtol=99
+        )
+
+        assert not cache1.compatible(
+            method="gridsynth", epsilon=1e-4, cache_size=100, cache_eps_rtol=1e-1
+        )
+
 
 class TestCatalyst:
     """Unit tests for catalyst integration."""
