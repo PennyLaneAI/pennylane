@@ -35,7 +35,7 @@ class Resources:
     """
 
     gate_counts: dict[CompressedResourceOp, int] = field(default_factory=dict)
-    weighted_cost: float | None = field(default=None)
+    weighted_cost: float = field(default=None)
 
     def __post_init__(self):
         """Verify that all gate counts are non-zero."""
@@ -308,7 +308,7 @@ def controlled_resource_rep(  # pylint: disable=too-many-arguments, too-many-pos
     num_control_wires: int,
     num_zero_control_values: int = 0,
     num_work_wires: int = 0,
-    work_wire_type="dirty",
+    work_wire_type="borrowed",
 ):
     """Creates a ``CompressedResourceOp`` representation of a controlled operator.
 
@@ -444,16 +444,16 @@ def custom_ctrl_op_to_base():
 def resolve_work_wire_type(base_work_wires, base_work_wire_type, work_wires, work_wire_type):
     """Resolves the overall work wire type when the base op comes with work wires."""
 
-    # If any of the work wires is dirty, we treat all work wires as dirty. We can be
+    # If any of the work wires is borrowed, we treat all work wires as borrowed. We can be
     # more flexible in the future with dynamic qubit management, but for now we're
     # just going to live with this.
-    if base_work_wires and base_work_wire_type == "dirty":
-        return "dirty"
+    if base_work_wires and base_work_wire_type == "borrowed":
+        return "borrowed"
 
-    if work_wires and work_wire_type == "dirty":
-        return "dirty"
+    if work_wires and work_wire_type == "borrowed":
+        return "borrowed"
 
-    return "clean"
+    return "zeroed"
 
 
 def _controlled_qubit_unitary_rep(  # pylint: disable=too-many-arguments, too-many-positional-arguments
@@ -499,7 +499,7 @@ def _controlled_x_rep(  # pylint: disable=too-many-arguments, too-many-positiona
     num_control_wires,
     num_zero_control_values,
     num_work_wires,
-    work_wire_type="dirty",
+    work_wire_type="borrowed",
 ) -> CompressedResourceOp | None:
     """Helper function that handles custom logic for controlled X gates."""
 

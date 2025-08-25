@@ -97,6 +97,9 @@ class Select(Operation):
         work_wires (Union[Wires, Sequence[int], or int]): auxiliary wire(s) that may be
             utilized during the decomposition of the operator into native operations.
             For details, see the section on the unary iterator decomposition below.
+        partial (bool): Whether the state on the wires provided in ``control`` are compatible with
+            a `partial Select <https://pennylane.ai/compilation/partial-select>`__ decomposition.
+            See the note below for details.
         id (str or None): String representing the operation (optional)
 
     .. note::
@@ -112,6 +115,10 @@ class Select(Operation):
         ``control`` wires satisfies :math:`\langle j|\psi\rangle=0` for all :math:`j\in [K, 2^c)`,
         where :math:`K` is the number of operators (``len(ops)``) and :math:`c` is the number of
         control wires (``len(control)``).
+        If you are unsure whether this condition is satisfied, set ``partial=False`` to guarantee
+        a correct, even though more expensive, decomposition.
+        For more details on the partial Select decomposition, see
+        `its compilation page <https://pennylane.ai/compilation/partial-select>`__.
 
     **Example**
 
@@ -129,7 +136,7 @@ class Select(Operation):
     3: ────╰X────╰SWAP─┤  State
 
     If there are fewer operators to be applied than possible for the given number of control
-    wires, we call the ``Select`` operator a *partial Select*.
+    wires, we call the ``Select`` operator a `partial Select <https://pennylane.ai/compilation/partial-select>`__.
     In this case, the control structure can be simplified if the state on the control wires
     does not have overlap with the unused computational basis states (:math:`|j\rangle` with
     :math:`j>K-1`). Passing ``partial=True`` tells ``Select`` that this criterion is
@@ -501,8 +508,8 @@ class Select(Operation):
             ]
             return decomp_ops
 
-        states = product([0, 1], repeat=len(control))
-        return [ctrl(op, control, control_values=state) for state, op in zip(states, ops)]
+        ctrl_states = product([0, 1], repeat=len(control))
+        return [ctrl(op, control, control_values=state) for state, op in zip(ctrl_states, ops)]
 
     @property
     def ops(self):
@@ -533,13 +540,13 @@ class Select(Operation):
 # Decomposition of Select using multi-control strategy
 
 
-def _multi_controlled_rep(target_rep, num_control_wires, state):
+def _multi_controlled_rep(target_rep, num_control_wires, ctrl_state):
     return controlled_resource_rep(
         base_class=target_rep.op_type,
         base_params=target_rep.params,
         num_control_wires=num_control_wires,
         num_work_wires=0,
-        num_zero_control_values=num_control_wires - sum(state),
+        num_zero_control_values=num_control_wires - sum(ctrl_state),
     )
 
 
@@ -550,9 +557,9 @@ def _select_resources_multi_control(op_reps, num_control_wires, partial):
             resources[op_reps[0]] += 1
         else:
             # Use dummy control values, we will only care about the length of the outputs
-            controls_and_states = _partial_select(len(op_reps), list(range(num_control_wires)))
-            for (ctrl_, state), rep in zip(controls_and_states, op_reps):
-                resources[_multi_controlled_rep(rep, len(ctrl_), state)] += 1
+            ctrls_and_ctrl_states = _partial_select(len(op_reps), list(range(num_control_wires)))
+            for (ctrl_, ctrl_state), rep in zip(ctrls_and_ctrl_states, op_reps):
+                resources[_multi_controlled_rep(rep, len(ctrl_), ctrl_state)] += 1
     else:
         state_iterator = product([0, 1], repeat=num_control_wires)
 
@@ -569,12 +576,12 @@ def _select_decomp_multi_control(ops, control, work_wires, partial, **_):
         if len(ops) == 1:
             apply(ops[0])
         else:
-            controls_and_values = _partial_select(len(ops), control)
-            for (ctrl_, values), op in zip(controls_and_values, ops):
-                ctrl(op, ctrl_, control_values=values)
+            ctrls_and_ctrl_states = _partial_select(len(ops), control)
+            for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops):
+                ctrl(op, ctrl_, control_values=ctrl_state)
     else:
-        for state, op in zip(product([0, 1], repeat=len(control)), ops):
-            ctrl(op, control, control_values=state)
+        for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops):
+            ctrl(op, control, control_values=ctrl_state)
 
 
 add_decomps(Select, _select_decomp_multi_control)
@@ -890,10 +897,9 @@ def _select_decomp_unary(ops, control, work_wires, partial, **_):
     control wires (as usual for Select), and :math:`c-1` additional work wires.
     See the documentation of ``Select`` for details.
 
-    .. note::
-
-        This decomposition assumes that the state on the control wires does not have any overlap
-        with :math:`|i\rangle` for :math:`i\geq K`.
+    The ``partial`` argument controls whether the reduction to partial Select is performed,
+    see the documentation of ``Select`` and https://pennylane.ai/compilation/partial-select for
+    details.
     """
 
     if len(ops) == 0:
@@ -905,7 +911,8 @@ def _select_decomp_unary(ops, control, work_wires, partial, **_):
         # ops = ops + [qml.I(ops[0].wires[0])] * (2**len(control)-cutoff)
         # return _select_decomp_unary_not_partial(ops, control, work_wires)
 
-    min_num_controls = max(_ceil_log(len(ops)), 1)
+    K = len(ops)
+    min_num_controls = max(_ceil_log(K), 1)
     assert len(control) >= min_num_controls
     control = control[-min_num_controls:]
     if 1 <= K <= 2:

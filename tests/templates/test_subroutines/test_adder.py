@@ -108,8 +108,9 @@ class TestAdder:
         self, k, x_wires, mod, work_wires, x
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the PhaseAdder template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -120,7 +121,8 @@ class TestAdder:
             mod = 2 ** len(x_wires)
 
         # pylint: disable=bad-reversed-sequence
-        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x))))
+        out = list(circuit(x)[0, :])
+        result = sum(bit * (2**i) for i, bit in enumerate(reversed(out)))
         assert np.allclose(result, (x + k) % mod)
 
     @pytest.mark.parametrize(
@@ -249,9 +251,10 @@ class TestAdder:
         mod = 7
         x_wires = [0, 1, 2]
         work_wires = [3, 4]
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
         @jax.jit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x, wires=x_wires)
@@ -259,5 +262,5 @@ class TestAdder:
             return qml.sample(wires=x_wires)
 
         # pylint: disable=bad-reversed-sequence
-        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit())))
+        result = sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()[0, :])))
         assert jax.numpy.allclose(result, (x + k) % mod)

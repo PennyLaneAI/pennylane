@@ -42,9 +42,10 @@ def test_standard_checks(num_ops, partial, work_wires):
 
     op = qml.Select(ops, control, work_wires, partial=not partial)
     assert op.target_wires == qml.wires.Wires(0)
-    qml.ops.functions.assert_valid(op, skip_new_decomp=partial)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=(partial or work_wires is None))
 
 
+@pytest.mark.unit
 def test_repr():
     """Test the repr method."""
     ops = [qml.X(0), qml.Y(0)]
@@ -57,6 +58,7 @@ def test_repr():
     assert repr(op) == "Select(ops=(X(0), Y(0)), control=Wires([1]), partial=True)"
 
 
+@pytest.mark.unit
 @pytest.mark.parametrize(
     "K, control, expected",
     [
@@ -85,345 +87,12 @@ def test_repr():
 def test_partial_select(K, control, expected):
     """Tests that the _partial_select function produces the correct simplified control
     structure."""
-    out = _partial_select(K, control)
-    assert out == expected
+    assert _partial_select(K, control) == expected
 
 
+@pytest.mark.unit
 class TestSelect:
-    """Tests that the template defines the correct decomposition."""
-
-    @pytest.mark.parametrize(
-        ("ops", "control", "expected_gates", "wires"),
-        [
-            (
-                [qml.X(0), qml.Y(0)],
-                [1],
-                [
-                    qml.ctrl(qml.X(0), control=1, control_values=0),
-                    qml.ctrl(qml.Y(0), control=1),
-                ],
-                2,
-            ),
-            (
-                [qml.X(0), qml.I(0), qml.Z(0)],
-                [1, 2],
-                [
-                    qml.ctrl(qml.X(0), control=[1, 2], control_values=[0, 0]),
-                    qml.ctrl(qml.Z(0), control=[1, 2], control_values=[1, 0]),
-                ],
-                3,
-            ),
-            (
-                [
-                    qml.X(0),
-                    qml.I(0),
-                    qml.I(0),
-                    qml.RX(0.3, 0),
-                ],
-                [1, 2],
-                [
-                    qml.ctrl(qml.X(0), control=[1, 2], control_values=[0, 0]),
-                    qml.ctrl(qml.RX(0.3, 0), control=[1, 2], control_values=[1, 1]),
-                ],
-                3,
-            ),
-            (
-                [qml.X("a"), qml.Z("b"), qml.RX(0.7, "b")],
-                ["c", 1],
-                [
-                    qml.ctrl(qml.X("a"), control=["c", 1], control_values=[0, 0]),
-                    qml.ctrl(qml.Z("b"), control=["c", 1], control_values=[0, 1]),
-                    qml.ctrl(qml.RX(0.7, "b"), control=["c", 1], control_values=[1, 0]),
-                ],
-                ["a", "b", "c", 1],
-            ),
-            (
-                [qml.X("a"), qml.RX(0.7, "b")],
-                ["c", 1],
-                [
-                    qml.ctrl(qml.X("a"), control=["c", 1], control_values=[0, 0]),
-                    qml.ctrl(qml.RX(0.7, "b"), control=["c", 1], control_values=[0, 1]),
-                ],
-                ["a", "b", "c", 1],
-            ),
-        ],
-    )
-    def test_operation_result(self, ops, control, expected_gates, wires):
-        """Test the correctness of the Select template output."""
-        dev = qml.device("default.qubit", wires=wires)
-
-        @qml.qnode(dev)
-        def circuit1():
-            for wire in control:
-                qml.Hadamard(wires=wire)
-
-            qml.Select(ops, control)
-            return qml.state()
-
-        @qml.qnode(dev)
-        def circuit2():
-            for wire in control:
-                qml.Hadamard(wires=wire)
-            for op in expected_gates:
-                qml.apply(op)
-            return qml.state()
-
-        assert np.allclose(circuit1(), circuit2())
-
-    @pytest.mark.parametrize(
-        ("ops", "control", "expected_gates", "wires"),
-        [
-            (
-                [qml.X(0), qml.Y(0)],
-                [1],
-                [
-                    qml.ctrl(qml.X(0), control=1, control_values=0),
-                    qml.ctrl(qml.Y(0), control=1),
-                ],
-                2,
-            ),
-            (
-                [qml.X(0), qml.I(0), qml.Z(0)],
-                [1, 2],
-                [
-                    qml.ctrl(qml.X(0), control=[1, 2], control_values=[0, 0]),
-                    qml.ctrl(qml.Z(0), control=[1], control_values=[1]),
-                ],
-                3,
-            ),
-            (
-                [
-                    qml.X(0),
-                    qml.I(0),
-                    qml.I(0),
-                    qml.RX(0.3, 0),
-                ],
-                [1, 2],
-                [
-                    qml.ctrl(qml.X(0), control=[1, 2], control_values=[0, 0]),
-                    qml.ctrl(qml.RX(0.3, 0), control=[1, 2], control_values=[1, 1]),
-                ],
-                3,
-            ),
-            (
-                [qml.X("a"), qml.Z("b"), qml.RX(0.7, "b")],
-                ["c", 1],
-                [
-                    qml.ctrl(qml.X("a"), control=["c", 1], control_values=[0, 0]),
-                    qml.ctrl(qml.Z("b"), control=["c", 1], control_values=[0, 1]),
-                    qml.ctrl(qml.RX(0.7, "b"), control=["c"], control_values=[1]),
-                ],
-                ["a", "b", "c", 1],
-            ),
-            (
-                [qml.X("a"), qml.RX(0.7, "b")],
-                ["c", 1],
-                [
-                    qml.ctrl(qml.X("a"), control=[1], control_values=[0]),
-                    qml.ctrl(qml.RX(0.7, "b"), control=[1], control_values=[1]),
-                ],
-                ["a", "b", "c", 1],
-            ),
-        ],
-    )
-    def test_operation_result_partial(self, ops, control, expected_gates, wires, seed):
-        """Test the correctness of the Select template output with partial=True."""
-        dev = qml.device("default.qubit", wires=wires)
-
-        # Prepare a state that only has overlap with the basis states used in Select
-        np.random.seed(seed)
-        state = np.random.random(len(ops))
-        state /= np.linalg.norm(state)
-        state = np.concatenate([state, np.zeros(2 ** len(control) - len(ops))])
-
-        @qml.qnode(dev)
-        def circuit1():
-            qml.StatePrep(state, wires=control)
-            qml.Select(ops, control, partial=True)
-            return qml.state()
-
-        @qml.qnode(dev)
-        def circuit2():
-            qml.StatePrep(state, wires=control)
-            for op in expected_gates:
-                qml.apply(op)
-            return qml.state()
-
-        assert np.allclose(circuit1(), circuit2())
-
-    @pytest.mark.parametrize(
-        ("ops", "control", "expected_gates", "expected_gates_partial"),
-        [
-            (
-                [qml.X(wires=0)],
-                [1],
-                [qml.ctrl(qml.X(wires=0), control=1, control_values=0)],
-                [qml.X(wires=0)],
-            ),
-            (
-                [qml.X(wires=0), qml.Y(wires=0)],
-                [1],
-                [
-                    qml.ctrl(qml.X(wires=0), control=1, control_values=0),
-                    qml.ctrl(qml.Y(wires=0), control=1),
-                ],
-                None,
-            ),
-            (
-                [qml.RX(0.5, wires=0), qml.RY(0.7, wires=1)],
-                [2],
-                [
-                    qml.ctrl(qml.RX(0.5, wires=0), control=2, control_values=0),
-                    qml.ctrl(qml.RY(0.7, wires=1), control=2),
-                ],
-                None,
-            ),
-            (
-                [
-                    qml.RX(0.5, wires=0),
-                    qml.RY(0.7, wires=1),
-                    qml.RZ(0.3, wires=1),
-                    qml.X(wires=2),
-                ],
-                [3, 4],
-                [
-                    qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
-                    qml.ctrl(qml.RY(0.7, wires=1), control=[3, 4], control_values=[0, 1]),
-                    qml.ctrl(qml.RZ(0.3, wires=1), control=[3, 4], control_values=[1, 0]),
-                    qml.ctrl(qml.X(wires=2), control=[3, 4], control_values=[1, 1]),
-                ],
-                None,
-            ),
-            (
-                [
-                    qml.RX(0.5, wires=0),
-                    qml.RY(0.7, wires=1),
-                    qml.X(wires=2),
-                ],
-                [3, 4],
-                [
-                    qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
-                    qml.ctrl(qml.RY(0.7, wires=1), control=[3, 4], control_values=[0, 1]),
-                    qml.ctrl(qml.X(wires=2), control=[3, 4], control_values=[1, 0]),
-                ],
-                [
-                    qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
-                    qml.ctrl(qml.RY(0.7, wires=1), control=[4], control_values=[1]),
-                    qml.ctrl(qml.X(wires=2), control=[3], control_values=[1]),
-                ],
-            ),
-        ],
-    )
-    def test_queued_ops(self, ops, control, expected_gates, expected_gates_partial):
-        """Test the correctness of the Select template queued operations."""
-        # Test expansion of queued Select with partial=False
-        with qml.tape.OperationRecorder() as recorder:
-            op = qml.Select(ops, control=control)
-
-        select_ops1 = recorder.expand().operations
-
-        # Test queueing within decomposition with partial=False
-        with qml.queuing.AnnotatedQueue() as q:
-            op.decomposition()
-
-        select_ops2 = q.queue
-
-        for op1, op2, exp_op in zip(select_ops1, select_ops2, expected_gates, strict=True):
-            qml.assert_equal(op1, exp_op)
-            qml.assert_equal(op2, exp_op)
-
-        # Test expansion of queued Select with partial=True
-        with qml.tape.OperationRecorder() as recorder:
-            op_partial = qml.Select(ops, control=control, partial=True)
-
-        select_ops1 = recorder.expand().operations
-
-        # Test queueing within decomposition with partial=True
-        with qml.queuing.AnnotatedQueue() as q:
-            op_partial.decomposition()
-
-        select_ops2 = q.queue
-
-        expected_gates_partial = expected_gates_partial or expected_gates
-        for op1, op2, exp_op in zip(select_ops1, select_ops2, expected_gates_partial, strict=True):
-            qml.assert_equal(op1, exp_op)
-            qml.assert_equal(op2, exp_op)
-
-    @pytest.mark.parametrize(
-        ("ops", "control", "expected_gates", "expected_gates_partial"),
-        [
-            (
-                [qml.X(wires=0)],
-                [1],
-                [qml.ctrl(qml.X(wires=0), control=1, control_values=0)],
-                [qml.X(wires=0)],
-            ),
-            (
-                [qml.X(wires=0), qml.Y(wires=0)],
-                [1],
-                [
-                    qml.ctrl(qml.X(wires=0), control=1, control_values=0),
-                    qml.ctrl(qml.Y(wires=0), control=1),
-                ],
-                None,
-            ),
-            (
-                [qml.RX(0.5, wires=0), qml.RY(0.7, wires=1)],
-                [2],
-                [
-                    qml.ctrl(qml.RX(0.5, wires=0), control=2, control_values=0),
-                    qml.ctrl(qml.RY(0.7, wires=1), control=2),
-                ],
-                None,
-            ),
-            (
-                [
-                    qml.RX(0.5, wires=0),
-                    qml.RY(0.7, wires=1),
-                    qml.RZ(0.3, wires=1),
-                    qml.X(wires=2),
-                ],
-                [3, 4],
-                [
-                    qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
-                    qml.ctrl(qml.RY(0.7, wires=1), control=[3, 4], control_values=[0, 1]),
-                    qml.ctrl(qml.RZ(0.3, wires=1), control=[3, 4], control_values=[1, 0]),
-                    qml.ctrl(qml.X(wires=2), control=[3, 4], control_values=[1, 1]),
-                ],
-                None,
-            ),
-            (
-                [
-                    qml.RX(0.5, wires=0),
-                    qml.RY(0.7, wires=1),
-                    qml.X(wires=2),
-                ],
-                [3, 4],
-                [
-                    qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
-                    qml.ctrl(qml.RY(0.7, wires=1), control=[3, 4], control_values=[0, 1]),
-                    qml.ctrl(qml.X(wires=2), control=[3, 4], control_values=[1, 0]),
-                ],
-                [
-                    qml.ctrl(qml.RX(0.5, wires=0), control=[3, 4], control_values=[0, 0]),
-                    qml.ctrl(qml.RY(0.7, wires=1), control=[4], control_values=[1]),
-                    qml.ctrl(qml.X(wires=2), control=[3], control_values=[1]),
-                ],
-            ),
-        ],
-    )
-    def test_decomposition(self, ops, control, expected_gates, expected_gates_partial):
-        """Unit test checking that compute_decomposition and decomposition work as expected."""
-        expected_gates_partial = expected_gates_partial or expected_gates
-        for partial, exp_gates in zip([False, True], [expected_gates, expected_gates_partial]):
-            op = qml.Select(ops, control=control, partial=partial)
-            select_decomposition = op.decomposition()
-            select_compute_decomposition = op.compute_decomposition(ops, control, partial=partial)
-
-            for op1, op2 in zip(select_decomposition, exp_gates):
-                qml.assert_equal(op1, op2)
-            for op1, op2 in zip(select_compute_decomposition, exp_gates):
-                qml.assert_equal(op1, op2)
+    """Tests that the fundamental methods of Select work properly."""
 
     def test_copy(self):
         """Test that the copy function of Select works correctly."""
@@ -433,26 +102,85 @@ class TestSelect:
 
         qml.assert_equal(op, op_copy)
 
-    def test_resources(self):
-        """Test the resources property"""
+    @pytest.mark.parametrize(
+        ("ops", "control"),
+        [
+            ([qml.X(0)], [1]),
+            ([qml.X(0), qml.Y(0)], [1]),
+            ([qml.RX(0.5, 0), qml.RY(0.7, 1)], [2]),
+            ([qml.X(0), qml.I(0), qml.Z(0)], [1, 2]),
+            ([qml.RX(0.5, 0), qml.RY(0.7, 1), qml.RZ(0.3, 1), qml.X(2)], [3, 4]),
+            ([qml.X(0), qml.I(0), qml.I(0), qml.RX(0.3, 0)], [1, 2]),
+            ([qml.X("a"), qml.Z("b"), qml.RX(0.7, "b")], ["c", 1]),
+            ([qml.X("a"), qml.RX(0.7, "b")], ["c", 1]),
+        ],
+    )
+    def test_basic_decomposition(self, ops, control):
+        """Test the correctness of the Select template decomposition with partial=False.
+        Tests both the returned and the queued operations."""
+        control_values = [
+            list(map(int, np.binary_repr(i, width=len(control)))) for i in range(len(ops))
+        ]
+        expected_gates = [qml.ctrl(op, control, vals) for op, vals in zip(ops, control_values)]
 
-        assert qml.Select.resource_keys == frozenset(("op_reps", "num_control_wires", "partial"))
+        select_op = qml.Select(ops, control, partial=False)
+        with qml.queuing.AnnotatedQueue() as q0:
+            decomp0 = select_op.decomposition()
+        decomp_queue0 = qml.tape.QuantumScript.from_queue(q0).operations
 
-        ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
+        with qml.queuing.AnnotatedQueue() as q1:
+            decomp1 = qml.Select.compute_decomposition(ops, control, partial=False)
+        decomp_queue1 = qml.tape.QuantumScript.from_queue(q1).operations
 
-        op = qml.Select(ops, control=(0, 1))
+        for dec in [decomp0, decomp1, decomp_queue0, decomp_queue1]:
+            for op_dec, op_exp in zip(dec, expected_gates, strict=True):
+                qml.assert_equal(op_dec, op_exp)
 
-        resources = op.resource_params
-        assert resources["num_control_wires"] == 2
+    @pytest.mark.parametrize(
+        ("ops", "control", "expected_controls"),
+        [
+            ([qml.X(0)], [1], [([], [])]),
+            ([qml.X(0), qml.Y(0)], [1], [([1], [0]), ([1], [1])]),
+            ([qml.RX(0.5, 0), qml.RY(0.7, 1)], [2], [([2], [0]), ([2], [1])]),
+            ([qml.X(0), qml.I(0), qml.Z(0)], [1, 2], [([1, 2], [0, 0]), ([2], [1]), ([1], [1])]),
+            (
+                [qml.RX(0.5, 0), qml.RY(0.7, 1), qml.RZ(0.3, 1), qml.X(2)],
+                [3, 4],
+                [([3, 4], [0, 0]), ([3, 4], [0, 1]), ([3, 4], [1, 0]), ([3, 4], [1, 1])],
+            ),
+            (
+                [qml.X(0), qml.I(0), qml.I(0), qml.RX(0.3, 0)],
+                [1, 2],
+                [([1, 2], [0, 0]), ([1, 2], [0, 1]), ([1, 2], [1, 0]), ([1, 2], [1, 1])],
+            ),
+            (
+                [qml.X("a"), qml.Z("b"), qml.RX(0.7, "b")],
+                ["c", 1],
+                [(["c", 1], [0, 0]), ([1], [1]), (["c"], [1])],
+            ),
+            ([qml.X("a"), qml.RX(0.7, "b")], ["c", 1], [([1], [0]), ([1], [1])]),
+        ],
+    )
+    def test_basic_decomposition_partial(self, ops, control, expected_controls):
+        """Test the correctness of the Select template decomposition with partial=True.
+        Tests both the returned and the queued operations."""
+        expected_gates = [
+            qml.ctrl(op, ctrl, vals) if ctrl else op
+            for op, (ctrl, vals) in zip(ops, expected_controls)
+        ]
 
-        op_reps = (
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.X),
-            qml.resource_rep(qml.Y),
-        )
+        select_op = qml.Select(ops, control, partial=True)
+        with qml.queuing.AnnotatedQueue() as q0:
+            decomp0 = select_op.decomposition()
+        decomp_queue0 = qml.tape.QuantumScript.from_queue(q0).operations
 
-        assert resources["op_reps"] == op_reps
+        with qml.queuing.AnnotatedQueue() as q1:
+            decomp1 = qml.Select.compute_decomposition(ops, control, partial=True)
+        decomp_queue1 = qml.tape.QuantumScript.from_queue(q1).operations
+
+        for dec in [decomp0, decomp1, decomp_queue0, decomp_queue1]:
+            for op_dec, op_exp in zip(dec, expected_gates, strict=True):
+                qml.assert_equal(op_dec, op_exp)
 
     @pytest.mark.parametrize("partial", [False, True])
     def test_new_decomposition_multi_control(self, partial):
@@ -591,6 +319,27 @@ class TestSelect:
         else:
             qml.assert_equal(decomp_ops[0], qml.ctrl(qml.Z(1), (0,), control_values=[0]))
 
+    def test_resources(self):
+        """Test the resources property"""
+
+        assert qml.Select.resource_keys == frozenset(("op_reps", "num_control_wires", "partial"))
+
+        ops = [qml.X(2), qml.X(3), qml.X(4), qml.Y(2)]
+
+        op = qml.Select(ops, control=(0, 1))
+
+        resources = op.resource_params
+        assert resources["num_control_wires"] == 2
+
+        op_reps = (
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.X),
+            qml.resource_rep(qml.Y),
+        )
+
+        assert resources["op_reps"] == op_reps
+
 
 class TestErrorMessages:
     """Test that the correct errors are raised"""
@@ -644,6 +393,16 @@ class TestErrorMessages:
         """Test that error is raised if more ops are requested than can fit in control wires"""
         with pytest.raises(ValueError, match=msg_match):
             qml.Select(ops, control)
+
+    def test_unary_iterator_non_partial_not_implemented(self):
+        """Test that an error is raised when trying to call unary iterator decomposition with
+        partial=False."""
+        with pytest.raises(NotImplementedError, match="Unary iteration with partial=False"):
+            _ = _select_decomp_unary([qml.X(0)], control=(1,), work_wires=None, partial=False)
+        with pytest.raises(
+            NotImplementedError, match="Resources for unary iteration with partial=False"
+        ):
+            _ = _select_resources_unary([qml.resource_rep(qml.X)], 1, partial=False)
 
 
 def select_rx_circuit(angles):
@@ -832,6 +591,8 @@ class TestUnaryIterator:
         """Test that the unary iterator is correct by asserting that the identity
         matrix is created by preparing the i-th computational basis state conditioned on the
         i-th basis state in the control qubits."""
+        if not partial:
+            pytest.xfail(reason="partial=False not supported with unary iteration yet.")
 
         dev = qml.device("default.qubit")
 
@@ -871,6 +632,9 @@ class TestUnaryIterator:
     ):  # pylint: disable=too-many-arguments
         """Test that proper errors are raised"""
 
+        if not partial:
+            pytest.xfail(reason="partial=False not supported with unary iteration yet.")
+
         wires = qml.registers({"target": num_ops, "control": control, "work": work})
         ops = [qml.BasisEmbedding(i, wires=wires["target"]) for i in range(num_ops)]
 
@@ -883,6 +647,9 @@ class TestUnaryIterator:
     def test_comparison_with_select(self, num_controls, num_ops, seed, partial):
         """Test that the unary iterator is correct by comparing it to the standard Select
         decomposition."""
+
+        if not partial:
+            pytest.xfail(reason="partial=False not supported with unary iteration yet.")
 
         angles = [list(map(int, np.binary_repr(i, width=num_controls))) for i in range(num_ops)]
         angles = np.pi * np.array(angles).T
