@@ -609,7 +609,8 @@
 
 <h3>Internal changes ⚙️</h3>
 
-* Remove `autograph` keyword argument from `QNode` constructor.
+* Remove `autograph` keyword argument from `QNode` constructor. If `autograph` conversion is to be used,
+  please use the `qjit` decorator and the `qml.capture.disable_autograph` context manager.
   [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
   
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
