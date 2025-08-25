@@ -96,6 +96,7 @@ def test_recording_wanted():
         qml.PauliY(0)
         qml.s_prod(2j, qml.PauliZ(0))
 
+    assert len(tape) == 3
     qml.assert_equal(tape, tape2)
 
 

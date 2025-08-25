@@ -64,7 +64,6 @@ class Hadamard(Operation):
     """
 
     is_hermitian = True
-    _queue_category = "_ops"
 
     num_wires = 1
     """int: Number of wires that the operator acts on."""
@@ -336,7 +335,6 @@ class PauliX(Operation):
 
     batch_size = None
 
-    _queue_category = "_ops"
     is_hermitian = True
 
     @property
@@ -620,8 +618,6 @@ class PauliY(Operation):
 
     batch_size = None
 
-    _queue_category = "_ops"
-
     @property
     def pauli_rep(self):
         if self._pauli_rep is None:
@@ -864,7 +860,6 @@ class PauliZ(Operation):
     """
 
     is_hermitian = True
-    _queue_category = "_ops"
     num_wires = 1
     num_params = 0
     """int: Number of trainable parameters that the operator depends on."""
