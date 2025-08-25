@@ -69,7 +69,7 @@ class TestFrozenMapping:
         with pytest.raises(TypeError, match="FrozenMapping is immutable"):
             del fm["b"]
 
-        assert repr(fm) == "FrozenMapping({'a': 1, 'b': 2})"
+        assert repr(fm) == "{'a': 1, 'b': 2}"
 
     def test_copy_frozen_mapping(self):
         """Test that copying a FrozenMapping creates a new instance."""
@@ -272,6 +272,13 @@ class TestExecutionConfig:
     def test_hashability(self):
         """Test that ExecutionConfig instances are hashable."""
         config = ExecutionConfig()
+        assert isinstance(hash(config), int)
+
+        config = ExecutionConfig(
+            device_options={"option1": 42},
+            gradient_keyword_arguments={"arg1": "value"},
+            mcm_config={"mcm_method": "deferred", "postselect_mode": "hw-like"},
+        )
         assert isinstance(hash(config), int)
 
 
