@@ -99,14 +99,42 @@ OPERATIONS = [
     TanhOp,
 ]
 
+# Operations from upstream that should be deleted/replaced in the local version
+UPSTREAM_OPERATIONS_TO_DELETE = []
+
+
+def filter_and_extend_upstream(upstream_list, to_delete, to_add):
+    """Filter out operations/attributes from upstream list and add new ones.
+
+    Args:
+        upstream_list: List of operations/attributes to filter
+        to_delete: List of operations/attributes to remove
+        to_add: List of operations/attributes to add
+
+    Returns:
+        Modified list of operations/attributes
+    """
+    filtered_ops = list(upstream_list)
+
+    # Remove operations that should be deleted
+    for op_to_delete in to_delete:
+        if op_to_delete in filtered_ops:
+            filtered_ops.remove(op_to_delete)
+
+    # Add new operations
+    filtered_ops.extend(to_add)
+
+    return filtered_ops
+
+
+all_operations = filter_and_extend_upstream(
+    xstablehlo.StableHLO.operations, UPSTREAM_OPERATIONS_TO_DELETE, OPERATIONS
+)
+all_attributes = list(xstablehlo.StableHLO.attributes)
+
 # Create the extended StableHLO dialect by dynamically getting upstream components
 StableHLO = Dialect(
     "stablehlo",
-    [
-        *xstablehlo.StableHLO.operations,
-        *OPERATIONS,
-    ],
-    [
-        *xstablehlo.StableHLO.attributes,
-    ],
+    all_operations,
+    all_attributes,
 )

@@ -29,12 +29,11 @@ from xdsl.dialects import builtin as xbuiltin
 from xdsl.dialects import func as xfunc
 from xdsl.dialects import scf as xscf
 from xdsl.dialects import tensor as xtensor
-from xdsl.dialects import transform as xtransform
 from xdsl.ir import Dialect as xDialect
 from xdsl.parser import Parser as xParser
 from xdsl.traits import SymbolTable as xSymbolTable
 
-from .dialects import MBQC, QEC, Catalyst, Quantum, StableHLO
+from .dialects import MBQC, QEC, Catalyst, Quantum, StableHLO, Transform
 
 JaxJittedFunction: TypeAlias = _jax.PjitFunction  # pylint: disable=c-extension-no-member
 
@@ -58,7 +57,7 @@ class QuantumParser(xParser):  # pylint: disable=abstract-method,too-few-public-
         xscf.Scf,
         StableHLO,
         xtensor.Tensor,
-        xtransform.Transform,
+        Transform,
         Quantum,
         MBQC,
         Catalyst,
