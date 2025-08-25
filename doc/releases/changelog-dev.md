@@ -97,6 +97,50 @@
   * ``"weighted_random"``: same as ``"weighted"``, but the numbers of ``shots`` are sampled from a multinomial distribution
   * or a user-defined function implementing a custom shot distribution strategy
 
+  To show an example about how this works, let's start by defining a simple Hamiltonian:
+
+  ```python
+  import pennylane as qml
+
+  ham = qml.Hamiltonian(
+      coeffs=[10, 0.1, 20, 100, 0.2],
+      observables=[
+          qml.X(0) @ qml.Y(1),
+          qml.Z(0) @ qml.Z(2),
+          qml.Y(1),
+          qml.X(1) @ qml.X(2),
+          qml.Z(0) @ qml.Z(1) @ qml.Z(2)
+      ]
+  )
+  ```
+
+  This Hamiltonian can be split into 3 non-commuting groups of mutually commuting terms.
+  A fixed total number of shots might be distributed across the groups to make the expectation value of the whole Hamiltonian more accurate.
+  For instance, it might be convenient to use a number of shots per group which is proportional to the L1 norm of each group's coefficients.
+  This can be achieved by using the ``weighted`` shots distribution strategy:
+
+  ```python
+  from functools import partial
+  from pennylane.transforms import split_non_commuting
+
+  dev = qml.device("default.qubit")
+  total_shots = 10000
+
+  @partial(split_non_commuting, shot_dist="weighted")
+  @qml.set_shots(shots=total_shots)
+  @qml.qnode(dev)
+  def circuit():
+      return qml.expval(ham)
+
+  with qml.Tracker(dev) as tracker:
+      circuit()
+  ```
+
+  ```pycon
+  >>> print(tracker.history["shots"])
+  [2303, 23, 7674]
+  ```
+
 * PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
   Users can now use standard python assignment when designing circuits with experimental program capture enabled.
 
