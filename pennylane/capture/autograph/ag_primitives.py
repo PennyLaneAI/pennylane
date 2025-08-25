@@ -21,7 +21,7 @@ import functools
 import operator
 from collections.abc import Callable, Iterator
 from numbers import Number
-from typing import Any, SupportsIndex
+from typing import Any, SupportsIndex, Union
 
 from malt.core import config as ag_config
 from malt.impl import api as ag_api
@@ -55,9 +55,9 @@ __all__ = [
 
 
 def set_item(
-    target: "DynamicJaxprTracer" | list,
-    i: int | "DynamicJaxprTracer",
-    x: Number | "DynamicJaxprTracer",
+    target: Union["DynamicJaxprTracer", list],
+    i: Union[int, "DynamicJaxprTracer"],
+    x: Union[Number, "DynamicJaxprTracer"],
 ):
     """An implementation of the AutoGraph 'set_item' function."""
 
@@ -70,9 +70,9 @@ def set_item(
 
 
 def update_item_with_op(
-    target: "DynamicJaxprTracer" | list,
-    index: Number | "DynamicJaxprTracer",
-    x: Number | "DynamicJaxprTracer",
+    target: Union["DynamicJaxprTracer", list],
+    index: Union[Number, "DynamicJaxprTracer"],
+    x: Union[Number, "DynamicJaxprTracer"],
     op: str,
 ):
     """An implementation of the AutoGraph 'update_item_with_op' function."""
