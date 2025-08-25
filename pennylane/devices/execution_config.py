@@ -50,6 +50,61 @@ class MCMConfig:
             raise ValueError(f"Invalid postselection mode '{self.postselect_mode}'.")
 
 
+@dataclass(frozen=True)
+class GradientConfig:
+    """A class to store gradient configuration options."""
+
+    grad_on_execution: bool | None = None
+    """Whether or not to compute the gradient at the same time as the execution.
+
+    If ``None``, then the device or execution pipeline can decide which one is most efficient for the situation.
+    """
+
+    use_device_gradient: bool | None = None
+    """Whether or not to compute the gradient on the device.
+
+    ``None`` indicates to use the device if possible, but to fall back to pennylane behaviour if it isn't.
+
+    True indicates a request to either use the device gradient or fail.
+    """
+
+    use_device_jacobian_product: bool | None = None
+    """Whether or not to use the device provided vjp or jvp to compute gradients.
+
+    ``None`` indicates to use the device if possible, but to fall back to the device Jacobian
+    or PennyLane behaviour if it isn't.
+
+    ``True`` indicates to either use the device Jacobian products or fail.
+    """
+
+    gradient_method: str | TransformDispatcher | None = None
+    """The method used to compute the gradient of the quantum circuit being executed"""
+
+    gradient_keyword_arguments: dict | None = None
+    """Arguments used to control a gradient transform"""
+
+    derivative_order: int = 1
+    """The derivative order to compute while evaluating a gradient."""
+
+    def __post_init__(self):
+        """Validate the configured gradient options."""
+        if self.grad_on_execution not in {True, False, None}:
+            raise ValueError(
+                f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
+            )
+
+        if self.gradient_keyword_arguments is None:
+            object.__setattr__(self, "gradient_keyword_arguments", {})
+
+        if not (
+            isinstance(self.gradient_method, (str, TransformDispatcher))
+            or self.gradient_method is None
+        ):
+            raise ValueError(
+                f"Differentiation method {self.gradient_method} must be a str, TransformDispatcher, or None. Got {type(self.gradient_method)} instead."
+            )
+
+
 # pylint: disable=too-many-instance-attributes
 @dataclass(frozen=True)
 class ExecutionConfig:
@@ -100,6 +155,9 @@ class ExecutionConfig:
     mcm_config: MCMConfig | dict = field(default_factory=MCMConfig)
     """Configuration options for handling mid-circuit measurements"""
 
+    gradient_config: GradientConfig | dict | None = None
+    """Configuration options for handling mid-circuit measurements"""
+
     convert_to_numpy: bool = True
     """Whether or not to convert parameters to numpy before execution.
 
@@ -120,32 +178,41 @@ class ExecutionConfig:
         """
         object.__setattr__(self, "interface", get_canonical_interface_name(self.interface))
 
-        if self.grad_on_execution not in {True, False, None}:
-            raise ValueError(
-                f"grad_on_execution must be True, False, or None. Got {self.grad_on_execution} instead."
-            )
-
         if self.device_options is None:
             object.__setattr__(self, "device_options", {})
 
-        if self.gradient_keyword_arguments is None:
-            object.__setattr__(self, "gradient_keyword_arguments", {})
-
-        if not (
-            isinstance(self.gradient_method, (str, TransformDispatcher))
-            or self.gradient_method is None
-        ):
-            raise ValueError(
-                f"Differentiation method {self.gradient_method} must be a str, TransformDispatcher, or None. Got {type(self.gradient_method)} instead."
-            )
+        if self.executor_backend is None:
+            object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
 
         if isinstance(self.mcm_config, dict):
             object.__setattr__(self, "mcm_config", MCMConfig(**self.mcm_config))
         elif not isinstance(self.mcm_config, MCMConfig):
             raise ValueError(f"Got invalid type {type(self.mcm_config)} for 'mcm_config'")
 
-        if self.executor_backend is None:
-            object.__setattr__(self, "executor_backend", get_executor(backend=ExecBackends.MP_Pool))
+        if isinstance(self.gradient_config, dict):
+            object.__setattr__(self, "gradient_config", GradientConfig(**self.gradient_config))
+        elif self.gradient_config is None:
+            gradient_config = GradientConfig(
+                grad_on_execution=self.grad_on_execution,
+                use_device_gradient=self.use_device_gradient,
+                use_device_jacobian_product=self.use_device_jacobian_product,
+                gradient_method=self.gradient_method,
+                gradient_keyword_arguments=self.gradient_keyword_arguments,
+                derivative_order=self.derivative_order,
+            )
+            object.__setattr__(self, "gradient_config", gradient_config)
+            object.__setattr__(self, "grad_on_execution", gradient_config.grad_on_execution)
+            object.__setattr__(self, "use_device_gradient", gradient_config.use_device_gradient)
+            object.__setattr__(
+                self, "use_device_jacobian_product", gradient_config.use_device_jacobian_product
+            )
+            object.__setattr__(self, "gradient_method", gradient_config.gradient_method)
+            object.__setattr__(
+                self, "gradient_keyword_arguments", gradient_config.gradient_keyword_arguments
+            )
+            object.__setattr__(self, "derivative_order", gradient_config.derivative_order)
+        elif not isinstance(self.gradient_config, GradientConfig):
+            raise ValueError(f"Got invalid type {type(self.gradient_config)} for 'gradient_config'")
 
 
 # pylint: disable=missing-function-docstring, inconsistent-return-statements
