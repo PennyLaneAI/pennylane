@@ -3,19 +3,6 @@
 
 <h3>New features since last release</h3>
 
-* A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
-  This allows for more customization and efficiency when calculating expectation values across the non-commuting groups of observables that 
-  comprise a ``Hamiltonian``/``LinearCombination``.
-  [(#7988)](https://github.com/PennyLaneAI/pennylane/pull/7988)
-
-  Given a QNode that returns a sample-based measurement (e.g., ``expval``) of a ``Hamiltonian``/``LinearCombination`` and a finite ``shots`` value, the current default behaviour 
-  of :func:`~.transforms.split_non_commuting` will perform ``shots`` executions per non-commuting term. With the ``shot_dist`` argument, this behaviour can be changed:
-  
-  * ``"uniform"``: distributes the number of ``shots`` evenly among each non-commuting term
-  * ``"weighted"``: ???
-  * ``"weighted_random"``: ??? 
-  * or a user-defined function implementing a custom shot distribution strategy
-
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
@@ -95,6 +82,20 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
+  This allows for more customization and efficiency when calculating expectation values across the non-commuting groups
+  of observables that comprise a ``Hamiltonian``/``LinearCombination``.
+  [(#7988)](https://github.com/PennyLaneAI/pennylane/pull/7988)
+
+  Given a QNode that returns a sample-based measurement (e.g., ``expval``) of a ``Hamiltonian``/``LinearCombination``
+  and a finite ``shots`` value, the current default behaviour of :func:`~.transforms.split_non_commuting` will perform ``shots``
+  executions for each group of commuting terms. With the ``shot_dist`` argument, this behaviour can be changed:
+
+  * ``"uniform"``: evenly distributes the number of ``shots`` across all groups of commuting terms
+  * ``"weighted"``: distributes the number of ``shots`` according to weights proportional to the L1 norm of the coefficients in each group
+  * ``"weighted_random"``: same as ``"weighted"``, but the numbers of ``shots`` are sampled from a multinomial distribution
+  * or a user-defined function implementing a custom shot distribution strategy
 
 * PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
   Users can now use standard python assignment when designing circuits with experimental program capture enabled.
