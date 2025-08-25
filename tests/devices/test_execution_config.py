@@ -15,7 +15,7 @@
 Unit tests for the :class:`~pennylane.devices.ExecutionConfig` class.
 """
 
-from copy import copy
+from copy import copy, deepcopy
 from dataclasses import replace
 
 import pytest
@@ -70,6 +70,20 @@ class TestFrozenMapping:
             del fm["b"]
 
         assert repr(fm) == "FrozenMapping({'a': 1, 'b': 2})"
+
+    def test_copy_frozen_mapping(self):
+        """Test that copying a FrozenMapping creates a new instance."""
+        fm1 = FrozenMapping(a=1, b=2)
+        fm2 = copy(fm1)
+        assert fm1 is not fm2
+        assert fm1 == fm2
+
+    def test_deepcopy_frozen_mapping(self):
+        """Test that deep copying a FrozenMapping creates a new instance."""
+        fm1 = FrozenMapping(a=1, b=2)
+        fm2 = deepcopy(fm1)
+        assert fm1 is not fm2
+        assert fm1 == fm2
 
 
 class TestExecutionConfig:
