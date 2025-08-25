@@ -56,22 +56,22 @@ __all__ = [
 
 def set_item(
     target: Union["DynamicJaxprTracer", list],
-    i: Union[int, "DynamicJaxprTracer"],
+    index: Union[int, "DynamicJaxprTracer"],
     x: Union[Number, "DynamicJaxprTracer"],
 ):
     """An implementation of the AutoGraph 'set_item' function."""
 
     if qml.math.is_abstract(target):
-        target = target.at[i].set(x)
+        target = target.at[index].set(x)
     else:
-        target[i] = x
+        target[index] = x
 
     return target
 
 
 def update_item_with_op(
     target: Union["DynamicJaxprTracer", list],
-    index: Union[Number, "DynamicJaxprTracer"],
+    index: Union[int, "DynamicJaxprTracer"],
     x: Union[Number, "DynamicJaxprTracer"],
     op: str,
 ):
