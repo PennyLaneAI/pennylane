@@ -108,8 +108,6 @@
   (Array(-1, dtype=float32),
    Array(-1, dtype=float32),
    Array(-1, dtype=float32)) 
-  ```
-
 * PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
   Users can now use standard python assignment when designing circuits with experimental program capture enabled.
 
