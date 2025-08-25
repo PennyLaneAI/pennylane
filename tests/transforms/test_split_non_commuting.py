@@ -21,7 +21,7 @@ import pytest
 
 import pennylane as qml
 from pennylane.transforms import split_non_commuting
-from pennylane.transforms.split_non_commuting import ShotDistributionFunction
+from pennylane.transforms.split_non_commuting import ShotDistFunction
 
 # Two qubit-wise commuting groups: [[0, 3], [1, 2, 4]]
 # Four groups based on wire overlaps: [[0, 2], [1], [3], [4]]
@@ -978,7 +978,7 @@ class TestShotDistribution:
     """
 
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc", "wires", None])
-    def test_none_shot_distribution(self, grouping_strategy):
+    def test_none_shot_dist(self, grouping_strategy):
         """Test standard behaviour with no shot distribution strategy."""
 
         total_shots = 1000
@@ -987,7 +987,7 @@ class TestShotDistribution:
         tapes, _ = split_non_commuting(
             initial_tape,
             grouping_strategy=grouping_strategy,
-            shot_distribution=None,
+            shot_dist=None,
         )
 
         assert sum(tape.shots.total_shots for tape in tapes) == total_shots * len(tapes)
@@ -995,20 +995,18 @@ class TestShotDistribution:
         for tape in tapes:
             assert tape.shots.total_shots == total_shots
 
-    @pytest.mark.parametrize("shot_distribution", [0, 1.2, [], {}])
-    def test_type_error_shot_distribution(self, shot_distribution):
-        """Test an error is raised for shot_distribution incorrect type."""
+    @pytest.mark.parametrize("shot_dist", [0, 1.2, [], {}])
+    def test_type_error_shot_dist(self, shot_dist):
+        """Test an error is raised for shot_dist incorrect type."""
 
         initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=10)
 
-        with pytest.raises(
-            TypeError, match="`shot_distribution` must be a callable or str or None,"
-        ):
-            _ = split_non_commuting(initial_tape, shot_distribution=shot_distribution)
+        with pytest.raises(TypeError, match="`shot_dist` must be a callable or str or None,"):
+            _ = split_non_commuting(initial_tape, shot_dist=shot_dist)
 
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
     @pytest.mark.parametrize(
-        ["shot_distribution", "expected_shots"],
+        ["shot_dist", "expected_shots"],
         [
             ("uniform", (334, 333, 333)),
             ("weighted", (231, 2, 767)),
@@ -1016,7 +1014,7 @@ class TestShotDistribution:
         ],
     )
     def test_single_hamiltonian_sampling_strategy(
-        self, grouping_strategy, shot_distribution, expected_shots
+        self, grouping_strategy, shot_dist, expected_shots
     ):
         """Test built-in shot distribution strategies for the single hamiltonian case."""
 
@@ -1026,7 +1024,7 @@ class TestShotDistribution:
         tapes, _ = split_non_commuting(
             initial_tape,
             grouping_strategy=grouping_strategy,
-            shot_distribution=shot_distribution,
+            shot_dist=shot_dist,
             seed=42,
         )
 
@@ -1045,18 +1043,18 @@ class TestShotDistribution:
         total_shots = 1000
         initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=total_shots)
 
-        mock_shot_distribution = MagicMock(spec=ShotDistributionFunction)
+        mock_shot_dist = MagicMock(spec=ShotDistFunction)
 
         _ = split_non_commuting(
             initial_tape,
             grouping_strategy=grouping_strategy,
-            shot_distribution=mock_shot_distribution,
+            shot_dist=mock_shot_dist,
             seed=seed,
         )
 
-        # check that the shot_distribution function gets called exactly once with the expected signature
+        # check that the shot distribution function gets called exactly once with the expected signature
         coeffs_per_group = [[10, 20], [0.1, 0.2], [100]]
-        mock_shot_distribution.assert_called_once_with(total_shots, coeffs_per_group, seed)
+        mock_shot_dist.assert_called_once_with(total_shots, coeffs_per_group, seed)
 
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
     def test_single_hamiltonian_custom_function(self, grouping_strategy):
@@ -1064,13 +1062,13 @@ class TestShotDistribution:
 
         initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(ham)], shots=10)
 
-        def custom_shot_distribution(_, coeffs_per_group, __):
+        def custom_shot_dist(_, coeffs_per_group, __):
             return [1] * len(coeffs_per_group)
 
         tapes, _ = split_non_commuting(
             initial_tape,
             grouping_strategy=grouping_strategy,
-            shot_distribution=custom_shot_distribution,
+            shot_dist=custom_shot_dist,
         )
 
         for tape in tapes:

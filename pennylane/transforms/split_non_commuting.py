@@ -51,7 +51,7 @@ class SingleTermMP:
     idx_in_group: int
 
 
-ShotDistributionFunction = Callable[
+ShotDistFunction = Callable[
     # total_shots, coeffs_per_group, seed -> shots_per_tape
     [int, list[list[TensorLike]], np.random.Generator | int | None],
     Sequence[int],
@@ -90,7 +90,7 @@ def _weighted_random_sampling(total_shots, coeffs_per_group, seed):
     return shots_per_group.astype(int)
 
 
-shot_distribution_str2fn = {
+shot_dist_str2fn = {
     "uniform": _uniform_deterministic_sampling,
     "weighted": _weighted_deterministic_sampling,
     "weighted_random": _weighted_random_sampling,
@@ -118,9 +118,7 @@ def shot_vector_support(initial_postprocessing: PostprocessingFn) -> Postprocess
 def split_non_commuting(
     tape: QuantumScript,
     grouping_strategy: Literal["default", "wires", "qwc"] | None = "default",
-    shot_distribution: (
-        ShotDistributionFunction | Literal["uniform", "weighted", "weighted_random"] | None
-    ) = None,
+    shot_dist: ShotDistFunction | Literal["uniform", "weighted", "weighted_random"] | None = None,
     seed: np.random.Generator | int | None = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Splits a circuit into tapes measuring groups of commuting observables.
@@ -130,7 +128,7 @@ def split_non_commuting(
         grouping_strategy (str): The strategy to use for computing disjoint groups of
             commuting observables, can be ``"default"``, ``"wires"``, ``"qwc"``,
             or ``None`` to disable grouping.
-        shot_distribution (str or Callable or None): The strategy to use for shot distribution
+        shot_dist (str or Callable or None): The strategy to use for shot distribution
             over the disjoint groups of commuting observables, can be ``"uniform"``, ``"weighted"``,
             ``"weighted_random"`` or a custom callable. ``None`` to disable any shot distribution strategy.
         seed (Generator or int or None): A seed-like parameter used only when the shot distribution
@@ -141,7 +139,7 @@ def split_non_commuting(
         the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
 
     Raises:
-        TypeError: if ``shot_distribution`` is not a str or Callable or None.
+        TypeError: if ``shot_dist`` is not a str or Callable or None.
 
     .. note::
         This transform splits expectation values of sums into separate terms, and also distributes the terms into
@@ -354,16 +352,14 @@ def split_non_commuting(
     if len(tape.measurements) == 0:
         return [tape], null_postprocessing
 
-    if shot_distribution is None:
-        shot_distribution_fn = None
-    elif isinstance(shot_distribution, Callable):
-        shot_distribution_fn = shot_distribution
-    elif isinstance(shot_distribution, str):
-        shot_distribution_fn = shot_distribution_str2fn.get(shot_distribution)
+    if shot_dist is None:
+        shot_dist_fn = None
+    elif isinstance(shot_dist, Callable):
+        shot_dist_fn = shot_dist
+    elif isinstance(shot_dist, str):
+        shot_dist_fn = shot_dist_str2fn.get(shot_dist)
     else:
-        raise TypeError(
-            f"`shot_distribution` must be a callable or str or None, not {type(shot_distribution)}."
-        )
+        raise TypeError(f"`shot_dist` must be a callable or str or None, not {type(shot_dist)}.")
 
     # Special case for a single measurement of a Sum, in which case
     # the grouping information can be computed and cached in the observable.
@@ -379,7 +375,7 @@ def split_non_commuting(
             or tape.measurements[0].obs.grouping_indices is not None
         )
     ):
-        return _split_ham_with_grouping(tape, shot_distribution_fn=shot_distribution_fn, seed=seed)
+        return _split_ham_with_grouping(tape, shot_dist_fn=shot_dist_fn, seed=seed)
 
     single_term_obs_mps, offsets = _split_all_multi_term_obs_mps(tape)
 
@@ -411,7 +407,7 @@ def split_non_commuting(
 
 
 def _split_ham_with_grouping(
-    tape: qml.tape.QuantumScript, shot_distribution_fn: ShotDistributionFunction, seed: int
+    tape: qml.tape.QuantumScript, shot_dist_fn: ShotDistFunction, seed: int
 ):
     """Split a tape measuring a single Sum and group commuting observables.
     It also assigns to each new tape the correct number of shots according to the
@@ -460,8 +456,8 @@ def _split_ham_with_grouping(
             mps_groups.append(mps_group)
             coeffs_per_group.append(coeffs_group)
 
-    if tape.shots.total_shots is not None and shot_distribution_fn is not None:
-        shots_per_group = shot_distribution_fn(tape.shots.total_shots, coeffs_per_group, seed)
+    if tape.shots.total_shots is not None and shot_dist_fn is not None:
+        shots_per_group = shot_dist_fn(tape.shots.total_shots, coeffs_per_group, seed)
         tapes = [
             tape.copy(measurements=mps, shots=int(shots))
             for mps, shots in zip(mps_groups, shots_per_group)
