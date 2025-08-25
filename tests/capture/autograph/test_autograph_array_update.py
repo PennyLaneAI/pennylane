@@ -116,6 +116,7 @@ def test_static_array_update():
     assert jnp.array_equal(result, [0, 11])
 
 
+@pytest.mark.usefixtures("enable_disable_plxpr")
 def test_dynamic_index():
     """Tests that a dynamic index can be used."""
 
