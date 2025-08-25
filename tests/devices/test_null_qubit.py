@@ -528,7 +528,7 @@ class TestSampleMeasurements:
         res1, res2 = dev.execute((qs1, qs2))
 
         assert np.array_equal(res1, np.zeros((100, 2)))
-        assert np.array_equal(res2, np.zeros(50))
+        assert np.array_equal(res2, np.zeros((50, 1)))
 
     @pytest.mark.parametrize("all_outcomes", [True, False])
     def test_counts_wires(self, all_outcomes):
