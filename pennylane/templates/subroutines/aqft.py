@@ -16,7 +16,6 @@ This submodule contains the template for AQFT.
 """
 
 import warnings
-from collections import Counter
 
 import numpy as np
 
