@@ -1023,6 +1023,9 @@ class VarianceOp(IRDLOperation):
 
     variance = result_def(Float64Type())
 
+    def __init__(self, obs: ObservableSSAValue | Operation):
+        super().__init__(operands=(obs,), result_types=(Float64Type(),))
+
 
 @irdl_op_definition
 class YieldOp(IRDLOperation):
