@@ -20,6 +20,8 @@ This module provides type definitions based on the StableHLO specification
 token types and other necessary type definitions for StableHLO operations.
 """
 
+# pylint: disable=too-few-public-methods
+
 from typing import TypeAlias
 
 from xdsl.dialects.builtin import (
