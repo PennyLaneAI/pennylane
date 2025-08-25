@@ -1032,7 +1032,7 @@ class TestShotDistribution:
             assert tape.shots.total_shots == shots
 
     @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
-    def test_single_hamiltonian_random_sampling_strategy(self, grouping_strategy):
+    def test_single_hamiltonian_random_sampling_strategy(self, grouping_strategy, seed):
         """Test built-in random shot distribution strategy for the single hamiltonian case."""
 
         total_shots = 1000
@@ -1042,7 +1042,7 @@ class TestShotDistribution:
             initial_tape,
             grouping_strategy=grouping_strategy,
             shot_dist="weighted_random",
-            seed=42,
+            seed=seed,
         )
 
         # check that the original total number of shots is conserved
