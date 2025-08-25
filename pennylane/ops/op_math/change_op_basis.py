@@ -32,7 +32,7 @@ from .composite import CompositeOp, handle_recursion_error
 
 
 def change_op_basis(compute_op, target_op, uncompute_op=None):
-    """Construct an operator which represents the product of the
+    """Construct an operator that represents the product of the
     operators provided.
 
     Args:
