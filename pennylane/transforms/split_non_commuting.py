@@ -358,11 +358,13 @@ def split_non_commuting(
         shot_dist_fn = shot_dist
     elif isinstance(shot_dist, str):
         try:
-            shot_dist_fn = shot_dist_str2fn.get(shot_dist)
+            shot_dist_fn = shot_dist_str2fn[shot_dist]
         except KeyError as e:
-            raies ValueError(f"Unknown shot_dist {shot_dist}. Available options are {list(shot_dist_str2fn.keys())}.") from e
+            raise ValueError(
+                f"Unknown shot_dist='{shot_dist}'. Available options are {list(shot_dist_str2fn.keys())}."
+            ) from e
     else:
-        raise TypeError(f"`shot_dist` must be a callable or str or None, not {type(shot_dist)}.")
+        raise TypeError(f"shot_dist must be a callable or str or None, not {type(shot_dist)}.")
 
     # Special case for a single measurement of a Sum, in which case
     # the grouping information can be computed and cached in the observable.
