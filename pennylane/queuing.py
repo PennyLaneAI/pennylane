@@ -161,12 +161,13 @@ use the :meth:`~.queuing.QueuingManager.stop_recording` context upon constructio
 """
 
 import copy
+import warnings
 from collections import OrderedDict
 from contextlib import contextmanager
 from threading import RLock
 from typing import Optional, Union
 
-from pennylane.exceptions import QueuingError
+from pennylane.exceptions import PennyLaneDeprecationWarning, QueuingError
 
 
 class WrappedObj:
@@ -591,5 +592,10 @@ def process_queue(
                     f"to {current_list[1:]}. Please place earlier in the queue."
                 )
             lists[obj._queue_category].append(obj)
+        else:
+            warnings.warn(
+                PennyLaneDeprecationWarning,
+                "Preventing an object from getting queued with `_queue_category=None` is deprecated.",
+            )
 
     return lists["_ops"], lists["_measurements"]
