@@ -1583,7 +1583,7 @@ class TestQubitUnitaryDecompositionGraph:
 
         op = qml.QubitUnitary(U, wires=list(range(n_wires)))
         tape = qml.tape.QuantumScript([op])
-        [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set, max_expansion=4)
+        [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set)
 
         matrix = qml.matrix(decomp, wire_order=list(range(n_wires)))
         assert qml.math.allclose(matrix, op.matrix(wire_order=list(range(n_wires))), atol=1e-7)
