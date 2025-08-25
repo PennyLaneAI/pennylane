@@ -25,12 +25,13 @@ from pennylane.ops.op_math.decompositions.normal_forms import (
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 from pennylane.queuing import QueuingManager
 
+is_jax = True
 try:
     import jax
     import jax.numpy as jnp
     from jax.core import ShapedArray
 except (ModuleNotFoundError, ImportError):  # pragma: no cover
-    pass
+    is_jax = False
 
 
 def _domain_correction(theta: float) -> tuple[float, ZOmega]:
@@ -285,6 +286,8 @@ def rs_decomposition(
 
         # If QJIT is active, use the compressed normal form.
         if not is_qjit:
+            assert not is_jax, "JAX is not installed"  # pragma: no cover
+
             decomposed_gates, g_phase, phase = eval_ross_algorithm(angle)
         else:
             # circular import issue when import outside of the function
@@ -322,15 +325,12 @@ def rs_decomposition(
             if queuing:
                 _ = [qml.apply(op) for op in new_tape.operations]
 
-    # TODO: Improve the global phase information to the decomposition.
+    interface = qml.math.get_interface(angle)
+    phase += qml.math.mod(g_phase, 2) * math.pi
     if is_qjit:
         with jax.ensure_compile_time_eval():
-            interface = qml.math.get_interface(angle)
-            phase += qml.math.mod(g_phase, 2) * math.pi
             global_phase = qml.GlobalPhase(phase)
     else:
-        interface = qml.math.get_interface(angle)
-        phase += qml.math.mod(g_phase, 2) * math.pi
         global_phase = qml.GlobalPhase(qml.math.array(phase, like=interface))
 
     # Return the gates from the mapped tape and global phase
