@@ -19,6 +19,7 @@ import pytest
 from gate_data import QFT
 
 import pennylane as qml
+from pennylane.capture.autograph import run_autograph
 
 
 def test_standard_validity():
@@ -213,18 +214,20 @@ class TestDynamicDecomposition:
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=autograph)
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
         def circuit(wires):
             qml.QFT(wires=wires)
             return qml.state()
 
+        if autograph:
+            circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(circuit)(wires=wires)
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
 
         with qml.capture.pause():
 
             @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
-            @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
+            @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
             def circuit_comparison():
                 qml.QFT(wires=wires)
                 return qml.state()
