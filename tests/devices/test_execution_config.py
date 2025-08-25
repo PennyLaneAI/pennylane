@@ -269,6 +269,11 @@ class TestExecutionConfig:
         assert config.device_options == og_device_options
         assert config.gradient_keyword_arguments == og_gradient_keyword_arguments
 
+    def test_hashability(self):
+        """Test that ExecutionConfig instances are hashable."""
+        config = ExecutionConfig()
+        assert isinstance(hash(config), int)
+
 
 class TestMCMConfig:
     """Tests for the MCMConfig class."""

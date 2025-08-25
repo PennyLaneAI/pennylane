@@ -33,6 +33,7 @@ class FrozenMapping(MutableMapping):
 
     def __init__(self, *args, **kwargs):
         self._data = dict(*args, **kwargs)
+        self._hash = None  # Cache the hash value
 
     def __getitem__(self, key):
         return self._data[key]
@@ -55,6 +56,13 @@ class FrozenMapping(MutableMapping):
 
     def __repr__(self):
         return f"{self._data}"
+
+    def __hash__(self):
+        """Makes the object hashable, allowing it to be used in sets and as a dict key."""
+        if self._hash is None:
+            # FIX: Corrected 'froznet' to 'frozenset'
+            self._hash = hash(frozenset(self._data.items()))
+        return self._hash
 
     def copy(self):
         """Returns a standard, mutable shallow copy of the data."""
