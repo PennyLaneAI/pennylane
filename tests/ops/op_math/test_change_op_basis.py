@@ -14,9 +14,9 @@
 """
 Unit tests for the ChangeOpBasis arithmetic class of qubit operations
 """
+import re
 
 # pylint:disable=protected-access, unused-argument
-import gate_data as gd  # a file containing matrix rep of each gate
 import pytest
 
 import pennylane as qml
@@ -27,48 +27,6 @@ from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
 from pennylane.wires import Wires
 
 X, Y, Z = qml.PauliX, qml.PauliY, qml.PauliZ
-
-no_mat_ops = (
-    qml.Barrier,
-    qml.WireCut,
-)
-
-non_param_ops = (
-    (qml.Identity, gd.I),
-    (qml.Hadamard, gd.H),
-    (qml.PauliX, gd.X),
-    (qml.PauliY, gd.Y),
-    (qml.PauliZ, gd.Z),
-    (qml.S, gd.S),
-    (qml.T, gd.T),
-    (qml.SX, gd.SX),
-    (qml.CNOT, gd.CNOT),
-    (qml.CZ, gd.CZ),
-    (qml.CY, gd.CY),
-    (qml.SWAP, gd.SWAP),
-    (qml.ISWAP, gd.ISWAP),
-    (qml.SISWAP, gd.SISWAP),
-    (qml.CSWAP, gd.CSWAP),
-    (qml.Toffoli, gd.Toffoli),
-)
-
-param_ops = (
-    (qml.RX, gd.Rotx),
-    (qml.RY, gd.Roty),
-    (qml.RZ, gd.Rotz),
-    (qml.PhaseShift, gd.Rphi),
-    (qml.Rot, gd.Rot3),
-    (qml.U1, gd.U1),
-    (qml.U2, gd.U2),
-    (qml.U3, gd.U3),
-    (qml.CRX, gd.CRotx),
-    (qml.CRY, gd.CRoty),
-    (qml.CRZ, gd.CRotz),
-    (qml.CRot, gd.CRot3),
-    (qml.IsingXX, gd.IsingXX),
-    (qml.IsingYY, gd.IsingYY),
-    (qml.IsingZZ, gd.IsingZZ),
-)
 
 ops = (
     (qml.PauliZ(0), qml.PauliX(1), qml.PauliZ(0)),
@@ -117,24 +75,6 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
         op2 = qml.change_op_basis(qml.PauliY("a"), qml.PauliX("a"), qml.PauliX(1))
         assert op1.hash != op2.hash
 
-    PROD_TERMS_OP_PAIRS = (  # not all operands have pauli representation
-        (
-            qml.change_op_basis(qml.Hadamard(0), X(1), qml.Hadamard(0)),
-            [1.0],
-            [qml.change_op_basis(qml.Hadamard(0), X(1), qml.Hadamard(0))],
-        ),  # trivial change_op_basis
-        (
-            qml.change_op_basis(X(0), X(1), X(0)),
-            [1.0],
-            [qml.change_op_basis(X(0), X(1), X(0))],
-        ),  # trivial change_op_basis
-        (
-            qml.change_op_basis(qml.Hadamard(0), X(1)),
-            [1.0],
-            [qml.change_op_basis(qml.Hadamard(0), X(1), qml.Hadamard(0))],
-        ),  # change_op_basis without adjoint provided
-    )
-
     def test_batch_size(self):
         """Test that batch size returns the batch size of a base operation if it is batched."""
         x = qml.numpy.array([1.0, 2.0, 3.0])
@@ -149,12 +89,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize(
         "factors",
         (
-            [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])],
+            [qml.PauliX(wires=0), qml.PauliZ(wires=0)],
             [qml.PauliX(wires=0), qml.RZ(0.612, "r")],
-            [
-                qml.Hamiltonian([-0.3], [qml.PauliZ(wires=1)]),
-                qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]),
-            ],
+            [qml.PauliZ(wires=0), qml.PauliX(wires=0)],
             [MyOp(3.1, 0), qml.CNOT([0, 2])],
         ),
     )
@@ -168,12 +105,9 @@ class TestInitialization:  # pylint:disable=too-many-public-methods
     @pytest.mark.parametrize(
         "factors",
         (
-            [qml.PauliX(wires=0), qml.Hamiltonian([0.5], [qml.PauliX(wires=1)])],
+            [qml.PauliX(wires=0), qml.PauliZ(wires=0)],
             [qml.PauliX(wires=0), qml.RZ(0.612, "r")],
-            [
-                qml.Hamiltonian([-0.3], [qml.PauliZ(wires=1)]),
-                qml.Hamiltonian([0.5], [qml.PauliX(wires=1)]),
-            ],
+            [qml.PauliZ(wires=0), qml.PauliX(wires=0)],
             [MyOp(3.1, 0), qml.CNOT([0, 2])],
         ),
     )
@@ -247,7 +181,12 @@ class TestIntegration:
             qml.PauliX(0)
             return qml.expval(change_op_basis_op)
 
-        with pytest.raises(DeviceError):
+        with pytest.raises(
+            DeviceError,
+            match=re.escape(
+                "Measurement expval(RX(1.23, wires=[0]) @ I(1) @ (Adjoint(RX(1.23, wires=[0])))) not accepted for analytic simulation on default.qubit"
+            ),
+        ):
             my_circ()
 
     def test_params_can_be_considered_trainable(self):
