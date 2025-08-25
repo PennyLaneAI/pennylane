@@ -23,8 +23,9 @@ by PennyLane.
 import copy
 import inspect
 import warnings
+from contextlib import ContextDecorator
 
-from malt.core import converter
+from malt.core import ag_ctx, converter
 from malt.impl.api import PyToPy
 
 import pennylane as qml
@@ -205,7 +206,6 @@ def run_autograph(fn):
         ] 0 b 1 a
       in (c,) }
     """
-
     user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
     new_fn, module, source_map = TRANSFORMER.transform(fn, user_context)
@@ -303,6 +303,89 @@ def autograph_source(fn):
         "given function to be converted, please submit a bug report."
     )
 
+
+# pylint: disable=too-few-public-methods
+class DisableAutograph(ag_ctx.ControlStatusCtx, ContextDecorator):
+    """Context decorator that disables AutoGraph for the given function/context.
+
+    .. note::
+
+        A singleton instance is used for discarding parentheses usage:
+
+        @disable_autograph
+        instead of
+        @DisableAutograph()
+
+        with disable_autograph:
+        instead of
+        with DisableAutograph()
+
+    **Example**
+
+    We can see this works by considering a simple example.
+    In this case, we expect to see a ``cond`` primitive captured in the jaxpr from the function ``f``.
+
+    .. code-block::
+
+        import pennylane as qml
+        import jax
+
+        from jax import make_jaxpr
+        from pennylane.capture.autograph import disable_autograph, run_autograph
+
+        qml.capture.enable()
+
+        def f(x):
+            if x > 1:
+                return x**2
+            return x
+
+        def g():
+            x = 2
+            return f(x)
+
+    >>> make_jaxpr(run_autograph(g))()
+    { lambda ; . let
+        _:bool[] a:i32[] = cond[
+        args_slice=slice(2, None, None)
+        consts_slices=[slice(2, 2, None), slice(2, 2, None)]
+        jaxpr_branches=[{ lambda ; . let  in (True:bool[], 4:i32[]) }, { lambda ; . let  in (True:bool[], 2:i32[]) }]
+        ] True:bool[] True:bool[]
+    in (a,) }
+
+    Now if we add the decorator the function is evaluated and not captured in the jaxpr,
+
+    .. code-block:: python
+
+        @disable_autograph
+        def f(x):
+            if x > 1:
+                return x**2
+            return x
+
+    >>> make_jaxpr(run_autograph(g))()
+    { lambda ; . let  in (4:i32[],) }
+
+    Or we can also use the context manager,
+
+    .. code-block:: python
+
+        def g():
+            x = 2
+            with disable_autograph:
+                return f(x)
+
+    >>> make_jaxpr(run_autograph(g))()
+    { lambda ; . let  in (4:i32[],) }
+
+    """
+
+    def __init__(self):
+        super().__init__(status=ag_ctx.Status.DISABLED)
+
+
+# Singleton instance of DisableAutograph
+disable_autograph = DisableAutograph()
 
 # converter.Feature.LISTS permits overloading the 'set_item' function in 'ag_primitives.py'
 OPTIONAL_FEATURES = [converter.Feature.BUILTIN_FUNCTIONS, converter.Feature.LISTS]
