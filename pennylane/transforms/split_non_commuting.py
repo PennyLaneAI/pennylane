@@ -357,7 +357,10 @@ def split_non_commuting(
     elif isinstance(shot_dist, Callable):
         shot_dist_fn = shot_dist
     elif isinstance(shot_dist, str):
-        shot_dist_fn = shot_dist_str2fn.get(shot_dist)
+        try:
+            shot_dist_fn = shot_dist_str2fn.get(shot_dist)
+        except KeyError as e:
+            raies ValueError(f"Unknown shot_dist {shot_dist}. Available options are {list(shot_dist_str2fn.keys())}.") from e
     else:
         raise TypeError(f"`shot_dist` must be a callable or str or None, not {type(shot_dist)}.")
 
