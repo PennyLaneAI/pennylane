@@ -300,48 +300,13 @@ def test_control_flow_operations(run_filecheck):
       "stablehlo.return"(%new_i, %new_sum) : (tensor<i64>, tensor<i64>) -> ()
     }) : (tensor<i64>, tensor<i64>) -> (tensor<i64>, tensor<i64>)
     
-    """
+    // Test OptimizationBarrierOp:
 
-    run_filecheck(program, roundtrip=True, verify=True)
-
-
-def test_while_operation(run_filecheck):
-    """Test the WhileOp operation."""
-    program = r"""
-    // CHECK:   %[[init_i:.*]] = "test.op"() : () -> tensor<i64>
-    %init_i = "test.op"() : () -> tensor<i64>
+    // CHECK:   %[[operand:.*]] = "test.op"() : () -> tensor<i1>
+    %operand = "test.op"() : () -> tensor<i1>
     
-    // CHECK:   %[[init_sum:.*]] = "test.op"() : () -> tensor<i64>
-    %init_sum = "test.op"() : () -> tensor<i64>
-    
-    // CHECK:   %[[ten:.*]] = "test.op"() : () -> tensor<i64>
-    %ten = "test.op"() : () -> tensor<i64>
-    
-    // CHECK:   %[[one:.*]] = "test.op"() : () -> tensor<i64>
-    %one = "test.op"() : () -> tensor<i64>
-    
-    // CHECK:   %[[results:.*]], %[[results_1:.*]] = "stablehlo.while"(%[[init_i]], %[[init_sum]]) ({
-    // CHECK:   ^{{.*}}(%[[arg0:.*]] : tensor<i64>, %[[arg1:.*]] : tensor<i64>):
-    // CHECK:     %[[cond:.*]] = stablehlo.compare LT, %[[arg0]], %[[ten]] : (tensor<i64>, tensor<i64>) -> tensor<i1>
-    // CHECK:     "stablehlo.return"(%[[cond]]) : (tensor<i1>) -> ()
-    // CHECK:   }, {
-    // CHECK:   ^{{.*}}(%[[arg0_1:.*]] : tensor<i64>, %[[arg1_1:.*]] : tensor<i64>):
-    // CHECK:     %[[new_sum:.*]] = "stablehlo.add"(%[[arg1_1]], %[[one]]) : (tensor<i64>, tensor<i64>) -> tensor<i64>
-    // CHECK:     %[[new_i:.*]] = "stablehlo.add"(%[[arg0_1]], %[[one]]) : (tensor<i64>, tensor<i64>) -> tensor<i64>
-    // CHECK:     "stablehlo.return"(%[[new_i]], %[[new_sum]]) : (tensor<i64>, tensor<i64>) -> ()
-    // CHECK:   }) : (tensor<i64>, tensor<i64>) -> (tensor<i64>, tensor<i64>)
-    %results:2 = "stablehlo.while"(%init_i, %init_sum) ({
-    ^bb0(%arg0: tensor<i64>, %arg1: tensor<i64>):
-      %cond = "stablehlo.compare"(%arg0, %ten) {comparison_direction = #stablehlo<comparison_direction LT>} : (tensor<i64>, tensor<i64>) -> tensor<i1>
-      "stablehlo.return"(%cond) : (tensor<i1>) -> ()
-    }, {
-    ^bb0(%arg0: tensor<i64>, %arg1: tensor<i64>):
-      %new_sum = "stablehlo.add"(%arg1, %one) : (tensor<i64>, tensor<i64>) -> tensor<i64>
-      %new_i = "stablehlo.add"(%arg0, %one) : (tensor<i64>, tensor<i64>) -> tensor<i64>
-      "stablehlo.return"(%new_i, %new_sum) : (tensor<i64>, tensor<i64>) -> ()
-    }) : (tensor<i64>, tensor<i64>) -> (tensor<i64>, tensor<i64>)
-    
-    // CHECK: }
+    // CHECK:   %[[result2:.*]] = "stablehlo.optimization_barrier"(%[[operand]]) : (tensor<i1>) -> tensor<i1>
+    %result2 = "stablehlo.optimization_barrier"(%operand) : (tensor<i1>) -> tensor<i1>
     """
 
     run_filecheck(program, roundtrip=True, verify=True)
