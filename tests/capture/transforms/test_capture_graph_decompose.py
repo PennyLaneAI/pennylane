@@ -22,6 +22,10 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.decomposition.decomposition_rule import null_decomp
+from pennylane.measurements import MidMeasureMP
+from pennylane.operation import Operation
+from pennylane.ops import Conditional
 
 jax = pytest.importorskip("jax")
 from pennylane.tape.plxpr_conversion import CollectOpsandMeas
@@ -345,3 +349,58 @@ class TestDecomposeInterpreterGraphEnabled:
             qml.RZ(qml.math.array(-0.1, like="jax"), wires=[1]),
             qml.CNOT(wires=[0, 1]),
         ]
+
+    @pytest.mark.integration
+    def test_decompose_with_mcm(self):
+        """Tests that circuits and decomposition rules containing MCMs are supported."""
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+        @qml.register_resources({qml.H: 1, qml.X: 1})
+        def _custom_decomp(wires, **_):
+            qml.H(wires[0])
+            m0 = qml.measure(wires[0])
+            qml.cond(m0, qml.H)(wires[1])
+
+        @DecomposeInterpreter(
+            gate_set={qml.RX, qml.RY, qml.RZ},
+            fixed_decomps={qml.GlobalPhase: null_decomp, CustomOp: _custom_decomp},
+        )
+        def circuit():
+            CustomOp(wires=[1, 0])
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.X)(0)
+
+        jaxpr = jax.make_jaxpr(circuit)()
+        collector = CollectOpsandMeas()
+        collector.eval(jaxpr.jaxpr, jaxpr.consts)
+        ops = collector.state["ops"]
+
+        def equivalent_circuit():
+            qml.RZ(np.pi, wires=1)
+            qml.RY(np.pi / 2, wires=1)
+            m0 = qml.measure(1)
+            qml.cond(m0, qml.RZ)(np.pi, wires=0)
+            qml.cond(m0, qml.RY)(np.pi / 2, wires=0)
+            m1 = qml.measure(0)
+            qml.cond(m1, qml.RX)(np.pi, wires=0)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            equivalent_circuit()
+
+        qml.assert_equal(ops[0], q.queue[0])
+        qml.assert_equal(ops[1], q.queue[1])
+        assert isinstance(ops[3], Conditional)
+        assert isinstance(ops[4], Conditional)
+        assert isinstance(ops[6], Conditional)
+        qml.assert_equal(ops[3].base, q.queue[3].base)
+        qml.assert_equal(ops[4].base, q.queue[4].base)
+        qml.assert_equal(ops[6].base, q.queue[6].base)
+        assert isinstance(ops[2], MidMeasureMP)
+        assert isinstance(ops[5], MidMeasureMP)
