@@ -16,7 +16,7 @@
 upstream in xDSL."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Iterable
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from typing import TypeVar
 
@@ -77,8 +77,8 @@ class ContainerConstraint(AttrConstraint, ABC):
         self,
         *,
         element_type: IRDLAttrConstraint[AttributeInvT] | None = None,
-        shape: IRDLAttrConstraint[AttributeInvT] | Iterable[int] | None = None,
-        rank: IRDLAttrConstraint[AttributeInvT] | Iterable[int] | int | None = None,
+        shape: IRDLAttrConstraint[AttributeInvT] | Sequence[int] | None = None,
+        rank: IRDLAttrConstraint[AttributeInvT] | Collection[int] | int | None = None,
     ):
         element_type = element_type or AnyAttr()
         element_type_constr = element_type
@@ -92,13 +92,13 @@ class ContainerConstraint(AttrConstraint, ABC):
 
         elif shape is not None:
             shape_constr = shape
-            if isinstance(shape_constr, Iterable):
+            if isinstance(shape_constr, Sequence):
                 shape_constr = ArrayAttr([IntAttr(s) for s in shape])
 
         # rank is not None
         else:
             shape_constr = rank
-            if isinstance(shape_constr, (int, Iterable)):
+            if isinstance(shape_constr, (int, Collection)):
                 # Constrain shape to have length `rank` if `rank` is an int
                 if isinstance(shape_constr, int):
                     length_constr = EqIntConstraint(shape_constr)
@@ -110,8 +110,21 @@ class ContainerConstraint(AttrConstraint, ABC):
                     )
                 )
 
-        assert isinstance(element_type_constr, (Attribute, AttrConstraint))
-        assert isinstance(shape_constr, (Attribute, AttrConstraint))
+        if not isinstance(element_type_constr, (Attribute, AttrConstraint)):
+            raise TypeError(
+                f"{element_type} is not a valid constraint for the 'element_type' argument. "
+                "'element_type' must be an AttrConstraint or Attribute."
+            )
+        if not isinstance(shape_constr, (Attribute, AttrConstraint)):
+            if shape is not None:
+                raise TypeError(
+                    f"{shape} is not a valid constraint for the 'shape' argument. 'shape' "
+                    "must be an AttrConstraint, Attribute, or sequence of integers."
+                )
+            raise TypeError(
+                f"{rank} is not a valid constraint for the 'rank' argument. 'rank' must be "
+                "an AttrConstraint, Attribute, integer, or collection of integers."
+            )
 
         object.__setattr__(self, "element_type", element_type_constr)
         object.__setattr__(self, "shape", shape_constr)

@@ -137,6 +137,29 @@ def my_dialect_fixture():
 class TestMemRefConstraint:
     """Tests for the MemRefConstraint class."""
 
+    def test_memref_constraint_init_invalid_element_type(self):
+        """Test that an error is raised if the provided element_type is invalid"""
+
+        element_type = int
+        with pytest.raises(
+            TypeError, match="is not a valid constraint for the 'element_type' argument"
+        ):
+            MemRefConstraint(element_type=element_type)
+
+    def test_memref_constraint_init_invalid_shape(self):
+        """Test that an error is raised if the provided shape is invalid"""
+
+        shape = {1, 2}
+        with pytest.raises(TypeError, match="is not a valid constraint for the 'shape' argument"):
+            MemRefConstraint(shape=shape)
+
+    def test_memref_constraint_init_invalid_rank(self):
+        """Test that an error is raised if the provided rank is invalid"""
+
+        rank = 1.5
+        with pytest.raises(TypeError, match="is not a valid constraint for the 'rank' argument"):
+            MemRefConstraint(rank=rank)
+
     def test_memref_constraint_properties(self):
         """Test that the properties of MemRefConstraint object are correct."""
         rank = 1
@@ -279,6 +302,29 @@ class TestMemRefConstraint:
 
 class TestTensorConstraint:
     """Tests for the TensorConstraint class."""
+
+    def test_tensor_constraint_init_invalid_element_type(self):
+        """Test that an error is raised if the provided element_type is invalid"""
+
+        element_type = int
+        with pytest.raises(
+            TypeError, match="is not a valid constraint for the 'element_type' argument"
+        ):
+            TensorConstraint(element_type=element_type)
+
+    def test_tensor_constraint_init_invalid_shape(self):
+        """Test that an error is raised if the provided shape is invalid"""
+
+        shape = {1, 2}
+        with pytest.raises(TypeError, match="is not a valid constraint for the 'shape' argument"):
+            TensorConstraint(shape=shape)
+
+    def test_tensor_constraint_init_invalid_rank(self):
+        """Test that an error is raised if the provided rank is invalid"""
+
+        rank = 1.5
+        with pytest.raises(TypeError, match="is not a valid constraint for the 'rank' argument"):
+            TensorConstraint(rank=rank)
 
     def test_tensor_constraint_properties(self):
         """Test that the properties of TensorConstraint object are correct."""
