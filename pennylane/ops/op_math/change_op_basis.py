@@ -94,9 +94,9 @@ class ChangeOpBasis(CompositeOp):
     @handle_recursion_error
     def resource_params(self):
         resources = {}
-        resources["compute_op"] = self[0]
-        resources["target_op"] = self[1]
-        resources["uncompute_op"] = self[2]
+        resources["compute_op"] = resource_rep(type(self[0]), **self[0].resource_params)
+        resources["target_op"] = resource_rep(type(self[1]), **self[1].resource_params)
+        resources["uncompute_op"] = resource_rep(type(self[2]), **self[2].resource_params)
         return resources
 
     grad_method = None
@@ -160,9 +160,9 @@ class ChangeOpBasis(CompositeOp):
 def _change_op_basis_resources(compute_op, target_op, uncompute_op):
     resources = Counter()
 
-    resources[resource_rep(type(compute_op), **compute_op.resource_params)] += 1
-    resources[resource_rep(type(target_op), **target_op.resource_params)] += 1
-    resources[resource_rep(type(uncompute_op), **uncompute_op.resource_params)] += 1
+    resources[compute_op] += 1
+    resources[target_op] += 1
+    resources[uncompute_op] += 1
 
     return resources
 

@@ -21,6 +21,7 @@ import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
+from pennylane.decomposition import resource_rep
 from pennylane.exceptions import DeviceError
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 from pennylane.ops.op_math import ChangeOpBasis, change_op_basis
@@ -212,9 +213,9 @@ class TestDecomposition:
         assert ChangeOpBasis.resource_keys == frozenset({"compute_op", "target_op", "uncompute_op"})
         change_op_basis_op = ChangeOpBasis(qml.X(0), qml.Y(1), qml.X(2))
         assert change_op_basis_op.resource_params == {
-            "compute_op": qml.X(0),
-            "target_op": qml.Y(1),
-            "uncompute_op": qml.X(2),
+            "compute_op": resource_rep(qml.X),
+            "target_op": resource_rep(qml.Y),
+            "uncompute_op": resource_rep(qml.X),
         }
 
     def test_registered_decomp(self):
