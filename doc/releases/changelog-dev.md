@@ -83,6 +83,36 @@
 
 <h3>Improvements 🛠</h3>
 
+* PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
+  Users can now use standard python assignment when designing circuits with experimental program capture enabled.
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3))
+  def circuit(val):
+    angles = jnp.zeros(3)
+    angles[1] = val / 2
+    angles[2] = val
+
+    for i, angle in enumerate(angles):
+        qml.RX(angle, i)
+
+    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  ```
+
+  ```pycon
+  >>> circuit(jnp.pi)
+  (Array(0.99999994, dtype=float32),
+   Array(0., dtype=float32),
+   Array(-0.99999994, dtype=float32)) 
+  ```
+
+  [(#8027)](https://github.com/PennyLaneAI/pennylane/pull/8027)
+
 * Logical operations (`and`, `or` and `not`) are now supported with the `autograph` module. Users can
   now use these logical operations in control flow when designing quantum circuits with experimental
   program capture enabled.
@@ -352,6 +382,7 @@
   down on the complexity of post-processing due to having to handle single shot and single wire cases
   separately. The return shape will now *always* be `(shots, num_wires)`.
   [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
+  [(#8118)](https://github.com/PennyLaneAI/pennylane/pull/8118)
 
   For a simple qnode:
 
@@ -490,6 +521,7 @@
   [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
   [How to optimize a QML model using JAX and Optax](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
+  [(#8106)](https://github.com/PennyLaneAI/pennylane/pull/8106)
 
 * `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
   Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
@@ -579,6 +611,9 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
+  [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
 
 * Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
   [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
@@ -718,6 +753,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* An error is now raised if sequences of classically processed mid circuit measurements
+  are used as input to :func:`pennylane.counts` or :func:`pennylane.probs`.
+  [(#8109)](https://github.com/PennyLaneAI/pennylane/pull/8109)
+
 * Simplifying operators raised to integer powers no longer causes recursion errors.
   [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
 
@@ -762,6 +801,9 @@
 
 * Fixes `SemiAdder` to work when inputs are defined with a single wire.
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
+
+* Fixes a bug where `qml.prod` applied on a quantum function does not dequeue operators passed as arguments to the function.
+  [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
 
 <h3>Contributors ✍️</h3>
 
