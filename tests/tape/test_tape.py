@@ -1757,14 +1757,14 @@ class TestOutputShape:
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         shot_dim = shots if not isinstance(shots, tuple) else len(shots)
         if expected_shape is None:
-            expected_shape = shot_dim if shot_dim == 1 else (shot_dim,)
+            expected_shape = (shot_dim,)
 
         if isinstance(measurement, qml.measurements.SampleMP):
             if measurement.obs is not None:
-                expected_shape = (shots,) if shots != 1 else ()
+                expected_shape = (shots,)
 
             else:
-                expected_shape = (shots, num_wires) if shots != 1 else (num_wires,)
+                expected_shape = (shots, num_wires)
 
         with pytest.warns(
             PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
@@ -1906,10 +1906,7 @@ class TestOutputShape:
                 qml.sample(qml.PauliZ(i))
 
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
-        if shots == 1:
-            expected = tuple(() for _ in range(num_samples))
-        else:
-            expected = tuple((shots,) for _ in range(num_samples))
+        expected = tuple((shots,) for _ in range(num_samples))
 
         with pytest.warns(
             PennyLaneDeprecationWarning, match="``QuantumScript.shape`` is deprecated"
@@ -1937,10 +1934,7 @@ class TestOutputShape:
         tape = qml.tape.QuantumScript.from_queue(q, shots=shots)
         expected = []
         for s in shots:
-            if s == 1:
-                expected.append(tuple(() for _ in range(num_samples)))
-            else:
-                expected.append(tuple((s,) for _ in range(num_samples)))
+            expected.append(tuple((s,) for _ in range(num_samples)))
 
         expected = tuple(expected)
 

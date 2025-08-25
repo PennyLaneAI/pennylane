@@ -104,9 +104,9 @@ class PhaseAdder(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [1 1 0 1]
+        [[1 1 0 1]]
 
-    The result, :math:`[1 1 0 1]`, is the binary representation of
+    The result, :math:`[[1 1 0 1]]`, is the binary representation of
     :math:`8 + 5  \; \text{modulo} \; 15 = 13`.
 
     .. details::

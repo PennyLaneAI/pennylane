@@ -98,7 +98,7 @@ def test_assembly_format(run_filecheck):
     %graph_reg = mbqc.graph_state_prep (%adj_matrix : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
     """
 
-    run_filecheck(program)
+    run_filecheck(program, roundtrip=True)
 
 
 class TestMeasureInBasisOp:
