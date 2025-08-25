@@ -19,6 +19,7 @@ from __future__ import annotations
 import numpy as np
 
 import pennylane as qml
+from pennylane import allocation
 
 from .decomposition_rule import DecompositionRule, register_condition, register_resources
 from .resources import adjoint_resource_rep, controlled_resource_rep, pow_resource_rep, resource_rep
@@ -310,53 +311,26 @@ def flip_control_adjoint(
     )
 
 
-def _controlled_decomp_with_work_wire_condition(
-    num_control_wires, num_work_wires, work_wire_type, **__
-):
-    return num_work_wires > 1 and num_control_wires > 1 and work_wire_type == "zeroed"
-
-
-def _controlled_decomp_with_work_wire_resource(
-    base_class, base_params, num_control_wires, num_work_wires, work_wire_type, **__
-):
+def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, **__):
     return {
-        controlled_resource_rep(
-            qml.X,
-            {},
-            num_control_wires,
-            num_work_wires=num_work_wires - 1,
-            work_wire_type=work_wire_type,
-        ): 2,
-        controlled_resource_rep(base_class, base_params, 1, 0): 1,
+        controlled_resource_rep(qml.X, {}, num_control_wires): 2,
+        controlled_resource_rep(base_class, base_params, 1): 1,
     }
 
 
-# pylint: disable=protected-access,unused-argument, too-many-arguments
-@register_condition(_controlled_decomp_with_work_wire_condition)
-@register_resources(_controlled_decomp_with_work_wire_resource)
-def _controlled_decomp_with_work_wire(
-    *params, wires, control_wires, control_values, work_wires, work_wire_type, base, **__
-):
+# pylint: disable=protected-access,unused-argument,too-many-arguments
+@register_condition(lambda num_control_wires, **_: num_control_wires > 2)
+@register_resources(_ctrl_single_work_wire_resource, work_wires={"zeroed": 1})
+def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     base_op = base._unflatten(*base._flatten())
-    qml.ctrl(
-        qml.X(work_wires[0]),
-        control=wires[: len(control_wires)],
-        control_values=control_values,
-        work_wires=work_wires[1:],
-        work_wire_type=work_wire_type,
-    )
-    qml.ctrl(base_op, control=work_wires[0])
-    qml.ctrl(
-        qml.X(work_wires[0]),
-        control=wires[: len(control_wires)],
-        control_values=control_values,
-        work_wires=work_wires[1:],
-        work_wire_type=work_wire_type,
-    )
+    with allocation.allocate(1, True, True) as work_wires:
+        qml.ctrl(qml.X(work_wires[0]), control=control_wires)
+        qml.ctrl(base_op, control=work_wires[0])
+        qml.ctrl(qml.X(work_wires[0]), control=control_wires)
 
 
-controlled_decomp_with_work_wire = flip_zero_control(_controlled_decomp_with_work_wire)
+ctrl_single_work_wire = flip_zero_control(_ctrl_single_work_wire)
 
 
 def _to_controlled_qu_condition(base_class, **__):

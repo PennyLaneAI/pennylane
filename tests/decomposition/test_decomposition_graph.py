@@ -620,36 +620,22 @@ class TestControlledDecompositions:
     def test_decompose_with_single_work_wire(self, _):
         """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""
 
-        op = qml.ctrl(
-            qml.Rot(0.123, 0.234, 0.345, wires=0),
-            control=[1, 2, 3],
-            work_wires=[4, 5],
-            work_wire_type="zeroed",
-        )
+        op = qml.ctrl(qml.Rot(0.123, 0.234, 0.345, wires=0), control=[1, 2, 3])
 
-        graph = DecompositionGraph(
-            operations=[op],
-            gate_set={"MultiControlledX", "CRot"},
-        )
-        solution = graph.solve()
+        graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot"})
+        solution = graph.solve(num_work_wires=1)
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
-        assert q.queue == [
-            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="zeroed"),
+            rule = solution.decomposition(op, num_work_wires=1)
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = qml.tape.QuantumScript.from_queue(q)
+        [tape], _ = qml.transforms.resolve_dynamic_wires([tape], min_int=4)
+        assert tape.operations == [
+            qml.MultiControlledX(wires=[1, 2, 3, 4]),
             qml.CRot(0.123, 0.234, 0.345, wires=[4, 0]),
-            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="zeroed"),
+            qml.MultiControlledX(wires=[1, 2, 3, 4]),
         ]
-        assert solution.resource_estimate(op) == to_resources(
-            {
-                resource_rep(
-                    qml.MultiControlledX,
-                    num_control_wires=3,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="zeroed",
-                ): 2,
-                qml.CRot: 1,
-            }
+        assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
+            {controlled_resource_rep(qml.X, {}, num_control_wires=3): 2, qml.CRot: 1}
         )
 
 
