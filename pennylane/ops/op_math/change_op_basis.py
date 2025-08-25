@@ -179,7 +179,7 @@ def _controlled_change_op_basis_resources(
     base_params,
     **__,
 ):  # pylint: disable=unused-argument, too-many-arguments
-    resources = Counter()
+    resources = defaultdict(int)
     resources[
         resource_rep(type(base_params["compute_op"]), **base_params["compute_op"].resource_params)
     ] += 1
