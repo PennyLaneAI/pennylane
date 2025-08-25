@@ -53,7 +53,7 @@ class ContainerConstraint(AttrConstraint, ABC):
         * By providing an ``IRDLAttrConstraint`` for the ``rank`` argument.
         * By providing an ``int`` representing the concrete expected rank for the ``rank``
           argument.
-        * By providing a sequence of ``int``\ s specifying the various allowed ranks for the
+        * By providing a collection of ``int``\ s specifying the various allowed ranks for the
           ``rank`` argument.
 
     .. note::
