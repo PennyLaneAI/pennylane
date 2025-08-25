@@ -38,17 +38,25 @@ from pennylane.compiler.python_compiler.xdsl_extras import (
     SameOperandsElementType,
 )
 
+from .types import (
+    HLO_ComplexTensor,
+    HLO_Fp32Or64Tensor,
+    HLO_IntFpOrComplexOrQuantizedIntTensor,
+    HLO_Tensor,
+)
+
 # Type aliases
 F32Or64Type = Float32Type | Float64Type
 F32Or64TensorType = TensorType[F32Or64Type]
 ComplexTensorType = TensorType[ComplexType]
 
 # Generic type variables for templating
-T_IN = TypeVar("T_IN", bound=AnyTensorType)
+T_LHS = TypeVar("T_LHS", bound=AnyTensorType)
+T_RHS = TypeVar("T_RHS", bound=AnyTensorType)
 T_OUT = TypeVar("T_OUT", bound=AnyTensorType)
 
 
-class ElementwiseBinaryOperation(IRDLOperation, abc.ABC, Generic[T_IN, T_OUT]):
+class ElementwiseBinaryOperation(IRDLOperation, abc.ABC, Generic[T_LHS, T_RHS, T_OUT]):
     """
     Templated base class for elementwise binary operations.
 
@@ -59,8 +67,8 @@ class ElementwiseBinaryOperation(IRDLOperation, abc.ABC, Generic[T_IN, T_OUT]):
     https://openxla.org/xla/operation_semantics#element-wise_binary_arithmetic_operations
     """
 
-    lhs = operand_def(T_IN)
-    rhs = operand_def(T_IN)
+    lhs = operand_def(T_LHS)
+    rhs = operand_def(T_RHS)
     result = result_def(T_OUT)
 
     traits = traits_def(
@@ -83,7 +91,9 @@ class ElementwiseBinaryOperation(IRDLOperation, abc.ABC, Generic[T_IN, T_OUT]):
 
 
 @irdl_op_definition
-class ComplexOp(ElementwiseBinaryOperation[F32Or64TensorType, ComplexTensorType]):
+class ComplexOp(
+    ElementwiseBinaryOperation[HLO_Fp32Or64Tensor, HLO_Fp32Or64Tensor, HLO_ComplexTensor]
+):
     """
     Performs element-wise conversion to a complex value from a pair of real and
     imaginary values, `lhs` and `rhs`, and produces a `result` tensor.
@@ -111,7 +121,13 @@ class ComplexOp(ElementwiseBinaryOperation[F32Or64TensorType, ComplexTensorType]
 
 
 @irdl_op_definition
-class DivideOp(ElementwiseBinaryOperation[AnyTensorType, AnyTensorType]):
+class DivideOp(
+    ElementwiseBinaryOperation[
+        HLO_IntFpOrComplexOrQuantizedIntTensor,
+        HLO_IntFpOrComplexOrQuantizedIntTensor,
+        HLO_IntFpOrComplexOrQuantizedIntTensor,
+    ]
+):
     """
     Performs element-wise division of dividend `lhs` and divisor `rhs` tensors
     and produces a `result` tensor.
@@ -129,7 +145,7 @@ class DivideOp(ElementwiseBinaryOperation[AnyTensorType, AnyTensorType]):
 
 
 @irdl_op_definition
-class MaximumOp(ElementwiseBinaryOperation[AnyTensorType, AnyTensorType]):
+class MaximumOp(ElementwiseBinaryOperation[HLO_Tensor, HLO_Tensor, HLO_Tensor]):
     """
     Performs element-wise max operation on tensors `lhs` and `rhs` and produces
     a `result` tensor.
@@ -147,7 +163,7 @@ class MaximumOp(ElementwiseBinaryOperation[AnyTensorType, AnyTensorType]):
 
 
 @irdl_op_definition
-class MinimumOp(ElementwiseBinaryOperation[AnyTensorType, AnyTensorType]):
+class MinimumOp(ElementwiseBinaryOperation[HLO_Tensor, HLO_Tensor, HLO_Tensor]):
     """
     Performs element-wise min operation on tensors `lhs` and `rhs` and produces a
     `result` tensor.
@@ -165,7 +181,7 @@ class MinimumOp(ElementwiseBinaryOperation[AnyTensorType, AnyTensorType]):
 
 
 @irdl_op_definition
-class PowerOp(ElementwiseBinaryOperation[AnyTensorType, AnyTensorType]):
+class PowerOp(ElementwiseBinaryOperation[HLO_Tensor, HLO_Tensor, HLO_Tensor]):
     """
     Performs element-wise exponentiation of `lhs` tensor by `rhs` tensor and
     produces a `result` tensor.
@@ -183,7 +199,7 @@ class PowerOp(ElementwiseBinaryOperation[AnyTensorType, AnyTensorType]):
 
 
 @irdl_op_definition
-class RemainderOp(ElementwiseBinaryOperation[AnyTensorType, AnyTensorType]):
+class RemainderOp(ElementwiseBinaryOperation[HLO_Tensor, HLO_Tensor, HLO_Tensor]):
     """
     Performs element-wise remainder of dividend `lhs` and divisor `rhs` tensors
     and produces a `result` tensor.

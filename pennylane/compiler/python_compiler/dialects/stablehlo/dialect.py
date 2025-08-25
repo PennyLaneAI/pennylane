@@ -24,7 +24,7 @@ the upstream operation list.
 import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
-from .elementwise.binary import (
+from .elementwise_binary import (
     ComplexOp,
     DivideOp,
     MaximumOp,
@@ -32,7 +32,7 @@ from .elementwise.binary import (
     PowerOp,
     RemainderOp,
 )
-from .elementwise.other import (
+from .elementwise_other import (
     ClampOp,
     CompareOp,
     MapOp,
@@ -41,7 +41,7 @@ from .elementwise.other import (
 )
 
 # Import all elementwise operations from organized files
-from .elementwise.unary import (
+from .elementwise_unary import (
     ConvertOp,
     CosineOp,
     ExponentialMinusOneOp,

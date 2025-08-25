@@ -18,24 +18,18 @@ Other elementwise operations for the StableHLO dialect.
 
 # pylint: disable=too-few-public-methods
 
-from typing import ClassVar
-
 import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.dialects.builtin import (
-    I1,
-    I32,
     AnyFloat,
-    AnyTensorType,
     DenseArrayBase,
     IntegerAttr,
     TensorType,
+    i32,
     i64,
 )
 from xdsl.irdl import (
     IRDLOperation,
-    VarConstraint,
     attr_def,
-    base,
     irdl_op_definition,
     operand_def,
     opt_attr_def,
@@ -44,12 +38,14 @@ from xdsl.irdl import (
     var_operand_def,
     var_region_def,
 )
+from xdsl.irdl.attributes import eq
+from xdsl.irdl.constraints import AtLeast
 from xdsl.traits import NoMemoryEffect, RecursiveMemoryEffect, SingleBlockImplicitTerminator
 
-from pennylane.compiler.python_compiler.xdsl_extras import Elementwise, SameOperandsAndResultShape
+from ...xdsl_extras import Elementwise, SameOperandsAndResultShape
+from .types import HLO_FpOrQuantizedIntTensor, HLO_PredTensor, HLO_Tensor
 
 # Type aliases
-I1TensorType = TensorType[I1]
 FloatTensorType = TensorType[AnyFloat]
 
 
@@ -62,10 +58,10 @@ class ClampOp(IRDLOperation):
 
     name = "stablehlo.clamp"
 
-    min = operand_def(AnyTensorType)
-    operand = operand_def(AnyTensorType)
-    max = operand_def(AnyTensorType)
-    result = result_def(AnyTensorType)
+    min = operand_def(HLO_Tensor)
+    operand = operand_def(HLO_Tensor)
+    max = operand_def(HLO_Tensor)
+    result = result_def(HLO_Tensor)
 
     # TODO: Implement CustomDirective
     # assembly_format = """
@@ -93,9 +89,9 @@ class CompareOp(IRDLOperation):
     $comparison_direction `,` $lhs `,` $rhs (`,` $comparison_type^)? attr-dict `:` functional-type(operands, results)
     """
 
-    lhs = operand_def(AnyTensorType)
-    rhs = operand_def(AnyTensorType)
-    result = result_def(I1TensorType)
+    lhs = operand_def(HLO_Tensor)
+    rhs = operand_def(HLO_Tensor)
+    result = result_def(HLO_PredTensor)
     comparison_direction = attr_def(xstablehlo.ComparisonDirectionAttr)
     comparison_type = opt_attr_def(xstablehlo.ComparisonTypeAttr)
 
@@ -132,8 +128,8 @@ class MapOp(IRDLOperation):
 
     name = "stablehlo.map"
 
-    inputs = var_operand_def(AnyTensorType)
-    result = result_def(AnyTensorType)
+    inputs = var_operand_def(HLO_Tensor)
+    result = result_def(HLO_Tensor)
     dimensions = attr_def(DenseArrayBase.constr(i64))
     computation = var_region_def("single_block")
 
@@ -171,11 +167,11 @@ class ReducePrecisionOp(IRDLOperation):
     #   attr-dict `:` custom<SameOperandsAndResultType>(type($operand), type($output))
     # """
 
-    operand = operand_def(FloatTensorType)
-    result = result_def(FloatTensorType)
+    operand = operand_def(HLO_FpOrQuantizedIntTensor)
+    result = result_def(HLO_FpOrQuantizedIntTensor)
 
-    exponent_bits = attr_def(IntegerAttr[I32])
-    mantissa_bits = attr_def(IntegerAttr[I32])
+    exponent_bits = attr_def(IntegerAttr.constr(type=eq(i32), value=AtLeast(1)))
+    mantissa_bits = attr_def(IntegerAttr.constr(type=eq(i32), value=AtLeast(0)))
 
     traits = traits_def(
         NoMemoryEffect(),
@@ -207,13 +203,10 @@ class SelectOp(IRDLOperation):
     #   custom<SelectOpType>(type($pred), type($on_true), type($on_false), type($result))
     # """
 
-    PRED: ClassVar = VarConstraint("PRED", base(I1TensorType))
-    T: ClassVar = VarConstraint("T", base(AnyTensorType))
-
-    pred = operand_def(PRED)
-    on_true = operand_def(T)
-    on_false = operand_def(T)
-    result = result_def(T)
+    pred = operand_def(HLO_PredTensor)
+    on_true = operand_def(HLO_Tensor)
+    on_false = operand_def(HLO_Tensor)
+    result = result_def(HLO_Tensor)
 
     traits = traits_def(
         NoMemoryEffect(),
