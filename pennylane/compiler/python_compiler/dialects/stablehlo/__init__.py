@@ -20,7 +20,7 @@ functionality.
 """
 
 # Import all elementwise operations explicitly
-from .elementwise.unary import (
+from .elementwise_unary import (
     ConvertOp,
     CosineOp,
     ExponentialMinusOneOp,
@@ -43,7 +43,7 @@ from .elementwise.unary import (
     TanhOp,
 )
 
-from .elementwise.binary import (
+from .elementwise_binary import (
     ComplexOp,
     DivideOp,
     MaximumOp,
@@ -52,7 +52,7 @@ from .elementwise.binary import (
     RemainderOp,
 )
 
-from .elementwise.other import (
+from .elementwise_other import (
     ClampOp,
     CompareOp,
     MapOp,

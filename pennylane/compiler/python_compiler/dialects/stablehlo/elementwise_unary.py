@@ -33,12 +33,24 @@ from xdsl.irdl import (
     IRDLOperation,
     irdl_op_definition,
     operand_def,
+    opt_attr_def,
     result_def,
     traits_def,
 )
 from xdsl.traits import NoMemoryEffect
 
-from pennylane.compiler.python_compiler.xdsl_extras import Elementwise, SameOperandsAndResultShape
+from ...xdsl_extras import Elementwise, SameOperandsAndResultShape
+from .attributes import ResultAccuracyMode, ResultAccuracyModeAttr
+from .types import (
+    HLO_FloatTensor,
+    HLO_FpComplexOrQuantizedIntTensor,
+    HLO_FpOrComplexTensor,
+    HLO_FpOrQuantizedIntTensor,
+    HLO_IntFpOrComplexOrQuantizedIntTensor,
+    HLO_NonQuantizedTensor,
+    HLO_PredTensor,
+    HLO_SIntFpComplexOrQuantizedIntTensor,
+)
 
 # Type aliases
 I1TensorType = TensorType[I1]
@@ -86,7 +98,7 @@ class ElementwiseUnaryOperation(IRDLOperation, abc.ABC, Generic[T_IN, T_OUT]):
 
 
 @irdl_op_definition
-class ConvertOp(ElementwiseUnaryOperation[AnyTensorType, AnyTensorType]):
+class ConvertOp(ElementwiseUnaryOperation[HLO_NonQuantizedTensor, HLO_NonQuantizedTensor]):
     """
     Performs an element-wise conversion from one element type to another on
     `operand` tensor and produces a `result` tensor.
@@ -106,7 +118,9 @@ class ConvertOp(ElementwiseUnaryOperation[AnyTensorType, AnyTensorType]):
 
 
 @irdl_op_definition
-class CosineOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]):
+class CosineOp(
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
+):
     """
     Performs element-wise cosine operation on `operand` tensor and produces a
     `result` tensor.
@@ -122,6 +136,9 @@ class CosineOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComple
 
     name = "stablehlo.cosine"
 
+    # result_accuracy = opt_attr_def(
+    #     ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    # )
     # TODO: implement HLO_CompatibleOperandsAndResultType()
     # traits = traits_def(
     #     HLO_CompatibleOperandsAndResultType()
@@ -130,7 +147,7 @@ class CosineOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComple
 
 @irdl_op_definition
 class ExponentialMinusOneOp(
-    ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
 ):
     """
     Performs element-wise exponential minus one operation on `operand` tensor
@@ -147,6 +164,10 @@ class ExponentialMinusOneOp(
 
     name = "stablehlo.exponential_minus_one"
 
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
+
     # TODO: implement HLO_CompatibleOperandsAndResultType()
     # traits = traits_def(
     #     HLO_CompatibleOperandsAndResultType()
@@ -154,7 +175,9 @@ class ExponentialMinusOneOp(
 
 
 @irdl_op_definition
-class ExponentialOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]):
+class ExponentialOp(
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
+):
     """
     Performs element-wise exponential operation on `operand` tensor and produces
     a `result` tensor.
@@ -170,6 +193,10 @@ class ExponentialOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrC
 
     name = "stablehlo.exponential"
 
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
+
     # TODO: implement HLO_CompatibleOperandsAndResultType()
     # traits = traits_def(
     #     HLO_CompatibleOperandsAndResultType()
@@ -177,7 +204,7 @@ class ExponentialOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrC
 
 
 @irdl_op_definition
-class FloorOp(ElementwiseUnaryOperation[FloatTensorType, FloatTensorType]):
+class FloorOp(ElementwiseUnaryOperation[HLO_FpOrQuantizedIntTensor, HLO_FpOrQuantizedIntTensor]):
     """
     Performs element-wise floor of `operand` tensor and produces a `result`
     tensor.
@@ -195,7 +222,7 @@ class FloorOp(ElementwiseUnaryOperation[FloatTensorType, FloatTensorType]):
 
 
 @irdl_op_definition
-class ImagOp(ElementwiseUnaryOperation[ComplexTensorType, FloatTensorType]):
+class ImagOp(ElementwiseUnaryOperation[HLO_FpOrComplexTensor, HLO_FloatTensor]):
     """
     Extracts the imaginary part, element-wise, from the `operand` and produces a
     `result` tensor.
@@ -213,7 +240,7 @@ class ImagOp(ElementwiseUnaryOperation[ComplexTensorType, FloatTensorType]):
 
 
 @irdl_op_definition
-class IsFiniteOp(ElementwiseUnaryOperation[FloatTensorType, I1TensorType]):
+class IsFiniteOp(ElementwiseUnaryOperation[HLO_FpOrQuantizedIntTensor, HLO_PredTensor]):
     """
     Performs element-wise check whether the value in `x` is finite (i.e. is
     neither +Inf, -Inf, nor NaN) and produces a `y` tensor.
@@ -231,7 +258,9 @@ class IsFiniteOp(ElementwiseUnaryOperation[FloatTensorType, I1TensorType]):
 
 
 @irdl_op_definition
-class LogOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]):
+class LogOp(
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
+):
     """
     Performs element-wise logarithm operation on `operand` tensor and produces a
     `result` tensor.
@@ -247,9 +276,15 @@ class LogOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTe
 
     name = "stablehlo.log"
 
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
+
 
 @irdl_op_definition
-class LogPlusOneOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]):
+class LogPlusOneOp(
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
+):
     """
     Performs element-wise logarithm plus one operation on `operand` tensor and
     produces a `result` tensor.
@@ -265,9 +300,15 @@ class LogPlusOneOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrCo
 
     name = "stablehlo.log_plus_one"
 
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
+
 
 @irdl_op_definition
-class LogisticOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]):
+class LogisticOp(
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
+):
     """
     Performs element-wise logistic operation on `operand` tensor and produces a
     `result` tensor.
@@ -283,9 +324,17 @@ class LogisticOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComp
 
     name = "stablehlo.logistic"
 
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
+
 
 @irdl_op_definition
-class NegateOp(ElementwiseUnaryOperation[AnyTensorType, AnyTensorType]):
+class NegateOp(
+    ElementwiseUnaryOperation[
+        HLO_IntFpOrComplexOrQuantizedIntTensor, HLO_IntFpOrComplexOrQuantizedIntTensor
+    ]
+):
     """
     Performs element-wise negation of `operand` tensor and produces a `result`
     tensor.
@@ -303,7 +352,7 @@ class NegateOp(ElementwiseUnaryOperation[AnyTensorType, AnyTensorType]):
 
 
 @irdl_op_definition
-class RealOp(ElementwiseUnaryOperation[ComplexTensorType, FloatTensorType]):
+class RealOp(ElementwiseUnaryOperation[HLO_FpOrComplexTensor, HLO_FloatTensor]):
     """
     Extracts the real part, element-wise, from the `operand` and produces a
     `result` tensor.
@@ -321,7 +370,9 @@ class RealOp(ElementwiseUnaryOperation[ComplexTensorType, FloatTensorType]):
 
 
 @irdl_op_definition
-class RoundNearestAfzOp(ElementwiseUnaryOperation[FloatTensorType, FloatTensorType]):
+class RoundNearestAfzOp(
+    ElementwiseUnaryOperation[HLO_FpOrQuantizedIntTensor, HLO_FpOrQuantizedIntTensor]
+):
     """
     Performs element-wise rounding towards the nearest integer, breaking ties
     away from zero, on the `operand` tensor and produces a `result` tensor.
@@ -339,7 +390,9 @@ class RoundNearestAfzOp(ElementwiseUnaryOperation[FloatTensorType, FloatTensorTy
 
 
 @irdl_op_definition
-class RoundNearestEvenOp(ElementwiseUnaryOperation[FloatTensorType, FloatTensorType]):
+class RoundNearestEvenOp(
+    ElementwiseUnaryOperation[HLO_FpOrQuantizedIntTensor, HLO_FpOrQuantizedIntTensor]
+):
     """
     Performs element-wise rounding towards the nearest integer, breaking ties
     towards the even integer, on the `operand` tensor and produces a `result`
@@ -358,7 +411,9 @@ class RoundNearestEvenOp(ElementwiseUnaryOperation[FloatTensorType, FloatTensorT
 
 
 @irdl_op_definition
-class RsqrtOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]):
+class RsqrtOp(
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
+):
     """
     Performs element-wise reciprocal square root operation on `operand` tensor
     and produces a `result` tensor, implementing the `rSqrt` operation from the
@@ -375,9 +430,17 @@ class RsqrtOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplex
 
     name = "stablehlo.rsqrt"
 
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
+
 
 @irdl_op_definition
-class SignOp(ElementwiseUnaryOperation[AnyTensorType, AnyTensorType]):
+class SignOp(
+    ElementwiseUnaryOperation[
+        HLO_SIntFpComplexOrQuantizedIntTensor, HLO_SIntFpComplexOrQuantizedIntTensor
+    ]
+):
     """
     Returns the sign of the `operand` element-wise and produces a `result`
     tensor.
@@ -395,7 +458,9 @@ class SignOp(ElementwiseUnaryOperation[AnyTensorType, AnyTensorType]):
 
 
 @irdl_op_definition
-class SineOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]):
+class SineOp(
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
+):
     """
     Performs element-wise sine operation on `operand` tensor and produces a
     `result` tensor.
@@ -411,9 +476,15 @@ class SineOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexT
 
     name = "stablehlo.sine"
 
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
+
 
 @irdl_op_definition
-class SqrtOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]):
+class SqrtOp(
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
+):
     """
     Performs element-wise square root operation on `operand` tensor and produces
     a `result` tensor.
@@ -429,9 +500,15 @@ class SqrtOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexT
 
     name = "stablehlo.sqrt"
 
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
+
 
 @irdl_op_definition
-class TanOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]):
+class TanOp(
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
+):
     """
     Performs element-wise tangent operation on `operand` tensor and
     produces a `result` tensor.
@@ -447,9 +524,15 @@ class TanOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTe
 
     name = "stablehlo.tan"
 
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
+
 
 @irdl_op_definition
-class TanhOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexTensorType]):
+class TanhOp(
+    ElementwiseUnaryOperation[HLO_FpComplexOrQuantizedIntTensor, HLO_FpComplexOrQuantizedIntTensor]
+):
     """
     Performs element-wise hyperbolic tangent operation on `operand` tensor and
     produces a `result` tensor.
@@ -464,3 +547,7 @@ class TanhOp(ElementwiseUnaryOperation[FloatOrComplexTensorType, FloatOrComplexT
     """
 
     name = "stablehlo.tanh"
+
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
