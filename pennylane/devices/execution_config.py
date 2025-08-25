@@ -54,7 +54,7 @@ class FrozenMapping(MutableMapping):
         )
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self._data})"
+        return f"{self._data}"
 
     def copy(self):
         """Returns a standard, mutable shallow copy of the data."""
