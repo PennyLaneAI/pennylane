@@ -196,14 +196,13 @@ def _controlled_change_op_basis_resources(
 @register_resources(_controlled_change_op_basis_resources)
 def _controlled_change_op_basis_decomposition(
     *_,
-    wires,
     control_wires,
     control_values,
     work_wires,
     work_wire_type,
     base,
     **__,
-):  # pylint: disable=unused-argument, too-many-arguments
+):  # pylint: too-many-arguments
     base.operands[0]._unflatten(  # pylint: disable=protected-access
         *base.operands[0]._flatten()  # pylint: disable=protected-access
     )
