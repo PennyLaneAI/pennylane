@@ -20,6 +20,7 @@ import copy
 import functools
 import operator
 from collections.abc import Callable, Iterator
+from numbers import Number
 from typing import Any, SupportsIndex
 
 from malt.core import config as ag_config
@@ -35,6 +36,7 @@ has_jax = True
 try:
     import jax
     import jax.numpy as jnp
+    from jax.interpreters.partial_eval import DynamicJaxprTracer
 except ImportError:  # pragma: no cover
     has_jax = False
 
@@ -52,7 +54,11 @@ __all__ = [
 ]
 
 
-def set_item(target, i, x):
+def set_item(
+    target: DynamicJaxprTracer | list,
+    i: int | DynamicJaxprTracer,
+    x: Number | DynamicJaxprTracer,
+):
     """An implementation of the AutoGraph 'set_item' function."""
 
     if qml.math.is_abstract(target):
@@ -63,7 +69,12 @@ def set_item(target, i, x):
     return target
 
 
-def update_item_with_op(target, index, x, op):
+def update_item_with_op(
+    target: DynamicJaxprTracer | list,
+    index: Number | DynamicJaxprTracer,
+    x: Number | DynamicJaxprTracer,
+    op: str,
+):
     """An implementation of the AutoGraph 'update_item_with_op' function."""
 
     gast_op_map = {"mult": "multiply", "div": "divide", "add": "add", "sub": "add", "pow": "power"}
