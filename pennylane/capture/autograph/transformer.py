@@ -144,7 +144,7 @@ class PennyLaneTransformer(PyToPy):
         # The operator_update transform would be more correct if placed with
         # slices.transform in PyToPy.transform_ast in DiastaticMalt rather than
         # at the beginning of the transformation. operator_update.transform
-        # should come after the unsupported features check and intial analysis,
+        # should come after the unsupported features check and initial analysis,
         # but it fails if it does not come before variables.transform.
         node = operator_update.transform(node, ctx)
         node = super().transform_ast(node, ctx)
