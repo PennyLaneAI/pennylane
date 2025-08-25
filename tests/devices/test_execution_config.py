@@ -85,6 +85,28 @@ class TestFrozenMapping:
         assert fm1 is not fm2
         assert fm1 == fm2
 
+    def test_deepcopy_frozen_mapping_with_memo(self):
+        """Test that deepcopy correctly uses the memo dictionary to handle shared objects."""
+        shared_list = [1, 2, 3]
+
+        # Create two FrozenMappings that both reference the same shared_list
+        fm1 = FrozenMapping(a=shared_list)
+        original_data = {"fm": fm1, "another_ref": shared_list}
+
+        copied_data = deepcopy(original_data)
+
+        assert original_data is not copied_data
+        assert isinstance(copied_data["fm"], dict)
+
+        # Crucially, check if the shared object was only copied once.
+        # The 'id' function gives the memory address of an object.
+        # If memoization worked, the list inside the copied mapping and the
+        # 'another_ref' list should be the *same* object in memory.
+        assert id(copied_data["fm"]["a"]) == id(copied_data["another_ref"])
+
+        # Also, ensure the copied shared list is a different object from the original
+        assert copied_data["fm"]["a"] is not shared_list
+
 
 class TestExecutionConfig:
     """Tests for the ExecutionConfig class."""
