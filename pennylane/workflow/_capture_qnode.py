@@ -470,8 +470,8 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     ) as exc:
         raise CaptureError(
             "Autograph must be used when Python control flow is dependent on a dynamic "
-            "variable (a function input). Please ensure that autograph is being used with "
-            "`qml.capture.run_autograph` or consider using PennyLane native control "
+            "variable (a function input). Please ensure that autograph is being correctly enabled with "
+            "`qml.capture.run_autograph` or disabled with `qml.capture.disable_autograph` or consider using PennyLane native control "
             "flow functions like `qml.for_loop`, `qml.while_loop`, or `qml.cond`."
         ) from exc
 
