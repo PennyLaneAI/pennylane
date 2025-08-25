@@ -235,10 +235,10 @@ class TestInitialization:
         assert not f.shots
 
         @qml.qnode(qml.device("default.qubit"), shots=10)
-        def f():
+        def f2():
             return qml.state()
 
-        assert f.shots == 10
+        assert f2.shots == 10
 
     def test_cache_initialization_maxdiff_1(self):
         """Test that when max_diff = 1, the cache initializes to false."""
