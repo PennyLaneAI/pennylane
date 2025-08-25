@@ -129,18 +129,22 @@ def resolve_constant_wire(ssa: SSAValue) -> int:
 ######################################################
 
 
-def ssa_to_qml_params(op: CustomOp) -> list[float | int]:
+def ssa_to_qml_params(op: CustomOp, control: bool = False) -> list[float | int]:
     """Get the parameters from the operation."""
-    if not hasattr(op, "params"):
+    attr = "in_ctrl_values" if control else "params"
+    values = getattr(op, attr, None)
+    if not values:
         return []
-    return [resolve_constant_params(p) for p in op.params if p is not None]
+    return [resolve_constant_params(p) for p in values if p is not None]
 
 
-def ssa_to_qml_wires(op: CustomOp) -> list[int]:
+def ssa_to_qml_wires(op: CustomOp, control: bool = False) -> list[int]:
     """Get the wires from the operation."""
-    if not hasattr(op, "in_qubits"):
+    attr = "in_ctrl_qubits" if control else "in_qubits"
+    qubits = getattr(op, attr, None)
+    if not qubits:
         return []
-    return [resolve_constant_wire(q) for q in op.in_qubits if q is not None]
+    return [resolve_constant_wire(q) for q in qubits if q is not None]
 
 
 ############################################################
@@ -149,13 +153,21 @@ def ssa_to_qml_wires(op: CustomOp) -> list[int]:
 
 
 def xdsl_to_qml_op(op: CustomOp) -> Operator:
-    """Given a ``quantum.custom`` xDSL op, convert it to a PennyLane operator."""
-    gate_name = op.properties["gate_name"].data
+    """Convert a ``quantum.custom`` xDSL op to a PennyLane operator."""
+    gate_name = op.properties.get("gate_name").data
     parameters = ssa_to_qml_params(op)
     wires = ssa_to_qml_wires(op)
-    gate = resolve_gate(gate_name)(*parameters, wires=wires)
-    if op.properties.get("adjoint") is not None:
+    gate_cls = resolve_gate(gate_name)
+    gate = gate_cls(*parameters, wires=wires)
+
+    if op.properties.get("adjoint"):
         gate = qml.adjoint(gate)
+
+    ctrls = ssa_to_qml_wires(op, control=True)
+    if ctrls:
+        cvals = ssa_to_qml_params(op, control=True)
+        gate = qml.ctrl(gate, control=ctrls, control_values=cvals)
+
     return gate
 
 
