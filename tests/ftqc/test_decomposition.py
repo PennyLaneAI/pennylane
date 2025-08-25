@@ -498,9 +498,6 @@ class TestMBQCFormalismConversion:
     # wires E2E. Following discussion at the FTQC team meeting, we are marking
     # this test as flaky and keeping it here for the time being.
     @flaky(max_runs=5, min_passes=3)
-    @pytest.mark.xfail(
-        reason="lightning qubit hasn't been switched to no squeezing yet."
-    )  # [sc-96550]
     @pytest.mark.slow
     def test_conversion_of_multi_wire_circuit(self):
         """Test that the transform converts the tape to the expected set of gates
