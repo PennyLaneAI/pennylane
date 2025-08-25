@@ -577,6 +577,9 @@ class TestUnaryIterator:
         decomp = qml.list_decomps(qml.Select)[1]
         assert decomp is _select_decomp_unary
 
+    def test_expected_operators():
+        pass
+
     @pytest.mark.parametrize("num_controls", [0, 1, 2, 3])
     def test_no_ops(self, num_controls, partial):
         """Test that the unary iterator does not return any operators for an empty list
