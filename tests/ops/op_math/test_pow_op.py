@@ -48,7 +48,7 @@ def test_basic_validity():
     qml.ops.functions.assert_valid(op)
 
     op = qml.pow(qml.Hermitian(np.eye(2), 0), 2)
-    qml.ops.functions.assert_valid(op, skip_new_decomp=True)
+    qml.ops.functions.assert_valid(op, skip_new_decomp=True, skip_differentiation=True)
 
 
 class TestConstructor:

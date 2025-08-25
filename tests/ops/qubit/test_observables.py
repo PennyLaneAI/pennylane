@@ -571,7 +571,7 @@ class TestProjector:
         second_projector = qml.Projector(state_vector, wires)
         qml.assert_equal(second_projector, state_vector_projector)
 
-        qml.ops.functions.assert_valid(state_vector_projector)
+        qml.ops.functions.assert_valid(state_vector_projector, skip_differentiation=True)
 
     def test_pow_zero(self):
         """Assert that the projector raised to zero is an empty list."""

@@ -1562,16 +1562,17 @@ class TestQubitUnitaryDecompositionGraph:
     @pytest.mark.parametrize(
         "gate_set",
         [
-            # TODO: remove SelectPauliRot when decomposition is defined for it.
-            ("RX", "RY", "CNOT", "SelectPauliRot", "GlobalPhase"),
-            ("RX", "RZ", "CNOT", "SelectPauliRot", "GlobalPhase"),
-            ("RZ", "RY", "CNOT", "SelectPauliRot", "GlobalPhase"),
-            ("Rot", "CNOT", "SelectPauliRot", "GlobalPhase"),
+            ("RX", "RY", "CNOT", "GlobalPhase"),
+            ("RX", "RZ", "CNOT", "GlobalPhase"),
+            ("RZ", "RY", "CNOT", "GlobalPhase"),
+            ("Rot", "CNOT", "GlobalPhase"),
         ],
     )
     @pytest.mark.parametrize(
         "U, n_wires",
         [
+            (qml.QFT.compute_matrix(2), 2),
+            (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [2, 0])), 2),
             (qml.matrix(qml.CRX(0.123, [0, 2]) @ qml.CRY(0.456, [1, 3])), 4),
             (qml.QFT.compute_matrix(5), 5),
             (qml.GroverOperator.compute_matrix(6, []), 6),
@@ -1582,7 +1583,7 @@ class TestQubitUnitaryDecompositionGraph:
 
         op = qml.QubitUnitary(U, wires=list(range(n_wires)))
         tape = qml.tape.QuantumScript([op])
-        [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set)
+        [decomp], _ = qml.transforms.decompose([tape], gate_set=gate_set, max_expansion=4)
 
         matrix = qml.matrix(decomp, wire_order=list(range(n_wires)))
         assert qml.math.allclose(matrix, op.matrix(wire_order=list(range(n_wires))), atol=1e-7)

@@ -402,6 +402,7 @@ def test_generated_list_of_ops(class_to_validate, str_wires):
 @pytest.mark.jax
 def test_explicit_list_of_ops(valid_instance_and_kwargs):
     """Test the validity of operators that could not be auto-generated."""
+    print(valid_instance_and_kwargs)
     valid_instance, kwargs = valid_instance_and_kwargs
     assert_valid(valid_instance, **kwargs)
 
