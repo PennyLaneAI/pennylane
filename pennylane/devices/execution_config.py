@@ -75,7 +75,6 @@ class FrozenMapping(MutableMapping):
         """Supports copy.deepcopy() by returning a mutable dict with deep-copied contents."""
         if memo is None:
             memo = {}
-        # Return a mutable dict, not a new FrozenMapping instance
         return deepcopy(self._data, memo)
 
 
