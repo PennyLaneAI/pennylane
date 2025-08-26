@@ -15,6 +15,8 @@
 Unit tests for the pennylane.drawer.drawable_layers` module.
 """
 
+import sys
+
 import pytest
 
 import pennylane as qml
@@ -97,7 +99,7 @@ class TestDrawableLayers:
     def test_recursion_error(self):
         """Test that extremely deep circuits are handled with an informative message."""
 
-        ops = [qml.X(0)] * 10000 + [qml.X(1)]
+        ops = [qml.X(0)] * (sys.getrecursionlimit() + 1) + [qml.X(1)]
 
         with pytest.raises(RecursionError, match=r"which is too deep to handle"):
             drawable_layers(ops)
