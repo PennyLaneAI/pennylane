@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule defines a class for compute, uncompute patterns.
+This submodule defines a class for compute-uncompute patterns.
 """
 from collections import Counter
 from functools import reduce
