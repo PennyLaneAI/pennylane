@@ -329,7 +329,9 @@ def simulate(
     has_mcm = any(isinstance(op, MidMeasureMP) for op in circuit.operations)
     if has_mcm:
         if execution_kwargs.get("mcm_method", None) == "tree-traversal":
-            return simulate_tree_mcm(circuit, prng_key=prng_key, **execution_kwargs)
+            return simulate_tree_mcm(
+                circuit, prng_key=prng_key, debugger=debugger, **execution_kwargs
+            )
 
         results = []
         aux_circ = circuit.copy(shots=[1])

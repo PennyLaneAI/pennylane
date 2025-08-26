@@ -662,8 +662,14 @@ def apply_snapshot(
     else:
         snapshot = qml.devices.qubit.measure(measurement, state, is_state_batched)
 
-    if op.tag:
-        debugger.snapshots[op.tag] = snapshot
+    if op.tag is not None:
+        if op.tag in debugger.snapshots:
+            if isinstance(debugger.snapshots[op.tag], list):
+                debugger.snapshots[op.tag].append(snapshot)
+            else:
+                debugger.snapshots[op.tag] = [debugger.snapshots[op.tag], snapshot]
+        else:
+            debugger.snapshots[op.tag] = snapshot
     else:
         debugger.snapshots[len(debugger.snapshots)] = snapshot
     return state

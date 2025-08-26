@@ -225,6 +225,26 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     return new_tapes, partial(postprocessing_fn, snapshot_tags=snapshot_tags)
 
 
+def null_postprocessing(results):
+    return results[0]
+
+
+@transform
+def _add_snapshot_tags(tape):
+    new_ops = []
+    num_snapshots = 0
+    for op in tape.operations:
+        if isinstance(op, Snapshot):
+            if op.tag is None:
+                new_ops.append(op.update_tag(num_snapshots))
+            else:
+                new_ops.append(op)
+            num_snapshots += 1
+        else:
+            new_ops.append(op)
+    return (tape.copy(ops=new_ops),), null_postprocessing
+
+
 @snapshots.custom_qnode_transform
 def snapshots_qnode(self, qnode, targs, tkwargs):
     """A custom QNode wrapper for the snapshot transform :func:`~.snapshots`.
@@ -236,8 +256,7 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
     def get_snapshots(*args, **kwargs):
 
         with _SnapshotDebugger(qnode.device) as dbg:
-
-            results = qnode(*args, **kwargs)
+            results = _add_snapshot_tags(qnode)(*args, **kwargs)
 
         dbg.snapshots["execution_results"] = results
         return dbg.snapshots

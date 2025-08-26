@@ -232,7 +232,6 @@ class Snapshot(Operation):
     ):
         if tag and not isinstance(tag, str):
             raise ValueError("Snapshot tags can only be of type 'str'")
-        self.tag = tag
 
         if measurement is None:
             measurement = qml.state()
@@ -248,11 +247,24 @@ class Snapshot(Operation):
                 f"an instance of {qml.measurements.MeasurementProcess}"
             )
 
+        self.hyperparameters["tag"] = tag
         self.hyperparameters["measurement"] = measurement
         self.hyperparameters["shots"] = (
             shots if shots == "workflow" else qml.measurements.Shots(shots)
         )
         super().__init__(wires=measurement.wires)
+
+    def __repr__(self):
+        return f"<Snapshot: {self.tag}, {self.hyperparameters['measurement']}>"
+
+    @property
+    def tag(self):
+        return self.hyperparameters["tag"]
+
+    def update_tag(self, new_tag):
+        new_op = copy(self)
+        new_op.hyperparameters["tag"] = new_tag
+        return new_op
 
     def label(self, decimals=None, base_label=None, cache=None):
         return "|Snap|"
