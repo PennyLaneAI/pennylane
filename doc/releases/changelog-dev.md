@@ -81,6 +81,9 @@
   Array([ 3.14159265, -1.57079633], dtype=float64)
   ```
 
+* The :func:`~.transforms.decompose` transform is now able to decompose a classically controlled operation.
+  [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
+
 <h3>Improvements 🛠</h3>
 
 * PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
@@ -739,9 +742,10 @@
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
-* Update xDSL supported version to `0.46`.
+* Update xDSL supported version to `0.49`.
   [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
   [(#7932)](https://github.com/PennyLaneAI/pennylane/pull/7932)
+  [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
 * Update JAX version used in tests to `0.6.2`
   [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
@@ -754,6 +758,7 @@
 * An `xdsl_extras` module has been added to the Python compiler to house additional utilities and
   functionality not available upstream in xDSL.
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
+  [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
 <h3>Documentation 📝</h3>
 
@@ -791,6 +796,9 @@
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 <h3>Bug fixes 🐛</h3>
+
+* A more informative error is raised when extremely deep circuits are attempted to be drawn.
+  [(#8139)](https://github.com/PennyLaneAI/pennylane/pull/8139)
 
 * An error is now raised if sequences of classically processed mid circuit measurements
   are used as input to :func:`pennylane.counts` or :func:`pennylane.probs`.

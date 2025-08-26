@@ -839,12 +839,8 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
     if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
 
-    # Handle MCMs
-    if isinstance(op, measurements.MidMeasureMP):
-        yield op
-
     # Handle classically controlled operators
-    elif isinstance(op, Conditional):
+    if isinstance(op, Conditional):
         if acceptance_function(op.base) or max_depth_reached:
             yield op
         else:
