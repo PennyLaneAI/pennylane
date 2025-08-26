@@ -76,7 +76,8 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
 
 class ChangeOpBasis(CompositeOp):
     """
-    Composite operator representing a compute, uncompute pattern of operators.
+    Composite operator representing a compute, uncompute pattern of operators, which constitutes changing the basis in
+    which an operator is applied.
 
     Args:
         compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
