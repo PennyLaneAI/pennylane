@@ -29,16 +29,22 @@ from pennylane.templates.subroutines.select import (
 )
 
 
-@pytest.mark.parametrize("num_ops", [3, 10, 15, 16])
+@pytest.mark.parametrize(
+    "num_ops, num_controls",
+    [(0, 1), (1, 1), (2, 1), (1, 2), (4, 2), (3, 4), (10, 4), (15, 4), (16, 4)],
+)
 @pytest.mark.parametrize("partial", [True, False])
 @pytest.mark.parametrize("work_wires", [None, [5, 6, 7]])
-def test_standard_checks(num_ops, partial, work_wires):
+def test_standard_checks(num_ops, num_controls, partial, work_wires):
     """Run standard validity tests."""
     ops = [qml.PauliX(0) for _ in range(num_ops)]
-    control = [1, 2, 3, 4]
+    control = list(range(1, num_controls + 1))
 
-    op = qml.Select(ops, control, work_wires, partial=not partial)
-    assert op.target_wires == qml.wires.Wires(0)
+    op = qml.Select(ops, control, work_wires, partial=partial)
+    if num_ops > 0:
+        assert op.target_wires == qml.wires.Wires(0)
+    else:
+        assert op.target_wires == qml.wires.Wires([])
     qml.ops.functions.assert_valid(op)
 
 

@@ -504,7 +504,7 @@ class Select(Operation):
             if len(ops) == 1:
                 if QueuingManager.recording():
                     apply(ops[0])
-                return ops
+                return list(ops)
             controls_and_values = _partial_select(len(ops), control)
             decomp_ops = [
                 ctrl(op, ctrl_, control_values=values, work_wires=work_wires)
@@ -756,48 +756,54 @@ def _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wir
             ] += 1
         return dict(resources)
 
-    # Apply initial ladder of left elbows
-    resources[resource_rep(TemporaryAND)] += c - 1
-    first_bit_has_flipped = False
-    for k, target_rep in enumerate(op_reps):
+    def _make_first_flipped_bits(c, i=0):
+        """Compute the pattern [c-1, c-2, c-1, c-3, c-1, c-2, c-1, c-4...] recursively."""
+        if c == 1:
+            return [i]
+        return (sub := _make_first_flipped_bits(c - 1, i=i + 1)) + [i] + sub
+
+    # c-1 left elbows at the beginning and c-1-max(a,1) left elbows for each of the target
+    # operators, except the last one, where a is the first flipped bit. Same for right elbows.
+    first_flipped_bits = np.array(_make_first_flipped_bits(c)[: K - 1], dtype=int)
+    num_elbows = c - 1 + np.sum(c - 1 - np.clip(first_flipped_bits, a_min=1, a_max=None))
+
+    resources[resource_rep(TemporaryAND)] += num_elbows
+    resources[adjoint_resource_rep(TemporaryAND)] += num_elbows
+    resources[resource_rep(CNOT)] += K - 1 + int(K > 2 ** (c - 1))
+    resources[resource_rep(X)] += 2 * int(K > 2 ** (c - 2))
+    for op_rep in op_reps:
         resources[
             controlled_resource_rep(
-                base_class=target_rep.op_type,
-                base_params=target_rep.params,
-                num_control_wires=1,
-                num_work_wires=num_work_wires,
+                op_rep.op_type, op_rep.params, num_control_wires=1, num_work_wires=num_work_wires
             )
         ] += 1
-
-        if k < K - 1:
-            first_flip_bit = c - 1 - list(np.binary_repr(k, width=c)[::-1]).index("0")
-            num_sub_triples = c - 1 - max(first_flip_bit, 1)
-            resources[adjoint_resource_rep(TemporaryAND)] += num_sub_triples
-            if first_flip_bit == 1:
-                if not first_bit_has_flipped:
-                    resources[resource_rep(X)] += 2
-                resources[resource_rep(CNOT)] += 1
-            elif first_flip_bit == 0:
-                resources[resource_rep(CNOT)] += 2
-                first_bit_has_flipped = True
-            else:
-                resources[resource_rep(CNOT)] += 1
-            resources[resource_rep(TemporaryAND)] += num_sub_triples
-
-        else:
-            resources[adjoint_resource_rep(TemporaryAND)] += c - 1
 
     return dict(resources)
 
 
 # pylint: disable=unused-argument
 def _select_resources_unary(op_reps, num_control_wires, partial, num_work_wires):
+    num_ops = len(op_reps)
+    if num_ops == 0:
+        return {}
     if not partial:
         return _select_resources_unary_not_partial(op_reps, num_control_wires, num_work_wires)
 
-    num_ops = len(op_reps)
+    if num_ops == 1:
+        return {op_reps[0]: 1}
     counts = Counter()
 
+    if num_ops == 2:
+        return {
+            controlled_resource_rep(
+                op_rep.op_type,
+                op_rep.params,
+                num_control_wires=1,
+                num_work_wires=num_work_wires,
+                num_zero_control_values=1 - i,
+            ): 1
+            for i, op_rep in enumerate(op_reps)
+        }
     if num_ops / 2 ** _ceil_log(num_ops) > 3 / 4:
         counts.update(
             {
@@ -1026,7 +1032,7 @@ def _select_decomp_unary(ops, control, work_wires, partial, **_):
             # Can skip control for partial Select and a single op
             if QueuingManager.recording():
                 apply(ops[0])
-            return ops
+            return list(ops)
         # Don't need unary iterator, just control-apply the one/two operator(s) directly.
         new_ops = [
             ctrl(op, control=control[-1], control_values=[i], work_wires=work_wires)
