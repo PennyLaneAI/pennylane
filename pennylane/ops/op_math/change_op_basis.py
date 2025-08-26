@@ -43,6 +43,8 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute, uncompute pattern.
+
+    .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
     """
 
     return ChangeOpBasis(compute_op, target_op, uncompute_op)
