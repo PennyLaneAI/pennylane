@@ -1,12 +1,13 @@
 name: Build nightly PennyLane RC releases for TestPyPI
 
 on:
-  branches:
-    - '*-rc-nightly' 
-  # schedule:
-  #   # Run every weekday at 5:50 EDT (cron is in UTC)
-  #   - cron: "50 9 * * 1-5"
-  workflow_dispatch:
+  push:
+    branches:
+      - '*-rc-nightly' 
+    # schedule:
+    #   # Run every weekday at 5:50 EDT (cron is in UTC)
+    #   - cron: "50 9 * * 1-5"
+    workflow_dispatch:
 
 jobs:
   setup:
