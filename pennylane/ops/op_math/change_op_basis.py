@@ -99,7 +99,7 @@ class ChangeOpBasis(CompositeOp):
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """
-        We do not sort the ops. The order is guaranteed to matter since if the compute
+        We do not sort the ops. The order is guaranteed to matter since if the compute operator
         and the base operator commute, the pattern would simplify to just being the base operator.
 
         Args:
