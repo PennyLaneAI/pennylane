@@ -214,18 +214,16 @@ class TestDecompose:
 
                 return q.queue
 
-        @partial(
-            qml.transforms.decompose,
-            gate_set={qml.RX, qml.RZ},
-        )
-        @qml.qnode(qml.device("default.qubit"))
         def circuit():
             CustomOp(wires=[0, 1])
             m0 = qml.measure(0)
             qml.cond(m0, qml.X)(0)
-            return qml.probs()
 
-        decomposed_tape = qml.workflow.construct_tape(circuit, level="user")()
+        with qml.queuing.AnnotatedQueue() as q:
+            circuit()
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        [decomposed_tape], _ = qml.transforms.decompose([tape], gate_set={qml.RX, qml.RZ})
         assert len(decomposed_tape.operations) == 9
 
         def equivalent_circuit():

@@ -16,7 +16,6 @@
 
 from copy import copy
 
-import pennylane as qml
 from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
@@ -42,8 +41,7 @@ class CollectResourceOps(FlattenedInterpreter):
 
 @CollectResourceOps.register_primitive(measure_prim)
 def _(self, wires, reset, postselect):  # pylint: disable=unused-argument
-    m0 = qml.measure(wires, reset=reset, postselect=postselect)
-    return m0
+    return 0
 
 
 @CollectResourceOps.register_primitive(adjoint_transform_prim)
