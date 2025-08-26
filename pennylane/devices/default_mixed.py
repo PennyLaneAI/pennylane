@@ -179,7 +179,7 @@ class DefaultMixed(Device):
     Args:
         wires (int, Iterable[Number, str]): Number of wires present on the device, or iterable that
             contains unique labels for the wires as numbers (i.e., ``[-1, 0, 2]``) or strings
-            (``['ancilla', 'q1', 'q2']``).
+            (``['auxiliary', 'q1', 'q2']``).
         shots (int, Sequence[int], Sequence[Union[int, Sequence[int]]]): The default number of shots
             to use in executions involving this device.
         seed (Union[str, None, int, array_like[int], SeedSequence, BitGenerator, Generator, jax.random.PRNGKey]): A
@@ -266,6 +266,8 @@ class DefaultMixed(Device):
         circuits: QuantumScript,
         execution_config: ExecutionConfig | None = None,
     ) -> Result | ResultBatch:
+        if execution_config is None:
+            execution_config = ExecutionConfig()
         return tuple(
             simulate(
                 c,
@@ -297,7 +299,7 @@ class DefaultMixed(Device):
             "best",
         }
         updated_values["grad_on_execution"] = False
-        execution_config.interface = get_canonical_interface_name(execution_config.interface)
+        updated_values["interface"] = get_canonical_interface_name(execution_config.interface)
 
         # Add device options
         updated_values["device_options"] = dict(execution_config.device_options)  # copy

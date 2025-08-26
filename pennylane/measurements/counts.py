@@ -308,7 +308,7 @@ def counts(
     all_outcomes=False,
 ) -> CountsMP:
     r"""Sample from the supplied observable, with the number of shots
-    determined from the ``dev.shots`` attribute of the corresponding device,
+    determined from QNode,
     returning the number of counts for each sample. If no observable is provided then basis state
     samples are returned directly from the device.
 
@@ -420,11 +420,11 @@ def counts(
 
     if isinstance(op, Sequence):
         if not all(
-            math.is_abstract(o) or (isinstance(o, MeasurementValue) and len(o.measurements) == 1)
+            math.is_abstract(o) or (isinstance(o, MeasurementValue) and not o.has_processing)
             for o in op
         ):
             raise QuantumFunctionError(
-                "Only sequences of single MeasurementValues can be passed with the op argument. "
+                "Only sequences of unprocessed MeasurementValues can be passed with the op argument. "
                 "MeasurementValues manipulated using arithmetic operators cannot be used when "
                 "collecting statistics for a sequence of mid-circuit measurements."
             )

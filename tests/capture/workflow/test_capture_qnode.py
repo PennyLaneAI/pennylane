@@ -91,7 +91,7 @@ def test_error_if_overridden_shot_vector():
 def test_error_if_no_device_wires():
     """Test that a NotImplementedError is raised if the device does not provide wires."""
 
-    dev = qml.device("default.qubit")
+    dev = qml.device("default.qubit", wires=None)
 
     @qml.qnode(dev)
     def circuit():
@@ -179,7 +179,7 @@ def test_overriding_shots():
     )
 
     assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-        (50,), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
+        (50, 1), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
     )
 
     with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
@@ -610,7 +610,7 @@ class TestDevicePreprocessing:
             )
         else:
             assert len(res) == shots
-            counts = qml.numpy.bincount(res)
+            counts = qml.numpy.bincount(qml.math.squeeze(res))
             assert qml.math.isclose(counts[0] / counts[1], 1, atol=0.3)
 
     def test_mcms_execution_single_branch_statistics(self, dev_name, seed):
@@ -931,7 +931,7 @@ class TestQNodeVmapIntegration:
             == qml.measurements.SampleMP._wires_primitive
         )
 
-        assert eqn0.outvars[0].aval.shape == (3, 50)
+        assert eqn0.outvars[0].aval.shape == (3, 50, 1)
 
         with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
             res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)

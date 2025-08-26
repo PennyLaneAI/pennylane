@@ -134,6 +134,33 @@ class TestDecomposition:
         assert isinstance(ops1[0], qml.MottonenStatePreparation)
         assert isinstance(ops2[0], qml.MottonenStatePreparation)
 
+    def test_stateprep_resources(self):
+        """Test the resources for StatePrep"""
+
+        assert qml.StatePrep.resource_keys == frozenset({"num_wires"})
+
+        op = qml.StatePrep([0, 0, 0, 1], wires=(0, 1))
+        assert op.resource_params == {"num_wires": 2}
+
+    def test_decomposition_rule_stateprep(self):
+        """Test that stateprep has a correct decomposition rule registered."""
+
+        decomp = qml.list_decomps(qml.StatePrep)[0]
+
+        resource_obj = decomp.compute_resources(num_wires=2)
+        assert resource_obj.num_gates == 1
+        assert resource_obj.gate_counts == {
+            qml.resource_rep(qml.MottonenStatePreparation, num_wires=2): 1
+        }
+
+        with qml.queuing.AnnotatedQueue() as q:
+            decomp(np.array([0, 0, 0, 1]), wires=(0, 1))
+
+        qml.assert_equal(q.queue[0], qml.MottonenStatePreparation(np.array([0, 0, 0, 1]), (0, 1)))
+
+
+class TestStatePrepIntegration:
+
     @pytest.mark.parametrize(
         "state, pad_with, expected",
         [
@@ -249,7 +276,7 @@ class TestStateVector:
         assert np.array_equal(ket, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_StatePrep_state_vector_preserves_parameter_type(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
         qsv_op = qml.StatePrep(qml.math.array([0, 0, 0, 1], like=interface), wires=[1, 2])
@@ -257,7 +284,7 @@ class TestStateVector:
         assert qml.math.get_interface(qsv_op.state_vector(wire_order=[0, 1, 2])) == interface
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     def test_StatePrep_state_vector_preserves_parameter_type_broadcasted(self, interface):
         """Tests that given an array of some type, the resulting state vector is also that type."""
         qsv_op = qml.StatePrep(
@@ -430,7 +457,7 @@ class TestStateVector:
         assert not np.any(basis_state)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["autograd", "jax", "torch"])
     @pytest.mark.parametrize("dtype_like", [0, 0.0])
     def test_BasisState_state_vector_preserves_parameter_type(self, interface, dtype_like):
         """Tests that given an array of some type, the resulting state_vector is also that type."""

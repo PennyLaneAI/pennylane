@@ -20,6 +20,8 @@ from xdsl.context import Context
 from xdsl.dialects import builtin
 from xdsl.passes import ModulePass, PassPipeline
 
+from pennylane.typing import Callable
+
 from .transform_interpreter import TransformInterpreterPass  # pylint: disable=no-name-in-module
 
 available_passes = {}
@@ -42,6 +44,7 @@ class ApplyTransformSequence(ModulePass):
     """
 
     name = "apply-transform-sequence"
+    callback: Callable[[ModulePass, builtin.ModuleOp, ModulePass], None] | None = None
 
     def apply(  # pylint: disable=arguments-renamed,no-self-use
         self, ctx: Context, module: builtin.ModuleOp
@@ -56,7 +59,7 @@ class ApplyTransformSequence(ModulePass):
 
         pipeline = PassPipeline(
             # pylint: disable-next=unexpected-keyword-arg
-            (TransformInterpreterPass(passes=available_passes),)
+            (TransformInterpreterPass(passes=available_passes, callback=self.callback),)
         )
         for op in nested_modules:
             pipeline.apply(ctx, op)

@@ -16,14 +16,25 @@
 This submodule contains the template for Amplitude Amplification.
 """
 
-# pylint: disable-msg=too-many-arguments
+# pylint: disable-msg=too-many-arguments,too-many-positional-arguments
 import copy
 
 import numpy as np
 
-import pennylane as qml
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
-from pennylane.wires import Wires
+from pennylane.ops import Hadamard, PhaseShift
+from pennylane.ops.op_math import ctrl
+from pennylane.queuing import QueuingManager, apply
+from pennylane.wires import WireError, Wires
+
+from .reflection import Reflection
 
 
 def _get_fixed_point_angles(iters, p_min):
@@ -36,7 +47,7 @@ def _get_fixed_point_angles(iters, p_min):
     gamma = np.cos(np.arccos(1 / delta, dtype=np.complex128) / iters, dtype=np.complex128) ** -1
 
     alphas = [
-        float(2 * np.arctan(1 / (np.tan(2 * np.pi * j / iters) * np.sqrt(1 - gamma**2))))
+        np.real(2 * np.arctan(1 / (np.tan(2 * np.pi * j / iters) * np.sqrt(1 - gamma**2))))
         for j in range(1, iters // 2 + 1)
     ]
     betas = [-alphas[-j] for j in range(1, iters // 2 + 1)]
@@ -104,10 +115,22 @@ class AmplitudeAmplification(Operation):
 
     grad_method = None
 
+    resource_keys = {"fixed_point", "O", "iters", "num_reflection_wires", "U"}
+
     def _flatten(self):
         data = (self.hyperparameters["U"], self.hyperparameters["O"])
         metadata = tuple(item for item in self.hyperparameters.items() if item[0] not in ["O", "U"])
         return data, metadata
+
+    @property
+    def resource_params(self) -> dict:
+        return {
+            "fixed_point": self.hyperparameters["fixed_point"],
+            "O": self.hyperparameters["O"],
+            "iters": self.hyperparameters["iters"],
+            "num_reflection_wires": len(self.hyperparameters["reflection_wires"]),
+            "U": self.hyperparameters["U"],
+        }
 
     @classmethod
     def _primitive_bind_call(cls, *args, **kwargs):
@@ -125,13 +148,13 @@ class AmplitudeAmplification(Operation):
             reflection_wires = U.wires
 
         if fixed_point and work_wire is None:
-            raise qml.wires.WireError("work_wire must be specified if fixed_point == True.")
+            raise WireError("work_wire must be specified if fixed_point == True.")
 
-        if fixed_point and len(O.wires + qml.wires.Wires(work_wire)) == len(O.wires):
+        if fixed_point and len(O.wires + Wires(work_wire)) == len(O.wires):
             raise ValueError("work_wire must be different from the wires of O.")
 
         if fixed_point:
-            wires = U.wires + qml.wires.Wires(work_wire)
+            wires = U.wires + Wires(work_wire)
         else:
             wires = U.wires
 
@@ -141,7 +164,7 @@ class AmplitudeAmplification(Operation):
         self.hyperparameters["fixed_point"] = fixed_point
         self.hyperparameters["work_wire"] = work_wire
         self.hyperparameters["p_min"] = p_min
-        self.hyperparameters["reflection_wires"] = qml.wires.Wires(reflection_wires)
+        self.hyperparameters["reflection_wires"] = Wires(reflection_wires)
 
         super().__init__(*U.data, *O.data, wires=wires)
 
@@ -161,21 +184,21 @@ class AmplitudeAmplification(Operation):
             alphas, betas = _get_fixed_point_angles(iters, p_min)
 
             for iter in range(iters // 2):
-                ops.append(qml.Hadamard(wires=work_wire))
-                ops.append(qml.ctrl(O, control=work_wire))
-                ops.append(qml.Hadamard(wires=work_wire))
-                ops.append(qml.PhaseShift(betas[iter], wires=work_wire))
-                ops.append(qml.Hadamard(wires=work_wire))
-                ops.append(qml.ctrl(O, control=work_wire))
-                ops.append(qml.Hadamard(wires=work_wire))
+                ops.append(Hadamard(wires=work_wire))
+                ops.append(ctrl(O, control=work_wire))
+                ops.append(Hadamard(wires=work_wire))
+                ops.append(PhaseShift(betas[iter], wires=work_wire))
+                ops.append(Hadamard(wires=work_wire))
+                ops.append(ctrl(O, control=work_wire))
+                ops.append(Hadamard(wires=work_wire))
 
-                ops.append(qml.Reflection(U, -alphas[iter], reflection_wires=reflection_wires))
+                ops.append(Reflection(U, -alphas[iter], reflection_wires=reflection_wires))
         else:
             for _ in range(iters):
                 ops.append(O)
-                if qml.QueuingManager.recording():
-                    qml.apply(O)
-                ops.append(qml.Reflection(U, np.pi, reflection_wires=reflection_wires))
+                if QueuingManager.recording():
+                    apply(O)
+                ops.append(Reflection(U, np.pi, reflection_wires=reflection_wires))
 
         return ops
 
@@ -193,8 +216,92 @@ class AmplitudeAmplification(Operation):
         )
         return new_op
 
-    def queue(self, context=qml.QueuingManager):
+    def queue(self, context=QueuingManager):
         for op in [self.hyperparameters["U"], self.hyperparameters["O"]]:
             context.remove(op)
         context.append(self)
         return self
+
+
+def _amplitude_amplification_resources(fixed_point, O, iters, num_reflection_wires, U):
+    resources = {}
+
+    if fixed_point and iters // 2 > 0:
+
+        resources[resource_rep(Hadamard)] = 4 * (iters // 2)
+        resources[
+            controlled_resource_rep(
+                O.__class__,
+                O.resource_params,
+                num_control_wires=1,
+            )
+        ] = 2 * (iters // 2)
+        resources[resource_rep(PhaseShift)] = iters // 2
+        resources[
+            resource_rep(
+                Reflection,
+                base_class=U.__class__,
+                base_params=U.resource_params,
+                num_wires=len(U.wires),
+                num_reflection_wires=num_reflection_wires,
+            )
+        ] = (
+            iters // 2
+        )
+    elif not fixed_point and iters > 0:
+        resources[resource_rep(O.__class__, **O.resource_params)] = iters
+        resources[
+            resource_rep(
+                Reflection,
+                base_class=U.__class__,
+                base_params=U.resource_params,
+                num_wires=len(U.wires),
+                num_reflection_wires=num_reflection_wires,
+            )
+        ] = iters
+
+    return resources
+
+
+@register_resources(_amplitude_amplification_resources)
+def _amplitude_amplification_decomposition(
+    *_, U, O, iters, fixed_point, work_wire, p_min, reflection_wires, **__
+):
+
+    delta = np.sqrt(1 - p_min)
+    gamma = np.cos(np.arccos(1 / delta, dtype=np.complex128) / iters, dtype=np.complex128) ** -1
+
+    if fixed_point:
+
+        def alpha(iter):
+            return np.real(
+                2 * np.arctan(1 / (np.tan(2 * np.pi * (iter + 1) / iters) * np.sqrt(1 - gamma**2)))
+            )
+
+        def beta(iter):
+            return -alpha(-(iter + 1))
+
+        @for_loop(iters // 2)
+        def half_iter_loop(iter):
+            Hadamard(wires=work_wire)
+            ctrl(O, control=work_wire)
+            Hadamard(wires=work_wire)
+            PhaseShift(beta(iter), wires=work_wire)
+            Hadamard(wires=work_wire)
+            ctrl(O, control=work_wire)
+            Hadamard(wires=work_wire)
+
+            Reflection(U, -alpha(iter), reflection_wires=reflection_wires)
+
+        half_iter_loop()  # pylint: disable=no-value-for-parameter
+    else:
+
+        @for_loop(iters)
+        def iter_loop(_):
+            apply(O)
+            Reflection(U, np.pi, reflection_wires=reflection_wires)
+
+        iter_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(AmplitudeAmplification, _amplitude_amplification_decomposition)
