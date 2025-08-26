@@ -91,6 +91,8 @@ class TestFrozenMapping:
         # Check immutability
         with pytest.raises(TypeError, match="FrozenMapping is immutable"):
             fm2["c"] = 4
+        with pytest.raises(TypeError, match="FrozenMapping is immutable"):
+            fm2["b"] = [3, 2]
 
 
 class TestExecutionConfig:
