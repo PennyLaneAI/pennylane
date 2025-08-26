@@ -70,7 +70,8 @@ def _mlir_graph_callback(pass_instance, module, pass_level):
     out_dir = Path("mlir_generated_graphs")
     out_dir.mkdir(exist_ok=True)
 
-    pass_name = f"after_{pass_instance.name}" if pass_level else "no_transforms"
+    pass_name = pass_instance.name if hasattr(pass_instance, "name") else pass_instance
+    pass_name = f"after_{pass_name}" if pass_level else "no_transforms"
     out_file = out_dir / f"QNode_level_{pass_level}_{pass_name}.svg"
 
     with open(out_file, "wb") as f:

@@ -55,7 +55,7 @@ class TestMLIRGraph:
 
     @pytest.mark.parametrize("qjit", [True, False])
     def test_no_transforms(self, tmp_path: Path, qjit: bool):
-        "Test the MLIR graph is not generated when no transforms are applied"
+        "Test the MLIR graph is still generated when no transforms are applied"
 
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def _():
@@ -69,10 +69,10 @@ class TestMLIRGraph:
             _ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(_)
 
         generate_mlir_graph(_)()
-        assert collect_files(tmp_path) == set()
+        assert collect_files(tmp_path) == {"QNode_level_0_no_transforms.svg"}
 
     @pytest.mark.parametrize("qjit", [True, False])
-    def test_transforms_no_args(self, tmp_path: Path, qjit: bool):
+    def test_xdsl_transforms_no_args(self, tmp_path: Path, qjit: bool):
         "Test the MLIR graph generation with no arguments to the QNode with and without qjit"
 
         @qml.compiler.python_compiler.transforms.merge_rotations_pass
@@ -99,8 +99,8 @@ class TestMLIRGraph:
         )
 
     @pytest.mark.parametrize("qjit", [True, False])
-    def test_transforms_args(self, tmp_path: Path, qjit: bool):
-        "Test the MLIR graph generation with arguments to the QNode with and without qjit"
+    def test_xdsl_transforms_args(self, tmp_path: Path, qjit: bool):
+        "Test the MLIR graph generation with arguments to the QNode for xDSL transforms"
 
         @qml.compiler.python_compiler.transforms.merge_rotations_pass
         @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
@@ -119,6 +119,56 @@ class TestMLIRGraph:
             {
                 "QNode_level_0_no_transforms.svg",
                 "QNode_level_1_after_xdsl-merge-rotations.svg",
+                "QNode_level_2_after_xdsl-cancel-inverses.svg",
+            },
+        )
+
+    @pytest.mark.parametrize("qjit", [True, False])
+    def test_catalyst_transforms_args(self, tmp_path: Path, qjit: bool):
+        "Test the MLIR graph generation with arguments to the QNode for catalyst transforms"
+
+        @qml.transforms.merge_rotations
+        @qml.transforms.cancel_inverses
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def _(x, y, w1, w2):
+            qml.RX(x, w1)
+            qml.RX(y, w2)
+            return qml.state()
+
+        if qjit:
+            _ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(_)
+
+        generate_mlir_graph(_)(0.1, 0.2, 0, 1)
+        assert_files(
+            tmp_path,
+            {
+                "QNode_level_0_no_transforms.svg",
+                "QNode_level_1_after_merge-rotations.svg",
+                "QNode_level_2_after_remove-chained-self-inverse.svg",
+            },
+        )
+
+    @pytest.mark.parametrize("qjit", [True, False])
+    def test_catalyst_xdsl_transforms_args(self, tmp_path: Path, qjit: bool):
+        "Test the MLIR graph generation with arguments to the QNode for catalyst and xDSL transforms"
+
+        @qml.transforms.merge_rotations
+        @qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def _(x, y, w1, w2):
+            qml.RX(x, w1)
+            qml.RX(y, w2)
+            return qml.state()
+
+        if qjit:
+            _ = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(_)
+
+        generate_mlir_graph(_)(0.1, 0.2, 0, 1)
+        assert_files(
+            tmp_path,
+            {
+                "QNode_level_0_no_transforms.svg",
+                "QNode_level_1_after_merge-rotations.svg",
                 "QNode_level_2_after_xdsl-cancel-inverses.svg",
             },
         )
