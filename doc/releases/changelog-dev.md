@@ -414,7 +414,7 @@
 
 <h3>Breaking changes 💔</h3>
 
-* The methods :method:`~.pauli.PauliWord.operation` and :method:`~.pauli.PauliSentence.operation`
+* The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
   no longer queue any operators.
   [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
 
@@ -793,8 +793,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Fixes a bug that made the queueing behaviour of :method:`~.pauli.PauliWord.operation` and
-  :method:`~.pauli.PauliSentence.operation` dependent on the global state of a program due to
+* Fixes a bug that made the queueing behaviour of :meth:`~.pauli.PauliWord.operation` and
+  :meth:`~.pauli.PauliSentence.operation` dependent on the global state of a program due to
   a caching issue.
   [(#8135)](https://github.com/PennyLaneAI/pennylane/pull/8135)
 
