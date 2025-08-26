@@ -22,3 +22,4 @@
 """
 
 from .pes_vibronic import vibronic_pes
+from .pes_fit import create_matrix, cost_function, coeff_element, potential_matrix
