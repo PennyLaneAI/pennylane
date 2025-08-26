@@ -90,7 +90,7 @@ def test_repr():
 def test_partial_select(K, control, expected):
     """Tests that the _partial_select function produces the correct simplified control
     structure."""
-    assert _partial_select(K, control) == expected
+    assert list(_partial_select(K, control)) == expected
 
 
 @pytest.mark.unit

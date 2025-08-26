@@ -434,6 +434,7 @@ def _qrom_decomposition_resources(
                 num_control_wires=num_control_select_wires,
                 op_reps=tuple(new_ops_reps),
                 partial=False,
+                num_work_wires=0,
             ): 1
         }
     else:

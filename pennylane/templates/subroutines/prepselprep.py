@@ -222,7 +222,9 @@ def _prepselprep_resources(op_reps, num_control):
     )
     return {
         resource_rep(StatePrep, num_wires=num_control): 1,
-        resource_rep(Select, op_reps=prod_reps, num_control_wires=num_control, partial=True): 1,
+        resource_rep(
+            Select, op_reps=prod_reps, num_control_wires=num_control, partial=True, num_work_wires=0
+        ): 1,
         adjoint_resource_rep(StatePrep, base_params={"num_wires": num_control}): 1,
     }
 
