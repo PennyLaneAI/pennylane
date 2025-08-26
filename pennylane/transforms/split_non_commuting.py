@@ -310,37 +310,36 @@ def split_non_commuting(
         will perform ``shots`` executions for each group of commuting terms. With the
         ``shot_dist`` argument, this behaviour can be changed. For example,
         ``shot_dist = "weighted"`` will partition the number of shots performed for
-        each commuting group up according to the L1 norm of each group's coefficients:
+        each commuting group according to the L1 norm of each group's coefficients:
 
         .. code-block:: python3
 
-              import pennylane as qml
+            import pennylane as qml
+            from pennylane.transforms import split_non_commuting
+            from functools import partial
 
-              ham = qml.Hamiltonian(
-                  coeffs=[10, 0.1, 20, 100, 0.2],
-                  observables=[
-                      qml.X(0) @ qml.Y(1),
-                      qml.Z(0) @ qml.Z(2),
-                      qml.Y(1),
-                      qml.X(1) @ qml.X(2),
-                      qml.Z(0) @ qml.Z(1) @ qml.Z(2)
-                  ]
-              )
+            ham = qml.Hamiltonian(
+                coeffs=[10, 0.1, 20, 100, 0.2],
+                observables=[
+                    qml.X(0) @ qml.Y(1),
+                    qml.Z(0) @ qml.Z(2),
+                    qml.Y(1),
+                    qml.X(1) @ qml.X(2),
+                    qml.Z(0) @ qml.Z(1) @ qml.Z(2)
+                ]
+            )
 
-                      from functools import partial
-              from pennylane.transforms import split_non_commuting
+            dev = qml.device("default.qubit")
+            total_shots = 10000
 
-              dev = qml.device("default.qubit")
-              total_shots = 10000
+            @partial(split_non_commuting, shot_dist="weighted")
+            @qml.set_shots(shots=total_shots)
+            @qml.qnode(dev)
+            def circuit():
+                return qml.expval(ham)
 
-              @partial(split_non_commuting, shot_dist="weighted")
-              @qml.set_shots(shots=total_shots)
-              @qml.qnode(dev)
-              def circuit():
-                  return qml.expval(ham)
-
-              with qml.Tracker(dev) as tracker:
-                  circuit()
+            with qml.Tracker(dev) as tracker:
+                circuit()
 
         >>> print(tracker.history["shots"])
         [2303, 23, 7674]
