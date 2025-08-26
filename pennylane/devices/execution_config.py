@@ -17,7 +17,6 @@ Contains the :class:`ExecutionConfig` and :class:`MCMConfig` data classes.
 from __future__ import annotations
 
 from collections.abc import MutableMapping
-from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Literal
 
@@ -66,20 +65,6 @@ class FrozenMapping(MutableMapping):
         if self._hash is None:
             self._hash = hash(frozenset(self._data.items()))
         return self._hash
-
-    def copy(self):
-        """Returns a standard, mutable shallow copy of the data."""
-        return self._data.copy()
-
-    def __copy__(self):
-        """Supports copy.copy() by returning a mutable dict."""
-        return self.copy()
-
-    def __deepcopy__(self, memo=None):
-        """Supports copy.deepcopy() by returning a mutable dict with deep-copied contents."""
-        if memo is None:
-            memo = {}
-        return deepcopy(self._data, memo)
 
 
 @dataclass(frozen=True)
