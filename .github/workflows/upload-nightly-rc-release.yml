@@ -1,4 +1,4 @@
-name: Build nightly PennyLane releases for TestPyPI
+name: Build nightly PennyLane RC releases for TestPyPI
 
 push:
   branches:
