@@ -130,11 +130,11 @@ def split_non_commuting(
             commuting observables, can be ``"default"``, ``"wires"``, ``"qwc"``,
             or ``None`` to disable grouping.
         shot_dist (str or Callable or None): The strategy to use for shot distribution
-            over the disjoint groups of commuting observables. Values can be ``"uniform"`` 
-            (evenly distributes the number of ``shots`` across all groups of commuting terms), 
-            ``"weighted"`` (distributes the number of ``shots`` according to weights proportional 
-            to the L1 norm of the coefficients in each group), ``"weighted_random"`` (same 
-            as ``"weighted"``, but the numbers of ``shots`` are sampled from a multinomial distribution) 
+            over the disjoint groups of commuting observables. Values can be ``"uniform"``
+            (evenly distributes the number of ``shots`` across all groups of commuting terms),
+            ``"weighted"`` (distributes the number of ``shots`` according to weights proportional
+            to the L1 norm of the coefficients in each group), ``"weighted_random"`` (same
+            as ``"weighted"``, but the numbers of ``shots`` are sampled from a multinomial distribution)
             or a custom callable. ``None`` will disable any shot distribution strategy.
             See Usage Details for more information.
         seed (Generator or int or None): A seed-like parameter used only when the shot distribution
@@ -302,13 +302,14 @@ def split_non_commuting(
     indices, the grouping information will be used regardless of the requested ``grouping_strategy``
 
     .. details::
+
         :title: Usage Details
 
         **Shot distribution**
 
-        With finite-shot measurements, the default behaviour of ``split_non_commuting`` 
-        will perform ``shots`` executions for each group of commuting terms. With the 
-        ``shot_dist`` argument, this behaviour can be changed. For example, 
+        With finite-shot measurements, the default behaviour of ``split_non_commuting``
+        will perform ``shots`` executions for each group of commuting terms. With the
+        ``shot_dist`` argument, this behaviour can be changed. For example,
         ``shot_dist = "weighted"` will partition the number of shots performed for
         each commuting group up according to the L1 norm of each group's coefficients:
 
@@ -344,7 +345,7 @@ def split_non_commuting(
 
         >>> print(tracker.history["shots"])
         [2303, 23, 7674]
- 
+
         **Internal details**
 
         Internally, this function works with tapes. We can create a tape with multiple
