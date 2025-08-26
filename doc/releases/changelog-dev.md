@@ -3,31 +3,6 @@
 
 <h3>New features since last release</h3>
 
-* The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
-  [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
-
-  ```python
-  @qml.qnode(qml.device("default.qubit"), shots=1000)
-  def circuit():
-      qml.H(0)
-      return qml.expval(qml.Z(0))
-  ```
-
-  ```pycon
-  >>> circuit.shots
-  Shots(total=1000)
-  >>> circuit()
-  np.float64(-0.004)
-  ```
-
-  Setting the `shots` value in a QNode is equivalent to decorating with :func:`qml.workflow.set_shots`. Note, however, that decorating with :func:`qml.workflow.set_shots` overrides QNode `shots`:
-
-  ```pycon
-  >>> new_circ = qml.set_shots(circuit, shots=123)
-  >>> new_circ.shots
-  Shots(total=123)
-  ```
-
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
@@ -107,6 +82,31 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
+  [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
+
+  ```python
+  @qml.qnode(qml.device("default.qubit"), shots=1000)
+  def circuit():
+      qml.H(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit.shots
+  Shots(total=1000)
+  >>> circuit()
+  np.float64(-0.004)
+  ```
+
+  Setting the `shots` value in a QNode is equivalent to decorating with :func:`qml.workflow.set_shots`. Note, however, that decorating with :func:`qml.workflow.set_shots` overrides QNode `shots`:
+
+  ```pycon
+  >>> new_circ = qml.set_shots(circuit, shots=123)
+  >>> new_circ.shots
+  Shots(total=123)
+  ```
 
 * PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
   Users can now use this when designing quantum circuits with experimental program capture enabled.
