@@ -75,6 +75,7 @@ class TestFrozenMapping:
         """Test that copying a FrozenMapping creates a new instance."""
         fm1 = FrozenMapping(a=1, b=2)
         fm2 = copy(fm1)
+        assert isinstance(fm2, FrozenMapping)
         assert fm1 is not fm2
         assert fm1 == fm2
 
