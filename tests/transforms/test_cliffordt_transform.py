@@ -606,8 +606,8 @@ class TestCliffordCached:
 
     # pylint: disable=protected-access, import-outside-toplevel, reimported
     def test_cached_with_rtol(self):
-        """Test that the cached version of the circuit is equivalent to the
-        original one with a relative threshold for epsilon."""
+        """Test that caches are correctly identified as compatible or
+        incompatible with a relative threshold for epsilon."""
 
         import pennylane.transforms.decompositions.clifford_t_transform as clt2
 
