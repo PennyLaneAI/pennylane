@@ -791,6 +791,9 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* A more informative error is raised when extremely deep circuits are attempted to be drawn.
+  [(#8139)](https://github.com/PennyLaneAI/pennylane/pull/8139)
+
 * An error is now raised if sequences of classically processed mid circuit measurements
   are used as input to :func:`pennylane.counts` or :func:`pennylane.probs`.
   [(#8109)](https://github.com/PennyLaneAI/pennylane/pull/8109)
