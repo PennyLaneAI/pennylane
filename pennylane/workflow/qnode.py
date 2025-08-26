@@ -31,7 +31,7 @@ from pennylane import math, pytrees
 from pennylane.exceptions import PennyLaneDeprecationWarning, QuantumFunctionError
 from pennylane.logging import debug_logger
 from pennylane.math import Interface, get_canonical_interface_name
-from pennylane.measurements import MidMeasureMP, Shots
+from pennylane.measurements import MidMeasureMP, Shots, ShotsLike
 from pennylane.queuing import AnnotatedQueue
 from pennylane.tape import QuantumScript
 from pennylane.transforms.core import TransformDispatcher, TransformProgram
@@ -524,6 +524,7 @@ class QNode:
         interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
         *,
+        shots: ShotsLike = "unset",
         grad_on_execution: bool | Literal["best"] = "best",
         cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
@@ -610,7 +611,7 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        self._shots: Shots = device.shots
+        self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
         self._shots_override_device: bool = False
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)
@@ -631,14 +632,30 @@ class QNode:
     def __repr__(self) -> str:
         """String representation."""
         if not isinstance(self.device, qml.devices.LegacyDeviceFacade):
-            return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}'>"
+            return f"<QNode: device='{self.device}', interface='{self.interface}', diff_method='{self.diff_method}', shots='{self.shots}'>"
 
-        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}'>"
+        detail = "<QNode: wires={}, device='{}', interface='{}', diff_method='{}', shots='{}'>"
         return detail.format(
             self.device.num_wires,
             self.device.short_name,
             self.interface,
             self.diff_method,
+            self.shots,
+        )
+
+    @property
+    def shots(self) -> Shots:
+        """Default shots for execution workflows.
+
+        Note that this property is not able to be set directly; only `set_shots` can modify it.
+
+        """
+        return self._shots
+
+    @shots.setter
+    def shots(self, _):
+        raise AttributeError(
+            "Shots cannot be set on a qnode instance. You can set shots with `qml.set_shots`."
         )
 
     @property
@@ -736,8 +753,7 @@ class QNode:
         old_gradient_kwargs.update(new_gradient_kwargs)
         kwargs["gradient_kwargs"] = old_gradient_kwargs
 
-        # pylint: disable=protected-access
-        old_shots = self._shots
+        old_shots = self.shots
         # set shots issue
         if "device" in kwargs:
             if old_shots != kwargs["device"].shots:
@@ -750,7 +766,7 @@ class QNode:
         original_init_args.update(kwargs)
         updated_qn = QNode(**original_init_args)
         # pylint: disable=protected-access
-        if updated_qn._shots != old_shots:
+        if updated_qn.shots != old_shots:
             updated_qn._set_shots(old_shots)
         if self._shots_override_device:
             updated_qn._shots_override_device = True
@@ -808,10 +824,10 @@ class QNode:
                     stacklevel=2,
                 )
 
-        if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode._shots precedency:
-            shots = self._shots
+        if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode.shots precedency:
+            shots = self.shots
         else:
-            shots = kwargs.pop("shots", self._shots)
+            shots = kwargs.pop("shots", self.shots)
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any
