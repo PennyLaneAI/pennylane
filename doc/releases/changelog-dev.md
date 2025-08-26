@@ -20,7 +20,7 @@
   np.float64(-0.004)
   ```
 
-  Setting the `shots` value in a QNode is equivalent to decorating with :func:`~.set_shots`. Note, however, that decorating with :func:`~.set_shots` overrides QNode `shots`:
+  Setting the `shots` value in a QNode is equivalent to decorating with :func:`qml.workflow.set_shots`. Note, however, that decorating with :func:`qml.workflow.set_shots` overrides QNode `shots`:
 
   ```pycon
   >>> new_circ = qml.set_shots(circuit, shots=123)
