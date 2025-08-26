@@ -16,11 +16,14 @@
 
 import warnings
 
+import numpy as np
 import pytest
 
 import pennylane as qml
 import pennylane.numpy as qnp
+from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operation
+from pennylane.ops import Conditional
 from pennylane.transforms.decompose import _operator_decomposition_gen, decompose
 
 # pylint: disable=unnecessary-lambda-assignment
@@ -189,6 +192,66 @@ class TestDecompose:
         expected_tape = qml.tape.QuantumScript(expected_ops)
 
         qml.assert_equal(decomposed_tape, expected_tape)
+
+    def test_decompose_with_mcm(self):
+        """Tests that circuits and decomposition rules containing MCMs are supported."""
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self) -> dict:
+                return {}
+
+            def decomposition(self):
+
+                with qml.queuing.AnnotatedQueue() as q:
+                    qml.H(0)
+                    m0 = qml.measure(0)
+                    qml.cond(m0, qml.H)(1)
+
+                return q.queue
+
+        def circuit():
+            CustomOp(wires=[0, 1])
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.X)(0)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            circuit()
+
+        tape = qml.tape.QuantumScript.from_queue(q)
+        [decomposed_tape], _ = qml.transforms.decompose([tape], gate_set={qml.RX, qml.RZ})
+        assert len(decomposed_tape.operations) == 9
+
+        def equivalent_circuit():
+            qml.RZ(np.pi / 2, wires=0)
+            qml.RX(np.pi / 2, wires=0)
+            qml.RZ(np.pi / 2, wires=0)
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.RZ)(np.pi / 2, wires=1)
+            qml.cond(m0, qml.RX)(np.pi / 2, wires=1)
+            qml.cond(m0, qml.RZ)(np.pi / 2, wires=1)
+            m1 = qml.measure(0)
+            qml.cond(m1, qml.RX)(np.pi, wires=0)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            equivalent_circuit()
+
+        qml.assert_equal(decomposed_tape.operations[0], q.queue[0])
+        qml.assert_equal(decomposed_tape.operations[1], q.queue[1])
+        qml.assert_equal(decomposed_tape.operations[2], q.queue[2])
+        assert isinstance(decomposed_tape.operations[4], Conditional)
+        assert isinstance(decomposed_tape.operations[5], Conditional)
+        assert isinstance(decomposed_tape.operations[6], Conditional)
+        assert isinstance(decomposed_tape.operations[8], Conditional)
+        qml.assert_equal(decomposed_tape.operations[4].base, q.queue[4].base)
+        qml.assert_equal(decomposed_tape.operations[5].base, q.queue[5].base)
+        qml.assert_equal(decomposed_tape.operations[6].base, q.queue[6].base)
+        qml.assert_equal(decomposed_tape.operations[8].base, q.queue[8].base)
+        assert isinstance(decomposed_tape.operations[3], MidMeasureMP)
+        assert isinstance(decomposed_tape.operations[7], MidMeasureMP)
 
 
 def test_null_postprocessing():
