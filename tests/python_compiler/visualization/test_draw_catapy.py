@@ -218,7 +218,6 @@ class Testdraw:
     def test_adjoint(self):
         """Test that the adjoint operation is visualized correctly."""
 
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def circ():
             qml.adjoint(qml.RX(0.1, wires=0))
@@ -226,6 +225,18 @@ class Testdraw:
             return qml.state()
 
         assert draw(circ)() == "0: ──RX†──H†─┤  State"
+
+    def test_args_warning(self):
+        """Test that a warning is raised when dynamic arguments are used."""
+
+        # pylint: disable=unused-argument
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ(arg):
+            qml.RX(0.1, wires=0)
+            return qml.state()
+
+        with pytest.warns(UserWarning):
+            _ = draw(circ)(0.1)
 
 
 if __name__ == "__main__":

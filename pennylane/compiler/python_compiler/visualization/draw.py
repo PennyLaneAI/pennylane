@@ -13,6 +13,7 @@
 # limitations under the License.
 """This file contains the implementation of the `draw` function for the Unified Compiler."""
 
+import warnings
 from functools import wraps
 
 from catalyst import qjit
@@ -73,6 +74,13 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
 
     @wraps(qnode)
     def wrapper(*args, **kwargs):
+        if args or kwargs:
+            warnings.warn(
+                "The `draw` function does not yet support dynamic arguments.\n"
+                "To visualize the circuit with dynamic parameters or wires, please use the\n"
+                "`compiler.python_compiler.visualization.generate_mlir_graph` function instead.",
+                UserWarning,
+            )
         mlir_module = _get_mlir_module(qnode, args, kwargs)
         Compiler.run(mlir_module, callback=_draw_callback)
 
