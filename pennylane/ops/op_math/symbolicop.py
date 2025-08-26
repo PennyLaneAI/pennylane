@@ -149,7 +149,7 @@ class SymbolicOp(Operator):
         new_op = copy(self)
         new_base = self.base.map_wires(wire_map=wire_map)
         new_op.hyperparameters["base"] = new_base
-        new_op._wires = new_base._wires  # pylint:disable=protected-access
+        new_op._wires = new_base.wires  # pylint:disable=protected-access
         if (p_rep := new_op.pauli_rep) is not None:
             new_op._pauli_rep = p_rep.map_wires(wire_map)  # pylint:disable=protected-access
         return new_op

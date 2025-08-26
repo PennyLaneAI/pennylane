@@ -26,6 +26,7 @@ from pennylane.decomposition import (
 )
 from pennylane.operation import Operation
 from pennylane.ops import GlobalPhase, LinearCombination, Prod, StatePrep, adjoint, prod
+from pennylane.queuing import QueuingManager
 from pennylane.templates.embeddings import AmplitudeEmbedding
 from pennylane.wires import Wires
 
@@ -93,7 +94,8 @@ class PrepSelPrep(Operation):
 
         coeffs, ops = lcu.terms()
         control = Wires(control)
-        self.hyperparameters["lcu"] = LinearCombination(coeffs, ops)
+        with QueuingManager.stop_recording():
+            self.hyperparameters["lcu"] = LinearCombination(coeffs, ops)
         self.hyperparameters["coeffs"] = coeffs
         self.hyperparameters["ops"] = ops
         self.hyperparameters["control"] = control
