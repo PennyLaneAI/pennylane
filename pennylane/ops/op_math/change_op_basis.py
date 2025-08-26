@@ -42,7 +42,7 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
             operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
-        ~ops.op_math.ChangeOpBasis: the operator representing the compute, uncompute pattern.
+        ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
 
     .. seealso:: :class:`~.ops.op_math.ChangeOpBasis`
     """
@@ -62,7 +62,7 @@ class ChangeOpBasis(CompositeOp):
             Default is uncompute_op=qml.adjoint(compute_op).
 
     Returns:
-        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, compute_op†.
+        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
     """
 
     def __init__(self, compute_op, target_op, uncompute_op=None):
@@ -101,7 +101,7 @@ class ChangeOpBasis(CompositeOp):
     @classmethod
     def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
         """
-        We do not sort the ops. The order is guaranteed to matter since if the compute
+        We do not sort the ops. The order is guaranteed to matter since if the compute operator
         and the base operator commute, the pattern would simplify to just being the base operator.
 
         Args:
