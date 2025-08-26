@@ -115,7 +115,7 @@
   ```
 
   This Hamiltonian can be split into 3 non-commuting groups of mutually commuting terms.
-  With ``shot_dist = "weighted"`, for example, the number of shots will be divvied up according to the L1 norm of each group's coefficients:
+  With ``shot_dist = "weighted"``, for example, the number of shots will be divided up according to the L1 norm of each group's coefficients:
 
   ```python
   from functools import partial
