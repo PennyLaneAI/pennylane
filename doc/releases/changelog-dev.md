@@ -409,6 +409,9 @@
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
 
+* Added state of the art resources for the `ResourceTrotterProduct` template.
+  [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
