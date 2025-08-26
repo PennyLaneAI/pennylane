@@ -82,6 +82,7 @@
   ```
 
 * The :func:`~.transforms.decompose` transform is now able to decompose a classically controlled operation.
+  [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
 <h3>Improvements 🛠</h3>
 
