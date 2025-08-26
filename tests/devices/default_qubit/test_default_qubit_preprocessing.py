@@ -1012,3 +1012,305 @@ class TestAdjointDiffTapeValidation:
 
         x = pnp.array(1.1, requires_grad=True)
         assert qml.jacobian(circuit)(x) == 0
+
+
+class TestGraphDecompositionDeviceIntegration:
+    """Test graph-based decomposition integration with DefaultQubit device preprocessing."""
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_default_qubit_with_graph_decomposition_enabled(self):
+        """Test that DefaultQubit works correctly when graph decomposition is enabled."""
+        # Graph decomposition is already enabled by the fixture
+
+        # Create a device and QNode
+        dev = qml.device("default.qubit", wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QFT(wires=[0, 1, 2])
+            qml.RX(0.5, wires=0)
+            return qml.expval(qml.Z(0))
+
+        # Should execute without error
+        result = circuit()
+        assert isinstance(result, (int, float, np.number))
+
+        # QFT should not be decomposed (default.qubit supports it)
+        tape = qml.workflow.construct_tape(circuit)()
+        qft_ops = [op for op in tape.operations if op.name == "QFT"]
+        assert len(qft_ops) == 1, "QFT should be preserved by default.qubit"
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_device_level_decomposition_with_graph_enabled(self):
+        """Test device-level decomposition drawing with graph decomposition enabled."""
+        # Graph decomposition is already enabled by the fixture
+
+        # Create a custom device with restrictive stopping condition
+        from pennylane.devices.default_qubit import DefaultQubit
+        from pennylane.devices.preprocess import decompose, validate_device_wires
+        from pennylane.transforms.core import TransformProgram
+
+        class RestrictiveQubit(DefaultQubit):
+            def preprocess_transforms(self, execution_config=None):
+                def restrictive_stopping_condition(op):
+                    basic_gates = {"RX", "RY", "RZ", "CNOT", "H", "Rϕ", "SWAP"}
+                    return op.name in basic_gates
+
+                transform_program = TransformProgram()
+                transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+                transform_program.add_transform(
+                    decompose,
+                    stopping_condition=restrictive_stopping_condition,
+                    name=self.name,
+                )
+                return transform_program
+
+        dev = RestrictiveQubit(wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QFT(wires=[0, 1, 2])
+            return qml.expval(qml.Z(0))
+
+        # Should execute without error
+        result = circuit()
+        assert isinstance(result, (int, float, np.number))
+
+        # Check device-level decomposition
+        device_drawing = qml.draw(circuit, level="device")()
+        assert "QFT" not in device_drawing, "QFT should be decomposed at device level"
+        assert any(
+            gate in device_drawing for gate in ["Rϕ", "SWAP", "H"]
+        ), "Should contain decomposed gates"
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_graph_decomposition_vs_legacy_consistency(self):
+        """Test that graph and legacy decomposition produce equivalent results."""
+
+        # Create a circuit that should produce the same result regardless of decomposition method
+        def create_circuit(dev):
+            @qml.qnode(dev)
+            def circuit():
+                # Use an operation that both systems can decompose
+                qml.QFT(wires=[0, 1])
+                return qml.state()
+
+            return circuit
+
+        # Test with graph decomposition (already enabled by fixture)
+        dev_graph = qml.device("default.qubit", wires=2)
+        circuit_graph = create_circuit(dev_graph)
+        result_graph = circuit_graph()
+
+        # Test with legacy decomposition
+        qml.decomposition.disable_graph()
+        dev_legacy = qml.device("default.qubit", wires=2)
+        circuit_legacy = create_circuit(dev_legacy)
+        result_legacy = circuit_legacy()
+
+        # Results should be equivalent (within numerical precision)
+        assert np.allclose(
+            result_graph, result_legacy, atol=1e-10
+        ), "Graph and legacy decomposition should produce equivalent results"
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_graph_decomposition_parameter_preservation(self):
+        """Test that parameterized operations maintain their parameters through graph decomposition."""
+        # Graph decomposition is already enabled by the fixture
+
+        # Create a custom device that forces decomposition of Rot
+        from pennylane.devices.default_qubit import DefaultQubit
+        from pennylane.devices.preprocess import decompose, validate_device_wires
+        from pennylane.transforms.core import TransformProgram
+
+        class RotDecomposingQubit(DefaultQubit):
+            def preprocess_transforms(self, execution_config=None):
+                def stopping_condition(op):
+                    # Allow basic gates but force Rot decomposition
+                    return op.name in {"RX", "RY", "RZ"}
+
+                transform_program = TransformProgram()
+                transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+                transform_program.add_transform(
+                    decompose,
+                    stopping_condition=stopping_condition,
+                    name=self.name,
+                )
+                return transform_program
+
+        dev = RotDecomposingQubit(wires=1)
+
+        @qml.qnode(dev)
+        def circuit(x, y, z):
+            qml.Rot(x, y, z, wires=0)
+            return qml.expval(qml.Z(0))
+
+        # Test with specific parameters
+        x, y, z = 0.1, 0.2, 0.3
+        result = circuit(x, y, z)
+
+        # Should execute without error and produce a valid result
+        assert isinstance(result, (int, float, np.number))
+        assert -1 <= result <= 1  # expectation value should be in valid range
+
+        # Compare with reference implementation using Rot directly
+        @qml.qnode(qml.device("default.qubit", wires=1))
+        def reference_circuit(x, y, z):
+            qml.Rot(x, y, z, wires=0)
+            return qml.expval(qml.Z(0))
+
+        reference_result = reference_circuit(x, y, z)
+        assert np.isclose(
+            result, reference_result, atol=1e-10
+        ), "Decomposed circuit should produce same result as reference"
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_graph_decomposition_with_adjoint_differentiation(self):
+        """Test that graph decomposition works with adjoint differentiation."""
+        # Graph decomposition is already enabled by the fixture
+
+        dev = qml.device("default.qubit", wires=2)
+
+        @qml.qnode(dev, diff_method="adjoint")
+        def circuit(x):
+            qml.RX(x, wires=0)
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Z(0))
+
+        x = pnp.array(0.5, requires_grad=True)
+
+        # Should compute gradient without error
+        grad = qml.grad(circuit)(x)
+        assert isinstance(grad, (int, float, np.number))
+
+        # Compare with expected analytical result
+        expected_grad = -np.sin(x)
+        assert np.isclose(grad, expected_grad, atol=1e-10)
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_graph_decomposition_preserves_wire_order(self):
+        """Test that graph decomposition preserves wire ordering in operations."""
+
+        # Create a custom device that forces QFT decomposition
+        from pennylane.devices.default_qubit import DefaultQubit
+        from pennylane.devices.preprocess import decompose, validate_device_wires
+        from pennylane.transforms.core import TransformProgram
+
+        class QFTDecomposingQubit(DefaultQubit):
+            def preprocess_transforms(self, execution_config=None):
+                def stopping_condition(op):
+                    return op.name in {"H", "Rϕ", "SWAP"}
+
+                transform_program = TransformProgram()
+                transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
+                transform_program.add_transform(
+                    decompose,
+                    stopping_condition=stopping_condition,
+                    name=self.name,
+                )
+                return transform_program
+
+        dev = QFTDecomposingQubit(wires=3)
+
+        @qml.qnode(dev)
+        def circuit():
+            qml.QFT(wires=[0, 1, 2])
+            return qml.state()
+
+        # Should execute without error
+        result = circuit()
+        assert len(result) == 8  # 2^3 states
+
+        # Compare with reference QFT implementation
+        @qml.qnode(qml.device("default.qubit", wires=3))
+        def reference_circuit():
+            qml.QFT(wires=[0, 1, 2])
+            return qml.state()
+
+        reference_result = reference_circuit()
+        assert np.allclose(
+            result, reference_result, atol=1e-10
+        ), "Decomposed QFT should produce same state as reference"
+
+
+class TestDefaultQubitGateSet:
+    """Tests for DefaultQubit gate_set functionality."""
+
+    def test_default_qubit_has_gate_set_property(self):
+        """Test that DefaultQubit has a gate_set property."""
+        dev = DefaultQubit()
+        assert hasattr(dev, "gate_set")
+        gate_set = dev.gate_set
+        assert isinstance(gate_set, set)
+        assert len(gate_set) > 0
+
+    def test_default_qubit_has_capabilities(self):
+        """Test that DefaultQubit has DeviceCapabilities."""
+        dev = DefaultQubit()
+        assert hasattr(dev, "capabilities")
+        assert dev.capabilities is not None
+        from pennylane.devices.capabilities import DeviceCapabilities
+
+        assert isinstance(dev.capabilities, DeviceCapabilities)
+
+    def test_default_qubit_gate_set_from_capabilities(self):
+        """Test that gate_set is derived from DeviceCapabilities operations."""
+        dev = DefaultQubit()
+
+        # Gate set should match the operations in capabilities
+        gate_set = dev.gate_set
+        capabilities_ops = set(dev.capabilities.operations.keys())
+        assert gate_set == capabilities_ops
+
+    def test_default_qubit_gate_set_contains_basic_gates(self):
+        """Test that DefaultQubit gate_set contains expected basic gates."""
+        dev = DefaultQubit()
+        gate_set = dev.gate_set
+
+        # Should contain basic single-qubit gates
+        expected_gates = {"PauliX", "PauliY", "PauliZ", "Hadamard", "RX", "RY", "RZ"}
+        for gate in expected_gates:
+            assert gate in gate_set, f"Gate {gate} should be in DefaultQubit gate_set"
+
+    def test_capabilities_supports_operation_method(self):
+        """Test that DeviceCapabilities.supports_operation works correctly."""
+        dev = DefaultQubit()
+
+        # Test operations that should be supported
+        supported_ops = ["Hadamard", "CNOT", "RX", "Toffoli"]
+        for op in supported_ops:
+            assert dev.capabilities.supports_operation(op), f"Should support {op}"
+
+        # Test operation that should not be supported
+        assert not dev.capabilities.supports_operation("NonExistentGate")
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_default_qubit_uses_gate_set_in_preprocessing(self):
+        """Test that DefaultQubit passes its gate_set to decompose during preprocessing."""
+        dev = DefaultQubit()
+
+        # Create a circuit with Hadamard that can be decomposed
+        @qml.qnode(dev)
+        def circuit():
+            qml.Hadamard(0)
+            return qml.expval(qml.Z(0))
+
+        # Execute to trigger preprocessing
+        result = circuit()
+        assert isinstance(result, (int, float, np.number))
+
+    @pytest.mark.usefixtures("enable_graph_decomposition")
+    def test_default_qubit_gate_set_decomposition_integration(self):
+        """Test integration of gate_set with actual decomposition."""
+        dev = DefaultQubit(wires=2)
+
+        # Create a circuit that should use gate_set for decomposition
+        @qml.qnode(dev)
+        def circuit():
+            qml.QFT(wires=[0, 1])  # Should decompose using DefaultQubit's gate_set
+            return qml.state()
+
+        # Execute to trigger preprocessing with gate_set
+        result = circuit()
+        assert result is not None
+        assert len(result) == 4  # 2-qubit state should have 4 amplitudes

@@ -326,6 +326,7 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     ) = None,
     name: str = "device",
     error: type[Exception] | None = None,
+    gate_set: None | set | dict | list = None,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Decompose operations until the stopping condition is met.
 
@@ -349,6 +350,9 @@ def decompose(  # pylint: disable = too-many-positional-arguments
             error message. Defaults to "device".
         error (type): An error type to raise if it is not possible to obtain a decomposition that
             fulfills the ``stopping_condition``. Defaults to ``DeviceError``.
+        gate_set (None, set, dict, list): The gate set to be used for decomposition when graph
+            decomposition is enabled. If ``None``, defaults to all operations filtered by the
+            stopping condition. Only used with graph decomposition.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
@@ -419,20 +423,19 @@ def decompose(  # pylint: disable = too-many-positional-arguments
     if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
         return (tape,), null_postprocessing
 
-    # Check if graph-based decomposition is enabled
+    # pylint: disable=import-outside-toplevel
     from pennylane.decomposition import enabled_graph
 
     if enabled_graph():
         # Use the main decompose transform which supports graph decomposition
         from pennylane.transforms.decompose import decompose as graph_decompose
 
-        # When gate_set=None, the main decompose transform defaults to set(ops.__all__)
-        # which includes all PennyLane operations. The stopping_condition will filter
-        # this down to what the device actually supports. This approach maintains
-        # the generic nature of the preprocess interface across all devices.
+        # Pass the gate_set from the device to the graph decompose transform.
+        # If gate_set is None, the main decompose transform defaults to set(ops.__all__)
+        # which includes all PennyLane operations, filtered by stopping_condition.
         return graph_decompose(
             tape,
-            gate_set=None,  # Defaults to all operations, filtered by stopping_condition
+            gate_set=gate_set,
             stopping_condition=stopping_condition,
         )
 
