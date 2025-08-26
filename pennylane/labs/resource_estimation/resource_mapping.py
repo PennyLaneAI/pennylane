@@ -114,12 +114,12 @@ def _(op: qops.RZ):
 
 @map_to_resource_op.register
 def _(op: qops.MultiRZ):
-    return re_ops.ResourceMultiRZ()
+    return re_ops.ResourceMultiRZ(num_wires=len(op.wires))
 
 
 @map_to_resource_op.register
 def _(op: qops.PauliRot):
-    return re_ops.ResourcePauliRot()
+    return re_ops.ResourcePauliRot(pauli_string=op.hyperparameters["pauli_word"])
 
 
 @map_to_resource_op.register
@@ -209,7 +209,7 @@ def _(op: qops.CZ):
 
 @map_to_resource_op.register
 def _(op: qops.MultiControlledX):
-    return re_ops.ResourceMultiControlledX()
+    return re_ops.ResourceMultiControlledX(num_ctrl_wires=len(op.wires) - 1, num_ctrl_values=sum(op.control_values))
 
 
 @map_to_resource_op.register

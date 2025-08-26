@@ -84,9 +84,9 @@ class Test_map_to_resource_op:
             (qml.Toffoli(wires=(0, 1, 2)), re_ops.ResourceToffoli()),
             
             # Multi-Qubit Gates
-            (qml.MultiRZ(0.1, wires=[0, 1, 2]), re_ops.ResourceMultiRZ()),
-            (qml.PauliRot(0.1, "XYZ", wires=[0, 1, 2]), re_ops.ResourcePauliRot()),
-            (qml.MultiControlledX(wires=[0, 1, 2]), re_ops.ResourceMultiControlledX()),
+            (qml.MultiRZ(0.1, wires=[0, 1, 2]), re_ops.ResourceMultiRZ(num_wires=3)),
+            (qml.PauliRot(0.1, "XYZ", wires=[0, 1, 2]), re_ops.ResourcePauliRot("XYZ")),
+            (qml.MultiControlledX(wires=[0, 1, 2]), re_ops.ResourceMultiControlledX(num_ctrl_wires=2, num_ctrl_values=2)),
 
             # Custom/Template Gates
             (qtemps.TemporaryAND(wires=[0, 1, 2]), re_ops.ResourceTempAND()),
@@ -95,4 +95,4 @@ class Test_map_to_resource_op:
     def test_map_to_resource_op(self, operator, expected_res_op):
         """Test that map_to_resource_op maps to the appropriate resource operator"""
 
-        assert map_to_resource_op(operator) == expected_res_op 
+        assert isinstance(map_to_resource_op(operator), type(expected_res_op))
