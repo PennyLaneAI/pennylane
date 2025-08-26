@@ -115,9 +115,7 @@
   ```
 
   This Hamiltonian can be split into 3 non-commuting groups of mutually commuting terms.
-  A fixed total number of shots might be distributed across the groups to make the expectation value of the whole Hamiltonian more accurate.
-  For instance, it might be convenient to use a number of shots per group which is proportional to the L1 norm of each group's coefficients.
-  This can be achieved by using the ``weighted`` shots distribution strategy:
+  With ``shot_dist = "weighted"`, for example, the number of shots will be divvied up according to the L1 norm of each group's coefficients:
 
   ```python
   from functools import partial
