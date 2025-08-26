@@ -68,16 +68,16 @@ class FrozenMapping(MutableMapping):
         return self._hash
 
     def copy(self):
-        """Returns a shallow copy as a FrozenMapping instance."""
-        return FrozenMapping(self._data.copy())
+        """Returns a standard, mutable shallow copy of the data."""
+        return self._data.copy()
 
     def __copy__(self):
-        """Supports copy.copy() by returning a FrozenMapping instance."""
-        return FrozenMapping(self._data.copy())
+        """Supports copy.copy() by returning a mutable dict."""
+        return self.copy()
 
     def __deepcopy__(self, memo=None):
-        """Supports copy.deepcopy() by returning a FrozenMapping instance with deep-copied contents."""
-        return FrozenMapping(deepcopy(self._data, memo))
+        """Supports copy.deepcopy() by returning a mutable dict with deep-copied contents."""
+        return deepcopy(self._data, memo)
 
 
 @dataclass(frozen=True)
