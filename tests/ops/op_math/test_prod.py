@@ -1377,14 +1377,22 @@ class TestWrapperFunc:
     def test_correct_queued_operators(self):
         """Test that args and kwargs do not add operators to the queue."""
 
-        with qml.queuing.AnnotatedQueue() as q:
-            qml.prod(qml.QSVT)(qml.X(1), [qml.Z(1)])
-            qml.prod(qml.QSVT(qml.X(1), [qml.Z(1)]))
+        def f(op):
+            qml.apply(op)
 
-        for op in q.queue:
-            assert op.name == "QSVT"
+        def f2(op, op2=None):
+            qml.X(0)
+            qml.apply(op)
+            if op2:
+                qml.apply(op2)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.prod(f)(qml.Z(0))
+            qml.prod(f2)(qml.Y(0), op2=qml.Z(0))
 
         assert len(q.queue) == 2
+        assert q.queue[0] == qml.Z(0)
+        assert q.queue[1] == qml.Z(0) @ qml.Y(0) @ qml.X(0)
 
 
 class TestIntegration:
@@ -1436,9 +1444,10 @@ class TestIntegration:
 
     def test_measurement_process_sample(self):
         """Test Prod class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             Prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1451,9 +1460,10 @@ class TestIntegration:
 
     def test_measurement_process_counts(self):
         """Test Prod class instance in sample measurement process."""
-        dev = qml.device("default.qubit", wires=2, shots=20)
+        dev = qml.device("default.qubit", wires=2)
         prod_op = Prod(qml.PauliX(wires=0), qml.PauliX(wires=1))
 
+        @qml.set_shots(20)
         @qml.qnode(dev)
         def my_circ():
             Prod(qml.Hadamard(0), qml.Hadamard(1))
@@ -1722,8 +1732,8 @@ class TestDecomposition:
         op = qml.S(0) @ qml.S(1) @ qml.T(0) @ qml.Y(1)
 
         graph = qml.decomposition.DecompositionGraph([op], gate_set=set(qml.ops.__all__))
-        graph.solve()
+        solution = graph.solve()
         with qml.queuing.AnnotatedQueue() as q:
-            graph.decomposition(op)(**op.hyperparameters)
+            solution.decomposition(op)(**op.hyperparameters)
 
         assert q.queue == list(op[::-1])
