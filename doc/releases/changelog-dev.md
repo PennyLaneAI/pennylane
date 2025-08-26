@@ -416,7 +416,7 @@
 
 * The methods :method:`~.pauli.PauliWord.operation` and :method:`~.pauli.PauliSentence.operation`
   no longer queue any operators.
-  [(#8135)](https://github.com/PennyLaneAI/pennylane/pull/8135)
+  [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
 
 * `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
   down on the complexity of post-processing due to having to handle single shot and single wire cases
