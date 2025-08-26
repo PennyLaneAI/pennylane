@@ -71,7 +71,7 @@ def _partial_select(K, control):
         ]
         for j in range(K)
     ]
-    return [list(zip(*ctrl_)) for ctrl_ in controls]
+    return (list(zip(*ctrl_)) for ctrl_ in controls)
 
 
 class Select(Operation):
@@ -505,10 +505,9 @@ class Select(Operation):
                 if QueuingManager.recording():
                     apply(ops[0])
                 return list(ops)
-            controls_and_values = _partial_select(len(ops), control)
             decomp_ops = [
                 ctrl(op, ctrl_, control_values=values, work_wires=work_wires)
-                for (ctrl_, values), op in zip(controls_and_values, ops)
+                for (ctrl_, values), op in zip(_partial_select(len(ops), control), ops)
             ]
             return decomp_ops
 
@@ -588,8 +587,7 @@ def _select_decomp_multi_control(ops, control, work_wires, partial, **_):
         if len(ops) == 1:
             apply(ops[0])
         else:
-            ctrls_and_ctrl_states = _partial_select(len(ops), control)
-            for (ctrl_, ctrl_state), op in zip(ctrls_and_ctrl_states, ops):
+            for (ctrl_, ctrl_state), op in zip(_partial_select(len(ops), control), ops):
                 ctrl(op, ctrl_, control_values=ctrl_state, work_wires=work_wires)
     else:
         for ctrl_state, op in zip(product([0, 1], repeat=len(control)), ops):
