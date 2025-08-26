@@ -520,6 +520,7 @@ def _split_ham_with_grouping(
         tapes = [
             tape.copy(measurements=mps, shots=int(shots))
             for mps, shots in zip(mps_groups, shots_per_group)
+            if int(shots) != 0
         ]
     else:
         tapes = [tape.copy(measurements=mps) for mps in mps_groups]
