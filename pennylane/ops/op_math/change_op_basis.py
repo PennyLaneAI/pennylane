@@ -43,23 +43,6 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute, uncompute pattern.
-    """
-
-    return ChangeOpBasis(compute_op, target_op, uncompute_op)
-
-
-class ChangeOpBasis(CompositeOp):
-    """
-    Composite operator representing a compute, uncompute pattern of operators.
-
-    Args:
-        compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-            Default is uncompute_op=qml.adjoint(compute_op).
-
-    Returns:
-        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, compute_op†.
 
     **Example**
 
@@ -84,6 +67,23 @@ class ChangeOpBasis(CompositeOp):
     0: ──H──────╭●────────────────┤ State
     1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ State
     2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ State
+    """
+
+    return ChangeOpBasis(compute_op, target_op, uncompute_op)
+
+
+class ChangeOpBasis(CompositeOp):
+    """
+    Composite operator representing a compute, uncompute pattern of operators.
+
+    Args:
+        compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
+        target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
+        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
+            Default is uncompute_op=qml.adjoint(compute_op).
+
+    Returns:
+        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, compute_op†.
     """
 
     def __init__(self, compute_op, target_op, uncompute_op=None):
