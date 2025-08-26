@@ -81,6 +81,8 @@
   Array([ 3.14159265, -1.57079633], dtype=float64)
   ```
 
+* The :func:`~.transforms.decompose` transform is now able to decompose a classically controlled operation.
+
 <h3>Improvements 🛠</h3>
 
 * PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
