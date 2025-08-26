@@ -1,6 +1,6 @@
 name: Build nightly PennyLane RC releases for TestPyPI
 
-push:
+on:
   branches:
     - '*-rc-nightly' 
   # schedule:
