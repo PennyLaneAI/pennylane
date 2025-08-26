@@ -60,7 +60,7 @@ class ChangeOpBasis(CompositeOp):
             Default is uncompute_op=qml.adjoint(compute_op).
 
     Returns:
-        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, compute_op†.
+        (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
     """
 
     def __init__(self, compute_op, target_op, uncompute_op=None):
