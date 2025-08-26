@@ -54,7 +54,8 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
     Consider the following example involving a ``ChangeOpBasis``. The compute, uncompute pattern is composed of
     a Quantum Fourier Transform (``QFT``), followed by a ``PhaseAdder``, and finally an inverse ``QFT``.
 
-    .. code::
+    .. code-block:: python
+
         import pennylane as qml
         from functools import partial
 
