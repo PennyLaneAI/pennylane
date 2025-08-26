@@ -74,8 +74,8 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
 
         circuit2 = qml.transforms.decompose(circuit, max_expansion=1)
 
-    When the circuit is decomposed, we will get the following. Note how the ``QFT`` are not controlled.
-    This is the optimization achieved by use of the `change_op_basis` function.
+    When this circuit is decomposed, the ``compute_op`` and ``uncompute_op`` are not controlled,
+    resulting in a much more resource-efficient decomposition:
 
     >>> print(qml.draw(circuit2)())
     0: ──H──────╭●────────────────┤  State
