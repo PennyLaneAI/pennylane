@@ -841,6 +841,9 @@
 * Fixes a bug where `qml.prod` applied on a quantum function does not dequeue operators passed as arguments to the function.
   [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
 
+* Uses the new Autoray 0.8.0 interface by replacing `autoray.autoray.NumpyMimic` with the new `autoray.autoray.AutoNamespace` in `qml.math`.
+  [(#8138)]((https://github.com/PennyLaneAI/pennylane/pull/8138))
+
 <h3>Contributors ✍️</h3>
 
 This release contains contributions from (in alphabetical order):
@@ -867,4 +870,5 @@ Alex Preciado,
 Shuli Shu,
 Jay Soni,
 David Wierichs,
-Jake Zaia
+Jake Zaia,
+Moritz Willmann
