@@ -15,7 +15,6 @@
 """Unit tests for the ``decompose`` transform"""
 
 import warnings
-from functools import partial
 
 import numpy as np
 import pytest
