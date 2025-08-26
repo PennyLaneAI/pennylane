@@ -160,6 +160,15 @@ class TestMemRefConstraint:
         with pytest.raises(TypeError, match="is not a valid constraint for the 'rank' argument"):
             MemRefConstraint(rank=rank)
 
+    @pytest.mark.parametrize("element_type", [None, builtin.Float64Type(), builtin.i64])
+    def test_memref_constraint_init_rank_and_shape_error(self, element_type):
+        """Test that an error is raised if both rank and shape are provided."""
+        shape = (1, 2)
+        rank = 2
+
+        with pytest.raises(ValueError, match="Only one of 'shape' or 'rank' may be provided"):
+            MemRefConstraint(element_type=element_type, shape=shape, rank=rank)
+
     def test_memref_constraint_properties(self):
         """Test that the properties of MemRefConstraint object are correct."""
         rank = 1
@@ -325,6 +334,15 @@ class TestTensorConstraint:
         rank = 1.5
         with pytest.raises(TypeError, match="is not a valid constraint for the 'rank' argument"):
             TensorConstraint(rank=rank)
+
+    @pytest.mark.parametrize("element_type", [None, builtin.Float64Type(), builtin.i64])
+    def test_tensor_constraint_init_rank_and_shape_error(self, element_type):
+        """Test that an error is raised if both rank and shape are provided."""
+        shape = (1, 2)
+        rank = 2
+
+        with pytest.raises(ValueError, match="Only one of 'shape' or 'rank' may be provided"):
+            TensorConstraint(element_type=element_type, shape=shape, rank=rank)
 
     def test_tensor_constraint_properties(self):
         """Test that the properties of TensorConstraint object are correct."""
