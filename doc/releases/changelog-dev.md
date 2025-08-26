@@ -283,6 +283,9 @@
 
 <h4>Other improvements</h4>
 
+* Program capture can now handle dynamic shots, shot vectors, and shots set with `qml.set_shots`.
+  [(#7652)](https://github.com/PennyLaneAI/pennylane/pull/7652)
+
 * Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
   representation of the program between multiple compilation passes.
   [(#7964)](https://github.com/PennyLaneAI/pennylane/pull/7964)
