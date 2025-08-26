@@ -302,6 +302,7 @@ def split_non_commuting(
     indices, the grouping information will be used regardless of the requested ``grouping_strategy``
 
     .. details::
+
         :title: Usage Details
 
         **Shot distribution**
