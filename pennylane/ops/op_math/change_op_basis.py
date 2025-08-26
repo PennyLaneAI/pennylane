@@ -63,6 +63,8 @@ class ChangeOpBasis(CompositeOp):
 
     Returns:
         (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, uncompute_op.
+
+    .. seealso:: :func:`~.change_op_basis`
     """
 
     def __init__(self, compute_op, target_op, uncompute_op=None):
