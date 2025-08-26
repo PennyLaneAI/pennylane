@@ -28,6 +28,8 @@ from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 import pennylane as qml
 from pennylane.compiler.python_compiler.visualization import draw
 
+# pylint: disable=implicit-str-concat
+
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
 class Testdraw:
@@ -59,7 +61,6 @@ class Testdraw:
 
         return circ
 
-    # pylint: disable=implicit-str-concat
     @pytest.mark.parametrize("qjit", [True, False])
     @pytest.mark.parametrize(
         "level, expected",
@@ -97,7 +98,6 @@ class Testdraw:
 
         assert draw(transforms_circuit, level=level)() == expected
 
-    # pylint: disable=implicit-str-concat
     @pytest.mark.parametrize("qjit", [True, False])
     @pytest.mark.parametrize(
         "level, expected",
@@ -133,7 +133,42 @@ class Testdraw:
 
         assert draw(transforms_circuit, level=level)() == expected
 
-    # pylint: disable=implicit-str-concat
+    @pytest.mark.parametrize("qjit", [True, False])
+    @pytest.mark.parametrize(
+        "level, expected",
+        [
+            (
+                0,
+                "0: ──RX──RX──H──H─╭●─╭●──RZ──RZ─╭●─╭●─┤  State\n"
+                "1: ──RY──RY───────╰X─╰X──H───H──│──│──┤  State\n"
+                "2: ──RZ──RZ─────────────────────╰X─╰X─┤  State",
+            ),
+            (
+                1,
+                "0: ──RX──H──H─╭●─╭●──RZ────╭●─╭●─┤  State\n"
+                "1: ──RY───────╰X─╰X──H───H─│──│──┤  State\n"
+                "2: ──RZ────────────────────╰X─╰X─┤  State",
+            ),
+            (2, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
+            (None, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
+            (50, "0: ──RX──RZ─┤  State\n" "1: ──RY─────┤  State\n" "2: ──RZ─────┤  State"),
+        ],
+    )
+    def test_multiple_levels_xdsl_catalyst(self, transforms_circuit, level, qjit, expected):
+        """Test that multiple levels of transformation are applied correctly with xDSL and Catalyst compilation passes."""
+
+        transforms_circuit = qml.transforms.merge_rotations(
+            qml.compiler.python_compiler.transforms.iterative_cancel_inverses_pass(
+                transforms_circuit
+            )
+        )
+        if qjit:
+            transforms_circuit = qml.qjit(pass_plugins=[getXDSLPluginAbsolutePath()])(
+                transforms_circuit
+            )
+
+        assert draw(transforms_circuit, level=level)() == expected
+
     @pytest.mark.parametrize("qjit", [True, False])
     @pytest.mark.parametrize(
         "level, expected",
