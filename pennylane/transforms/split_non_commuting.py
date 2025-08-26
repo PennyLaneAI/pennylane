@@ -130,8 +130,13 @@ def split_non_commuting(
             commuting observables, can be ``"default"``, ``"wires"``, ``"qwc"``,
             or ``None`` to disable grouping.
         shot_dist (str or Callable or None): The strategy to use for shot distribution
-            over the disjoint groups of commuting observables, can be ``"uniform"``, ``"weighted"``,
-            ``"weighted_random"`` or a custom callable. ``None`` to disable any shot distribution strategy.
+            over the disjoint groups of commuting observables. Values can be ``"uniform"`` 
+            (evenly distributes the number of ``shots`` across all groups of commuting terms), 
+            ``"weighted"`` (distributes the number of ``shots`` according to weights proportional 
+            to the L1 norm of the coefficients in each group), ``"weighted_random"`` (same 
+            as ``"weighted"``, but the numbers of ``shots`` are sampled from a multinomial distribution) 
+            or a custom callable. ``None`` will disable any shot distribution strategy.
+            See Usage Details for more information.
         seed (Generator or int or None): A seed-like parameter used only when the shot distribution
             strategy involves a non-deterministic sampling process (e.g. ``"weighted_random"``).
 
@@ -298,6 +303,49 @@ def split_non_commuting(
 
     .. details::
         :title: Usage Details
+
+        **Shot distribution**
+
+        With finite-shot measurements, the default behaviour of ``split_non_commuting`` 
+        will perform ``shots`` executions for each group of commuting terms. With the 
+        ``shot_dist`` argument, this behaviour can be changed. For example, 
+        ``shot_dist = "weighted"` will partition the number of shots performed for
+        each commuting group up according to the L1 norm of each group's coefficients:
+
+        .. code-block:: python3
+
+              import pennylane as qml
+
+              ham = qml.Hamiltonian(
+                  coeffs=[10, 0.1, 20, 100, 0.2],
+                  observables=[
+                      qml.X(0) @ qml.Y(1),
+                      qml.Z(0) @ qml.Z(2),
+                      qml.Y(1),
+                      qml.X(1) @ qml.X(2),
+                      qml.Z(0) @ qml.Z(1) @ qml.Z(2)
+                  ]
+              )
+
+                      from functools import partial
+              from pennylane.transforms import split_non_commuting
+
+              dev = qml.device("default.qubit")
+              total_shots = 10000
+
+              @partial(split_non_commuting, shot_dist="weighted")
+              @qml.set_shots(shots=total_shots)
+              @qml.qnode(dev)
+              def circuit():
+                  return qml.expval(ham)
+
+              with qml.Tracker(dev) as tracker:
+                  circuit()
+
+        >>> print(tracker.history["shots"])
+        [2303, 23, 7674]
+ 
+        **Internal details**
 
         Internally, this function works with tapes. We can create a tape with multiple
         measurements of non-commuting observables:
