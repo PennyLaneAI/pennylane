@@ -3,9 +3,10 @@
 
 <h3>New features since last release</h3>
 
-* New `change_basis_op` function added, which allows a compute, uncompute pattern like U V U† to be represented
-  by a single operator. A corresponding decomposition rule has been added to support controlling the pattern by simply 
-  controlling the middle (target) operator and not U or U†.
+  * A new :func:`~.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` were added,
+    which allow a compute-uncompute pattern (U V U†) to be represented by a single operator. A corresponding 
+    decomposition rule has been added to support controlling the pattern by simply 
+    controlling the middle (target) operator and not U or U†.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
   [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
 
