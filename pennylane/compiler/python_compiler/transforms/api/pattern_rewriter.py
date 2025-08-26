@@ -15,7 +15,7 @@
 
 from collections.abc import Sequence
 from numbers import Number
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from xdsl.builder import ImplicitBuilder
 from xdsl.dialects import arith, builtin, scf, stablehlo, tensor
@@ -72,11 +72,11 @@ _qubit_ops = (quantum.AllocQubitOp, quantum.ExtractOp)
 class AbstractWire:
     """A class representing an abstract wire."""
 
-    id: str
+    id: UUID
 
     def __init__(self):
         # Create a universally unique identifier
-        self.id = str(uuid4())
+        self.id = uuid4()
 
     def __hash__(self):
         return hash(self.id)
