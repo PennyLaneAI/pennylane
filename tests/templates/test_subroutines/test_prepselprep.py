@@ -387,9 +387,10 @@ class TestInterfaces:
 
         @qml.qnode(dev)
         def circuit(coeffs):
-            H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
-            )
+            with qml.QueuingManager.stop_recording():
+                H = qml.ops.LinearCombination(
+                    coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 
@@ -406,9 +407,10 @@ class TestInterfaces:
 
         @qml.qnode(dev)
         def circuit(coeffs):
-            H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
-            )
+            with qml.QueuingManager.stop_recording():
+                H = qml.ops.LinearCombination(
+                    coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 
@@ -427,9 +429,10 @@ class TestInterfaces:
 
         @qml.qnode(dev)
         def circuit(coeffs):
-            H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
-            )
+            with qml.QueuingManager.stop_recording():
+                H = qml.ops.LinearCombination(
+                    coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 
@@ -448,9 +451,10 @@ class TestInterfaces:
         @jax.jit
         @qml.qnode(dev)
         def circuit(coeffs):
-            H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
-            )
+            with qml.QueuingManager.stop_recording():
+                H = qml.ops.LinearCombination(
+                    coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+                )
             qml.PrepSelPrep(H, control=(3, 4))
             return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 

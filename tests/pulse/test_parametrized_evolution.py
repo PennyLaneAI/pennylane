@@ -508,7 +508,8 @@ class TestMatrix:
             for ti in t:
                 yield jax.scipy.linalg.expm(-1j * 0.001 * qml.matrix(H(params, t=ti)))
 
-        true_mat = reduce(lambda x, y: y @ x, generator(params))
+        with qml.QueuingManager.stop_recording():
+            true_mat = reduce(lambda x, y: y @ x, generator(params))
 
         assert qml.math.allclose(ev.matrix(), true_mat, atol=1e-2)
 
@@ -595,7 +596,8 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def true_circuit(params):
-            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+            with qml.QueuingManager.stop_recording():
+                true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
             QubitUnitary(U=true_mat, wires=[0, 1])
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
@@ -642,7 +644,8 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def true_circuit(params):
-            true_mat = reduce(lambda x, y: y @ x, generator(params))
+            with qml.QueuingManager.stop_recording():
+                true_mat = reduce(lambda x, y: y @ x, generator(params))
             QubitUnitary(U=true_mat, wires=[0, 1])
             return qml.expval(qml.PauliZ(0) @ qml.PauliX(1))
 
@@ -690,7 +693,8 @@ class TestIntegration:
 
         @qml.qnode(dev)
         def true_circuit(params):
-            true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
+            with qml.QueuingManager.stop_recording():
+                true_mat = qml.math.expm(-1j * qml.matrix(H(params, t=t)) * t)
             QubitUnitary(U=true_mat, wires=[0, 1])
             return qml.expval(qml.PauliX(0) @ qml.PauliX(1))
 
