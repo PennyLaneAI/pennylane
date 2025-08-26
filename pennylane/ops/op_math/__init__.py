@@ -41,6 +41,7 @@ Symbolic Classes
     :toctree: api
 
     ~Adjoint
+    ~ChangeOpBasis
     ~CompositeOp
     ~Conditional
     ~Controlled

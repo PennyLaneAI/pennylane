@@ -3,11 +3,9 @@
 
 <h3>New features since last release</h3>
 
-* New `~.ChangeOpBasis` class added, which allows a compute, uncompute pattern like U V U† to be represented
-  by a single operator that inherits from `~.CompositeOp`. A corresponding decomposition rule has been added to
-  support controlling the pattern by simply controlling the middle (target) operator and not U or U†.
+* New `change_basis_op` function added, which allows a compute, uncompute pattern like U V U† to be represented
+  by a single operator.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
-  [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
 
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the

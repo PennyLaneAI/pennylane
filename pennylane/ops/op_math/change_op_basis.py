@@ -36,17 +36,47 @@ from pennylane.ops.op_math import adjoint, ctrl
 from .composite import CompositeOp, handle_recursion_error
 
 
-def change_op_basis(compute_op, target_op, uncompute_op=None):
-    """Construct an operator which represents the product of the
+def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+    """Construct an operator that represents the product of the
     operators provided.
 
     Args:
         compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
         target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations. Default is uncompute_op=qml.adjoint(compute_op).
+        uncompute_op (None | :class:`~.operation.Operator`): An optional single operator or a product that applies quantum
+            operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute, uncompute pattern.
+
+    **Example**
+
+    Consider the following example involving a ``ChangeOpBasis``. The compute, uncompute pattern is composed of
+    a Quantum Fourier Transform (``QFT``), followed by a ``PhaseAdder``, and finally an inverse ``QFT``.
+
+    .. code::
+        import pennylane as qml
+        from functools import partial
+
+        qml.decomposition.enable_graph()
+
+        dev = qml.device("default.qubit")
+
+        @partial(qml.transforms.decompose)
+        @qml.qnode(dev)
+        def circuit():
+            qml.ctrl(
+                qml.change_op_basis(qml.H(1), qml.X(1)),
+                control=0
+            )
+            return qml.state()
+
+    When the circuit is decomposed, we will get the following. Note how the ``QFT``s are not controlled.
+    This is the optimization achieved by use of the `change_op_basis` function.
+
+    >>> print(qml.draw(circuit, level=1)())
+    0: ────╭●────┤  State
+    1: ──H─╰X──H─┤  State
     """
 
     return ChangeOpBasis(compute_op, target_op, uncompute_op)
@@ -54,12 +84,14 @@ def change_op_basis(compute_op, target_op, uncompute_op=None):
 
 class ChangeOpBasis(CompositeOp):
     """
-    Composite operator representing a compute, uncompute pattern of operators.
+    Composite operator representing a compute-uncompute pattern of operators, which constitutes changing the basis in
+    which an operator is applied.
 
     Args:
         compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
         target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations. Default is uncompute_op=qml.adjoint(compute_op).
+        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
+            Default is uncompute_op=qml.adjoint(compute_op).
 
     Returns:
         (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, compute_op†.
@@ -122,7 +154,7 @@ class ChangeOpBasis(CompositeOp):
         """Check if the product operator is hermitian.
 
         Note, this check is not exhaustive. There can be hermitian operators for which this check
-        yields false, which ARE hermitian. So a false result only implies a more explicit check
+        yields false, which ARE hermitian. So a false result only implies that a more explicit check
         must be performed.
         """
         return self[1].is_hermitian
