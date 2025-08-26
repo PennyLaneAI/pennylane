@@ -64,9 +64,11 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
     When the circuit is decomposed, we will get the following. Note how the ``QFT``s are not controlled.
     This is the optimization achieved by use of the `change_op_basis` function.
 
-    0: ──H──────╭●────────────────┤ State
-    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ State
-    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ State
+    .. code-block::
+
+        0: ──H──────╭●────────────────┤ State
+        1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ State
+        2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ State
     """
 
     return ChangeOpBasis(compute_op, target_op, uncompute_op)
