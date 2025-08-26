@@ -1,0 +1,63 @@
+schema = 3
+
+[compilation]
+qjit_compatible = false
+runtime_code_generation = false
+dynamic_qubit_management = false
+overlapping_observables = true
+non_commuting_observables = false
+initial_state_prep = false
+supported_mcm_methods = []
+
+[operators.gates]
+# Single-qubit gates
+Identity = {properties = ["invertible", "controllable", "differentiable"]}
+PauliX = {properties = ["invertible", "controllable", "differentiable"]}
+PauliY = {properties = ["invertible", "controllable", "differentiable"]}
+PauliZ = {properties = ["invertible", "controllable", "differentiable"]}
+Hadamard = {properties = ["invertible", "controllable", "differentiable"]}
+S = {properties = ["invertible", "controllable", "differentiable"]}
+T = {properties = ["invertible", "controllable", "differentiable"]}
+SX = {properties = ["invertible", "controllable", "differentiable"]}
+RX = {properties = ["invertible", "controllable", "differentiable"]}
+RY = {properties = ["invertible", "controllable", "differentiable"]}
+RZ = {properties = ["invertible", "controllable", "differentiable"]}
+PhaseShift = {properties = ["invertible", "controllable", "differentiable"]}
+Rot = {properties = ["invertible", "controllable", "differentiable"]}
+U1 = {properties = ["invertible", "controllable", "differentiable"]}
+U2 = {properties = ["invertible", "controllable", "differentiable"]}
+U3 = {properties = ["invertible", "controllable", "differentiable"]}
+
+# Two-qubit gates
+CNOT = {properties = ["invertible", "controllable", "differentiable"]}
+CY = {properties = ["invertible", "controllable", "differentiable"]}
+CZ = {properties = ["invertible", "controllable", "differentiable"]}
+SWAP = {properties = ["invertible", "controllable", "differentiable"]}
+ISWAP = {properties = ["invertible", "controllable", "differentiable"]}
+PSWAP = {properties = ["invertible", "controllable", "differentiable"]}
+CRX = {properties = ["invertible", "controllable", "differentiable"]}
+CRY = {properties = ["invertible", "controllable", "differentiable"]}
+CRZ = {properties = ["invertible", "controllable", "differentiable"]}
+CRot = {properties = ["invertible", "controllable", "differentiable"]}
+IsingXX = {properties = ["invertible", "controllable", "differentiable"]}
+IsingYY = {properties = ["invertible", "controllable", "differentiable"]}
+IsingZZ = {properties = ["invertible", "controllable", "differentiable"]}
+IsingXY = {properties = ["invertible", "controllable", "differentiable"]}
+
+# Three-qubit gates
+Toffoli = {properties = ["invertible", "controllable", "differentiable"]}
+CSWAP = {properties = ["invertible", "controllable", "differentiable"]}
+FREDKIN = {properties = ["invertible", "controllable", "differentiable"]}
+
+# State preparation (not controllable/invertible in the usual sense)
+BasisState = {properties = ["differentiable"]}
+StatePrep = {properties = ["differentiable"]}
+
+# Special operations
+Snapshot = {properties = []}
+
+[operators.observables]
+# Basic observables will be added here if needed
+
+[measurement_processes]
+# Measurement processes will be added here if needed

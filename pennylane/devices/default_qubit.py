@@ -21,6 +21,7 @@ import warnings
 from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -105,94 +106,6 @@ def stopping_condition_shots(op: Operator) -> bool:
         (isinstance(op, Conditional) and stopping_condition_shots(op.base))
         or isinstance(op, MidMeasureMP)
         or stopping_condition(op)
-    )
-
-
-def _create_default_qubit_capabilities() -> DeviceCapabilities:
-    """Create DeviceCapabilities for DefaultQubit with supported operations."""
-
-    # Define basic operator properties for most operations
-    basic_props = OperatorProperties(
-        invertible=True,  # Most operations have adjoints
-        controllable=True,  # Most can be controlled
-        differentiable=True,  # DefaultQubit supports backprop
-        conditions=[],
-    )
-
-    # Operations that DefaultQubit natively supports
-    operations = {}
-
-    # Single-qubit gates
-    single_qubit_gates = [
-        "Identity",
-        "PauliX",
-        "PauliY",
-        "PauliZ",
-        "Hadamard",
-        "S",
-        "T",
-        "SX",
-        "RX",
-        "RY",
-        "RZ",
-        "PhaseShift",
-        "Rot",
-        "U1",
-        "U2",
-        "U3",
-    ]
-    for gate in single_qubit_gates:
-        operations[gate] = basic_props
-
-    # Two-qubit gates
-    two_qubit_gates = [
-        "CNOT",
-        "CY",
-        "CZ",
-        "SWAP",
-        "ISWAP",
-        "PSWAP",
-        "CRX",
-        "CRY",
-        "CRZ",
-        "CRot",
-        "IsingXX",
-        "IsingYY",
-        "IsingZZ",
-        "IsingXY",
-    ]
-    for gate in two_qubit_gates:
-        operations[gate] = basic_props
-
-    # Three-qubit gates
-    three_qubit_gates = ["Toffoli", "CSWAP", "FREDKIN"]
-    for gate in three_qubit_gates:
-        operations[gate] = basic_props
-
-    # State preparation (not controllable/invertible in the usual sense)
-    state_prep_props = OperatorProperties(
-        invertible=False, controllable=False, differentiable=True, conditions=[]
-    )
-    operations["BasisState"] = state_prep_props
-    operations["StatePrep"] = state_prep_props
-
-    # Special operations
-    snapshot_props = OperatorProperties(
-        invertible=False, controllable=False, differentiable=False, conditions=[]
-    )
-    operations["Snapshot"] = snapshot_props
-
-    return DeviceCapabilities(
-        operations=operations,
-        observables={},  # Will be populated later if needed
-        measurement_processes={},
-        qjit_compatible=False,
-        runtime_code_generation=False,
-        dynamic_qubit_management=False,
-        overlapping_observables=True,
-        non_commuting_observables=False,
-        initial_state_prep=False,
-        supported_mcm_methods=[],
     )
 
 
@@ -537,6 +450,9 @@ class DefaultQubit(Device):
 
     """
 
+    config_filepath = Path(__file__).parent / "default_qubit.toml"
+    """Path to the TOML configuration file that defines device capabilities."""
+
     @property
     def name(self):
         """The name of the device."""
@@ -579,10 +495,6 @@ class DefaultQubit(Device):
     """
     tuple of string names for all the device options.
     """
-
-    # Define device capabilities using the DeviceCapabilities class
-    capabilities = _create_default_qubit_capabilities()
-    """Device capabilities describing supported operations and features."""
 
     # pylint:disable = too-many-arguments
     @debug_logger_init
