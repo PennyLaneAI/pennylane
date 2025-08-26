@@ -83,6 +83,60 @@
 
 <h3>Improvements 🛠</h3>
 
+* The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
+  [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
+
+  ```python
+  @qml.qnode(qml.device("default.qubit"), shots=1000)
+  def circuit():
+      qml.H(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit.shots
+  Shots(total=1000)
+  >>> circuit()
+  np.float64(-0.004)
+  ```
+
+  Setting the `shots` value in a QNode is equivalent to decorating with :func:`qml.workflow.set_shots`. Note, however, that decorating with :func:`qml.workflow.set_shots` overrides QNode `shots`:
+
+  ```pycon
+  >>> new_circ = qml.set_shots(circuit, shots=123)
+  >>> new_circ.shots
+  Shots(total=123)
+  ```
+
+* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
+  Users can now use this when designing quantum circuits with experimental program capture enabled.
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3))
+  def circuit(val):
+    angles = jnp.zeros(3)
+    angles[0:3] += val
+
+    for i, angle in enumerate(angles):
+        qml.RX(angle, i)
+
+    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  ```
+
+  ```pycon
+  >>> circuit(jnp.pi)
+  (Array(-1, dtype=float32),
+   Array(-1, dtype=float32),
+   Array(-1, dtype=float32)) 
+  ```
+
+  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
+  
 * PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
   Users can now use standard python assignment when designing circuits with experimental program capture enabled.
 
@@ -178,13 +232,16 @@
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
   [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
+  [(#8075)](https://github.com/PennyLaneAI/pennylane/pull/8075)
   [(#8002)](https://github.com/PennyLaneAI/pennylane/pull/8002)
   
   The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, 
   :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
   :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`, 
   :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, 
-  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.Qubitization`, and :class:`~.Superposition`
+  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.ArbitraryStatePreparation`, :class:`~.CosineWindow`, 
+  :class:`~.AmplitudeAmplification`, :class:`~.Permute`, :class:`~.AQFT`, :class:`~.FlipSign`, :class:`~.FABLE`,
+  :class:`~.Qubitization`, and :class:`~.Superposition`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
@@ -372,9 +429,16 @@
 * The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
   [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
 
+* The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
+  StableHLO dialect with missing upstream operations.
+  [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
+
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
+
+* Added state of the art resources for the `ResourceTrotterProduct` template.
+  [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
 
 <h3>Breaking changes 💔</h3>
 
@@ -700,9 +764,10 @@
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
-* Update xDSL supported version to `0.46`.
+* Update xDSL supported version to `0.49`.
   [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
   [(#7932)](https://github.com/PennyLaneAI/pennylane/pull/7932)
+  [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
 * Update JAX version used in tests to `0.6.2`
   [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
@@ -715,6 +780,7 @@
 * An `xdsl_extras` module has been added to the Python compiler to house additional utilities and
   functionality not available upstream in xDSL.
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
+  [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
 <h3>Documentation 📝</h3>
 
@@ -752,6 +818,9 @@
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 <h3>Bug fixes 🐛</h3>
+
+* A more informative error is raised when extremely deep circuits are attempted to be drawn.
+  [(#8139)](https://github.com/PennyLaneAI/pennylane/pull/8139)
 
 * An error is now raised if sequences of classically processed mid circuit measurements
   are used as input to :func:`pennylane.counts` or :func:`pennylane.probs`.
