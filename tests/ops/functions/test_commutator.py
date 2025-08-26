@@ -67,6 +67,7 @@ def test_no_recording_in_context():
         qml.PauliX(0)
         qml.PauliY(0)
 
+    assert len(tape) == len(tape2) == 2
     qml.assert_equal(tape, tape2)
 
 
@@ -80,6 +81,7 @@ def test_no_recording_in_context_with_pauli():
     with qml.tape.QuantumTape() as tape2:
         qml.PauliX(0)
 
+    assert len(tape) == len(tape2) == 1
     qml.assert_equal(tape, tape2)
 
 
@@ -96,7 +98,7 @@ def test_recording_wanted():
         qml.PauliY(0)
         qml.s_prod(2j, qml.PauliZ(0))
 
-    assert len(tape) == 3
+    assert len(tape) == len(tape2) == 3
     qml.assert_equal(tape, tape2)
 
 

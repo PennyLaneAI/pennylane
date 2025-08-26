@@ -22,7 +22,6 @@ from scipy import sparse
 import pennylane as qml
 from pennylane import math
 from pennylane.ops import Identity, PauliX, PauliY, PauliZ, Prod, SProd, Sum
-from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
 from pennylane.wires import Wires, WiresLike
 
@@ -505,7 +504,6 @@ class PauliWord(dict):
             current_size *= 2
         return indices
 
-    @QueuingManager.stop_recording()
     def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliWord."""
         if len(self) == 0:
@@ -1004,7 +1002,6 @@ class PauliSentence(dict):
         matrix.eliminate_zeros()
         return matrix
 
-    @QueuingManager.stop_recording()
     def operation(self, wire_order: WiresLike = ()):
         """Returns a native PennyLane :class:`~pennylane.operation.Operation` representing the PauliSentence."""
         if len(self) == 0:
