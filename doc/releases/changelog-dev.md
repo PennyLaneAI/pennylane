@@ -3,8 +3,8 @@
 
 <h3>New features since last release</h3>
 
-* New `change_basis_op` function added, which allows a compute, uncompute pattern like U V U† to be represented
-  by a single operator.
+* A new :func:`~.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` were added,
+  which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
 
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
