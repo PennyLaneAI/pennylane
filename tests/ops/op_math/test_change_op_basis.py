@@ -220,18 +220,18 @@ class TestDecomposition:
         decomps = qml.decomposition.list_decomps(ChangeOpBasis)
 
         default_decomp = decomps[0]
-        _ops = [qml.X(0), qml.X(1), qml.X(2), qml.MultiRZ(0.5, wires=(0, 1))]
-        resources = {qml.resource_rep(qml.X): 3, qml.resource_rep(qml.MultiRZ, num_wires=2): 1}
+        _ops = [qml.X(0), qml.MultiRZ(0.5, wires=(0, 1)), qml.X(0)]
+        resources = {qml.resource_rep(qml.X): 2, qml.resource_rep(qml.MultiRZ, num_wires=2): 1}
 
         resource_obj = default_decomp.compute_resources(resources=resources)
 
-        assert resource_obj.num_gates == 4
+        assert resource_obj.num_gates == 3
         assert resource_obj.gate_counts == resources
 
         with qml.queuing.AnnotatedQueue() as q:
             default_decomp(operands=_ops)
 
-        assert q.queue == _ops[::-1]
+        assert q.queue == _ops
 
     @pytest.mark.parametrize("ops_lst", ops)
     def test_decomposition(self, ops_lst):
