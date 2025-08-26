@@ -203,12 +203,9 @@ def _basis_state_decomp(state, wires, **__):
         qml.GlobalPhase(-global_phase)
         return
 
-    def _X(w):
-        qml.X(w)
-
     @qml.for_loop(0, len(wires), 1)
     def _loop(i):
-        qml.cond(qml.math.allclose(state[i], 1), _X)(wires[i])
+        qml.cond(qml.math.allclose(state[i], 1), qml.X)(wires[i])
 
     _loop()  # pylint: disable=no-value-for-parameter
 

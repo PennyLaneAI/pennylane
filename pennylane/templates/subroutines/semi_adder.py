@@ -99,9 +99,9 @@ class SemiAdder(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [0 0 0 1 1 1]
+        [[0 0 0 1 1 1]]
 
-    The result :math:`[0 0 0 1 1 1]`, is the binary representation of :math:`3 + 4 = 7`.
+    The result :math:`[[0 0 0 1 1 1]]`, is the binary representation of :math:`3 + 4 = 7`.
 
     Note that the result is computed modulo :math:`2^{\text{len(y_wires)}}` which makes the computed value dependent on the size of the ``y_wires`` register. This behavior is demonstrated in the following example.
 
@@ -124,7 +124,7 @@ class SemiAdder(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [0 0]
+        [[0 0]]
 
     The result :math:`[0\ 0]` is the binary representation of :math:`3 + 1 = 4` where :math:`4 \mod 2^2 = 0`.
     """

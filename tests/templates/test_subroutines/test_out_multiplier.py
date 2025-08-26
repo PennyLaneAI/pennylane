@@ -100,8 +100,9 @@ class TestOutMultiplier:
         self, x_wires, y_wires, output_wires, mod, work_wires, x, y
     ):  # pylint: disable=too-many-arguments
         """Test the correctness of the OutMultiplier template output."""
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit(x, y):
             qml.BasisEmbedding(x, wires=x_wires)
@@ -113,9 +114,8 @@ class TestOutMultiplier:
             mod = 2 ** len(output_wires)
 
         # pylint: disable=bad-reversed-sequence
-        assert np.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit(x, y)))), (x * y) % mod
-        )
+        out = circuit(x, y)[0, :]
+        assert np.allclose(sum(bit * (2**i) for i, bit in enumerate(reversed(out))), (x * y) % mod)
 
     @pytest.mark.parametrize(
         ("x_wires", "y_wires", "output_wires", "mod", "work_wires", "msg_match"),
@@ -277,9 +277,10 @@ class TestOutMultiplier:
         y_wires = [2, 3]
         output_wires = [6, 7, 8, 9]
         work_wires = [5, 10]
-        dev = qml.device("default.qubit", shots=1)
+        dev = qml.device("default.qubit")
 
         @jax.jit
+        @qml.set_shots(1)
         @qml.qnode(dev)
         def circuit():
             qml.BasisEmbedding(x_list, wires=x_wires)
@@ -288,6 +289,7 @@ class TestOutMultiplier:
             return qml.sample(wires=output_wires)
 
         # pylint: disable=bad-reversed-sequence
+        out = circuit()[0, :]
         assert jax.numpy.allclose(
-            sum(bit * (2**i) for i, bit in enumerate(reversed(circuit()))), (x * y) % mod
+            sum(bit * (2**i) for i, bit in enumerate(reversed(out))), (x * y) % mod
         )

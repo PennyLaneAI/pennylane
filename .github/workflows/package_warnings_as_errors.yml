@@ -22,7 +22,6 @@ jobs:
       python_warning_level: 'error'
       run_lightened_ci: false
       skip_ci_test_jobs: |
-        tf-tests
         all-interfaces-tests
         external-libraries-tests
         qcut-tests
