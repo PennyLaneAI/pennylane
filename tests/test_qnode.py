@@ -252,6 +252,15 @@ class TestInitialization:
 
         assert f3.shots == qml.measurements.Shots(5)
 
+        # Shots from device and also from qnode, then qnode should take precedence
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+
+            @qml.qnode(qml.device("default.qubit", shots=500), shots=None)
+            def f4():
+                return qml.state()
+
+        assert f4.shots == qml.measurements.Shots(None)
+
     def test_cache_initialization_maxdiff_1(self):
         """Test that when max_diff = 1, the cache initializes to false."""
 
@@ -1204,7 +1213,7 @@ class TestShots:
             qml.RX(a, wires=0)
             return qml.expval(qml.PauliZ(0))
 
-        with pytest.raises(AttributeError, match="Shots can not be set on a qnode instance"):
+        with pytest.raises(AttributeError, match="Shots cannot be set on a qnode instance"):
             circuit.shots = 5
 
     # pylint: disable=unexpected-keyword-arg
