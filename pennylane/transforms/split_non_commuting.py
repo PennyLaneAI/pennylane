@@ -823,7 +823,7 @@ def _processing_fn_with_grouping(
     res_batch_for_each_mp = [[] for _ in offsets]  # ([n_mps] [,n_shots] [,batch_size])
     coeffs_for_each_mp = [[] for _ in offsets]
 
-    for _, term in single_term_obs_mps.items():
+    for term in single_term_obs_mps.values():
 
         res_group = res[term.group_idx]  # ([n_shots] [,n_mps] [,batch_size])
         group_size = group_sizes[term.group_idx]
