@@ -42,7 +42,6 @@ class Test_map_to_resource_op:
         ):
             map_to_resource_op(operation)
 
-
     @pytest.mark.parametrize(
         "operator, expected_res_op",
         [
@@ -59,7 +58,6 @@ class Test_map_to_resource_op:
             (qml.RX(0.1, wires=0), re_ops.ResourceRX()),
             (qml.RY(0.1, wires=0), re_ops.ResourceRY()),
             (qml.RZ(0.1, wires=0), re_ops.ResourceRZ()),
-
             # Two-Qubit Gates
             (qml.SWAP(wires=(0, 1)), re_ops.ResourceSWAP()),
             (qml.IsingXX(0.1, wires=(0, 1)), re_ops.ResourceIsingXX()),
@@ -77,17 +75,17 @@ class Test_map_to_resource_op:
             (qml.CRZ(0.1, wires=(0, 1)), re_ops.ResourceCRZ()),
             (qml.CY(wires=(0, 1)), re_ops.ResourceCY()),
             (qml.CZ(wires=(0, 1)), re_ops.ResourceCZ()),
-            
             # Three-Qubit Gates
             (qml.CCZ(wires=(0, 1, 2)), re_ops.ResourceCCZ()),
             (qml.CSWAP(wires=(0, 1, 2)), re_ops.ResourceCSWAP()),
             (qml.Toffoli(wires=(0, 1, 2)), re_ops.ResourceToffoli()),
-            
             # Multi-Qubit Gates
             (qml.MultiRZ(0.1, wires=[0, 1, 2]), re_ops.ResourceMultiRZ(num_wires=3)),
             (qml.PauliRot(0.1, "XYZ", wires=[0, 1, 2]), re_ops.ResourcePauliRot("XYZ")),
-            (qml.MultiControlledX(wires=[0, 1, 2]), re_ops.ResourceMultiControlledX(num_ctrl_wires=2, num_ctrl_values=2)),
-
+            (
+                qml.MultiControlledX(wires=[0, 1, 2]),
+                re_ops.ResourceMultiControlledX(num_ctrl_wires=2, num_ctrl_values=2),
+            ),
             # Custom/Template Gates
             (qtemps.TemporaryAND(wires=[0, 1, 2]), re_ops.ResourceTempAND()),
         ],
