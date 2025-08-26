@@ -523,8 +523,8 @@ class QNode:
         device: SupportedDeviceAPIs,
         interface: SupportedInterfaceUserInput = Interface.AUTO,
         diff_method: TransformDispatcher | SupportedDiffMethods = "best",
-        shots: ShotsLike = None,
         *,
+        shots: ShotsLike = "unset",
         grad_on_execution: bool | Literal["best"] = "best",
         cache: Cache | dict | Literal["auto"] | bool = "auto",
         cachesize: int = 10000,
@@ -611,7 +611,7 @@ class QNode:
         self._gradient_fn = None
         self.gradient_kwargs = gradient_kwargs
 
-        self._shots: Shots = Shots(shots or device.shots)
+        self._shots: Shots = device.shots if shots == "unset" else Shots(shots)
         self._shots_override_device: bool = False
         self._transform_program = TransformProgram()
         functools.update_wrapper(self, func)

@@ -226,19 +226,31 @@ class TestInitialization:
     """Testing the initialization of the qnode."""
 
     def test_shots_initialization(self):
-        """Test that when max_diff = 1, the cache initializes to false."""
+        """Test the initialization with shots."""
 
+        # Default behavior: no shots from either device or qnode
+        # shots should be None
         @qml.qnode(qml.device("default.qubit"))
         def f():
             return qml.state()
 
         assert not f.shots
 
+        # Shots should be set correctly set from the qnode init
         @qml.qnode(qml.device("default.qubit"), shots=10)
         def f2():
             return qml.state()
 
         assert f2.shots == qml.measurements.Shots(10)
+
+        # Shots from device should be set correctly
+        with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
+
+            @qml.qnode(qml.device("default.qubit", shots=5))
+            def f3():
+                return qml.state()
+
+        assert f3.shots == qml.measurements.Shots(5)
 
     def test_cache_initialization_maxdiff_1(self):
         """Test that when max_diff = 1, the cache initializes to false."""
