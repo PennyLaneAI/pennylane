@@ -46,9 +46,10 @@ def map_to_resource_op(op: Operation) -> ResourceOperator:
         "Operation doesn't have a resource equivalent and doesn't define a decomposition."
     )
 
+
 @map_to_resource_op.register
-def _(op: qops.GlobalPhase):
-    return re_ops.ResourceGlobalPhase()
+def _(op: qops.Identity):
+    return re_ops.ResourceIdentity()
 
 
 @map_to_resource_op.register
@@ -57,13 +58,49 @@ def _(op: qops.Hadamard):
 
 
 @map_to_resource_op.register
-def _(op: qops.Identity):
-    return re_ops.ResourceIdentity()
+def _(op: qops.S):
+    return re_ops.ResourceS()
+
+
+@map_to_resource_op.register
+def _(op: qops.T):
+    return re_ops.ResourceT()
+
+
+@map_to_resource_op.register
+def _(op: qops.X):
+    return re_ops.ResourceX()
+
+
+@map_to_resource_op.register
+def _(op: qops.Y):
+    return re_ops.ResourceY()
+
+
+@map_to_resource_op.register
+def _(op: qops.Z):
+    return re_ops.ResourceZ()
+
+
+@map_to_resource_op.register
+def _(op: qops.SWAP):
+    return re_ops.ResourceSWAP()
+
+
+@map_to_resource_op.register
+def _(op: qops.PhaseShift):
+    return re_ops.ResourcePhaseShift()
+
+
+@map_to_resource_op.register
+def _(op: qops.Rot):
+    return re_ops.ResourceRot()
 
 
 @map_to_resource_op.register
 def _(op: qops.RX):
     return re_ops.ResourceRX()
+
 
 @map_to_resource_op.register
 def _(op: qops.RY):
@@ -76,59 +113,79 @@ def _(op: qops.RZ):
 
 
 @map_to_resource_op.register
-def _(op: qops.S):
-    return re_ops.ResourceS()
-
-@map_to_resource_op.register
-def _(op: qops.SWAP):
-    return re_ops.ResourceSWAP()
-
-@map_to_resource_op.register
-def _(op: qops.T):
-    return re_ops.ResourceT()
+def _(op: qops.MultiRZ):
+    return re_ops.ResourceMultiRZ()
 
 
 @map_to_resource_op.register
-def _(op: qops.X):
-    return re_ops.ResourceX()
+def _(op: qops.PauliRot):
+    return re_ops.ResourcePauliRot()
+
 
 @map_to_resource_op.register
-def _(op: qops.Y):
-    return re_ops.ResourceY()
+def _(op: qops.IsingXX):
+    return re_ops.ResourceIsingXX()
+
 
 @map_to_resource_op.register
-def _(op: qops.Z):
-    return re_ops.ResourceZ()
+def _(op: qops.IsingYY):
+    return re_ops.ResourceIsingYY()
 
-#### controlled_ops
+
+@map_to_resource_op.register
+def _(op: qops.IsingXY):
+    return re_ops.ResourceIsingXY()
+
+
+@map_to_resource_op.register
+def _(op: qops.IsingZZ):
+    return re_ops.ResourceIsingZZ()
+
+
+@map_to_resource_op.register
+def _(op: qops.PSWAP):
+    return re_ops.ResourcePSWAP()
+
+
+@map_to_resource_op.register
+def _(op: qops.SingleExcitation):
+    return re_ops.ResourceSingleExcitation()
+
 
 @map_to_resource_op.register
 def _(op: qops.CCZ):
     return re_ops.ResourceCCZ()
 
+
 @map_to_resource_op.register
 def _(op: qops.CH):
     return re_ops.ResourceCH()
+
 
 @map_to_resource_op.register
 def _(op: qops.CNOT):
     return re_ops.ResourceCNOT()
 
+
 @map_to_resource_op.register
 def _(op: qops.ControlledPhaseShift):
     return re_ops.ResourceControlledPhaseShift()
+
 
 @map_to_resource_op.register
 def _(op: qops.CRot):
     return re_ops.ResourceCRot()
 
+
 @map_to_resource_op.register
 def _(op: qops.CRX):
     return re_ops.ResourceCRX()
 
+
 @map_to_resource_op.register
 def _(op: qops.CRY):
     return re_ops.ResourceCRY()
+
 
 @map_to_resource_op.register
 def _(op: qops.CRZ):
@@ -139,23 +196,27 @@ def _(op: qops.CRZ):
 def _(op: qops.CSWAP):
     return re_ops.ResourceCSWAP()
 
+
 @map_to_resource_op.register
 def _(op: qops.CY):
     return re_ops.ResourceCY()
+
 
 @map_to_resource_op.register
 def _(op: qops.CZ):
     return re_ops.ResourceCZ()
 
+
 @map_to_resource_op.register
 def _(op: qops.MultiControlledX):
     return re_ops.ResourceMultiControlledX()
+
 
 @map_to_resource_op.register
 def _(op: qtemps.TemporaryAND):
     return re_ops.ResourceTempAND()
 
+
 @map_to_resource_op.register
 def _(op: qops.Toffoli):
     return re_ops.ResourceToffoli()
-
