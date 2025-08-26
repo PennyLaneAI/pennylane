@@ -45,7 +45,6 @@ class QMLCollector:
     """
 
     # Several TODO for this pass/collector:
-    # - Add support for qml.ctrl
     # - Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.),
     # - Add support for measurement operations (e.g., qml.probs, qml.expval, etc.)
     # - Add support for complex parameters (e.g., complex numbers, arrays, etc.)

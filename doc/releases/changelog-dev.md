@@ -261,7 +261,7 @@
 * Two new `draw` and `generate_mlir_graph` functions have been introduced in the `qml.compiler.python_compiler.visualization` module 
   to visualize circuits with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
   [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
-  [(#8091)](https://github.com/PennyLaneAI/pennylane/pull/8091)
+  [(#8108)](https://github.com/PennyLaneAI/pennylane/pull/8108)
 
 * Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
   representation of the program between multiple compilation passes.
