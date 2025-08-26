@@ -165,9 +165,9 @@ class TestGroupingUtils:
         assert are_identical_pauli_words(binary_to_pauli(vec), op)
 
     vecs_to_ops_abstract_wires = [
-        (np.array([1, 0, 1, 0, 0, 1]), PauliX("alice") @ PauliY("ancilla")),
-        (np.array([1, 1, 1, 1, 1, 1]), PauliY("alice") @ PauliY("bob") @ PauliY("ancilla")),
-        (np.array([1, 0, 1, 0, 1, 0]), PauliX("alice") @ PauliZ("bob") @ PauliX("ancilla")),
+        (np.array([1, 0, 1, 0, 0, 1]), PauliX("alice") @ PauliY("auxiliary")),
+        (np.array([1, 1, 1, 1, 1, 1]), PauliY("alice") @ PauliY("bob") @ PauliY("auxiliary")),
+        (np.array([1, 0, 1, 0, 1, 0]), PauliX("alice") @ PauliZ("bob") @ PauliX("auxiliary")),
         (np.zeros(6), Identity("alice")),
     ]
 
@@ -176,7 +176,7 @@ class TestGroupingUtils:
         """Test conversion of Pauli in binary vector representation to operator form when
         ``wire_map`` is specified."""
 
-        wire_map = {"alice": 0, "bob": 1, "ancilla": 2}
+        wire_map = {"alice": 0, "bob": 1, "auxiliary": 2}
 
         assert are_identical_pauli_words(binary_to_pauli(vec, wire_map=wire_map), op)
 
