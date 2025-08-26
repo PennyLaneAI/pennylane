@@ -23,8 +23,6 @@ starting from the catalyst/mlir/include/Quantum/IR/QuantumOps.td file in the cat
 
 # pylint: disable=too-few-public-methods
 
-# pragma: no cover
-
 from collections.abc import Sequence
 from typing import TypeAlias
 
@@ -59,6 +57,7 @@ from xdsl.irdl import (
     AtLeast,
     AttrSizedOperandSegments,
     AttrSizedResultSegments,
+    IntSetConstraint,
     IRDLOperation,
     ParsePropInAttrDict,
     SameVariadicResultSize,
@@ -83,7 +82,6 @@ from xdsl.traits import (
     Pure,
     SingleBlockImplicitTerminator,
 )
-from xdsl.utils.exceptions import VerifyException
 
 from ..xdsl_extras import MemRefConstraint, TensorConstraint
 
@@ -185,7 +183,7 @@ class AllocOp(IRDLOperation):
 
     nqubits = opt_operand_def(i64)
 
-    nqubits_attr = opt_prop_def(IntegerAttr[I64])
+    nqubits_attr = opt_prop_def(IntegerAttr.constr(type=I64, value=AtLeast(0)))
 
     qreg = result_def(QuregType)
 
@@ -203,14 +201,6 @@ class AllocOp(IRDLOperation):
             properties = {}
 
         super().__init__(operands=operands, properties=properties, result_types=(QuregType(),))
-
-    def verify_(self):
-        """Verify operation when rewriting."""
-        if self.nqubits_attr is None:
-            return
-
-        if self.nqubits_attr.value.data < 0:  # pylint: disable=no-member
-            raise VerifyException("Cannot allocate less than zero qubits.")
 
 
 @irdl_op_definition
@@ -658,8 +648,9 @@ class MeasureOp(IRDLOperation):
 
     in_qubit = operand_def(QubitType)
 
-    # TODO: postselect's definition needs to be updated so that we can constrain it to be either 0 or 1
-    postselect = opt_prop_def(IntegerAttr[I32])
+    postselect = opt_prop_def(
+        IntegerAttr.constr(type=I32, value=IntSetConstraint(frozenset((0, 1))))
+    )
 
     mres = result_def(IntegerType(1))
 
@@ -679,14 +670,6 @@ class MeasureOp(IRDLOperation):
         super().__init__(
             operands=(in_qubit,), properties=properties, result_types=(IntegerType(1), QubitType())
         )
-
-    def verify_(self):
-        """Verify operation when rewriting."""
-        if self.postselect is None:
-            return
-
-        if self.postselect.value.data not in [0, 1]:  # pylint: disable=no-member
-            raise VerifyException("'postselect' must be 0 or 1.")
 
 
 @irdl_op_definition
