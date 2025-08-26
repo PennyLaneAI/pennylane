@@ -484,7 +484,8 @@ def test_process_queue_error_if_not_operator_or_measurement():
 
 
 def test_queue_category_none_deprecation():
-    class DummyOp(qml.operation.Operator):
+
+    class DummyOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
         _queue_category = None
         num_wires = 1
         num_params = 0
