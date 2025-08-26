@@ -62,22 +62,25 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
         qml.decomposition.enable_graph()
 
         dev = qml.device("default.qubit")
-
-        @partial(qml.transforms.decompose)
         @qml.qnode(dev)
         def circuit():
+            qml.H(0)
+            qml.CNOT([1,2])
             qml.ctrl(
-                qml.change_op_basis(qml.H(1), qml.X(1)),
+                qml.change_op_basis(qml.QFT([1,2]), qml.PhaseAdder(1, x_wires=[1,2])),
                 control=0
             )
             return qml.state()
 
+        circuit2 = qml.transforms.decompose(circuit, max_expansion=1)
+
     When the circuit is decomposed, we will get the following. Note how the ``QFT``s are not controlled.
     This is the optimization achieved by use of the `change_op_basis` function.
 
-    >>> print(qml.draw(circuit, level=1)())
-    0: ────╭●────┤  State
-    1: ──H─╰X──H─┤  State
+    >>> print(qml.draw(circuit2)())
+    0: ──H──────╭●────────────────┤  State
+    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤  State
+    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤  State
     """
 
     return ChangeOpBasis(compute_op, target_op, uncompute_op)
