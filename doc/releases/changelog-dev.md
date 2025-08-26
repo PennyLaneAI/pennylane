@@ -649,7 +649,7 @@
 <h3>Internal changes ⚙️</h3>
 
 * Removed exclusion of the `qml.compiler.python_compiler` submodule from code coverage reports.
-  [(#)]()
+  [(#8141)](https://github.com/PennyLaneAI/pennylane/pull/8141)
 
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
   [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
