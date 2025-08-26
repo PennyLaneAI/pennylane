@@ -418,6 +418,25 @@ def decompose(  # pylint: disable = too-many-positional-arguments
 
     if all(stopping_condition(op) for op in tape.operations[len(prep_op) :]):
         return (tape,), null_postprocessing
+
+    # Check if graph-based decomposition is enabled
+    from pennylane.decomposition import enabled_graph
+
+    if enabled_graph():
+        # Use the main decompose transform which supports graph decomposition
+        from pennylane.transforms.decompose import decompose as graph_decompose
+
+        # When gate_set=None, the main decompose transform defaults to set(ops.__all__)
+        # which includes all PennyLane operations. The stopping_condition will filter
+        # this down to what the device actually supports. This approach maintains
+        # the generic nature of the preprocess interface across all devices.
+        return graph_decompose(
+            tape,
+            gate_set=None,  # Defaults to all operations, filtered by stopping_condition
+            stopping_condition=stopping_condition,
+        )
+
+    # Fallback to original implementation for non-graph decomposition
     try:
 
         new_ops = [
