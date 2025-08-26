@@ -85,11 +85,11 @@
 
 * A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
   This allows for more customization and efficiency when calculating expectation values across the non-commuting groups
-  of observables that comprise a ``Hamiltonian``/``LinearCombination``.
+  of observables that make up a ``Hamiltonian``/``LinearCombination``.
   [(#7988)](https://github.com/PennyLaneAI/pennylane/pull/7988)
 
   Given a QNode that returns a sample-based measurement (e.g., ``expval``) of a ``Hamiltonian``/``LinearCombination``
-  and a finite ``shots`` value, the current default behaviour of :func:`~.transforms.split_non_commuting` will perform ``shots``
+  with finite ``shots``, the current default behaviour of :func:`~.transforms.split_non_commuting` will perform ``shots``
   executions for each group of commuting terms. With the ``shot_dist`` argument, this behaviour can be changed:
 
   * ``"uniform"``: evenly distributes the number of ``shots`` across all groups of commuting terms
