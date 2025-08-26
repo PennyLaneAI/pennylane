@@ -576,7 +576,6 @@ class PLPatternRewriter(PatternRewriter):
                     operands=(obs, dynamic_shape, None, None),
                     result_types=(
                         builtin.TensorType(element_type=builtin.Float64Type(), shape=tensor_shape),
-                        builtin.TensorType(element_type=builtin.i64, shape=tensor_shape),
                     ),
                 )
 
@@ -586,6 +585,8 @@ class PLPatternRewriter(PatternRewriter):
                 tensor_shape = tuple(-1 if isinstance(i, SSAValue) else i for i in _iter)
                 # We only insert values into dynamic_shape that are unknown at compile time
                 dynamic_shape = tuple(i for i in _iter if isinstance(i, SSAValue))
+                if isinstance(n_qubits, int) and n_qubits == 1:
+                    tensor_shape = (tensor_shape[0],)
 
                 measurementOp = quantum.SampleOp(
                     operands=(obs, dynamic_shape, None),
@@ -625,7 +626,7 @@ class PLPatternRewriter(PatternRewriter):
         self.notify_op_modified(midMeasureOp)
 
         # If reseting, we need to insert a conditional statement that applies a PauliX
-        # if we measured |1>
+        # if we measured |1>. The else block just yields a qubit.
         if mcm.reset:
             true_region = Region()
             with ImplicitBuilder(true_region):
@@ -643,7 +644,8 @@ class PLPatternRewriter(PatternRewriter):
                 false_region=false_region,
             )
             self.insert_op(ifOp, InsertPoint.after(midMeasureOp))
-            midMeasureOp.out_qubit.replace_by_if(lambda use: use.operation != ifOp)
+            mcm_out_qubit = midMeasureOp.results[1]
+            mcm_out_qubit.replace_by_if(lambda use: use.operation != ifOp)
             self.notify_op_modified(ifOp)
 
 
