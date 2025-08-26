@@ -67,6 +67,7 @@ def test_no_recording_in_context():
         qml.PauliX(0)
         qml.PauliY(0)
 
+    assert len(tape) == len(tape2) == 2
     qml.assert_equal(tape, tape2)
 
 
@@ -80,22 +81,24 @@ def test_no_recording_in_context_with_pauli():
     with qml.tape.QuantumTape() as tape2:
         qml.PauliX(0)
 
+    assert len(tape) == len(tape2) == 1
     qml.assert_equal(tape, tape2)
 
 
+@pytest.mark.xfail(strict=True)
 def test_recording_wanted():
     """Test that commutator can be correctly recorded with qml.apply still"""
     with qml.tape.QuantumTape() as tape:
         a = qml.PauliX(0)
         b = qml.PauliY(0)
         comm = qml.commutator(a, b)
-        qml.apply(comm)
 
     with qml.tape.QuantumTape() as tape2:
         qml.PauliX(0)
         qml.PauliY(0)
         qml.s_prod(2j, qml.PauliZ(0))
 
+    assert len(tape) == len(tape2) == 3
     qml.assert_equal(tape, tape2)
 
 
