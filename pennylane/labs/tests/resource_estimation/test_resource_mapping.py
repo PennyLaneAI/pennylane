@@ -17,11 +17,10 @@ This module contains tests for class needed to map PennyLane operations to their
 import pytest
 
 import pennylane as qml
-from pennylane.labs.resource_estimation import map_to_resource_op
-from pennylane.operation import Operation
-
 import pennylane.labs.resource_estimation.ops as re_ops
 import pennylane.templates as qtemps
+from pennylane.labs.resource_estimation import map_to_resource_op
+from pennylane.operation import Operation
 
 # pylint: disable= no-self-use
 

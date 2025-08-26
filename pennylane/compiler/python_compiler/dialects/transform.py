@@ -43,10 +43,7 @@ from xdsl.dialects.builtin import Dialect
 
 # pylint: disable=unused-wildcard-import,wildcard-import,undefined-variable,too-few-public-methods
 from xdsl.dialects.transform import ApplyRegisteredPassOp as xApplyRegisteredPassOp
-from xdsl.dialects.transform import (
-    DictionaryAttr,
-    StringAttr,
-)
+from xdsl.dialects.transform import DictionaryAttr, StringAttr
 from xdsl.dialects.transform import Transform as xTransform
 from xdsl.dialects.transform import (
     TransformHandleType,

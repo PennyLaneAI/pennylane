@@ -16,11 +16,11 @@ from __future__ import annotations
 
 from functools import singledispatch
 
-from pennylane.labs.resource_estimation import ResourceOperator
-from pennylane.operation import Operation
+import pennylane.labs.resource_estimation.ops as re_ops
 import pennylane.ops as qops
 import pennylane.templates as qtemps
-import pennylane.labs.resource_estimation.ops as re_ops
+from pennylane.labs.resource_estimation import ResourceOperator
+from pennylane.operation import Operation
 
 
 @singledispatch
