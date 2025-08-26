@@ -15,6 +15,7 @@
 
 from collections.abc import Sequence
 from numbers import Number
+from uuid import uuid4
 
 from xdsl.builder import ImplicitBuilder
 from xdsl.dialects import arith, builtin, scf, stablehlo, tensor
@@ -66,6 +67,22 @@ _out_qubit_ops = (quantum.MeasureOp, mbqc.MeasureInBasisOp)
 
 # Tuple of all operations that return "qubit"
 _qubit_ops = (quantum.AllocQubitOp, quantum.ExtractOp)
+
+
+class AbstractWire:
+    """A class representing an abstract wire."""
+
+    id: str
+
+    def __init__(self):
+        # Create a universally unique identifier
+        self.id = str(uuid4())
+
+    def __hash__(self):
+        return hash(self.id)
+
+    def __eq__(self, other):
+        return self.id == other.id
 
 
 class StateManagement:
@@ -301,19 +318,20 @@ class PLPatternRewriter(PatternRewriter):
 
             yield cur_op
 
-    def _get_gate_base(self, gate: Operator):
+    @staticmethod
+    def _get_gate_base(gate: Operator):
         """Get the base op of a gate."""
-        if not isinstance(gate, ops.SymbolicOp):
+        if not isinstance(gate, (ops.Controlled, ops.Adjoint)):
             return gate, (), (), False
 
         if isinstance(gate, ops.Controlled):
-            base_gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate.base)
+            base_gate, ctrl_wires, ctrl_vals, adjoint = PLPatternRewriter._get_gate_base(gate.base)
             ctrl_wires = tuple(gate.control_wires) + tuple(ctrl_wires)
             ctrl_vals = tuple(gate.control_values) + tuple(ctrl_vals)
             return base_gate, ctrl_wires, ctrl_vals, adjoint
 
         if isinstance(gate, ops.Adjoint):
-            base_gate, ctrl_wires, ctrl_vals, adjoint = self._get_gate_base(gate.base)
+            base_gate, ctrl_wires, ctrl_vals, adjoint = PLPatternRewriter._get_gate_base(gate.base)
             adjoint = adjoint ^ True
             return base_gate, tuple(ctrl_wires), tuple(ctrl_vals), adjoint
 
