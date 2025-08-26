@@ -449,10 +449,10 @@ class ResourcePrepTHC(ResourceOperator):
         # Figure- 4(Subprepare Circuit)
         gate_list.append(plre.GateCount(hadamard, coeff_precision_bits + 1))
 
-        # Contiguous register cost Eq.29
+        # Contiguous register cost Eq.29 in arXiv:2011.03494
         gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
 
-        # QROM for keep values Eq.31
+        # QROM for keep values Eq.31 in arXiv:2011.03494
         qrom_coeff = resource_rep(
             plre.ResourceQROM,
             {
@@ -530,7 +530,7 @@ class ResourcePrepTHC(ResourceOperator):
 
         # Figure - 3
 
-        # Inquality tests
+        # Inquality tests from arXiv:2011.03494
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(plre.GateCount(toffoli, 4 * m_register - 4))
 
@@ -578,7 +578,7 @@ class ResourcePrepTHC(ResourceOperator):
         # Contiguous register cost
         gate_list.append(plre.GateCount(toffoli, m_register**2 + m_register - 1))
 
-        # Adjoint of QROM for keep values Eq.32
+        # Adjoint of QROM for keep values Eq.32 in arXiv:2011.03494
         qrom_adj = resource_rep(
             plre.ResourceAdjoint,
             {

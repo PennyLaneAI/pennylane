@@ -217,6 +217,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         if isinstance(select_swap_depths, int) or select_swap_depths is None:
             select_swap_depths = [select_swap_depths] * 2
 
+        # Select cost from Figure 5 in arXiv:2011.03494
         select = resource_rep(
             plre.ResourceSelectTHC,
             {
@@ -227,6 +228,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         )
         gate_list.append(GateCount(select))
 
+        # Prep cost from Figure 3 and 4 in arXiv:2011.03494
         prep = resource_rep(
             plre.ResourcePrepTHC,
             {
@@ -238,7 +240,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         gate_list.append(GateCount(prep))
         gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep})))
 
-        # reflection cost
+        # reflection cost from Eq. 44 in arXiv:2011.03494
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision_bits + 4))
 
@@ -305,6 +307,7 @@ class ResourceQubitizeTHC(ResourceOperator):
             gate_list.append(AllocWires(1))
             gate_list.append(GateCount(mcx, 2))
 
+        # Controlled Select cost from Fig 5 in arXiv:2011.03494
         select = resource_rep(
             plre.ResourceSelectTHC,
             {
@@ -322,6 +325,7 @@ class ResourceQubitizeTHC(ResourceOperator):
             )
         )
 
+        # Prep cost from Fig 3 and 4 in arXiv:2011.03494
         prep = resource_rep(
             plre.ResourcePrepTHC,
             {
@@ -333,7 +337,7 @@ class ResourceQubitizeTHC(ResourceOperator):
         gate_list.append(GateCount(prep))
         gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep})))
 
-        # reflection cost
+        # reflection cost from Eq. 44 in arXiv:2011.03494s
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision_bits + 4))
 

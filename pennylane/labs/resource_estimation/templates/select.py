@@ -168,10 +168,11 @@ class ResourceSelectTHC(ResourceOperator):
         )
 
         gate_list = []
+        # Total select cost from Eq. 43 in arXiv:2011.03494
 
         # 4 swaps on state registers controlled on spin qubits
-        swap = resource_rep(plre.ResourceCSWAP)
-        gate_list.append(GateCount(swap, 4 * num_orb))
+        cswap = resource_rep(plre.ResourceCSWAP)
+        gate_list.append(GateCount(cswap, 4 * num_orb))
 
         # QROM to load rotation angles for 2-body integrals
         gate_list.append(AllocWires(rotation_precision_bits * (num_orb - 1)))
@@ -200,7 +201,7 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(GateCount(semiadder, num_orb - 1))
 
-        # Adjoint of QROM for 2-body integrals Eq. 34
+        # Adjoint of QROM for 2-body integrals Eq. 34 in arXiv:2011.03494
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_twobody}))
         )
@@ -233,7 +234,7 @@ class ResourceSelectTHC(ResourceOperator):
         gate_list.append(GateCount(s, 2 * num_orb))
         gate_list.append(GateCount(s_dagg, 2 * num_orb))
 
-        # Adjoint of QROM for one body integrals Eq. 35
+        # Adjoint of QROM for one body integrals Eq. 35 in arXiv:2011.03494
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_onebody}))
         )
@@ -249,9 +250,8 @@ class ResourceSelectTHC(ResourceOperator):
         cz = resource_rep(plre.ResourceCZ)
         gate_list.append(plre.GateCount(cz, 1))
 
-        # 1 Toffoli to apply the cswap between the spin registers
-        toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(plre.GateCount(toffoli, 1))
+        # 1 cswap between the spin registers
+        gate_list.append(plre.GateCount(cswap, 1))
         gate_list.append(FreeWires(rotation_precision_bits * (num_orb - 1)))
 
         return gate_list
@@ -317,8 +317,8 @@ class ResourceSelectTHC(ResourceOperator):
             gate_list.append(GateCount(mcx, 2))
 
         # 4 swaps on state registers controlled on spin qubits
-        swap = resource_rep(plre.ResourceCSWAP)
-        gate_list.append(GateCount(swap, 4 * num_orb))
+        cswap = resource_rep(plre.ResourceCSWAP)
+        gate_list.append(GateCount(cswap, 4 * num_orb))
 
         # QROM for loading rotation angles for 2-body integrals
         gate_list.append(AllocWires(rotation_precision_bits * (num_orb - 1)))
@@ -347,7 +347,7 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(GateCount(semiadder, num_orb - 1))
 
-        # Adjoint of QROM for 2-body integrals Eq. 34
+        # Adjoint of QROM for 2-body integrals Eq. 34 in arXiv:2011.03494
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_twobody}))
         )
@@ -380,7 +380,7 @@ class ResourceSelectTHC(ResourceOperator):
         gate_list.append(GateCount(s, 2 * num_orb))
         gate_list.append(GateCount(s_dagg, 2 * num_orb))
 
-        # Adjoint of QROM for one body integrals Eq. 35
+        # Adjoint of QROM for one body integrals Eq. 35 in arXiv:2011.03494
         gate_list.append(
             GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": qrom_onebody}))
         )
@@ -403,9 +403,8 @@ class ResourceSelectTHC(ResourceOperator):
         )
         gate_list.append(plre.GateCount(ccz, 1))
 
-        # 1 Toffoli to apply the cswap between the spin registers
-        toffoli = resource_rep(plre.ResourceToffoli)
-        gate_list.append(plre.GateCount(toffoli, 1))
+        # 1 cswap between the spin registers
+        gate_list.append(plre.GateCount(cswap, 1))
 
         gate_list.append(FreeWires(rotation_precision_bits * (num_orb - 1)))
 
