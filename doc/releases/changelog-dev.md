@@ -3,7 +3,7 @@
 
 <h3>New features since last release</h3>
 
-* A new :func:`~.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` were added,
+* A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` were added,
   which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
 
