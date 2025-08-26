@@ -222,7 +222,9 @@ class TestDecompose:
             circuit()
 
         tape = qml.tape.QuantumScript.from_queue(q)
-        [decomposed_tape], _ = qml.transforms.decompose([tape], gate_set={qml.RX, qml.RZ})
+        [decomposed_tape], _ = qml.transforms.decompose(
+            [tape], gate_set={qml.RX, qml.RZ, MidMeasureMP}
+        )
         assert len(decomposed_tape.operations) == 9
 
         def equivalent_circuit():
