@@ -107,6 +107,7 @@ class TestPushHadamards:
         (qml.RX, qml.RY),
     )
     def test_rotation_gates_error(self, rot_gate):
+        """Test that an error is raised when the input circuit contains RX or RY rotation gates."""
         qs = QuantumScript(ops=[rot_gate(0.5, wires=0)])
 
         with pytest.raises(

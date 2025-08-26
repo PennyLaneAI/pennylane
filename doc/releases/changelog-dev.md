@@ -11,15 +11,24 @@
 * New ZX calculus-based transforms have been added to access circuit optimization
   passes implemented in [pyzx](https://pyzx.readthedocs.io/en/latest/):
 
-    * :func:`~.transforms.zx.push_hadamards` to optimize a phase-polynomial + Hadamard circuit by pushing
-      Hadamard gates as far as possible to one side to create fewer larger phase-polynomial blocks
-      (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
-      [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
+  * :func:`~.transforms.zx.push_hadamards` to optimize a phase-polynomial + Hadamard circuit by pushing
+    Hadamard gates as far as possible to one side to create fewer larger phase-polynomial blocks
+    (see [pyzx.basic_optimization](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.basic_optimization)).
+    [(#8025)](https://github.com/PennyLaneAI/pennylane/pull/8025)
 
-    * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford gates by applying
-      a combination of phase gadgetization strategies and Clifford gate simplification rules.
-      (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
-      [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
+  * :func:`~.transforms.zx.todd` to optimize a Clifford + T circuit by using the Third Order Duplicate and Destroy (TODD) algorithm
+    (see [pyzx.phase_block_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.phase_block_optimize)).
+    [(#8029)](https://github.com/PennyLaneAI/pennylane/pull/8029)
+
+  * :func:`~.transforms.zx.optimize_t_count` to reduce the number of T gates in a Clifford + T circuit by applying
+    a sequence of passes that combine ZX-based commutation and cancellation rules and the TODD algorithm
+    (see [pyzx.full_optimize](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.optimize.full_optimize)).
+    [(#8088)](https://github.com/PennyLaneAI/pennylane/pull/8088)
+
+  * :func:`~.transforms.zx.reduce_non_clifford` to reduce the number of non-Clifford gates by applying
+    a combination of phase gadgetization strategies and Clifford gate simplification rules.
+    (see [pyzx.full_reduce](https://pyzx.readthedocs.io/en/latest/api.html#pyzx.simplify.full_reduce)).
+    [(#7747)](https://github.com/PennyLaneAI/pennylane/pull/7747)
 
 * The `qml.specs` function now accepts a `compute_depth` keyword argument, which is set to `True` by default.
   This makes the expensive depth computation performed by `qml.specs` optional.
@@ -74,6 +83,88 @@
 
 <h3>Improvements 🛠</h3>
 
+* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
+  Users can now use this when designing quantum circuits with experimental program capture enabled.
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3))
+  def circuit(val):
+    angles = jnp.zeros(3)
+    angles[0:3] += val
+
+    for i, angle in enumerate(angles):
+        qml.RX(angle, i)
+
+    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  ```
+
+  ```pycon
+  >>> circuit(jnp.pi)
+  (Array(-1, dtype=float32),
+   Array(-1, dtype=float32),
+   Array(-1, dtype=float32)) 
+  ```
+
+  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
+  
+* PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
+  Users can now use standard python assignment when designing circuits with experimental program capture enabled.
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3))
+  def circuit(val):
+    angles = jnp.zeros(3)
+    angles[1] = val / 2
+    angles[2] = val
+
+    for i, angle in enumerate(angles):
+        qml.RX(angle, i)
+
+    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  ```
+
+  ```pycon
+  >>> circuit(jnp.pi)
+  (Array(0.99999994, dtype=float32),
+   Array(0., dtype=float32),
+   Array(-0.99999994, dtype=float32)) 
+  ```
+
+  [(#8027)](https://github.com/PennyLaneAI/pennylane/pull/8027)
+
+* Logical operations (`and`, `or` and `not`) are now supported with the `autograph` module. Users can
+  now use these logical operations in control flow when designing quantum circuits with experimental
+  program capture enabled.
+
+  ```python
+  import pennylane as qml
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=1))
+  def circuit(param):
+      if param >= 0 and param <= 1:
+          qml.H(0)
+      return qml.state()
+  ```
+
+  ```pycon
+  >>> circuit(0.5)
+  Array([0.70710677+0.j, 0.70710677+0.j], dtype=complex64)
+  ```
+
+  [(#8006)](https://github.com/PennyLaneAI/pennylane/pull/8006)
+
 * The decomposition of :class:`~.BasisRotation` has been optimized to skip redundant phase shift gates
   with angle :math:`\pm \pi` for real-valued, i.e., orthogonal, rotation matrices. This uses the fact that
   no or single :class:`~.PhaseShift` gate is required in case the matrix has a determinant :math:`\pm 1`.
@@ -116,13 +207,16 @@
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
   [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
+  [(#8075)](https://github.com/PennyLaneAI/pennylane/pull/8075)
   [(#8002)](https://github.com/PennyLaneAI/pennylane/pull/8002)
   
   The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, 
   :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
   :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`, 
   :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, 
-  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.Qubitization`, and :class:`~.Superposition`
+  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.ArbitraryStatePreparation`, :class:`~.CosineWindow`, 
+  :class:`~.AmplitudeAmplification`, :class:`~.Permute`, :class:`~.AQFT`, :class:`~.FlipSign`, :class:`~.FABLE`,
+  :class:`~.Qubitization`, and :class:`~.Superposition`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
@@ -307,9 +401,16 @@
 * The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
   [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
 
+* The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
+  StableHLO dialect with missing upstream operations.
+  [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
+
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
+
+* Added state of the art resources for the `ResourceTrotterProduct` template.
+  [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
 
 <h3>Breaking changes 💔</h3>
 
@@ -317,6 +418,7 @@
   down on the complexity of post-processing due to having to handle single shot and single wire cases
   separately. The return shape will now *always* be `(shots, num_wires)`.
   [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
+  [(#8118)](https://github.com/PennyLaneAI/pennylane/pull/8118)
 
   For a simple qnode:
 
@@ -455,6 +557,7 @@
   [Turning quantum nodes into Torch Layers](https://pennylane.ai/qml/demos/tutorial_qnn_module_torch) and
   [How to optimize a QML model using JAX and Optax](https://pennylane.ai/qml/demos/tutorial_How_to_optimize_QML_model_using_JAX_and_Optax).
   [(#7989)](https://github.com/PennyLaneAI/pennylane/pull/7989)
+  [(#8106)](https://github.com/PennyLaneAI/pennylane/pull/8106)
 
 * `pennylane.devices.DefaultExecutionConfig` is deprecated and will be removed in v0.44.
   Instead, use `qml.devices.ExecutionConfig()` to create a default execution configuration.
@@ -544,6 +647,12 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
+  [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
+
+* Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
+  [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
 
 * Add capability for roundtrip testing and module verification to the Python compiler `run_filecheck` and
 `run_filecheck_qjit` fixtures.
@@ -680,6 +789,10 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* An error is now raised if sequences of classically processed mid circuit measurements
+  are used as input to :func:`pennylane.counts` or :func:`pennylane.probs`.
+  [(#8109)](https://github.com/PennyLaneAI/pennylane/pull/8109)
+
 * Simplifying operators raised to integer powers no longer causes recursion errors.
   [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
 
@@ -724,6 +837,9 @@
 
 * Fixes `SemiAdder` to work when inputs are defined with a single wire.
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
+
+* Fixes a bug where `qml.prod` applied on a quantum function does not dequeue operators passed as arguments to the function.
+  [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
 
 <h3>Contributors ✍️</h3>
 

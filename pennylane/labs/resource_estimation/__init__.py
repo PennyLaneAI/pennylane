@@ -136,6 +136,7 @@ Templates:
     ~ResourceRegisterComparator
     ~ResourceSelectPauliRot
     ~ResourceQubitUnitary
+    ~ResourceTrotterProduct
     ~ResourceTrotterCDF
     ~ResourceTrotterTHC
     ~ResourceTrotterVibrational
@@ -149,6 +150,8 @@ State Preparation:
 .. autosummary::
     :toctree: api
 
+    ~ResourceMPSPrep
+    ~ResourceQROMStatePreparation
     ~ResourceUniformStatePrep
     ~ResourceAliasSampling
     ~ResourcePrepTHC
@@ -242,12 +245,15 @@ from .templates import (
     ResourceRegisterComparator,
     ResourceQubitUnitary,
     ResourceSelectPauliRot,
+    ResourceTrotterProduct,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     CompactHamiltonian,
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
     ResourceQubitizeTHC,
+    ResourceMPSPrep,
+    ResourceQROMStatePreparation,
     ResourceUniformStatePrep,
     ResourceAliasSampling,
     ResourceSelectTHC,
