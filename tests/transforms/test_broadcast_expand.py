@@ -175,7 +175,7 @@ class TestBroadcastExpand:
         "args, shapes",
         [
             ([{"op": qml.PauliZ(0)}, {"op": qml.PauliX(1)}], [(), ()]),
-            ([{"wires": 0}, {"wires": 1}], [(), ()]),
+            ([{"wires": 0}, {"wires": 1}], [(1,), (1,)]),
             ([{"op": qml.PauliZ(0)}, {"wires": [0, 1]}], [(), (2,)]),
         ],
     )
