@@ -123,20 +123,7 @@ class MPLDrawer:
 
     **Formatting**
 
-    PennyLane has inbuilt styles for controlling the appearance of the circuit drawings.
-    All available styles can be determined by evaluating ``qml.drawer.available_styles()``.
-    Any available string can then be passed to ``qml.drawer.use_style``.
-
-    .. code-block:: python
-
-        qml.drawer.use_style('black_white')
-
-    .. figure:: ../../_static/drawer/black_white_style.png
-            :align: center
-            :width: 60%
-            :target: javascript:void(0);
-
-    You can also control the appearance with matplotlib's provided tools, see the
+    You can control the appearance with matplotlib's provided tools, see the
     `matplotlib docs <https://matplotlib.org/stable/tutorials/introductory/customizing.html>`_ .
     For example, we can customize ``plt.rcParams``:
 
