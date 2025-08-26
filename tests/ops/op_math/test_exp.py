@@ -441,20 +441,20 @@ class TestDecomposition:
                 )
 
     @pytest.mark.parametrize(
-        "base, base_string",
+        "base, base_string, wires",
         (
-            (qml.prod(qml.PauliZ(0), qml.PauliY(1)), "ZY"),
-            (qml.prod(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YIZ"),
+            (qml.prod(qml.PauliZ(0), qml.PauliY(1)), "ZY", (0, 1)),
+            (qml.prod(qml.PauliY(0), qml.Identity(1), qml.PauliZ(2)), "YZ", (0, 2)),
         ),
     )
-    def test_decomposition_into_pauli_rot(self, base, base_string):
+    def test_decomposition_into_pauli_rot(self, base, base_string, wires):
         """Check that Exp decomposes into PauliRot if base is a pauli word with more than one term."""
         theta = 3.21
         op = Exp(base, -0.5j * theta)
 
         assert op.has_decomposition
         pr = op.decomposition()[0]
-        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, base.wires))
+        qml.assert_equal(pr, qml.PauliRot(3.21, base_string, wires))
 
     @pytest.mark.parametrize("op_name", all_qubit_operators)
     @pytest.mark.parametrize("str_wires", (True, False))
@@ -503,6 +503,10 @@ class TestDecomposition:
             # exp(qml.GlobalPhase.generator(), phi) decomposes to PauliRot
             # cannot compare GlobalPhase and PauliRot with qml.equal
             assert np.allclose(op.matrix(wire_order=op.wires), dec[0].matrix(wire_order=op.wires))
+        elif op_class is qml.FermionicSWAP:
+            expected = op.map_wires(dict(zip(op.wires, reversed(op.wires))))
+            # simplifying the generator changes the wire order
+            qml.assert_equal(expected, dec[0])
         else:
             qml.assert_equal(op, dec[0])
 
@@ -540,9 +544,9 @@ class TestDecomposition:
                 2,
                 [
                     qml.IsingXX(2.0, wires=[0, 1]),
-                    qml.PauliRot(2.0, "X", wires=[1]),
+                    qml.RX(2.0, wires=[1]),
                     qml.IsingXX(2.0, wires=[0, 1]),
-                    qml.PauliRot(2.0, "X", wires=[1]),
+                    qml.RX(2.0, wires=[1]),
                 ],
             ),
             (
@@ -553,13 +557,13 @@ class TestDecomposition:
                 ),
                 4,
                 [
-                    qml.PauliRot(2.0, "X", wires=[0]),
+                    qml.RX(2.0, wires=[0]),
                     qml.IsingZZ(0.5, wires=[1, 0]),
-                    qml.PauliRot(2.0, "X", wires=[0]),
+                    qml.RX(2.0, wires=[0]),
                     qml.IsingZZ(0.5, wires=[1, 0]),
-                    qml.PauliRot(2.0, "X", wires=[0]),
+                    qml.RX(2.0, wires=[0]),
                     qml.IsingZZ(0.5, wires=[1, 0]),
-                    qml.PauliRot(2.0, "X", wires=[0]),
+                    qml.RX(2.0, wires=[0]),
                     qml.IsingZZ(0.5, wires=[1, 0]),
                 ],
             ),
@@ -567,7 +571,12 @@ class TestDecomposition:
                 2,
                 qml.Hamiltonian([1, 1], [qml.PauliX(0), qml.Identity(0) @ qml.Identity(1)]),
                 2,
-                [qml.PauliRot(2.0, "X", wires=[0]), qml.PauliRot(2.0, "X", wires=[0])],
+                [
+                    qml.RX(2.0, wires=[0]),
+                    qml.GlobalPhase(1.0, wires=0),
+                    qml.RX(2.0, wires=[0]),
+                    qml.GlobalPhase(1.0, wires=0),
+                ],
             ),
         ],
     )
@@ -577,12 +586,9 @@ class TestDecomposition:
         with pytest.warns(PennyLaneDeprecationWarning, match="Providing 'num_steps'"):
             op = qml.exp(hamiltonian, coeff=-1j * time, num_steps=steps)
         queue = op.decomposition()
-
+        print(queue)
         for expected_gate, gate in zip(expected_queue, queue):
-            prep = [gate.parameters, gate.wires]
-            target = [expected_gate.parameters, expected_gate.wires]
-
-            assert prep == target
+            qml.assert_equal(expected_gate, gate)
 
     def test_trotter_decomposition_raises_error(self):
         """Test that the trotter decomposition raises an error when no ``num_steps`` is specified."""

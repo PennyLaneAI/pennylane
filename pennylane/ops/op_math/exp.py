@@ -14,6 +14,7 @@
 """
 This submodule defines the symbolic operation that stands for an exponential of an operator.
 """
+from functools import lru_cache
 from warnings import warn
 
 import numpy as np
@@ -41,6 +42,45 @@ from .linear_combination import LinearCombination
 from .sprod import SProd
 from .sum import Sum
 from .symbolicop import ScalarSymbolicOp
+
+
+@lru_cache
+def _get_has_generator_types(num_wires):
+    # Store operator classes with generators
+    has_generator_types = []
+    any_wires_types = []
+    for op_name in qml.ops.qubit.__all__:
+        op_class = getattr(qml.ops.qubit, op_name)
+        if op_class not in {qml.PauliRot, qml.PCPhase} and op_class.has_generator:
+            if op_class.num_wires == num_wires:
+                has_generator_types.append(op_class)
+            elif op_class.num_wires is None:
+                any_wires_types.append(op_class)
+
+    # prioritize types with that exact number of wires over types with any number of wires
+    # ie choose RZ before MultiRZ
+    return has_generator_types + any_wires_types
+
+
+def _find_equal_generator(base, coeff):
+    for op_class in _get_has_generator_types(len(base.wires)):
+        g, c = qml.generator(op_class)(coeff, base.wires)
+        # Some generators are not wire-ordered (e.g. OrbitalRotation)
+        mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
+
+        if qml.equal(mapped_wires_g, base):
+            # Cancel the coefficients added by the generator
+            coeff = math.real(-1j / c * coeff)
+            return op_class(coeff, g.wires)
+
+        # could have absorbed the coefficient.
+        simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
+
+        if qml.equal(simplified_g, base):
+            coeff = math.real(-1j * coeff)
+            return op_class(coeff, g.wires)
+
+    return None
 
 
 def exp(op, coeff=1, num_steps=None, id=None):
@@ -207,6 +247,7 @@ class Exp(ScalarSymbolicOp, Operation):
         self.grad_recipe = [None]
         self.num_steps = num_steps
         self.hyperparameters["num_steps"] = num_steps
+        self._is_evolution = not math.is_abstract(coeff) and math.allclose(math.real(coeff), 0)
 
     def __repr__(self):
         return (
@@ -245,18 +286,26 @@ class Exp(ScalarSymbolicOp, Operation):
 
     # pylint: disable=invalid-overridden-method, arguments-renamed
     @property
+    @queuing.QueuingManager.stop_recording()
     def has_decomposition(self):
         # TODO: Support nested sums in method
-        base = self.base
+        base = self.base.simplify()
         coeff = self.coeff
-        if isinstance(base, SProd):
+        while isinstance(base, SProd):
             coeff *= base.scalar
             base = base.base
 
-        imag_coeff = not math.is_abstract(coeff) and math.allclose(math.real(coeff), 0)
-        is_pauli_rot = base.pauli_rep is not None and len(base.pauli_rep) == 1 and imag_coeff
-        is_hamiltonian = isinstance(base, LinearCombination)
-        return is_pauli_rot or is_hamiltonian or self.base.pauli_rep is not None
+        if self.num_steps is not None and isinstance(base, Sum) and base.is_hermitian:
+            return True
+
+        if not self._is_evolution:
+            return False
+
+        if qml.pauli.is_pauli_word(base):
+            return True
+
+        op = _find_equal_generator(base, coeff)
+        return op is not None
 
     def decomposition(self):
         r"""Representation of the operator as a product of other operators. Decomposes into
@@ -272,6 +321,11 @@ class Exp(ScalarSymbolicOp, Operation):
         """
         with queuing.QueuingManager.stop_recording():
             base = self.base.simplify()  # for things like products of scalar products
+
+            # preferably, this should be added to LinearCombination.simplify
+            if isinstance(base, LinearCombination) and len(base) == 1:
+                _c, _o = base.terms()
+                base = SProd(_c[0], _o[0])
             d = self._recursive_decomposition(base, self.coeff)
 
         if queuing.QueuingManager.recording():
@@ -293,13 +347,13 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        if self.num_steps is not None and isinstance(base, Sum):
+        if self.num_steps is not None and isinstance(base, Sum) and base.is_hermitian:
             # Apply trotter decomposition
             coeffs, ops = [1] * len(base), base.operands
             coeffs = [c * coeff for c in coeffs]
             return self._trotter_decomposition(ops, coeffs)
 
-        if not math.is_abstract(coeff) and math.real(coeff):
+        if not self._is_evolution:
 
             error_msg = f"The decomposition of the {self} operator is not defined."
 
@@ -321,38 +375,10 @@ class Exp(ScalarSymbolicOp, Operation):
     def _smart_decomposition(self, coeff, base):
         """Decompose to an operator with a generator or a PauliRot if possible."""
 
-        # Store operator classes with generators
-        has_generator_types = []
-        has_generator_types_anywires = []
-        for op_name in qml.ops.qubit.__all__:
-            op_class = getattr(qml.ops.qubit, op_name)
-            if op_class.has_generator:
-                if op_class.num_wires is None:
-                    has_generator_types_anywires.append(op_class)
-                elif op_class.num_wires == len(base.wires):
-                    has_generator_types.append(op_class)
-        # Ensure op_class.num_wires == base.num_wires before op_class.num_wires is None
-        has_generator_types.extend(has_generator_types_anywires)
-
-        for op_class in has_generator_types:
-            # PauliRot and PCPhase have different positional args
-            if op_class not in {qml.PauliRot, qml.PCPhase}:
-                g, c = qml.generator(op_class)(coeff, base.wires)
-                # Some generators are not wire-ordered (e.g. OrbitalRotation)
-                mapped_wires_g = qml.map_wires(g, dict(zip(g.wires, base.wires)))
-
-                if qml.equal(mapped_wires_g, base):
-                    # Cancel the coefficients added by the generator
-                    coeff = math.real(-1j / c * coeff)
-                    return [op_class(coeff, g.wires)]
-
-                # could have absorbed the coefficient.
-                simplified_g = qml.simplify(qml.s_prod(c, mapped_wires_g))
-
-                if qml.equal(simplified_g, base):
-                    # Cancel the coefficients added by the generator
-                    coeff = math.real(-1j * coeff)
-                    return [op_class(coeff, g.wires)]
+        print(coeff, base)
+        op = _find_equal_generator(base, coeff)
+        if op is not None:
+            return [op]
 
         if qml.pauli.is_pauli_word(base):
             # Check if the exponential can be decomposed into a PauliRot gate

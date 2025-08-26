@@ -109,6 +109,7 @@ class Evolution(Exp):
     def __init__(self, generator, param=1, num_steps=None, id=None):
         super().__init__(generator, coeff=-1j * param, num_steps=num_steps, id=id)
         self._data = (param,)
+        self._is_evolution = True
 
     def __repr__(self):
         return (
@@ -147,6 +148,9 @@ class Evolution(Exp):
         if isinstance(new_base, qml.ops.op_math.SProd):
             return Evolution(new_base.base, self.param * new_base.scalar)
         return Evolution(new_base, self.param)
+
+    def pow(self, z):
+        return Evolution(self.base, self.param * z)
 
     @property
     def has_generator(self):
