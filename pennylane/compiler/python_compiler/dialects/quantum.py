@@ -85,7 +85,7 @@ from xdsl.traits import (
 )
 from xdsl.utils.exceptions import VerifyException
 
-from ..xdsl_extras import MemRefRankConstraint, TensorRankConstraint
+from ..xdsl_extras import MemRefConstraint, TensorConstraint
 
 ################################################################
 ######################## ATTRIBUTES ############################
@@ -163,7 +163,7 @@ class AdjointOp(IRDLOperation):
 
     region = region_def("single_block")
 
-    traits = lazy_traits_def(lambda: SingleBlockImplicitTerminator(YieldOp))
+    traits = lazy_traits_def(lambda: (SingleBlockImplicitTerminator(YieldOp),))
 
     def __init__(
         self,
@@ -270,13 +270,13 @@ class CountsOp(IRDLOperation):
 
     dynamic_shape = opt_operand_def(IntegerType(64))
 
-    in_eigvals = opt_operand_def(MemRefType.constr(Float64Type()) & MemRefRankConstraint(1))
+    in_eigvals = opt_operand_def(MemRefConstraint(element_type=Float64Type(), rank=1))
 
-    in_counts = opt_operand_def(MemRefType.constr(i64) & MemRefRankConstraint(1))
+    in_counts = opt_operand_def(MemRefConstraint(element_type=i64, rank=1))
 
-    eigvals = opt_result_def(TensorType.constr(Float64Type()) & TensorRankConstraint(1))
+    eigvals = opt_result_def(TensorConstraint(element_type=Float64Type(), rank=1))
 
-    counts = opt_result_def(TensorType.constr(i64) & TensorRankConstraint(1))
+    counts = opt_result_def(TensorConstraint(element_type=i64, rank=1))
 
 
 @irdl_op_definition
@@ -567,8 +567,8 @@ class HamiltonianOp(IRDLOperation):
     """
 
     coeffs = operand_def(
-        (TensorType.constr(Float64Type()) & TensorRankConstraint(1))
-        | (MemRefType.constr(Float64Type()) & MemRefRankConstraint(1))
+        TensorConstraint(element_type=Float64Type(), rank=1)
+        | (MemRefConstraint(element_type=Float64Type(), rank=1))
     )
 
     terms = var_operand_def(ObservableType)
@@ -587,8 +587,8 @@ class HermitianOp(IRDLOperation):
     """
 
     matrix = operand_def(
-        (TensorType.constr(ComplexType(Float64Type())) & TensorRankConstraint(2))
-        | (MemRefType.constr(ComplexType(Float64Type())) & MemRefRankConstraint(2))
+        TensorConstraint(element_type=ComplexType(Float64Type()), rank=2)
+        | MemRefConstraint(element_type=ComplexType(Float64Type()), rank=2)
     )
 
     qubits = var_operand_def(QubitType)
@@ -817,9 +817,9 @@ class ProbsOp(IRDLOperation):
 
     dynamic_shape = opt_operand_def(IntegerType(64))
 
-    state_in = opt_operand_def(MemRefType.constr(Float64Type()) & MemRefRankConstraint(1))
+    state_in = opt_operand_def(MemRefConstraint(element_type=Float64Type(), rank=1))
 
-    probabilities = opt_result_def(TensorType.constr(Float64Type()) & TensorRankConstraint(1))
+    probabilities = opt_result_def(TensorConstraint(element_type=Float64Type(), rank=1))
 
 
 @irdl_op_definition
@@ -843,8 +843,8 @@ class QubitUnitaryOp(IRDLOperation):
     ]
 
     matrix = operand_def(
-        (TensorType.constr(ComplexType(Float64Type())) & TensorRankConstraint(2))
-        | (MemRefType.constr(ComplexType(Float64Type())) & MemRefRankConstraint(2))
+        (TensorConstraint(element_type=ComplexType(Float64Type()), rank=2))
+        | (MemRefConstraint(element_type=ComplexType(Float64Type()), rank=2))
     )
 
     in_qubits = var_operand_def(QubitType)
@@ -923,13 +923,9 @@ class SampleOp(IRDLOperation):
 
     dynamic_shape = var_operand_def(IntegerType(64))
 
-    in_data = opt_operand_def(
-        MemRefType.constr(Float64Type()) & (MemRefRankConstraint(1) | MemRefRankConstraint(2))
-    )
+    in_data = opt_operand_def(MemRefConstraint(element_type=Float64Type(), rank=(1, 2)))
 
-    samples = opt_result_def(
-        TensorType.constr(Float64Type()) & (TensorRankConstraint(1) | TensorRankConstraint(2))
-    )
+    samples = opt_result_def(TensorConstraint(element_type=Float64Type(), rank=(1, 2)))
 
 
 @irdl_op_definition
@@ -943,8 +939,7 @@ class SetBasisStateOp(IRDLOperation):
     """
 
     basis_state = operand_def(
-        (TensorType.constr(i1) & TensorRankConstraint(1))
-        | (MemRefType.constr(i1) & MemRefRankConstraint(1))
+        (TensorConstraint(element_type=i1, rank=1)) | (MemRefConstraint(element_type=i1, rank=1))
     )
 
     in_qubits = var_operand_def(QubitType)
@@ -963,8 +958,8 @@ class SetStateOp(IRDLOperation):
     """
 
     in_state = operand_def(
-        (TensorType.constr(ComplexType(Float64Type())) & TensorRankConstraint(1))
-        | (MemRefType.constr(ComplexType(Float64Type())) & MemRefRankConstraint(1))
+        (TensorConstraint(element_type=ComplexType(Float64Type()), rank=1))
+        | (MemRefConstraint(element_type=ComplexType(Float64Type()), rank=1))
     )
 
     in_qubits = var_operand_def(QubitType)
@@ -990,11 +985,9 @@ class StateOp(IRDLOperation):
 
     dynamic_shape = opt_operand_def(IntegerType(64))
 
-    state_in = opt_operand_def(
-        MemRefType.constr(ComplexType(Float64Type())) & MemRefRankConstraint(1)
-    )
+    state_in = opt_operand_def(MemRefConstraint(element_type=ComplexType(Float64Type()), rank=1))
 
-    state = opt_result_def(TensorType.constr(ComplexType(Float64Type())) & TensorRankConstraint(1))
+    state = opt_result_def(TensorConstraint(element_type=ComplexType(Float64Type()), rank=1))
 
 
 @irdl_op_definition
