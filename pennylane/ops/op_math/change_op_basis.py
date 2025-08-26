@@ -31,14 +31,14 @@ from pennylane.ops.op_math import adjoint
 from .composite import CompositeOp, handle_recursion_error
 
 
-def change_op_basis(compute_op, target_op, uncompute_op=None):
-    """Construct an operator which represents the product of the
+def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
+    """Construct an operator that represents the product of the
     operators provided.
 
     Args:
         compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
         target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations. Default is uncompute_op=qml.adjoint(compute_op).
+        uncompute_op (None | :class:`~.operation.Operator`): An optional single operator or a product that applies quantum operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute, uncompute pattern.
@@ -114,7 +114,7 @@ class ChangeOpBasis(CompositeOp):
         """Check if the product operator is hermitian.
 
         Note, this check is not exhaustive. There can be hermitian operators for which this check
-        yields false, which ARE hermitian. So a false result only implies a more explicit check
+        yields false, which ARE hermitian. So a false result only implies that a more explicit check
         must be performed.
         """
         return self[1].is_hermitian
