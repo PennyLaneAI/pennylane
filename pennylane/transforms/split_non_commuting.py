@@ -307,7 +307,7 @@ def split_non_commuting(
         **Shot distribution**
 
         With finite-shot measurements, the default behaviour of ``split_non_commuting``
-        will perform ``shots`` executions for each group of commuting terms. With the
+        will use 1 execution with ``shots`` each for each group of commuting terms. With the
         ``shot_dist`` argument, this behaviour can be changed. For example,
         ``shot_dist = "weighted"`` will partition the number of shots performed for
         each commuting group according to the L1 norm of each group's coefficients:
