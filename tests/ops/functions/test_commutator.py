@@ -92,6 +92,7 @@ def test_recording_wanted():
         a = qml.PauliX(0)
         b = qml.PauliY(0)
         comm = qml.commutator(a, b)
+        qml.apply(comm)
 
     with qml.tape.QuantumTape() as tape2:
         qml.PauliX(0)
