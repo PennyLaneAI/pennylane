@@ -47,7 +47,6 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
             operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
-<<<<<<< HEAD
         ~ops.op_math.ChangeOpBasis: the operator representing the compute-uncompute pattern.
 
     **Example**
