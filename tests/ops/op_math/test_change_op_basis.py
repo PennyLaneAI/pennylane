@@ -134,7 +134,7 @@ class TestProperties:  # pylint: disable=too-few-public-methods
         """Tests the adjoint of a ChangeOpBasis is correct."""
         change_op_basis_op = ChangeOpBasis(*ops_lst)
         adjoint_ops = []
-        for op in change_op_basis_op[::-1]:
+        for op in change_op_basis_op:
             adjoint_ops.append(op.adjoint())
         for i, op in enumerate(change_op_basis_op.adjoint()):
             assert op == adjoint_ops[i]
@@ -239,7 +239,7 @@ class TestDecomposition:
         of the provided factors."""
         change_op_basis_op = change_op_basis(*ops_lst)
         decomposition = change_op_basis_op.decomposition()
-        true_decomposition = list(ops_lst[::-1])  # reversed list of factors
+        true_decomposition = list(ops_lst)  # reversed list of factors
 
         assert isinstance(decomposition, list)
         for op1, op2 in zip(decomposition, true_decomposition):
@@ -296,7 +296,7 @@ class TestDecomposition:
         """Test the decomposition of a change_op_basis of operators is a list
         of the provided factors on a tape."""
         change_op_basis_op = change_op_basis(*ops_lst)
-        true_decomposition = list(ops_lst[::-1])  # reversed list of factors
+        true_decomposition = list(ops_lst)  # reversed list of factors
         with qml.queuing.AnnotatedQueue() as q:
             change_op_basis_op.decomposition()
 
