@@ -38,7 +38,8 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
     Args:
         compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
         target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (None | :class:`~.operation.Operator`): An optional single operator or a product that applies quantum operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
+        uncompute_op (None | :class:`~.operation.Operator`): An optional single operator or a product that applies quantum
+            operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
         ~ops.op_math.ChangeOpBasis: the operator representing the compute, uncompute pattern.
@@ -54,10 +55,35 @@ class ChangeOpBasis(CompositeOp):
     Args:
         compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
         target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations. Default is uncompute_op=qml.adjoint(compute_op).
+        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
+            Default is uncompute_op=qml.adjoint(compute_op).
 
     Returns:
         (Operator): Returns an Operator which is the change_op_basis of the provided Operators: compute_op, target_op, compute_op†.
+
+    **Example**
+
+    Consider the following example involving a ``ChangeOpBasis``. The compute, uncompute pattern is composed of
+    a Quantum Fourier Transform (``QFT``), followed by a ``PhaseAdder``, and finally an inverse ``QFT``.
+
+    .. code::
+        dev = qml.device("default.qubit")
+        @qml.qnode(dev)
+        def circuit():
+            qml.H(0)
+            qml.CNOT([1,2])
+            qml.ctrl(
+                qml.change_op_basis(qml.QFT([1,2]), qml.PhaseAdder(1, x_wires=[1,2])),
+                control=0)
+            )
+            return qml.state()
+
+    When the circuit is decomposed, we will get the following. Note how the ``QFT``s are not controlled.
+    This is the optimization achieved by use of the `change_op_basis` function.
+
+    0: ──H──────╭●────────────────┤ State
+    1: ─╭●─╭QFT─├PhaseAdder─╭QFT†─┤ State
+    2: ─╰X─╰QFT─╰PhaseAdder─╰QFT†─┤ State
     """
 
     def __init__(self, compute_op, target_op, uncompute_op=None):
@@ -156,7 +182,7 @@ def _change_op_basis_resources(resources):
 # pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(*_, wires=None, operands):
-    for op in reversed(operands):
+    for op in operands:
         op._unflatten(*op._flatten())  # pylint: disable=protected-access
 
 
