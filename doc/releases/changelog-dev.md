@@ -83,6 +83,65 @@
 
 <h3>Improvements 🛠</h3>
 
+* PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
+  Users can now use this when designing quantum circuits with experimental program capture enabled.
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3))
+  def circuit(val):
+    angles = jnp.zeros(3)
+    angles[0:3] += val
+
+    for i, angle in enumerate(angles):
+        qml.RX(angle, i)
+
+    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  ```
+
+  ```pycon
+  >>> circuit(jnp.pi)
+  (Array(-1, dtype=float32),
+   Array(-1, dtype=float32),
+   Array(-1, dtype=float32)) 
+  ```
+
+  [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
+  
+* PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
+  Users can now use standard python assignment when designing circuits with experimental program capture enabled.
+
+  ```python
+  import pennylane as qml
+  import jax.numpy as jnp
+
+  qml.capture.enable()
+
+  @qml.qnode(qml.device("default.qubit", wires=3))
+  def circuit(val):
+    angles = jnp.zeros(3)
+    angles[1] = val / 2
+    angles[2] = val
+
+    for i, angle in enumerate(angles):
+        qml.RX(angle, i)
+
+    return qml.expval(qml.Z(0)), qml.expval(qml.Z(1)), qml.expval(qml.Z(2))
+  ```
+
+  ```pycon
+  >>> circuit(jnp.pi)
+  (Array(0.99999994, dtype=float32),
+   Array(0., dtype=float32),
+   Array(-0.99999994, dtype=float32)) 
+  ```
+
+  [(#8027)](https://github.com/PennyLaneAI/pennylane/pull/8027)
+
 * Logical operations (`and`, `or` and `not`) are now supported with the `autograph` module. Users can
   now use these logical operations in control flow when designing quantum circuits with experimental
   program capture enabled.
@@ -148,13 +207,16 @@
   [(#7385)](https://github.com/PennyLaneAI/pennylane/pull/7385)
   [(#7941)](https://github.com/PennyLaneAI/pennylane/pull/7941)
   [(#7943)](https://github.com/PennyLaneAI/pennylane/pull/7943)
+  [(#8075)](https://github.com/PennyLaneAI/pennylane/pull/8075)
   [(#8002)](https://github.com/PennyLaneAI/pennylane/pull/8002)
   
   The included templates are: :class:`~.Adder`, :class:`~.ControlledSequence`, :class:`~.ModExp`, :class:`~.MottonenStatePreparation`, 
   :class:`~.MPSPrep`, :class:`~.Multiplier`, :class:`~.OutAdder`, :class:`~.OutMultiplier`, :class:`~.OutPoly`, :class:`~.PrepSelPrep`,
   :class:`~.ops.Prod`, :class:`~.Reflection`, :class:`~.Select`, :class:`~.StatePrep`, :class:`~.TrotterProduct`, :class:`~.QROM`, 
   :class:`~.GroverOperator`, :class:`~.UCCSD`, :class:`~.StronglyEntanglingLayers`, :class:`~.GQSP`, :class:`~.FermionicSingleExcitation`, 
-  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.Qubitization`, and :class:`~.Superposition`
+  :class:`~.FermionicDoubleExcitation`, :class:`~.QROM`, :class:`~.ArbitraryStatePreparation`, :class:`~.CosineWindow`, 
+  :class:`~.AmplitudeAmplification`, :class:`~.Permute`, :class:`~.AQFT`, :class:`~.FlipSign`, :class:`~.FABLE`,
+  :class:`~.Qubitization`, and :class:`~.Superposition`
 
 * A new function called :func:`~.math.choi_matrix` is available, which computes the [Choi matrix](https://en.wikipedia.org/wiki/Choi%E2%80%93Jamio%C5%82kowski_isomorphism) of a quantum channel.
   This is a useful tool in quantum information science and to check circuit identities involving non-unitary operations.
@@ -195,6 +257,10 @@
   [(#7690)](https://github.com/PennyLaneAI/pennylane/pull/7690)
 
 <h4>Other improvements</h4>
+
+* A `draw` function has been introduced in the `qml.compiler.python_compiler.visualization` module to visualize circuits
+  with the new unified compiler framework when xDSL and/or Catalyst compilation passes are applied.
+  [(#8040)](https://github.com/PennyLaneAI/pennylane/pull/8040)
 
 * Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
   representation of the program between multiple compilation passes.
@@ -339,6 +405,10 @@
 * The `qec` xDSL dialect has been added to the Python compiler, which contains data structures that support quantum error correction functionality.
   [(#7985)](https://github.com/PennyLaneAI/pennylane/pull/7985)
 
+* The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
+  StableHLO dialect with missing upstream operations.
+  [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
+
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
@@ -349,6 +419,7 @@
   down on the complexity of post-processing due to having to handle single shot and single wire cases
   separately. The return shape will now *always* be `(shots, num_wires)`.
   [(#7944)](https://github.com/PennyLaneAI/pennylane/pull/7944)
+  [(#8118)](https://github.com/PennyLaneAI/pennylane/pull/8118)
 
   For a simple qnode:
 
@@ -578,6 +649,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
+  [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
+
 * Set `autoray` package upper-bound in `pyproject.toml` CI due to breaking changes in `v0.8.0`.
   [(#8110)](https://github.com/PennyLaneAI/pennylane/pull/8110)
 
@@ -715,6 +789,10 @@
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 <h3>Bug fixes 🐛</h3>
+
+* An error is now raised if sequences of classically processed mid circuit measurements
+  are used as input to :func:`pennylane.counts` or :func:`pennylane.probs`.
+  [(#8109)](https://github.com/PennyLaneAI/pennylane/pull/8109)
 
 * Simplifying operators raised to integer powers no longer causes recursion errors.
   [(#8044)](https://github.com/PennyLaneAI/pennylane/pull/8044)
