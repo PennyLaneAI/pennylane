@@ -212,7 +212,9 @@ class TestDecompose:
                 return ops
 
         m0 = qml.measure(0)
-        tape = qml.tape.QuantumScript([CustomOp(wires=(0,1)), m0.measurements[0], qml.ops.Conditional(m0, qml.X(0))])
+        tape = qml.tape.QuantumScript(
+            [CustomOp(wires=(0, 1)), m0.measurements[0], qml.ops.Conditional(m0, qml.X(0))]
+        )
         [decomposed_tape], _ = qml.transforms.decompose(
             [tape], gate_set={qml.RX, qml.RZ, MidMeasureMP}
         )
