@@ -184,7 +184,7 @@ class MemRefConstraint(ContainerConstraint):
         return MemRefType
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class NestedTupleOfConstraint(AttrConstraint[TupleType]):
     """Constrain a nested tuple whose flattened leaves all match any allowed constraints."""
 
