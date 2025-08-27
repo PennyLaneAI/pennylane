@@ -3,6 +3,10 @@
 
 <h3>New features since last release</h3>
 
+* A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
+  which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
+  [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
+
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
@@ -82,6 +86,31 @@
   ```
 
 <h3>Improvements 🛠</h3>
+
+* The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
+  [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
+
+  ```python
+  @qml.qnode(qml.device("default.qubit"), shots=1000)
+  def circuit():
+      qml.H(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit.shots
+  Shots(total=1000)
+  >>> circuit()
+  np.float64(-0.004)
+  ```
+
+  Setting the `shots` value in a QNode is equivalent to decorating with :func:`qml.workflow.set_shots`. Note, however, that decorating with :func:`qml.workflow.set_shots` overrides QNode `shots`:
+
+  ```pycon
+  >>> new_circ = qml.set_shots(circuit, shots=123)
+  >>> new_circ.shots
+  Shots(total=123)
+  ```
 
 * PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
   Users can now use this when designing quantum circuits with experimental program capture enabled.
@@ -257,6 +286,9 @@
   [(#7690)](https://github.com/PennyLaneAI/pennylane/pull/7690)
 
 <h4>Other improvements</h4>
+
+* Program capture can now handle dynamic shots, shot vectors, and shots set with `qml.set_shots`.
+  [(#7652)](https://github.com/PennyLaneAI/pennylane/pull/7652)
 
 * Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
   representation of the program between multiple compilation passes.
@@ -736,9 +768,10 @@
 * The `TensorLike` type is now compatible with static type checkers.
   [(#7905)](https://github.com/PennyLaneAI/pennylane/pull/7905)
 
-* Update xDSL supported version to `0.46`.
+* Update xDSL supported version to `0.49`.
   [(#7923)](https://github.com/PennyLaneAI/pennylane/pull/7923)
   [(#7932)](https://github.com/PennyLaneAI/pennylane/pull/7932)
+  [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
 * Update JAX version used in tests to `0.6.2`
   [(#7925)](https://github.com/PennyLaneAI/pennylane/pull/7925)
@@ -751,6 +784,7 @@
 * An `xdsl_extras` module has been added to the Python compiler to house additional utilities and
   functionality not available upstream in xDSL.
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
+  [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
 <h3>Documentation 📝</h3>
 
@@ -788,6 +822,9 @@
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 <h3>Bug fixes 🐛</h3>
+
+* A more informative error is raised when extremely deep circuits are attempted to be drawn.
+  [(#8139)](https://github.com/PennyLaneAI/pennylane/pull/8139)
 
 * An error is now raised if sequences of classically processed mid circuit measurements
   are used as input to :func:`pennylane.counts` or :func:`pennylane.probs`.
@@ -838,8 +875,9 @@
 * Fixes `SemiAdder` to work when inputs are defined with a single wire.
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
 
-* Fixes a bug where `qml.prod` applied on a quantum function does not dequeue operators passed as arguments to the function.
+* Fixes a bug where `qml.prod`, `qml.matrix`, and `qml.cond` applied on a quantum function does not dequeue operators passed as arguments to the function.
   [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
+  [(#8119)](https://github.com/PennyLaneAI/pennylane/pull/8119)
 
 <h3>Contributors ✍️</h3>
 

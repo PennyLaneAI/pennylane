@@ -235,6 +235,16 @@ class TestSingleOperation:
         ]
         assert all(np.allclose(mat, np.eye(4)) for mat in mats)
 
+    def test_matrix_dequeues_operation(self):
+        """Tests that the operator is dequeued."""
+
+        with qml.queuing.AnnotatedQueue() as q:
+            mat = qml.matrix(qml.X(0))
+            qml.QubitUnitary(mat, wires=[0])
+
+        assert len(q.queue) == 1
+        assert isinstance(q.queue[0], qml.QubitUnitary)
+
 
 class TestMultipleOperations:
     def test_multiple_operations_tape(self):
@@ -270,6 +280,21 @@ class TestMultipleOperations:
         matrix = qml.matrix(testcircuit, wire_order)()
         expected_matrix = I_CNOT @ X_S_H
         assert np.allclose(matrix, expected_matrix)
+
+    def test_qfunc_arguments_dequeued(self):
+        """Tests that operators passed as arguments to the qfunc are dequeued"""
+
+        def func(op, op1=None):
+            qml.apply(op)
+            if op1:
+                qml.apply(op1)
+
+        with qml.queuing.AnnotatedQueue() as q:
+            mat = qml.matrix(func, wire_order=[0])(qml.X(0), op1=qml.Z(0))
+            qml.QubitUnitary(mat, wires=[0])
+
+        assert len(q.queue) == 1
+        assert isinstance(q.queue[0], qml.QubitUnitary)
 
     def test_multiple_operations_qnode(self):
         """Check the total matrix for a QNode containing multiple gates"""
