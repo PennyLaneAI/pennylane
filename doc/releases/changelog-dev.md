@@ -501,6 +501,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
+  no longer queue any operators.
+  [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
+
 * `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
   down on the complexity of post-processing due to having to handle single shot and single wire cases
   separately. The return shape will now *always* be `(shots, num_wires)`.
@@ -877,6 +881,11 @@
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
 
 <h3>Bug fixes 🐛</h3>
+
+* Fixes a bug that made the queueing behaviour of :meth:`~.pauli.PauliWord.operation` and
+  :meth:`~.pauli.PauliSentence.operation` dependent on the global state of a program due to
+  a caching issue.
+  [(#8135)](https://github.com/PennyLaneAI/pennylane/pull/8135)
 
 * A more informative error is raised when extremely deep circuits are attempted to be drawn.
   [(#8139)](https://github.com/PennyLaneAI/pennylane/pull/8139)
