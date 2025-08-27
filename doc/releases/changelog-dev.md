@@ -496,6 +496,8 @@
 * The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
   StableHLO dialect with missing upstream operations.
   [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
+  [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
+  
 
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
