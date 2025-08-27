@@ -1239,8 +1239,8 @@ class TestDefaultQubitGateSet:
     def test_default_qubit_has_gate_set_property(self):
         """Test that DefaultQubit has a gate_set property."""
         dev = DefaultQubit()
-        assert hasattr(dev, "gate_set")
-        gate_set = dev.gate_set
+        assert hasattr(dev, "capabilities")
+        gate_set = dev.capabilities.gate_set
         assert isinstance(gate_set, set)
         assert len(gate_set) > 0
 
@@ -1258,14 +1258,14 @@ class TestDefaultQubitGateSet:
         dev = DefaultQubit()
 
         # Gate set should match the operations in capabilities
-        gate_set = dev.gate_set
+        gate_set = dev.capabilities.gate_set
         capabilities_ops = set(dev.capabilities.operations.keys())
         assert gate_set == capabilities_ops
 
     def test_default_qubit_gate_set_contains_basic_gates(self):
         """Test that DefaultQubit gate_set contains expected basic gates."""
         dev = DefaultQubit()
-        gate_set = dev.gate_set
+        gate_set = dev.capabilities.gate_set
 
         # Should contain basic single-qubit gates
         expected_gates = {"PauliX", "PauliY", "PauliZ", "Hadamard", "RX", "RY", "RZ"}
