@@ -139,7 +139,7 @@ class ChangeOpBasis(CompositeOp):
                 self[1]._unflatten(*self[1]._flatten()),  # pylint: disable=protected-access
                 self[0]._unflatten(*self[0]._flatten()),  # pylint: disable=protected-access
             ]
-        return list(self)
+        return list(self[::-1])
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -147,11 +147,11 @@ class ChangeOpBasis(CompositeOp):
         return True
 
     def adjoint(self):
-        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self[::-1]))
+        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
-        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands[::-1]]):
             return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
         return None
 
