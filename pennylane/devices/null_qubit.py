@@ -272,8 +272,6 @@ class NullQubit(Device):
         * ``jvps``: How many circuits are submitted to :meth:`~.compute_jvp` or :meth:`~.execute_and_compute_jvp`
 
     """
-    config_filepath = Path(__file__).parent / "default_qubit.toml"
-    """Path to the TOML configuration file that defines device capabilities."""
 
     @property
     def name(self):
