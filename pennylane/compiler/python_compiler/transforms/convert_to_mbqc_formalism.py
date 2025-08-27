@@ -176,6 +176,7 @@ class ConvertToMBQCFormalismPattern(
 
     def _prep_graph_state(self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter):
         adj_matrix = _generate_adj_matrix(op.gate_name.data)
+        num_aux_wres = 13 if op.gate_name.data == "CNOT" else 4
         adj_matrix_op = arith.ConstantOp(
             builtin.DenseIntOrFPElementsAttr.from_list(
                 type=builtin.TensorType(builtin.IntegerType(1), shape=(len(adj_matrix),)),
@@ -190,7 +191,7 @@ class ConvertToMBQCFormalismPattern(
 
         graph_qubit_dict = {}
         # Extract qubit from the graph state reg
-        for i, _ in enumerate(adj_matrix):
+        for i in range(num_aux_wres):
             extract_op = ExtractOp(graph_state_reg, i)
             rewriter.insert_op(extract_op, InsertPoint.before(op))
 
