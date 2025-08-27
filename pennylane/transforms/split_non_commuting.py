@@ -306,8 +306,8 @@ def split_non_commuting(
 
         **Shot distribution**
 
-        With finite-shot measurements, the default behaviour of ``split_non_commuting``
-        will use 1 execution with ``shots`` each for each group of commuting terms. With the
+        With finite-shot measurements, the default behaviour of ``split_non_commuting`` is to perform one
+        execution with the total number of ``shots`` for each group of commuting terms. With the
         ``shot_dist`` argument, this behaviour can be changed. For example,
         ``shot_dist = "weighted"`` will partition the number of shots performed for
         each commuting group according to the L1 norm of each group's coefficients:
@@ -330,11 +330,9 @@ def split_non_commuting(
             )
 
             dev = qml.device("default.qubit")
-            total_shots = 10000
 
             @partial(split_non_commuting, shot_dist="weighted")
-            @qml.set_shots(shots=total_shots)
-            @qml.qnode(dev)
+            @qml.qnode(dev, shots=10000)
             def circuit():
                 return qml.expval(ham)
 
