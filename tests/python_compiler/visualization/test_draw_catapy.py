@@ -281,6 +281,42 @@ class Testdraw:
             == "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State"
         )
 
+    def test_probs_meas(self):
+        """Test that the probability measurement is visualized correctly."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.RX(0.1, 0)
+            qml.RY(0.2, 1)
+            qml.RZ(0.3, 2)
+            return qml.probs(0), qml.probs(1), qml.probs(2)
+
+        assert draw(circ)() == "0: ──RX─┤  Probs\n1: ──RY─┤  Probs\n2: ──RZ─┤  Probs"
+
+    def test_probs_meas_2(self):
+        """Test that the probability measurement is visualized correctly."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.RX(0.1, 0)
+            qml.RY(0.2, 1)
+            qml.RZ(0.3, 2)
+            return qml.probs()
+
+        assert draw(circ)() == "0: ──RX─┤  Probs\n1: ──RY─┤  Probs\n2: ──RZ─┤  Probs"
+
+    def test_expval_meas(self):
+        """Test that the expectation value measurement is visualized correctly."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.RX(0.1, 0)
+            qml.RY(0.2, 1)
+            qml.RZ(0.3, 2)
+            return qml.expval(qml.X(0)), qml.expval(qml.Y(1)), qml.expval(qml.Z(2))
+
+        assert draw(circ)() == "0: ──RX─┤  <X>\n1: ──RY─┤  <Y>\n2: ──RZ─┤  <Z>"
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])

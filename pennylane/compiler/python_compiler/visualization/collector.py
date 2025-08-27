@@ -24,16 +24,25 @@ from xdsl.dialects.builtin import (
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import CustomOp
+from pennylane.compiler.python_compiler.dialects.quantum import (
+    CustomOp,
+    ExpvalOp,
+)
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import StateOp
+from pennylane.compiler.python_compiler.dialects.quantum import (
+    ProbsOp,
+    SampleOp,
+    StateOp,
+)
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 
 from .xdsl_conversion import (
     dispatch_wires_extract,
+    xdsl_to_qml_compbasis_op,
+    xdsl_to_qml_custom_op,
     xdsl_to_qml_meas,
-    xdsl_to_qml_op,
+    xdsl_to_qml_named_op,
 )
 
 
@@ -43,12 +52,6 @@ class QMLCollector:
     Walks all `FuncOp`s in the given module, building a mapping of SSA qubits to wire indices,
     and converting supported xDSL operations and measurements to PennyLane objects.
     """
-
-    # Several TODO for this pass/collector:
-    # - Add support for other operations (e.g., QubitUnaryOp, GlobalPhaseOp, etc.),
-    # - Add support for measurement operations (e.g., qml.probs, qml.expval, etc.)
-    # - Add support for complex parameters (e.g., complex numbers, arrays, etc.)
-    # - Add support for dynamic wires and parameters
 
     SUPPORTED_OPS: dict[type, Callable[[Any], Operator | MeasurementProcess]]
 
@@ -61,19 +64,36 @@ class QMLCollector:
 
     # pylint: disable=protected-access
     SUPPORTED_OPS = {
-        StateOp: lambda self, xdsl_obj: self._handle_measurement(xdsl_obj),
+        StateOp: lambda self, xdsl_obj: self._handle_state_meas(xdsl_obj),
+        ProbsOp: lambda self, xdsl_obj: self._handle_probs_meas(xdsl_obj),
+        SampleOp: lambda self, xdsl_obj: self._handle_sample_meas(xdsl_obj),
+        ExpvalOp: lambda self, xdsl_obj: self._handle_expval_meas(xdsl_obj),
         CustomOp: lambda self, xdsl_obj: self._handle_custom_op(xdsl_obj),
     }
 
-    def _handle_measurement(self, xdsl_state) -> MeasurementProcess:
+    def _handle_state_meas(self, xdsl_state: StateOp) -> MeasurementProcess:
         return xdsl_to_qml_meas(xdsl_state)
 
-    def _handle_custom_op(self, xdsl_custom_op) -> Operator:
+    def _handle_probs_meas(self, xdsl_probs: ProbsOp) -> MeasurementProcess:
+        xdsl_compbasis_op = xdsl_probs.obs.owner
+        qml_compbasis_op = xdsl_to_qml_compbasis_op(xdsl_compbasis_op)
+        return xdsl_to_qml_meas(xdsl_probs, qml_compbasis_op)
+
+    # TODO: right now shots do not seem to work
+    def _handle_sample_meas(self, xdsl_sample: SampleOp) -> MeasurementProcess:
+        return xdsl_to_qml_meas(xdsl_sample)
+
+    def _handle_expval_meas(self, xdsl_expval: ExpvalOp) -> MeasurementProcess:
+        xdsl_named_obs_op = xdsl_expval.obs.owner
+        qml_obs_op = xdsl_to_qml_named_op(xdsl_named_obs_op)
+        return xdsl_to_qml_meas(xdsl_expval, qml_obs_op)
+
+    def _handle_custom_op(self, xdsl_custom_op: CustomOp) -> Operator:
         if self.quantum_register is None:
             raise ValueError("Quantum register (AllocOp) not found.")
         if not self.wire_to_ssa_qubits:
             raise NotImplementedError("No wires extracted from the register found.")
-        return xdsl_to_qml_op(xdsl_custom_op)
+        return xdsl_to_qml_custom_op(xdsl_custom_op)
 
     # TODO: this will probably no longer be needed once PR #7937 is merged
     def _process_qubit_mapping(self, op):
@@ -121,6 +141,11 @@ class QMLCollector:
 
                 if handler:
                     qml_obj = handler(self, op)
-                    (collected_meas if isinstance(op, StateOp) else collected_ops).append(qml_obj)
+
+                    if isinstance(qml_obj, MeasurementProcess):
+                        collected_meas.append(qml_obj)
+
+                    if isinstance(qml_obj, Operator):
+                        collected_ops.append(qml_obj)
 
         return collected_ops, collected_meas

@@ -25,8 +25,14 @@ from xdsl.ir import SSAValue
 
 import pennylane as qml
 from pennylane import ops
-from pennylane.compiler.python_compiler.dialects.quantum import CustomOp
+from pennylane.compiler.python_compiler.dialects.quantum import (
+    ComputationalBasisOp,
+    CustomOp,
+)
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
+from pennylane.compiler.python_compiler.dialects.quantum import (
+    NamedObsOp,
+)
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all
@@ -39,9 +45,11 @@ from_str_to_PL_gate = {
     if inspect.isclass(getattr(ops, name, None)) and issubclass(getattr(ops, name), Operator)
 }
 
-# TODO: only support state measurements for now
 from_str_to_PL_measurement = {
     "quantum.state": qml.state,
+    "quantum.probs": qml.probs,
+    "quantum.sample": qml.sample,
+    "quantum.expval": qml.expval,
 }
 
 ######################################################
@@ -147,12 +155,27 @@ def ssa_to_qml_wires(op: CustomOp, control: bool = False) -> list[int]:
     return [resolve_constant_wire(q) for q in qubits if q is not None]
 
 
+# TODO: this can probably be combined with the above function
+def ssa_to_qml_wires_named(op: NamedObsOp) -> list[int]:
+    """Get the wires from the named observable operation."""
+    if not op.qubit:
+        raise ValueError("No qubit found for named observable operation.")
+    return resolve_constant_wire(op.qubit)
+
+
+def ssa_to_qml_wires_compbasis(op: ComputationalBasisOp) -> list[int]:
+    """Get the wires from the computational basis operation."""
+    if not op.qubits:
+        return None
+    return [resolve_constant_wire(q) for q in op.qubits if q is not None]
+
+
 ############################################################
 ### xDSL ---> PennyLane Operators/Measurements conversion
 ############################################################
 
 
-def xdsl_to_qml_op(op: CustomOp) -> Operator:
+def xdsl_to_qml_custom_op(op: CustomOp) -> Operator:
     """Convert a ``quantum.custom`` xDSL op to a PennyLane operator."""
     gate_name = op.properties.get("gate_name").data
     parameters = ssa_to_qml_params(op)
@@ -171,8 +194,22 @@ def xdsl_to_qml_op(op: CustomOp) -> Operator:
     return gate
 
 
-def xdsl_to_qml_meas(meas) -> Operator:
+def xdsl_to_qml_named_op(op: NamedObsOp) -> Operator:
+    """Convert a ``quantum.namedobs`` xDSL op to a PennyLane operator."""
+    gate_name = op.type.data.value
+    gate_cls = resolve_gate(gate_name)
+    wires = ssa_to_qml_wires_named(op)
+    gate = gate_cls(wires=wires)
+    return gate
+
+
+def xdsl_to_qml_compbasis_op(op: ComputationalBasisOp) -> Operator:
+    """Convert a ``quantum.compbasis`` xDSL op to a PennyLane operator."""
+    return ssa_to_qml_wires_compbasis(op)
+
+
+def xdsl_to_qml_meas(meas, *args, **kwargs) -> Operator:
     """Given a measurement in xDSL, convert it to a PennyLane measurement."""
     meas_name = meas.name
     measurement = resolve_measurement(meas_name)
-    return measurement()
+    return measurement(*args, **kwargs)
