@@ -290,7 +290,11 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, gate_se
     name = "adjoint + default.qubit"
     program.add_transform(no_sampling, name=name)
     program.add_transform(
-        decompose, stopping_condition=adjoint_ops, name=name, skip_initial_state_prep=False, gate_set=gate_set
+        decompose,
+        stopping_condition=adjoint_ops,
+        name=name,
+        skip_initial_state_prep=False,
+        gate_set=gate_set,
     )
     program.add_transform(validate_observables, adjoint_observables, name=name)
     program.add_transform(
@@ -554,7 +558,12 @@ class DefaultQubit(Device):
             )
 
         if execution_config.gradient_method in {"adjoint", "best"}:
-            return _supports_adjoint(circuit, device_wires=self.wires, device_name=self.name, gate_set=self.capabilities.gate_set)
+            return _supports_adjoint(
+                circuit,
+                device_wires=self.wires,
+                device_name=self.name,
+                gate_set=self.capabilities.gate_set,
+            )
         return False
 
     @debug_logger
@@ -578,7 +587,9 @@ class DefaultQubit(Device):
 
             if config.mcm_config.mcm_method == "deferred":
                 transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-            transform_program.add_transform(transforms_decompose, gate_set=self.capabilities.gate_set)
+            transform_program.add_transform(
+                transforms_decompose, gate_set=self.capabilities.gate_set
+            )
 
             return transform_program
 
@@ -615,7 +626,9 @@ class DefaultQubit(Device):
 
         if config.gradient_method == "adjoint":
             _add_adjoint_transforms(
-                transform_program, device_vjp=config.use_device_jacobian_product, gate_set=self.capabilities.gate_set
+                transform_program,
+                device_vjp=config.use_device_jacobian_product,
+                gate_set=self.capabilities.gate_set,
             )
 
         return transform_program
