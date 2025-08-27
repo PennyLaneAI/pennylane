@@ -762,6 +762,9 @@
   execution on null devices.
   [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
 
+* The `mbqc.graph_state_prep` operation is integrated into the `convert_to_mbqc_formalism` pass.
+  [(#8153)](https://github.com/PennyLaneAI/pennylane/pull/8153)
+
 <h3>Documentation 📝</h3>
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
