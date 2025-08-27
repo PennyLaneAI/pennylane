@@ -83,6 +83,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* `DynamicRegister` can not longer be used as an individual wire label.
+
 * PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
   Users can now use this when designing quantum circuits with experimental program capture enabled.
 
