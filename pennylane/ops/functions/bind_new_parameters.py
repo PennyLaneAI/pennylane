@@ -22,6 +22,7 @@ from functools import singledispatch
 
 from pennylane import ops
 from pennylane.operation import Operator
+from pennylane.pytrees import flatten, unflatten
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.templates.subroutines import (
     ApproxTimeEvolution,
@@ -53,13 +54,8 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
     Returns:
         .Operator: New operator with updated parameters
     """
-    try:
-        return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
-    except (TypeError, ValueError):
-        # operation is doing something different with its call signature.
-        new_op = copy.deepcopy(op)
-        new_op.data = tuple(params)
-        return new_op
+    _, struct = flatten(op)
+    return unflatten(params, struct)
 
 
 @bind_new_parameters.register

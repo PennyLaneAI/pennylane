@@ -297,6 +297,10 @@ class Exp(ScalarSymbolicOp, Operation):
         if self.num_steps is not None and isinstance(base, Sum) and base.is_hermitian:
             return True
 
+        # pylint: disable=unidiomatic-typecheck
+        if type(self) is Exp and not math.is_abstract(coeff) and math.real(coeff):
+            return False
+
         if qml.pauli.is_pauli_word(base):
             return True
 
@@ -349,7 +353,8 @@ class Exp(ScalarSymbolicOp, Operation):
             coeffs = [c * coeff for c in coeffs]
             return self._trotter_decomposition(ops, coeffs)
 
-        if not math.is_abstract(coeff) and math.real(coeff):
+        # pylint: disable=unidiomatic-typecheck
+        if type(self) is Exp and not math.is_abstract(coeff) and math.real(coeff):
 
             error_msg = f"The decomposition of the {self} operator is not defined."
 
@@ -401,7 +406,11 @@ class Exp(ScalarSymbolicOp, Operation):
             List[Operator]: list containing the PauliRot operator
         """
         # Cancel the coefficients added by PauliRot and Ising gates
-        coeff = math.real(2j * coeff)
+        coeff = (
+            math.real(2j * coeff)
+            if math.get_interface(coeff) == "jax"
+            else math.real_if_close(2j * coeff)
+        )
         pauli_word = qml.pauli.pauli_word_to_string(base)
         if pauli_word == "I" * base.num_wires:
             return []
