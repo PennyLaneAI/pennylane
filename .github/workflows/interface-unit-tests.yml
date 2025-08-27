@@ -394,7 +394,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: [5]
+        group: [1, 2, 3, 4, 5, 6]
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).core-tests
