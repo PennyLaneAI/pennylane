@@ -38,6 +38,7 @@ PSWAP = {properties = ["invertible", "controllable", "differentiable"]}
 CRX = {properties = ["invertible", "controllable", "differentiable"]}
 CRY = {properties = ["invertible", "controllable", "differentiable"]}
 CRZ = {properties = ["invertible", "controllable", "differentiable"]}
+ControlledPhaseShift = {properties = ["invertible", "controllable", "differentiable"]}
 CRot = {properties = ["invertible", "controllable", "differentiable"]}
 IsingXX = {properties = ["invertible", "controllable", "differentiable"]}
 IsingYY = {properties = ["invertible", "controllable", "differentiable"]}
