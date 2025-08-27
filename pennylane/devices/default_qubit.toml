@@ -50,6 +50,12 @@ Toffoli = {properties = ["invertible", "controllable", "differentiable"]}
 CSWAP = {properties = ["invertible", "controllable", "differentiable"]}
 FREDKIN = {properties = ["invertible", "controllable", "differentiable"]}
 
+# Multi-qubit gates
+MultiControlledX = {properties = ["invertible", "controllable", "differentiable"]}
+
+# Special operations
+GlobalPhase = {properties = ["invertible", "differentiable"]}
+
 # State preparation (not controllable/invertible in the usual sense)
 BasisState = {properties = ["differentiable"]}
 StatePrep = {properties = ["differentiable"]}
