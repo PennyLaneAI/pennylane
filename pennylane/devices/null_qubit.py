@@ -25,7 +25,6 @@ from collections import defaultdict
 from dataclasses import replace
 from functools import lru_cache, singledispatch
 from numbers import Number
-from pathlib import Path
 
 import numpy as np
 

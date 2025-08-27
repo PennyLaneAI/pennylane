@@ -21,7 +21,6 @@ import warnings
 from collections.abc import Sequence
 from dataclasses import replace
 from functools import partial
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -76,6 +75,51 @@ if TYPE_CHECKING:
     from jax.extend.core import Jaxpr
 
     from pennylane.operation import Operator
+
+
+# Hardcoded gate_set from default_qubit.toml
+ALL_DQ_GATE_SET = {
+    "BasisState",
+    "CNOT",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "CSWAP",
+    "CY",
+    "CZ",
+    "ControlledPhaseShift",
+    "FREDKIN",
+    "GlobalPhase",
+    "Hadamard",
+    "ISWAP",
+    "Identity",
+    "IsingXX",
+    "IsingXY",
+    "IsingYY",
+    "IsingZZ",
+    "MultiControlledX",
+    "PSWAP",
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "PhaseShift",
+    "QubitUnitary",
+    "RX",
+    "RY",
+    "RZ",
+    "Rot",
+    "S",
+    "SWAP",
+    "SX",
+    "Snapshot",
+    "StatePrep",
+    "T",
+    "Toffoli",
+    "U1",
+    "U2",
+    "U3",
+}
 
 
 def stopping_condition(op: Operator) -> bool:
@@ -303,51 +347,6 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, gate_se
     program.add_transform(adjoint_state_measurements, device_vjp=device_vjp)
     program.add_transform(broadcast_expand)
     program.add_transform(validate_adjoint_trainable_params)
-
-
-# Hardcoded gate_set from default_qubit.toml
-HARDCODED_GATE_SET = {
-    "BasisState",
-    "CNOT",
-    "CRX",
-    "CRY",
-    "CRZ",
-    "CRot",
-    "CSWAP",
-    "CY",
-    "CZ",
-    "ControlledPhaseShift",
-    "FREDKIN",
-    "GlobalPhase",
-    "Hadamard",
-    "ISWAP",
-    "Identity",
-    "IsingXX",
-    "IsingXY",
-    "IsingYY",
-    "IsingZZ",
-    "MultiControlledX",
-    "PSWAP",
-    "PauliX",
-    "PauliY",
-    "PauliZ",
-    "PhaseShift",
-    "QubitUnitary",
-    "RX",
-    "RY",
-    "RZ",
-    "Rot",
-    "S",
-    "SWAP",
-    "SX",
-    "Snapshot",
-    "StatePrep",
-    "T",
-    "Toffoli",
-    "U1",
-    "U2",
-    "U3",
-}
 
 
 @simulator_tracking
@@ -603,7 +602,7 @@ class DefaultQubit(Device):
                 circuit,
                 device_wires=self.wires,
                 device_name=self.name,
-                gate_set=HARDCODED_GATE_SET,
+                gate_set=ALL_DQ_GATE_SET,
             )
         return False
 
@@ -628,7 +627,7 @@ class DefaultQubit(Device):
 
             if config.mcm_config.mcm_method == "deferred":
                 transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-            transform_program.add_transform(transforms_decompose, gate_set=HARDCODED_GATE_SET)
+            transform_program.add_transform(transforms_decompose, gate_set=ALL_DQ_GATE_SET)
 
             return transform_program
 
@@ -644,7 +643,7 @@ class DefaultQubit(Device):
             stopping_condition=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
-            gate_set=HARDCODED_GATE_SET,
+            gate_set=ALL_DQ_GATE_SET,
         )
         transform_program.add_transform(
             validate_measurements,
@@ -667,7 +666,7 @@ class DefaultQubit(Device):
             _add_adjoint_transforms(
                 transform_program,
                 device_vjp=config.use_device_jacobian_product,
-                gate_set=HARDCODED_GATE_SET,
+                gate_set=ALL_DQ_GATE_SET,
             )
 
         return transform_program
