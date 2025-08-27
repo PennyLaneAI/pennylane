@@ -117,7 +117,7 @@ def test_exception():
 @pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
 def test_jit_rs_decomposition(decomposition_info):
     """Test that the qjit rs decomposition is working."""
-    catalyst = pytest.importorskip("catalyst")
+    pytest.importorskip("catalyst")
     jax = pytest.importorskip("jax")
     jnp = jax.numpy
 
