@@ -586,7 +586,6 @@ class TestDecomposition:
         with pytest.warns(PennyLaneDeprecationWarning, match="Providing 'num_steps'"):
             op = qml.exp(hamiltonian, coeff=-1j * time, num_steps=steps)
         queue = op.decomposition()
-        print(queue)
         for expected_gate, gate in zip(expected_queue, queue):
             qml.assert_equal(expected_gate, gate)
 
