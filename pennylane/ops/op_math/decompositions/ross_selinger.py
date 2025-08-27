@@ -25,14 +25,6 @@ from pennylane.ops.op_math.decompositions.normal_forms import (
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 from pennylane.queuing import QueuingManager
 
-is_jax = True
-try:
-    import jax
-    import jax.numpy as jnp
-    from jax.core import ShapedArray
-except (ModuleNotFoundError, ImportError):  # pragma: no cover
-    is_jax = False
-
 
 def _domain_correction(theta: float) -> tuple[float, ZOmega]:
     r"""Return shifts for the angle :math:`\theta` for it to be in the interval :math:`[-\pi/4, \pi/4]` and the corresponding scaling factor for the matrix elements.
@@ -280,18 +272,22 @@ def rs_decomposition(
                 so3_mat, compressed=is_qjit, upper_bounded_size=upper_bounded_size
             )
 
-            if is_qjit:
-                return (decomposition_info, jnp.float64(g_phase), jnp.float64(phase))
             return (decomposition_info, g_phase, phase)
 
         # If QJIT is active, use the compressed normal form.
         if not is_qjit:
             decomposed_gates, g_phase, phase = eval_ross_algorithm(angle)
         else:
-            if not is_jax:  # pragma: no cover
+            # Import JAX lazily at call-time to avoid hard dependency in non-QJIT runs
+            try:  # pragma: no cover - environment dependent
+                import jax  # pylint: disable=import-outside-toplevel
+                import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
+                from jax.core import ShapedArray  # pylint: disable=import-outside-toplevel
+            except Exception as exc:  # pragma: no cover
                 raise ImportError(
                     "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
-                )
+                ) from exc
+
             # circular import issue when import outside of the function
             api_extensions = AvailableCompilers.names_entrypoints["catalyst"]["ops"].load()
 
@@ -301,6 +297,11 @@ def rs_decomposition(
             # the decomposition will be padded with -1s.
             upper_bounded_size = int(10 * math.log2(1 / epsilon))
 
+            # Wrap the pure Python algorithm to cast outputs to JAX types
+            def eval_ross_algorithm_jitted(angle_val, upper_bounded_size_val):
+                decomp_info, gph, ph = eval_ross_algorithm(angle_val, upper_bounded_size_val)
+                return (decomp_info, jnp.float64(gph), jnp.float64(ph))
+
             result_type = (
                 (jnp.int32, ShapedArray((upper_bounded_size,), jnp.int32), jnp.int32),
                 jnp.float64,  # g_phase
@@ -308,7 +309,7 @@ def rs_decomposition(
             )
 
             decomposed_info, g_phase, phase = api_extensions.pure_callback(
-                eval_ross_algorithm, result_type=result_type
+                eval_ross_algorithm_jitted, result_type=result_type
             )(angle, upper_bounded_size)
 
             decomposed_gates = _jit_rs_decomposition(op.wires[0], decomposed_info)
@@ -330,6 +331,13 @@ def rs_decomposition(
     interface = qml.math.get_interface(angle)
     phase += qml.math.mod(g_phase, 2) * math.pi
     if is_qjit:
+        # Import JAX at call-time to avoid hard dependency when QJIT isn't in use
+        try:  # pragma: no cover - environment dependent
+            import jax  # pylint: disable=import-outside-toplevel
+        except Exception as exc:  # pragma: no cover
+            raise ImportError(
+                "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
+            ) from exc
         with jax.ensure_compile_time_eval():
             global_phase = qml.GlobalPhase(phase)
     else:
