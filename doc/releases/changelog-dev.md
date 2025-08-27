@@ -86,6 +86,31 @@
 
 <h3>Improvements 🛠</h3>
 
+* The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
+  [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
+
+  ```python
+  @qml.qnode(qml.device("default.qubit"), shots=1000)
+  def circuit():
+      qml.H(0)
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> circuit.shots
+  Shots(total=1000)
+  >>> circuit()
+  np.float64(-0.004)
+  ```
+
+  Setting the `shots` value in a QNode is equivalent to decorating with :func:`qml.workflow.set_shots`. Note, however, that decorating with :func:`qml.workflow.set_shots` overrides QNode `shots`:
+
+  ```pycon
+  >>> new_circ = qml.set_shots(circuit, shots=123)
+  >>> new_circ.shots
+  Shots(total=123)
+  ```
+
 * PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
   Users can now use this when designing quantum circuits with experimental program capture enabled.
 
@@ -260,6 +285,9 @@
   [(#7690)](https://github.com/PennyLaneAI/pennylane/pull/7690)
 
 <h4>Other improvements</h4>
+
+* Program capture can now handle dynamic shots, shot vectors, and shots set with `qml.set_shots`.
+  [(#7652)](https://github.com/PennyLaneAI/pennylane/pull/7652)
 
 * Added a callback mechanism to the `qml.compiler.python_compiler` submodule to inspect the intermediate 
   representation of the program between multiple compilation passes.
@@ -846,8 +874,9 @@
 * Fixes `SemiAdder` to work when inputs are defined with a single wire.
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
 
-* Fixes a bug where `qml.prod` applied on a quantum function does not dequeue operators passed as arguments to the function.
+* Fixes a bug where `qml.prod`, `qml.matrix`, and `qml.cond` applied on a quantum function does not dequeue operators passed as arguments to the function.
   [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
+  [(#8119)](https://github.com/PennyLaneAI/pennylane/pull/8119)
 
 <h3>Contributors ✍️</h3>
 
