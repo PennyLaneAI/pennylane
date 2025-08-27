@@ -312,7 +312,9 @@ class TestMBQCFormalismConversion:
         # queue ops with queue_single_qubit_gate
         with qml.queuing.AnnotatedQueue() as q:
             qml.Rot(1.2, 0.34, 0.7, wire_map[w])
-            wire_map[w], measurements = queue_single_qubit_gate(q_mgr, op=op, in_wire=wire_map[w])
+            wire_map[w], measurements = queue_single_qubit_gate(
+                q_mgr, op=op, in_wire=wire_map[w], diagonalize_mcms=False
+            )
             queue_corrections(op, measurements)(wire_map[w])
             qml.expval(qml.X(wire_map[w]))
             qml.expval(qml.Y(wire_map[w]))
@@ -327,7 +329,17 @@ class TestMBQCFormalismConversion:
             assert isinstance(tape_op, tuple([qml.measurements.MidMeasureMP, qml.ops.Conditional]))
 
         # tape yields expected results
-        (diagonalized_tape,), _ = diagonalize_mcms(tape)
+        with qml.queuing.AnnotatedQueue() as q:
+            qml.Rot(1.2, 0.34, 0.7, wire_map[w])
+            wire_map[w], measurements = queue_single_qubit_gate(
+                q_mgr, op=op, in_wire=wire_map[w], diagonalize_mcms=True
+            )
+            queue_corrections(op, measurements)(wire_map[w])
+            qml.expval(qml.X(wire_map[w]))
+            qml.expval(qml.Y(wire_map[w]))
+            qml.expval(qml.Z(wire_map[w]))
+
+        diagonalized_tape = qml.tape.QuantumScript.from_queue(q, shots=500)
         res, res_ref = qml.execute([diagonalized_tape, ref_tape], device=dev, mcm_method="one-shot")
         assert np.allclose(res, res_ref, atol=0.07)
 

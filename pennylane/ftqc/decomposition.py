@@ -18,7 +18,7 @@ from functools import partial, singledispatch
 
 import networkx as nx
 
-from pennylane import math, measure, adjoint, PhaseShift
+from pennylane import PhaseShift, adjoint, math, measure
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
@@ -57,7 +57,7 @@ def convert_to_mbqc_gateset(tape):
 
 
 @transform
-def convert_to_mbqc_formalism(tape, diagonalize_mcms= False):
+def convert_to_mbqc_formalism(tape, diagonalize_mcms=False):
     """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
@@ -100,7 +100,7 @@ def convert_to_mbqc_formalism(tape, diagonalize_mcms= False):
                 else:
                     w = op.wires[0]
                     wire_map[w], measurements = queue_single_qubit_gate(
-                        q_mgr, op, in_wire=wire_map[w], diagonalize_mcms = diagonalize_mcms
+                        q_mgr, op, in_wire=wire_map[w], diagonalize_mcms=diagonalize_mcms
                     )
                     queue_corrections(op, measurements)(wire_map[w])
 
@@ -133,13 +133,13 @@ def queue_single_qubit_gate(q_mgr, op, in_wire, diagonalize_mcms):
 
 
 @singledispatch
-def queue_measurements(op, wires, diagonalize_mcms):
+def queue_measurements(op, wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute the operation in the MBQC formalism"""
     raise NotImplementedError(f"Received unsupported gate of type {op}")
 
 
 @queue_measurements.register(RotXZX)
-def _rot_measurements(op: RotXZX, wires, diagonalize_mcms):
+def _rot_measurements(op: RotXZX, wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute RotXZX in the MBQC formalism"""
 
     phi, theta, omega = op.data
@@ -147,21 +147,22 @@ def _rot_measurements(op: RotXZX, wires, diagonalize_mcms):
     if diagonalize_mcms:
         H(wires[0])
         m1 = measure(wires[0], reset=True)
-        
-        cond(m1, PhaseShift(-phi, wires[1]), PhaseShift(phi, wires[1]))
+
+        cond(m1, partial(PhaseShift, phi=-phi), partial(PhaseShift, phi=phi))(wires=wires[1])
         H(wires[1])
         m2 = measure(wires[1], reset=True)
 
-        cond(m2, PhaseShift(-theta, wires[2]), PhaseShift(theta, wires[2]))
+        cond(m2, partial(PhaseShift, phi=-theta), partial(PhaseShift, phi=theta))(wires=wires[2])
         H(wires[2])
         m3 = measure(wires[2])
 
-        cond(m1 ^ m3, PhaseShift(-omega, wires[3]), PhaseShift(omega, wires[3]))
+        cond(m1 ^ m3, partial(PhaseShift, phi=-omega), partial(PhaseShift, phi=omega))(
+            wires=wires[3]
+        )
         H(wires[3])
         m4 = measure(wires[3])
 
         return [m1, m2, m3, m4]
-
 
     m1 = measure_x(wires[0], reset=True)
     m2 = cond_measure(
@@ -184,7 +185,7 @@ def _rot_measurements(op: RotXZX, wires, diagonalize_mcms):
 
 
 @queue_measurements.register(RZ)
-def _rz_measurements(op: RZ, wires, diagonalize_mcms):
+def _rz_measurements(op: RZ, wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute RZ in the MBQC formalism"""
 
     angle = op.parameters[0]
@@ -196,7 +197,7 @@ def _rz_measurements(op: RZ, wires, diagonalize_mcms):
         H(wires[1])
         m2 = measure(wires[1], reset=True)
 
-        cond(m2, PhaseShift(-angle, wires[2]), PhaseShift(angle, wires[2]))
+        cond(m2, partial(PhaseShift, phi=-angle), partial(PhaseShift, phi=angle))(wires=wires[2])
         H(wires[2])
         m3 = measure(wires[2], reset=True)
 
@@ -204,9 +205,6 @@ def _rz_measurements(op: RZ, wires, diagonalize_mcms):
         m4 = measure(wires[3], reset=True)
 
         return [m1, m2, m3, m4]
-
-
-
 
     m1 = measure_x(wires[0], reset=True)
     m2 = measure_x(wires[1], reset=True)
@@ -221,7 +219,7 @@ def _rz_measurements(op: RZ, wires, diagonalize_mcms):
 
 
 @queue_measurements.register(H)
-def _hadamard_measurements(op: H, wires, diagonalize_mcms):
+def _hadamard_measurements(op: H, wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute Hadamard in the MBQC formalism"""
     if diagonalize_mcms:
         H(wires[0])
@@ -246,7 +244,7 @@ def _hadamard_measurements(op: H, wires, diagonalize_mcms):
 
 
 @queue_measurements.register(S)
-def _s_measurements(op: S, wires, diagonalize_mcms):
+def _s_measurements(op: S, wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute S in the MBQC formalism"""
     if diagonalize_mcms:
         H(wires[0])
@@ -259,7 +257,7 @@ def _s_measurements(op: S, wires, diagonalize_mcms):
         H(wires[3])
         m4 = measure(wires[3], reset=True)
         return [m1, m2, m3, m4]
-            
+
     m1 = measure_x(wires[0], reset=True)
     m2 = measure_x(wires[1], reset=True)
     m3 = measure_y(wires[2], reset=True)
@@ -314,7 +312,7 @@ def _s_corrections(op, m1, m2, m3, m4):
     return m2 ^ m4, parity(m1, m2, m3, 1)
 
 
-def queue_cnot(q_mgr, ctrl_idx, target_idx, diagonalize_mcms):
+def queue_cnot(q_mgr, ctrl_idx, target_idx, diagonalize_mcms=False):
     """Queue the resource state preparation, measurements and byproducts to execute
     the operation in the MBQC formalism. This is the 15-qubit procedure from
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312, Fig. 2"""
@@ -342,7 +340,7 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx, diagonalize_mcms):
     return output_ctrl_idx, output_target_idx, measurements
 
 
-def cnot_measurements(wires, diagonalize_mcms):
+def cnot_measurements(wires, diagonalize_mcms=False):
     """Queue the measurements needed to execute CNOT in the MBQC formalism.
     Numbering convention follows the procedure in Raussendorf et al. 2003,
     https://doi.org/10.1103/PhysRevA.68.022312, see Fig. 2"""
