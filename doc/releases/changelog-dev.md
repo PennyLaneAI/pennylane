@@ -115,18 +115,17 @@
   ```
 
   This Hamiltonian can be split into 3 non-commuting groups of mutually commuting terms.
-  With ``shot_dist = "weighted"``, for example, the number of shots will be divided up according to the L1 norm of each group's coefficients:
+  With ``shot_dist = "weighted"``, for example, the number of shots will be divided
+  according to the L1 norm of each group's coefficients:
 
   ```python
   from functools import partial
   from pennylane.transforms import split_non_commuting
 
   dev = qml.device("default.qubit")
-  total_shots = 10000
 
   @partial(split_non_commuting, shot_dist="weighted")
-  @qml.set_shots(shots=total_shots)
-  @qml.qnode(dev)
+  @qml.qnode(dev, shots=10000)
   def circuit():
       return qml.expval(ham)
 
@@ -137,6 +136,7 @@
   ```pycon
   >>> print(tracker.history["shots"])
   [2303, 23, 7674]
+  ```
 
 * The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
   [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
