@@ -342,6 +342,28 @@ def split_non_commuting(
         >>> print(tracker.history["shots"])
         [2303, 23, 7674]
 
+        The ``shot_dist`` strategy can be also defined by a custom function. For example:
+
+        .. code-block:: python3
+
+            import numpy as np
+
+            def my_shot_dist(total_shots, coeffs_per_group, seed):
+                max_per_group = [np.max(np.abs(coeffs)) for coeffs in coeffs_per_group]
+                prob_shots = np.array(max_per_group) / np.sum(max_per_group)
+                return np.round(total_shots * prob_shots)
+
+            @partial(split_non_commuting, shot_dist=my_shot_dist)
+            @qml.qnode(dev, shots=10000)
+            def circuit():
+                return qml.expval(ham)
+
+            with qml.Tracker(dev) as tracker:
+                circuit()
+
+        >>> print(tracker.history["shots"])
+        [1664, 17, 8319]
+
         **Internal details**
 
         Internally, this function works with tapes. We can create a tape with multiple
