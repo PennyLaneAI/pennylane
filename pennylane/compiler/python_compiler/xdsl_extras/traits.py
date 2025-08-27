@@ -35,7 +35,7 @@ class SameOperandsAndResultShape(OpTrait):
     # TODO: This trait should be added to ElementwiseBinaryOperation and
     # ElementwiseUnaryOperation operations when upstreaming to xdsl.
 
-    def verify(self, op: "Operation") -> None:
+    def verify(self, op: Operation) -> None:
         """Verify that the operation has the same shape for all operands and results."""
 
         if len(op.results) < 1 or len(op.operands) < 1:
@@ -60,7 +60,7 @@ class SameOperandsElementType(OpTrait):
     # TODO: This trait should be added to ElementwiseBinaryOperation and
     # ElementwiseUnaryOperation operations when upstreaming to xdsl.
 
-    def verify(self, op: "Operation") -> None:
+    def verify(self, op: Operation) -> None:
         """Verify that the operation has the same element type for all operands."""
 
         if len(op.operands) < 1:
