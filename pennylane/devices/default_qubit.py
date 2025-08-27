@@ -27,7 +27,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from pennylane import capture, math, ops
-from pennylane.devices.capabilities import DeviceCapabilities, OperatorProperties
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
