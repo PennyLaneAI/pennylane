@@ -1117,3 +1117,27 @@ class TestShotDistribution:
 
         for tape in tapes:
             assert tape.shots.total_shots == 1
+
+    @pytest.mark.parametrize("grouping_strategy", ["default", "qwc"])
+    def test_drop_tape_with_zero_shots(self, grouping_strategy):
+        """Test that a tape with zero shots gets dropped."""
+
+        h = qml.Hamiltonian(coeffs=[1.0, 1.0, 1.0], observables=[qml.X(0), qml.Y(0), qml.Z(0)])
+        initial_tape = qml.tape.QuantumScript(measurements=[qml.expval(h)], shots=100)
+
+        mock_shot_dist = MagicMock(spec=ShotDistFunction)
+        mock_shot_dist.return_value = [20, 0, 80]
+
+        tapes, _ = split_non_commuting(
+            initial_tape,
+            grouping_strategy=grouping_strategy,
+            shot_dist=mock_shot_dist,
+        )
+
+        assert len(tapes) == 2
+
+        assert tapes[0].measurements[0] == qml.expval(qml.X(0))
+        assert tapes[0].shots.total_shots == 20
+
+        assert tapes[1].measurements[0] == qml.expval(qml.Z(0))
+        assert tapes[1].shots.total_shots == 80
