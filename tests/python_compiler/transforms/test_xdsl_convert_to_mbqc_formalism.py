@@ -29,18 +29,21 @@ from pennylane.compiler.python_compiler.transforms import (
     convert_to_mbqc_formalism_pass,
     measurements_from_samples_pass,
 )
-
-# from pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism import _generate_graph
+from pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism import (
+    _adj_matrix_generation_helper,
+)
 from pennylane.ftqc import RotXZX
 
 
 class TestConvertToMBQCFormalismPass:
     """Unit tests for ConvertToMBQCFormalismPass."""
 
-    # def test_generate_graph_unsupported_gate(self):
-    #     """Test that error raised for unsupported gates."""
-    #     with pytest.raises(NotImplementedError):
-    #         _generate_graph("IsingXY")
+    def test_adj_matrix_generation_helper(self):
+        """Test that error raised for unsupported gates."""
+        num_vertices = 4
+        edges = [(1, 0), (2, 1), (3, 2)]
+        adj_matrix = _adj_matrix_generation_helper(num_vertices, edges)
+        assert adj_matrix == [1, 0, 1, 0, 0, 1]
 
     def test_hadamard_gate(self, run_filecheck):
         """Test for lowering a Hadamard gate to a MBQC formalism."""

@@ -19,7 +19,6 @@ import math
 from dataclasses import dataclass
 from enum import Enum
 
-import numpy as np
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
@@ -33,7 +32,7 @@ from ..dialects.mbqc import (
     MeasurementPlaneAttr,
     MeasurementPlaneEnum,
 )
-from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp, ExtractOp, QubitType
+from ..dialects.quantum import CustomOp, DeallocQubitOp, ExtractOp, QubitType
 from .api import compiler_transform
 
 
@@ -42,13 +41,18 @@ class _MeasureBasis(Enum):
     Y = "Y"
 
 
+class _NumAuxWires(Enum):
+    ONE_WIRE_GATE = 4
+    CNOT = 13
+
+
 def _generate_adj_matrix(op_name: str) -> list:
-    """Generate a networkx graph to represent the connectivity of auxiliary qubits of
+    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits of
     a gate.
     Args:
         op_name (str): Gate name.
     Returns:
-        A graph represents the connectivity of auxiliary qubits.
+        An adjacent matrix represents the connectivity of auxiliary qubits.
     """
     if op_name in ["RotXZX", "RZ", "Hadamard", "S"]:
         return _generate_one_wire_op_adj_matrix()
@@ -57,40 +61,50 @@ def _generate_adj_matrix(op_name: str) -> list:
     raise NotImplementedError(f"{op_name} is not supported in the MBQC formalism.")
 
 
+def _adj_matrix_generation_helper(
+    num_vertices: int, edges_in_adj_matrix: list[tuple[int, int]]
+) -> list:
+    """Generate an adjacent matrix with the number of vertice and edges information.
+    Note that adjcent matrix means the lower triangular part of the full adjact matrix.
+    It can be represented as below and `x` marks here are diagonalized elements.
+    x
+    + x
+    + + x
+    .
+    ........
+    .
+    + + + + + x
+
+    Args:
+      num_vertices (int) : Number of vertices in the adjacent matrix.
+      edges_in_adj_matrix (list[tuple[int, int]]): List of edges in the adjacent matrix.
+
+    Return:
+      An adjacent matrix represents the connectivities of vertices.
+    """
+    adj_matrix_length = (num_vertices * (num_vertices - 1)) >> 1
+    adj_matrix = [0] * adj_matrix_length
+    for n, _ in enumerate(adj_matrix):
+        N = (1 + math.isqrt(1 + 8 * n)) >> 1
+        i = N
+        j = n - ((N - 1) * N >> 1)
+        if (i, j) in edges_in_adj_matrix:
+            adj_matrix[n] = 1
+    return adj_matrix
+
+
 def _generate_cnot_adj_matrix() -> list:
-    """Generate a networkx graph to represent the connectivity of auxiliary qubits of
-    a CNOT gate based on the textbook MBQC formalism. Note that wire 1 is the control
-    wire and wire 9 is the target wire as described in the Fig.2 of
-    [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
+    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits of
+    a CNOT gate based on the textbook MBQC formalism. The connectivity of the qubits in
+    the register is:
 
-    1  --  2  --  3  --  4  --  5  --  6  -- 7
-                         |
-                         8
-                         |
-    9  -- 10  --  11 -- 12  -- 13  -- 14  -- 15
-
-    The connectivity of the qubits in the register is:
-    x0 --  0  --  1  --  2  --  3  --  4  -- 5
+    ctl --  0  --  1  --  2  --  3  --  4  -- 5
                          |
                          6
                          |
-    x1 --  7  --  8  --  9  -- 10  -- 11  -- 12
+    tgt --  7  --  8  --  9  -- 10  -- 11  -- 12
 
-    # edges_in_textbook = [
-    #     (2, 3),
-    #     (3, 4),
-    #     (4, 5),
-    #     (5, 6),
-    #     (6, 7),
-    #     (4, 8),
-    #     (8, 12),
-    #     (10, 11),
-    #     (11, 12),
-    #     (12, 13),
-    #     (13, 14),
-    #     (14, 15),
-    # ]
-
+    Note that both ctrl and target qubits are not in the adjacent matrix and
     edges_in_adj_matrix = [
        (1, 0),
        (2, 1),
@@ -106,13 +120,19 @@ def _generate_cnot_adj_matrix() -> list:
        (12, 11),
     ]
 
-    Returns:
-        A graph represents the connectivity of auxiliary qubits of a CNOT gate.
-    """
-    num_vertices = 13
-    adj_matrix_length = (num_vertices * (num_vertices - 1)) >> 1
-    adj_matrix = [0] * adj_matrix_length
+    Also note that wire 1 is the control wire and wire 9 is the target wire as described
+    in the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
 
+    1  --  2  --  3  --  4  --  5  --  6  -- 7
+                         |
+                         8
+                         |
+    9  -- 10  --  11 -- 12  -- 13  -- 14  -- 15
+
+    Returns:
+        An adjacent matrix represents the connectivity of auxiliary qubits of a CNOT gate.
+    """
+    num_vertices = _NumAuxWires.CNOT.value
     edges_in_adj_matrix = [
         (1, 0),
         (2, 1),
@@ -128,23 +148,38 @@ def _generate_cnot_adj_matrix() -> list:
         (12, 11),
     ]
 
-    for n in range(len(adj_matrix)):
-        N = (1 + math.isqrt(1 + 8 * n)) >> 1
-        i = N
-        j = n - (N - 1) * N >> 1
-        if (i, j) in edges_in_adj_matrix:
-            adj_matrix[n] = 1
-    return adj_matrix
+    return _adj_matrix_generation_helper(num_vertices, edges_in_adj_matrix)
 
 
 def _generate_one_wire_op_adj_matrix() -> list:
-    """Generate lattice graph for a one-wire gate based on the textbook MBQC formalism.
-    Note wire 1 is the target wire in the Fig. 2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
+    """Generate an adjacent matrix to represent the connectivity of auxiliary qubits of
+    a one-wire gate based on the textbook MBQC formalism. The connectivity of the qubits in
+    the register is:
+
+    tgt --  0  --  1  --  2  --  3
+
+    Note that both ctrl and target qubits are not in the adjacent matrix and
+    edges_in_adj_matrix = [
+       (1, 0),
+       (2, 1),
+       (3, 2),
+    ]
+
+    Also note that wire 1 is the target wire as described
+    in the Fig.2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
+
+    1  --  2  --  3  --  4  --  5
 
     Returns:
-        A graph represents the connectivity of auxiliary qubits of a one-wire gate.
+        An adjacent matrix represents the connectivity of auxiliary qubits of a one-wire gate.
     """
-    return [1, 0, 1, 0, 0, 1]
+    num_vertices = _NumAuxWires.ONE_WIRE_GATE.value
+    edges_in_adj_matrix = [
+        (1, 0),
+        (2, 1),
+        (3, 2),
+    ]
+    return _adj_matrix_generation_helper(num_vertices, edges_in_adj_matrix)
 
 
 @dataclass(frozen=True)
@@ -176,7 +211,11 @@ class ConvertToMBQCFormalismPattern(
 
     def _prep_graph_state(self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter):
         adj_matrix = _generate_adj_matrix(op.gate_name.data)
-        num_aux_wres = 13 if op.gate_name.data == "CNOT" else 4
+        num_aux_wres = (
+            _NumAuxWires.CNOT.value
+            if op.gate_name.data == "CNOT"
+            else _NumAuxWires.ONE_WIRE_GATE.value
+        )
         adj_matrix_op = arith.ConstantOp(
             builtin.DenseIntOrFPElementsAttr.from_list(
                 type=builtin.TensorType(builtin.IntegerType(1), shape=(len(adj_matrix),)),
