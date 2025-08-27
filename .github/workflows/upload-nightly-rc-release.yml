@@ -2,8 +2,6 @@ name: Build nightly PennyLane RC releases for TestPyPI
 
 on:
   push:
-    branches:
-      - '*-rc-nightly' 
     # schedule:
     #   # Run every weekday at 5:50 EDT (cron is in UTC)
     #   - cron: "50 9 * * 1-5"
@@ -14,22 +12,21 @@ jobs:
     name: Setup the release
     runs-on: ubuntu-24.04
     steps:
+    - name: Get latest branch matching pattern
+      id: get-latest-branch
+      run: |
+        latest_branch=$(git branch -r --sort=-committerdate | grep -Eo 'origin/v[0-9]+\.[0-9]+\.[0-9]+-rc0' | head -n 1 | sed 's|origin/||')
+        echo "latest_branch=$latest_branch" >> $GITHUB_ENV
+
     - name: Checkout PennyLane repo
       uses: actions/checkout@v4
       with:
         ssh-key: ${{ secrets.NIGHTLY_VERSION_UPDATE_DEPLOY_KEY }}
+        ref: ${{ env.latest_branch }}
 
     - name: Bump dev version
       run: |
         python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py
-
-    - name: Push new version
-      run: |
-        git config --global user.email '${{ secrets.AUTO_UPDATE_VERSION_RINGO_EMAIL }}'
-        git config --global user.name "ringo-but-quantum"
-        git add $GITHUB_WORKSPACE/pennylane/_version.py
-        git commit -m "[no ci] bump nightly RC version"
-        # git push
 
     - name: Build wheels
       run: |
@@ -53,9 +50,3 @@ jobs:
       with:
         name: nightly-wheels
         path: dist
-
-    # - name: Upload wheels
-    #   uses: pypa/gh-action-pypi-publish@release/v1
-    #   with:
-    #     repository-url: https://test.pypi.org/legacy/
-    #     packages-dir: dist
