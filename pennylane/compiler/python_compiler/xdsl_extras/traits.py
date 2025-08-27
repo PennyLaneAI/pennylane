@@ -63,7 +63,7 @@ class SameOperandsElementType(OpTrait):
     def verify(self, op: Operation) -> None:
         """Verify that the operation has the same element type for all operands."""
 
-        if len(op.operands) < 1:
+        if len(op.operands) <= 1:
             return
 
         # Get the element type of the first operand
