@@ -120,13 +120,9 @@ class Elementwise(OpTrait):
     def verify(self, op: Operation) -> None:
         """Verify that the operation is elementwise."""
 
-        # Check if a type is mappable (vector or tensor)
-        def is_mappable_type(attr_type: Attribute) -> bool:
-            return isinstance(attr_type, (VectorType, TensorType))
-
-        # Filter mappable types from results and operands
-        result_mappable_types = [t for t in op.result_types if is_mappable_type(t)]
-        operand_mappable_types = [t for t in op.operand_types if is_mappable_type(t)]
+        # Filter mappable types from results and operands (vectors/tensors only)
+        result_mappable_types = [t for t in op.result_types if Elementwise.is_mappable_type(t)]
+        operand_mappable_types = [t for t in op.operand_types if Elementwise.is_mappable_type(t)]
 
         # If the op only has scalar operand/result types, then we have nothing to check
         if not result_mappable_types and not operand_mappable_types:
@@ -165,3 +161,12 @@ class Elementwise(OpTrait):
                     f"'{op.name}': all non-scalar operands/results must have the "
                     "same shape and base type"
                 )
+
+    @staticmethod
+    def is_mappable_type(attr_type: Attribute) -> bool:
+        """Return True if the type is elementwise-mappable (vector or tensor).
+
+        There is a TODO in MLIR to generalize this trait to avoid hardcoding vector/tensor.
+        We should update this when the TODO is resolved.
+        """
+        return isinstance(attr_type, (VectorType, TensorType))
