@@ -134,9 +134,9 @@ class ChangeOpBasis(CompositeOp):
     @handle_recursion_error
     def resource_params(self):
         resources = {}
-        resources["compute_op"] = resource_rep(type(self[0]), **self[0].resource_params)
+        resources["compute_op"] = resource_rep(type(self[2]), **self[2].resource_params)
         resources["target_op"] = resource_rep(type(self[1]), **self[1].resource_params)
-        resources["uncompute_op"] = resource_rep(type(self[2]), **self[2].resource_params)
+        resources["uncompute_op"] = resource_rep(type(self[0]), **self[0].resource_params)
         return resources
 
     grad_method = None
@@ -243,8 +243,8 @@ def _controlled_change_op_basis_decomposition(
     base,
     **__,
 ):
-    base.operands[0]._unflatten(  # pylint: disable=protected-access
-        *base.operands[0]._flatten()  # pylint: disable=protected-access
+    base.operands[2]._unflatten(  # pylint: disable=protected-access
+        *base.operands[2]._flatten()  # pylint: disable=protected-access
     )
     ctrl(
         base.operands[1]._unflatten(  # pylint: disable=protected-access
@@ -255,15 +255,15 @@ def _controlled_change_op_basis_decomposition(
         work_wires=work_wires,
         work_wire_type=work_wire_type,
     )
-    base.operands[2]._unflatten(  # pylint: disable=protected-access
-        *base.operands[2]._flatten()  # pylint: disable=protected-access
+    base.operands[0]._unflatten(  # pylint: disable=protected-access
+        *base.operands[0]._flatten()  # pylint: disable=protected-access
     )
 
 
 # pylint: disable=unused-argument
 @register_resources(_change_op_basis_resources)
 def _change_op_basis_decomp(*_, wires=None, operands):
-    for op in operands:
+    for op in operands[::-1]:
         op._unflatten(*op._flatten())  # pylint: disable=protected-access
 
 
