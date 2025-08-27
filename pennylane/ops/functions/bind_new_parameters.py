@@ -76,10 +76,11 @@ def bind_new_parameters_approx_time_evolution(
 
 @bind_new_parameters.register
 def _(op: TrotterProduct, params: Sequence[TensorLike]):
-    new_hamiltonian = bind_new_parameters(op.hyperparameters["base"], params[1:])
-    time = params[0]
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["base"], params[:-1])
+    time = params[-1]
 
-    return TrotterProduct(new_hamiltonian, time, **op.hyperparameters)
+    hp = op.hyperparameters
+    return TrotterProduct(new_hamiltonian, time, n=hp["n"], order=hp["order"])
 
 
 @bind_new_parameters.register
