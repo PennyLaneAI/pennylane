@@ -247,7 +247,6 @@ class Exp(ScalarSymbolicOp, Operation):
         self.grad_recipe = [None]
         self.num_steps = num_steps
         self.hyperparameters["num_steps"] = num_steps
-        self._is_evolution = not math.is_abstract(coeff) and math.allclose(math.real(coeff), 0)
 
     def __repr__(self):
         return (
@@ -298,9 +297,6 @@ class Exp(ScalarSymbolicOp, Operation):
         if self.num_steps is not None and isinstance(base, Sum) and base.is_hermitian:
             return True
 
-        if not self._is_evolution:
-            return False
-
         if qml.pauli.is_pauli_word(base):
             return True
 
@@ -347,13 +343,13 @@ class Exp(ScalarSymbolicOp, Operation):
         if isinstance(base, SProd):
             return self._recursive_decomposition(base.base, base.scalar * coeff)
 
-        if self.num_steps is not None and isinstance(base, Sum) and base.is_hermitian:
+        if self.num_steps is not None and isinstance(base, Sum):
             # Apply trotter decomposition
-            coeffs, ops = [1] * len(base), base.operands
+            coeffs, ops = base.terms()
             coeffs = [c * coeff for c in coeffs]
             return self._trotter_decomposition(ops, coeffs)
 
-        if not self._is_evolution:
+        if not math.is_abstract(coeff) and math.real(coeff):
 
             error_msg = f"The decomposition of the {self} operator is not defined."
 
@@ -375,7 +371,6 @@ class Exp(ScalarSymbolicOp, Operation):
     def _smart_decomposition(self, coeff, base):
         """Decompose to an operator with a generator or a PauliRot if possible."""
 
-        print(coeff, base)
         op = _find_equal_generator(base, coeff)
         if op is not None:
             return [op]
@@ -431,9 +426,6 @@ class Exp(ScalarSymbolicOp, Operation):
         op_list = []
         for c, op in zip(coeffs, ops):
             c /= self.num_steps  # divide by trotter number
-            if isinstance(op, SProd):
-                c *= op.scalar
-                op = op.base
             op_list.extend(self._recursive_decomposition(op, c))
 
         return op_list * self.num_steps  # apply operators ``num_steps`` times

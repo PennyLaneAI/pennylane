@@ -109,7 +109,6 @@ class Evolution(Exp):
     def __init__(self, generator, param=1, num_steps=None, id=None):
         super().__init__(generator, coeff=-1j * param, num_steps=num_steps, id=id)
         self._data = (param,)
-        self._is_evolution = True
 
     def __repr__(self):
         return (
