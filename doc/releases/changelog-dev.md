@@ -83,6 +83,8 @@
 
 <h3>Improvements 🛠</h3>
 
+* A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
+
 * The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
   [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
 
