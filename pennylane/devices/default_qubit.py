@@ -305,6 +305,51 @@ def _add_adjoint_transforms(program: TransformProgram, device_vjp=False, gate_se
     program.add_transform(validate_adjoint_trainable_params)
 
 
+# Hardcoded gate_set from default_qubit.toml
+HARDCODED_GATE_SET = {
+    "BasisState",
+    "CNOT",
+    "CRX",
+    "CRY",
+    "CRZ",
+    "CRot",
+    "CSWAP",
+    "CY",
+    "CZ",
+    "ControlledPhaseShift",
+    "FREDKIN",
+    "GlobalPhase",
+    "Hadamard",
+    "ISWAP",
+    "Identity",
+    "IsingXX",
+    "IsingXY",
+    "IsingYY",
+    "IsingZZ",
+    "MultiControlledX",
+    "PSWAP",
+    "PauliX",
+    "PauliY",
+    "PauliZ",
+    "PhaseShift",
+    "QubitUnitary",
+    "RX",
+    "RY",
+    "RZ",
+    "Rot",
+    "S",
+    "SWAP",
+    "SX",
+    "Snapshot",
+    "StatePrep",
+    "T",
+    "Toffoli",
+    "U1",
+    "U2",
+    "U3",
+}
+
+
 @simulator_tracking
 @single_tape_support
 class DefaultQubit(Device):
@@ -455,9 +500,6 @@ class DefaultQubit(Device):
 
     """
 
-    config_filepath = Path(__file__).parent / "default_qubit.toml"
-    """Path to the TOML configuration file that defines device capabilities."""
-
     @property
     def name(self):
         """The name of the device."""
@@ -561,7 +603,7 @@ class DefaultQubit(Device):
                 circuit,
                 device_wires=self.wires,
                 device_name=self.name,
-                gate_set=self.capabilities.gate_set,
+                gate_set=HARDCODED_GATE_SET,
             )
         return False
 
@@ -586,9 +628,7 @@ class DefaultQubit(Device):
 
             if config.mcm_config.mcm_method == "deferred":
                 transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-            transform_program.add_transform(
-                transforms_decompose, gate_set=self.capabilities.gate_set
-            )
+            transform_program.add_transform(transforms_decompose, gate_set=HARDCODED_GATE_SET)
 
             return transform_program
 
@@ -604,7 +644,7 @@ class DefaultQubit(Device):
             stopping_condition=stopping_condition,
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
-            gate_set=self.capabilities.gate_set,
+            gate_set=HARDCODED_GATE_SET,
         )
         transform_program.add_transform(
             validate_measurements,
@@ -627,7 +667,7 @@ class DefaultQubit(Device):
             _add_adjoint_transforms(
                 transform_program,
                 device_vjp=config.use_device_jacobian_product,
-                gate_set=self.capabilities.gate_set,
+                gate_set=HARDCODED_GATE_SET,
             )
 
         return transform_program
