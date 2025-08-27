@@ -177,7 +177,7 @@ def _jit_rs_decomposition(wire, decomposition_info):
     return ops
 
 
-# pylint: disable=import-outside-toplevel
+# pylint: disable=import-outside-toplevel, too-many-statements
 def rs_decomposition(
     op, epsilon, is_qjit=False, *, max_search_trials=20, max_factoring_trials=1000
 ):
