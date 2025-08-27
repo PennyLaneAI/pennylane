@@ -184,8 +184,8 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         .. note::
 
-            This decomposition assumes an appropriately sized phase gradient state is available.
-            Users should ensure the cost of constructing such a state has been accounted for.
+            This decomposition assumes that an appropriately sized phase gradient state is available.
+            Users should ensure that the cost of constructing this state has been accounted for.
             See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
 
         Args:
