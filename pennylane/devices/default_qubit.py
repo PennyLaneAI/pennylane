@@ -518,13 +518,6 @@ class DefaultQubit(Device):
             self._rng = np.random.default_rng(seed)
         self._debugger = None
 
-    @property
-    def gate_set(self) -> set:
-        """Return the gate set supported by this device for graph decomposition."""
-        if self.capabilities:
-            return set(self.capabilities.operations.keys())
-        return set()  # Fallback if no capabilities defined
-
     @debug_logger
     def supports_derivatives(
         self,
