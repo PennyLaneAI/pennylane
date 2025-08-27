@@ -19,8 +19,16 @@ import warnings
 
 import numpy as np
 
+from pennylane import capture, math
+from pennylane.control_flow import for_loop
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
-from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard
+from pennylane.ops import SWAP, ControlledPhaseShift, Hadamard, PhaseShift, cond
 
 
 class AQFT(Operation):
@@ -117,6 +125,8 @@ class AQFT(Operation):
 
     """
 
+    resource_keys = {"num_wires", "order"}
+
     def __init__(self, order, wires=None, id=None):
         n_wires = len(wires)
 
@@ -138,6 +148,10 @@ class AQFT(Operation):
 
         self.hyperparameters["order"] = order
         super().__init__(wires=wires, id=id)
+
+    @property
+    def resource_params(self) -> dict:
+        return {"order": self.hyperparameters["order"], "num_wires": len(self.wires)}
 
     @property
     def num_params(self):
@@ -188,3 +202,66 @@ class AQFT(Operation):
             decomp_ops.append(swap)
 
         return decomp_ops
+
+
+def _AQFT_resources(num_wires, order):
+
+    resources = {}
+
+    resources[resource_rep(Hadamard)] = num_wires
+
+    resources[
+        controlled_resource_rep(
+            PhaseShift,
+            {},
+            num_control_wires=1,
+        )
+    ] = sum(min(num_wires - 1 - i, order) for i in range(num_wires))
+
+    resources[resource_rep(SWAP)] = num_wires // 2
+
+    return dict(resources)
+
+
+@register_resources(_AQFT_resources)
+def _AQFT_decomposition(wires, order):
+    n_wires = len(wires)
+    shifts = [2 * np.pi * 2**-i for i in range(2, n_wires + 1)]
+
+    if capture.enabled():
+        shifts = math.array(shifts, like="jax")
+        wires = math.array(wires, like="jax")
+
+    @for_loop(len(wires))
+    def wire_loop(i):
+        wire = wires[i]
+        Hadamard(wire)
+
+        @for_loop(n_wires - 1 - i)
+        def wires_limited_shift_loop(j):
+            shift = shifts[j]
+            control_wire = wires[i + 1 + j]
+
+            ControlledPhaseShift(shift, wires=[control_wire, wire])
+
+        @for_loop(order)
+        def order_limited_shift_loop(j):
+            shift = shifts[j]
+            control_wire = wires[i + 1 + j]
+
+            ControlledPhaseShift(shift, wires=[control_wire, wire])
+
+        cond(n_wires - 1 - i < order, wires_limited_shift_loop, order_limited_shift_loop)()
+
+    wire_loop()  # pylint: disable=no-value-for-parameter
+
+    @for_loop(len(wires) // 2)
+    def half_wire_loop(k):
+        wire1 = wires[k]
+        wire2 = wires[-k - 1]
+        SWAP(wires=[wire1, wire2])
+
+    half_wire_loop()  # pylint: disable=no-value-for-parameter
+
+
+add_decomps(AQFT, _AQFT_decomposition)

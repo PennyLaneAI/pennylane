@@ -24,6 +24,7 @@ import pytest
 import pennylane as qml
 from pennylane.exceptions import DeviceError
 from pennylane.operation import Channel, Operation, Operator, StatePrepBase
+from pennylane.ops.op_math import ChangeOpBasis
 from pennylane.ops.op_math.adjoint import Adjoint, AdjointOperation
 from pennylane.ops.op_math.pow import PowOperation
 from pennylane.templates.subroutines.trotter import TrotterizedQfunc
@@ -37,6 +38,7 @@ def _trotterize_qfunc_dummy(time, theta, phi, wires, flip=False):
 
 
 _INSTANCES_TO_TEST = [
+    (ChangeOpBasis(qml.PauliX(0), qml.PauliZ(0)), {}),
     (qml.sum(qml.PauliX(0), qml.PauliZ(0)), {}),
     (qml.sum(qml.X(0), qml.X(0), qml.Z(0), qml.Z(0)), {}),
     (qml.BasisState([1], wires=[0]), {"skip_differentiation": True, "heuristic_resources": True}),
