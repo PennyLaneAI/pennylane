@@ -160,10 +160,9 @@ class TestDifferentiability:
 
     @staticmethod
     def circuit(coeffs):
-        with qml.queuing.QueuingManager.stop_recording():
-            H = qml.ops.LinearCombination(
-                coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
-            )
+        H = qml.ops.LinearCombination(
+            coeffs, [qml.Y(0), qml.Y(1) @ qml.Y(2), qml.X(0), qml.X(1) @ qml.X(2)]
+        )
         qml.Qubitization(H, control=(3, 4))
         return qml.expval(qml.PauliZ(3) @ qml.PauliZ(4))
 
