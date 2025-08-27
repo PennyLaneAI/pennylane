@@ -819,6 +819,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `Exp` and `Evolution` now have improved decompositions, allowing them to handle more situations
+  more robustly. In particular, the generator is simplified prior to decomposition. Now more
+  time evolution ops can be supported on devices that do not natively support them.
+  [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
+
+* A scalar product of a norm one scalar and an operator now decomposes into a `GlobalPhase` and the operator.
+  For example, `-1 * qml.X(0)` now decomposes into `[qml.GlobalPhase(-np.pi), qml.X(0)]`.
+  [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
+
 * A more informative error is raised when extremely deep circuits are attempted to be drawn.
   [(#8139)](https://github.com/PennyLaneAI/pennylane/pull/8139)
 
