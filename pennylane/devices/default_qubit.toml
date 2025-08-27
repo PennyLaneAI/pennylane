@@ -27,6 +27,7 @@ Rot = {properties = ["invertible", "controllable", "differentiable"]}
 U1 = {properties = ["invertible", "controllable", "differentiable"]}
 U2 = {properties = ["invertible", "controllable", "differentiable"]}
 U3 = {properties = ["invertible", "controllable", "differentiable"]}
+QubitUnitary = {properties = ["invertible", "controllable", "differentiable"]}
 
 # Two-qubit gates
 CNOT = {properties = ["invertible", "controllable", "differentiable"]}
