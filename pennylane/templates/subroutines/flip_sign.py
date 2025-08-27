@@ -14,8 +14,16 @@
 r"""
 Contains the FlipSign template.
 """
+from functools import reduce
+
+from pennylane.decomposition import (
+    add_decomps,
+    controlled_resource_rep,
+    register_resources,
+    resource_rep,
+)
 from pennylane.operation import Operation
-from pennylane.ops import X, Z, ctrl
+from pennylane.ops import X, Z, cond, ctrl
 
 
 class FlipSign(Operation):
@@ -60,6 +68,8 @@ class FlipSign(Operation):
 
     """
 
+    resource_keys = {"num_wires", "arr_bin"}
+
     def _flatten(self):
         hyperparameters = (("n", tuple(self.hyperparameters["arr_bin"])),)
         return tuple(), (self.wires, hyperparameters)
@@ -86,6 +96,13 @@ class FlipSign(Operation):
 
         self._hyperparameters = {"arr_bin": n}
         super().__init__(wires=wires, id=id)
+
+    @property
+    def resource_params(self):
+        return {
+            "num_wires": len(self.wires),
+            "arr_bin": self.hyperparameters["arr_bin"],
+        }
 
     @staticmethod
     def to_list(n, n_wires):
@@ -140,3 +157,30 @@ class FlipSign(Operation):
             op_list.append(X(wires[-1]))
 
         return op_list
+
+
+def _flip_sign_resources(num_wires, arr_bin):
+    res = {
+        controlled_resource_rep(
+            Z,
+            {},
+            num_control_wires=num_wires - 1,
+            num_zero_control_values=reduce(lambda acc, nxt: acc + int(nxt == 0), arr_bin[:-1], 0),
+        ): 1
+    }
+    if arr_bin[-1] == 0:
+        res[resource_rep(X)] = 2
+
+    return res
+
+
+@register_resources(_flip_sign_resources)
+def _flip_sign_decomposition(wires, arr_bin):
+    cond(arr_bin[-1] == 0, X)(wires[-1])
+
+    ctrl(Z(wires[-1]), control=wires[:-1], control_values=arr_bin[:-1])
+
+    cond(arr_bin[-1] == 0, X)(wires[-1])
+
+
+add_decomps(FlipSign, _flip_sign_decomposition)
