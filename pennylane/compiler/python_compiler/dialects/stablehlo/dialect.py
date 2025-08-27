@@ -24,7 +24,7 @@ the upstream operation list.
 import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
-from .attributes import ResultAccuracyMode, ResultAccuracyModeAttr
+from .attributes import ResultAccuracyModeAttr
 from .elementwise_binary import (
     ComplexOp,
     DivideOp,
@@ -103,7 +103,6 @@ OPERATIONS = [
 
 # Attributes to add to the dialect
 ATTRIBUTES = [
-    ResultAccuracyMode,
     ResultAccuracyModeAttr,
     UniformQuantizedPerAxisType,
     UniformQuantizedType,
