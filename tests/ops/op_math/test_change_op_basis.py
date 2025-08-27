@@ -185,7 +185,7 @@ class TestIntegration:
         with pytest.raises(
             DeviceError,
             match=re.escape(
-                "Measurement expval(RX(1.23, wires=[0]) @ I(1) @ (Adjoint(RX(1.23, wires=[0])))) not accepted for analytic simulation on default.qubit"
+                "Measurement expval((Adjoint(RX(1.23, wires=[0]))) @ I(1) @ RX(1.23, wires=[0])) not accepted for analytic simulation on default.qubit"
             ),
         ):
             my_circ()

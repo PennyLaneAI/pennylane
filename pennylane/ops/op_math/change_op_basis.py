@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """
-This submodule defines a class for compute, uncompute patterns.
+This submodule defines a class for compute-uncompute patterns.
 """
 from collections import Counter, defaultdict
 from functools import reduce
@@ -105,10 +105,10 @@ class ChangeOpBasis(CompositeOp):
     .. seealso:: :func:`~.change_op_basis`
     """
 
-    def __init__(self, compute_op, target_op, uncompute_op=None):
+    def __init__(self, compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
         if uncompute_op is None:
             uncompute_op = adjoint(compute_op)
-        super().__init__(compute_op, target_op, uncompute_op)
+        super().__init__(uncompute_op, target_op, compute_op)
 
     resource_keys = frozenset({"compute_op", "target_op", "uncompute_op"})
 
@@ -142,7 +142,7 @@ class ChangeOpBasis(CompositeOp):
     grad_method = None
 
     @classmethod
-    def _sort(cls, op_list, wire_map: dict = None) -> list[Operator]:
+    def _sort(cls, op_list: list, wire_map: dict = None) -> list[Operator]:
         """
         We do not sort the ops. The order is guaranteed to matter since if the compute operator
         and the base operator commute, the pattern would simplify to just being the base operator.
@@ -176,11 +176,11 @@ class ChangeOpBasis(CompositeOp):
         r"""Decomposition of the product operator is given by each of compute_op, target_op, compute_op† applied in succession."""
         if queuing.QueuingManager.recording():
             return [
-                self[0]._unflatten(*self[0]._flatten()),  # pylint: disable=protected-access
-                self[1]._unflatten(*self[1]._flatten()),  # pylint: disable=protected-access
                 self[2]._unflatten(*self[2]._flatten()),  # pylint: disable=protected-access
+                self[1]._unflatten(*self[1]._flatten()),  # pylint: disable=protected-access
+                self[0]._unflatten(*self[0]._flatten()),  # pylint: disable=protected-access
             ]
-        return list(self)
+        return list(self[::-1])
 
     # pylint: disable=arguments-renamed, invalid-overridden-method
     @property
@@ -188,11 +188,11 @@ class ChangeOpBasis(CompositeOp):
         return True
 
     def adjoint(self):
-        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self[::-1]))
+        return ChangeOpBasis(*(adjoint(factor, lazy=False) for factor in self))
 
     def _build_pauli_rep(self):
         """PauliSentence representation of the Product of operations."""
-        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands]):
+        if all(operand_pauli_reps := [op.pauli_rep for op in self.operands[::-1]]):
             return reduce(lambda a, b: a @ b, operand_pauli_reps) if operand_pauli_reps else None
         return None
 
