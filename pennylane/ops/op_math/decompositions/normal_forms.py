@@ -240,11 +240,13 @@ def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
     if upper_bounded_size is not None and compressed:
         size = upper_bounded_size
         # If the upper_bounded_size is smaller than actual size, raise an error.
+        # This is not supposed to happen, if it does,
+        # check upper_bounded_size calculation in rs_decomposition function.
         if size < syllable_sequence.shape[0]:
             raise ValueError(
                 f"The upper_bounded_size is smaller than the actual size of the syllable sequence. "
                 f"Upper bounded size: {size}, Actual size: {syllable_sequence.shape[0]}."
-            )
+            )  # pragma: no cover
         syllable_sequence = syllable_sequence[:size]
         pad_len = size - syllable_sequence.shape[0]
         if pad_len > 0:
