@@ -205,29 +205,20 @@ class TestDecompose:
                 return {}
 
             def decomposition(self):
+                ops = [qml.H(0)]
+                m = qml.measure(0)
+                ops += m.measurements
+                ops.append(qml.ops.Conditional(m0, qml.H(1)))
+                return ops
 
-                with qml.queuing.AnnotatedQueue() as q:
-                    qml.H(0)
-                    m0 = qml.measure(0)
-                    qml.cond(m0, qml.H)(1)
-
-                return q.queue
-
-        def circuit():
-            CustomOp(wires=[0, 1])
-            m0 = qml.measure(0)
-            qml.cond(m0, qml.X)(0)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            circuit()
-
-        tape = qml.tape.QuantumScript.from_queue(q)
+        m0 = qml.measure(0)
+        tape = qml.tape.QuantumScript([CustomOp(wires=(0,1)), m0.measurements[0], qml.ops.Conditional(m0, qml.X(0))])
         [decomposed_tape], _ = qml.transforms.decompose(
             [tape], gate_set={qml.RX, qml.RZ, MidMeasureMP}
         )
         assert len(decomposed_tape.operations) == 9
 
-        def equivalent_circuit():
+        with qml.queuing.AnnotatedQueue() as q:
             qml.RZ(np.pi / 2, wires=0)
             qml.RX(np.pi / 2, wires=0)
             qml.RZ(np.pi / 2, wires=0)
@@ -237,9 +228,6 @@ class TestDecompose:
             qml.cond(m0, qml.RZ)(np.pi / 2, wires=1)
             m1 = qml.measure(0)
             qml.cond(m1, qml.RX)(np.pi, wires=0)
-
-        with qml.queuing.AnnotatedQueue() as q:
-            equivalent_circuit()
 
         qml.assert_equal(decomposed_tape.operations[0], q.queue[0])
         qml.assert_equal(decomposed_tape.operations[1], q.queue[1])
