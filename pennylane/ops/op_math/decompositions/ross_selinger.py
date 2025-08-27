@@ -286,8 +286,10 @@ def rs_decomposition(
 
         # If QJIT is active, use the compressed normal form.
         if not is_qjit:
-            assert not is_jax, "JAX is not installed"  # pragma: no cover
-
+            if not is_jax:  # pragma: no cover
+                raise ImportError(
+                    "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
+                )
             decomposed_gates, g_phase, phase = eval_ross_algorithm(angle)
         else:
             # circular import issue when import outside of the function

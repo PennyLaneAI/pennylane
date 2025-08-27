@@ -104,32 +104,22 @@ def test_exception():
 @pytest.mark.jax
 @pytest.mark.external
 @pytest.mark.parametrize(
-    ("decomposition_info", "expected_ops"),
+    ("decomposition_info"),
     [
-        (
-            (1, (1, 0, 1, 1, 1, 0), 0),
-            ("Cond", "ForLoop", "Cond"),
-        ),
-        (
-            (0, (1, 0, 1, 1, 1, 0), 12),
-            ("Cond", "ForLoop", "Cond"),
-        ),
-        (
-            (0, (), 9),
-            ("Cond", "Cond"),
-        ),
+        # T, (SHT, HT, SHT, SHT, SHT, HT ) , I
+        [1, [1, 0, 1, 1, 1, 0], 0],
+        # _ ,  (SHT, HT, SHT, SHT, SHT, HT ), S, Y
+        [0, [1, 0, 1, 1, 1, 0], 12],
+        # _ , , H, Sd
+        [0, [], 9],
     ],
 )
 @pytest.mark.filterwarnings("ignore::pennylane.exceptions.PennyLaneDeprecationWarning")
-def test_jit_rs_decomposition(decomposition_info, expected_ops):
+def test_jit_rs_decomposition(decomposition_info):
     """Test that the qjit rs decomposition is working."""
     catalyst = pytest.importorskip("catalyst")
     jax = pytest.importorskip("jax")
     jnp = jax.numpy
-
-    catalyst_cfs_api = catalyst.api_extensions.control_flow
-
-    catalyst_op_dict = {"Cond": catalyst_cfs_api.Cond, "ForLoop": catalyst_cfs_api.ForLoop}
 
     # Create decomposition info using jnp
     has_leading_t = jnp.int32(decomposition_info[0])  # First element
@@ -140,16 +130,33 @@ def test_jit_rs_decomposition(decomposition_info, expected_ops):
 
     # Get the operations from _jit_rs_decomposition
     @qml.qnode(qml.device("lightning.qubit", wires=1))
-    def circuit():
-        ops = _jit_rs_decomposition(0, decomposition_info)
+    def qjit_circuit():
+        _jit_rs_decomposition(0, decomposition_info)
+        return qml.state()
 
-        # Verify we got the expected number of operations
-        assert len(ops) == len(expected_ops)
+    @qml.qnode(qml.device("lightning.qubit", wires=1))
+    def non_qjit_circuit():
+        if int(decomposition_info[0].item()) == 1:
+            qml.T(0)
+        for i in decomposition_info[1]:
+            if i == 0:
+                qml.H(0)
+                qml.T(0)
+            elif i == 1:
+                qml.S(0)
+                qml.H(0)
+                qml.T(0)
+        if decomposition_info[2] == 12:
+            qml.S(0)
+            qml.Y(0)
+        elif decomposition_info[2] == 9:
+            qml.H(0)
+            qml.adjoint(qml.S)(0)
 
-        # Verify each operation is of the expected type
-        for op, expected_type in zip(ops, expected_ops):
-            assert isinstance(
-                op, catalyst_op_dict[expected_type]
-            ), f"Expected {expected_type}, got {type(op)}"
+        return qml.state()
 
-    qml.qjit(circuit)
+    qjit_result = qml.qjit(qjit_circuit)()
+    # Do not jit the reference circuit; it uses standard Python control flow
+    non_qjit_result = non_qjit_circuit()
+
+    assert qml.math.allclose(qjit_result, non_qjit_result)
