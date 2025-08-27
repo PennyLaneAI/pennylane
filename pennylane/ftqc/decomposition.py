@@ -18,7 +18,7 @@ from functools import partial, singledispatch
 
 import networkx as nx
 
-from pennylane import math
+from pennylane import math, measure, adjoint, PhaseShift
 from pennylane.decomposition import enabled_graph, register_resources
 from pennylane.devices.preprocess import null_postprocessing
 from pennylane.measurements import SampleMP, sample
@@ -57,7 +57,7 @@ def convert_to_mbqc_gateset(tape):
 
 
 @transform
-def convert_to_mbqc_formalism(tape):
+def convert_to_mbqc_formalism(tape, diagonalize_mcms= False):
     """Convert a circuit to the textbook MBQC formalism based on the procedures outlined in
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312. The circuit must
     be decomposed to the gate set {CNOT, H, S, RotXZX, RZ, X, Y, Z, Identity, GlobalPhase}
@@ -88,7 +88,7 @@ def convert_to_mbqc_formalism(tape):
             elif isinstance(op, CNOT):  # two wires
                 ctrl, tgt = op.wires[0], op.wires[1]
                 wire_map[ctrl], wire_map[tgt], measurements = queue_cnot(
-                    q_mgr, wire_map[ctrl], wire_map[tgt]
+                    q_mgr, wire_map[ctrl], wire_map[tgt], diagonalize_mcms
                 )
                 cnot_corrections(measurements)(wire_map[ctrl], wire_map[tgt])
             else:  # one wire
@@ -100,7 +100,7 @@ def convert_to_mbqc_formalism(tape):
                 else:
                     w = op.wires[0]
                     wire_map[w], measurements = queue_single_qubit_gate(
-                        q_mgr, op, in_wire=wire_map[w]
+                        q_mgr, op, in_wire=wire_map[w], diagonalize_mcms = diagonalize_mcms
                     )
                     queue_corrections(op, measurements)(wire_map[w])
 
@@ -113,7 +113,7 @@ def convert_to_mbqc_formalism(tape):
     return (new_tape,), null_postprocessing
 
 
-def queue_single_qubit_gate(q_mgr, op, in_wire):
+def queue_single_qubit_gate(q_mgr, op, in_wire, diagonalize_mcms):
     """Queue the resource state preparation, measurements and byproducts
     to execute the operation in the MBQC formalism. This implementation
     follows the procedures defined in Raussendorf et al. 2003,
@@ -125,7 +125,7 @@ def queue_single_qubit_gate(q_mgr, op, in_wire):
     make_graph_state(nx.grid_graph((4,)), wires=graph_wires)
     CZ([wires[0], wires[1]])
 
-    measurements = queue_measurements(op, wires)
+    measurements = queue_measurements(op, wires, diagonalize_mcms)
 
     # release input qubit and intermediate graph qubits
     q_mgr.release_qubits(wires[0:-1])
@@ -133,16 +133,35 @@ def queue_single_qubit_gate(q_mgr, op, in_wire):
 
 
 @singledispatch
-def queue_measurements(op, wires):
+def queue_measurements(op, wires, diagonalize_mcms):
     """Queue the measurements needed to execute the operation in the MBQC formalism"""
     raise NotImplementedError(f"Received unsupported gate of type {op}")
 
 
 @queue_measurements.register(RotXZX)
-def _rot_measurements(op: RotXZX, wires):
+def _rot_measurements(op: RotXZX, wires, diagonalize_mcms):
     """Queue the measurements needed to execute RotXZX in the MBQC formalism"""
 
     phi, theta, omega = op.data
+
+    if diagonalize_mcms:
+        H(wires[0])
+        m1 = measure(wires[0], reset=True)
+        
+        cond(m1, PhaseShift(-phi, wires[1]), PhaseShift(phi, wires[1]))
+        H(wires[1])
+        m2 = measure(wires[1], reset=True)
+
+        cond(m2, PhaseShift(-theta, wires[2]), PhaseShift(theta, wires[2]))
+        H(wires[2])
+        m3 = measure(wires[2])
+
+        cond(m1 ^ m3, PhaseShift(-omega, wires[3]), PhaseShift(omega, wires[3]))
+        H(wires[3])
+        m4 = measure(wires[3])
+
+        return [m1, m2, m3, m4]
+
 
     m1 = measure_x(wires[0], reset=True)
     m2 = cond_measure(
@@ -165,10 +184,29 @@ def _rot_measurements(op: RotXZX, wires):
 
 
 @queue_measurements.register(RZ)
-def _rz_measurements(op: RZ, wires):
+def _rz_measurements(op: RZ, wires, diagonalize_mcms):
     """Queue the measurements needed to execute RZ in the MBQC formalism"""
 
     angle = op.parameters[0]
+
+    if diagonalize_mcms:
+        H(wires[0])
+        m1 = measure(wires[0], reset=True)
+
+        H(wires[1])
+        m2 = measure(wires[1], reset=True)
+
+        cond(m2, PhaseShift(-angle, wires[2]), PhaseShift(angle, wires[2]))
+        H(wires[2])
+        m3 = measure(wires[2], reset=True)
+
+        H(wires[3])
+        m4 = measure(wires[3], reset=True)
+
+        return [m1, m2, m3, m4]
+
+
+
 
     m1 = measure_x(wires[0], reset=True)
     m2 = measure_x(wires[1], reset=True)
@@ -183,8 +221,22 @@ def _rz_measurements(op: RZ, wires):
 
 
 @queue_measurements.register(H)
-def _hadamard_measurements(op: H, wires):
+def _hadamard_measurements(op: H, wires, diagonalize_mcms):
     """Queue the measurements needed to execute Hadamard in the MBQC formalism"""
+    if diagonalize_mcms:
+        H(wires[0])
+        m1 = measure(wires[0], reset=True)
+        adjoint(S(wires[1]))
+        H(wires[1])
+        m2 = measure(wires[1], reset=True)
+        adjoint(S(wires[2]))
+        H(wires[2])
+        m3 = measure(wires[2], reset=True)
+        adjoint(S(wires[3]))
+        H(wires[3])
+        m4 = measure(wires[3], reset=True)
+        return [m1, m2, m3, m4]
+
     m1 = measure_x(wires[0], reset=True)
     m2 = measure_y(wires[1], reset=True)
     m3 = measure_y(wires[2], reset=True)
@@ -194,8 +246,20 @@ def _hadamard_measurements(op: H, wires):
 
 
 @queue_measurements.register(S)
-def _s_measurements(op: S, wires):
+def _s_measurements(op: S, wires, diagonalize_mcms):
     """Queue the measurements needed to execute S in the MBQC formalism"""
+    if diagonalize_mcms:
+        H(wires[0])
+        m1 = measure(wires[0], reset=True)
+        H(wires[1])
+        m2 = measure(wires[1], reset=True)
+        adjoint(S(wires[2]))
+        H(wires[2])
+        m3 = measure(wires[2], reset=True)
+        H(wires[3])
+        m4 = measure(wires[3], reset=True)
+        return [m1, m2, m3, m4]
+            
     m1 = measure_x(wires[0], reset=True)
     m2 = measure_x(wires[1], reset=True)
     m3 = measure_y(wires[2], reset=True)
@@ -250,7 +314,7 @@ def _s_corrections(op, m1, m2, m3, m4):
     return m2 ^ m4, parity(m1, m2, m3, 1)
 
 
-def queue_cnot(q_mgr, ctrl_idx, target_idx):
+def queue_cnot(q_mgr, ctrl_idx, target_idx, diagonalize_mcms):
     """Queue the resource state preparation, measurements and byproducts to execute
     the operation in the MBQC formalism. This is the 15-qubit procedure from
     Raussendorf et al. 2003, https://doi.org/10.1103/PhysRevA.68.022312, Fig. 2"""
@@ -268,7 +332,7 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
     CZ([ctrl_idx, graph_wires[0]])
     CZ([target_idx, graph_wires[7]])
 
-    measurements = cnot_measurements((ctrl_idx, target_idx, graph_wires))
+    measurements = cnot_measurements((ctrl_idx, target_idx, graph_wires), diagonalize_mcms)
 
     q_mgr.release_qubit(ctrl_idx)
     q_mgr.release_qubit(target_idx)
@@ -278,11 +342,48 @@ def queue_cnot(q_mgr, ctrl_idx, target_idx):
     return output_ctrl_idx, output_target_idx, measurements
 
 
-def cnot_measurements(wires):
+def cnot_measurements(wires, diagonalize_mcms):
     """Queue the measurements needed to execute CNOT in the MBQC formalism.
     Numbering convention follows the procedure in Raussendorf et al. 2003,
     https://doi.org/10.1103/PhysRevA.68.022312, see Fig. 2"""
     ctrl_idx, target_idx, graph_wires = wires
+    if diagonalize_mcms:
+        H(ctrl_idx)
+        m1 = measure(ctrl_idx, reset=True)
+        adjoint(S(graph_wires[0]))
+        H(graph_wires[0])
+        m2 = measure(graph_wires[0], reset=True)
+        adjoint(S(graph_wires[1]))
+        H(graph_wires[1])
+        m3 = measure(graph_wires[1], reset=True)
+        adjoint(S(graph_wires[2]))
+        H(graph_wires[2])
+        m4 = measure(graph_wires[2], reset=True)
+        adjoint(S(graph_wires[3]))
+        H(graph_wires[3])
+        m5 = measure(graph_wires[3], reset=True)
+        adjoint(S(graph_wires[4]))
+        H(graph_wires[4])
+        m6 = measure(graph_wires[4], reset=True)
+
+        adjoint(S(graph_wires[6]))
+        H(graph_wires[6])
+        m8 = measure(graph_wires[6], reset=True)
+
+        H(target_idx)
+        m9 = measure(target_idx, reset=True)
+        H(graph_wires[7])
+        m10 = measure(graph_wires[7], reset=True)
+        H(graph_wires[8])
+        m11 = measure(graph_wires[8], reset=True)
+        adjoint(S(graph_wires[9]))
+        H(graph_wires[9])
+        m12 = measure(graph_wires[9], reset=True)
+        H(graph_wires[10])
+        m13 = measure(graph_wires[10], reset=True)
+        H(graph_wires[11])
+        m14 = measure(graph_wires[11], reset=True)
+        return [m1, m2, m3, m4, m5, m6, m8, m9, m10, m11, m12, m13, m14]
 
     m1 = measure_x(ctrl_idx, reset=True)
     m2 = measure_y(graph_wires[0], reset=True)
