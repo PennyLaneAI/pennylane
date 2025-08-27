@@ -3,6 +3,10 @@
 
 <h3>New features since last release</h3>
 
+* A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
+  which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
+  [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
+
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
