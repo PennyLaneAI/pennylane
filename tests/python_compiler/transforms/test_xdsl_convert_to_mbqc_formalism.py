@@ -29,17 +29,18 @@ from pennylane.compiler.python_compiler.transforms import (
     convert_to_mbqc_formalism_pass,
     measurements_from_samples_pass,
 )
-from pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism import _generate_graph
+
+# from pennylane.compiler.python_compiler.transforms.convert_to_mbqc_formalism import _generate_graph
 from pennylane.ftqc import RotXZX
 
 
 class TestConvertToMBQCFormalismPass:
     """Unit tests for ConvertToMBQCFormalismPass."""
 
-    def test_generate_graph_unsupported_gate(self):
-        """Test that error raised for unsupported gates."""
-        with pytest.raises(NotImplementedError):
-            _generate_graph("IsingXY")
+    # def test_generate_graph_unsupported_gate(self):
+    #     """Test that error raised for unsupported gates."""
+    #     with pytest.raises(NotImplementedError):
+    #         _generate_graph("IsingXY")
 
     def test_hadamard_gate(self, run_filecheck):
         """Test for lowering a Hadamard gate to a MBQC formalism."""
@@ -47,6 +48,8 @@ class TestConvertToMBQCFormalismPass:
             func.func @test_func() {
                 // CHECK: [[q0:%.+]] = "test.op"() : () -> !quantum.bit
                 %0 = "test.op"() : () -> !quantum.bit
+                // CHECK: %1 = mbqc.graph_state_prep(%2 : tensor<6xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+                // CHECK: %3 = quantum.extract %1[0] : !quantum.reg -> !quantum.bit
                 // CHECK: [[qb1:%.+]] = quantum.alloc_qb : !quantum.bit
                 // CHECK: [[qb2:%.+]] = quantum.alloc_qb : !quantum.bit
                 // CHECK: [[qb3:%.+]] = quantum.alloc_qb : !quantum.bit

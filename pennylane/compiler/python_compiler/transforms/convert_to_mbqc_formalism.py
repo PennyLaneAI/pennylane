@@ -19,7 +19,7 @@ import math
 from dataclasses import dataclass
 from enum import Enum
 
-import networkx as nx
+import numpy as np
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import arith, builtin, func, scf
 from xdsl.dialects.scf import ForOp, IfOp, WhileOp
@@ -27,8 +27,13 @@ from xdsl.ir import SSAValue
 from xdsl.ir.core import OpResult
 from xdsl.rewriter import InsertPoint
 
-from ..dialects.mbqc import MeasureInBasisOp, MeasurementPlaneAttr, MeasurementPlaneEnum
-from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp, QubitType
+from ..dialects.mbqc import (
+    GraphStatePrepOp,
+    MeasureInBasisOp,
+    MeasurementPlaneAttr,
+    MeasurementPlaneEnum,
+)
+from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp, ExtractOp, QubitType
 from .api import compiler_transform
 
 
@@ -37,7 +42,7 @@ class _MeasureBasis(Enum):
     Y = "Y"
 
 
-def _generate_graph(op_name: str):
+def _generate_adj_matrix(op_name: str) -> list:
     """Generate a networkx graph to represent the connectivity of auxiliary qubits of
     a gate.
     Args:
@@ -46,59 +51,100 @@ def _generate_graph(op_name: str):
         A graph represents the connectivity of auxiliary qubits.
     """
     if op_name in ["RotXZX", "RZ", "Hadamard", "S"]:
-        return _generate_one_wire_op_lattice()
+        return _generate_one_wire_op_adj_matrix()
     if op_name == "CNOT":
-        return _generate_cnot_graph()
+        return _generate_cnot_adj_matrix()
     raise NotImplementedError(f"{op_name} is not supported in the MBQC formalism.")
 
 
-def _generate_cnot_graph():
+def _generate_cnot_adj_matrix() -> list:
     """Generate a networkx graph to represent the connectivity of auxiliary qubits of
     a CNOT gate based on the textbook MBQC formalism. Note that wire 1 is the control
     wire and wire 9 is the target wire as described in the Fig.2 of
     [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
 
+    1  --  2  --  3  --  4  --  5  --  6  -- 7
+                         |
+                         8
+                         |
+    9  -- 10  --  11 -- 12  -- 13  -- 14  -- 15
+
+    The connectivity of the qubits in the register is:
+    x0 --  0  --  1  --  2  --  3  --  4  -- 5
+                         |
+                         6
+                         |
+    x1 --  7  --  8  --  9  -- 10  -- 11  -- 12
+
+    # edges_in_textbook = [
+    #     (2, 3),
+    #     (3, 4),
+    #     (4, 5),
+    #     (5, 6),
+    #     (6, 7),
+    #     (4, 8),
+    #     (8, 12),
+    #     (10, 11),
+    #     (11, 12),
+    #     (12, 13),
+    #     (13, 14),
+    #     (14, 15),
+    # ]
+
+    edges_in_adj_matrix = [
+       (1, 0),
+       (2, 1),
+       (3, 2),
+       (4, 3),
+       (5, 4),
+       (6, 2),
+       (9, 6),
+       (8, 7),
+       (9, 8),
+       (10, 9),
+       (11, 10),
+       (12, 11),
+    ]
+
     Returns:
         A graph represents the connectivity of auxiliary qubits of a CNOT gate.
     """
-    g = nx.Graph()
-    wires = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 14, 15]
-    edges = [
-        (2, 3),
-        (3, 4),
-        (4, 5),
-        (5, 6),
-        (6, 7),
-        (4, 8),
-        (8, 12),
-        (10, 11),
-        (11, 12),
-        (12, 13),
-        (13, 14),
-        (14, 15),
+    num_vertices = 13
+    adj_matrix_length = (num_vertices * (num_vertices - 1)) >> 1
+    adj_matrix = [0] * adj_matrix_length
+
+    edges_in_adj_matrix = [
+        (1, 0),
+        (2, 1),
+        (3, 2),
+        (4, 3),
+        (5, 4),
+        (6, 2),
+        (9, 6),
+        (8, 7),
+        (9, 8),
+        (10, 9),
+        (11, 10),
+        (12, 11),
     ]
-    g.add_nodes_from(wires)
-    g.add_edges_from(edges)
-    return g
+
+    for n in range(len(adj_matrix)):
+        N = (1 + math.isqrt(1 + 8 * n)) >> 1
+        i = N
+        j = n - (N - 1) * N >> 1
+        if (i, j) in edges_in_adj_matrix:
+            adj_matrix[n] = 1
+    return adj_matrix
 
 
-def _generate_one_wire_op_lattice():
+def _generate_one_wire_op_adj_matrix() -> list:
     """Generate lattice graph for a one-wire gate based on the textbook MBQC formalism.
     Note wire 1 is the target wire in the Fig. 2 of [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
 
     Returns:
         A graph represents the connectivity of auxiliary qubits of a one-wire gate.
     """
-    g = nx.Graph()
-    wires = [2, 3, 4, 5]
-    edges = [
-        (2, 3),
-        (3, 4),
-        (4, 5),
-    ]
-    g.add_nodes_from(wires)
-    g.add_edges_from(edges)
-    return g
+    return [1, 0, 1, 0, 0, 1]
 
 
 @dataclass(frozen=True)
@@ -128,61 +174,33 @@ class ConvertToMBQCFormalismPattern(
 ):  # pylint: disable=too-few-public-methods, no-self-use, unpacking-non-sequence
     """RewritePattern for converting to the MBQC formalism."""
 
-    # TODOs: replace it with a mbqc.graph_state_prep op once the deallocation of qubits in a qreg is resolved.
     def _prep_graph_state(self, op: CustomOp, rewriter: pattern_rewriter.PatternRewriter):
-        """Allocate auxiliary qubits and prepare a graph state for auxiliary qubits. Auxiliary qubits are
-        entangled in the way described in the textbook MBQC form. **Note that all ops
-        inserted into the IR in this function could be abstracted into a primitive that
-        return a graph state that can be measured directly.**
-
-        Args:
-            op (CustomOp) : A `CustomOp` object. Note that op here is a quantum.customop object
-                 instead of a qml.ops.
-            rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
-
-        Return:
-            graph_qubits_dict : A dictionary of auxiliary qubits in the graph state. The keys represents
-            the indices of qubits described in the [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
-        """
-        graph = _generate_graph(op.gate_name.data)
-
-        graph_qubits_dict = {}
-
-        nodes = graph.nodes
-        edges = graph.edges
-
-        # Create auxiliary qubit allocation objects
-        for node in nodes:
-            graph_qubits_dict[node] = AllocQubitOp()
-
-        # Insert auxiliary qubit allocation objects into the IR
-        for _, qubit in graph_qubits_dict.items():
-            rewriter.insert_op(qubit, InsertPoint.before(op))
-
-        # Prepare auxiliary qubits by applying Hadamard ops before entanglement
-        for node in nodes:
-            in_qubits = graph_qubits_dict[node]
-            # Create a Hadamard gate object for each auxiliary qubit
-            hadamard_op = CustomOp(in_qubits=in_qubits, gate_name="Hadamard")
-            # Insert the newly created Hadamard gate object to the IR
-            rewriter.insert_op(hadamard_op, InsertPoint.before(op))
-            # Ensure the qubits in the graph_qubits_dict are updated
-            graph_qubits_dict[node] = hadamard_op.results[0]
-
-        # Apply CZ gate to entangle each nearest auxiliary qubit pair
-        for edge in edges:
-            in_qubits = [graph_qubits_dict[node] for node in edge]
-            # Create a CZ gate object for each auxiliary qubit pair
-            cz_op = CustomOp(in_qubits=in_qubits, gate_name="CZ")
-            # Insert the newly created CZ gate object to the IR
-            rewriter.insert_op(cz_op, InsertPoint.before(op))
-            # Ensure the qubits in the graph_qubits_dict are updated
-            graph_qubits_dict[edge[0]], graph_qubits_dict[edge[1]] = (
-                cz_op.results[0],
-                cz_op.results[1],
+        adj_matrix = _generate_adj_matrix(op.gate_name.data)
+        adj_matrix_op = arith.ConstantOp(
+            builtin.DenseIntOrFPElementsAttr.from_list(
+                type=builtin.TensorType(builtin.IntegerType(1), shape=(len(adj_matrix),)),
+                data=adj_matrix,
             )
+        )
+        rewriter.insert_op(adj_matrix_op, InsertPoint.before(op))
 
-        return graph_qubits_dict
+        graph_state_prep_op = GraphStatePrepOp(adj_matrix_op.result, "Hadamard", "CZ")
+        rewriter.insert_op(graph_state_prep_op, InsertPoint.before(op))
+        graph_state_reg = graph_state_prep_op.results[0]
+
+        graph_qubit_dict = {}
+        # Extract qubit from the graph state reg
+        for i, _ in enumerate(adj_matrix):
+            extract_op = ExtractOp(graph_state_reg, i)
+            rewriter.insert_op(extract_op, InsertPoint.before(op))
+
+            # Note the following convert the aux qubit index in the register to the
+            # standard context book MBQC representation
+            key = i + 2 if i < 7 else i + 3
+
+            graph_qubit_dict[key] = extract_op.results[0]
+
+        return graph_qubit_dict
 
     def _insert_xy_basis_measure_op(
         self,
