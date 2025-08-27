@@ -87,6 +87,61 @@
 
 <h3>Improvements 🛠</h3>
 
+* A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
+  This allows for more customization and efficiency when calculating expectation values across the non-commuting groups
+  of observables that make up a ``Hamiltonian``/``LinearCombination``.
+  [(#7988)](https://github.com/PennyLaneAI/pennylane/pull/7988)
+
+  Given a QNode that returns a sample-based measurement (e.g., ``expval``) of a ``Hamiltonian``/``LinearCombination``
+  with finite ``shots``, the current default behaviour of :func:`~.transforms.split_non_commuting` will perform ``shots``
+  executions for each group of commuting terms. With the ``shot_dist`` argument, this behaviour can be changed:
+
+  * ``"uniform"``: evenly distributes the number of ``shots`` across all groups of commuting terms
+  * ``"weighted"``: distributes the number of ``shots`` according to weights proportional to the L1 norm of the coefficients in each group
+  * ``"weighted_random"``: same as ``"weighted"``, but the numbers of ``shots`` are sampled from a multinomial distribution
+  * or a user-defined function implementing a custom shot distribution strategy
+
+  To show an example about how this works, let's start by defining a simple Hamiltonian:
+
+  ```python
+  import pennylane as qml
+
+  ham = qml.Hamiltonian(
+      coeffs=[10, 0.1, 20, 100, 0.2],
+      observables=[
+          qml.X(0) @ qml.Y(1),
+          qml.Z(0) @ qml.Z(2),
+          qml.Y(1),
+          qml.X(1) @ qml.X(2),
+          qml.Z(0) @ qml.Z(1) @ qml.Z(2)
+      ]
+  )
+  ```
+
+  This Hamiltonian can be split into 3 non-commuting groups of mutually commuting terms.
+  With ``shot_dist = "weighted"``, for example, the number of shots will be divided
+  according to the L1 norm of each group's coefficients:
+
+  ```python
+  from functools import partial
+  from pennylane.transforms import split_non_commuting
+
+  dev = qml.device("default.qubit")
+
+  @partial(split_non_commuting, shot_dist="weighted")
+  @qml.qnode(dev, shots=10000)
+  def circuit():
+      return qml.expval(ham)
+
+  with qml.Tracker(dev) as tracker:
+      circuit()
+  ```
+
+  ```pycon
+  >>> print(tracker.history["shots"])
+  [2303, 23, 7674]
+  ```
+
 * The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
   [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
 
@@ -140,7 +195,7 @@
   ```
 
   [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
-  
+
 * PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
   Users can now use standard python assignment when designing circuits with experimental program capture enabled.
 
