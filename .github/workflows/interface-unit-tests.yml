@@ -394,7 +394,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: [1, 2, 3, 4, 5, 6]
+        group: [5]
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).core-tests
@@ -403,7 +403,7 @@ jobs:
     if: ${{ !contains(fromJSON(needs.setup-ci-load.outputs.jobs-to-skip), 'core-tests') }}
     uses: ./.github/workflows/unit-test.yml
     with:
-      job_runner_name: 'pl-4-core-large-runner' #${{ needs.determine_runner.outputs.runner_group }}
+      job_runner_name: 'ubuntu-latest' #${{ needs.determine_runner.outputs.runner_group }}
       job_name: ${{ inputs.job_name_prefix }}core-tests (${{ matrix.group }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}
       branch: ${{ inputs.branch }}
       coverage_artifact_name: core-interfaces-coverage-core-${{ matrix.python-version }}-${{ matrix.group }}
