@@ -22,7 +22,6 @@ from functools import singledispatch
 
 from pennylane import ops
 from pennylane.operation import Operator
-from pennylane.pytrees import flatten, unflatten
 from pennylane.templates.embeddings import AngleEmbedding
 from pennylane.templates.subroutines import (
     ApproxTimeEvolution,
@@ -30,6 +29,7 @@ from pennylane.templates.subroutines import (
     ControlledSequence,
     FermionicDoubleExcitation,
     QDrift,
+    TrotterProduct,
 )
 from pennylane.typing import TensorLike
 
@@ -54,8 +54,13 @@ def bind_new_parameters(op: Operator, params: Sequence[TensorLike]) -> Operator:
     Returns:
         .Operator: New operator with updated parameters
     """
-    _, struct = flatten(op)
-    return unflatten(params, struct)
+    try:
+        return op.__class__(*params, wires=op.wires, **copy.deepcopy(op.hyperparameters))
+    except (TypeError, ValueError):
+        # operation is doing something different with its call signature.
+        new_op = copy.deepcopy(op)
+        new_op.data = tuple(params)
+        return new_op
 
 
 @bind_new_parameters.register
@@ -67,6 +72,14 @@ def bind_new_parameters_approx_time_evolution(
     n = op.hyperparameters["n"]
 
     return ApproxTimeEvolution(new_hamiltonian, time, n)
+
+
+@bind_new_parameters.register
+def _(op: TrotterProduct, params: Sequence[TensorLike]):
+    new_hamiltonian = bind_new_parameters(op.hyperparameters["base"], params[1:])
+    time = params[0]
+
+    return TrotterProduct(new_hamiltonian, time, **op.hyperparameters)
 
 
 @bind_new_parameters.register
