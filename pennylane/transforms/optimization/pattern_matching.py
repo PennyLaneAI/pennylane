@@ -59,6 +59,7 @@ def pattern_matching_optimization(
         tape (QNode or QuantumTape or Callable): A quantum circuit to be optimized.
         pattern_tapes(list(.QuantumTape)): List of quantum tapes that implement the identity.
         custom_quantum_cost (dict): Optional, quantum cost that overrides the default cost dictionary.
+        allow_phase (Boolean): Optional, whether to skip the assertion that the template is equivalent to the identity.
 
     Returns:
         qnode (QNode) or quantum function (Callable) or tuple[List[QuantumTape], function]: The transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
