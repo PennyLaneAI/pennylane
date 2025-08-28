@@ -20,6 +20,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
 def test_standard_validity():
@@ -35,6 +36,41 @@ def test_repr():
 
 class TestDecomposition:
     """Tests that the template defines the correct decomposition."""
+
+    @pytest.mark.parametrize(
+        "permutation_order,wire_order",
+        [
+            ([1, 0], [0, 1]),
+            ([1, 0, 2], [0, 1, 2]),
+            ([1, 0, 2, 3], [0, 1, 2, 3]),
+            ([0, 2, 1, 3], [0, 1, 2, 3]),
+            ([2, 3, 0, 1], [0, 1, 2, 3]),
+        ],
+    )
+    def test_decomposition_new(self, permutation_order, wire_order):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.Permute(permutation_order, wire_order)
+
+        for rule in qml.list_decomps(qml.Permute):
+            _test_decomposition_rule(op, rule)
+
+    @pytest.mark.parametrize(
+        "permutation_order,wire_order",
+        [
+            ([1, 0], [0, 1]),
+            ([1, 0, 2], [0, 1, 2]),
+            ([1, 0, 2, 3], [0, 1, 2, 3]),
+            ([0, 2, 1, 3], [0, 1, 2, 3]),
+            ([2, 3, 0, 1], [0, 1, 2, 3]),
+        ],
+    )
+    @pytest.mark.capture
+    def test_decomposition_new_capture(self, permutation_order, wire_order):
+        """Tests the decomposition rule implemented with the new system."""
+        op = qml.Permute(permutation_order, wire_order)
+
+        for rule in qml.list_decomps(qml.Permute):
+            _test_decomposition_rule(op, rule)
 
     def test_identity_permutation_qnode(self, mocker):
         """Test that identity permutations have no effect on QNodes."""
