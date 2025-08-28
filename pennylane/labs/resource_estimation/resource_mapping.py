@@ -266,18 +266,20 @@ def _(op: qtemps.Select):
 
 @map_to_resource_op.register
 def _(op: qtemps.QROM):
-    data = op.hyperparameters["data"]
-    num_bitstrings = len(data)
-    size_bitstring = len(data[0]) if num_bitstrings > 0 else 0
+    bitstrings = op.hyperparameters["bitstrings"]
+    num_bitstrings = len(bitstrings)
+    size_bitstring = len(bitstrings[0]) if num_bitstrings > 0 else 0
     return re_temps.ResourceQROM(
-        num_bitstrings=num_bitstrings, size_bitstring=size_bitstring
+        num_bitstrings=num_bitstrings,
+        size_bitstring=size_bitstring,
+        clean=op.hyperparameters["clean"],
     )
 
 
 @map_to_resource_op.register
 def _(op: qtemps.SelectPauliRot):
     return re_temps.ResourceSelectPauliRot(
-        rotation_axis=op.hyperparameters["pauli_word"],
+        rotation_axis=op.hyperparameters["rot_axis"],
         num_ctrl_wires=len(op.wires) - 1,
         precision=None,
     )
@@ -290,7 +292,7 @@ def _(op: qops.QubitUnitary):
 @map_to_resource_op.register
 def _(op: qtemps.ControlledSequence):
     res_base = map_to_resource_op(op.hyperparameters["base"])
-    num_control_wires = len(op.wires) - res_base.num_wires
+    num_control_wires = len(op.hyperparameters["control_wires"])
     return re_temps.ResourceControlledSequence(
         base=res_base, num_control_wires=num_control_wires
     )
