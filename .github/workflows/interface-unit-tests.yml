@@ -154,7 +154,6 @@ jobs:
             cat >python_versions.json <<-EOF
           {
             "default": ["3.11", "3.12", "3.13"],
-            "core-tests": ["3.11"],
             "torch-tests": ["3.11", "3.13"],
             "jax-tests": ["3.11", "3.13"],
             "capture-jax-tests": ["3.11", "3.13"],
@@ -190,7 +189,7 @@ jobs:
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 20,
+            "core-tests": 18,
             "jax-tests": 8,
             "torch-tests": 2,
             "device-tests": 1
@@ -212,8 +211,7 @@ jobs:
             echo "The following jobs will be skipped: $skipped_jobs"
             echo "jobs_to_skip=$skipped_jobs" >> $GITHUB_OUTPUT
           else
-            # TODO: Temp skip all jobs to investigate issue with runners
-            echo 'jobs_to_skip=["torch-tests", "autograd-tests", "jax-tests", "capture-jax-tests", "all-interfaces-tests", "external-libraries-tests", "qcut-tests", "qchem-tests", "gradients-tests", "data-tests", "device-tests"]' >> $GITHUB_OUTPUT
+            echo 'jobs_to_skip=[]' >> $GITHUB_OUTPUT
           fi
 
     outputs:
@@ -396,7 +394,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: [5] #[1, 2, 3, 4, 5, 6]
+        group: [1, 2, 3, 4, 5, 6]
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).core-tests
