@@ -549,6 +549,7 @@
 
 * `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+  [(#8046)](https://github.com/PennyLaneAI/pennylane/pull/8046)
 
 * Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
   This prevents the potential mutation of a global object. 
