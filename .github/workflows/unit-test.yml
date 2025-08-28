@@ -198,7 +198,7 @@ jobs:
 
       - name: Update
         if: inputs.job_runner_name == 'blacksmith-4vcpu-ubuntu-2404'
-        run: sudo apt-get update -y && sudo apt-get upgrade -y
+        run: sudo apt-get update -y && sudo apt-get upgrade -y 2>&1 || true
 
       - name: Run PennyLane Unit Tests
         env:
