@@ -83,6 +83,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
+  [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
+
 * PennyLane `autograph` supports standard python for updating arrays like `array[i] += x` instead of jax `arr.at[i].add(x)`. 
   Users can now use this when designing quantum circuits with experimental program capture enabled.
 

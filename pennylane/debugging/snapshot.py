@@ -172,6 +172,57 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
       '10': tensor(48, requires_grad=True)},
      'execution_results': tensor(-0.1, requires_grad=True)}
 
+    **Integration with Mid Circuit Measurements:**
+
+    Mid circuit measurements can be handled either by executing the circuit ``shots`` times (``mcm_method="one-shot"``),
+    or constructing and executing a tree of all possible branches (``mcm_method="tree-traversal"``).
+
+    .. code-block:: python
+
+        @qml.qnode(qml.device('default.qubit'))
+        def c(y):
+            qml.H(0)
+            qml.Snapshot(measurement=qml.probs(0))
+            m0 = qml.measure(0)
+            qml.cond(m0, qml.RX)(0.5, 0)
+            qml.Snapshot(measurement=qml.probs(0))
+            qml.RY(y, 0)
+            qml.measure(0)
+            qml.Snapshot(measurement=qml.probs(0))
+            return qml.probs(0)
+
+    If we use ``"one-shot"`` together with three shots, you can see that each snapshot has three
+    probabilities in a list.  Each entry corresponds to a different execution of the circuit.
+
+    >>> one_shot = qml.set_shots(c, 3).update(mcm_method="one-shot")
+    >>> qml.snapshots(one_shot)(1.0)
+    {0: [array([0., 1.]), array([0., 1.]), array([1., 0.])],
+    1: [array([1., 0.]), array([1., 0.]), array([1., 0.])],
+    2: [array([1., 0.]), array([1., 0.]), array([1., 0.])],
+    'execution_results': array([1., 0.])}
+
+    With ``"tree-traversal"``, we have different numbers of probabilities based on the number of mcm's earlier
+    in the circuit. Before any mcm's, we have one state. After the first mcm, we have two states.  And after
+    two mcm's, we have four states.
+
+    >>> qml.snapshots(c.update(mcm_method="tree-traversal"))(1.0)
+    {0: array([0.5, 0.5]),
+    1: [array([1., 0.]), array([0.06120872, 0.93879128])],
+    2: [array([1., 0.]), array([0., 1.]), array([1., 0.]), array([0., 1.])],
+    'execution_results': array([0.51653561, 0.48346439])}
+
+    Note that without the ``RY`` rotation, the second snapshot only has **three* probabilities, not **four**.
+    This is due to the fact that one of the four branches can never occur.
+
+    >>> qml.snapshots(c.update(mcm_method="tree-traversal"))(0)
+    {0: array([0.5, 0.5]),
+    1: [array([1., 0.]), array([0.06120872, 0.93879128])],
+    2: [array([1., 0.]), array([1., 0.]), array([0., 1.])],
+    'execution_results': array([0.53060436, 0.46939564])}
+
+
+    **Application to tapes**
+
     Here you can see the default behaviour of the transform for unsupported devices and you can see how the amount of wires included
     in each resulting tape is minimal:
 
@@ -193,6 +244,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
 
     >>> print(tapes)
     [<QuantumTape: wires=[], params=0>, <QuantumTape: wires=[0], params=0>, <QuantumTape: wires=[0, 1], params=0>, <QuantumTape: wires=[0, 1], params=0>]
+
     """
 
     new_tapes = []
@@ -225,12 +277,14 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     return new_tapes, partial(postprocessing_fn, snapshot_tags=snapshot_tags)
 
 
-def null_postprocessing(results):
+def _null_postprocessing(results):
     return results[0]
 
 
 @transform
 def _add_snapshot_tags(tape):
+    """Makes sure every snapshot has a tag.  Snapshots that do not have tags gain a tag corresponding to their
+    index into all snapshots."""
     new_ops = []
     num_snapshots = 0
     for op in tape.operations:
@@ -242,7 +296,7 @@ def _add_snapshot_tags(tape):
             num_snapshots += 1
         else:
             new_ops.append(op)
-    return (tape.copy(ops=new_ops),), null_postprocessing
+    return (tape.copy(ops=new_ops),), _null_postprocessing
 
 
 @snapshots.custom_qnode_transform
@@ -256,7 +310,7 @@ def snapshots_qnode(self, qnode, targs, tkwargs):
     def get_snapshots(*args, **kwargs):
 
         with _SnapshotDebugger(qnode.device) as dbg:
-            results = _add_snapshot_tags(qnode)(*args, **kwargs)
+            results = _add_snapshot_tags(qnode)(*args, **kwargs)  # pylint: disable=not-callable
 
         dbg.snapshots["execution_results"] = results
         return dbg.snapshots

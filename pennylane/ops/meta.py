@@ -255,13 +255,15 @@ class Snapshot(Operation):
         super().__init__(wires=measurement.wires)
 
     def __repr__(self):
-        return f"<Snapshot: {self.tag}, {self.hyperparameters['measurement']}>"
+        return f"<Snapshot: tag={self.tag}, measurement={self.hyperparameters['measurement']}, shots={self.hyperparameters['shots']}>"
 
     @property
-    def tag(self):
+    def tag(self) -> None | str | int:
+        """The tag for the snapshot."""
         return self.hyperparameters["tag"]
 
-    def update_tag(self, new_tag):
+    def update_tag(self, new_tag: int | None | str):
+        """Create a new snapshot with an updated tag."""
         new_op = copy(self)
         new_op.hyperparameters["tag"] = new_tag
         return new_op
