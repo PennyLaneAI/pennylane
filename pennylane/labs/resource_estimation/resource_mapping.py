@@ -305,16 +305,15 @@ def _(op: qtemps.QuantumPhaseEstimation):
     )
 
 
-@map_to_resource_op.register
-def _(op: qtemps.TrotterProduct):
-    res_ops = [
-        map_to_resource_op(term) for term in op.hyperparameters["hamiltonian"].ops
-    ]
-    return re_temps.ResourceTrotterProduct(
-        first_order_expansion=res_ops,
-        num_steps=op.hyperparameters["n"],
-        order=op.hyperparameters["order"],
-    )
+# @map_to_resource_op.register
+# def _(op: qtemps.TrotterProduct):
+#     res_ops = [map_to_resource_op(term) for term in op.hyperparameters["base"].operands]
+#     return re_temps.ResourceTrotterProduct(
+#         first_order_expansion=res_ops,
+#         num_steps=op.hyperparameters["n"],
+#         order=op.hyperparameters["order"],
+#     )
+
 
 @map_to_resource_op.register
 def _(op: qtemps.MPS):
@@ -329,7 +328,7 @@ def _(op: qtemps.QROMStatePreparation):
 @map_to_resource_op.register
 def _(op: qops.IntegerComparator):
     return re_temps.ResourceIntegerComparator(
-        value=op.hyperparameters["val"],
+        value=op.hyperparameters["value"],
         register_size=len(op.wires) - 1,
         geq=op.hyperparameters["geq"],
     )

@@ -141,23 +141,23 @@ class Test_map_to_resource_op:
             #     qml.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
             #     re_temps.ResourceQPE(base=re_ops.ResourceZ(), num_estimation_wires=2),
             # ),
-            # (
-            #     qml.TrotterProduct(
-            #         qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliY(1)]),
-            #         time=1.0,
-            #         n=10,
-            #         order=2,
-            #     ),
-            #     re_temps.ResourceTrotterProduct(
-            #         first_order_expansion=[re_ops.ResourceX(), re_ops.ResourceY()],
-            #         num_steps=10,
-            #         order=2,
-            #     ),
-            # ),
-            # (
-            #     qml.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
-            #     re_temps.ResourceIntegerComparator(value=5, register_size=3, geq=False),
-            # ),
+            (
+                qml.TrotterProduct(
+                    qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliY(1)]),
+                    time=1.0,
+                    n=10,
+                    order=2,
+                ),
+                re_temps.ResourceTrotterProduct(
+                    first_order_expansion=[re_ops.ResourceX(), re_ops.ResourceY()],
+                    num_steps=10,
+                    order=2,
+                ),
+            ),
+            (
+                qml.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
+                re_temps.ResourceIntegerComparator(value=5, register_size=3, geq=False),
+            ),
         ],
     )
     def test_map_to_resource_op_templates(self, operator, expected_res_op):
