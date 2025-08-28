@@ -43,7 +43,7 @@ class ResourceSelectTHC(ResourceOperator):
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
             Hamiltonian on which the select operator is being applied
         rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-            the rotation angles for basis rotation. If :code:`None` is provided the default value from the
+            the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
             :code:`resource_config` is used.
         select_swap_depth (int, optional): A natural number that determines if data
             will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
@@ -66,7 +66,7 @@ class ResourceSelectTHC(ResourceOperator):
      Qubit breakdown:
       clean qubits: 313, dirty qubits: 0, algorithmic qubits: 58
      Gate breakdown:
-      {'Toffoli': 2.220E+3, 'CNOT': 1.057E+4, 'X': 268, 'Hadamard': 6.406E+3, 'S': 80, 'Z': 41}
+      {'Toffoli': 2.219E+3, 'CNOT': 1.058E+4, 'X': 268, 'Hadamard': 6.406E+3, 'S': 80, 'Z': 41}
     """
 
     resource_keys = {"compact_ham", "rotation_precision_bits", "select_swap_depth"}
@@ -99,14 +99,14 @@ class ResourceSelectTHC(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-                * compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
-                    Hamiltonian on which the select operator is being applied
+                * compact_ham (CompactHamiltonian): a tensor hypercontracted
+                  Hamiltonian on which the select operator is being applied
                 * rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                    the rotation angles for basis rotation. If :code:`None` is provided the default value from the
-                    :code:`resource_config` is used.
+                  the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
+                  :code:`resource_config` is used.
                 * select_swap_depth (int, optional): A natural number that determines if data
-                    will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                    Defaults to :code:`None`, which internally determines the optimal depth.
+                  will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
+                  Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
             "compact_ham": self.compact_ham,
@@ -125,7 +125,7 @@ class ResourceSelectTHC(ResourceOperator):
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
             rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If :code:`None` is provided the default value from the
+                the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                 :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
@@ -158,7 +158,7 @@ class ResourceSelectTHC(ResourceOperator):
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
             rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If :code:`None` is provided the default value from the
+                the rotation angles for basis rotation. If :code:`None` is provide, the default value from the
                 :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of
@@ -297,7 +297,7 @@ class ResourceSelectTHC(ResourceOperator):
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
             rotation_precision_bits (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If :code:`None` is provided the default value from the
+                the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
                 :code:`resource_config` is used.
             select_swap_depth (int, optional): A natural number that determines if data
                 will be loaded in parallel by adding more rows following Figure 1.C of
