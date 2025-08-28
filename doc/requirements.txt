@@ -32,7 +32,7 @@ networkx==3.1
 requests==2.32.3
 # we do not pin the sphinx theme, to allow the
 # navbar and header data to be updated at the source
-pennylane-sphinx-theme @ git+https://github.com/PennyLaneAI/pennylane-sphinx-theme.git@045911478c4b53532b444bc8d3f66afc5b0c40d1
+pennylane-sphinx-theme @ git+https://github.com/PennyLaneAI/pennylane-sphinx-theme.git@afdf1397d74abed663ca6420dbe99ee8e80bebea
 tomli~=2.0.0 # Drop once minimum Python version is 3.11
 sphinxext-opengraph==0.9.0
 matplotlib==3.8.0
