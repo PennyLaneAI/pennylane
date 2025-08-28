@@ -795,7 +795,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
     if isinstance(op, (Allocate, Deallocate)):
         yield op
 
-    if isinstance(op, Conditional):
+    elif isinstance(op, Conditional):
         if acceptance_function(op.base) or max_depth_reached:
             yield op
         else:
