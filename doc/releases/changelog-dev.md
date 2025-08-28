@@ -88,6 +88,9 @@
   Array([ 3.14159265, -1.57079633], dtype=float64)
   ```
 
+* The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
+  [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
+
 <h3>Improvements 🛠</h3>
 
 * A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
@@ -756,6 +759,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `autograph` keyword argument has been removed from the `QNode` constructor. 
+  To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
+  [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
+  
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
   [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
 
