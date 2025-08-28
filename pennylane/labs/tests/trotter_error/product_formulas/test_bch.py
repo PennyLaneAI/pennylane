@@ -298,6 +298,9 @@ params = [
 def test_effective_hamiltonian_backend(backend, num_workers, mpi4py_support):
     """Test that effective_hamiltonian function runs without errors for different backends."""
 
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
     r, delta = 1, 0.5
 
     fragments = {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))}
@@ -305,6 +308,8 @@ def test_effective_hamiltonian_backend(backend, num_workers, mpi4py_support):
     n_frags = len(fragments)
 
     first_order = ProductFormula(list(range(n_frags)), coeffs=[delta / r] * n_frags) ** r
-    ham = effective_hamiltonian(first_order, fragments, order=2)
+    ham = effective_hamiltonian(
+        first_order, fragments, order=2, num_workers=num_workers, backend=backend
+    )
 
     assert isinstance(ham, np.ndarray)
