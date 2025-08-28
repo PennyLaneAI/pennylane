@@ -844,7 +844,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
         if acceptance_function(op.base) or max_depth_reached:
             yield op
         else:
-            decomp = [
+            yield from (
                 Conditional(op.meas_val, base_op)
                 for base_op in _operator_decomposition_gen(
                     op.base,
@@ -853,7 +853,7 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
                     current_depth=current_depth,
                     graph_solution=graph_solution,
                 )
-            ]
+            )
 
     elif acceptance_function(op) or max_depth_reached:
         yield op
