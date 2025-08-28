@@ -195,7 +195,11 @@ jobs:
           PYTEST_XML_ARGS: ${{ inputs.pytest_xml_file_path != '' && format('--junit-xml="{0}/{1}"', env.TEST_REPORTS_DIR, inputs.pytest_xml_file_path) || '' }}
         run: |
           echo "args=$PYTEST_COVERAGE_ARGS $PYTEST_PARALLELISE_ARGS $PYTEST_ADDITIONAL_ARGS $PYTEST_DURATIONS_ARGS $PYTEST_XML_ARGS" >> $GITHUB_OUTPUT
-
+        
+      - name: Print cvx info
+        run: |
+          python -c 'import cvxpy, cvxopt, numpy as np; print(f"CVXPY version: {cvxpy.__version__}\nCVXOPT version: {cvxopt.__version__}\nNumPy version: {np.__version__}\n\n--- BLAS/LAPACK ---"); np.show_config()'
+      
       - name: Run PennyLane Unit Tests
         env:
           PYTEST_MARKER: ${{ inputs.pytest_markers != '' && format('-m "{0}"', inputs.pytest_markers) || '' }}
