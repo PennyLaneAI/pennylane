@@ -88,6 +88,9 @@
   Array([ 3.14159265, -1.57079633], dtype=float64)
   ```
 
+* The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
+  [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
+
 <h3>Improvements 🛠</h3>
 
 * A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
