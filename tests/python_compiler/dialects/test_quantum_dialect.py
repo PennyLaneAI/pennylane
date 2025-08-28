@@ -119,53 +119,53 @@ class TestAssemblyFormat:
         # Tests for allocation/deallocation ops: AllocOp, DeallocOp, AllocQubitOp, DeallocQubitOp
         # Tests for extraction/insertion ops: ExtractOp, InsertOp
         program = """
-        // **Allocation of register with dynamic number of wires**
+        ////////////////// **Allocation of register with dynamic number of wires** //////////////////
         // CHECK: [[NQUBITS:%.+]] = "test.op"() : () -> i64
         // CHECK: [[QREG_DYN:%.+]] = quantum.alloc([[NQUBITS]]) : !quantum.reg
         %nqubits = "test.op"() : () -> i64
         %qreg_dynamic = quantum.alloc(%nqubits) : !quantum.reg
 
-        // **Deallocation of dynamic register**
+        ////////////////// **Deallocation of dynamic register** //////////////////
         // CHECK: quantum.dealloc [[QREG_DYN]] : !quantum.reg
         quantum.dealloc %qreg_dynamic : !quantum.reg
 
-        // **Allocation of register with static number of wires**
+        ////////////////// **Allocation of register with static number of wires** //////////////////
         // CHECK: [[QREG_STATIC:%.+]] = quantum.alloc(10) : !quantum.reg
         %qreg_static = quantum.alloc(10) : !quantum.reg
 
-        // **Deallocation of static register**
+        ////////////////// **Deallocation of static register** //////////////////
         // CHECK: quantum.dealloc [[QREG_STATIC]] : !quantum.reg
         quantum.dealloc %qreg_static : !quantum.reg
 
-        // **Dynamic qubit allocation**
+        ////////////////// **Dynamic qubit allocation** //////////////////
         // CHECK: [[DYN_QUBIT:%.+]] = quantum.alloc_qb : !quantum.bit
         %dyn_qubit = quantum.alloc_qb : !quantum.bit
 
-        // **Dynamic qubit deallocation**
+        ////////////////// **Dynamic qubit deallocation** //////////////////
         // CHECK: quantum.dealloc_qb [[DYN_QUBIT]] : !quantum.bit
         quantum.dealloc_qb %dyn_qubit : !quantum.bit
 
-        //////////////////////////////////////////////////////////////////////////
-        //////////// Quantum register to use with the remaining tests ////////////
-        //////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////
+        ////////////////// Quantum register //////////////////
+        //////////////////////////////////////////////////////
         // CHECK: [[QREG:%.+]] = "test.op"() : () -> !quantum.reg
         %qreg = "test.op"() : () -> !quantum.reg
 
-        // **Static qubit extraction**
+        ////////////////// **Static qubit extraction** //////////////////
         // CHECK: [[STATIC_QUBIT:%.+]] = quantum.extract [[QREG]][[[STATIC_INDEX:0]]] : !quantum.reg -> !quantum.bit
         %static_qubit = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
 
-        // **Dynamic qubit extraction**
+        ////////////////// **Dynamic qubit extraction** //////////////////
         // CHECK: [[DYN_INDEX:%.+]] = "test.op"() : () -> i64
         // CHECK: [[DYN_QUBIT1:%.+]] = quantum.extract [[QREG]][[[DYN_INDEX]]] : !quantum.reg -> !quantum.bit
         %dyn_index = "test.op"() : () -> i64
         %dyn_qubit1 = quantum.extract %qreg[%dyn_index] : !quantum.reg -> !quantum.bit
 
-        // **Static qubit insertion**
+        ////////////////// **Static qubit insertion** //////////////////
         // CHECK: [[QREG1:%.+]] = quantum.insert [[QREG]][[[STATIC_INDEX]]], [[STATIC_QUBIT]] : !quantum.reg, !quantum.bit
         %qreg1 = quantum.insert %qreg[0], %static_qubit : !quantum.reg, !quantum.bit
 
-        // **Dynamic qubit insertion**
+        ////////////////// **Dynamic qubit insertion** //////////////////
         // CHECK: quantum.insert [[QREG1]][[[DYN_INDEX]]], [[DYN_QUBIT1]] : !quantum.reg, !quantum.bit
         %qreg2 = quantum.insert %qreg1[%dyn_index], %dyn_qubit1 : !quantum.reg, !quantum.bit
         """
@@ -243,7 +243,9 @@ class TestAssemblyFormat:
 
         # Tests for SetBasisStateOp, SetStateOp
         program = """
-        // Qubits
+        ////////////////////////////////////////////
+        ////////////////// Qubits //////////////////
+        ////////////////////////////////////////////
         // CHECK: [[Q0:%.+]] = "test.op"() : () -> !quantum.bit
         // CHECK: [[Q1:%.+]] = "test.op"() : () -> !quantum.bit
         %q0 = "test.op"() : () -> !quantum.bit
@@ -297,7 +299,51 @@ class TestAssemblyFormat:
 
         # Tests for AdjointOp, DeviceInitOp, DeviceReleaseOp, FinalizeOp, InitializeOp,
         # NumQubitsOp, YieldOp
-        # program = """
-        # """
+        program = """
+        //////////////////////////////////////////
+        //////////// Quantum register ////////////
+        //////////////////////////////////////////
+        // CHECK: [[QREG:%.+]] = "test.op"() : () -> !quantum.reg
+        %qreg = "test.op"() : () -> !quantum.reg
 
-        # run_filecheck(program, roundtrip=True, verify=True)
+        //////////// **AdjointOp and YieldOp tests** ////////////
+        // CHECK:      quantum.adjoint([[QREG]]) : !quantum.reg {
+        // CHECK-NEXT: ^bb0([[ARG_QREG:%.+]] : !quantum.reg):
+        // CHECK-NEXT:   quantum.yield [[ARG_QREG]] : !quantum.reg
+        // CHECK-NEXT: }
+        %qreg1 = quantum.adjoint(%qreg) : !quantum.reg {
+        ^bb0(%arg_qreg: !quantum.reg):
+          quantum.yield %arg_qreg : !quantum.reg
+        }
+
+        //////////// **DeviceInitOp tests** ////////////
+        // Integer SSA value for shots
+        // CHECK: [[SHOTS:%.+]] = "test.op"() : () -> i64
+        %shots = "test.op"() : () -> i64
+
+        // No auto qubit management
+        // CHECK: quantum.device shots([[SHOTS]]) ["foo", "bar", "baz"]
+        quantum.device shots(%shots) ["foo", "bar", "baz"]
+
+        // Auto qubit management
+        // CHECK: quantum.device shots([[SHOTS]]) ["foo", "bar", "baz"] {auto_qubit_management}
+        quantum.device shots(%shots) ["foo", "bar", "baz"] {auto_qubit_management}
+
+        //////////// **DeviceReleaseOp tests** ////////////
+        // CHECK: quantum.device_release
+        quantum.device_release
+
+        //////////// **FinalizeOp tests** ////////////
+        // CHECK: quantum.finalize
+        quantum.finalize
+
+        //////////// **InitializeOp tests** ////////////
+        // CHECK: quantum.init
+        quantum.init
+
+        //////////// **NumQubitsOp tests** ////////////
+        // CHECK: quantum.num_qubits : i64
+        %nqubits = quantum.num_qubits : i64
+        """
+
+        run_filecheck(program, roundtrip=True, verify=True)
