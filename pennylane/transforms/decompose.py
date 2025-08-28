@@ -29,6 +29,7 @@ from pennylane.decomposition import DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
 from pennylane.operation import Operator
+from pennylane.ops import Conditional
 from pennylane.transforms.core import transform
 
 
@@ -203,7 +204,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
                 return self.interpret_operation(op)
 
-            if enabled_graph() and self._decomp_graph_solution.is_solved_for(op):
+            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(op):
 
                 rule = self._decomp_graph_solution.decomposition(op)
                 num_wires = len(op.wires)
@@ -326,7 +327,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # a solution is found for this operator in the graph.
             if (
                 op.has_qfunc_decomposition
-                or enabled_graph()
+                or self._decomp_graph_solution
                 and self._decomp_graph_solution.is_solved_for(op)
             ):
                 return self._evaluate_jaxpr_decomposition(op)
@@ -838,10 +839,28 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
     if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
 
-    if acceptance_function(op) or max_depth_reached:
+    # Handle classically controlled operators
+    if isinstance(op, Conditional):
+        if acceptance_function(op.base) or max_depth_reached:
+            yield op
+        else:
+            yield from (
+                Conditional(op.meas_val, base_op)
+                for base_op in _operator_decomposition_gen(
+                    op.base,
+                    acceptance_function,
+                    max_expansion=max_expansion,
+                    current_depth=current_depth,
+                    graph_solution=graph_solution,
+                )
+            )
+
+    elif acceptance_function(op) or max_depth_reached:
         yield op
+
     elif isinstance(op, (Allocate, Deallocate)):
         yield op
+
     elif graph_solution is not None and graph_solution.is_solved_for(op, num_available_work_wires):
         op_rule = graph_solution.decomposition(op, num_available_work_wires)
         with queuing.AnnotatedQueue() as decomposed_ops:
