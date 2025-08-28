@@ -153,6 +153,7 @@ State Preparation:
     ~ResourceQROMStatePreparation
     ~ResourceUniformStatePrep
     ~ResourceAliasSampling
+    ~ResourceMottonenStatePreparation
 
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -257,4 +258,5 @@ from .templates import (
     ResourceQPE,
     ResourceIterativeQPE,
     ResourceControlledSequence,
+    ResourceMottonenStatePreparation,
 )

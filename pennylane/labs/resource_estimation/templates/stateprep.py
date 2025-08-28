@@ -828,3 +828,82 @@ class ResourceQROMStatePreparation(ResourceOperator):
             selswap_depths=selswap_depths,
             **kwargs,
         )
+
+class ResourceMottonenStatePreparation(ResourceOperator):
+    r"""Resource class for Mottonen state preparation.
+
+    Args:
+        num_states (int): the number of states in the uniform superposition
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        Resources are described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
+        The resources are defined as :math:`2^{N+2} - 5` :class:`~.ResourceRZ` gates and
+        :math:`2^{N+2} - 4N - 4` :class:`~.ResourceCNOT` gates.
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> mottonen_state = plre.ResourceMottonenStatePreparation()
+    >>> print(plre.estimate_resources(mottonen_state))
+
+    """
+
+    resource_keys = {"num_wires"}
+
+    def __init__(self, num_wires, wires=None):
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of wires that the operation acts on
+        """
+        return {"num_wires": self.num_wires}
+
+    @classmethod
+    def resource_rep(cls, num_wires: int) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, {"num_wires": num_wires})
+
+    @classmethod
+    def default_resource_decomp(cls, num_states, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+
+        Args:
+            num_wires (int): the number of wires that the operation acts on
+
+        Resources:
+            Resources are described in `Mottonen et al. (2008) <https://arxiv.org/pdf/quant-ph/0407010>`_.
+            The resources are defined as :math:`2^{N+2} - 5` :class:`~.ResourceRZ` gates and
+            :math:`2^{N+2} - 4N - 4` :class:`~.ResourceCNOT` gates.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+
+        gate_lst = []
+
+        rz = resource_rep(plre.ResourceRZ)
+        cnot = resource_rep(plre.ResourceCNOT)
+
+        r_count = 2**(num_wires+2) - 5
+        cnot_count = 2**(num_wires+2) - 4*num_wires - 4
+
+        gate_lst.append(GateCount(rz, r_count))
+        gate_lst.append(GateCount(cnot, cnot_count))
+
+        return gate_lst
