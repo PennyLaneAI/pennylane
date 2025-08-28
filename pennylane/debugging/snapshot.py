@@ -211,7 +211,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     2: [array([1., 0.]), array([0., 1.]), array([1., 0.]), array([0., 1.])],
     'execution_results': array([0.51653561, 0.48346439])}
 
-    Note that without the ``RY`` rotation, the second snapshot only has **three* probabilities, not **four**.
+    Note that without the ``RY`` rotation, the third snapshot only has **three* probabilities, not **four**.
     This is due to the fact that one of the four branches can never occur.
 
     >>> qml.snapshots(c.update(mcm_method="tree-traversal"))(0)
