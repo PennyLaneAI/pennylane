@@ -459,8 +459,6 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     """Process the quantum function of a QNode to create a Jaxpr."""
 
     qfunc = partial(qnode.func, **kwargs) if kwargs else qnode.func
-    # pylint: disable=protected-access
-    qfunc = qml.capture.run_autograph(qfunc) if qnode._autograph else qfunc
     flat_fn = FlatFn(qfunc)
 
     try:
@@ -474,8 +472,9 @@ def _extract_qfunc_jaxpr(qnode, abstracted_axes, *args, **kwargs):
     ) as exc:
         raise CaptureError(
             "Autograph must be used when Python control flow is dependent on a dynamic "
-            "variable (a function input). Please ensure that autograph=True or use native control "
-            "flow functions like for_loop, while_loop, etc."
+            "variable (a function input). Please ensure that autograph is being correctly enabled with "
+            "`qml.capture.run_autograph` or disabled with `qml.capture.disable_autograph` or consider using PennyLane native control "
+            "flow functions like `qml.for_loop`, `qml.while_loop`, or `qml.cond`."
         ) from exc
 
     assert flat_fn.out_tree is not None, "out_tree should be set by call to flat_fn"
