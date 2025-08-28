@@ -409,7 +409,9 @@ class TestCondReturns:
         assert len(true_fn.outvars) == 0
         assert true_fn.eqns[0].primitive == qml.X._primitive  # pylint: disable=protected-access
 
-        assert jaxpr.eqns[0].params["jaxpr_branches"][-1] is None
+        false_fn = jaxpr.eqns[0].params["jaxpr_branches"][-1]
+        assert len(false_fn.eqns) == 0
+        assert len(false_fn.outvars) == 0
 
 
 dev = qml.device("default.qubit", wires=3)
@@ -490,7 +492,7 @@ def circuit_multiple_cond(tmp_pred, tmp_arg):
     def false_fn_2(arg):
         return qml.RY(0.1, wires=0)
 
-    [dyn_pred_2, _] = qml.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
+    dyn_pred_2, _ = qml.cond(dyn_pred_1, true_fn_1, false_fn_1, elifs=())(arg)
     qml.cond(dyn_pred_2, true_fn_2, false_fn_2, elifs=())(arg)
     return qml.expval(qml.Z(0))
 
@@ -622,7 +624,7 @@ class TestCondCircuits:
     def test_mcm_predicate_execution(self, reset, postselect, shots, seed):
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results."""
-        device = qml.device("default.qubit", wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
+        device = qml.device("default.qubit", wires=3, seed=jax.random.PRNGKey(seed))
 
         def true_fn(arg):
             qml.RX(arg, 0)
@@ -630,6 +632,7 @@ class TestCondCircuits:
         def false_fn(arg):
             qml.RY(3 * arg, 0)
 
+        @qml.set_shots(shots)
         @qml.qnode(device)
         def f(x, y):
             qml.RX(x, 0)
@@ -666,7 +669,7 @@ class TestCondCircuits:
         """Test that QNodes executed with mid-circuit measurement predicates for
         qml.cond give correct results when there are also elifs present."""
         # pylint: disable=expression-not-assigned
-        device = qml.device("default.qubit", wires=5, shots=shots, seed=jax.random.PRNGKey(seed))
+        device = qml.device("default.qubit", wires=5, seed=jax.random.PRNGKey(seed))
 
         def true_fn():
             # Adjoint Hadamard diagonalizing gates to get Hadamard basis state
@@ -684,6 +687,7 @@ class TestCondCircuits:
             # Adjoint PauliZ diagonalizing gates to get Z basis state
             return
 
+        @qml.set_shots(shots)
         @qml.qnode(device)
         def f(*x):
             qml.RX(x[0], 0)

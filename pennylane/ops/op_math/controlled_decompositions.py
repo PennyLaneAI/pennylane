@@ -25,9 +25,9 @@ from pennylane.wires import Wires, WiresLike
 
 # pylint: disable=protected-access
 from .decompositions.controlled_decompositions import (
-    _decompose_mcx_with_many_workers,
-    _decompose_mcx_with_one_worker,
-    _decompose_mcx_with_two_workers,
+    _mcx_many_workers,
+    _mcx_one_worker,
+    _mcx_two_workers,
     ctrl_decomp_bisect,
     ctrl_decomp_zyz,
 )
@@ -146,9 +146,7 @@ def _decompose_mcx_with_many_workers_old(control_wires, target_wire, work_wires,
 
     with qml.queuing.AnnotatedQueue() as q:
         wires = list(control_wires) + [target_wire]
-        _decompose_mcx_with_many_workers(
-            wires=wires, work_wires=work_wires, work_wire_type=work_wire_type
-        )
+        _mcx_many_workers(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
     if qml.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
@@ -186,9 +184,9 @@ def _decompose_mcx_with_one_worker_kg24(
     work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> list[Operator]:
     r"""
-    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` ancillary qubit. It
-    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is zeroed
-    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the ancilla is borrowed as described in
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`1` auxiliary qubit. It
+    produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is zeroed
+    and :math:`4k-3` Toffoli gates and depth :math:`O(k)` if the auxiliary is borrowed as described in
     Sec. 5.1 of [1].
 
     Args:
@@ -207,9 +205,7 @@ def _decompose_mcx_with_one_worker_kg24(
 
     with qml.queuing.AnnotatedQueue() as q:
         wires = list(control_wires) + [target_wire]
-        _decompose_mcx_with_one_worker(
-            wires=wires, work_wires=[work_wire], work_wire_type=work_wire_type
-        )
+        _mcx_one_worker(wires=wires, work_wires=[work_wire], work_wire_type=work_wire_type)
 
     if qml.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover
@@ -225,10 +221,10 @@ def _decompose_mcx_with_two_workers_old(
     work_wire_type: Literal["zeroed", "borrowed"] = "borrowed",
 ) -> list[Operator]:
     r"""
-    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` ancillary qubits.
+    Synthesise a multi-controlled X gate with :math:`k` controls using :math:`2` auxiliary qubits.
     It produces a circuit with :math:`2k-3` Toffoli gates and depth :math:`O(\log(k))` if using
-    zeroed ancillae, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using borrowed
-    ancillae as described in Sec. 5 of [1].
+    zeroed auxiliary qubits, and :math:`4k-8` Toffoli gates and depth :math:`O(\log(k))` if using borrowed
+    auxiliary qubits as described in Sec. 5 of [1].
 
     Args:
         control_wires (Wires): The control wires.
@@ -249,9 +245,7 @@ def _decompose_mcx_with_two_workers_old(
 
     with qml.queuing.AnnotatedQueue() as q:
         wires = list(control_wires) + [target_wire]
-        _decompose_mcx_with_two_workers(
-            wires=wires, work_wires=work_wires, work_wire_type=work_wire_type
-        )
+        _mcx_two_workers(wires=wires, work_wires=work_wires, work_wire_type=work_wire_type)
 
     if qml.QueuingManager.recording():
         for op in q.queue:  # pragma: no cover

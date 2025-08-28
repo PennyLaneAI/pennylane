@@ -31,6 +31,7 @@ from pennylane.decomposition import (
 )
 from pennylane.decomposition.decomposition_graph import _to_name
 from pennylane.exceptions import DecompositionError
+from pennylane.operation import Operation
 
 # pylint: disable=protected-access,no-name-in-module
 
@@ -153,7 +154,7 @@ class TestDecompositionGraph:
     def test_graph_construction_non_applicable_rules(self, _):
         """Tests rules which are not applicable are skipped."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             """A custom op"""
 
             resource_keys = {"num_wires"}
@@ -190,7 +191,7 @@ class TestDecompositionGraph:
     def test_gate_set(self, _):
         """Tests that graph construction stops at the target gate set."""
 
-        class CustomOp(qml.operation.Operator):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
             resource_keys = set()
@@ -247,6 +248,9 @@ class TestDecompositionGraph:
             {qml.RY: 1, qml.GlobalPhase: 1, qml.RZ: 1},
         )
 
+        # verify that is_solved_for returns False for non-existent operators
+        assert not solution.is_solved_for(qml.Toffoli(wires=[0, 1, 2]))
+
     def test_decomposition_not_found(self, _):
         """Tests that the correct error is raised if a decomposition isn't found."""
 
@@ -258,7 +262,7 @@ class TestDecompositionGraph:
     def test_lazy_solve(self, _):
         """Tests the lazy keyword argument."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
             resource_keys = set()
@@ -267,7 +271,7 @@ class TestDecompositionGraph:
             def resource_params(self):
                 return {}
 
-        class AnotherOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class AnotherOp(Operation):  # pylint: disable=too-few-public-methods
             """Another custom operation."""
 
             resource_keys = set()
@@ -311,7 +315,7 @@ class TestDecompositionGraph:
     def test_decomposition_with_resource_params(self, _):
         """Tests operators with non-empty resource params."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
             resource_keys = {"num_wires"}
@@ -357,6 +361,125 @@ class TestDecompositionGraph:
         assert solution.decomposition(qml.Hadamard(wires=[0])).compute_resources() == to_resources(
             {qml.RZ: 2, qml.RX: 1, qml.GlobalPhase: 1},
         )
+
+    def test_work_wire_requirement(self, _):
+        """Tests that the graph respects the work wire requirement."""
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({qml.Toffoli: 2, qml.CRot: 1}, work_wires={"zeroed": 1})
+        def _decomp_with_work_wire(*_, **__):
+            raise NotImplementedError
+
+        @qml.register_resources({qml.Toffoli: 2, qml.CRot: 3})
+        def _decomp_without_work_wire(*_, **__):
+            raise NotImplementedError
+
+        graph = DecompositionGraph(
+            [CustomOp(wires=[0, 1, 2])],
+            gate_set={qml.Toffoli, qml.CRot},
+            alt_decomps={CustomOp: [_decomp_without_work_wire, _decomp_with_work_wire]},
+        )
+
+        solution = graph.solve(num_work_wires=0)
+        assert solution.decomposition(CustomOp(wires=[0, 1, 2])) is _decomp_without_work_wire
+
+        solution = graph.solve(num_work_wires=1)
+        assert (
+            solution.decomposition(CustomOp(wires=[0, 1, 2]), num_work_wires=1)
+            is _decomp_with_work_wire
+        )
+
+    def test_multiple_nodes_with_different_work_wire_budget(self, _):
+        """Tests that the same operator produced under different work wire budgets
+        are stored as different nodes in the graph, and results can be queried."""
+
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
+            """A custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({qml.Toffoli: 2, qml.CRot: 1}, work_wires={"zeroed": 2})
+        def _decomp_with_work_wire(*_, **__):
+            raise NotImplementedError
+
+        @qml.register_resources({qml.Toffoli: 4, qml.CRot: 3})
+        def _decomp_without_work_wire(*_, **__):
+            raise NotImplementedError
+
+        class LargeOp(Operation):  # pylint: disable=too-few-public-methods
+            """A larger custom operation."""
+
+            resource_keys = set()
+
+            @property
+            def resource_params(self):
+                return {}
+
+        @qml.register_resources({qml.Toffoli: 2, CustomOp: 2}, work_wires={"zeroed": 1})
+        def _decomp2_with_work_wire(*_, **__):
+            raise NotImplementedError
+
+        @qml.register_resources({qml.Toffoli: 4, CustomOp: 2})
+        def _decomp2_without_work_wire(*_, **__):
+            raise NotImplementedError
+
+        op = LargeOp(wires=[0, 1, 2, 3])
+        small_op = CustomOp(wires=[0, 1, 2])
+
+        graph = DecompositionGraph(
+            [op, small_op],
+            gate_set={qml.Toffoli, qml.RZ, qml.RY, qml.CNOT},
+            alt_decomps={
+                CustomOp: [_decomp_without_work_wire, _decomp_with_work_wire],
+                LargeOp: [_decomp2_without_work_wire, _decomp2_with_work_wire],
+            },
+        )
+
+        # 1 node for LargerOp, 2 nodes for CustomOp, 1 for Toffoli, 1 for CRot, 1 for RZ,
+        # 1 for RY, 1 for CNOT, and 1 dummy starting node, 1 decomposition from CRot,
+        # node, 2 decomposition nodes from LargerOp, 2 decompositions from each CustomOp
+        assert len(graph._graph.nodes()) == 16
+        assert len(graph._graph.edges()) == 26
+
+        solution = graph.solve(num_work_wires=0)
+        assert solution.decomposition(op) is _decomp2_without_work_wire
+        assert solution.decomposition(small_op) is _decomp_without_work_wire
+
+        solution = graph.solve(num_work_wires=1)
+        assert solution.decomposition(op, num_work_wires=1) is _decomp2_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=0) is _decomp_without_work_wire
+
+        solution = graph.solve(num_work_wires=2)
+        # When there are only 2 work wires available, by construction, it is more
+        # resource efficient to use them on the CustomOp, so even where there are
+        # enough work wires to use the more efficient decomposition for the LargeOp,
+        # we should still choose the less efficient one to achieve better overall
+        # resource efficiency. Because if we use one of the work wires to decompose
+        # the LargeOp, there won't be enough work wires left to further decompose
+        # the 2 CustomOp and it would result in significantly more gates.
+        assert solution.decomposition(op, num_work_wires=2) is _decomp2_without_work_wire
+        assert solution.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
+
+        solution = graph.solve(num_work_wires=3)
+        assert solution.decomposition(op, num_work_wires=3) is _decomp2_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=2) is _decomp_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=3) is _decomp_with_work_wire
+
+        solution = graph.solve(num_work_wires=None)
+        assert solution.decomposition(op, num_work_wires=None) is _decomp2_with_work_wire
+        assert solution.decomposition(small_op, num_work_wires=None) is _decomp_with_work_wire
 
 
 @pytest.mark.unit
@@ -413,7 +536,7 @@ class TestControlledDecompositions:
     def test_controlled_base_decomposition(self, _):
         """Tests applying control on the decomposition of the target operator."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
             resource_keys = set()
@@ -432,7 +555,7 @@ class TestControlledDecompositions:
             qml.Z(wires=wires[0])
             qml.GlobalPhase(np.pi / 2, wires=wires)
 
-        class CustomControlledOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomControlledOp(Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
             resource_keys = set()
@@ -497,36 +620,22 @@ class TestControlledDecompositions:
     def test_decompose_with_single_work_wire(self, _):
         """Tests that the Lemma 7.11 decomposition from https://arxiv.org/pdf/quant-ph/9503016 is applied correctly."""
 
-        op = qml.ctrl(
-            qml.Rot(0.123, 0.234, 0.345, wires=0),
-            control=[1, 2, 3],
-            work_wires=[4, 5],
-            work_wire_type="zeroed",
-        )
+        op = qml.ctrl(qml.Rot(0.123, 0.234, 0.345, wires=0), control=[1, 2, 3])
 
-        graph = DecompositionGraph(
-            operations=[op],
-            gate_set={"MultiControlledX", "CRot"},
-        )
-        solution = graph.solve()
+        graph = DecompositionGraph(operations=[op], gate_set={"MultiControlledX", "CRot"})
+        solution = graph.solve(num_work_wires=1)
         with qml.queuing.AnnotatedQueue() as q:
-            solution.decomposition(op)(*op.parameters, wires=op.wires, **op.hyperparameters)
-        assert q.queue == [
-            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="zeroed"),
+            rule = solution.decomposition(op, num_work_wires=1)
+            rule(*op.parameters, wires=op.wires, **op.hyperparameters)
+        tape = qml.tape.QuantumScript.from_queue(q)
+        [tape], _ = qml.transforms.resolve_dynamic_wires([tape], min_int=4)
+        assert tape.operations == [
+            qml.MultiControlledX(wires=[1, 2, 3, 4]),
             qml.CRot(0.123, 0.234, 0.345, wires=[4, 0]),
-            qml.MultiControlledX(wires=[1, 2, 3, 4], work_wires=[5], work_wire_type="zeroed"),
+            qml.MultiControlledX(wires=[1, 2, 3, 4]),
         ]
-        assert solution.resource_estimate(op) == to_resources(
-            {
-                resource_rep(
-                    qml.MultiControlledX,
-                    num_control_wires=3,
-                    num_zero_control_values=0,
-                    num_work_wires=1,
-                    work_wire_type="zeroed",
-                ): 2,
-                qml.CRot: 1,
-            }
+        assert solution.resource_estimate(op, num_work_wires=1) == to_resources(
+            {controlled_resource_rep(qml.X, {}, num_control_wires=3): 2, qml.CRot: 1}
         )
 
 
@@ -575,7 +684,7 @@ class TestSymbolicDecompositions:
     def test_adjoint_general(self, _):
         """Tests decomposition of a generalized adjoint operation."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
             resource_keys = set()
@@ -688,7 +797,7 @@ class TestSymbolicDecompositions:
     def test_special_pow_decomps(self, _):
         """Tests special cases for decomposing a power."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
             resource_keys = set()
@@ -724,7 +833,7 @@ class TestSymbolicDecompositions:
     def test_general_pow_decomps(self, _):
         """Tests the more general power decomposition rules."""
 
-        class CustomOp(qml.operation.Operation):  # pylint: disable=too-few-public-methods
+        class CustomOp(Operation):  # pylint: disable=too-few-public-methods
             """A custom operation."""
 
             resource_keys = set()
