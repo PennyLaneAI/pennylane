@@ -92,6 +92,7 @@ def new_estimate_resources(
     work_wires: int | dict = 0,
     tight_budget: bool = False,
     single_qubit_rotation_error: float | None = None,
+    verbose = False,
 ) -> Resources | Callable:
     r"""Estimate the quantum resources required from a circuit or operation in terms of the gates
     provided in the gateset.
@@ -156,7 +157,7 @@ def new_estimate_resources(
     if single_qubit_rotation_error is not None:
         config = new_update_config_single_qubit_rot_error(config, single_qubit_rotation_error)
 
-    return _new_estimate_resources(obj, gate_set, config, work_wires, tight_budget)
+    return _new_estimate_resources(obj, gate_set, config, work_wires, tight_budget, verbose)
 
 
 @singledispatch
@@ -166,6 +167,7 @@ def _new_estimate_resources(
     config: dict = resource_config,
     work_wires: int | dict = 0,
     tight_budget: bool = False,
+    verbose = False,
 ) -> Resources | Callable:
     r"""Raise error if there is no implementation registered for the object type."""
 
@@ -181,6 +183,7 @@ def new_resources_from_qfunc(
     config: dict = resource_config,
     work_wires=0,
     tight_budget=False,
+    verbose = False,
 ) -> Callable:
     """Get resources from a quantum function which queues operations"""
 
@@ -202,109 +205,144 @@ def new_resources_from_qfunc(
 
         num_algo_qubits += len(Wires.all_wires(circuit_wires))
         qm.clean_active_algo = num_algo_qubits  # set the algorithmic qubits in the qubit manager
+        if verbose:
+            print(qm)
 
         # Obtain resources in the gate_set
         compressed_res_ops_lst = new_ops_to_compressed_reps(q.queue)
 
         gate_counts = defaultdict(int)
         for cmp_rep_op in compressed_res_ops_lst:
-            if isinstance(cmp_rep_op, (AllocWires, BorrowWires, ReturnWires)):
-                pass  # TODO: Add logic to track wires at the top level
+            if isinstance(cmp_rep_op, BorrowWires):
+                if cmp_rep_op.clean:
+                    qm.borrow_clean(cmp_rep_op.num_wires)
+                else:
+                    qm.borrow_dirty(cmp_rep_op.num_wires)
+                if verbose:
+                    print("-----< qfunc borrow >----")
+                    print(qm)
+
+            elif isinstance(cmp_rep_op, ReturnWires):
+                if cmp_rep_op.clean:
+                    qm.return_clean(cmp_rep_op.num_wires)
+                else:
+                    qm.return_dirty(cmp_rep_op.num_wires)
+                if verbose:
+                    print("-----< qfunc return >----")
+                    print(qm)
+            
+            elif isinstance(cmp_rep_op, AllocWires):
+                qm.take(cmp_rep_op.num_wires)
+                if verbose:
+                    print("-----< qfunc allocate >----")
+                    print(qm)
+
             else:
+                if verbose:
+                    print(f"-----< qfunc gate: {cmp_rep_op.name} >----")
+                    print(qm)
+                
                 n_wires = cmp_rep_op.params["num_wires"]
                 sub_qm = qm.step_into_decomp_simple(num_active_qubits=n_wires)
                 
+                if verbose:
+                    print("|---- step-in >")
+                    print(sub_qm)
+
                 new_counts_from_compressed_res_op(
-                    cmp_rep_op, gate_counts, qbit_mngr=sub_qm, gate_set=gate_set, config=config
+                    cmp_rep_op, gate_counts, qbit_mngr=sub_qm, gate_set=gate_set, config=config, verbose=verbose,
                 )
 
                 new_sub_qm = NQMStack.pop()
                 assert new_sub_qm is sub_qm
                 qm.step_out_decomp_simple(new_sub_qm)
+                if verbose:
+                    print(f"|---- step-out {cmp_rep_op.name} >")
+                    print(qm)
 
         return Resources(qubit_manager=qm, gate_types=gate_counts)
 
     return wrapper
 
 
-@_new_estimate_resources.register
-def new_resources_from_resource(
-    obj: Resources,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
-    work_wires=None,
-    tight_budget=None,
-) -> Resources:
-    """Further process resources from a resources object."""
+# @_new_estimate_resources.register
+# def new_resources_from_resource(
+#     obj: Resources,
+#     gate_set: set = DefaultGateSet,
+#     config: dict = resource_config,
+#     work_wires=None,
+#     tight_budget=None,
+# ) -> Resources:
+#     """Further process resources from a resources object."""
 
-    existing_qm = obj.qubit_manager
-    if work_wires is not None:
-        if isinstance(work_wires, dict):
-            clean_wires = work_wires["clean"]
-            dirty_wires = work_wires["dirty"]
-        else:
-            clean_wires = work_wires
-            dirty_wires = 0
+#     existing_qm = obj.qubit_manager
+#     if work_wires is not None:
+#         if isinstance(work_wires, dict):
+#             clean_wires = work_wires["clean"]
+#             dirty_wires = work_wires["dirty"]
+#         else:
+#             clean_wires = work_wires
+#             dirty_wires = 0
 
-        existing_qm._clean_qubit_counts = max(clean_wires, existing_qm._clean_qubit_counts)
-        existing_qm._dirty_qubit_counts = max(dirty_wires, existing_qm._dirty_qubit_counts)
+#         existing_qm._clean_qubit_counts = max(clean_wires, existing_qm._clean_qubit_counts)
+#         existing_qm._dirty_qubit_counts = max(dirty_wires, existing_qm._dirty_qubit_counts)
 
-    if tight_budget is not None:
-        existing_qm.tight_budget = tight_budget
+#     if tight_budget is not None:
+#         existing_qm.tight_budget = tight_budget
 
-    gate_counts = defaultdict(int)
-    for cmpr_rep_op, count in obj.gate_types.items():
-        new_counts_from_compressed_res_op(
-            cmpr_rep_op,
-            gate_counts,
-            qbit_mngr=existing_qm,
-            gate_set=gate_set,
-            scalar=count,
-            config=config,
-        )
+#     gate_counts = defaultdict(int)
+#     for cmpr_rep_op, count in obj.gate_types.items():
+#         new_counts_from_compressed_res_op(
+#             cmpr_rep_op,
+#             gate_counts,
+#             qbit_mngr=existing_qm,
+#             gate_set=gate_set,
+#             scalar=count,
+#             config=config,
+#         )
 
-    # Update:
-    return Resources(qubit_manager=existing_qm, gate_types=gate_counts)
-
-
-@_new_estimate_resources.register
-def new_resources_from_resource_ops(
-    obj: ResourceOperator,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
-    work_wires=None,
-    tight_budget=None,
-) -> Resources:
-    """Extract resources from a resource operator."""
-    if isinstance(obj, Operation):
-        obj = map_to_resource_op(obj)
-
-    return new_resources_from_resource(
-        1 * obj,
-        gate_set,
-        config,
-        work_wires,
-        tight_budget,
-    )
+#     # Update:
+#     return Resources(qubit_manager=existing_qm, gate_types=gate_counts)
 
 
-@_new_estimate_resources.register
-def new_resources_from_pl_ops(
-    obj: Operation,
-    gate_set: set = DefaultGateSet,
-    config: dict = resource_config,
-    work_wires=None,
-    tight_budget=None,
-) -> Resources:
-    """Extract resources from a pl operator."""
-    obj = map_to_resource_op(obj)
-    return new_resources_from_resource(
-        1 * obj,
-        gate_set,
-        config,
-        work_wires,
-        tight_budget,
-    )
+# @_new_estimate_resources.register
+# def new_resources_from_resource_ops(
+#     obj: ResourceOperator,
+#     gate_set: set = DefaultGateSet,
+#     config: dict = resource_config,
+#     work_wires=None,
+#     tight_budget=None,
+# ) -> Resources:
+#     """Extract resources from a resource operator."""
+#     if isinstance(obj, Operation):
+#         obj = map_to_resource_op(obj)
+
+#     return new_resources_from_resource(
+#         1 * obj,
+#         gate_set,
+#         config,
+#         work_wires,
+#         tight_budget,
+#     )
+
+
+# @_new_estimate_resources.register
+# def new_resources_from_pl_ops(
+#     obj: Operation,
+#     gate_set: set = DefaultGateSet,
+#     config: dict = resource_config,
+#     work_wires=None,
+#     tight_budget=None,
+# ) -> Resources:
+#     """Extract resources from a pl operator."""
+#     obj = map_to_resource_op(obj)
+#     return new_resources_from_resource(
+#         1 * obj,
+#         gate_set,
+#         config,
+#         work_wires,
+#         tight_budget,
+#     )
 
 
 def new_counts_from_compressed_res_op(
@@ -314,6 +352,7 @@ def new_counts_from_compressed_res_op(
     gate_set: set,
     scalar: int = 1,
     config: dict = resource_config,
+    verbose = False,
 ) -> None:
     """Modifies the `gate_counts_dict` argument by adding the (scaled) resources of the operation provided.
 
@@ -334,37 +373,56 @@ def new_counts_from_compressed_res_op(
 
     for action in resource_decomp:
         if isinstance(action, GateCount):
+            if verbose:
+                print(f"-----< decomp gate: {action.gate.name} >----")
+                print(qbit_mngr)
+
             n_wires = action.gate.params["num_wires"]
             sub_qm = qbit_mngr.step_into_decomp_simple(num_active_qubits=n_wires)
+            if verbose:
+                print("|---- step-in >")
+                print(sub_qm)
 
             new_counts_from_compressed_res_op(
                 action.gate,
                 gate_counts_dict,
-                qbit_mngr=qbit_mngr,
+                qbit_mngr=sub_qm,
                 scalar=scalar * action.count,
                 gate_set=gate_set,
                 config=config,
+                verbose=verbose,
             )
 
             new_sub_qm = NQMStack.pop()
             assert new_sub_qm is sub_qm
             qbit_mngr.step_out_decomp_simple(new_sub_qm)
+            if verbose:
+                print(f"|---- step-out {action.gate.name} >")
+                print(qbit_mngr)
 
         if isinstance(action, BorrowWires):
             if action.clean:
                 qbit_mngr.borrow_clean(action.num_wires)
             else:
                 qbit_mngr.borrow_dirty(action.num_wires)
+            if verbose:
+                print("-----< decomp borrow >----")
+                print(qbit_mngr)
 
         if isinstance(action, ReturnWires):
             if action.clean:
                 qbit_mngr.return_clean(action.num_wires)
             else:
                 qbit_mngr.return_dirty(action.num_wires)
-        
+            if verbose:
+                print("-----< decomp return >----")
+                print(qbit_mngr)
+
         if isinstance(action, AllocWires):
             qbit_mngr.take(action.num_wires * scalar)
-
+            if verbose:
+                print("-----< decomp alloc >----")
+                print(qbit_mngr)
     return
 
 

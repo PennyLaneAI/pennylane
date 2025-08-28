@@ -164,7 +164,7 @@ Compact Hamiltonian Class:
 
 """
 
-from .qubit_manager import AllocWires, FreeWires, QubitManager
+from .qubit_manager import AllocWires, FreeWires, QubitManager, BorrowWires, ReturnWires, NewQubitManager, NQMStack
 from .resources_base import Resources
 from .resource_operator import (
     CompressedResourceOp,
@@ -182,7 +182,8 @@ from .resource_tracking import (
     StandardGateSet,
     DefaultGateSet,
     resource_config,
-    estimate_resources,
+    # estimate_resources,
+    new_estimate_resources,
 )
 from .ops import (
     ResourceHadamard,
