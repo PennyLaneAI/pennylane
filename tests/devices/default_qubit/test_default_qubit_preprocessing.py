@@ -1014,14 +1014,12 @@ class TestAdjointDiffTapeValidation:
         assert qml.jacobian(circuit)(x) == 0
 
 
-class TestDefaultQubitPreprocessIntegration:
+class TestDefaultQubitPreprocessGraphDecompIntegration:
     """Integration tests for DefaultQubit preprocessing with graph decomposition."""
 
     @pytest.mark.usefixtures("enable_graph_decomposition")
     def test_default_qubit_with_graph_decomposition(self):
         """Test that DefaultQubit preprocessing works with graph decomposition enabled."""
-        from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
-
         dev = DefaultQubit(wires=3)
 
         # Create a circuit with QFT (has matrix but not in ALL_DQ_GATE_SET)
