@@ -54,8 +54,8 @@ class TestDecomposeInterpreter:
         assert interpreter.max_expansion == max_expansion
         valid_op = qml.RX(1.5, 0)
         invalid_op = qml.RY(1.5, 0)
-        assert interpreter._stopping_condition(valid_op)
-        assert not interpreter._stopping_condition(invalid_op)
+        assert interpreter.stopping_condition(valid_op)
+        assert not interpreter.stopping_condition(invalid_op)
 
     @pytest.mark.unit
     def test_fixed_alt_decomps_not_available_capture(self):
