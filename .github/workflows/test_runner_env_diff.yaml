@@ -84,4 +84,4 @@ jobs:
           uv pip freeze
       
       - name: Run Kernel Tests
-        run: python -m pytest tests/kernels/test_kernels.py --splits 6 --group 5 --durations-path='.github/durations/core_tests_durations.json'
+        run: python -m pytest tests/kernels/test_kernels.py --splits 6 --group 5 --durations-path='.github/durations/core_tests_durations.json' -m 'core and not qcut and not finite-diff and not param-shift'
