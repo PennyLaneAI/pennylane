@@ -829,11 +829,12 @@ class ResourceQROMStatePreparation(ResourceOperator):
             **kwargs,
         )
 
+
 class ResourceMottonenStatePreparation(ResourceOperator):
     r"""Resource class for Mottonen state preparation.
 
     Args:
-        num_states (int): the number of states in the uniform superposition
+        num_wires (int): the number of wires the operation acts on
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
@@ -845,8 +846,16 @@ class ResourceMottonenStatePreparation(ResourceOperator):
 
     The resources for this operation are computed using:
 
-    >>> mottonen_state = plre.ResourceMottonenStatePreparation()
-    >>> print(plre.estimate_resources(mottonen_state))
+    >>> mottonen_state = plre.ResourceMottonenStatePreparation(10)
+    >>> gate_set = {"RZ", "CNOT"}
+    >>> print(plre.estimate_resources(mottonen_state, gate_set))
+    --- Resources: ---
+     Total qubits: 10
+     Total gates : 8.143E+3
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 10
+     Gate breakdown:
+      {'RZ': 4.091E+3, 'CNOT': 4.052E+3}
 
     """
 
@@ -877,7 +886,7 @@ class ResourceMottonenStatePreparation(ResourceOperator):
         return CompressedResourceOp(cls, {"num_wires": num_wires})
 
     @classmethod
-    def default_resource_decomp(cls, num_states, **kwargs):
+    def default_resource_decomp(cls, num_wires, **kwargs):
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
@@ -900,10 +909,107 @@ class ResourceMottonenStatePreparation(ResourceOperator):
         rz = resource_rep(plre.ResourceRZ)
         cnot = resource_rep(plre.ResourceCNOT)
 
-        r_count = 2**(num_wires+2) - 5
-        cnot_count = 2**(num_wires+2) - 4*num_wires - 4
+        r_count = 2 ** (num_wires + 2) - 5
+        cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
 
         gate_lst.append(GateCount(rz, r_count))
         gate_lst.append(GateCount(cnot, cnot_count))
 
         return gate_lst
+
+
+class ResourceCosineWindow(ResourceOperator):
+    r"""Resource class for preparing an initial state with a cosine wave function.
+
+    The wave function is defined below where :math:`m` is the number of wires.
+
+    .. math::
+
+        |\psi\rangle = \sqrt{2^{1-m}} \sum_{k=0}^{2^m-1} \cos(\frac{\pi k}{2^m} - \frac{\pi}{2}) |k\rangle,
+
+    .. note::
+
+        The wave function is shifted by :math:`\frac{\pi}{2}` units so that the window is centered.
+
+    Args:
+        num_wires (int): the number of wires the operation acts on
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+
+
+
+    .. seealso:: :class:`~.CosineWindow`
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> cosine_state = plre.ResourceCosineWindow(5)
+    >>> print(plre.estimate_resources(cosine_state))
+    --- Resources: ---
+     Total qubits: 5
+     Total gates : 1.616E+3
+     Qubit breakdown:
+      clean qubits: 0, dirty qubits: 0, algorithmic qubits: 5
+     Gate breakdown:
+      {'Hadamard': 6, 'T': 1.584E+3, 'CNOT': 26}
+
+    """
+
+    resource_keys = {"num_wires"}
+
+    def __init__(self, num_wires, wires=None):
+        self.num_wires = num_wires
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_wires (int): the number of wires that the operation acts on
+        """
+        return {"num_wires": self.num_wires}
+
+    @classmethod
+    def resource_rep(cls, num_wires: int) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(cls, {"num_wires": num_wires})
+
+    @classmethod
+    def default_resource_decomp(cls, num_wires, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+
+        Args:
+            num_wires (int): the number of wires that the operation acts on
+
+        Resources:
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+
+        hadamard = resource_rep(plre.ResourceHadamard)
+        rz = resource_rep(plre.ResourceRZ)
+        iqft = resource_rep(
+            plre.ResourceAdjoint,
+            {"base_cmpr_op": resource_rep(plre.ResourceQFT, {"num_wires": num_wires})},
+        )
+        phase_shift = resource_rep(plre.ResourcePhaseShift)
+
+        return [
+            GateCount(hadamard, 1),
+            GateCount(rz, 1),
+            GateCount(iqft, 1),
+            GateCount(phase_shift, num_wires),
+        ]

@@ -1640,3 +1640,96 @@ class TestQROMStatePrep:
         )
 
         assert actual_resources == expected_res
+
+
+class TestResourceMottonenStatePreparation:
+    """Test the ResourceMottonenStatePreparation class"""
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resources(self, num_wires):
+        """Test that the resources are correct"""
+        rz = resource_rep(plre.ResourceRZ)
+        cnot = resource_rep(plre.ResourceCNOT)
+
+        r_count = 2 ** (num_wires + 2) - 5
+        cnot_count = 2 ** (num_wires + 2) - 4 * num_wires - 4
+
+        expected = [GateCount(rz, r_count), GateCount(cnot, cnot_count)]
+
+        assert plre.ResourceMottonenStatePreparation.resource_decomp(num_wires) == expected
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resource_params(self, num_wires):
+        """Test that the resource params are correct"""
+        op = plre.ResourceMottonenStatePreparation(num_wires)
+
+        assert op.resource_params == {"num_wires": num_wires}
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resource_rep(self, num_wires):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = plre.CompressedResourceOp(
+            plre.ResourceMottonenStatePreparation,
+            {"num_wires": num_wires},
+        )
+        assert expected == plre.ResourceMottonenStatePreparation.resource_rep(num_wires)
+
+
+class TestResourceCosineWindow:
+    """Test the ResourceCosineWindow class"""
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resources(self, num_wires):
+        """Test that the resources are correct"""
+        hadamard = resource_rep(plre.ResourceHadamard)
+        rz = resource_rep(plre.ResourceRZ)
+        iqft = resource_rep(
+            plre.ResourceAdjoint,
+            {"base_cmpr_op": resource_rep(plre.ResourceQFT, {"num_wires": num_wires})},
+        )
+        phase_shift = resource_rep(plre.ResourcePhaseShift)
+
+        expected = [
+            GateCount(hadamard, 1),
+            GateCount(rz, 1),
+            GateCount(iqft, 1),
+            GateCount(phase_shift, num_wires),
+        ]
+
+        assert plre.ResourceCosineWindow.resource_decomp(num_wires) == expected
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resource_params(self, num_wires):
+        """Test that the resource params are correct"""
+        op = plre.ResourceCosineWindow(num_wires)
+
+        assert op.resource_params == {"num_wires": num_wires}
+
+    @pytest.mark.parametrize(
+        "num_wires",
+        [(4), (5), (6)],
+    )
+    def test_resource_rep(self, num_wires):
+        """Test the resource_rep returns the correct CompressedResourceOp"""
+
+        expected = plre.CompressedResourceOp(
+            plre.ResourceCosineWindow,
+            {"num_wires": num_wires},
+        )
+        assert expected == plre.ResourceCosineWindow.resource_rep(num_wires)
