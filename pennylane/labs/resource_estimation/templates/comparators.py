@@ -595,7 +595,7 @@ class ResourceRegisterComparator(ResourceOperator):
         compare_register = min(first_register, second_register)
 
         one_qubit_compare = resource_rep(plre.ResourceSingleQubitComparator)
-        two_qubit_compare = plre.ResourceTwoQubitComparator().tempand_based_decomp()
+        two_qubit_compare = plre.ResourceTwoQubitComparator.tempand_based_decomp()
 
         if first_register == second_register:
 
