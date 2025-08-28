@@ -213,12 +213,17 @@ class TestDecompose:
 
         m0 = qml.measure(0)
         tape = qml.tape.QuantumScript(
-            [CustomOp(wires=(0, 1)), m0.measurements[0], qml.ops.Conditional(m0, qml.X(0))]
+            [
+                CustomOp(wires=(0, 1)),
+                m0.measurements[0],
+                qml.ops.Conditional(m0, qml.X(0)),
+                qml.ops.Conditional(m0, qml.RX(0.5, wires=0)),
+            ]
         )
         [decomposed_tape], _ = qml.transforms.decompose(
             [tape], gate_set={qml.RX, qml.RZ, MidMeasureMP}
         )
-        assert len(decomposed_tape.operations) == 9
+        assert len(decomposed_tape.operations) == 10
 
         with qml.queuing.AnnotatedQueue() as q:
             qml.RZ(np.pi / 2, wires=0)
@@ -230,6 +235,7 @@ class TestDecompose:
             qml.cond(m0, qml.RZ)(np.pi / 2, wires=1)
             m1 = qml.measure(0)
             qml.cond(m1, qml.RX)(np.pi, wires=0)
+            qml.cond(m1, qml.RX)(0.5, wires=0)
 
         qml.assert_equal(decomposed_tape.operations[0], q.queue[0])
         qml.assert_equal(decomposed_tape.operations[1], q.queue[1])
@@ -238,10 +244,12 @@ class TestDecompose:
         assert isinstance(decomposed_tape.operations[5], Conditional)
         assert isinstance(decomposed_tape.operations[6], Conditional)
         assert isinstance(decomposed_tape.operations[8], Conditional)
+        assert isinstance(decomposed_tape.operations[9], Conditional)
         qml.assert_equal(decomposed_tape.operations[4].base, q.queue[4].base)
         qml.assert_equal(decomposed_tape.operations[5].base, q.queue[5].base)
         qml.assert_equal(decomposed_tape.operations[6].base, q.queue[6].base)
         qml.assert_equal(decomposed_tape.operations[8].base, q.queue[8].base)
+        qml.assert_equal(decomposed_tape.operations[9].base, q.queue[9].base)
         assert isinstance(decomposed_tape.operations[3], MidMeasureMP)
         assert isinstance(decomposed_tape.operations[7], MidMeasureMP)
 
