@@ -373,6 +373,9 @@
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
 
+* Added a mapper function `map_to_resource_ops` that maps PennyLane operators to ResourceOperator equivalents.
+  [(#8146)](https://github.com/PennyLaneAI/pennylane/pull/8146)
+
 <h3>Breaking changes 💔</h3>
 
 * `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
@@ -817,6 +820,7 @@ Marcus Edwards,
 Lillian Frederiksen,
 Pietropaolo Frisoni,
 Simone Gasperini,
+Austin Huang,
 David Ittah,
 Korbinian Kottmann,
 Mehrdad Malekmohammadi
