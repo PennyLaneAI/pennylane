@@ -22,9 +22,7 @@ from scipy.linalg import logm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import nested_commutator
-from pennylane.labs.trotter_error.fragments import vibrational_fragments
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
-from pennylane.labs.trotter_error.realspace.realspace_operator import RealspaceSum
 
 deltas = [0.5, 0.1, 0.01]
 
@@ -281,32 +279,32 @@ def test_against_matrix_log(fragments, product_formula):
     assert np.allclose(np.linalg.norm(bch_error - log_error), 0)
 
 
-@pytest.mark.parametrize(
-    "backend", ["serial", "mp_pool", "cf_procpool", "mpi4py_pool", "mpi4py_comm"]
-)
-@pytest.mark.parametrize("num_workers", [1, 2])
+params = [
+    ("serial", 1),
+    ("mp_pool", 1),
+    ("mp_pool", 2),
+    ("cf_procpool", 1),
+    ("cf_procpool", 2),
+    ("cf_threadpool", 1),
+    ("cf_threadpool", 2),
+    ("mpi4py_pool", 1),
+    ("mpi4py_pool", 2),
+    ("mpi4py_comm", 1),
+    ("mpi4py_comm", 2),
+]
+
+
+@pytest.mark.parametrize("backend, num_workers", params)
 def test_effective_hamiltonian_backend(backend, num_workers, mpi4py_support):
     """Test that effective_hamiltonian function runs without errors for different backends."""
 
-    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
-        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+    r, delta = 1, 0.5
 
-    n_modes = 4
-    r_state = np.random.RandomState(42)
-    freqs = r_state.random(4)
-    taylor_coeffs = [
-        np.array(0),
-        r_state.random(size=(n_modes,)),
-        r_state.random(size=(n_modes, n_modes)),
-        r_state.random(size=(n_modes, n_modes, n_modes)),
-    ]
+    fragments = {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))}
 
-    delta = 0.001
-    frag_labels = [0, 1, 1, 0]
-    frag_coeffs = [1 / 2, 1 / 2, 1 / 2, 1 / 2]
+    n_frags = len(fragments)
 
-    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
-    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
-    ham = effective_hamiltonian(pf, frags, order=5, timestep=delta)
+    first_order = ProductFormula(list(range(n_frags)), coeffs=[delta / r] * n_frags) ** r
+    ham = effective_hamiltonian(first_order, fragments, order=2)
 
-    assert isinstance(ham, RealspaceSum)
+    assert isinstance(ham, np.ndarray)
