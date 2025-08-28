@@ -93,7 +93,6 @@ def effective_hamiltonian(
     bch = bch_expansion(product_formula(1j * timestep), order)
     eff = _AdditiveIdentity()
 
-    coeffs = [coeff for ith_order in bch for coeff in ith_order.values()]
     commutators = [commutator for ith_order in bch for commutator in ith_order.keys()]
 
     executor = concurrency.backends.get_executor(backend)
@@ -103,6 +102,7 @@ def effective_hamiltonian(
             [(commutator, fragments) for commutator in commutators],
         )
 
+    coeffs = [coeff for ith_order in bch for coeff in ith_order.values()]
     for coeff, commutator in zip(coeffs, expectations):
         eff += coeff * nested_commutator(commutator)
 

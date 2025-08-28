@@ -22,7 +22,9 @@ from scipy.linalg import logm
 
 from pennylane.labs.trotter_error import ProductFormula, effective_hamiltonian
 from pennylane.labs.trotter_error.abstract import nested_commutator
+from pennylane.labs.trotter_error.fragments import vibrational_fragments
 from pennylane.labs.trotter_error.product_formulas.bch import bch_expansion
+from pennylane.labs.trotter_error.realspace.realspace_operator import RealspaceSum
 
 deltas = [0.5, 0.1, 0.01]
 
@@ -277,3 +279,34 @@ def test_against_matrix_log(fragments, product_formula):
     log_error = log - (1j * t * ham) / t**order
 
     assert np.allclose(np.linalg.norm(bch_error - log_error), 0)
+
+
+@pytest.mark.parametrize(
+    "backend", ["serial", "mp_pool", "cf_procpool", "mpi4py_pool", "mpi4py_comm"]
+)
+@pytest.mark.parametrize("num_workers", [1, 2])
+def test_effective_hamiltonian_backend(backend, num_workers, mpi4py_support):
+    """Test that effective_hamiltonian function runs without errors for different backends."""
+
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
+    n_modes = 4
+    r_state = np.random.RandomState(42)
+    freqs = r_state.random(4)
+    taylor_coeffs = [
+        np.array(0),
+        r_state.random(size=(n_modes,)),
+        r_state.random(size=(n_modes, n_modes)),
+        r_state.random(size=(n_modes, n_modes, n_modes)),
+    ]
+
+    delta = 0.001
+    frag_labels = [0, 1, 1, 0]
+    frag_coeffs = [1 / 2, 1 / 2, 1 / 2, 1 / 2]
+
+    pf = ProductFormula(frag_labels, coeffs=frag_coeffs)
+    frags = dict(enumerate(vibrational_fragments(n_modes, freqs, taylor_coeffs)))
+    ham = effective_hamiltonian(pf, frags, order=5, timestep=delta)
+
+    assert isinstance(ham, RealspaceSum)
