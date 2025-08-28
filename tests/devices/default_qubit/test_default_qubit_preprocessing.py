@@ -1031,64 +1031,92 @@ class TestDefaultQubitPreprocessGraphDecompIntegration:
 
     @staticmethod
     def _create_operation_from_name(gate_name):
-        """Dynamically create a quantum operation from its name with sensible default parameters."""
-        # Single-qubit operations (no parameters)
-        if gate_name in ["Hadamard", "PauliX", "PauliY", "PauliZ", "S", "T", "SX", "Identity"]:
-            return getattr(qml, gate_name)(wires=0)
+        """Dynamically create a quantum operation using introspection of the operation class."""
+        import inspect
 
-        # Single-qubit parametric operations
-        elif gate_name in ["RX", "RY", "RZ", "PhaseShift", "U1"]:
-            return getattr(qml, gate_name)(0.5, wires=0)
+        # Get the operation class
+        try:
+            op_class = getattr(qml, gate_name)
+        except AttributeError:
+            raise ValueError(f"Operation {gate_name} not found in PennyLane")
 
-        # Two-parameter single-qubit operations
-        elif gate_name == "U2":
-            return qml.U2(0.1, 0.2, wires=0)
+        # Get the class signature to understand parameters
+        # Use num_params attribute as the reliable source of parameter count
+        num_params_attr = getattr(op_class, "num_params", 0)
 
-        # Three-parameter single-qubit operations
-        elif gate_name in ["Rot", "U3"]:
-            return getattr(qml, gate_name)(0.1, 0.2, 0.3, wires=0)
-
-        # Two-qubit operations (no parameters)
-        elif gate_name in ["CNOT", "CY", "CZ", "SWAP", "ISWAP"]:
-            return getattr(qml, gate_name)(wires=[0, 1])
-
-        # Two-qubit parametric operations
-        elif gate_name in [
-            "CRX",
-            "CRY",
-            "CRZ",
-            "ControlledPhaseShift",
-            "IsingXX",
-            "IsingXY",
-            "IsingYY",
-            "IsingZZ",
-            "PSWAP",
-        ]:
-            return getattr(qml, gate_name)(0.5, wires=[0, 1])
-
-        # Three-parameter two-qubit operations
-        elif gate_name == "CRot":
-            return qml.CRot(0.1, 0.2, 0.3, wires=[0, 1])
-
-        # Three-qubit operations
-        elif gate_name in ["CSWAP", "Toffoli", "MultiControlledX"]:
-            return getattr(qml, gate_name)(wires=[0, 1, 2])
-
-        # Multi-qubit templates
-        elif gate_name == "QFT":
-            return qml.QFT(wires=[0, 1])  # Use 2-qubit QFT for consistency
-
-        # Special operations
-        elif gate_name == "GlobalPhase":
-            return qml.GlobalPhase(0.5, wires=[0])
-        elif gate_name == "QubitUnitary":
-            return qml.QubitUnitary(np.array([[0, 1], [1, 0]]), wires=0)  # Pauli-X matrix
-        elif gate_name == "BasisState":
-            return qml.BasisState([1, 0], wires=[0, 1])
-        elif gate_name == "StatePrep":
-            return qml.StatePrep([1, 0], wires=0)
+        # Handle the case where num_params is a property (e.g., for template operations)
+        if isinstance(num_params_attr, property):
+            # For template operations, usually no parameters needed for construction
+            num_params = 0
         else:
-            raise ValueError(f"Unknown gate: {gate_name}")
+            num_params = num_params_attr
+
+        # Fallback to signature inspection if num_params is not available
+        if num_params is None:
+            try:
+                sig = inspect.signature(op_class.__init__)
+                param_names = list(sig.parameters.keys())[1:]  # Skip 'self'
+                # Filter out non-data parameters
+                non_wire_params = [name for name in param_names if name not in ["wires", "id"]]
+                num_params = len(non_wire_params)
+            except (TypeError, ValueError):
+                # Final fallback
+                num_params = 0
+
+        # Determine number of wires needed
+        num_wires = getattr(op_class, "num_wires", None)
+        if num_wires is None or isinstance(num_wires, property):
+            # Try to infer from common patterns
+            # Use class name as the primary identifier
+            name = getattr(op_class, "__name__", gate_name)
+
+            # Common patterns for wire inference
+            if name in ["Toffoli", "CSWAP"]:
+                num_wires = 3  # Three-qubit gates
+            elif name == "MultiControlledX":  # Special case: needs at least 2 wires
+                num_wires = 2  # Minimum wires for MultiControlledX
+            elif any(prefix in name for prefix in ["C", "Control"]):
+                num_wires = 2  # Controlled operations typically need 2 qubits
+            elif name == "QFT":
+                num_wires = 2  # Use 2-qubit QFT for testing
+            else:
+                num_wires = 1  # Default to single qubit
+        wires = list(range(num_wires))
+
+        # Handle special cases that need specific data
+        if gate_name == "QubitUnitary":
+            matrix_size = 2**num_wires
+            # Create a simple multi-qubit unitary (tensor product of single-qubit gates)
+            single_qubit = np.array([[0, 1], [1, 0]])  # Pauli-X
+            matrix = single_qubit
+            for _ in range(num_wires - 1):
+                matrix = np.kron(matrix, np.eye(2))
+            return op_class(matrix, wires=wires)
+
+        elif gate_name in ["BasisState", "StatePrep"]:
+            # State preparation operations need state vectors
+            if gate_name == "BasisState":
+                state = [1] + [0] * (num_wires - 1)  # |100...>
+            else:  # StatePrep
+                # Simple superposition state
+                state_dim = 2**num_wires
+                state = np.zeros(state_dim)
+                state[0] = 1.0  # |000...>
+            return op_class(state, wires=wires)
+
+        # Generate parameters dynamically based on signature analysis
+        if num_params == 0:
+            # No parameters needed
+            return op_class(wires=wires)
+        elif num_params == 1:
+            return op_class(0.5, wires=wires)
+        elif num_params == 2:
+            return op_class(0.1, 0.2, wires=wires)
+        elif num_params == 3:
+            return op_class(0.1, 0.2, 0.3, wires=wires)
+        else:
+            params = [0.1 * (i + 1) for i in range(num_params)]
+            return op_class(*params, wires=wires)
 
     @staticmethod
     def _test_operation_consistency(operation, stopping_condition):
