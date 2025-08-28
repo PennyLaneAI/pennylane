@@ -580,7 +580,7 @@ class TestRegularization:
             import cvxpy as cp
             
             # The feastol is more tolerant than `test_closest_psd_matrix` 
-            # Because it 1e-10 made the test numerically unstable and it failed when run on different Python versions
+            # Because 1e-10 made the test numerically unstable and it failed when run on different Python versions
             # or different Hardware (e.g. local machine vs CI)
             output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=2e-10)
         except cp.error.SolverError:
