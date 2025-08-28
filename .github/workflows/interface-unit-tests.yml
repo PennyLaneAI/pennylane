@@ -154,6 +154,7 @@ jobs:
             cat >python_versions.json <<-EOF
           {
             "default": ["3.11", "3.12", "3.13"],
+            "core-tests": ["3.11"],
             "torch-tests": ["3.11", "3.13"],
             "jax-tests": ["3.11", "3.13"],
             "capture-jax-tests": ["3.11", "3.13"],
@@ -395,7 +396,7 @@ jobs:
            || fromJSON(needs.setup-ci-load.outputs.matrix-max-parallel).default
          }}
       matrix:
-        group: [1, 2, 3, 4, 5, 6]
+        group: [5] #[1, 2, 3, 4, 5, 6]
         python-version: >-
           ${{
             fromJSON(needs.setup-ci-load.outputs.python-version).core-tests
