@@ -12,33 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 r"""
-.. currentmodule:: pennylane
+Experimental circuit identity checking functionality
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This module contains experimental features enabling
-advanced quantum computing research.
-
-.. currentmodule:: pennylane.labs
-
-Modules
-~~~~~~~
+.. currentmodule:: pennylane.labs.circuit_identity
 
 .. autosummary::
     :toctree: api
 
-    dla
-    resource_estimation
-    trotter_error
-    intermediate_reps
-    zxopt
-    circuit_identity
+    ~check_circuit_id
+    ~state2bin
+
 
 """
 
-from pennylane.labs import dla
-from pennylane.labs import resource_estimation
-from pennylane.labs import trotter_error
-from pennylane.labs import intermediate_reps
-from pennylane.labs import zxopt
-from pennylane.labs import circuit_identity
-
-__all__ = []
+from .check_circuit_id import check_circuit_id, state2bin
