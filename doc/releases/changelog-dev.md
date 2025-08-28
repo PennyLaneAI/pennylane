@@ -506,6 +506,9 @@
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
   [(#8053)](https://github.com/PennyLaneAI/pennylane/pull/8053)
 
+* Added `__eq__` method to `ResourceOperator` to make comparison checks more intuitive.
+  [(#8155)](https://github.com/PennyLaneAI/pennylane/pull/8155)
+
 * Added a mapper function `map_to_resource_ops` that maps PennyLane operators to ResourceOperator equivalents.
   [(#8146)](https://github.com/PennyLaneAI/pennylane/pull/8146)
 

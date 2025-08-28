@@ -43,9 +43,7 @@ from xdsl.irdl import eq, irdl_attr_definition
 from xdsl.irdl.attributes import EqAttrConstraint, ParamAttrConstraint
 from xdsl.irdl.constraints import IntSetConstraint
 
-from pennylane.compiler.python_compiler.xdsl_extras.constraints import (
-    NestedTupleOfConstraint,
-)
+from pennylane.compiler.python_compiler.xdsl_extras.constraints import NestedTupleOfConstraint
 
 # pylint: disable=fixme
 
