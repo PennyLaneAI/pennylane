@@ -108,66 +108,165 @@ def test_all_attributes_names(attr):
     assert attr.name == expected_name
 
 
-def test_assembly_format(run_filecheck):
-    program = """
-    // CHECK: quantum.alloc(1) : !quantum.reg
-    %qreg_alloc_static = quantum.alloc(1) : !quantum.reg
+class TestAssemblyFormat:
+    """Lit tests for assembly format of operations/attributes in the Quantum
+    dialect."""
 
-    %i = "test.op"() : () -> i64
-    // CHECK: quantum.alloc(%i) : !quantum.reg
-    %qreg_alloc_dyn = quantum.alloc(%i) : !quantum.reg
+    def test_qubit_qreg_operations(self, run_filecheck):
+        """Test that the assembly format for operations for allocation/deallocation of
+        qubits/quantum registers works correctly."""
 
-    // CHECK: [[QREG:%.+]] = "test.op"() : () -> !quantum.reg
-    %qreg = "test.op"() : () -> !quantum.reg
+        # Tests for allocation/deallocation ops: AllocOp, DeallocOp, AllocQubitOp, DeallocQubitOp
+        # Tests for extraction/insertion ops: ExtractOp, InsertOp
+        program = """
+        // **Allocation of register with dynamic number of wires**
+        // CHECK: [[NQUBITS:%.+]] = "test.op"() : () -> i64
+        // CHECK: [[QREG_DYN:%.+]] = quantum.alloc([[NQUBITS]]) : !quantum.reg
+        %nqubits = "test.op"() : () -> i64
+        %qreg_dynamic = quantum.alloc(%nqubits) : !quantum.reg
 
-    // CHECK: [[COMPBASIS:%.+]] = quantum.compbasis qreg [[QREG]] : !quantum.obs
-    %compbasis = quantum.compbasis qreg %qreg : !quantum.obs
+        // **Deallocation of dynamic register**
+        // CHECK: quantum.dealloc [[QREG_DYN]] : !quantum.reg
+        quantum.dealloc %qreg_dynamic : !quantum.reg
 
-    // CHECK: quantum.counts [[COMPBASIS]] : tensor<2xf64>, tensor<2xi64>
-    %eigvals, %counts = quantum.counts %compbasis : tensor<2xf64>, tensor<2xi64>
+        // **Allocation of register with static number of wires**
+        // CHECK: [[QREG_STATIC:%.+]] = quantum.alloc(10) : !quantum.reg
+        %qreg_static = quantum.alloc(10) : !quantum.reg
 
-    // CHECK: [[PARAM:%.+]] = "test.op"() : () -> f64
-    %cst = "test.op"() : () -> f64
+        // **Deallocation of static register**
+        // CHECK: quantum.dealloc [[QREG_STATIC]] : !quantum.reg
+        quantum.dealloc %qreg_static : !quantum.reg
 
-    // CHECK: [[QUBIT:%.+]] = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
-    %qubit = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
+        // **Dynamic qubit allocation**
+        // CHECK: [[DYN_QUBIT:%.+]] = quantum.alloc_qb : !quantum.bit
+        %dyn_qubit = quantum.alloc_qb : !quantum.bit
 
-    // CHECK: [[WIRE_DYN:%.+]] = "test.op"() : () -> i64
-    %cst2 = "test.op"() : () -> i64
+        // **Dynamic qubit deallocation**
+        // CHECK: quantum.dealloc_qb [[DYN_QUBIT]] : !quantum.bit
+        quantum.dealloc_qb %dyn_qubit : !quantum.bit
 
-    // CHECK: [[QUBIT_DYN:%.+]] = quantum.extract %qreg[%cst2] : !quantum.reg -> !quantum.bit
-    %qubit_dyn = quantum.extract %qreg[%cst2] : !quantum.reg -> !quantum.bit
+        //////////////////////////////////////////////////////////////////////////
+        //////////// Quantum register to use with the remaining tests ////////////
+        //////////////////////////////////////////////////////////////////////////
+        // CHECK: [[QREG:%.+]] = "test.op"() : () -> !quantum.reg
+        %qreg = "test.op"() : () -> !quantum.reg
 
-    // CHECK: quantum.insert [[QREG:%.+]][0], [[QUBIT]] : !quantum.reg, !quantum.bit
-    %qreg_insert_static = quantum.insert %qreg[0], %qubit : !quantum.reg, !quantum.bit
+        // **Static qubit extraction**
+        // CHECK: [[STATIC_QUBIT:%.+]] = quantum.extract [[QREG]][[[STATIC_INDEX:0]]] : !quantum.reg -> !quantum.bit
+        %static_qubit = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
 
-    // CHECK: quantum.insert [[QREG:%.+]][[[WIRE_DYN]]], [[QUBIT]] : !quantum.reg, !quantum.bit
-    %qreg_insert_dyn = quantum.insert %qreg[%cst2], %qubit : !quantum.reg, !quantum.bit
+        // **Dynamic qubit extraction**
+        // CHECK: [[DYN_INDEX:%.+]] = "test.op"() : () -> i64
+        // CHECK: [[DYN_QUBIT1:%.+]] = quantum.extract [[QREG]][[[DYN_INDEX]]] : !quantum.reg -> !quantum.bit
+        %dyn_index = "test.op"() : () -> i64
+        %dyn_qubit1 = quantum.extract %qreg[%dyn_index] : !quantum.reg -> !quantum.bit
 
-    // CHECK: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
-    %out_qubit = quantum.custom "RX"(%cst) %qubit : !quantum.bit
+        // **Static qubit insertion**
+        // CHECK: [[QREG1:%.+]] = quantum.insert [[QREG]][[[STATIC_INDEX]]], [[STATIC_QUBIT]] : !quantum.reg, !quantum.bit
+        %qreg1 = quantum.insert %qreg[0], %static_qubit : !quantum.reg, !quantum.bit
 
-    // CHECK: [[QUBIT3:%.+]] = quantum.alloc_qb : !quantum.bit
-    %alloc_qubit = quantum.alloc_qb : !quantum.bit
+        // **Dynamic qubit insertion**
+        // CHECK: quantum.insert [[QREG1]][[[DYN_INDEX]]], [[DYN_QUBIT1]] : !quantum.reg, !quantum.bit
+        %qreg2 = quantum.insert %qreg1[%dyn_index], %dyn_qubit1 : !quantum.reg, !quantum.bit
+        """
 
-    // CHECK: [[NUM_QUBITS:%.+]] = quantum.num_qubits : i64
-    %num_qubits = quantum.num_qubits : i64
+        run_filecheck(program, roundtrip=True, verify=True)
 
-    // CHECK: quantum.dealloc_qb [[QUBIT3]] : !quantum.bit
-    quantum.dealloc_qb %alloc_qubit : !quantum.bit
+    def test_gates(self, run_filecheck):
+        """Test that the assembly format for operations for quantum gates works correctly."""
 
-    // CHECK: quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
-    quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
+        # Tests for CustomOp, GlobalPhaseOp, MultiRZOp, QubitUnitaryOp
+        # program = """
+        # //////////////////////////////////////////////////////////////////////////
+        # //////////// Quantum register to use with the remaining tests ////////////
+        # //////////////////////////////////////////////////////////////////////////
+        # // CHECK: [[QREG:%.+]] = "test.op"() : () -> !quantum.reg
+        # %qreg = "test.op"() : () -> !quantum.reg
 
-    // CHECK: quantum.adjoint([[QREG]])
-    quantum.adjoint(%qreg) : !quantum.reg {
-      ^bb0(%arg0: !quantum.reg):
-      // CHECK: quantum.yield %arg0
-      quantum.yield %arg0: !quantum.reg
-    }
+        # // **Adjoint operation and yield operation**
+        # // CHECK: [[NEW_QREG:%.+]] = quantum.adjoint([[QREG]]) : !quantum.reg {
+        # // CHECK: ^bb0([[ARG_QREG:%.+]]: !quantum.reg):
+        #     // CHECK: quantum.yield [[ARG_QREG]] : !quantum.reg
+        # // CHECK: }
+        # %new_qreg = quantum.adjoint(%qreg) : !quantum.reg {
+        # ^bb0(%arg0: !quantum.reg):
+        #     quantum.yield %arg0 : !quantum.reg
+        # }
 
-    // CHECK: [[mres2:%.+]], [[out_qubit2:%.+]] = quantum.measure [[QUBIT]] postselect 0 : i1, !quantum.bit
-    %mres2, %out_qubit2 = quantum.measure %qubit postselect 0 : i1, !quantum.bit
-    """
+        # // CHECK: [[COMPBASIS:%.+]] = quantum.compbasis qreg [[QREG]] : !quantum.obs
+        # %compbasis = quantum.compbasis qreg %qreg : !quantum.obs
 
-    run_filecheck(program, roundtrip=True)
+        # // CHECK: quantum.counts [[COMPBASIS]] : tensor<2xf64>, tensor<2xi64>
+        # %eigvals, %counts = quantum.counts %compbasis : tensor<2xf64>, tensor<2xi64>
+
+        # // CHECK: [[PARAM:%.+]] = "test.op"() : () -> f64
+        # %cst = "test.op"() : () -> f64
+
+        # // CHECK: [[QUBIT:%.+]] = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
+        # %qubit = quantum.extract %qreg[0] : !quantum.reg -> !quantum.bit
+
+        # // CHECK: [[WIRE_DYN:%.+]] = "test.op"() : () -> i64
+        # %cst2 = "test.op"() : () -> i64
+
+        # // CHECK: [[QUBIT_DYN:%.+]] = quantum.extract %qreg[%cst2] : !quantum.reg -> !quantum.bit
+        # %qubit_dyn = quantum.extract %qreg[%cst2] : !quantum.reg -> !quantum.bit
+
+        # // CHECK: quantum.insert [[QREG:%.+]][0], [[QUBIT]] : !quantum.reg, !quantum.bit
+        # %qreg_insert_static = quantum.insert %qreg[0], %qubit : !quantum.reg, !quantum.bit
+
+        # // CHECK: quantum.insert [[QREG:%.+]][[[WIRE_DYN]]], [[QUBIT]] : !quantum.reg, !quantum.bit
+        # %qreg_insert_dyn = quantum.insert %qreg[%cst2], %qubit : !quantum.reg, !quantum.bit
+
+        # // CHECK: [[QUBIT2:%.+]] = quantum.custom "RX"([[PARAM]]) [[QUBIT]]
+        # %out_qubit = quantum.custom "RX"(%cst) %qubit : !quantum.bit
+
+        # // CHECK: [[QUBIT3:%.+]] = quantum.alloc_qb : !quantum.bit
+        # %alloc_qubit = quantum.alloc_qb : !quantum.bit
+
+        # // CHECK: [[NUM_QUBITS:%.+]] = quantum.num_qubits : i64
+        # %num_qubits = quantum.num_qubits : i64
+
+        # // CHECK: quantum.dealloc_qb [[QUBIT3]] : !quantum.bit
+        # quantum.dealloc_qb %alloc_qubit : !quantum.bit
+
+        # // CHECK: quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
+        # quantum.device["some-library.so", "pennylane-lightning", "kwargs"]
+
+        # // CHECK: [[mres2:%.+]], [[out_qubit2:%.+]] = quantum.measure [[QUBIT]] postselect 0 : i1, !quantum.bit
+        # %mres2, %out_qubit2 = quantum.measure %qubit postselect 0 : i1, !quantum.bit
+        # """
+
+        # run_filecheck(program, roundtrip=True, verify=True)
+
+    def test_state_prep(self, run_filecheck):
+        """Test that the assembly format for state prep operations works correctly."""
+
+        # Tests for SetBasisStateOp, SetStateOp
+        # program = """
+        # """
+
+        # run_filecheck(program, roundtrip=True, verify=True)
+
+    def test_observable_measurements(self, run_filecheck):
+        """Test that the assembly format for observable and measurement operations
+        works correctly."""
+
+        # Tests for observables: ComputationalBasisOp, HamiltonianOp, HermitianOp,
+        #                        NamedObsOp, TensorOp
+        # Tests for measurements: CountsOp, ExpvalOp, MeasureOp, ProbsOp, SampleOp,
+        #                         StateOp, VarianceOp
+        # program = """
+        # """
+
+        # run_filecheck(program, roundtrip=True, verify=True)
+
+    def test_miscellaneous_operations(self, run_filecheck):
+        """Test that the assembly format for miscelleneous operations
+        works correctly."""
+
+        # Tests for AdjointOp, DeviceInitOp, DeviceReleaseOp, FinalizeOp, InitializeOp,
+        # NumQubitsOp, YieldOp
+        # program = """
+        # """
+
+        # run_filecheck(program, roundtrip=True, verify=True)
