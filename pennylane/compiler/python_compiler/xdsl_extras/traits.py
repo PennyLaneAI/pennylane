@@ -120,7 +120,7 @@ class Elementwise(OpTrait):
     def verify(self, op: Operation) -> None:
         """Verify that the operation is elementwise."""
 
-       # Filter mappable types from results and operands (vectors/tensors only)
+        # Filter mappable types from results and operands (vectors/tensors only)
         result_mappable_types = [t for t in op.result_types if Elementwise.is_mappable_type(t)]
         operand_mappable_types = [t for t in op.operand_types if Elementwise.is_mappable_type(t)]
 
