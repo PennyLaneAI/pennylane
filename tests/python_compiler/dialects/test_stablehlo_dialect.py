@@ -244,3 +244,69 @@ def test_invalid_ir_operand_result_shape_mismatch(run_filecheck):
         Exception, match="all non-scalar operands/results must have the same shape and base type"
     ):
         run_filecheck(program, roundtrip=True, verify=True)
+
+
+def test_control_flow_operations(run_filecheck):
+    """Test the IfOp operation."""
+    program = r"""
+    // Test IfOp:
+    
+    // CHECK:   %[[pred:.*]] = "test.op"() : () -> tensor<i1>
+    %pred = "test.op"() : () -> tensor<i1>
+    
+    // CHECK:   %[[result:.*]] = "stablehlo.if"(%[[pred]]) ({
+    // CHECK:     "stablehlo.return"(%[[pred]]) : (tensor<i1>) -> ()
+    // CHECK:   }, {
+    // CHECK:     "stablehlo.return"(%[[pred]]) : (tensor<i1>) -> ()
+    // CHECK:   }) : (tensor<i1>) -> tensor<i1>
+    %result = "stablehlo.if"(%pred) ({
+        "stablehlo.return"(%pred) : (tensor<i1>) -> ()
+    }, {
+        "stablehlo.return"(%pred) : (tensor<i1>) -> ()
+    }) : (tensor<i1>) -> tensor<i1>
+    
+    // Test WhileOp:
+
+    // CHECK:   %[[init_i:.*]] = "test.op"() : () -> tensor<i64>
+    %init_i = "test.op"() : () -> tensor<i64>
+    
+    // CHECK:   %[[init_sum:.*]] = "test.op"() : () -> tensor<i64>
+    %init_sum = "test.op"() : () -> tensor<i64>
+    
+    // CHECK:   %[[ten:.*]] = "test.op"() : () -> tensor<i64>
+    %ten = "test.op"() : () -> tensor<i64>
+    
+    // CHECK:   %[[one:.*]] = "test.op"() : () -> tensor<i64>
+    %one = "test.op"() : () -> tensor<i64>
+    
+    // CHECK:   %[[results:.*]], %[[results_1:.*]] = "stablehlo.while"(%[[init_i]], %[[init_sum]]) ({
+    // CHECK:   ^{{.*}}(%[[arg0:.*]] : tensor<i64>, %[[arg1:.*]] : tensor<i64>):
+    // CHECK:     %[[cond:.*]] = stablehlo.compare LT, %[[arg0]], %[[ten]] : (tensor<i64>, tensor<i64>) -> tensor<i1>
+    // CHECK:     "stablehlo.return"(%[[cond]]) : (tensor<i1>) -> ()
+    // CHECK:   }, {
+    // CHECK:   ^{{.*}}(%[[arg0_1:.*]] : tensor<i64>, %[[arg1_1:.*]] : tensor<i64>):
+    // CHECK:     %[[new_sum:.*]] = "stablehlo.add"(%[[arg1_1]], %[[one]]) : (tensor<i64>, tensor<i64>) -> tensor<i64>
+    // CHECK:     %[[new_i:.*]] = "stablehlo.add"(%[[arg0_1]], %[[one]]) : (tensor<i64>, tensor<i64>) -> tensor<i64>
+    // CHECK:     "stablehlo.return"(%[[new_i]], %[[new_sum]]) : (tensor<i64>, tensor<i64>) -> ()
+    // CHECK:   }) : (tensor<i64>, tensor<i64>) -> (tensor<i64>, tensor<i64>)
+    %results:2 = "stablehlo.while"(%init_i, %init_sum) ({
+    ^bb0(%arg0: tensor<i64>, %arg1: tensor<i64>):
+      %cond = "stablehlo.compare"(%arg0, %ten) {comparison_direction = #stablehlo<comparison_direction LT>} : (tensor<i64>, tensor<i64>) -> tensor<i1>
+      "stablehlo.return"(%cond) : (tensor<i1>) -> ()
+    }, {
+    ^bb0(%arg0: tensor<i64>, %arg1: tensor<i64>):
+      %new_sum = "stablehlo.add"(%arg1, %one) : (tensor<i64>, tensor<i64>) -> tensor<i64>
+      %new_i = "stablehlo.add"(%arg0, %one) : (tensor<i64>, tensor<i64>) -> tensor<i64>
+      "stablehlo.return"(%new_i, %new_sum) : (tensor<i64>, tensor<i64>) -> ()
+    }) : (tensor<i64>, tensor<i64>) -> (tensor<i64>, tensor<i64>)
+    
+    // Test OptimizationBarrierOp:
+
+    // CHECK:   %[[operand:.*]] = "test.op"() : () -> tensor<i1>
+    %operand = "test.op"() : () -> tensor<i1>
+    
+    // CHECK:   %[[result2:.*]] = "stablehlo.optimization_barrier"(%[[operand]]) : (tensor<i1>) -> tensor<i1>
+    %result2 = "stablehlo.optimization_barrier"(%operand) : (tensor<i1>) -> tensor<i1>
+    """
+
+    run_filecheck(program, roundtrip=True, verify=True)
