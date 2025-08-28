@@ -73,7 +73,17 @@ def _run_filecheck_impl(program_str, pipeline=(), verify=False, roundtrip=False)
     )
 
     exit_code = matcher.run()
-    assert exit_code == 0, f"filecheck failed with exit code {exit_code}"
+    assert (
+        exit_code == 0
+    ), f"""
+        filecheck failed with exit code {exit_code}.
+
+        Original program string:
+        {program_str}
+
+        Parsed module:
+        {stream.getvalue()}
+    """
 
 
 @pytest.fixture(scope="function")
