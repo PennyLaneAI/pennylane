@@ -190,17 +190,6 @@ class NestedTupleOfConstraint(AttrConstraint[TupleType]):
 
     elem_constraints: tuple[AttrConstraint, ...]
 
-    @property
-    def type_name(self) -> str:
-        return "tensor"
-
-
-@dataclass(frozen=True)
-class NestedTupleOfConstraint(AttrConstraint[TupleType]):
-    """Constrain a nested tuple whose flattened leaves all match any allowed constraints."""
-
-    elem_constraints: tuple[AttrConstraint, ...]
-
     def __init__(self, elem_constraints: Sequence[object]):
         object.__setattr__(
             self,
