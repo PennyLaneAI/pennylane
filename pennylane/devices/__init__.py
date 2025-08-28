@@ -81,7 +81,6 @@ method for devices.
     validate_adjoint_trainable_params
     no_sampling
 
-
 Other transforms that may be relevant to device preprocessing include:
 
 .. currentmodule:: pennylane
