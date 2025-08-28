@@ -38,7 +38,7 @@ from .composite import CompositeOp, handle_recursion_error
 
 def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Operator = None):
     """Construct an operator that represents the product of the
-    operators provided.
+    operators provided; particularly a compute-uncompute pattern.
 
     Args:
         compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
