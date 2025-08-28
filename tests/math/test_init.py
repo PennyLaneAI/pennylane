@@ -18,7 +18,7 @@ import pytest
 import pennylane as qml
 
 
-class TestNumpyMimicForFFT:
+class TestAutoNamespaceForFFT:
     """Test that the fft module is accessible via Autoray."""
 
     def test_find_fft_module_and_funcs(self):
