@@ -20,6 +20,8 @@ This module provides attribute definitions based on the StableHLO specification
 attributes for StableHLO operations.
 """
 
+# pylint: disable=too-few-public-methods
+
 from enum import StrEnum
 
 from xdsl.ir import EnumAttribute, SpacedOpaqueSyntaxAttribute

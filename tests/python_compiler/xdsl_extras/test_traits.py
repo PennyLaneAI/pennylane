@@ -19,6 +19,7 @@ from typing import TypeAlias
 import pytest
 
 # pylint: disable=wrong-import-position
+# pylint: disable=too-few-public-methods
 
 xdsl = pytest.importorskip("xdsl")
 

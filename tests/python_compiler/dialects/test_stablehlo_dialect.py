@@ -156,7 +156,7 @@ def test_all_other_operations(run_filecheck):
     %compare = "stablehlo.compare"(%tf32, %tf32) {comparison_direction = #stablehlo<comparison_direction EQ>} : (tensor<f32>, tensor<f32>) -> tensor<i1>
     
     // CHECK: %map = "stablehlo.map"(%[[tf32]], %[[tf32]]) ({
-    // CHECK:   ^0(%arg0 : tensor<f32>, %arg1 : tensor<f32>):
+    // CHECK:   ^[[bb0:.*]](%arg0 : tensor<f32>, %arg1 : tensor<f32>):
     // CHECK:     %0 = "stablehlo.multiply"(%arg0, %arg1) : (tensor<f32>, tensor<f32>) -> tensor<f32>
     // CHECK:     "stablehlo.return"(%0) : (tensor<f32>) -> ()
     // CHECK: }) {dimensions = array<i64: 0, 1>} : (tensor<f32>, tensor<f32>) -> tensor<f32>

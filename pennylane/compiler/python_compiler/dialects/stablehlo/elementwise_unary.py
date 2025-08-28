@@ -136,9 +136,9 @@ class CosineOp(
 
     name = "stablehlo.cosine"
 
-    # result_accuracy = opt_attr_def(
-    #     ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
-    # )
+    result_accuracy = opt_attr_def(
+        ResultAccuracyModeAttr, ResultAccuracyModeAttr(ResultAccuracyMode.DEFAULT)
+    )
     # TODO: implement HLO_CompatibleOperandsAndResultType()
     # traits = traits_def(
     #     HLO_CompatibleOperandsAndResultType()

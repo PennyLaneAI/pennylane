@@ -24,6 +24,7 @@ the upstream operation list.
 import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
+from .attributes import ResultAccuracyModeAttr
 from .elementwise_binary import (
     ComplexOp,
     DivideOp,
@@ -63,6 +64,7 @@ from .elementwise_unary import (
     TanhOp,
     TanOp,
 )
+from .types import UniformQuantizedPerAxisType, UniformQuantizedType
 
 # Operations to add to the dialect
 OPERATIONS = [
@@ -99,8 +101,16 @@ OPERATIONS = [
     TanhOp,
 ]
 
-# Operations from upstream that should be deleted/replaced in the local version
+# Attributes to add to the dialect
+ATTRIBUTES = [
+    ResultAccuracyModeAttr,
+    UniformQuantizedPerAxisType,
+    UniformQuantizedType,
+]
+
+# Operations/attributes from upstream that should be deleted/replaced in the local version
 UPSTREAM_OPERATIONS_TO_DELETE = []
+UPSTREAM_ATTRIBUTES_TO_DELETE = []
 
 
 def filter_and_extend_upstream(upstream_list, to_delete, to_add):
@@ -130,7 +140,9 @@ def filter_and_extend_upstream(upstream_list, to_delete, to_add):
 all_operations = filter_and_extend_upstream(
     xstablehlo.StableHLO.operations, UPSTREAM_OPERATIONS_TO_DELETE, OPERATIONS
 )
-all_attributes = list(xstablehlo.StableHLO.attributes)
+all_attributes = filter_and_extend_upstream(
+    xstablehlo.StableHLO.attributes, UPSTREAM_ATTRIBUTES_TO_DELETE, ATTRIBUTES
+)
 
 # Create the extended StableHLO dialect by dynamically getting upstream components
 StableHLO = Dialect(
