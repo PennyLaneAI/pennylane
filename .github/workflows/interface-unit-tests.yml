@@ -211,7 +211,8 @@ jobs:
             echo "The following jobs will be skipped: $skipped_jobs"
             echo "jobs_to_skip=$skipped_jobs" >> $GITHUB_OUTPUT
           else
-            echo 'jobs_to_skip=[]' >> $GITHUB_OUTPUT
+            # TODO: Temp skip all jobs to investigate issue with runners
+            echo 'jobs_to_skip=["torch-tests", "autograd-tests", "jax-tests", "capture-jax-tests", "all-interfaces-tests", "external-libraries-tests", "qcut-tests", "qchem-tests", "gradients-tests", "data-tests", "device-tests"]' >> $GITHUB_OUTPUT
           fi
 
     outputs:
