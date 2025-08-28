@@ -72,6 +72,7 @@ resource_config = {
     "precision_qrom_state_prep": 1e-9,
     "precision_mps_prep": 1e-9,
     "precision_alias_sampling": 1e-9,
+    "precision_superposition": 1e-9,
 }
 
 

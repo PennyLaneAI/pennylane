@@ -936,7 +936,7 @@ class ResourceCosineWindow(ResourceOperator):
         wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
-
+        The resources were obtained from Figure 6 in arXiv:2110.09590 `<https://arxiv.org/pdf/2110.09590>`_.
 
 
     .. seealso:: :class:`~.CosineWindow`
@@ -992,6 +992,7 @@ class ResourceCosineWindow(ResourceOperator):
             num_wires (int): the number of wires that the operation acts on
 
         Resources:
+            The resources were obtained from Figure 6 in arXiv:2110.09590 `<https://arxiv.org/pdf/2110.09590>`_
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -1013,3 +1014,175 @@ class ResourceCosineWindow(ResourceOperator):
             GateCount(iqft, 1),
             GateCount(phase_shift, num_wires),
         ]
+
+
+class ResourceSuperposition(ResourceOperator):
+    r"""Resource class for preparing an initial state with the sum of slaters method.
+
+    Args:
+        num_state_qubits (int): number of qubits required to represent the state-vector
+        num_slaters (int): number of slaters required to represent the state-vector
+        precision (float): the precision threshold for loading in the binary representation
+            of the rotation angles
+        select_swap_depth (Union[int,None], optional): A parameter of :code:`QROM`
+            used to trade-off extra qubits for reduced circuit depth. It can be :code:`None`,
+            :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+            determines the optimal depth.
+        stateprep_op (Union[~.pennylane.labs.resource_estimation.ResourceOperator, None]): An optional
+            argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
+            is provided, ~.pennylane.labs.resource_estimation.ResourceMottonenStatePreparation is used.
+        wires (Sequence[int], optional): the wires the operation acts on
+
+    Resources:
+        The resources were obtained from arXiv:2310.18410 `<https://arxiv.org/pdf/2310.18410>`_.
+
+    **Example**
+
+    The resources for this operation are computed using:
+
+    >>> sos_state = plre.ResourceSuperPosition()
+    >>> print(plre.estimate_resources(sos_state))
+
+    """
+
+    resource_keys = {
+        "num_state_qubits",
+        "num_slaters",
+        "precision",
+        "select_swap_depth",
+        "stateprep_op",
+    }
+
+    def __init__(self, num_state_qubits, num_slaters, precision=None, select_swap_depth=None, stateprep_op=None, wires=None):
+        self.num_state_qubits = num_state_qubits
+        self.num_slaters = num_slaters
+        self.precision = precision
+        self.select_swap_depth = select_swap_depth
+        self.stateprep_op = stateprep_op.resource_rep_from_op() if stateprep_op else None
+        super().__init__(wires=wires)
+
+    @property
+    def resource_params(self):
+        r"""Returns a dictionary containing the minimal information needed to compute the resources.
+
+        Returns:
+            dict: A dictionary containing the resource parameters:
+                * num_state_qubits (int): number of qubits required to represent the state-vector
+                * num_slaters (int): number of slaters required to represent the state-vector
+                * precision (float): the precision threshold for loading in the binary representation
+                  of the rotation angles
+                * select_swap_depth (Union[int,None], optional): A parameter of :code:`QROM`
+                  used to trade-off extra qubits for reduced circuit depth. It can be :code:`None`,
+                  :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+                  determines the optimal depth.
+                * stateprep_op (Union[~.pennylane.labs.resource_estimation.CompressedResourceOp, None]): An optional
+                  argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
+                  is provided, ~.pennylane.labs.resource_estimation.ResourceMottonenStatePreparation is used.
+
+        """
+        return {
+            "num_state_qubits": self.num_state_qubits,
+            "num_slaters": self.num_slaters,
+            "precision": self.precision,
+            "select_swap_depth": self.select_swap_depth,
+            "stateprep_op": self.stateprep_op,
+        }
+
+    @classmethod
+    def resource_rep(
+        cls, num_state_qubits, num_slaters, precision=None, select_swap_depth=None, stateprep_op=None
+    ) -> CompressedResourceOp:
+        r"""Returns a compressed representation containing only the parameters of
+        the Operator that are needed to compute the resources.
+
+        Returns:
+            CompressedResourceOp: the operator in a compressed representation
+        """
+        return CompressedResourceOp(
+            cls,
+            {
+                "num_state_qubits": num_state_qubits,
+                "num_slaters": num_slaters,
+                "precision": precision,
+                "select_swap_depth": select_swap_depth,
+                "stateprep_op": stateprep_op,
+            },
+        )
+
+    @classmethod
+    def default_resource_decomp(cls, num_state_qubits, num_slaters, precision=None, select_swap_depth=None, stateprep_op=None, **kwargs):
+        r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
+        number of times it occurs in the circuit.
+
+        Args:
+            num_state_qubits (int): number of qubits required to represent the state-vector
+            num_slaters (int): number of slaters required to represent the state-vector
+            precision (float): the precision threshold for loading in the binary representation
+                of the rotation angles
+            select_swap_depth (Union[int,None], optional): A parameter of :code:`QROM`
+                used to trade-off extra qubits for reduced circuit depth. It can be :code:`None`,
+                :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
+                determines the optimal depth.
+            stateprep_op (Union[~.pennylane.labs.resource_estimation.CompressedResourceOp, None]): An optional
+                argument to set the subroutine used to perform the condensed state preparation. If :code:`None`
+                is provided, ~.pennylane.labs.resource_estimation.ResourceMottonenStatePreparation is used.
+
+        Resources:
+            The resources were obtained from arXiv:2310.18410 `<https://arxiv.org/pdf/2310.18410>`_.
+
+        Returns:
+            list[GateCount]: A list of GateCount objects, where each object
+            represents a specific quantum gate and the number of times it appears
+            in the decomposition.
+        """
+
+        gate_list = []
+
+        precision = precision or kwargs["config"]["precision_superposition"]
+        num_precision_wires = math.ceil(math.log2(math.pi / precision))
+
+        # Step-1: Condensed state prep to prepare |psi> = Sum_i(c_i * |i>)
+        num_qubits = int(math.log2(num_slaters))
+
+        if stateprep_op is None:
+            stateprep = resource_rep(
+                plre.ResourceMottonenStatePreparation, {"num_wires": num_qubits}
+            )
+            gate_list.append(GateCount(stateprep))
+        else:
+            gate_list.append(GateCount(stateprep_op))
+
+        # Step-2: QROM to prepare slaters
+        qrom = resource_rep(
+            plre.ResourceQROM,
+            {
+                "num_bitstrings": num_slaters,
+                "size_bitstring": num_precision_wires,
+                "clean": True,
+                "select_swap_depth": select_swap_depth,
+            },
+        )
+        gate_list.append(GateCount(qrom))
+
+        # Step-3,4: Prepare condensed bitstrings |b_i>
+        cnot = resource_rep(plre.ResourceCNOT)
+        cnot_count = int(2 * math.log2(num_slaters) - 1) * min(num_slaters, num_state_qubits)
+        gate_list.append(GateCount(cnot, cnot_count))
+
+        # Step-5: Use |b_i> bitstrings to reset enumeration register
+        multi_rx_ctrl_wires = int(math.log2(num_slaters) - 1)
+        multi_rx = resource_rep(
+            plre.ResourceMultiControlledX,
+            {"num_ctrl_wires": multi_rx_ctrl_wires, "num_ctrl_values": 0},
+        )
+        gate_list.append(GateCount(multi_rx, 2 * num_state_qubits))
+
+        # cnots to flip enumeration register
+        gate_list.append(
+            GateCount(cnot, min(num_slaters, num_state_qubits) * int(math.ceil(math.log2(num_slaters))/2))
+        )
+
+        # Step-6: Reset the |b_i> using cnots
+        gate_list.append(GateCount(cnot, cnot_count))
+
+        return gate_list

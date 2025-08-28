@@ -52,4 +52,5 @@ from .stateprep import (
     ResourceQROMStatePreparation,
     ResourceMottonenStatePreparation,
     ResourceCosineWindow,
+    ResourceSuperposition
 )

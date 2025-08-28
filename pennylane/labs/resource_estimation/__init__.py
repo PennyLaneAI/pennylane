@@ -155,6 +155,7 @@ State Preparation:
     ~ResourceAliasSampling
     ~ResourceMottonenStatePreparation
     ~ResourceCosineWindow
+    ~ResourceSuperposition
 
 Compact Hamiltonian Class:
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -261,4 +262,5 @@ from .templates import (
     ResourceControlledSequence,
     ResourceMottonenStatePreparation,
     ResourceCosineWindow,
+    ResourceSuperposition
 )
