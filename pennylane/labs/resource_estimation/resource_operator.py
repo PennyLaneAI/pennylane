@@ -207,6 +207,13 @@ class ResourceOperator(ABC):
         self.queue()
         super().__init__()
 
+    def __eq__(self, other):
+        """Return True if the operators are equal."""
+        if not isinstance(other, ResourceOperator):
+            return False
+
+        return self.__class__ is other.__class__ and self.resource_params == other.resource_params
+
     def queue(self, context: QueuingManager = QueuingManager):
         """Append the operator to the Operator queue."""
         context.append(self)

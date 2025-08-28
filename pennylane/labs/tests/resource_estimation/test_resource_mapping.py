@@ -92,4 +92,4 @@ class Test_map_to_resource_op:
     def test_map_to_resource_op(self, operator, expected_res_op):
         """Test that map_to_resource_op maps to the appropriate resource operator"""
 
-        assert isinstance(map_to_resource_op(operator), type(expected_res_op))
+        assert map_to_resource_op(operator) == expected_res_op
