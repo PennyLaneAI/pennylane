@@ -242,10 +242,41 @@ class TestAssemblyFormat:
         """Test that the assembly format for state prep operations works correctly."""
 
         # Tests for SetBasisStateOp, SetStateOp
-        # program = """
-        # """
+        program = """
+        // Qubits
+        // CHECK: [[Q0:%.+]] = "test.op"() : () -> !quantum.bit
+        // CHECK: [[Q1:%.+]] = "test.op"() : () -> !quantum.bit
+        %q0 = "test.op"() : () -> !quantum.bit
+        %q1 = "test.op"() : () -> !quantum.bit
 
-        # run_filecheck(program, roundtrip=True, verify=True)
+        ////////////////// **SetBasisStateOp tests** //////////////////
+        // Basis state containers
+        // CHECK: [[BASIS_TENSOR:%.+]] = "test.op"() : () -> tensor<2xi1>
+        // CHECK: [[BASIS_MEMREF:%.+]] = "test.op"() : () -> memref<2xi1>
+        %basis_tensor = "test.op"() : () -> tensor<2xi1>
+        %basis_memref = "test.op"() : () -> memref<2xi1>
+
+        // Basis state operations
+        // CHECK: [[Q2:%.+]], [[Q3:%.+]] = quantum.set_basis_state([[BASIS_TENSOR]]) [[Q0]], [[Q1]] : (tensor<2xi1>, !quantum.bit, !quantum.bit) -> (!quantum.bit, !quantum.bit)
+        // CHECK: [[Q4:%.+]], [[Q5:%.+]] = quantum.set_basis_state([[BASIS_MEMREF]]) [[Q2]], [[Q3]] : (memref<2xi1>, !quantum.bit, !quantum.bit) -> (!quantum.bit, !quantum.bit)
+        %q2, %q3 = quantum.set_basis_state(%basis_tensor) %q0, %q1 : (tensor<2xi1>, !quantum.bit, !quantum.bit) -> (!quantum.bit, !quantum.bit)
+        %q4, %q5 = quantum.set_basis_state(%basis_memref) %q2, %q3 : (memref<2xi1>, !quantum.bit, !quantum.bit) -> (!quantum.bit, !quantum.bit)
+
+        ////////////////// **SetStateOp tests** //////////////////
+        // State vector containers
+        // CHECK: [[STATE_TENSOR:%.+]] = "test.op"() : () -> tensor<4xcomplex<f64>>
+        // CHECK: [[STATE_MEMREF:%.+]] = "test.op"() : () -> memref<4xcomplex<f64>>
+        %state_tensor = "test.op"() : () -> tensor<4xcomplex<f64>>
+        %state_memref = "test.op"() : () -> memref<4xcomplex<f64>>
+
+        // State prep operations
+        // CHECK: [[Q6:%.+]], [[Q7:%.+]] = quantum.set_state([[STATE_TENSOR]]) [[Q4]], [[Q5]] : (tensor<4xcomplex<f64>>, !quantum.bit, !quantum.bit) -> (!quantum.bit, !quantum.bit)
+        // CHECK: quantum.set_state([[STATE_MEMREF]]) [[Q6]], [[Q7]] : (memref<4xcomplex<f64>>, !quantum.bit, !quantum.bit) -> (!quantum.bit, !quantum.bit)
+        %q6, %q7 = quantum.set_state(%state_tensor) %q4, %q5 : (tensor<4xcomplex<f64>>, !quantum.bit, !quantum.bit) -> (!quantum.bit, !quantum.bit)
+        %q8, %q9 = quantum.set_state(%state_memref) %q6, %q7 : (memref<4xcomplex<f64>>, !quantum.bit, !quantum.bit) -> (!quantum.bit, !quantum.bit)
+        """
+
+        run_filecheck(program, roundtrip=True, verify=True)
 
     def test_observable_measurements(self, run_filecheck):
         """Test that the assembly format for observable and measurement operations
