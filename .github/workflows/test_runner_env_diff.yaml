@@ -24,7 +24,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: sc-98279-pl-blacksmith-runners
+          ref: sc-98279-try-blacksmith-runners
           fetch-depth: 1
           repository: PennyLaneAI/pennylane
       
