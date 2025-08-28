@@ -30,7 +30,14 @@ from pennylane.labs.resource_estimation.resource_operator import (
 
 
 class ResourceSelectTHC(ResourceOperator):
-    r"""Resource class for creating the Select operator for THC Hamiltonian.
+    r"""Resource class for creating the custom Select operator for tensor hypercontracted Hamiltonian.
+    This operator customizes the Select circuit to use the structure of THC Hamiltonian.
+
+    .. note::
+
+            This decomposition assumes that an appropriately sized phase gradient state is available.
+            Users should ensure that the cost of constructing this state has been accounted for.
+            See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
 
     Args:
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
@@ -62,6 +69,8 @@ class ResourceSelectTHC(ResourceOperator):
       {'Toffoli': 2.220E+3, 'CNOT': 1.057E+4, 'X': 268, 'Hadamard': 6.406E+3, 'S': 80, 'Z': 41}
     """
 
+    resource_keys = {"compact_ham", "rotation_precision_bits", "select_swap_depth"}
+
     def __init__(
         self, compact_ham, rotation_precision_bits=None, select_swap_depth=None, wires=None
     ):
@@ -76,7 +85,12 @@ class ResourceSelectTHC(ResourceOperator):
         self.select_swap_depth = select_swap_depth
         num_orb = compact_ham.params["num_orbitals"]
         tensor_rank = compact_ham.params["tensor_rank"]
+
+        # num_orb*2 for state register, 2*log(M) for \mu and \nu registers
+        # 6 extras are for 2 spin registers, 1 for rotation on ancilla, 1 flag for success of inequality,
+        # 1 flag for one-body vs two-body and 1 to control swap of \mu and \nu registers.
         self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
+
         super().__init__(wires=wires)
 
     @property
@@ -136,8 +150,8 @@ class ResourceSelectTHC(ResourceOperator):
 
         .. note::
 
-            This decomposition assumes an appropriately sized phase gradient state is available.
-            Users should ensure the cost of constructing such a state has been accounted for.
+            This decomposition assumes that an appropriately sized phase gradient state is available.
+            Users should ensure that the cost of constructing this state has been accounted for.
             See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
 
         Args:
@@ -152,7 +166,8 @@ class ResourceSelectTHC(ResourceOperator):
                 Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
-            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
+            The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_.
+            The resources are modified to remove the control from the Select operation.
 
         Returns:
             list[GateCount]: A list of GateCount objects, where each object
@@ -174,8 +189,10 @@ class ResourceSelectTHC(ResourceOperator):
         cswap = resource_rep(plre.ResourceCSWAP)
         gate_list.append(GateCount(cswap, 4 * num_orb))
 
-        # QROM to load rotation angles for 2-body integrals
+        # Data output for rotations
         gate_list.append(AllocWires(rotation_precision_bits * (num_orb - 1)))
+
+        # QROM to load rotation angles for 2-body integrals
         qrom_twobody = resource_rep(
             plre.ResourceQROM,
             {
@@ -270,8 +287,8 @@ class ResourceSelectTHC(ResourceOperator):
 
         .. note::
 
-            This decomposition assumes an appropriately sized phase gradient state is available.
-            Users should ensure the cost of constructing such a state has been accounted for.
+            This decomposition assumes that an appropriately sized phase gradient state is available.
+            Users should ensure that the cost of constructing this state has been accounted for.
             See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
 
         Args:

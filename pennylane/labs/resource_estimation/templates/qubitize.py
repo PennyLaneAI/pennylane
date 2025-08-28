@@ -32,6 +32,12 @@ from pennylane.wires import Wires
 class ResourceQubitizeTHC(ResourceOperator):
     r"""Resource class for Qubitization of THC Hamiltonian.
 
+    .. note::
+
+            This decomposition assumes that an appropriately sized phase gradient state is available.
+            Users should ensure that the cost of constructing this state has been accounted for.
+            See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
+
     Args:
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
             Hamiltonian for which the walk operator is being created
@@ -67,6 +73,13 @@ class ResourceQubitizeTHC(ResourceOperator):
 
     """
 
+    resource_keys = {
+        "compact_ham",
+        "coeff_precision_bits",
+        "rotation_precision_bits",
+        "select_swap_depths",
+    }
+
     def __init__(
         self,
         compact_ham,
@@ -93,13 +106,23 @@ class ResourceQubitizeTHC(ResourceOperator):
         self.coeff_precision_bits = coeff_precision_bits
         self.rotation_precision_bits = rotation_precision_bits
         self.select_swap_depths = select_swap_depths
+
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+        num_coeff = num_orb + tensor_rank * (tensor_rank + 1) / 2  # N+M(M+1)/2
+        coeff_register = int(math.ceil(math.log2(num_coeff)))
         if wires is not None:
             self.wires = Wires(wires)
             self.num_wires = len(self.wires)
         else:
             num_orb = compact_ham.params["num_orbitals"]
             tensor_rank = compact_ham.params["tensor_rank"]
-            self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + 6
+
+            # Based on section III D, Eq. 43 in arXiv:2011.03494
+            # Numbers have been adjusted to remove the auxilliary qubits accounted for by different templates
+            self.num_wires = (
+                num_orb * 2 + 2 * int(np.ceil(math.log2(tensor_rank + 1))) + coeff_register + 6
+            )
             self.wires = None
         super().__init__(wires=wires)
 
@@ -261,8 +284,8 @@ class ResourceQubitizeTHC(ResourceOperator):
 
         .. note::
 
-            This decomposition assumes an appropriately sized phase gradient state is available.
-            Users should ensure the cost of constructing such a state has been accounted for.
+            This decomposition assumes that an appropriately sized phase gradient state is available.
+            Users should ensure that the cost of constructing this state has been accounted for.
             See also :class:`~.pennylane.labs.resource_estimation.ResourcePhaseGradient`.
 
         Args:

@@ -829,8 +829,10 @@ class ResourceQROMStatePreparation(ResourceOperator):
             **kwargs,
         )
 
+
 class ResourcePrepTHC(ResourceOperator):
-    r"""Resource class for preparing the state for THC Hamiltonian.
+    r"""Resource class for preparing the state for tensor hypercontracted Hamiltonian. This operator customizes
+    the Prepare circuit based on the structure of THC Hamiltonian.
 
     Args:
         compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
@@ -862,6 +864,8 @@ class ResourcePrepTHC(ResourceOperator):
       {'Hadamard': 797, 'Toffoli': 467, 'CNOT': 1.307E+4, 'X': 512}
 
     """
+
+    resource_keys = {"compact_ham", "coeff_precision_bits", "select_swap_depth"}
 
     def __init__(self, compact_ham, coeff_precision_bits=None, select_swap_depth=None, wires=None):
 
