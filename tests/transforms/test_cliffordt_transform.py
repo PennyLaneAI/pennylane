@@ -612,6 +612,10 @@ class TestCliffordCached:
         )
 
         assert not cache1.compatible(
+            method="gridsynth", epsilon=9e-6, cache_size=100, cache_eps_rtol=99
+        )
+
+        assert not cache1.compatible(
             method="gridsynth", epsilon=1e-4, cache_size=100, cache_eps_rtol=1e-1
         )
 

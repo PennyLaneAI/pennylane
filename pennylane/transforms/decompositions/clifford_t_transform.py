@@ -395,10 +395,11 @@ class _CachedCallable:
         """Check compatibility based on `method`, `epsilon`, `cache_eps_rtol` and `method_kwargs`."""
         return (
             self.method == method
+            and self.epsilon <= epsilon
             and (
-                self.epsilon <= epsilon
-                if cache_eps_rtol is None
-                else qml.math.allclose(self.epsilon, epsilon, rtol=cache_eps_rtol, atol=0.0)
+                qml.math.allclose(self.epsilon, epsilon, rtol=cache_eps_rtol, atol=0.0)
+                if cache_eps_rtol is not None
+                else True
             )
             and self.cache_size <= cache_size
             and self.method_kwargs == method_kwargs
