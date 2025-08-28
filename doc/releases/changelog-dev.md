@@ -756,6 +756,10 @@
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
 
+* The `autograph` keyword argument has been removed from the `QNode` constructor. 
+  To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
+  [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
+  
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
   [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
 
