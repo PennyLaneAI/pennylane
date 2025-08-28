@@ -313,7 +313,6 @@ class TestPrepTHC:
             TypeError, match="Unsupported Hamiltonian representation for ResourcePrepTHC."
         ):
             plre.ResourcePrepTHC(plre.CompactHamiltonian.cdf(58, 160))
-=======
 class TestMPSPrep:
     """Tests for the ResourceMPSPrep template"""
 
