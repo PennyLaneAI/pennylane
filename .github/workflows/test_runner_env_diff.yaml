@@ -82,3 +82,6 @@ jobs:
       - name: Print pip packages
         run: |
           uv pip freeze
+      
+      - name: Run Kernel Tests
+        run: python -m pytest tests/kernels/test_kernels.py --splits 6 --group 5 --durations-path='.github/durations/core_tests_durations.json'
