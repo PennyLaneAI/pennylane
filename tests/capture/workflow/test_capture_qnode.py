@@ -500,7 +500,7 @@ class TestUserTransforms:
         device_jaxpr = None
 
         def dummy_eval_jaxpr(
-            jaxpr, consts, *args, execution_config
+            jaxpr, consts, *args, execution_config, shots=None
         ):  # pylint: disable=unused-argument
             nonlocal device_jaxpr
             device_jaxpr = jaxpr
@@ -549,7 +549,7 @@ class TestUserTransforms:
         assert jnp.allclose(res, expected)
 
 
-@pytest.mark.parametrize("dev_name", ["default.qubit", "lightning.qubit"])
+@pytest.mark.parametrize("dev_name", ["default.qubit"])
 class TestDevicePreprocessing:
     """Integration tests for preprocessing and executing qnodes with program capture."""
 

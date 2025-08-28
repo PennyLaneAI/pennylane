@@ -990,6 +990,7 @@ class Device(abc.ABC):
         consts: list[TensorLike],
         *args,
         execution_config: ExecutionConfig | None = None,
+        shots=None,
     ) -> list[TensorLike]:
         """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
 

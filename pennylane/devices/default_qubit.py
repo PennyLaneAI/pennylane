@@ -1035,12 +1035,9 @@ class DefaultQubit(Device):
 
             key = jax.random.PRNGKey(self._rng.integers(100000))
 
-        # Use shots from the jaxpr context if provided, otherwise fall back to device shots
-        interpreter_shots = shots if shots is not None else self.shots.total_shots
-
         interpreter = DefaultQubitInterpreter(
             num_wires=len(self.wires),
-            shots=interpreter_shots,
+            shots=shots or self.shots,
             key=key,
             execution_config=execution_config,
         )

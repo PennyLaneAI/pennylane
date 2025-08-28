@@ -494,7 +494,7 @@ class NullQubit(Device):
     # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
     # pylint: disable=unused-argument
     def eval_jaxpr(
-        self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args, execution_config=None
+        self, jaxpr: "jax.extend.core.Jaxpr", consts: list, *args, execution_config=None, shots=None
     ) -> list:
         from pennylane.capture.primitives import (  # pylint: disable=import-outside-toplevel
             AbstractMeasurement,

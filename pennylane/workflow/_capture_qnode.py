@@ -213,17 +213,8 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
     consts = qfunc_jaxpr.consts
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
-    # Extract shots value if available
-    shots_value = None
-    if shots_len > 0 and shots:
-        # Handle shots - for now we take the total if it's a Shots object
-        if hasattr(shots[0], "total_shots"):
-            shots_value = shots[0].total_shots
-        else:
-            shots_value = shots[0] if len(shots) == 1 else shots
-
     partial_eval = partial(
-        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config, shots=shots_value
+        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config, shots=shots
     )
     if batch_dims is None:
         return partial_eval(*non_const_args)
