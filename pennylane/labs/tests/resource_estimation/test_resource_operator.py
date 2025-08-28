@@ -32,7 +32,11 @@ from pennylane.labs.resource_estimation import (
     set_decomp,
     set_pow_decomp,
 )
-from pennylane.labs.resource_estimation.ops import ResourceMultiRZ
+from pennylane.labs.resource_estimation.ops import (
+    ResourceMultiRZ,
+    ResourcePauliRot,
+    ResourceMultiControlledX,
+)
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
     _make_hashable,
@@ -293,6 +297,8 @@ class TestResourceOperator:
 
         assert ResourceMultiRZ(num_wires=3) == ResourceMultiRZ(num_wires=3)
         assert ResourceMultiRZ(num_wires=3) != ResourceMultiRZ(num_wires=2)
+        assert ResourcePauliRot("XYZ") != ResourcePauliRot("YZ")
+        assert ResourceMultiControlledX(2, 2) != ResourceMultiControlledX(2, 1)
 
     ops_to_queue = [
         ResourceHadamard(wires=[0]),
