@@ -167,10 +167,6 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         non_shots_args = args
     else:
         shots, non_shots_args = args[:shots_len], args[shots_len:]
-    if qml.measurements.Shots(shots) != device.shots:
-        raise NotImplementedError(
-            "Overriding shots is not yet supported with the program capture execution."
-        )
 
     consts = non_shots_args[:n_consts]
     non_const_args = non_shots_args[n_consts:]
@@ -217,8 +213,17 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
     consts = qfunc_jaxpr.consts
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
+    # Extract shots value if available
+    shots_value = None
+    if shots_len > 0 and shots:
+        # Handle shots - for now we take the total if it's a Shots object
+        if hasattr(shots[0], "total_shots"):
+            shots_value = shots[0].total_shots
+        else:
+            shots_value = shots[0] if len(shots) == 1 else shots
+
     partial_eval = partial(
-        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
+        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config, shots=shots_value
     )
     if batch_dims is None:
         return partial_eval(*non_const_args)

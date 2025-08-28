@@ -153,7 +153,7 @@ def test_providing_keyword_argument():
 def test_multiple_measurements():
     """Test that the qnode can return multiple measurements."""
 
-    @qml.qnode(qml.device("default.qubit", wires=3, shots=50))
+    @qml.qnode(qml.device("default.qubit", wires=3), shots=50)
     def circuit():
         return qml.sample(), qml.probs(wires=(0, 1)), qml.expval(qml.Z(0))
 
@@ -294,36 +294,6 @@ def test_qnode_pytree_output():
 
 class TestShots:
     """Tests for the number of shots."""
-
-    def test_overriding_shots(self):
-        """Test that the number of shots can be overridden on call."""
-
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        def circuit():
-            return qml.sample()
-
-        jaxpr = jax.make_jaxpr(qml.set_shots(circuit, shots=50))()
-        assert len(jaxpr.eqns) == 1
-        eqn0 = jaxpr.eqns[0]
-
-        assert eqn0.primitive == qnode_prim
-        assert eqn0.params["device"] == dev
-        assert eqn0.params["shots_len"] == 1
-        assert eqn0.invars[0].val == 50
-        assert (
-            eqn0.params["qfunc_jaxpr"].eqns[0].primitive
-            == qml.measurements.SampleMP._wires_primitive
-        )
-
-        assert eqn0.outvars[0].aval == jax.core.ShapedArray(
-            (50, 1), jnp.int64 if jax.config.jax_enable_x64 else jnp.int32
-        )
-
-        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
-            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts)
-            assert qml.math.allclose(res, jnp.zeros((50,)))
 
     def test_shot_vector(self):
         """Test that a shot vector can be captured."""
@@ -600,10 +570,10 @@ class TestDevicePreprocessing:
     def test_mcms_execution_deferred(self, dev_name, mcm_method, shots, seed):
         """Test that defer_measurements is reflected in the execution results of a device."""
 
-        dev = qml.device(dev_name, wires=3, shots=shots, seed=seed)
+        dev = qml.device(dev_name, wires=3, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
 
-        @qml.qnode(dev, mcm_method=mcm_method)
+        @qml.qnode(dev, mcm_method=mcm_method, shots=shots)
         def circuit():
             qml.Hadamard(0)
             qml.CNOT([0, 1])  # |Φ⁺⟩ = (1/√2) (|00⟩ + |11⟩)
@@ -638,10 +608,10 @@ class TestDevicePreprocessing:
         """Test that using a qnode with postselect_mode="fill-shots" gives the expected results."""
 
         shots = 1000
-        dev = qml.device(dev_name, wires=3, shots=shots, seed=seed)
+        dev = qml.device(dev_name, wires=3, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
 
-        @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="fill-shots")
+        @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="fill-shots", shots=shots)
         def circuit():
             qml.Hadamard(0)
             qml.CNOT([0, 1])  # |Φ⁺⟩ = (1/√2) (|00⟩ + |11⟩)
@@ -670,11 +640,11 @@ class TestDevicePreprocessing:
         """Test that using a qnode with postselect_mode="hw-like" gives the expected results."""
 
         shots = 1000
-        dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
+        dev = qml.device(dev_name, wires=2, seed=seed)
         postselect = 1 if dev_name == "default.qubit" else None
         n_postselects = 3
 
-        @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="hw-like")
+        @qml.qnode(dev, mcm_method=mcm_method, postselect_mode="hw-like", shots=shots)
         def circuit():
 
             @qml.for_loop(n_postselects)
@@ -704,9 +674,9 @@ class TestDevicePreprocessing:
         """Test that single-branch-statistics works as expected."""
 
         shots = 1000
-        dev = qml.device(dev_name, wires=2, shots=shots, seed=seed)
+        dev = qml.device(dev_name, wires=2, seed=seed)
 
-        @qml.qnode(dev, mcm_method="single-branch-statistics")
+        @qml.qnode(dev, mcm_method="single-branch-statistics", shots=shots)
         def circuit():
             qml.Hadamard(0)
             qml.measure(0)
@@ -930,7 +900,7 @@ class TestQNodeVmapIntegration:
     def test_vmap_multiple_measurements(self):
         """Test that JAX can vmap over the QNode primitive with multiple measurements."""
 
-        @qml.qnode(qml.device("default.qubit", wires=4, shots=5))
+        @qml.qnode(qml.device("default.qubit", wires=4), shots=5)
         def circuit(x):
             qml.DoubleExcitation(x, wires=[0, 1, 2, 3])
             return qml.sample(), qml.probs(wires=(0, 1, 2)), qml.expval(qml.Z(0))
