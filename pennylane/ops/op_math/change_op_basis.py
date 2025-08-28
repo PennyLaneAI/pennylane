@@ -41,9 +41,9 @@ def change_op_basis(compute_op: Operator, target_op: Operator, uncompute_op: Ope
     operators provided.
 
     Args:
-        compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (None | :class:`~.operation.Operator`): An optional single operator or a product that applies quantum
+        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
+        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
+        uncompute_op (None | :class:`~.Operator`): An optional single operator or a product that applies quantum
             operations. ``None`` corresponds to ``uncompute_op=qml.adjoint(compute_op)``.
 
     Returns:
@@ -94,9 +94,9 @@ class ChangeOpBasis(CompositeOp):
     which an operator is applied.
 
     Args:
-        compute_op (:class:`~.operation.Operator`): A single operator or product that applies quantum operations.
-        target_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
-        uncompute_op (:class:`~.operation.Operator`): A single operator or a product that applies quantum operations.
+        compute_op (:class:`~.Operator`): A single operator or product that applies quantum operations.
+        target_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
+        uncompute_op (:class:`~.Operator`): A single operator or a product that applies quantum operations.
             Default is uncompute_op=qml.adjoint(compute_op).
 
     Returns:
