@@ -292,7 +292,7 @@ class TestResourceOperator:
         with pytest.raises(TypeError, match="Can't instantiate abstract class"):
             res_op(x=1)
 
-    def test_eq_method():
+    def test_eq_method(self):
         """Test that the __eq__ method for the ResourceOperator is correct"""
 
         assert ResourceMultiRZ(num_wires=3) == ResourceMultiRZ(num_wires=3)
