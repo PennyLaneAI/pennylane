@@ -31,7 +31,7 @@ def state2bin(state):
 
     """
     n = int(np.log(len(state)) / np.log(2))
-    integer = np.nonzero(state)[0]
+    integer = np.where(state > 1e-10)[0]
     assert len(integer) == 1, f"not a binary vector {state}"
     integer = integer[0]
     phase = state[integer]
@@ -89,7 +89,9 @@ def check_circuit_id(target_U, circuit, wires, aux_wires, aux_state_io, **kwargs
         if len(out_states) > 1 and not len(out_states) == 2 ** (n_tot):
             # check that all out_states are the same and circuit decomp is deterministic
             if not all(np.allclose(out_state_i, out_states[0]) for out_state_i in out_states):
-                print(f"not all out_states the same: {out_states}")
+                print(
+                    f"not all out_states the same: {[state2bin(out_state) for out_state in out_states]}"
+                )
                 success = False
         else:
             out_states = [out_states]
