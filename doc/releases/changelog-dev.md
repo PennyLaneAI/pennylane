@@ -93,6 +93,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
+  [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
+
 * A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
   This allows for more customization and efficiency when calculating expectation values across the non-commuting groups
   of observables that make up a ``Hamiltonian``/``LinearCombination``.
