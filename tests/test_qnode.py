@@ -1813,7 +1813,7 @@ class TestMCMConfiguration:
 
         with pytest.raises(
             ValueError,
-            match="Cannot use the 'one-shot' method for mid-circuit measurements with",
+            match=r"Cannot use the 'one-shot' method for mid-circuit measurements with analytic mode.",
         ):
             f(param)
 
