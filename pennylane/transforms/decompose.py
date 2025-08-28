@@ -148,7 +148,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             See also: :meth:`~.interpret_operation_eqn`, :meth:`~.interpret_operation`.
             """
 
-            if self._stopping_condition(op):
+            if self.stopping_condition(op):
                 return self.interpret_operation(op)
 
             max_expansion = (
@@ -173,7 +173,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
                 return self.interpret_operation(op)
 
-            if self._stopping_condition(op):
+            if self.stopping_condition(op):
                 return self.interpret_operation(op)
 
             if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(op):
