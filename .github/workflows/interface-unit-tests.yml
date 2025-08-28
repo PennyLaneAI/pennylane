@@ -189,7 +189,7 @@ jobs:
             cat >matrix_max_parallel.json <<-EOF
           {
             "default": 1,
-            "core-tests": 18,
+            "core-tests": 6,
             "jax-tests": 8,
             "torch-tests": 2,
             "device-tests": 1
