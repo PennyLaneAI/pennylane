@@ -1,5 +1,6 @@
 name: Temp Test on runner env diff
 on:
+  pull_request:
   push:
     branches:
       - sc-98279-pl-blacksmith-runners
