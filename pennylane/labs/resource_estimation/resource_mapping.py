@@ -17,6 +17,7 @@ from __future__ import annotations
 from functools import singledispatch
 
 import pennylane.labs.resource_estimation.ops as re_ops
+import pennylane.labs.resource_estimation.templates as re_temps
 import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane.labs.resource_estimation import ResourceOperator
