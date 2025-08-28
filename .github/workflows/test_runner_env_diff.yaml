@@ -41,7 +41,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '${{ inputs.python_version }}'
+          python-version: '3.11'
       
       - name: Upgrade PIP and install wheel
         run: uv pip install --upgrade pip wheel setuptools>=75.8.1
