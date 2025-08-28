@@ -808,3 +808,261 @@ def test_validate_multiprocessing_workers_None():
     )
     device = qml.devices.DefaultQubit()
     validate_multiprocessing_workers(qs, None, device)
+
+
+class TestDecomposeGraphIntegration:
+    """Integration tests for the decompose transform with graph decomposition.
+
+    These tests verify the differences between the old (non-graph-decomp) and new
+    (graph-decomp) preprocessing systems. Key differences tested:
+
+    1. Graph system uses effective stopping condition: (op in gate_set) OR stopping_condition(op)
+    2. Non-graph system uses stopping_condition(op) directly
+    3. Custom stopping_conditions can override has_matrix in non-graph but not gate_set in graph system
+    4. Graph system provides more sophisticated decomposition path selection
+    """
+
+    @pytest.mark.parametrize(
+        "gate_name,expected_old_count,expected_new_count",
+        [
+            ("Rot", 3, 1),  # Rot in gate_set, should be preserved by graph
+            ("U3", 3, 1),  # U3 in gate_set, decomposes to RZ,RY,RZ in non-graph
+            ("U2", 3, 1),  # U2 in gate_set
+        ],
+    )
+    def test_gate_set_operations_vs_custom_stopping_condition(
+        self,
+        gate_name,
+        expected_old_count,
+        expected_new_count,
+        create_operation_from_name,
+        test_operation_consistency,
+    ):
+        """Test operations in gate_set with custom stopping condition that rejects them."""
+        # Create operation using fixture
+        operation = create_operation_from_name(gate_name)
+
+        # Custom stopping condition that rejects the specific operation
+        def reject_operation(op):
+            return op.name != gate_name
+
+        # Define a gate set that includes the operation
+        gate_set = {"Rot", "U3", "U2", "RX", "RY", "RZ", "GlobalPhase"}
+
+        # Test consistency using fixture
+        processed_old, processed_new = test_operation_consistency(
+            operation, reject_operation, gate_set=gate_set
+        )
+
+        assert (
+            len(processed_old.operations) == expected_old_count
+        ), f"Non-graph should have {expected_old_count} operations for {gate_name}"
+        assert (
+            len(processed_new.operations) == expected_new_count
+        ), f"Graph should have {expected_new_count} operations for {gate_name}"
+        if expected_new_count == 1:
+            assert (
+                processed_new.operations[0].name == gate_name
+            ), f"Graph should preserve {gate_name}"
+
+    @pytest.mark.parametrize(
+        "gate_name",
+        [
+            "QubitUnitary",  # Matrix-based gate
+            "QFT",  # Multi-qubit gate with matrix but not in gate_set
+        ],
+    )
+    def test_matrix_operations_with_custom_stopping_condition(
+        self, gate_name, create_operation_from_name, test_operation_consistency
+    ):
+        """Test that operations with has_matrix behave differently in graph vs non-graph systems."""
+        operation = create_operation_from_name(gate_name)
+
+        # Custom stopping condition that rejects the specific operation
+        def reject_operation(op):
+            return op.name != gate_name
+
+        # Define a gate set that includes QubitUnitary but not QFT, with sufficient gates for QFT decomposition
+        gate_set = {
+            "QubitUnitary",
+            "RX",
+            "RY",
+            "RZ",
+            "PhaseShift",
+            "CNOT",
+            "Hadamard",
+            "ControlledPhaseShift",
+            "SWAP",
+            "GlobalPhase",
+        }
+
+        # Test consistency using fixture
+        processed_old, processed_new = test_operation_consistency(
+            operation, reject_operation, gate_set=gate_set
+        )
+
+        assert operation.has_matrix, f"Test operation {gate_name} should have has_matrix=True"
+
+        # Verify the behavior for different operation types
+        if gate_name == "QubitUnitary":
+            # QubitUnitary is in gate_set, so graph system preserves it
+            assert (
+                len(processed_old.operations) > 1
+            ), "Non-graph should decompose QubitUnitary (custom stopping_condition override)"
+            assert (
+                len(processed_new.operations) == 1
+            ), "Graph should preserve QubitUnitary (in gate_set)"
+            assert processed_new.operations[0].name == "QubitUnitary"
+        elif gate_name == "QFT":
+            # QFT not in gate_set, both systems should decompose when rejected
+            assert (
+                len(processed_old.operations) > 1
+            ), "Non-graph should decompose QFT (custom stopping_condition)"
+            assert (
+                len(processed_new.operations) > 1
+            ), "Graph should also decompose QFT (not in gate_set)"
+
+    @pytest.mark.parametrize(
+        "operation,custom_stopping_condition,expected_old_count,expected_new_count,description",
+        [
+            (
+                qml.Rot(0.1, 0.2, 0.3, wires=0),
+                lambda op: op.name != "Rot",
+                3,
+                1,
+                "Rot in gate_set, rejected by custom condition",
+            ),
+            (
+                qml.U3(0.1, 0.2, 0.3, wires=0),
+                lambda op: op.name != "U3",
+                3,
+                1,
+                "U3 in gate_set, rejected by custom condition",
+            ),
+            (
+                qml.QubitUnitary(np.eye(2), wires=0),
+                lambda op: op.name != "QubitUnitary",
+                4,
+                1,
+                "QubitUnitary has_matrix and in gate_set",
+            ),
+            (
+                qml.RX(0.5, wires=0),
+                lambda op: True,
+                1,
+                1,
+                "RX accepted by custom condition and in gate_set",
+            ),
+            (
+                qml.PauliX(wires=0),
+                lambda op: op.name != "PauliX",
+                2,
+                1,
+                "PauliX in gate_set, decomposes to RX+GlobalPhase when rejected",
+            ),
+            (
+                qml.QFT(wires=[0, 1]),
+                lambda op: op.name != "QFT",
+                None,
+                None,
+                "QFT not in gate_set, both should decompose",
+            ),
+        ],
+    )
+    def test_effective_stopping_condition_comprehensive(
+        self,
+        operation,
+        custom_stopping_condition,
+        expected_old_count,
+        expected_new_count,
+        description,
+        test_operation_consistency,
+    ):
+        """Comprehensive test of the effective stopping condition behavior across multiple scenarios."""
+        # Define a comprehensive gate set for testing
+        gate_set = {
+            "Rot",
+            "U3",
+            "QubitUnitary",
+            "RX",
+            "PauliX",
+            "Hadamard",
+            "ControlledPhaseShift",
+            "SWAP",
+            "GlobalPhase",
+        }
+
+        # Test consistency using fixture
+        processed_old, processed_new = test_operation_consistency(
+            operation, custom_stopping_condition, gate_set=gate_set
+        )
+
+        if expected_old_count is not None:
+            assert (
+                len(processed_old.operations) == expected_old_count
+            ), f"Non-graph failed for {description}: expected {expected_old_count}, got {len(processed_old.operations)}"
+        if expected_new_count is not None:
+            assert (
+                len(processed_new.operations) == expected_new_count
+            ), f"Graph failed for {description}: expected {expected_new_count}, got {len(processed_new.operations)}"
+
+        # For QFT (not in gate_set), both systems should decompose when custom condition rejects it
+        if operation.name == "QFT":
+            assert len(processed_old.operations) > 1, "QFT should be decomposed by non-graph system"
+            assert (
+                len(processed_new.operations) > 1
+            ), "QFT should be decomposed by graph system (not in gate_set)"
+
+    @pytest.mark.parametrize(
+        "gate_name,test_scenario",
+        [
+            ("Rot", "gate_set_with_reject"),  # Rot in gate_set, rejected by stopping condition
+            (
+                "QubitUnitary",
+                "gate_set_with_reject",
+            ),  # QubitUnitary in gate_set, rejected by stopping condition
+        ],
+    )
+    def test_effective_stopping_condition_behavior(
+        self, gate_name, test_scenario, create_operation_from_name, test_operation_consistency
+    ):
+        """Test that the new graph system uses effective stopping condition: op in gate_set OR stopping_condition(op).
+
+        This test demonstrates the key insight about how the graph decomposition system works:
+        - Graph system: effective_stopping_condition = (op in gate_set) OR stopping_condition(op)
+        - Non-graph system: uses stopping_condition(op) directly
+        """
+        # Create operation using fixture
+        operation = create_operation_from_name(gate_name)
+
+        # Create stopping condition that rejects this specific operation
+        def reject_operation(op):
+            return op.name != gate_name  # Reject the operation specifically
+
+        # Define a gate set that includes both operations
+        gate_set = {
+            "Rot",
+            "QubitUnitary",
+            "RX",
+            "RY",
+            "RZ",
+            "Hadamard",
+            "ControlledPhaseShift",
+            "SWAP",
+            "GlobalPhase",
+        }
+
+        # Test consistency using fixture
+        processed_old, processed_new = test_operation_consistency(
+            operation, reject_operation, gate_set=gate_set
+        )
+
+        # Verify the effective stopping condition behavior
+        assert gate_name in gate_set, f"{gate_name} should be in gate_set"
+        assert (
+            len(processed_old.operations) > 1
+        ), f"Non-graph should decompose {gate_name} (stopping condition rejects it)"
+        assert (
+            len(processed_new.operations) == 1
+        ), f"Graph should preserve {gate_name} (in gate_set)"
+        assert processed_new.operations[0].name == gate_name

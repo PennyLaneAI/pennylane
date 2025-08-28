@@ -1017,165 +1017,23 @@ class TestAdjointDiffTapeValidation:
 class TestDefaultQubitPreprocessGraphDecompIntegration:
     """Integration tests for DefaultQubit preprocessing with graph decomposition.
 
-    These tests verify the differences between the old (non-graph-decomp) and new
-    (graph-decomp) preprocessing systems within DefaultQubit. Key differences tested:
+    These tests specifically verify how DefaultQubit's preprocessing behaves
+    when graph decomposition is enabled vs disabled, focusing on:
 
-    1. Graph system uses effective stopping condition: (op in gate_set) OR stopping_condition(op)
-    2. Non-graph system uses stopping_condition(op) directly
-    3. Both preserve operations with has_matrix/has_sparse_matrix when using default stopping_condition
-    4. Custom stopping_conditions can override has_matrix in non-graph but not gate_set in graph system
-    5. Graph system provides more sophisticated decomposition path selection
-
-    The key insight: Graph decomposition acts as if using stopping_condition = lambda op: op.name in gate_set or stopping_condition(op)
+    1. DefaultQubit's gate_set integration with graph decomposition
+    2. DefaultQubit's stopping_condition behavior with graph decomposition
+    3. Measurement preservation across graph/non-graph systems in DefaultQubit
+    4. Consistency of DefaultQubit's preprocessing pipeline
     """
 
-    @staticmethod
-    def _create_operation_from_name(gate_name):
-        """Dynamically create a quantum operation using introspection of the operation class."""
-        import inspect
-
-        # Get the operation class
-        try:
-            op_class = getattr(qml, gate_name)
-        except AttributeError:
-            raise ValueError(f"Operation {gate_name} not found in PennyLane")
-
-        # Get the class signature to understand parameters
-        # Use num_params attribute as the reliable source of parameter count
-        num_params_attr = getattr(op_class, "num_params", 0)
-
-        # Handle the case where num_params is a property (e.g., for template operations)
-        if isinstance(num_params_attr, property):
-            # For template operations, usually no parameters needed for construction
-            num_params = 0
-        else:
-            num_params = num_params_attr
-
-        # Fallback to signature inspection if num_params is not available
-        if num_params is None:
-            try:
-                sig = inspect.signature(op_class.__init__)
-                param_names = list(sig.parameters.keys())[1:]  # Skip 'self'
-                # Filter out non-data parameters
-                non_wire_params = [name for name in param_names if name not in ["wires", "id"]]
-                num_params = len(non_wire_params)
-            except (TypeError, ValueError):
-                # Final fallback
-                num_params = 0
-
-        # Determine number of wires needed
-        num_wires = getattr(op_class, "num_wires", None)
-        if num_wires is None or isinstance(num_wires, property):
-            # Try to infer from common patterns
-            # Use class name as the primary identifier
-            name = getattr(op_class, "__name__", gate_name)
-
-            # Common patterns for wire inference
-            if name in ["Toffoli", "CSWAP"]:
-                num_wires = 3  # Three-qubit gates
-            elif name == "MultiControlledX":  # Special case: needs at least 2 wires
-                num_wires = 2  # Minimum wires for MultiControlledX
-            elif any(prefix in name for prefix in ["C", "Control"]):
-                num_wires = 2  # Controlled operations typically need 2 qubits
-            elif name == "QFT":
-                num_wires = 2  # Use 2-qubit QFT for testing
-            else:
-                num_wires = 1  # Default to single qubit
-        wires = list(range(num_wires))
-
-        # Handle special cases that need specific data
-        if gate_name == "QubitUnitary":
-            matrix_size = 2**num_wires
-            # Create a simple multi-qubit unitary (tensor product of single-qubit gates)
-            single_qubit = np.array([[0, 1], [1, 0]])  # Pauli-X
-            matrix = single_qubit
-            for _ in range(num_wires - 1):
-                matrix = np.kron(matrix, np.eye(2))
-            return op_class(matrix, wires=wires)
-
-        elif gate_name in ["BasisState", "StatePrep"]:
-            # State preparation operations need state vectors
-            if gate_name == "BasisState":
-                state = [1] + [0] * (num_wires - 1)  # |100...>
-            else:  # StatePrep
-                # Simple superposition state
-                state_dim = 2**num_wires
-                state = np.zeros(state_dim)
-                state[0] = 1.0  # |000...>
-            return op_class(state, wires=wires)
-
-        # Generate parameters dynamically based on signature analysis
-        if num_params == 0:
-            # No parameters needed
-            return op_class(wires=wires)
-        elif num_params == 1:
-            return op_class(0.5, wires=wires)
-        elif num_params == 2:
-            return op_class(0.1, 0.2, wires=wires)
-        elif num_params == 3:
-            return op_class(0.1, 0.2, 0.3, wires=wires)
-        else:
-            params = [0.1 * (i + 1) for i in range(num_params)]
-            return op_class(*params, wires=wires)
-
-    @staticmethod
-    def _test_operation_consistency(operation, stopping_condition):
-        """Helper to test operation consistency between graph and non-graph systems."""
-        from pennylane.devices.preprocess import decompose as preprocess_decompose
-
-        tape = qml.tape.QuantumScript([operation], [qml.expval(qml.Z(0))])
-
-        # Test non-graph decomposition
-        qml.decomposition.disable_graph()
-        processed_old = preprocess_decompose(tape, stopping_condition)[0][0]
-
-        # Test graph decomposition
-        qml.decomposition.enable_graph()
-        processed_new = preprocess_decompose(tape, stopping_condition)[0][0]
-
-        return processed_old, processed_new
-
-    @pytest.mark.parametrize(
-        "gate_name,expected_old_count,expected_new_count",
-        [
-            ("Rot", 3, 1),  # Rot in gate_set, should be preserved by graph
-            ("U3", 3, 1),  # U3 in gate_set, decomposes to RZ,RY,RZ in non-graph
-            ("U2", 3, 1),  # U2 in gate_set
-        ],
-    )
-    def test_gate_set_operations_vs_custom_stopping_condition(
-        self, gate_name, expected_old_count, expected_new_count
-    ):
-        """Test operations in gate_set with custom stopping condition that rejects them."""
-        # Create operation using helper
-        operation = self._create_operation_from_name(gate_name)
-
-        # Custom stopping condition that rejects the specific operation
-        def reject_operation(op):
-            return op.name != gate_name
-
-        # Test consistency using helper
-        processed_old, processed_new = self._test_operation_consistency(operation, reject_operation)
-
-        assert (
-            len(processed_old.operations) == expected_old_count
-        ), f"Non-graph should have {expected_old_count} operations for {gate_name}"
-        assert (
-            len(processed_new.operations) == expected_new_count
-        ), f"Graph should have {expected_new_count} operations for {gate_name}"
-        if expected_new_count == 1:
-            assert (
-                processed_new.operations[0].name == gate_name
-            ), f"Graph should preserve {gate_name}"
-
-    def test_stopping_condition_overrides_gate_set_exclusion(self):
-        """Test that stopping_condition takes precedence over gate_set exclusion."""
+    def test_stopping_condition_overrides_gate_set_exclusion(self, create_operation_from_name):
+        """Test that DefaultQubit's stopping_condition takes precedence over gate_set exclusion."""
         from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
 
         dev = DefaultQubit(wires=3)
 
         # Use QFT which has matrix but might not be in ALL_DQ_GATE_SET
-        operation = self._create_operation_from_name("QFT")
+        operation = create_operation_from_name("QFT")
         tape = qml.tape.QuantumScript([operation], [qml.expval(qml.Z(0))])
 
         # Test with both graph systems - should preserve due to stopping_condition
@@ -1195,60 +1053,14 @@ class TestDefaultQubitPreprocessGraphDecompIntegration:
             assert len(processed_tape.operations) == 1
             assert processed_tape.operations[0].name == "QFT"
 
-    @pytest.mark.usefixtures("enable_graph_decomposition")
-    @pytest.mark.parametrize(
-        "gate_name",
-        [
-            "QubitUnitary",  # Matrix-based gate
-            "QFT",  # Multi-qubit gate with matrix but not in gate_set
-        ],
-    )
-    def test_matrix_operations_with_custom_stopping_condition(self, gate_name):
-        """Test that operations with has_matrix behave differently in graph vs non-graph systems."""
-        from pennylane.devices.preprocess import decompose as preprocess_decompose
-
-        operation = self._create_operation_from_name(gate_name)
-        tape = qml.tape.QuantumScript([operation], [qml.expval(qml.Z(0))])
-
-        # Custom stopping condition that rejects the specific operation
-        def reject_operation(op):
-            return op.name != gate_name
-
-        # Non-graph system: custom stopping_condition can override has_matrix
-        qml.decomposition.disable_graph()
-        processed_old = preprocess_decompose(tape, reject_operation)[0][0]
-
-        # Graph system: behavior depends on gate_set membership
-        qml.decomposition.enable_graph()
-        processed_new = preprocess_decompose(tape, reject_operation)[0][0]
-
-        assert operation.has_matrix, f"Test operation {gate_name} should have has_matrix=True"
-
-        # Verify the behavior for different operation types
-        if gate_name == "QubitUnitary":
-            # QubitUnitary is in gate_set, so graph system preserves it
-            assert (
-                len(processed_old.operations) > 1
-            ), "Non-graph should decompose QubitUnitary (custom stopping_condition override)"
-            assert (
-                len(processed_new.operations) == 1
-            ), "Graph should preserve QubitUnitary (in gate_set)"
-            assert processed_new.operations[0].name == "QubitUnitary"
-        elif gate_name == "QFT":
-            # QFT not in gate_set, both systems should decompose when rejected
-            assert (
-                len(processed_old.operations) > 1
-            ), "Non-graph should decompose QFT (custom stopping_condition)"
-            assert (
-                len(processed_new.operations) > 1
-            ), "Graph should also decompose QFT (not in gate_set)"
-
     @pytest.mark.parametrize(
         "measurement_type",
         ["expval_Z", "var_X", "probs_single", "state", "density_matrix", "probs_multi"],
     )
-    def test_measurements_preserved_across_systems(self, measurement_type):
-        """Test that measurements are preserved identically by both systems."""
+    def test_measurements_preserved_across_systems(
+        self, measurement_type, create_operation_from_name
+    ):
+        """Test that DefaultQubit preserves measurements identically across graph/non-graph systems."""
 
         # Create measurement based on type
         measurement_map = {
@@ -1262,10 +1074,10 @@ class TestDefaultQubitPreprocessGraphDecompIntegration:
         measurement = measurement_map[measurement_type]
 
         # Simple operation that both systems handle the same way
-        operation = self._create_operation_from_name("RX")
+        operation = create_operation_from_name("RX")
         tape = qml.tape.QuantumScript([operation], [measurement])
 
-        # Get device and test preprocessing
+        # Get DefaultQubit device and test preprocessing
         dev = qml.device("default.qubit", wires=2)
 
         # Test non-graph system
@@ -1317,22 +1129,39 @@ class TestDefaultQubitPreprocessGraphDecompIntegration:
             "IsingZZ",
         ],
     )
-    def test_gate_set_consistency_with_default_stopping_condition(self, gate_name):
-        """Test that gates in ALL_DQ_GATE_SET behave consistently between systems with default stopping condition."""
+    def test_gate_set_consistency_with_default_stopping_condition(
+        self, gate_name, create_operation_from_name
+    ):
+        """Test that DefaultQubit gates in ALL_DQ_GATE_SET behave consistently between systems."""
         from pennylane.devices.default_qubit import ALL_DQ_GATE_SET, stopping_condition
 
-        # Verify gate is in the gate set
+        # Verify gate is in the DefaultQubit gate set
         assert gate_name in ALL_DQ_GATE_SET, f"{gate_name} should be in ALL_DQ_GATE_SET"
 
-        # Create operation using helper
-        operation = self._create_operation_from_name(gate_name)
+        # Create operation using fixture
+        operation = create_operation_from_name(gate_name)
+        tape = qml.tape.QuantumScript([operation], [qml.expval(qml.Z(0))])
 
-        # Test consistency using helper
-        processed_old, processed_new = self._test_operation_consistency(
-            operation, stopping_condition
-        )
+        # Get DefaultQubit device
+        dev = qml.device("default.qubit", wires=3)
 
-        # Both should preserve the gate when using default stopping_condition
+        # Test non-graph system
+        qml.decomposition.disable_graph()
+        program_old = dev.preprocess_transforms()
+        processed_tapes_old, _ = program_old([tape])
+
+        # Test graph system
+        qml.decomposition.enable_graph()
+        program_new = dev.preprocess_transforms()
+        processed_tapes_new, _ = program_new([tape])
+
+        assert len(processed_tapes_old) == 1
+        assert len(processed_tapes_new) == 1
+
+        processed_old = processed_tapes_old[0]
+        processed_new = processed_tapes_new[0]
+
+        # Both should preserve the gate when using DefaultQubit's default stopping_condition
         assert len(processed_old.operations) == len(
             processed_new.operations
         ), f"Mismatch for {gate_name}: old={len(processed_old.operations)}, new={len(processed_new.operations)}"
@@ -1342,29 +1171,40 @@ class TestDefaultQubitPreprocessGraphDecompIntegration:
             assert processed_old.operations[0].name == gate_name
             assert processed_new.operations[0].name == gate_name
 
-    def test_all_dq_gate_set_consistency_across_systems(self):
-        """Test that all gates in ALL_DQ_GATE_SET behave consistently between old and new systems.
+    def test_all_dq_gate_set_consistency_across_systems(self, create_operation_from_name):
+        """Test that all DefaultQubit gates in ALL_DQ_GATE_SET behave consistently between systems.
 
-        This test verifies the effective stopping condition: op in gate_set or stopping_condition(op)
-        to ensure no discrepancy between graph and non-graph decomposition systems.
-
-        For gates in ALL_DQ_GATE_SET with the default stopping_condition:
-        - Old system: should preserve due to has_matrix/has_sparse_matrix or gate_set support
-        - New system: should preserve due to effective stopping condition (op in gate_set OR stopping_condition)
+        This test verifies that DefaultQubit's preprocessing behaves consistently
+        when using graph vs non-graph decomposition systems for all gates in its gate set.
         """
-        from pennylane.devices.default_qubit import ALL_DQ_GATE_SET, stopping_condition
+        from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
 
         discrepancies = []
         preserved_gates = []
 
-        for gate_name in ALL_DQ_GATE_SET:
-            # Dynamically create the operation using helper
-            operation = self._create_operation_from_name(gate_name)
+        # Get DefaultQubit device
+        dev = qml.device("default.qubit", wires=3)
 
-            # Test consistency using helper
-            processed_old, processed_new = self._test_operation_consistency(
-                operation, stopping_condition
-            )
+        for gate_name in ALL_DQ_GATE_SET:
+            # Dynamically create the operation using fixture
+            operation = create_operation_from_name(gate_name)
+            tape = qml.tape.QuantumScript([operation], [qml.expval(qml.Z(0))])
+
+            # Test non-graph system
+            qml.decomposition.disable_graph()
+            program_old = dev.preprocess_transforms()
+            processed_tapes_old, _ = program_old([tape])
+
+            # Test graph system
+            qml.decomposition.enable_graph()
+            program_new = dev.preprocess_transforms()
+            processed_tapes_new, _ = program_new([tape])
+
+            assert len(processed_tapes_old) == 1
+            assert len(processed_tapes_new) == 1
+
+            processed_old = processed_tapes_old[0]
+            processed_new = processed_tapes_new[0]
 
             # Compare results
             old_op_count = len(processed_old.operations)
@@ -1385,138 +1225,16 @@ class TestDefaultQubitPreprocessGraphDecompIntegration:
                     }
                 )
 
-        # Verify that most gates in the gate_set are preserved by both systems
+        # Verify that most gates in the DefaultQubit gate_set are preserved by both systems
         assert len(preserved_gates) > 0, "Expected some gates to be preserved by both systems"
 
         # Report any discrepancies found
         if discrepancies:
-            error_msg = "Found discrepancies between old and new decomposition systems:\n"
+            error_msg = (
+                "Found discrepancies between old and new DefaultQubit preprocessing systems:\n"
+            )
             for disc in discrepancies:
                 error_msg += f"Gate {disc['gate']}: old={disc['old_count']} ops {disc['old_ops']}, new={disc['new_count']} ops {disc['new_ops']}\n"
             assert False, error_msg
 
         # Success: All gates in ALL_DQ_GATE_SET behave consistently between systems
-
-    @pytest.mark.parametrize(
-        "operation,custom_stopping_condition,expected_old_count,expected_new_count,description",
-        [
-            (
-                qml.Rot(0.1, 0.2, 0.3, wires=0),
-                lambda op: op.name != "Rot",
-                3,
-                1,
-                "Rot in gate_set, rejected by custom condition",
-            ),
-            (
-                qml.U3(0.1, 0.2, 0.3, wires=0),
-                lambda op: op.name != "U3",
-                3,
-                1,
-                "U3 in gate_set, rejected by custom condition",
-            ),
-            (
-                qml.QubitUnitary(np.eye(2), wires=0),
-                lambda op: op.name != "QubitUnitary",
-                4,
-                1,
-                "QubitUnitary has_matrix and in gate_set",
-            ),
-            (
-                qml.RX(0.5, wires=0),
-                lambda op: True,
-                1,
-                1,
-                "RX accepted by custom condition and in gate_set",
-            ),
-            (
-                qml.PauliX(wires=0),
-                lambda op: op.name != "PauliX",
-                2,
-                1,
-                "PauliX in gate_set, decomposes to RX+GlobalPhase when rejected",
-            ),
-            (
-                qml.QFT(wires=[0, 1]),
-                lambda op: op.name != "QFT",
-                None,
-                None,
-                "QFT not in gate_set, both should decompose",
-            ),
-        ],
-    )
-    def test_effective_stopping_condition_comprehensive(
-        self,
-        operation,
-        custom_stopping_condition,
-        expected_old_count,
-        expected_new_count,
-        description,
-    ):
-        """Comprehensive test of the effective stopping condition behavior across multiple scenarios."""
-        from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
-        from pennylane.devices.preprocess import decompose as preprocess_decompose
-
-        tape = qml.tape.QuantumScript([operation], [qml.expval(qml.Z(0))])
-
-        # Test non-graph system
-        qml.decomposition.disable_graph()
-        processed_old = preprocess_decompose(tape, custom_stopping_condition)[0][0]
-
-        # Test graph system
-        qml.decomposition.enable_graph()
-        processed_new = preprocess_decompose(tape, custom_stopping_condition)[0][0]
-
-        if expected_old_count is not None:
-            assert (
-                len(processed_old.operations) == expected_old_count
-            ), f"Non-graph failed for {description}: expected {expected_old_count}, got {len(processed_old.operations)}"
-        if expected_new_count is not None:
-            assert (
-                len(processed_new.operations) == expected_new_count
-            ), f"Graph failed for {description}: expected {expected_new_count}, got {len(processed_new.operations)}"
-
-        # For QFT (not in gate_set), both systems should decompose when custom condition rejects it
-        if operation.name == "QFT":
-            assert len(processed_old.operations) > 1, "QFT should be decomposed by non-graph system"
-            assert (
-                len(processed_new.operations) > 1
-            ), "QFT should be decomposed by graph system (not in gate_set)"
-
-    @pytest.mark.parametrize(
-        "gate_name,test_scenario",
-        [
-            ("Rot", "gate_set_with_reject"),  # Rot in gate_set, rejected by stopping condition
-            (
-                "QubitUnitary",
-                "gate_set_with_reject",
-            ),  # QubitUnitary in gate_set, rejected by stopping condition
-        ],
-    )
-    def test_effective_stopping_condition_behavior(self, gate_name, test_scenario):
-        """Test that the new graph system uses effective stopping condition: op in gate_set OR stopping_condition(op).
-
-        This test demonstrates the key insight about how the graph decomposition system works:
-        - Graph system: effective_stopping_condition = (op in gate_set) OR stopping_condition(op)
-        - Non-graph system: uses stopping_condition(op) directly
-        """
-        from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
-
-        # Create operation using helper
-        operation = self._create_operation_from_name(gate_name)
-
-        # Create stopping condition that rejects this specific operation
-        def reject_operation(op):
-            return op.name != gate_name  # Reject the operation specifically
-
-        # Test consistency using helper
-        processed_old, processed_new = self._test_operation_consistency(operation, reject_operation)
-
-        # Verify the effective stopping condition behavior
-        assert gate_name in ALL_DQ_GATE_SET, f"{gate_name} should be in ALL_DQ_GATE_SET"
-        assert (
-            len(processed_old.operations) > 1
-        ), f"Non-graph should decompose {gate_name} (stopping condition rejects it)"
-        assert (
-            len(processed_new.operations) == 1
-        ), f"Graph should preserve {gate_name} (in gate_set)"
-        assert processed_new.operations[0].name == gate_name
