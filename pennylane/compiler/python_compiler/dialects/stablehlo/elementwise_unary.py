@@ -21,7 +21,13 @@ Unary elementwise operations for the StableHLO dialect.
 import abc
 from typing import Generic, TypeVar
 
-from xdsl.dialects.builtin import I1, AnyFloat, AnyTensorType, ComplexType, TensorType
+from xdsl.dialects.builtin import (
+    I1,
+    AnyFloat,
+    AnyTensorType,
+    ComplexType,
+    TensorType,
+)
 from xdsl.ir import Attribute, SSAValue
 from xdsl.irdl import (
     IRDLOperation,

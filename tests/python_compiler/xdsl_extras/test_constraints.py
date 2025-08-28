@@ -26,7 +26,13 @@ from xdsl.dialects import builtin, test
 from xdsl.dialects.builtin import MemRefType, TensorType, TupleType, i1, i32
 from xdsl.dialects.stablehlo import TokenType
 from xdsl.ir import Dialect
-from xdsl.irdl import BaseAttr, IRDLOperation, irdl_op_definition, operand_def, result_def
+from xdsl.irdl import (
+    BaseAttr,
+    IRDLOperation,
+    irdl_op_definition,
+    operand_def,
+    result_def,
+)
 from xdsl.irdl.constraints import ConstraintContext
 from xdsl.utils.exceptions import VerifyException
 

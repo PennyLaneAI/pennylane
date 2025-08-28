@@ -23,7 +23,13 @@ from typing import Generic, TypeVar
 
 from xdsl.dialects.builtin import AnyTensorType, ComplexType, Float32Type, Float64Type, TensorType
 from xdsl.ir import Attribute, SSAValue
-from xdsl.irdl import IRDLOperation, irdl_op_definition, operand_def, result_def, traits_def
+from xdsl.irdl import (
+    IRDLOperation,
+    irdl_op_definition,
+    operand_def,
+    result_def,
+    traits_def,
+)
 from xdsl.traits import NoMemoryEffect
 
 from pennylane.compiler.python_compiler.xdsl_extras import (

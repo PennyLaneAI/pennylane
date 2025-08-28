@@ -25,8 +25,21 @@ import xdsl.dialects.stablehlo as xstablehlo
 from xdsl.ir import Dialect
 
 from .attributes import ResultAccuracyModeAttr
-from .elementwise_binary import ComplexOp, DivideOp, MaximumOp, MinimumOp, PowerOp, RemainderOp
-from .elementwise_other import ClampOp, CompareOp, MapOp, ReducePrecisionOp, SelectOp
+from .elementwise_binary import (
+    ComplexOp,
+    DivideOp,
+    MaximumOp,
+    MinimumOp,
+    PowerOp,
+    RemainderOp,
+)
+from .elementwise_other import (
+    ClampOp,
+    CompareOp,
+    MapOp,
+    ReducePrecisionOp,
+    SelectOp,
+)
 
 # Import all elementwise operations from organized files
 from .elementwise_unary import (
