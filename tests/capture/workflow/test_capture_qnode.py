@@ -974,8 +974,7 @@ class TestQNodeVmapIntegration:
         x = jnp.array([1.0, 2.0, 3.0])
 
         jaxpr = jax.make_jaxpr(jax.vmap(qml.set_shots(circuit, shots=50), in_axes=0))(x)
-        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
-            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(jaxpr.eqns) == 1
         eqn0 = jaxpr.eqns[0]
@@ -989,10 +988,6 @@ class TestQNodeVmapIntegration:
         )
 
         assert eqn0.outvars[0].aval.shape == (3, 50, 1)
-
-        with pytest.raises(NotImplementedError, match="Overriding shots is not yet supported"):
-            res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
-            assert qml.math.allclose(res, jnp.zeros((3, 50)))
 
     def test_vmap_error_indexing(self):
         """Test that an IndexError is raised when indexing a batched parameter."""
