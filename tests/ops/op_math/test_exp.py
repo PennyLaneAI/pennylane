@@ -402,6 +402,16 @@ class TestDecomposition:
         """Test that the exp of an SProd has a decomposition."""
         op = Exp(qml.s_prod(3, qml.PauliX(0)), 1j)
         assert op.has_decomposition
+        [decomp] = op.decomposition()
+        qml.assert_equal(decomp, qml.RX(-6.0, 0))
+
+    def test_imaginary_coeff_in_operator(self):
+        """Test that the operator can be decomposed if the imaginary coeff is in the operator instead."""
+
+        op = Exp(1j * qml.Z(0) @ qml.Z(1))
+        assert op.has_decomposition
+        [decomp] = op.decomposition()
+        qml.assert_equal(decomp, qml.IsingZZ(-2.0, wires=(0, 1)))
 
     @pytest.mark.parametrize("coeff", (1, 1 + 0.5j))
     def test_non_imag_no_decomposition(self, coeff):
@@ -585,6 +595,7 @@ class TestDecomposition:
 
         with pytest.warns(PennyLaneDeprecationWarning, match="Providing 'num_steps'"):
             op = qml.exp(hamiltonian, coeff=-1j * time, num_steps=steps)
+        assert op.has_decomposition
         queue = op.decomposition()
         for expected_gate, gate in zip(expected_queue, queue):
             qml.assert_equal(expected_gate, gate)
