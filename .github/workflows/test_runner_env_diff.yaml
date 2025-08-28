@@ -85,4 +85,4 @@ jobs:
           uv pip freeze
       
       - name: Run Kernel Tests
-        run: python -m pytest tests/kernels/test_kernels.py --cov-config=.coveragerc --cov=pennylane --cov-append --cov-report=term-missing --cov-report=xml --no-flaky-report --tb=native -n auto --splits 6 --group 5  --durations-path=".github/durations/core_tests_durations.json" --store-durations --clean-durations --junit-xml=".github/test-reports/core-tests (1, 3.11).xml" -m "core and not qcut and not finite-diff and not param-shift"
+        run: python -m pytest tests --no-flaky-report --tb=native -n auto --splits 6 --group 5  --durations-path=".github/durations/core_tests_durations.json" --store-durations --clean-durations --junit-xml=".github/test-reports/core-tests (1, 3.11).xml" -m "core and not qcut and not finite-diff and not param-shift"
