@@ -22,11 +22,11 @@ written using xDSL.
     documentation for the GraphStatePrepOp operation in the MBQC dialect in Catalyst.
 """
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Generator, TypeAlias
 
-import numpy as np
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern
@@ -234,16 +234,29 @@ def _n_vertices_from_packed_adj_matrix(adj_matrix: DenselyPackedAdjMatrix) -> in
     assert isinstance(
         adj_matrix, Sequence
     ), f"Expected `adj_matrix` to be a sequence, but got {type(adj_matrix).__name__}"
-    m = len(adj_matrix)
-    N = (1 + np.sqrt(1 + 8 * m)) / 2
 
-    if N != int(N):
+    m = len(adj_matrix)
+
+    # The formula to compute the number of vertices, N, in the graph from the number elements in the
+    # densely packed adjacency matrix, m, is
+    #   N = (1 + sqrt(1 + 8m)) / 2
+    # To avoid floating-point errors in the sqrt function, we break it down into integer-arithmetic
+    # operations and ensure that the solution is one where N is mathematically a true integer.
+
+    discriminant = 1 + 8 * m
+    sqrt_discriminant = math.isqrt(discriminant)
+
+    # Check if it's a perfect square
+    if sqrt_discriminant * sqrt_discriminant != discriminant:
         raise CompileError(
             f"The number of elements in the densely packed adjacency matrix is {m}, which does not "
             f"correspond to an integer number of graph vertices"
         )
 
-    return int(N)
+    # The numerator, 1 + sqrt(1 + 8m), must be even for the result to be an integer. The quantity
+    # sqrt(1 + 8m) will always be odd if it's a perfect square, so the quantity (1 + sqrt(1 + 8m))
+    # will always be even. We can therefore safely divide (using integer division).
+    return (1 + sqrt_discriminant) // 2
 
 
 def _edge_iter(adj_matrix: DenselyPackedAdjMatrix) -> Generator[tuple[int, int], None, None]:
