@@ -19,14 +19,7 @@ Other elementwise operations for the StableHLO dialect.
 # pylint: disable=too-few-public-methods
 
 import xdsl.dialects.stablehlo as xstablehlo
-from xdsl.dialects.builtin import (
-    AnyFloat,
-    DenseArrayBase,
-    IntegerAttr,
-    TensorType,
-    i32,
-    i64,
-)
+from xdsl.dialects.builtin import AnyFloat, DenseArrayBase, IntegerAttr, TensorType, i32, i64
 from xdsl.irdl import (
     IRDLOperation,
     attr_def,

@@ -33,9 +33,9 @@ from pennylane.labs.resource_estimation import (
     set_pow_decomp,
 )
 from pennylane.labs.resource_estimation.ops import (
+    ResourceMultiControlledX,
     ResourceMultiRZ,
     ResourcePauliRot,
-    ResourceMultiControlledX,
 )
 from pennylane.labs.resource_estimation.resource_operator import (
     GateCount,
