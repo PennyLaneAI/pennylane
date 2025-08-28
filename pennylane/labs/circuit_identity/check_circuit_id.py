@@ -89,9 +89,12 @@ def check_circuit_id(target_U, circuit, wires, aux_wires, aux_state_io, **kwargs
         if len(out_states) > 1 and not len(out_states) == 2 ** (n_tot):
             # check that all out_states are the same and circuit decomp is deterministic
             if not all(np.allclose(out_state_i, out_states[0]) for out_state_i in out_states):
-                print(
-                    f"not all out_states the same: {[state2bin(out_state) for out_state in out_states]}"
-                )
+                out_states_binary = [state2bin(out_state) for out_state in out_states]
+                _ = print("not all out_states the same") if success else None
+
+                print(f"for input state: {state2bin(in_state_zero)}:")
+                for i, out_state_binary in enumerate(out_states_binary):
+                    print(f"outcome {np.binary_repr(i)}: {out_state_binary}")
                 success = False
         else:
             out_states = [out_states]
