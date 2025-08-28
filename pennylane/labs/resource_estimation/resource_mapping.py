@@ -22,6 +22,7 @@ import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane.labs.resource_estimation import ResourceOperator
 from pennylane.operation import Operation
+from pennylane.ops.functions.iterative_qpe import iterative_qpe
 
 
 @singledispatch
@@ -223,3 +224,112 @@ def _(op: qtemps.TemporaryAND):
 @map_to_resource_op.register
 def _(op: qops.Toffoli):
     return re_ops.ResourceToffoli()
+
+@map_to_resource_op.register
+def _(op: qtemps.OutMultiplier):
+    return re_temps.ResourceOutMultiplier(
+        a_num_qubits=len(op.hyperparameters["x_wires"]),
+        b_num_qubits=len(op.hyperparameters["y_wires"]),
+    )
+
+
+@map_to_resource_op.register
+def _(op: qtemps.SemiAdder):
+    return re_temps.ResourceSemiAdder(
+        max_register_size=max(
+            len(op.hyperparameters["x_wires"]), len(op.hyperparameters["y_wires"])
+        )
+    )
+
+
+@map_to_resource_op.register
+def _(op: qtemps.QFT):
+    return re_temps.ResourceQFT(num_wires=len(op.wires))
+
+
+@map_to_resource_op.register
+def _(op: qtemps.AQFT):
+    return re_temps.ResourceAQFT(
+        order=op.hyperparameters["order"], num_wires=len(op.wires)
+    )
+
+
+@map_to_resource_op.register
+def _(op: qtemps.BasisRotation):
+    return re_temps.ResourceBasisRotation(dim_N=len(op.wires))
+
+@map_to_resource_op.register
+def _(op: qtemps.Select):
+    res_ops = [map_to_resource_op(select_op) for select_op in op.hyperparameters["ops"]]
+    return re_temps.ResourceSelect(select_ops=res_ops)
+
+
+@map_to_resource_op.register
+def _(op: qtemps.QROM):
+    data = op.hyperparameters["data"]
+    num_bitstrings = len(data)
+    size_bitstring = len(data[0]) if num_bitstrings > 0 else 0
+    return re_temps.ResourceQROM(
+        num_bitstrings=num_bitstrings, size_bitstring=size_bitstring
+    )
+
+
+@map_to_resource_op.register
+def _(op: qtemps.SelectPauliRot):
+    return re_temps.ResourceSelectPauliRot(
+        rotation_axis=op.hyperparameters["pauli_word"],
+        num_ctrl_wires=len(op.wires) - 1,
+        precision=None,
+    )
+
+
+@map_to_resource_op.register
+def _(op: qops.QubitUnitary):
+    return re_temps.ResourceQubitUnitary(num_wires=len(op.wires), precision=None)
+
+@map_to_resource_op.register
+def _(op: qtemps.ControlledSequence):
+    res_base = map_to_resource_op(op.hyperparameters["base"])
+    num_control_wires = len(op.wires) - res_base.num_wires
+    return re_temps.ResourceControlledSequence(
+        base=res_base, num_control_wires=num_control_wires
+    )
+
+
+@map_to_resource_op.register
+def _(op: qtemps.QuantumPhaseEstimation):
+    res_base = map_to_resource_op(op.hyperparameters["unitary"])
+    num_estimation_wires = len(op.hyperparameters["estimation_wires"])
+    return re_temps.ResourceQPE(
+        base=res_base, num_estimation_wires=num_estimation_wires, adj_qft_op=None
+    )
+
+
+@map_to_resource_op.register
+def _(op: qtemps.TrotterProduct):
+    res_ops = [
+        map_to_resource_op(term) for term in op.hyperparameters["hamiltonian"].ops
+    ]
+    return re_temps.ResourceTrotterProduct(
+        first_order_expansion=res_ops,
+        num_steps=op.hyperparameters["n"],
+        order=op.hyperparameters["order"],
+    )
+
+@map_to_resource_op.register
+def _(op: qtemps.MPS):
+    return re_temps.ResourceMPSPrep(num_wires=len(op.wires))
+
+
+@map_to_resource_op.register
+def _(op: qtemps.QROMStatePreparation):
+    return re_temps.ResourceQROMStatePreparation(num_wires=len(op.wires))
+
+
+@map_to_resource_op.register
+def _(op: qops.IntegerComparator):
+    return re_temps.ResourceIntegerComparator(
+        value=op.hyperparameters["val"],
+        register_size=len(op.wires) - 1,
+        geq=op.hyperparameters["geq"],
+    )

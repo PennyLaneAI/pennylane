@@ -17,7 +17,9 @@ This module contains tests for class needed to map PennyLane operations to their
 import pytest
 
 import pennylane as qml
+import numpy as np
 import pennylane.labs.resource_estimation.ops as re_ops
+import pennylane.labs.resource_estimation.templates as re_temps
 import pennylane.templates as qtemps
 from pennylane.labs.resource_estimation import map_to_resource_op
 from pennylane.operation import Operation
@@ -92,4 +94,72 @@ class Test_map_to_resource_op:
     def test_map_to_resource_op(self, operator, expected_res_op):
         """Test that map_to_resource_op maps to the appropriate resource operator"""
 
+        assert map_to_resource_op(operator) == expected_res_op
+
+
+    @pytest.mark.parametrize(
+        "operator, expected_res_op",
+        [
+            (
+                qtemps.OutMultiplier(x_wires=[0, 1], y_wires=[2], output_wires=[3, 4]),
+                re_temps.ResourceOutMultiplier(a_num_qubits=2, b_num_qubits=1),
+            ),
+            (
+                qml.SemiAdder(x_wires=[0, 1, 2], y_wires=[3, 4], work_wires=[5]),
+                re_temps.ResourceSemiAdder(max_register_size=3),
+            ),
+            # (qtemps.QFT(wires=[0, 1, 2]), re_temps.ResourceQFT(num_wires=3)),
+            # (
+            #     qtemps.AQFT(order=3, wires=[0, 1, 2, 3]),
+            #     re_temps.ResourceAQFT(order=3, num_wires=4),
+            # ),
+            # (
+            #     qtemps.BasisRotation(np.eye(4), wires=[0, 1, 2, 3]),
+            #     re_temps.ResourceBasisRotation(dim_N=4),
+            # ),
+            # (
+            #     qtemps.Select([qml.PauliX(2), qml.PauliY(2)], control=[0, 1]),
+            #     re_temps.ResourceSelect(select_ops=[re_ops.ResourceX(), re_ops.ResourceY()]),
+            # ),
+            # (
+            #     qtemps.QROM([[0, 1], [1, 1], [1, 0]], wires=[0, 1, 2, 3]),
+            #     re_temps.ResourceQROM(num_bitstrings=3, size_bitstring=2),
+            # ),
+            # (
+            #     qtemps.SelectPauliRot(0.5, "Z", wires=[0, 1, 2]),
+            #     re_temps.ResourceSelectPauliRot(rotation_axis="Z", num_ctrl_wires=2, precision=None),
+            # ),
+            # (
+            #     qml.QubitUnitary(np.eye(2), wires=0),
+            #     re_temps.ResourceQubitUnitary(num_wires=1, precision=None),
+            # ),
+            # (
+            #     qtemps.ControlledSequence(qml.RY(0.5, wires=2), wires=[0, 1]),
+            #     re_temps.ResourceControlledSequence(base=re_ops.ResourceRY(), num_control_wires=2),
+            # ),
+            # (
+            #     qml.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),
+            #     re_temps.ResourceQPE(base=re_ops.ResourceZ(), num_estimation_wires=2),
+            # ),
+            # (
+            #     qml.TrotterProduct(
+            #         qml.Hamiltonian([0.5, 0.5], [qml.PauliX(0), qml.PauliY(1)]),
+            #         time=1.0,
+            #         n=10,
+            #         order=2,
+            #     ),
+            #     re_temps.ResourceTrotterProduct(
+            #         first_order_expansion=[re_ops.ResourceX(), re_ops.ResourceY()],
+            #         num_steps=10,
+            #         order=2,
+            #     ),
+            # ),
+            # (
+            #     qml.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
+            #     re_temps.ResourceIntegerComparator(value=5, register_size=3, geq=False),
+            # ),
+        ],
+    )
+    def test_map_to_resource_op_templates(self, operator, expected_res_op):
+        """Test that map_to_resource_op maps templates to the appropriate resource operator"""
         assert map_to_resource_op(operator) == expected_res_op
