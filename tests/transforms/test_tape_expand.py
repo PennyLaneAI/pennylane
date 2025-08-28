@@ -823,7 +823,6 @@ class TestCreateCustomDecompExpandFn:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "CNOT"
 
-
         assert dev.preprocess_transforms()[0].transform.__name__ == "decompose"
         assert dev.preprocess_transforms()[0].kwargs.get("decomposer", None) is None
 
