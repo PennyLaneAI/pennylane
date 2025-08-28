@@ -5,7 +5,10 @@
 
 * A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
   which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
+  A corresponding decomposition rule has been added to support efficiently controlling the pattern,
+  in which only the central (target) operator is controlled, and not U or U†.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
+  [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
 
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
@@ -496,6 +499,8 @@
 * The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
   StableHLO dialect with missing upstream operations.
   [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
+  [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
+  
 
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
@@ -547,6 +552,7 @@
 
 * `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+  [(#8046)](https://github.com/PennyLaneAI/pennylane/pull/8046)
 
 * Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
   This prevents the potential mutation of a global object. 
