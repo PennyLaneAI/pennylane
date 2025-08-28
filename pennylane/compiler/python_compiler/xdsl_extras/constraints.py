@@ -16,11 +16,18 @@
 upstream in xDSL."""
 
 from abc import ABC, abstractmethod
-from collections.abc import Collection, Sequence
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from typing import TypeVar
 
-from xdsl.dialects.builtin import ArrayAttr, IntAttr, IntAttrConstraint, MemRefType, TensorType
+from xdsl.dialects.builtin import (
+    ArrayAttr,
+    IntAttr,
+    IntAttrConstraint,
+    MemRefType,
+    TensorType,
+    TupleType,
+)
 from xdsl.ir import Attribute, AttributeInvT
 from xdsl.irdl import (
     AnyAttr,
@@ -28,10 +35,12 @@ from xdsl.irdl import (
     AttrConstraint,
     ConstraintContext,
     EqIntConstraint,
+    IntConstraint,
     IntSetConstraint,
     IRDLAttrConstraint,
     RangeLengthConstraint,
     RangeOf,
+    irdl_to_attr_constraint,
 )
 from xdsl.utils.exceptions import VerifyException
 
@@ -53,7 +62,7 @@ class ContainerConstraint(AttrConstraint, ABC):
         * By providing an ``IRDLAttrConstraint`` for the ``rank`` argument.
         * By providing an ``int`` representing the concrete expected rank for the ``rank``
           argument.
-        * By providing a sequence of ``int``\ s specifying the various allowed ranks for the
+        * By providing a collection of ``int``\ s specifying the various allowed ranks for the
           ``rank`` argument.
 
     .. note::
@@ -65,7 +74,7 @@ class ContainerConstraint(AttrConstraint, ABC):
             Default is ``None``, which indicates that any element type is allowed.
         shape (IRDLAttrConstraint | Sequence[int] | None): The constraint for the shape.
             Default is ``None``, which indicates that any shape is allowed.
-        shape (IRDLAttrConstraint | Sequence[int] | int | None): The constraint for the
+        rank (IRDLAttrConstraint | Collection[int] | int | None): The constraint for the
             rank. Default is ``None``, which indicates that any rank is allowed.
     """
 
@@ -173,3 +182,53 @@ class MemRefConstraint(ContainerConstraint):
     @property
     def expected_type(self):
         return MemRefType
+
+
+@dataclass(frozen=True, init=False)
+class NestedTupleOfConstraint(AttrConstraint[TupleType]):
+    """Constrain a nested tuple whose flattened leaves all match any allowed constraints."""
+
+    elem_constraints: tuple[AttrConstraint, ...]
+
+    def __init__(self, elem_constraints: Sequence[object]):
+        object.__setattr__(
+            self,
+            "elem_constraints",
+            tuple(irdl_to_attr_constraint(c) for c in elem_constraints),
+        )
+
+    def get_flattened(self, a: Attribute):
+        """Get the flattened leaves of a tuple."""
+        if isinstance(a, TupleType):
+            for t in a.types.data:
+                yield from self.get_flattened(t)
+        else:
+            yield a
+
+    def verify(self, attr: Attribute, constraint_context: ConstraintContext) -> None:
+        """Verify that the attribute is a tuple of allowed types."""
+        if not isinstance(attr, TupleType):
+            raise VerifyException(f"expected TupleType, got {type(attr)}")
+
+        leaves = list(self.get_flattened(attr))
+
+        for i, leaf in enumerate(leaves):
+            matched = False
+            for constr in self.elem_constraints:
+                try:
+                    constr.verify(leaf, constraint_context)
+                    matched = True
+                    break
+                except VerifyException:
+                    # Try next allowed constraint
+                    pass
+            if not matched:
+                raise VerifyException(f"tuple leaf {i} failed all allowed constraints: {leaf}")
+
+    def mapping_type_vars(
+        self,
+        type_var_mapping: Mapping[TypeVar, AttrConstraint | IntConstraint],
+    ) -> AttrConstraint:
+        """Map type variables to constraints."""
+        # pylint: disable=unused-argument
+        return self
