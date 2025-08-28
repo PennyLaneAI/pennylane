@@ -19,7 +19,7 @@ from __future__ import annotations
 from collections.abc import MutableMapping
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from pennylane.concurrency.executors.backends import ExecBackends, get_executor
 from pennylane.math.interface_utils import Interface, get_canonical_interface_name
