@@ -36,7 +36,7 @@ from pennylane.exceptions import CompileError
 from ..dialects import mbqc, quantum
 from .api import compiler_transform
 
-DenselyPackedAdjMatrix: TypeAlias = list[int] | list[bool]
+DenselyPackedAdjMatrix: TypeAlias = Sequence[int] | Sequence[bool]
 
 
 @dataclass(frozen=True)
