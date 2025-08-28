@@ -581,7 +581,7 @@ class TestRegularization:
         try:
             import cvxpy as cp
             print("ABOUT TO CALL")
-            output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=1e-10, max_iters=10)
+            output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=1e-10)
         except cp.error.SolverError:
             pytest.skip(
                 "The cvxopt solver seems to not be installed on the system."
