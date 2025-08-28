@@ -710,7 +710,7 @@ class TestSample:
         tape = qml.tape.QuantumScript([], [qml.sample(wires=0)], shots=10)
         res = dev.execute(tape)
         assert qml.math.get_dtype_name(res)[0:3] == "int"
-        assert res.shape == (10,)
+        assert res.shape == (10, 1)
 
     def test_sample_dimensions(self):
         """Tests if the samples returned by the sample function have
@@ -1234,9 +1234,9 @@ class TestWiresIntegration:
         "wires1, wires2",
         [
             (["a", "c", "d"], [2, 3, 0]),
-            ([-1, -2, -3], ["q1", "ancilla", 2]),
+            ([-1, -2, -3], ["q1", "auxiliary", 2]),
             (["a", "c"], [3, 0]),
-            ([-1, -2], ["ancilla", 2]),
+            ([-1, -2], ["auxiliary", 2]),
             (["a"], ["nothing"]),
         ],
     )
