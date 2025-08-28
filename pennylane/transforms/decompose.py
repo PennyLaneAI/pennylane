@@ -29,6 +29,7 @@ from pennylane.decomposition import DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
 from pennylane.operation import Operator
+from pennylane.ops.identity import GlobalPhase
 from pennylane.transforms.core import transform
 
 
@@ -114,7 +115,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
 
             gate_set, stopping_condition = _resolve_gate_set(gate_set, stopping_condition)
             self._gate_set = gate_set
-            self._stopping_condition = stopping_condition
+            self.stopping_condition = stopping_condition
 
         def setup(self) -> None:
             """Setup the environment for the interpreter by pushing a new environment frame."""
@@ -133,34 +134,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         def read(self, var):
             """Extract the value corresponding to a variable."""
             return var.val if isinstance(var, jax.extend.core.Literal) else self._env_map[var]
-
-        def stopping_condition(self, op: Operator) -> bool:
-            """Function to determine whether an operator needs to be decomposed or not.
-
-            Args:
-                op (Operator): Operator to check.
-
-            Returns:
-                bool: Whether ``op`` is valid or needs to be decomposed. ``True`` means
-                    that the operator does not need to be decomposed.
-            """
-
-            # If the new graph-based decomposition is enabled,
-            # we don't rely on the has_decomposition attribute.
-            if enabled_graph():
-                return self._stopping_condition(op)
-
-            if not op.has_decomposition:
-                if not self._stopping_condition(op):
-                    warnings.warn(
-                        f"Operator {op.name} does not define a decomposition and was not "
-                        f"found in the target gate set. To remove this warning, add the operator "
-                        f"name ({op.name}) or type ({type(op)}) to the gate set.",
-                        UserWarning,
-                    )
-                return True
-
-            return self._stopping_condition(op)
 
         def decompose_operation(self, op: Operator):
             """Decompose a PennyLane operation instance if it does not satisfy the
@@ -197,13 +170,13 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
         def _evaluate_jaxpr_decomposition(self, op: Operator):
             """Creates and evaluates a Jaxpr of the plxpr decomposition of an operator."""
 
-            if self._stopping_condition(op):
-                return self.interpret_operation(op)
-
             if self.max_expansion is not None and self._current_depth >= self.max_expansion:
                 return self.interpret_operation(op)
 
-            if enabled_graph() and self._decomp_graph_solution.is_solved_for(op):
+            if self._stopping_condition(op):
+                return self.interpret_operation(op)
+
+            if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(op):
 
                 rule = self._decomp_graph_solution.decomposition(op)
                 num_wires = len(op.wires)
@@ -326,7 +299,7 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             # a solution is found for this operator in the graph.
             if (
                 op.has_qfunc_decomposition
-                or enabled_graph()
+                or self._decomp_graph_solution
                 and self._decomp_graph_solution.is_solved_for(op)
             ):
                 return self._evaluate_jaxpr_decomposition(op)
@@ -762,26 +735,7 @@ def decompose(
 
     gate_set, stopping_condition = _resolve_gate_set(gate_set, stopping_condition)
 
-    def _stopping_condition(op):
-
-        # If the new graph-based decomposition is enabled,
-        # we don't rely on the has_decomposition attribute.
-        if enabled_graph():
-            return stopping_condition(op)
-
-        if not op.has_decomposition:
-            if not stopping_condition(op):
-                warnings.warn(
-                    f"Operator {op.name} does not define a decomposition and was not "
-                    f"found in the target gate set. To remove this warning, add the operator name "
-                    f"({op.name}) or type ({type(op)}) to the gate set.",
-                    UserWarning,
-                )
-            return True
-
-        return stopping_condition(op)
-
-    if all(_stopping_condition(op) for op in tape.operations):
+    if all(stopping_condition(op) for op in tape.operations):
         return (tape,), null_postprocessing
 
     # If the decomposition graph is enabled, we create a DecompositionGraph instance
@@ -804,7 +758,7 @@ def decompose(
             for op in tape.operations
             for final_op in _operator_decomposition_gen(
                 op,
-                _stopping_condition,
+                stopping_condition,
                 max_expansion=max_expansion,
                 num_available_work_wires=num_available_work_wires,
                 graph_solution=decomp_graph_solution,
@@ -838,22 +792,43 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
     if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
 
-    if acceptance_function(op) or max_depth_reached:
+    if isinstance(op, (Allocate, Deallocate)):
         yield op
-    elif isinstance(op, (Allocate, Deallocate)):
+
+    elif acceptance_function(op) or max_depth_reached:
         yield op
-    elif graph_solution is not None and graph_solution.is_solved_for(op, num_available_work_wires):
+
+    elif graph_solution and graph_solution.is_solved_for(op, num_available_work_wires):
         op_rule = graph_solution.decomposition(op, num_available_work_wires)
         with queuing.AnnotatedQueue() as decomposed_ops:
             op_rule(*op.parameters, wires=op.wires, **op.hyperparameters)
         decomp = decomposed_ops.queue
-        current_depth += 1
         if num_available_work_wires is not None:
             num_available_work_wires -= op_rule.get_work_wire_spec(**op.resource_params).total
-    else:
-        decomp = op.decomposition()
-        current_depth += 1
 
+    elif enabled_graph() and isinstance(op, GlobalPhase):
+        warnings.warn(
+            "With qml.decomposition.enabled_graph(), GlobalPhase is not assumed to have a "
+            "decomposition. To disable this warning, add `GlobalPhase` to the gate set, or "
+            "assign a decomposition rule to `GlobalPhase` via the `fixed_decomps` keyword "
+            "argument. To make GlobalPhase decompose to nothing, you can import `null_decomp` "
+            "from pennylane.decomposition.decomposition_rule, and assign it to GlobalPhase."
+        )
+        yield op
+
+    elif op.has_decomposition:
+        decomp = op.decomposition()
+
+    else:
+        warnings.warn(
+            f"Operator {op.name} does not define a decomposition and was not found in the "
+            f"target gate set. To remove this warning, add the operator name({op.name}) or "
+            f"type ({type(op)}) to the gate set.",
+            UserWarning,
+        )
+        yield op
+
+    current_depth += 1
     for sub_op in decomp:
         yield from _operator_decomposition_gen(
             sub_op,
