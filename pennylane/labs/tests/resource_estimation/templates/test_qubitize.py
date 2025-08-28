@@ -69,16 +69,18 @@ class TestQubitizeTHC:
         )
 
     # We are comparing the Toffoli and qubit cost here
-    # Expected number of Toffolis and qubits were obtained from https://arxiv.org/abs/2011.03494
+    # Expected number of Toffolis and qubits were obtained from equations 44 and 46  in https://arxiv.org/abs/2011.03494
+    # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
         "compact_ham, coeff_prec, rotation_prec, selswap_depth, expected_res",
         (
             (
+                # This test was taken from arXiv:2501.06165, numbers are adjusted to only the walk operator cost without unary iteration
                 plre.CompactHamiltonian.thc(58, 160),
                 13,
                 13,
-                1,
-                {"algo_qubits": 152, "ancilla_qubits": 752, "toffoli_gates": 32317},
+                None,
+                {"algo_qubits": 152, "ancilla_qubits": 791, "toffoli_gates": 8579},
             ),
             (
                 plre.CompactHamiltonian.thc(10, 50),

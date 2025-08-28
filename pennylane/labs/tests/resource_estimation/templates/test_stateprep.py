@@ -268,7 +268,8 @@ class TestPrepTHC:
         assert plre.ResourcePrepTHC.resource_rep(compact_ham, coeff_prec, selswap_depth) == expected
 
     # We are comparing the Toffoli and qubit cost here
-    # Expected number of Toffolis and qubits were obtained from https://arxiv.org/abs/2011.03494
+    # Expected number of Toffolis and qubits were obtained from Eq. 33 in https://arxiv.org/abs/2011.03494.
+    # The numbers were adjusted slightly to account for a different QROM decomposition
     @pytest.mark.parametrize(
         "compact_ham, coeff_prec, selswap_depth, expected_res",
         (
@@ -313,6 +314,8 @@ class TestPrepTHC:
             TypeError, match="Unsupported Hamiltonian representation for ResourcePrepTHC."
         ):
             plre.ResourcePrepTHC(plre.CompactHamiltonian.cdf(58, 160))
+
+
 class TestMPSPrep:
     """Tests for the ResourceMPSPrep template"""
 

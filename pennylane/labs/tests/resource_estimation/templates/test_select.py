@@ -65,7 +65,8 @@ class TestSelectTHC:
         )
 
     # We are comparing the Toffoli and qubit cost here
-    # Expected number of Toffolis and qubits were obtained from https://arxiv.org/abs/2011.03494
+    # Expected number of Toffolis and qubits were obtained from Eq. 44 and 46 in https://arxiv.org/abs/2011.03494
+    # The numbers were adjusted slightly to account for removal of phase gradient state and a different QROM decomposition
     @pytest.mark.parametrize(
         "compact_ham, rotation_prec, selswap_depth, expected_res",
         (
