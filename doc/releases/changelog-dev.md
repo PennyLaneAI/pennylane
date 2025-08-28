@@ -5,7 +5,10 @@
 
 * A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
   which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
+  A corresponding decomposition rule has been added to support efficiently controlling the pattern,
+  in which only the central (target) operator is controlled, and not U or U†.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
+  [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
 
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
@@ -753,6 +756,10 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* The `autograph` keyword argument has been removed from the `QNode` constructor. 
+  To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
+  [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
+  
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
   [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
 
