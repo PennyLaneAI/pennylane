@@ -756,6 +756,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update `autograph` guide to reflect new capabilities.
+  [(#8132)](https://github.com/PennyLaneAI/pennylane/pull/8132)
+
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
   [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
