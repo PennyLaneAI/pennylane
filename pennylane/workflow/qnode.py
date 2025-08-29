@@ -841,7 +841,8 @@ class QNode:
         params = tape.get_parameters(trainable_only=False)
         tape.trainable_params = math.get_trainable_indices(params)
 
-        _validate_qfunc_output(self._qfunc_output, tape.measurements)
+        if q.queue:
+            _validate_qfunc_output(self._qfunc_output, tape.measurements)
         self._tape = tape
         return tape
 
