@@ -280,6 +280,15 @@ class Testdraw:
                 "0: ──RX─┤ ╭<X@Y> ╭<Y@Z@X> ╭<Z@X@Y>\n1: ──RY─┤ ╰<X@Y> ├<Y@Z@X> ├<Z@X@Y>\n2: ──RZ─┤        ╰<Y@Z@X> ╰<Z@X@Y>",
             ),
             (
+                lambda: (
+                    qml.expval(
+                        qml.Hamiltonian([0.2, 0.2], [qml.PauliX(0), qml.Y(1)])
+                        @ qml.Hamiltonian([0.1, 0.1], [qml.PauliZ(2), qml.PauliZ(3)])
+                    )
+                ),
+                "0: ──RX─┤ ╭<(𝓗)@(𝓗)>\n1: ──RY─┤ ├<(𝓗)@(𝓗)>\n2: ──RZ─┤ ├<(𝓗)@(𝓗)>\n3: ─────┤ ╰<(𝓗)@(𝓗)>",
+            ),
+            (
                 lambda: (qml.var(qml.X(0)), qml.var(qml.Y(1)), qml.var(qml.Z(2))),
                 "0: ──RX─┤  Var[X]\n1: ──RY─┤  Var[Y]\n2: ──RZ─┤  Var[Z]",
             ),

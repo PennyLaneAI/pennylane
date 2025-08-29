@@ -16,21 +16,16 @@ which collects and maps PennyLane operations and measurements from xDSL."""
 
 import inspect
 
-from xdsl.dialects.builtin import (
-    DenseIntOrFPElementsAttr,
-    IntegerAttr,
-)
+from xdsl.dialects.builtin import DenseIntOrFPElementsAttr, IntegerAttr
 from xdsl.dialects.tensor import ExtractOp as TensorExtractOp
 from xdsl.ir import SSAValue
 
 import pennylane as qml
 from pennylane import ops
-from pennylane.compiler.python_compiler.dialects.quantum import (
-    ComputationalBasisOp,
-    CustomOp,
-)
+from pennylane.compiler.python_compiler.dialects.quantum import ComputationalBasisOp, CustomOp
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
+    HamiltonianOp,
     MeasureOp,
     NamedObsOp,
     TensorOp,
@@ -107,6 +102,14 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
             return op.value.value.data  # Catalyst
         case "stablehlo.convert":
             return resolve_constant_params(op.operands[0])
+        case "builtin.unregistered":
+            if hasattr(op, "attributes"):
+                if op.attributes["op_name__"].data == "stablehlo.concatenate":
+                    return [
+                        resolve_constant_params(op.operands[i]) for i in range(len(op.operands))
+                    ]
+                if op.attributes["op_name__"].data == "stablehlo.broadcast_in_dim":
+                    return resolve_constant_params(op.operands[0])
         case _:
             raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
 
@@ -118,6 +121,7 @@ def dispatch_wires_extract(op: ExtractOpPL):
     return resolve_constant_wire(op.idx)  # used by xDSL
 
 
+# pylint: disable=too-many-return-statements
 def resolve_constant_wire(ssa: SSAValue) -> int:
     """Resolve the wire for the given SSA qubit."""
     if isinstance(ssa, IntegerAttr):  # used by Catalyst
@@ -197,15 +201,22 @@ def xdsl_to_qml_measure_op(op: MeasureOp) -> MeasurementProcess:
     return resolve_measurement(op.name)(wires=wire)
 
 
-def xdsl_to_qml_named_op(op: NamedObsOp | TensorOp) -> Operator:
-    """Convert a ``quantum.namedobs`` xDSL op to a PennyLane operator."""
-
-    if op.name == "quantum.tensor":
-        ops_list = [xdsl_to_qml_named_op(operand.owner) for operand in op.operands]
-        return qml.prod(*ops_list)
+def xdsl_to_qml_obs_op(op: NamedObsOp | TensorOp | HamiltonianOp) -> Operator:
+    """Convert an xDSL observable operation to a PennyLane operator."""
 
     if op.name == "quantum.namedobs":
         return resolve_gate(op.type.data.value)(wires=ssa_to_qml_wires_named(op))
+
+    if op.name == "quantum.tensor":
+        ops_list = [xdsl_to_qml_obs_op(operand.owner) for operand in op.operands]
+        return qml.prod(*ops_list)
+
+    if op.name == "quantum.hamiltonian":
+        coeffs = _extract(op, "coeffs", resolve_constant_params, single=True)
+        ops_list = [xdsl_to_qml_obs_op(term.owner) for term in op.terms]
+        return qml.Hamiltonian(coeffs, ops_list)
+
+    raise NotImplementedError(f"Cannot resolve named op: {op}")
 
 
 def xdsl_to_qml_compbasis_op(op: ComputationalBasisOp) -> list[int] | None:

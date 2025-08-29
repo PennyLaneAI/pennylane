@@ -18,17 +18,11 @@ from functools import singledispatchmethod
 from typing import Any, Union
 
 from xdsl.dialects import builtin, func
-from xdsl.dialects.builtin import (
-    FloatAttr,
-    IntegerAttr,
-)
+from xdsl.dialects.builtin import FloatAttr, IntegerAttr
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
-    CustomOp,
-    ExpvalOp,
-)
+from pennylane.compiler.python_compiler.dialects.quantum import CustomOp, ExpvalOp
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     MeasureOp,
@@ -46,7 +40,7 @@ from .xdsl_conversion import (
     xdsl_to_qml_custom_op,
     xdsl_to_qml_meas,
     xdsl_to_qml_measure_op,
-    xdsl_to_qml_named_op,
+    xdsl_to_qml_obs_op,
 )
 
 
@@ -66,8 +60,8 @@ class QMLCollector:
 
     # pylint: disable=unused-argument
     @singledispatchmethod
-    def handle(self, xdsl_op: Any) -> Union[Operator, MeasurementProcess, None]:
-        """Default: unsupported op → return None (caller simply skips it)."""
+    def handle(self, _: Any) -> Union[Operator, MeasurementProcess, None]:
+        """Default handler for unsupported operations. If the operation is not recognized, return None."""
         return None
 
     ############################################################
@@ -86,7 +80,7 @@ class QMLCollector:
     @handle.register
     def _(self, xdsl_meas_op: ExpvalOp | VarianceOp) -> MeasurementProcess:
         obs_op = xdsl_meas_op.obs.owner
-        return xdsl_to_qml_meas(xdsl_meas_op, xdsl_to_qml_named_op(obs_op))
+        return xdsl_to_qml_meas(xdsl_meas_op, xdsl_to_qml_obs_op(obs_op))
 
     @handle.register
     def _(self, xdsl_measure: MeasureOp) -> Operator:
