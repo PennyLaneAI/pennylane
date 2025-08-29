@@ -452,6 +452,7 @@ def assert_valid(
     skip_new_decomp=False,
     skip_pickle=False,
     skip_wire_mapping=False,
+    skip_capture=False,
     heuristic_resources=False,
 ) -> None:
     """Runs basic validation checks on an :class:`~.operation.Operator` to make
@@ -528,4 +529,5 @@ def assert_valid(
     _check_generator(op)
     if not skip_differentiation:
         _check_differentiation(op)
-    _check_capture(op)
+    if not skip_capture:
+        _check_capture(op)

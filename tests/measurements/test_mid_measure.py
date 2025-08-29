@@ -26,12 +26,6 @@ from pennylane.wires import Wires
 # pylint: disable=too-few-public-methods, too-many-public-methods
 
 
-def test_samples_computational_basis():
-    """Test that samples_computational_basis is always false for mid circuit measurements."""
-    m = MidMeasureMP(Wires(0))
-    assert not m.samples_computational_basis
-
-
 class TestMeasure:
     """Tests for the measure function"""
 

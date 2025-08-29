@@ -139,10 +139,6 @@ class MidMeasureMP(Operator):
     num_params = 0
     batch_size = None
 
-    def _flatten(self):
-        metadata = (("wires", self.wires), ("reset", self.reset), ("id", self.id))
-        return (None, None), metadata
-
     def __init__(
         self,
         wires: Wires | None = None,
@@ -151,14 +147,20 @@ class MidMeasureMP(Operator):
         id: str | None = None,
     ):
         super().__init__(wires=Wires(wires), id=id)
-        self._hyperparameters = {"reset": reset, "postselect": postselect}
-        self.reset = reset
-        self.postselect = postselect
+        self._hyperparameters = {"reset": reset, "postselect": postselect, "id": id}
+
+    @property
+    def reset(self):
+        return self.hyperparameters["reset"]
+
+    @property
+    def postselect(self):
+        return self.hyperparameters["postselect"]
 
     # pylint: disable=arguments-renamed, arguments-differ
     @classmethod
-    def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
-        raise NotImplementedError
+    def _primitive_bind_call(cls, *args, **kwargs):
+        return type.__call__(cls, *args, **kwargs)
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
