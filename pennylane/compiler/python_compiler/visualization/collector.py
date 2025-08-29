@@ -25,10 +25,7 @@ from xdsl.dialects.builtin import (
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import (
-    CustomOp,
-    ExpvalOp,
-)
+from pennylane.compiler.python_compiler.dialects.quantum import CustomOp, ExpvalOp, VarianceOp
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
     ProbsOp,
@@ -86,6 +83,12 @@ class QMLCollector:
         xdsl_named_obs_op = xdsl_expval.obs.owner
         qml_obs_op = xdsl_to_qml_named_op(xdsl_named_obs_op)
         return xdsl_to_qml_meas(xdsl_expval, qml_obs_op)
+
+    @handle.register
+    def _(self, xdsl_var: VarianceOp) -> MeasurementProcess:
+        xdsl_named_obs_op = xdsl_var.obs.owner
+        qml_obs_op = xdsl_to_qml_named_op(xdsl_named_obs_op)
+        return xdsl_to_qml_meas(xdsl_var, qml_obs_op)
 
     @handle.register
     def _(self, xdsl_custom_op: CustomOp) -> Operator:

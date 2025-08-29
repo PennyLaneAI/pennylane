@@ -317,6 +317,18 @@ class Testdraw:
 
         assert draw(circ)() == "0: ──RX─┤  <X>\n1: ──RY─┤  <Y>\n2: ──RZ─┤  <Z>"
 
+    def test_var_meas(self):
+        """Test that the variance measurement is visualized correctly."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.RX(0.1, 0)
+            qml.RY(0.2, 1)
+            qml.RZ(0.3, 2)
+            return qml.var(qml.X(0)), qml.var(qml.Y(1)), qml.var(qml.Z(2))
+
+        assert draw(circ)() == "0: ──RX─┤  Var[X]\n1: ──RY─┤  Var[Y]\n2: ──RZ─┤  Var[Z]"
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])

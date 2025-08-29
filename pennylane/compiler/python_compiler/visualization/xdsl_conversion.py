@@ -50,6 +50,7 @@ from_str_to_PL_measurement = {
     "quantum.probs": qml.probs,
     "quantum.sample": qml.sample,
     "quantum.expval": qml.expval,
+    "quantum.var": qml.var,
 }
 
 ######################################################
