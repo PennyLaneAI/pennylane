@@ -39,9 +39,7 @@ def test_name():
 def test_shots():
     """Test the shots property of NullQubit."""
     assert NullQubit().shots == qml.measurements.Shots(None)
-    with pytest.warns(
-        qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-    ):
+    with pytest.warns(PennyLaneDeprecationWarning, match="shots on device is deprecated"):
         assert NullQubit(shots=100).shots == qml.measurements.Shots(100)
 
     with pytest.raises(AttributeError):
