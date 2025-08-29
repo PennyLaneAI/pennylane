@@ -799,9 +799,9 @@ class TestSpecialUnitaryIntegration:
 
         jax.config.update("jax_enable_x64", True)
 
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, interface="jax", diff_method=diff_method, shots=shots)
         if use_jit:
             qnode = jax.jit(qnode)
 
@@ -836,9 +836,11 @@ class TestSpecialUnitaryIntegration:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import torch
 
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method)
+        qnode = qml.QNode(
+            self.circuit, dev, interface="torch", diff_method=diff_method, shots=shots
+        )
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
@@ -868,9 +870,9 @@ class TestSpecialUnitaryIntegration:
         argument controls whether autodiff or parameter-shift gradients are used."""
         import tensorflow as tf
 
-        dev = dev_fn(wires=2, shots=shots)
+        dev = dev_fn(wires=2)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method)
+        qnode = qml.QNode(self.circuit, dev, interface="tf", diff_method=diff_method, shots=shots)
 
         x = tf.Variable(self.x)
         with tf.GradientTape() as tape:
