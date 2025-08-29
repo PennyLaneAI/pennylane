@@ -571,8 +571,6 @@ class TestRegularization:
 
         The small perturbation ensures that the solver does not get stuck.
         """
-        if sys.version_info.minor > 11:
-            pytest.xfail("Test does not converge with Python 3.12")
         input, fix_diagonal, expected_output = (
             np.array([[0, 1.000001], [1, 0]]),
             True,
@@ -581,7 +579,10 @@ class TestRegularization:
         try:
             import cvxpy as cp
 
-            output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=1e-10)
+            # The feastol is more tolerant than `test_closest_psd_matrix`
+            # Because 1e-10 made the test numerically unstable and it failed when run on different Python versions
+            # or different Hardware (e.g. local machine vs CI)
+            output = kern.closest_psd_matrix(input, fix_diagonal=fix_diagonal, feastol=2e-10)
         except cp.error.SolverError:
             pytest.skip(
                 "The cvxopt solver seems to not be installed on the system."
