@@ -141,8 +141,7 @@ Currently, AutoGraph supports converting the following Python statements:
 - ``for`` loops
 - ``while`` loops
 
-``break`` and ``continue`` statements are currently not supported. The logical operators
-``and``, ``or`` and ``not`` are currently unsupported.
+``break`` and ``continue`` statements are currently not supported. 
 
 Nested functions
 ----------------
@@ -566,22 +565,6 @@ will be ignored by AutoGraph:
 >>> plxpr = make_plxpr(fn)(0)
 >>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 10)
 [0]
-
-Logical statements
-------------------
-
-AutoGraph supports capturing logical statements that involve dynamic variables --- that is,
-statements involving ``and``, ``not``, and ``or`` that return booleans.
-
->>> def fn(x):
-...     if (x > 0) and (x < 5):
-...         return x
-...     return -x
->>> plxpr = make_plxpr(fn)(0.0)
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, 2.5)
-[2.5]
->>> jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts, -3.0)
-[Array(3., dtype=float32, weak_type=True)]
 
 Debugging
 ---------
