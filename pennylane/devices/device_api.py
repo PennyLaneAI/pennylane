@@ -1001,6 +1001,7 @@ class Device(abc.ABC):
 
         Keyword Args:
             execution_config (Optional[ExecutionConfig]): a data structure with additional information required for execution
+            shots (Optional[Shots]): the number of shots to use for the evaluation
 
         Returns:
             list[TensorLike]: the result of evaluating the jaxpr with the given parameters.
