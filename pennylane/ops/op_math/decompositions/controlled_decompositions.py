@@ -471,7 +471,7 @@ decompose_mcx_many_workers_explicit = flip_zero_control(_mcx_many_workers)
 def _mcx_many_zeroed_workers(wires, **kwargs):
     num_control_wires = len(wires) - 1
     num_work_wires = num_control_wires - 2
-    with allocation.allocate(num_work_wires, require_zeros=True, restored=True) as work_wires:
+    with allocation.allocate(num_work_wires, state="zero", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "zeroed"})
         _mcx_many_workers(wires, **kwargs)
 
@@ -488,7 +488,7 @@ decompose_mcx_many_zeroed_workers = flip_zero_control(_mcx_many_zeroed_workers)
 def _mcx_many_borrowed_workers(wires, **kwargs):
     num_control_wires = len(wires) - 1
     num_work_wires = num_control_wires - 2
-    with allocation.allocate(num_work_wires, require_zeros=False, restored=True) as work_wires:
+    with allocation.allocate(num_work_wires, state="any", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "borrowed"})
         _mcx_many_workers(wires, **kwargs)
 
@@ -560,7 +560,7 @@ decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
     work_wires={"zeroed": 2},
 )
 def _mcx_two_zeroed_workers(wires, **kwargs):
-    with allocation.allocate(2, require_zeros=True, restored=True) as work_wires:
+    with allocation.allocate(2, state="zero", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "zeroed"})
         _mcx_two_workers(wires, **kwargs)
 
@@ -575,7 +575,7 @@ decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
     work_wires={"borrowed": 2},
 )
 def _mcx_two_borrowed_workers(wires, **kwargs):
-    with allocation.allocate(2, require_zeros=False, restored=True) as work_wires:
+    with allocation.allocate(2, state="any", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "borrowed"})
         _mcx_two_workers(wires, **kwargs)
 
@@ -635,7 +635,7 @@ decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)
     work_wires={"zeroed": 1},
 )
 def _mcx_one_zeroed_worker(wires, **kwargs):
-    with allocation.allocate(1, require_zeros=True, restored=True) as work_wires:
+    with allocation.allocate(1, state="zero", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "zeroed"})
         _mcx_one_worker(wires, **kwargs)
 
@@ -650,7 +650,7 @@ decompose_mcx_one_zeroed_worker = flip_zero_control(_mcx_one_zeroed_worker)
     work_wires={"borrowed": 1},
 )
 def _mcx_one_borrowed_worker(wires, **kwargs):
-    with allocation.allocate(1, require_zeros=False, restored=True) as work_wires:
+    with allocation.allocate(1, state="any", restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "borrowed"})
         _mcx_one_worker(wires, **kwargs)
 

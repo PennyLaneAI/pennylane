@@ -65,7 +65,7 @@ class CustomOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-me
 
 @qml.register_resources({qml.Toffoli: 2, qml.CRot: 1}, work_wires={"burnable": 2})
 def _decomp_with_work_wire(wires, **__):
-    with qml.allocation.allocate(2, require_zeros=True, restored=False) as work_wires:
+    with qml.allocation.allocate(2, state="zero", restored=False) as work_wires:
         qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
         qml.Toffoli(wires=[wires[1], work_wires[0], work_wires[1]])
         qml.CRot(0.1, 0.2, 0.3, wires=[work_wires[1], wires[2]])
@@ -94,7 +94,7 @@ class LargeOpDynamicWireDecomp(Operation):  # pylint: disable=too-few-public-met
 
 @qml.register_resources({qml.Toffoli: 2, CustomOpDynamicWireDecomp: 2}, work_wires={"zeroed": 1})
 def _decomp2_with_work_wire(wires, **__):
-    with qml.allocation.allocate(1, require_zeros=True, restored=True) as work_wires:
+    with qml.allocation.allocate(1, state="zero", restored=True) as work_wires:
         qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])
         CustomOpDynamicWireDecomp(wires=[work_wires[0], wires[2], wires[3]])
         qml.Toffoli(wires=[wires[0], wires[1], work_wires[0]])

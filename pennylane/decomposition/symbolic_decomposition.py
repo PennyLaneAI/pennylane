@@ -324,7 +324,7 @@ def _ctrl_single_work_wire_resource(base_class, base_params, num_control_wires, 
 def _ctrl_single_work_wire(*params, wires, control_wires, base, **__):
     """Implements Lemma 7.11 from https://arxiv.org/abs/quant-ph/9503016."""
     base_op = base._unflatten(*base._flatten())
-    with allocation.allocate(1, True, True) as work_wires:
+    with allocation.allocate(1, state="zero", restored=True) as work_wires:
         qml.ctrl(qml.X(work_wires[0]), control=control_wires)
         qml.ctrl(base_op, control=work_wires[0])
         qml.ctrl(qml.X(work_wires[0]), control=control_wires)
