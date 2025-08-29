@@ -246,11 +246,11 @@ class Testdraw:
         """
 
         @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def circ():
+        def _():
             op()
             return qml.state()
 
-        assert draw(circ)(**kwargs) == expected
+        assert draw(_)(**kwargs) == expected
 
     @pytest.mark.parametrize(
         "measurement, expected",
@@ -264,12 +264,32 @@ class Testdraw:
                 "0: ──RX─┤  Probs\n1: ──RY─┤  Probs\n2: ──RZ─┤  Probs",
             ),
             (
+                lambda: qml.sample(),
+                "0: ──RX─┤  Sample\n1: ──RY─┤  Sample\n2: ──RZ─┤  Sample",
+            ),
+            (
                 lambda: (qml.expval(qml.X(0)), qml.expval(qml.Y(1)), qml.expval(qml.Z(2))),
                 "0: ──RX─┤  <X>\n1: ──RY─┤  <Y>\n2: ──RZ─┤  <Z>",
             ),
             (
+                lambda: (
+                    qml.expval(qml.X(0) @ qml.Y(1)),
+                    qml.expval(qml.Y(1) @ qml.Z(2) @ qml.X(0)),
+                    qml.expval(qml.Z(2) @ qml.X(0) @ qml.Y(1)),
+                ),
+                "0: ──RX─┤ ╭<X@Y> ╭<Y@Z@X> ╭<Z@X@Y>\n1: ──RY─┤ ╰<X@Y> ├<Y@Z@X> ├<Z@X@Y>\n2: ──RZ─┤        ╰<Y@Z@X> ╰<Z@X@Y>",
+            ),
+            (
                 lambda: (qml.var(qml.X(0)), qml.var(qml.Y(1)), qml.var(qml.Z(2))),
                 "0: ──RX─┤  Var[X]\n1: ──RY─┤  Var[Y]\n2: ──RZ─┤  Var[Z]",
+            ),
+            (
+                lambda: (
+                    qml.var(qml.X(0) @ qml.Y(1)),
+                    qml.var(qml.Y(1) @ qml.Z(2) @ qml.X(0)),
+                    qml.var(qml.Z(2) @ qml.X(0) @ qml.Y(1)),
+                ),
+                "0: ──RX─┤ ╭Var[X@Y] ╭Var[Y@Z@X] ╭Var[Z@X@Y]\n1: ──RY─┤ ╰Var[X@Y] ├Var[Y@Z@X] ├Var[Z@X@Y]\n2: ──RZ─┤           ╰Var[Y@Z@X] ╰Var[Z@X@Y]",
             ),
         ],
     )
@@ -279,13 +299,16 @@ class Testdraw:
         """
 
         @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def circ():
+        def _():
             qml.RX(0.1, 0)
             qml.RY(0.2, 1)
             qml.RZ(0.3, 2)
             return measurement()
 
-        assert draw(circ)() == expected
+        if isinstance(measurement(), qml.measurements.SampleMP):
+            _ = qml.set_shots(10)(_)
+
+        assert draw(_)() == expected
 
 
 if __name__ == "__main__":

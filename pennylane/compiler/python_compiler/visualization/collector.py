@@ -31,6 +31,7 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
 )
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
+    MeasureOp,
     ProbsOp,
     SampleOp,
     StateOp,
@@ -44,6 +45,7 @@ from .xdsl_conversion import (
     xdsl_to_qml_compbasis_op,
     xdsl_to_qml_custom_op,
     xdsl_to_qml_meas,
+    xdsl_to_qml_measure_op,
     xdsl_to_qml_named_op,
 )
 
@@ -68,31 +70,31 @@ class QMLCollector:
         """Default: unsupported op → return None (caller simply skips it)."""
         return None
 
+    ############################################################
+    ### Measurements
+    ############################################################
+
     @handle.register
-    def _(self, xdsl_state: StateOp) -> MeasurementProcess:
-        return xdsl_to_qml_meas(xdsl_state)
+    def _(self, xdsl_meas: StateOp | SampleOp) -> MeasurementProcess:
+        return xdsl_to_qml_meas(xdsl_meas)
 
     @handle.register
     def _(self, xdsl_probs: ProbsOp) -> MeasurementProcess:
-        xdsl_compbasis_op = xdsl_probs.obs.owner
-        qml_compbasis_op = xdsl_to_qml_compbasis_op(xdsl_compbasis_op)
-        return xdsl_to_qml_meas(xdsl_probs, qml_compbasis_op)
+        compbasis_op = xdsl_probs.obs.owner
+        return xdsl_to_qml_meas(xdsl_probs, xdsl_to_qml_compbasis_op(compbasis_op))
 
     @handle.register
-    def _(self, xdsl_sample: SampleOp) -> MeasurementProcess:
-        return xdsl_to_qml_meas(xdsl_sample)
+    def _(self, xdsl_meas_op: ExpvalOp | VarianceOp) -> MeasurementProcess:
+        obs_op = xdsl_meas_op.obs.owner
+        return xdsl_to_qml_meas(xdsl_meas_op, xdsl_to_qml_named_op(obs_op))
 
     @handle.register
-    def _(self, xdsl_expval: ExpvalOp) -> MeasurementProcess:
-        xdsl_named_obs_op = xdsl_expval.obs.owner
-        qml_obs_op = xdsl_to_qml_named_op(xdsl_named_obs_op)
-        return xdsl_to_qml_meas(xdsl_expval, qml_obs_op)
+    def _(self, xdsl_measure: MeasureOp) -> Operator:
+        return xdsl_to_qml_measure_op(xdsl_measure)
 
-    @handle.register
-    def _(self, xdsl_var: VarianceOp) -> MeasurementProcess:
-        xdsl_named_obs_op = xdsl_var.obs.owner
-        qml_obs_op = xdsl_to_qml_named_op(xdsl_named_obs_op)
-        return xdsl_to_qml_meas(xdsl_var, qml_obs_op)
+    ############################################################
+    ### Operators
+    ############################################################
 
     @handle.register
     def _(self, xdsl_custom_op: CustomOp) -> Operator:
