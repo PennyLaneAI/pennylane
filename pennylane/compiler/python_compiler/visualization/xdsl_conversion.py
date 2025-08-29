@@ -84,16 +84,14 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
     op = ssa.owner
     if isinstance(op, TensorExtractOp):
         return resolve_constant_params(op.tensor)
-    if op.name == "builtin.unregistered":
-        if hasattr(op, "attributes"):
-            if op.attributes["op_name__"].data == "stablehlo.convert":
-                return resolve_constant_params(op.operands[0])
     if op.name == "stablehlo.constant":
         return _extract_dense_constant_value(op)
     if op.name == "arith.addf":
         return resolve_constant_params(op.operands[0]) + resolve_constant_params(op.operands[1])
     if op.name == "arith.constant":
         return op.value.value.data  # used by Catalyst
+    if op.name == "stablehlo.convert":
+        return resolve_constant_params(op.operands[0])
     raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
 
 
