@@ -2129,9 +2129,9 @@ class TestIntegration:
     @pytest.mark.parametrize("wires,expected", [(None, [1, 0]), (3, [0, 0, 1])])
     def test_sample_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by sample."""
-        dev = DefaultQubit(wires=wires, shots=5)
+        dev = DefaultQubit(wires=wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=5)
         def circuit():
             qml.PauliX(2)
             qml.Identity(0)
@@ -2192,9 +2192,9 @@ class TestIntegration:
     )
     def test_counts_uses_device_wires(self, wires, all_outcomes, expected):
         """Test that if device wires are given, then they are used by probs."""
-        dev = DefaultQubit(wires=wires, shots=10)
+        dev = DefaultQubit(wires=wires)
 
-        @qml.qnode(dev, interface=None)
+        @qml.qnode(dev, interface=None, shots=10)
         def circuit():
             qml.PauliX(2)
             qml.Identity(0)
