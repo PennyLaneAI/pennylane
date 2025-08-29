@@ -51,10 +51,7 @@ class DecomposeGraphStatePass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the decompose-graph-state pass."""
 
-        greedy_applier = pattern_rewriter.GreedyRewritePatternApplier(
-            [DecomposeGraphStatePattern()]
-        )
-        walker = pattern_rewriter.PatternRewriteWalker(greedy_applier)
+        walker = pattern_rewriter.PatternRewriteWalker(DecomposeGraphStatePattern())
         walker.rewrite_module(module)
 
 
@@ -134,7 +131,10 @@ class DecomposeGraphStatePattern(RewritePattern):
 
         # Finally, erase the ops that have now been replaced with quantum ops
         rewriter.erase_matched_op()
-        rewriter.erase_op(graph_prep_op.adj_matrix.owner)
+
+        # Erase the constant op that returned the adjacency matrix only if it has no other uses
+        if len(graph_prep_op.adj_matrix.uses) == 0:
+            rewriter.erase_op(graph_prep_op.adj_matrix.owner)
 
 
 @dataclass(frozen=True)
@@ -149,10 +149,7 @@ class NullDecomposeGraphStatePass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the null-decompose-graph-state pass."""
 
-        greedy_applier = pattern_rewriter.GreedyRewritePatternApplier(
-            [NullDecomposeGraphStatePattern()]
-        )
-        walker = pattern_rewriter.PatternRewriteWalker(greedy_applier)
+        walker = pattern_rewriter.PatternRewriteWalker(NullDecomposeGraphStatePattern())
         walker.rewrite_module(module)
 
 
@@ -180,7 +177,10 @@ class NullDecomposeGraphStatePattern(RewritePattern):
 
         # Finally, erase the ops that have now been replaced with quantum ops
         rewriter.erase_matched_op()
-        rewriter.erase_op(graph_prep_op.adj_matrix.owner)
+
+        # Erase the constant op that returned the adjacency matrix only if it has no other uses
+        if len(graph_prep_op.adj_matrix.uses) == 0:
+            rewriter.erase_op(graph_prep_op.adj_matrix.owner)
 
 
 def _parse_adj_matrix(graph_prep_op: mbqc.GraphStatePrepOp) -> DenselyPackedAdjMatrix:

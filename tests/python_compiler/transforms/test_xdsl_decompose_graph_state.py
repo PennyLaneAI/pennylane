@@ -351,6 +351,30 @@ class TestDecomposeGraphStatePass:
         pipeline = (DecomposeGraphStatePass(),)
         run_filecheck(program, pipeline)
 
+    def test_adj_matrix_reuse(self, run_filecheck):
+        """Test that the decompose-graph-state pass supports the case where we reuse the adjacency
+        matrix resulting from a constant op multiple times.
+        """
+
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: quantum.alloc(3)
+            // CHECK: quantum.alloc(3)
+
+            %adj_matrix = arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            %qreg1 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            %qreg2 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
+        """
+
+        pipeline = (DecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
 
 class TestNullDecomposeGraphStatePass:
     """Unit tests for the null-decompose-graph-state pass."""
@@ -463,6 +487,30 @@ class TestNullDecomposeGraphStatePass:
             %reg0 = quantum.insert %qreg[0], %q0b : !quantum.reg, !quantum.bit
             %reg1 = quantum.insert %reg0[1], %q1b : !quantum.reg, !quantum.bit
 
+            func.return
+        }
+        """
+
+        pipeline = (NullDecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
+    def test_adj_matrix_reuse(self, run_filecheck):
+        """Test that the null-decompose-graph-state pass supports the case where we reuse the
+        adjacency matrix resulting from a constant op multiple times.
+        """
+
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: quantum.alloc(3)
+            // CHECK: quantum.alloc(3)
+
+            %adj_matrix = arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            %qreg1 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            %qreg2 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
             func.return
         }
         """
