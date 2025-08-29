@@ -35,6 +35,8 @@ from .transforms.api import ApplyTransformSequence
 class Compiler:
     """Compiler namespace"""
 
+    visual_callbacks: list[str] = ["_draw_callback", "_mlir_graph_callback"]
+
     @staticmethod
     def run(
         jmod: jaxModule, callback: Callable[[ModulePass, ModuleOp, ModulePass], None] | None = None
@@ -53,8 +55,9 @@ class Compiler:
         xmod = parser.parse_module()
         pipeline = PassPipeline((ApplyTransformSequence(callback=callback),))
         # xmod is modified in place
+        if callback and callback.__name__ in Compiler.visual_callbacks:
+            callback(None, xmod, 0)
         pipeline.apply(ctx, xmod)
-
         buffer = io.StringIO()
         Printer(stream=buffer, print_generic_format=True).print_op(xmod)
         with jaxContext() as jctx:
