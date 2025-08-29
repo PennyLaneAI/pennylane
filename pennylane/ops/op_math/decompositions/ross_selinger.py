@@ -289,7 +289,7 @@ def rs_decomposition(
             if not is_jax:
                 raise ImportError(
                     "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
-                )
+                )  # pragma: no cover
 
             # circular import issue when import outside of the function
             api_extensions = AvailableCompilers.names_entrypoints["catalyst"]["ops"].load()
