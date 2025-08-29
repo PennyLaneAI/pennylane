@@ -185,6 +185,18 @@ class DeviceCapabilities:  # pylint: disable=too-many-instance-attributes
         observable_name = observable if isinstance(observable, str) else observable.name
         return bool(_get_supported_base_op(observable_name, self.observables))
 
+    @property
+    def gate_set(self) -> set[str]:
+        """The gate set supported by this device for graph decomposition.
+
+        Returns a set of operation names that are natively supported by the device.
+        This is derived from the operations in the device capabilities.
+
+        Returns:
+            set[str]: Set of operation names supported by the device
+        """
+        return set(self.operations.keys())
+
 
 VALID_COMPILATION_OPTIONS = {
     "qjit_compatible",

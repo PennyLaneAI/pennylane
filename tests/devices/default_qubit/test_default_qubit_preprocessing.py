@@ -26,6 +26,21 @@ from pennylane.exceptions import DeviceError
 from pennylane.operation import classproperty
 
 
+@pytest.fixture(autouse=True, scope="function")
+def reset_decomposition_state():
+    """Ensure decomposition state is reset after each test to prevent interference."""
+    # Record the initial state
+    initial_state = qml.decomposition.enabled_graph()
+
+    yield  # Run the test
+
+    # Restore the initial state after the test
+    if initial_state:
+        qml.decomposition.enable_graph()
+    else:
+        qml.decomposition.disable_graph()
+
+
 class NoMatOp(qml.operation.Operation):
     """Dummy operation for expanding circuit."""
 
@@ -1012,3 +1027,235 @@ class TestAdjointDiffTapeValidation:
 
         x = pnp.array(1.1, requires_grad=True)
         assert qml.jacobian(circuit)(x) == 0
+
+
+class TestDefaultQubitPreprocessGraphDecompIntegration:
+    """Integration tests for DefaultQubit preprocessing with graph decomposition.
+
+    These tests specifically verify how DefaultQubit's preprocessing behaves
+    when graph decomposition is enabled vs disabled, focusing on:
+
+    1. DefaultQubit's gate_set integration with graph decomposition
+    2. DefaultQubit's stopping_condition behavior with graph decomposition
+    3. Measurement preservation across graph/non-graph systems in DefaultQubit
+    4. Consistency of DefaultQubit's preprocessing pipeline
+    """
+
+    def test_stopping_condition_overrides_gate_set_exclusion(self, create_operation_from_name):
+        """Test that DefaultQubit's stopping_condition takes precedence over gate_set exclusion."""
+        from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
+
+        dev = DefaultQubit(wires=3)
+
+        # Use QFT which has matrix but might not be in ALL_DQ_GATE_SET
+        operation = create_operation_from_name("QFT")
+        tape = qml.tape.QuantumScript([operation], [qml.expval(qml.Z(0))])
+
+        # Test with both graph systems - should preserve due to stopping_condition
+        for enable_graph in [False, True]:
+            if enable_graph:
+                qml.decomposition.enable_graph()
+            else:
+                qml.decomposition.disable_graph()
+
+            program = dev.preprocess_transforms()
+            processed_tapes, _ = program([tape])
+
+            # Should preserve QFT due to stopping_condition (has_matrix=True)
+            # regardless of gate_set membership
+            assert len(processed_tapes) == 1
+            processed_tape = processed_tapes[0]
+            assert len(processed_tape.operations) == 1
+            assert processed_tape.operations[0].name == "QFT"
+
+    @pytest.mark.parametrize(
+        "measurement_type",
+        ["expval_Z", "var_X", "probs_single", "state", "density_matrix", "probs_multi"],
+    )
+    def test_measurements_preserved_across_systems(
+        self, measurement_type, create_operation_from_name
+    ):
+        """Test that DefaultQubit preserves measurements identically across graph/non-graph systems."""
+
+        # Create measurement based on type
+        measurement_map = {
+            "expval_Z": qml.expval(qml.Z(0)),
+            "var_X": qml.var(qml.X(0)),
+            "probs_single": qml.probs(wires=0),
+            "state": qml.state(),
+            "density_matrix": qml.density_matrix(wires=0),
+            "probs_multi": qml.probs(wires=[0, 1]),
+        }
+        measurement = measurement_map[measurement_type]
+
+        # Simple operation that both systems handle the same way
+        operation = create_operation_from_name("RX")
+        tape = qml.tape.QuantumScript([operation], [measurement])
+
+        # Get DefaultQubit device and test preprocessing
+        dev = qml.device("default.qubit", wires=2)
+
+        # Test non-graph system
+        qml.decomposition.disable_graph()
+        program_old = dev.preprocess_transforms()
+        processed_tapes_old, _ = program_old([tape])
+
+        # Test graph system
+        qml.decomposition.enable_graph()
+        program_new = dev.preprocess_transforms()
+        processed_tapes_new, _ = program_new([tape])
+
+        assert len(processed_tapes_old) == 1
+        assert len(processed_tapes_new) == 1
+
+        processed_old = processed_tapes_old[0]
+        processed_new = processed_tapes_new[0]
+
+        # Measurements should be preserved identically
+        assert len(processed_old.measurements) == len(processed_new.measurements) == 1
+        assert type(processed_old.measurements[0]) == type(processed_new.measurements[0])
+
+        if hasattr(measurement, "obs") and measurement.obs:
+            assert processed_old.measurements[0].obs.name == processed_new.measurements[0].obs.name
+
+    @pytest.mark.parametrize(
+        "gate_name",
+        [
+            "CNOT",
+            "CRX",
+            "CRY",
+            "CRZ",
+            "CRot",
+            "Hadamard",
+            "PauliX",
+            "PauliY",
+            "PauliZ",
+            "RX",
+            "RY",
+            "RZ",
+            "Rot",
+            "S",
+            "T",
+            "PhaseShift",
+            "SWAP",
+            "ISWAP",
+            "IsingXX",
+            "IsingYY",
+            "IsingZZ",
+        ],
+    )
+    def test_gate_set_consistency_with_default_stopping_condition(
+        self, gate_name, create_operation_from_name
+    ):
+        """Test that DefaultQubit gates in ALL_DQ_GATE_SET behave consistently between systems."""
+        from pennylane.devices.default_qubit import ALL_DQ_GATE_SET, stopping_condition
+
+        # Verify gate is in the DefaultQubit gate set
+        assert gate_name in ALL_DQ_GATE_SET, f"{gate_name} should be in ALL_DQ_GATE_SET"
+
+        # Create operation using fixture
+        operation = create_operation_from_name(gate_name)
+        tape = qml.tape.QuantumScript([operation], [qml.expval(qml.Z(0))])
+
+        # Get DefaultQubit device
+        dev = qml.device("default.qubit", wires=3)
+
+        # Test non-graph system
+        qml.decomposition.disable_graph()
+        program_old = dev.preprocess_transforms()
+        processed_tapes_old, _ = program_old([tape])
+
+        # Test graph system
+        qml.decomposition.enable_graph()
+        program_new = dev.preprocess_transforms()
+        processed_tapes_new, _ = program_new([tape])
+
+        assert len(processed_tapes_old) == 1
+        assert len(processed_tapes_new) == 1
+
+        processed_old = processed_tapes_old[0]
+        processed_new = processed_tapes_new[0]
+
+        # Both should preserve the gate when using DefaultQubit's default stopping_condition
+        assert len(processed_old.operations) == len(
+            processed_new.operations
+        ), f"Mismatch for {gate_name}: old={len(processed_old.operations)}, new={len(processed_new.operations)}"
+
+        # For single operations, both should preserve the original gate
+        if len(processed_old.operations) == 1:
+            assert processed_old.operations[0].name == gate_name
+            assert processed_new.operations[0].name == gate_name
+
+        # Clean up: restore original decomposition state
+        qml.decomposition.disable_graph()
+
+    def test_all_dq_gate_set_consistency_across_systems(self, create_operation_from_name):
+        """Test that all DefaultQubit gates in ALL_DQ_GATE_SET behave consistently between systems.
+
+        This test verifies that DefaultQubit's preprocessing behaves consistently
+        when using graph vs non-graph decomposition systems for all gates in its gate set.
+        """
+        from pennylane.devices.default_qubit import ALL_DQ_GATE_SET
+
+        discrepancies = []
+        preserved_gates = []
+
+        # Get DefaultQubit device
+        dev = qml.device("default.qubit", wires=3)
+
+        for gate_name in ALL_DQ_GATE_SET:
+            # Dynamically create the operation using fixture
+            operation = create_operation_from_name(gate_name)
+            tape = qml.tape.QuantumScript([operation], [qml.expval(qml.Z(0))])
+
+            # Test non-graph system
+            qml.decomposition.disable_graph()
+            program_old = dev.preprocess_transforms()
+            processed_tapes_old, _ = program_old([tape])
+
+            # Test graph system
+            qml.decomposition.enable_graph()
+            program_new = dev.preprocess_transforms()
+            processed_tapes_new, _ = program_new([tape])
+
+            assert len(processed_tapes_old) == 1
+            assert len(processed_tapes_new) == 1
+
+            processed_old = processed_tapes_old[0]
+            processed_new = processed_tapes_new[0]
+
+            # Compare results
+            old_op_count = len(processed_old.operations)
+            new_op_count = len(processed_new.operations)
+
+            if old_op_count == 1 and new_op_count == 1:
+                preserved_gates.append(gate_name)
+            elif old_op_count != new_op_count:
+                old_names = [op.name for op in processed_old.operations]
+                new_names = [op.name for op in processed_new.operations]
+                discrepancies.append(
+                    {
+                        "gate": gate_name,
+                        "old_count": old_op_count,
+                        "new_count": new_op_count,
+                        "old_ops": old_names,
+                        "new_ops": new_names,
+                    }
+                )
+
+        # Verify that most gates in the DefaultQubit gate_set are preserved by both systems
+        assert len(preserved_gates) > 0, "Expected some gates to be preserved by both systems"
+
+        # Report any discrepancies found
+        if discrepancies:
+            error_msg = (
+                "Found discrepancies between old and new DefaultQubit preprocessing systems:\n"
+            )
+            for disc in discrepancies:
+                error_msg += f"Gate {disc['gate']}: old={disc['old_count']} ops {disc['old_ops']}, new={disc['new_count']} ops {disc['new_ops']}\n"
+            assert False, error_msg
+
+        # Success: All gates in ALL_DQ_GATE_SET behave consistently between systems
+
+        # Clean up: restore original decomposition state
+        qml.decomposition.disable_graph()
