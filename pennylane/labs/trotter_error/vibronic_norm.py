@@ -18,19 +18,14 @@ from functools import cache
 
 import numpy as np
 import scipy as sp
+from mode_selector import get_reduced_model
 
-from pennylane.labs.trotter_error import (
-    ProductFormula,
-    RealspaceMatrix,
-    RealspaceSum,
-    effective_hamiltonian,
-    vibronic_fragments,
-)
+from pennylane.labs.trotter_error import RealspaceMatrix, RealspaceSum
 
 from pennylane.labs.trotter_error.realspace.matrix import _momentum_operator, _position_operator
 
 
-def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, numbers: list):
+def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, batch: list):
     if not _is_pow_2(gridpoints) or gridpoints <= 0:
         raise ValueError(f"Number of gridpoints must be a positive power of 2, got {gridpoints}.")
 
@@ -38,11 +33,27 @@ def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, numbers: list):
 
     norms = np.zeros(shape=(padded.states, padded.states))
 
-    for batch in numbers:
-        i, j = batch
-        norms[i, j] = _block_norm(padded.block(i, j), gridpoints)
+    i, j = batch
+    norms[i, j] = _block_norm(padded.block(i, j), gridpoints)
 
     return norms
+
+
+def _compute_norm(norm_mat: np.ndarray):
+    if norm_mat.shape == (1, 1):
+        return norm_mat[0, 0]
+
+    half = norm_mat.shape[0] // 2
+
+    top_left = norm_mat[0:half, 0:half]
+    top_right = norm_mat[0:half, half:]
+    bottom_left = norm_mat[half:, 0:half]
+    bottom_right = norm_mat[half:, half:]
+
+    norm1 = max(_compute_norm(top_left), _compute_norm(bottom_right))
+    norm2 = math.sqrt(_compute_norm(top_right) * _compute_norm(bottom_left))
+
+    return norm1 + norm2
 
 
 def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
@@ -103,7 +114,7 @@ def _get_eigenvalue(group_ops, gridpoints):
         return 0
 
     try:
-        eigvals, _ = sp.sparse.linalg.eigs(mat, k=1, tol=1e-5)
+        eigvals, _ = sp.sparse.linalg.eigs(mat, k=1)
         return np.abs(eigvals[0])
     except Exception:
         pass
@@ -124,20 +135,3 @@ def _is_pow_2(k: int) -> bool:
 def _next_pow_2(k: int) -> int:
     """Return the smallest power of 2 greater than or equal to k"""
     return 2 ** (k - 1).bit_length()
-
-
-def _compute_norm(norm_mat: np.ndarray):
-    if norm_mat.shape == (1, 1):
-        return norm_mat[0, 0]
-
-    half = norm_mat.shape[0] // 2
-
-    top_left = norm_mat[0:half, 0:half]
-    top_right = norm_mat[0:half, half:]
-    bottom_left = norm_mat[half:, 0:half]
-    bottom_right = norm_mat[half:, half:]
-
-    norm1 = max(_compute_norm(top_left), _compute_norm(bottom_right))
-    norm2 = math.sqrt(_compute_norm(top_right) * _compute_norm(bottom_left))
-
-    return norm1 + norm2
