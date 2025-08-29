@@ -127,6 +127,13 @@ def test_Deallocate_validity():
     qml.ops.functions.assert_valid(op)
 
 
+def test_error_bad_state():
+    """Test that a VAlueError is raised for an unsupported state."""
+
+    with pytest.raises(ValueError, match="is not a valid AllocateState"):
+        allocate(2, state="no")
+
+
 def test_allocate_function():
     """Test that allocate returns dynamic wires and queues an Allocate op."""
     with qml.queuing.AnnotatedQueue() as q:

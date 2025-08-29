@@ -93,6 +93,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
+  [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
+
 * A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
   [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
 
