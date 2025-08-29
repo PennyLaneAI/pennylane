@@ -500,11 +500,10 @@ class NullQubit(Device):
             AbstractMeasurement,
         )
 
-        def zeros_like(var):
+        def zeros_like(var, shots):
             if isinstance(var.aval, AbstractMeasurement):
-                shots = self.shots.total_shots
                 s, dtype = var.aval.abstract_eval(num_device_wires=len(self.wires), shots=shots)
                 return math.zeros(s, dtype=dtype, like="jax")
             return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
 
-        return [zeros_like(var) for var in jaxpr.outvars]
+        return [zeros_like(var, shots) for var in jaxpr.outvars]
