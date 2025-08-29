@@ -900,7 +900,7 @@ class TestShots:
     def test_no_shots_per_call_if_user_has_shots_qfunc_arg(self):
         """Tests that the per-call shots overwriting is suspended
         if user has a shots argument, but a warning is raised."""
-        dev = DefaultQubitLegacy(wires=[0, 1], shots=10)
+        dev = DefaultQubitLegacy(wires=[0, 1])
 
         def ansatz0(a, shots):
             qml.RX(a, wires=shots)
@@ -908,13 +908,9 @@ class TestShots:
 
         # assert that warning is still raised
         with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="shots on device is deprecated",
+            UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
-            with pytest.warns(
-                UserWarning, match="The 'shots' argument name is reserved for overriding"
-            ):
-                circuit = QNode(ansatz0, dev)
+            circuit = QNode(ansatz0, dev, shots=10)
 
         assert len(circuit(0.8, 1)) == 10
         tape = qml.workflow.construct_tape(circuit)(0.8, 1)
@@ -923,17 +919,13 @@ class TestShots:
         dev = DefaultQubitLegacy(wires=2)
 
         with pytest.warns(
-            PennyLaneDeprecationWarning,
-            match="shots on device is deprecated",
+            UserWarning, match="The 'shots' argument name is reserved for overriding"
         ):
-            with pytest.warns(
-                UserWarning, match="The 'shots' argument name is reserved for overriding"
-            ):
 
-                @qnode(dev, shots=10)
-                def ansatz1(a, shots):
-                    qml.RX(a, wires=shots)
-                    return qml.sample(qml.PauliZ(wires=0))
+            @qnode(dev, shots=10)
+            def ansatz1(a, shots):
+                qml.RX(a, wires=shots)
+                return qml.sample(qml.PauliZ(wires=0))
 
         with pytest.warns(
             PennyLaneDeprecationWarning,
