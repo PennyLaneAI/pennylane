@@ -1037,7 +1037,7 @@ class DefaultQubit(Device):
 
         interpreter = DefaultQubitInterpreter(
             num_wires=len(self.wires),
-            shots=shots or self.shots,
+            shots=Shots(shots).total_shots,
             key=key,
             execution_config=execution_config,
         )
