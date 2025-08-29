@@ -13,8 +13,7 @@
   The :func:`~.allocate` function can accept three arguments that dictate how dynamically allocated 
   wires are handled:
 
-  * `num_wires`: the number of wires to dynamically allocate. If only one wire is needed, this 
-    argument can be omitted.
+  * `num_wires`: the number of wires to dynamically allocate. 
   * `state = "zero"/"arb"`: the initial state that the dynamically allocated wires are requested to 
     be in. Currently, supported values are `"zero"` (initialize in the all-zero state) or `"arb"` 
     (an arbitrary state).
@@ -68,10 +67,10 @@
       qml.H(0)
 
       for i in range(2):
-          with qml.allocate(state="zero", restored=True) as new_qubit1:
-              with qml.allocate(state="arb", restored=False) as new_qubit2:
-                  m0 = qml.measure(new_qubit1, reset=True)
-                  qml.cond(m0 == 1, qml.Z)(new_qubit2)
+          with qml.allocate(1, state="zero", restored=True) as new_qubit1:
+              with qml.allocate(1, state="arb", restored=False) as new_qubit2:
+                  m0 = qml.measure(new_qubit1[0], reset=True)
+                  qml.cond(m0 == 1, qml.Z)(new_qubit2[0])
                   qml.CNOT((0, new_qubit2))
 
       return qml.expval(qml.Z(0))
@@ -615,6 +614,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
+  and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
+  [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
+
 * The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
   no longer queue any operators.
   [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
@@ -754,6 +757,7 @@
   ```
 
   [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
+  [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
 
 * Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
