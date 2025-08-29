@@ -337,7 +337,7 @@ def rs_decomposition(
         if not is_jax:
             raise ImportError(
                 "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
-            )
+            )  # pragma: no cover
         with jax.ensure_compile_time_eval():
             global_phase = qml.GlobalPhase(phase)
     else:

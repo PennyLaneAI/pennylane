@@ -233,7 +233,7 @@ def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
     if not is_jax:
         raise ImportError(
             "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
-        )
+        )  # pragma: no cover
 
     t_bit = jnp.int32(int(decomposition[0] == qml.T(0)))
     c_bit = jnp.int32(max(0, cl_index))
