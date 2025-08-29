@@ -431,18 +431,18 @@ As described above, there are multiple simulation techniques for circuits with
 mid-circuit measurements in PennyLane. They can be configured when initializing a
 :class:`~pennylane.QNode`, using the following keywords:
 
-* `mcm_method`: Sets the method used for applying mid-circuit measurements.
-  The three techniques described above can be specified with `"deferred"`,
-  `"one-shot"`, and `"tree-traversal"`. When using :func:`~pennylane.qjit`,
-  there is the additional (default) option `"single-branch-statistics`, which
+* ``mcm_method``: Sets the method used for applying mid-circuit measurements.
+  The three techniques described above can be specified with ``"deferred"``,
+  ``"one-shot"``, and ``"tree-traversal"``. When using :func:`~pennylane.qjit`,
+  there is the additional option ``"single-branch-statistics"``, which
   explores a single branch of the execution tree at random. If not provided,
   the method is selected by the device. For devices without native support
-  for mid-circuit measurements, `"one-shot"` is the default for finite-shots
-  execution, and `"deferred"` is the default for analytic mode, i.e., when
-  `shots=None`. For devices with native mid-circuit measurement support,
-  `"device"` may be used to request the device-native method for applying
-  mid-circuit measurements. This is true for `default.qubit` and `lightning.qubit`,
-  but this is not guranteed for other devices.
+  for mid-circuit measurements, ``"one-shot"`` is the default for finite-shots
+  execution, and ``"deferred"`` is the default for analytic mode, i.e., when
+  ``shots=None``. For devices with native mid-circuit measurement support,
+  ``"device"`` may be used to request the device-native method for applying
+  mid-circuit measurements. This is true for ``default.qubit`` and ``lightning.qubit``,
+  `but this is not guranteed for other devices.
 
 * ``postselect_mode``: Configures how invalid shots are handled when postselecting
   mid-circuit measurements with finite-shot circuits. Use ``"hw-like"`` to discard invalid samples.
