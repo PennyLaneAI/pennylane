@@ -412,7 +412,7 @@ cost.
 
     The tree-traversal algorithm is supported by the following devices:
 
-    * :class:`~.pennylane.devices.DefaultQubit`,
+    * :class:`default.qubit <~.pennylane.devices.DefaultQubit>`,
 
     * `lightning.qubit <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_qubit/device.html>`_,
 
