@@ -362,14 +362,14 @@ class TestDecomposeInterpreterGraphEnabled:
             def resource_params(self) -> dict:
                 return {}
 
-        @qml.register_resources({qml.H: 1, qml.X: 1})
+        @qml.register_resources({qml.H: 1, qml.X: 1, "measure": 1})
         def _custom_decomp(wires, **_):
             qml.H(wires[0])
             m0 = qml.measure(wires[0])
             qml.cond(m0, qml.H)(wires[1])
 
         @DecomposeInterpreter(
-            gate_set={qml.RX, qml.RY, qml.RZ},
+            gate_set={qml.RX, qml.RY, qml.RZ, "measure"},
             fixed_decomps={qml.GlobalPhase: null_decomp, CustomOp: _custom_decomp},
         )
         def circuit():
