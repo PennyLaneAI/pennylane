@@ -319,6 +319,22 @@ class Testdraw:
 
         assert draw(_)() == expected
 
+    def test_global_phase(self):
+        """Test the visualization of global phase shifts."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def _():
+            qml.H(0)
+            qml.H(1)
+            qml.H(2)
+            qml.GlobalPhase(0.5)
+            return qml.state()
+
+        assert (
+            draw(_)()
+            == "0: ──H─╭GlobalPhase─┤  State\n1: ──H─├GlobalPhase─┤  State\n2: ──H─╰GlobalPhase─┤  State"
+        )
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])

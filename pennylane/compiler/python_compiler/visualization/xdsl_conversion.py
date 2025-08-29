@@ -22,9 +22,13 @@ from xdsl.ir import SSAValue
 
 import pennylane as qml
 from pennylane import ops
-from pennylane.compiler.python_compiler.dialects.quantum import ComputationalBasisOp, CustomOp
+from pennylane.compiler.python_compiler.dialects.quantum import (
+    ComputationalBasisOp,
+    CustomOp,
+)
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
+    GlobalPhaseOp,
     HamiltonianOp,
     MeasureOp,
     NamedObsOp,
@@ -35,8 +39,6 @@ from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all
 from pennylane.typing import Callable
 
-# This is just a preliminary structure for mapping of PennyLane gates to xDSL operations.
-# Support for all PennyLane gates is not implemented yet.
 from_str_to_PL_gate = {
     name: getattr(ops, name)
     for name in ops_all
@@ -51,6 +53,8 @@ from_str_to_PL_measurement = {
     "quantum.var": qml.var,
     "quantum.measure": qml.measure,
 }
+
+# pylint: disable=too-many-return-statements
 
 ######################################################
 ### Gate/Measurement resolution
@@ -121,7 +125,6 @@ def dispatch_wires_extract(op: ExtractOpPL):
     return resolve_constant_wire(op.idx)  # used by xDSL
 
 
-# pylint: disable=too-many-return-statements
 def resolve_constant_wire(ssa: SSAValue) -> int:
     """Resolve the wire for the given SSA qubit."""
     if isinstance(ssa, IntegerAttr):  # used by Catalyst
@@ -157,9 +160,13 @@ def _extract(op, attr: str, resolver: Callable, single: bool = False):
     return [resolver(v) for v in values if v is not None]
 
 
-def ssa_to_qml_params(op: CustomOp, control: bool = False) -> list[float | int]:
+def ssa_to_qml_params(
+    op: CustomOp, control: bool = False, single: bool = False
+) -> list[float | int]:
     """Get the parameters from the operation."""
-    return _extract(op, "in_ctrl_values" if control else "params", resolve_constant_params)
+    return _extract(
+        op, "in_ctrl_values" if control else "params", resolve_constant_params, single=single
+    )
 
 
 def ssa_to_qml_wires(op: CustomOp, control: bool = False) -> list[int]:
@@ -179,10 +186,15 @@ def ssa_to_qml_wires_named(op: NamedObsOp) -> int:
 ############################################################
 
 
-def xdsl_to_qml_custom_op(op: CustomOp) -> Operator:
-    """Convert a ``quantum.custom`` xDSL op to a PennyLane operator."""
-    gate_cls = resolve_gate(op.properties.get("gate_name").data)
-    gate = gate_cls(*ssa_to_qml_params(op), wires=ssa_to_qml_wires(op))
+def xdsl_to_qml_op(op: CustomOp | GlobalPhaseOp) -> Operator:
+    """Convert an xDSL op to a PennyLane operator."""
+
+    if op.name == "quantum.gphase":
+        gate = qml.GlobalPhase(ssa_to_qml_params(op, single=True), wires=ssa_to_qml_wires(op))
+
+    else:  # custom.op
+        gate_cls = resolve_gate(op.properties.get("gate_name").data)
+        gate = gate_cls(*ssa_to_qml_params(op), wires=ssa_to_qml_wires(op))
 
     if op.properties.get("adjoint"):
         gate = qml.adjoint(gate)

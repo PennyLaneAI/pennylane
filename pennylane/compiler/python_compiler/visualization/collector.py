@@ -22,9 +22,13 @@ from xdsl.dialects.builtin import FloatAttr, IntegerAttr
 from xdsl.ir import SSAValue
 
 from pennylane.compiler.python_compiler.dialects.quantum import AllocOp as AllocOpPL
-from pennylane.compiler.python_compiler.dialects.quantum import CustomOp, ExpvalOp
+from pennylane.compiler.python_compiler.dialects.quantum import (
+    CustomOp,
+    ExpvalOp,
+)
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
+    GlobalPhaseOp,
     MeasureOp,
     ProbsOp,
     SampleOp,
@@ -37,10 +41,10 @@ from pennylane.operation import Operator
 from .xdsl_conversion import (
     dispatch_wires_extract,
     xdsl_to_qml_compbasis_op,
-    xdsl_to_qml_custom_op,
     xdsl_to_qml_meas,
     xdsl_to_qml_measure_op,
     xdsl_to_qml_obs_op,
+    xdsl_to_qml_op,
 )
 
 
@@ -83,7 +87,7 @@ class QMLCollector:
         return xdsl_to_qml_meas(xdsl_meas_op, xdsl_to_qml_obs_op(obs_op))
 
     @handle.register
-    def _(self, xdsl_measure: MeasureOp) -> Operator:
+    def _(self, xdsl_measure: MeasureOp) -> MeasurementProcess:
         return xdsl_to_qml_measure_op(xdsl_measure)
 
     ############################################################
@@ -91,12 +95,16 @@ class QMLCollector:
     ############################################################
 
     @handle.register
-    def _(self, xdsl_custom_op: CustomOp) -> Operator:
+    def _(self, xdsl_op: CustomOp | GlobalPhaseOp) -> Operator:
         if self.quantum_register is None:
             raise ValueError("Quantum register (AllocOp) not found.")
         if not self.wire_to_ssa_qubits:
             raise NotImplementedError("No wires extracted from the register found.")
-        return xdsl_to_qml_custom_op(xdsl_custom_op)
+        return xdsl_to_qml_op(xdsl_op)
+
+    ############################################################
+    ### Internal Methods
+    ############################################################
 
     # TODO: this will probably no longer be needed once PR #7937 is merged
     def _process_qubit_mapping(self, op):
