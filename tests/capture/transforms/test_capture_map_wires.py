@@ -269,7 +269,7 @@ class TestMapWiresInterpreter:
         """Test that a qnode with a while loop is transformed correctly."""
 
         @MapWiresInterpreter(wire_map={0: 1})
-        @qml.qnode(qml.device("default.qubit", wires=4), autograph=False)
+        @qml.qnode(qml.device("default.qubit", wires=4))
         def f(x):
             @qml.while_loop(lambda i: i < 3)
             def g(i):
