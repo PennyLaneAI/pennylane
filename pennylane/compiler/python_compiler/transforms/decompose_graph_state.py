@@ -113,6 +113,8 @@ class DecomposeGraphStatePattern(RewritePattern):
             qreg = qinsert_op.out_qreg
 
         # In this section, we iterate over the ops created above and insert them.
+        # Note that we do not need to specify the insertion point here; all ops are inserted before
+        # the matched op, automatically putting them in the order we want them in.
         for qextract_op in qextract_ops:
             rewriter.insert_op(qextract_op)
 
