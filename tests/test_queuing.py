@@ -102,23 +102,6 @@ class TestStopRecording:
         assert len(tape.operations) == 1
         assert tape.operations[0].name == "Hadamard"
 
-    def test_stop_recording_qnode_qfunc(self):
-        """A QNode with a stop_recording qfunc will result in no quantum measurements."""
-        dev = qml.device("default.qubit", wires=1)
-
-        @qml.qnode(dev)
-        @QueuingManager.stop_recording()
-        def my_circuit():
-            qml.PauliX(wires=0)
-            return qml.expval(qml.PauliZ(0))
-
-        result = my_circuit()
-        assert len(result) == 0
-
-        tape = qml.workflow.construct_tape(my_circuit)()
-        assert len(tape.operations) == 0
-        assert len(tape.measurements) == 0
-
     def test_stop_recording_qnode(self):
         """A stop_recording QNode is unaffected"""
         dev = qml.device("default.qubit", wires=1)

@@ -67,12 +67,16 @@ def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
 
 def _set_all_parameters_on_copy(tapes, params):
     """Copy a set of tapes with operations and set all parameters"""
-    return tuple(t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params))
+    return tuple(
+        t.bind_new_parameters(a, list(range(len(a)))) for t, a in zip(tapes, params, strict=True)
+    )
 
 
 def _set_trainable_parameters_on_copy(tapes, params):
     """Copy a set of tapes with operations and set all trainable parameters"""
-    return tuple(t.bind_new_parameters(a, t.trainable_params) for t, a in zip(tapes, params))
+    return tuple(
+        t.bind_new_parameters(a, t.trainable_params) for t, a in zip(tapes, params, strict=True)
+    )
 
 
 def _jax_dtype(m_type):
@@ -194,7 +198,7 @@ def _execute_and_compute_jvp(tapes, execute_fn, jpc, device, primals, tangents):
     calculation.
     """
     # Select the trainable params. Non-trainable params contribute a 0 gradient.
-    for tangent, tape in zip(tangents[0], tapes.vals):
+    for tangent, tape in zip(tangents[0], tapes.vals, strict=True):
         tape.trainable_params = tuple(
             idx for idx, t in enumerate(tangent) if not isinstance(t, Zero)
         )

@@ -274,7 +274,7 @@ def _scatter_element_add_autograd(tensor, index, value, **_):
     if pnp.isscalar(value) or len(pnp.shape(value)) == 0:
         value = [value]
     t = [0] * size
-    for _id, val in zip(flat_index, value):
+    for _id, val in zip(flat_index, value, strict=True):
         t[_id] = val
     return tensor + pnp.array(t).reshape(tensor.shape)
 
@@ -550,7 +550,7 @@ def _scatter_element_add_tf(
     import tensorflow as tf
 
     if not isinstance(index[0], int):
-        index = tuple(zip(*index))
+        index = tuple(zip(*index, strict=True))
     indices = tf.expand_dims(index, 0)
     value = tf.cast(tf.expand_dims(value, 0), tensor.dtype)
     return tf.tensor_scatter_nd_add(tensor, indices, value)
@@ -805,7 +805,7 @@ def _block_diag_torch(tensors):
     # converted the diagonal indices to row and column indices
     ridx, cidx = np.stack([p - sizes, p]).T
 
-    for t, r, c in zip(tensors, ridx, cidx):
+    for t, r, c in zip(tensors, ridx, cidx, strict=True):
         row = np.arange(*r).reshape(-1, 1)
         col = np.arange(*c).reshape(1, -1)
         res[row, col] = t

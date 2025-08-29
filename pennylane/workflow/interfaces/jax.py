@@ -172,7 +172,9 @@ def _set_copy_and_unwrap_tape(t, a, unwrap=True):
 
 def set_parameters_on_copy_and_unwrap(tapes, params, unwrap=True):
     """Copy a set of tapes with operations and set parameters"""
-    return tuple(_set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params))
+    return tuple(
+        _set_copy_and_unwrap_tape(t, a, unwrap=unwrap) for t, a in zip(tapes, params, strict=True)
+    )
 
 
 def _to_jax(result: qml.typing.ResultBatch) -> qml.typing.ResultBatch:
