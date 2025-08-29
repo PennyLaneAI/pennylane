@@ -36,6 +36,7 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all
+from pennylane.typing import Callable
 
 # This is just a preliminary structure for mapping of PennyLane gates to xDSL operations.
 # Support for all PennyLane gates is not implemented yet.
@@ -58,20 +59,21 @@ from_str_to_PL_measurement = {
 ######################################################
 
 
+def _resolve(name: str, mapping: dict, kind: str):
+    try:
+        return mapping[name]
+    except KeyError as exc:
+        raise ValueError(f"Unsupported {kind}: {name}") from exc
+
+
 def resolve_gate(name: str) -> Operator:
     """Resolve the gate from the name."""
-    try:
-        return from_str_to_PL_gate[name]
-    except KeyError as exc:
-        raise ValueError(f"Unsupported gate: {name}") from exc
+    return _resolve(name, from_str_to_PL_gate, "gate")
 
 
 def resolve_measurement(name: str) -> MeasurementProcess:
     """Resolve the measurement from the name."""
-    try:
-        return from_str_to_PL_measurement[name]
-    except KeyError as exc:
-        raise ValueError(f"Unsupported measurement: {name}") from exc
+    return _resolve(name, from_str_to_PL_measurement, "measurement")
 
 
 ######################################################
@@ -93,15 +95,17 @@ def resolve_constant_params(ssa: SSAValue) -> float | int:
     op = ssa.owner
     if isinstance(op, TensorExtractOp):
         return resolve_constant_params(op.tensor)
-    if op.name == "stablehlo.constant":
-        return _extract_dense_constant_value(op)
-    if op.name == "arith.addf":
-        return resolve_constant_params(op.operands[0]) + resolve_constant_params(op.operands[1])
-    if op.name == "arith.constant":
-        return op.value.value.data  # used by Catalyst
-    if op.name == "stablehlo.convert":
-        return resolve_constant_params(op.operands[0])
-    raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
+    match op.name:
+        case "stablehlo.constant":
+            return _extract_dense_constant_value(op)
+        case "arith.addf":
+            return resolve_constant_params(op.operands[0]) + resolve_constant_params(op.operands[1])
+        case "arith.constant":
+            return op.value.value.data  # Catalyst
+        case "stablehlo.convert":
+            return resolve_constant_params(op.operands[0])
+        case _:
+            raise NotImplementedError(f"Cannot resolve parameters for op: {op}")
 
 
 def dispatch_wires_extract(op: ExtractOpPL):
@@ -118,10 +122,8 @@ def resolve_constant_wire(ssa: SSAValue) -> int:
     op = ssa.owner
     if isinstance(op, TensorExtractOp):
         return resolve_constant_wire(op.tensor)
-    if op.name == "builtin.unregistered":
-        if hasattr(op, "attributes"):
-            if op.attributes["op_name__"].data == "stablehlo.convert":
-                return resolve_constant_wire(op.operands[0])
+    if op.name == "stablehlo.convert":
+        return resolve_constant_wire(op.operands[0])
     if op.name == "stablehlo.constant":
         return _extract_dense_constant_value(op)
     if isinstance(op, CustomOp):
@@ -136,37 +138,36 @@ def resolve_constant_wire(ssa: SSAValue) -> int:
 ######################################################
 
 
-def ssa_to_qml_params(op: CustomOp, control: bool = False) -> list[float | int]:
-    """Get the parameters from the operation."""
-    attr = "in_ctrl_values" if control else "params"
+def _extract(op, attr: str, resolver: Callable, single: bool = False):
+    """Helper to extract and resolve attributes."""
     values = getattr(op, attr, None)
     if not values:
-        return []
-    return [resolve_constant_params(p) for p in values if p is not None]
+        return [] if not single else None
+    if single:
+        return resolver(values)
+    return [resolver(v) for v in values if v is not None]
+
+
+def ssa_to_qml_params(op: CustomOp, control: bool = False) -> list[float | int]:
+    """Get the parameters from the operation."""
+    return _extract(op, "in_ctrl_values" if control else "params", resolve_constant_params)
 
 
 def ssa_to_qml_wires(op: CustomOp, control: bool = False) -> list[int]:
     """Get the wires from the operation."""
-    attr = "in_ctrl_qubits" if control else "in_qubits"
-    qubits = getattr(op, attr, None)
-    if not qubits:
-        return []
-    return [resolve_constant_wire(q) for q in qubits if q is not None]
+    return _extract(op, "in_ctrl_qubits" if control else "in_qubits", resolve_constant_wire)
 
 
-# TODO: this can probably be combined with the above function
-def ssa_to_qml_wires_named(op: NamedObsOp) -> list[int]:
-    """Get the wires from the named observable operation."""
+def ssa_to_qml_wires_named(op: NamedObsOp) -> int:
+    """Get the wire from the named observable operation."""
     if not op.qubit:
         raise ValueError("No qubit found for named observable operation.")
     return resolve_constant_wire(op.qubit)
 
 
-def ssa_to_qml_wires_compbasis(op: ComputationalBasisOp) -> list[int]:
+def ssa_to_qml_wires_compbasis(op: ComputationalBasisOp) -> list[int] | None:
     """Get the wires from the computational basis operation."""
-    if not op.qubits:
-        return None
-    return [resolve_constant_wire(q) for q in op.qubits if q is not None]
+    return _extract(op, "qubits", resolve_constant_wire)
 
 
 ############################################################
@@ -176,11 +177,8 @@ def ssa_to_qml_wires_compbasis(op: ComputationalBasisOp) -> list[int]:
 
 def xdsl_to_qml_custom_op(op: CustomOp) -> Operator:
     """Convert a ``quantum.custom`` xDSL op to a PennyLane operator."""
-    gate_name = op.properties.get("gate_name").data
-    parameters = ssa_to_qml_params(op)
-    wires = ssa_to_qml_wires(op)
-    gate_cls = resolve_gate(gate_name)
-    gate = gate_cls(*parameters, wires=wires)
+    gate_cls = resolve_gate(op.properties.get("gate_name").data)
+    gate = gate_cls(*ssa_to_qml_params(op), wires=ssa_to_qml_wires(op))
 
     if op.properties.get("adjoint"):
         gate = qml.adjoint(gate)
@@ -195,20 +193,14 @@ def xdsl_to_qml_custom_op(op: CustomOp) -> Operator:
 
 def xdsl_to_qml_named_op(op: NamedObsOp) -> Operator:
     """Convert a ``quantum.namedobs`` xDSL op to a PennyLane operator."""
-    gate_name = op.type.data.value
-    gate_cls = resolve_gate(gate_name)
-    wires = ssa_to_qml_wires_named(op)
-    gate = gate_cls(wires=wires)
-    return gate
+    return resolve_gate(op.type.data.value)(wires=ssa_to_qml_wires_named(op))
 
 
-def xdsl_to_qml_compbasis_op(op: ComputationalBasisOp) -> Operator:
+def xdsl_to_qml_compbasis_op(op: ComputationalBasisOp) -> list[int] | None:
     """Convert a ``quantum.compbasis`` xDSL op to a PennyLane operator."""
     return ssa_to_qml_wires_compbasis(op)
 
 
-def xdsl_to_qml_meas(meas, *args, **kwargs) -> Operator:
+def xdsl_to_qml_meas(meas, *args, **kwargs) -> MeasurementProcess:
     """Given a measurement in xDSL, convert it to a PennyLane measurement."""
-    meas_name = meas.name
-    measurement = resolve_measurement(meas_name)
-    return measurement(*args, **kwargs)
+    return resolve_measurement(meas.name)(*args, **kwargs)
