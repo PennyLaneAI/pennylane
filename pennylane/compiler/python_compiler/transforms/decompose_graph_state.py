@@ -282,7 +282,7 @@ def _edge_iter(adj_matrix: DenselyPackedAdjMatrix) -> Generator[tuple[int, int],
         (1, 3)
         (2, 3)
     """
-    # Calling `_n_vertices_from_packed_adj_matrix()`` asserts that the input `adj_matrix` is in the
+    # Calling `_n_vertices_from_packed_adj_matrix()` asserts that the input `adj_matrix` is in the
     # correct format and is valid.
     _n_vertices_from_packed_adj_matrix(adj_matrix)
 
