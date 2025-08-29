@@ -58,7 +58,7 @@ def vibronic_norm(hamiltonian: RealspaceMatrix, gridpoints: int):
 
     norms = np.zeros(shape=(padded.states, padded.states))
 
-    for i, j in [k for k in product(range(hamiltonian.states), repeat=2)]:
+    for i, j in product(range(hamiltonian.states), repeat=2):
         norms[i, j] = _block_norm(padded.block(i, j), gridpoints)
 
     return norms
