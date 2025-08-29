@@ -25,6 +25,7 @@ implementation of the basis translator, the Boost Graph library, and RustworkX.
 
 from __future__ import annotations
 
+import warnings
 from collections import defaultdict
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
@@ -488,8 +489,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         if visitor.unsolved_op_indices:
             unsolved_ops = [self._graph[op_idx] for op_idx in visitor.unsolved_op_indices]
             op_names = {op_node.op.name for op_node in unsolved_ops}
-            raise DecompositionError(
-                f"Decomposition not found for {op_names} to the gate set {set(self._gate_set_weights)}"
+            warnings.warn(
+                f"The graph-based decomposition system is unable to find a decomposition for "
+                f"{op_names} to the target gate set {set(self._gate_set_weights)}. The default "
+                "decomposition will be used.",
+                UserWarning,
             )
         return DecompGraphSolution(visitor, self._all_op_indices, self._op_to_op_nodes)
 

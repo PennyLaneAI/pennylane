@@ -298,15 +298,33 @@ class TestDecomposeGraphEnabled:
             def decomposition(self):
                 return [qml.H(self.wires[1]), qml.CNOT(self.wires), qml.H(self.wires[1])]
 
-        @qml.register_resources({qml.CZ: 1})
+        @qml.register_resources({qml.CRZ: 1})
         def my_decomp(wires, **__):
-            qml.CZ(wires=wires)
+            qml.CRZ(np.pi, wires=wires)
 
         tape = qml.tape.QuantumScript([CustomOp(wires=[0, 1])])
-        [new_tape], _ = qml.transforms.decompose(
-            tape, gate_set={"CNOT", "Hadamard"}, fixed_decomps={CustomOp: my_decomp}
-        )
+
+        with pytest.warns(UserWarning, match="The graph-based decomposition system is unable"):
+            [new_tape], _ = qml.transforms.decompose(
+                [tape],
+                gate_set={"CNOT", "Hadamard"},
+                fixed_decomps={CustomOp: my_decomp},
+            )
+
         assert new_tape.operations == [qml.H(1), qml.CNOT(wires=[0, 1]), qml.H(1)]
+
+    @pytest.mark.integration
+    def test_global_phase_warning(self):
+        """Tests that a sensible warning is raised when the graph fails to find a solution
+        due to GlobalPhase not being part of the gate set."""
+
+        tape = qml.tape.QuantumScript([qml.X(0)])
+
+        with pytest.warns(UserWarning, match="GlobalPhase is not assumed"):
+            with pytest.warns(UserWarning, match="The graph-based decomposition system is unable"):
+                [new_tape], _ = qml.transforms.decompose([tape], gate_set={"RX"})
+
+        assert new_tape.operations == [qml.RX(np.pi, wires=0), qml.GlobalPhase(-np.pi / 2, wires=0)]
 
     @pytest.mark.integration
     def test_controlled_decomp(self):
