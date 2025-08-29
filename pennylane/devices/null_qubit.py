@@ -512,4 +512,4 @@ class NullQubit(Device):
                 return math.zeros(s, dtype=dtype, like="jax")
             return math.zeros(var.aval.shape, dtype=var.aval.dtype, like="jax")
 
-        return [zeros_like(var, shots) for var in jaxpr.outvars]
+        return [zeros_like(var, shots).total_shots for var in jaxpr.outvars]

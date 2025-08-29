@@ -1010,7 +1010,7 @@ class DefaultQubit(Device):
     # pylint: disable=import-outside-toplevel
     @debug_logger
     def eval_jaxpr(
-        self, jaxpr: Jaxpr, consts: list[TensorLike], *args, execution_config=None, shots=None
+        self, jaxpr: Jaxpr, consts: list[TensorLike], *args, execution_config=None, shots=Shots(None)
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
