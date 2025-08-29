@@ -71,7 +71,6 @@ method for devices.
     :toctree: api
 
     decompose
-    device_resolve_dynamic_wires
     measurements_from_counts
     measurements_from_samples
     validate_observables
@@ -80,7 +79,6 @@ method for devices.
     validate_multiprocessing_workers
     validate_adjoint_trainable_params
     no_sampling
-
 
 Other transforms that may be relevant to device preprocessing include:
 

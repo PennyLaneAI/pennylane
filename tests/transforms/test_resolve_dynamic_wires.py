@@ -24,7 +24,7 @@ def test_error_if_no_available_wires():
 
     tape = qml.tape.QuantumScript([qml.allocation.Allocate.from_num_wires(2)])
 
-    with pytest.raises(qml.exceptions.AllocationError, match="no wires left to allocate"):
+    with pytest.raises(ValueError, match="no wires left to allocate"):
         qml.transforms.resolve_dynamic_wires(tape)
 
 
@@ -33,7 +33,7 @@ def test_error_if_use_deallocated_wire():
 
     op = qml.allocation.Allocate.from_num_wires(1)
     tape = qml.tape.QuantumScript([op, qml.allocation.Deallocate(op.wires), qml.X(op.wires)])
-    with pytest.raises(qml.exceptions.AllocationError, match="Encountered deallocated wires"):
+    with pytest.raises(ValueError, match="Encountered deallocated wires"):
         qml.transforms.resolve_dynamic_wires(tape, min_int=0)
 
 
@@ -44,7 +44,7 @@ def test_deallocated_wire_in_measurement():
     tape = qml.tape.QuantumScript(
         [op, qml.allocation.Deallocate(op.wires)], [qml.probs(wires=op.wires)]
     )
-    with pytest.raises(qml.exceptions.AllocationError, match="Encountered deallocated wires"):
+    with pytest.raises(ValueError, match="Encountered deallocated wires"):
         qml.transforms.resolve_dynamic_wires(tape, min_int=0)
 
 
