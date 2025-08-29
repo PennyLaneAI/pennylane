@@ -20,6 +20,12 @@ from math import pi as PI
 import pennylane as qml
 from pennylane.ops.op_math.decompositions.rings import _SQRT2, DyadicMatrix, SO3Matrix, ZOmega
 
+is_jax = True
+try:
+    import jax.numpy as jnp
+except (ModuleNotFoundError, ImportError):  # pragma: no cover
+    is_jax = False
+
 
 @lru_cache
 def _clifford_keys_unwired() -> list:
@@ -224,13 +230,10 @@ def _ma_normal_form(op: SO3Matrix, compressed=False, upper_bounded_size=None):
     if not compressed:
         return decomposition, g_phase
 
-    # Import JAX at call-time so availability changes can be detected without restarting the process
-    try:  # pragma: no cover - environment dependent
-        import jax.numpy as jnp
-    except Exception as exc:  # pragma: no cover
+    if not is_jax:
         raise ImportError(
             "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
-        ) from exc
+        )
 
     t_bit = jnp.int32(int(decomposition[0] == qml.T(0)))
     c_bit = jnp.int32(max(0, cl_index))

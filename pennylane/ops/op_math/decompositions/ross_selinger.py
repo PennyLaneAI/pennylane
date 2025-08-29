@@ -25,6 +25,14 @@ from pennylane.ops.op_math.decompositions.normal_forms import (
 from pennylane.ops.op_math.decompositions.rings import DyadicMatrix, SO3Matrix, ZOmega, ZSqrtTwo
 from pennylane.queuing import QueuingManager
 
+is_jax = True
+try:
+    import jax
+    import jax.numpy as jnp
+    from jax.core import ShapedArray
+except (ModuleNotFoundError, ImportError):  # pragma: no cover
+    is_jax = False
+
 
 def _domain_correction(theta: float) -> tuple[float, ZOmega]:
     r"""Return shifts for the angle :math:`\theta` for it to be in the interval :math:`[-\pi/4, \pi/4]` and the corresponding scaling factor for the matrix elements.
@@ -278,15 +286,10 @@ def rs_decomposition(
         if not is_qjit:
             decomposed_gates, g_phase, phase = eval_ross_algorithm(angle)
         else:
-            # Import JAX lazily at call-time to avoid hard dependency in non-QJIT runs
-            try:  # pragma: no cover - environment dependent
-                import jax  # pylint: disable=import-outside-toplevel
-                import jax.numpy as jnp  # pylint: disable=import-outside-toplevel
-                from jax.core import ShapedArray  # pylint: disable=import-outside-toplevel
-            except Exception as exc:  # pragma: no cover
+            if not is_jax:
                 raise ImportError(
                     "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
-                ) from exc
+                )
 
             # circular import issue when import outside of the function
             api_extensions = AvailableCompilers.names_entrypoints["catalyst"]["ops"].load()
@@ -331,13 +334,10 @@ def rs_decomposition(
     interface = qml.math.get_interface(angle)
     phase += qml.math.mod(g_phase, 2) * math.pi
     if is_qjit:
-        # Import JAX at call-time to avoid hard dependency when QJIT isn't in use
-        try:  # pragma: no cover - environment dependent
-            import jax  # pylint: disable=import-outside-toplevel
-        except Exception as exc:  # pragma: no cover
+        if not is_jax:
             raise ImportError(
                 "QJIT mode requires JAX. Please install it with `pip install jax jaxlib`."
-            ) from exc
+            )
         with jax.ensure_compile_time_eval():
             global_phase = qml.GlobalPhase(phase)
     else:
