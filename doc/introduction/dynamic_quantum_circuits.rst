@@ -413,13 +413,13 @@ cost.
     The tree-traversal algorithm is supported by the following devices:
 
     * :class:`~.pennylane.devices.DefaultQubit`,
-    
+
     * `lightning.qubit <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_qubit/device.html>`_,
-    
-    * `lightning.gpu <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_gpu/device.html>`_,
-    
+
+    * `lightning.gpu <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_gpu/device.html>`_
+
     * `lightning.kokkos <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_kokkos/device.html>`_,
-    
+
     Just-in-time (JIT) compilation is not available on ``DefaultQubit`` with ``shots=None``.
 
 .. _mcm_config:
@@ -442,7 +442,7 @@ mid-circuit measurements in PennyLane. They can be configured when initializing 
   ``shots=None``. For devices with native mid-circuit measurement support,
   ``"device"`` may be used to request the device-native method for applying
   mid-circuit measurements. This is true for ``default.qubit`` and ``lightning.qubit``,
-  `but this is not guranteed for other devices.
+  but this is not guranteed for other devices.
 
 * ``postselect_mode``: Configures how invalid shots are handled when postselecting
   mid-circuit measurements with finite-shot circuits. Use ``"hw-like"`` to discard invalid samples.
