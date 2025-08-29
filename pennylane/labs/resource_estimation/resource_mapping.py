@@ -22,7 +22,6 @@ import pennylane.ops as qops
 import pennylane.templates as qtemps
 from pennylane.labs.resource_estimation import ResourceOperator
 from pennylane.operation import Operation
-from pennylane.ops.functions.iterative_qpe import iterative_qpe
 
 
 @singledispatch
