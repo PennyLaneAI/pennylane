@@ -158,21 +158,22 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
         def c():
             qml.H(0)
 
-            wire = qml.allocate(state="zero", restored=True)
-            qml.CNOT((0, wire))
-            qml.CNOT((0, wire))
+            wires = qml.allocate(1, state="zero", restored=True)
+            qml.CNOT((0, wire[0]))
+            qml.CNOT((0, wire[0]))
             qml.deallocate(wire)
 
-            new_wire = qml.allocate(state="zero", restored=True)
-            qml.SWAP((0, new_wire))
-            qml.allocation.deallocate(new_wire)
+            new_wire = qml.allocate(2, state="zero", restored=True)
+            qml.SWAP((new_wire[1], new_wire[0]))
+            qml.deallocate(new_wire)
             
             return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(c)())
-                0: ──H────────╭●─╭●─────────────╭SWAP─────────────┤  <Z>
-    <DynamicWire>: ──Allocate─╰X─╰X──Deallocate─│─────────────────┤     
-    <DynamicWire>: ──Allocate───────────────────╰SWAP──Deallocate─┤  
+            0: ──H────────╭●────╭●──────────────────────┤  <Z>
+<DynamicWire>: ──Allocate─╰X────╰X───────────Deallocate─┤     
+<DynamicWire>: ─╭Allocate─╭SWAP─╭Deallocate─────────────┤     
+<DynamicWire>: ─╰Allocate─╰SWAP─╰Deallocate─────────────┤     
 
     Here, two dynamic wires are allocated in the circuit originally. When PennyLane determines
     what concrete values to use for dynamic wires to send to the device for execution, we can see 
@@ -216,13 +217,12 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
 
     Args:
         num_wires (int): 
-            (optional) The number of wires to dynamically allocate. If not specified, one wire will
-            be dynamically allocated.
+            The number of wires to dynamically allocate.
 
     Keyword Args:
         state (str):
             Specifies whether to allocate ``num_wires`` in the all-zeros state (``"zero"``) or in 
-            any arbitrary state (``"arb"``). The default value is ``state="zero"``.
+            any arbitrary state (``"any"``). The default value is ``state="zero"``.
 
         restored (bool):
             Whether or not the dynamically allocated wires are returned to the same state they 
@@ -244,7 +244,7 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
 
     **Example**
   
-    Using ``allocate`` to dynamically request more than 1 wire returns an array of wires 
+    Using ``allocate`` to dynamically request wires returns an array of wires 
     (``DynamicRegister``) that can be indexed into:
 
     >>> wires = qml.allocate(3)
@@ -253,10 +253,12 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
     >>> wires[1]
     <DynamicWire>
 
-    Allocating just one wire can be done without specifying ``num_wires``:
+    Note that allocating just one wire still requires indexing into:
 
-    >>> wire = qml.allocate()
+    >>> wire = qml.allocate(1)
     >>> wire
+    <DynamicRegister: size=1>
+    >>> wire[0]
     <DynamicWire>
         
     Most use cases for ``allocate`` are covered by using it as a context manager, which ensures 
@@ -309,11 +311,11 @@ def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False)
                 qml.H(0)
 
                 for i in range(2):
-                    with qml.allocate(state="zero", restored=True) as new_qubit1:
-                        with qml.allocate(state="arb", restored=False) as new_qubit2:
-                            m0 = qml.measure(new_qubit1, reset=True)
-                            qml.cond(m0 == 1, qml.Z)(new_qubit2)
-                            qml.CNOT((0, new_qubit2))
+                    with qml.allocate(1, state="zero", restored=True) as new_qubit1:
+                        with qml.allocate(1, state="any", restored=False) as new_qubit2:
+                            m0 = qml.measure(new_qubit1[0], reset=True)
+                            qml.cond(m0 == 1, qml.Z)(new_qubit2[0])
+                            qml.CNOT((0, new_qubit2[0]))
 
                 return qml.expval(qml.Z(0))
 
