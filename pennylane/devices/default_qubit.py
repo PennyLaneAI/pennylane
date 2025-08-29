@@ -1026,7 +1026,8 @@ class DefaultQubit(Device):
 
         if self.wires is None:
             raise DeviceError("Device wires are required for jaxpr execution.")
-        if self.shots.has_partitioned_shots:
+        shots = Shots(shots)
+        if shots.has_partitioned_shots:
             raise DeviceError("Shot vectors are unsupported with jaxpr execution.")
         if self._prng_key is not None:
             key = self.get_prng_keys()[0]
@@ -1037,7 +1038,7 @@ class DefaultQubit(Device):
 
         interpreter = DefaultQubitInterpreter(
             num_wires=len(self.wires),
-            shots=Shots(shots).total_shots,
+            shots=shots.total_shots,
             key=key,
             execution_config=execution_config,
         )
