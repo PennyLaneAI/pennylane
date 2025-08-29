@@ -214,7 +214,7 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
     partial_eval = partial(
-        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config, shots=shots
+        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config, shots=Shots(shots)
     )
     if batch_dims is None:
         return partial_eval(*non_const_args)
