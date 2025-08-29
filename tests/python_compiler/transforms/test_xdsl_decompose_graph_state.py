@@ -375,6 +375,28 @@ class TestDecomposeGraphStatePass:
         pipeline = (DecomposeGraphStatePass(),)
         run_filecheck(program, pipeline)
 
+    def test_with_stablehlo_constant(self, run_filecheck):
+        """Test that the decompose-graph-state pass supports the case where the adjacency matrix
+        results from a `stablehlo.constant` op (rather than an `arith.constant` op).
+        """
+
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: stablehlo.constant
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: quantum.alloc(3)
+
+            %adj_matrix = "stablehlo.constant"() <{value = dense<[1, 0, 1]> : tensor<3xi1>}> : () -> tensor<3xi1>
+            %qreg1 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
+        """
+
+        pipeline = (DecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
 
 class TestNullDecomposeGraphStatePass:
     """Unit tests for the null-decompose-graph-state pass."""
@@ -511,6 +533,28 @@ class TestNullDecomposeGraphStatePass:
             %adj_matrix = arith.constant dense<[1, 0, 1]> : tensor<3xi1>
             %qreg1 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
             %qreg2 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
+        """
+
+        pipeline = (NullDecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
+    def test_with_stablehlo_constant(self, run_filecheck):
+        """Test that the null-decompose-graph-state pass supports the case where the adjacency matrix
+        results from a `stablehlo.constant` op (rather than an `arith.constant` op).
+        """
+
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: stablehlo.constant
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: quantum.alloc(3)
+
+            %adj_matrix = "stablehlo.constant"() <{value = dense<[1, 0, 1]> : tensor<3xi1>}> : () -> tensor<3xi1>
+            %qreg1 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
             func.return
         }
         """
