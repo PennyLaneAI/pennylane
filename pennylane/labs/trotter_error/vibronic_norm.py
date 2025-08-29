@@ -15,6 +15,7 @@
 
 import math
 from functools import cache
+from itertools import product
 
 import numpy as np
 import scipy as sp
@@ -23,41 +24,71 @@ from pennylane.labs.trotter_error import RealspaceMatrix, RealspaceSum
 from pennylane.labs.trotter_error.realspace.matrix import _momentum_operator, _position_operator
 
 
-def vibronic_norm(rs_mat: RealspaceMatrix, gridpoints: int, batch: list):
-    if not _is_pow_2(gridpoints) or gridpoints <= 0:
+def vibronic_norm(hamiltonian: RealspaceMatrix, gridpoints: int):
+    """Returns the norm of a vibronic Hamiltonian.
+
+    Args:
+        hamiltonian (RealspaceMatrix): The vibronic Hamiltonian.
+        gridpoints (int):
+
+    Returns:
+        ndarray: matrix of the norms of the vibronic Hamiltonian blocks
+
+    **Example**
+
+    >>> from pennylane.labs.trotter_error import vibronic_norm
+    >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs, RealspaceMatrix
+    >>> import numpy as np
+    >>> n_states = 1
+    >>> n_modes = 5
+    >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
+    >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+    >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
+    >>> rs_mat = RealspaceMatrix(n_states, n_modes, {(0, 0): rs_sum})
+    >>> vibronic_norm(rs_mat, 2)
+    array([[11.60660172]])
+    """
+
+    if not gridpoints & (gridpoints - 1) == 0 or gridpoints <= 0:
         raise ValueError(f"Number of gridpoints must be a positive power of 2, got {gridpoints}.")
 
-    padded = RealspaceMatrix(_next_pow_2(rs_mat.states), rs_mat.modes, rs_mat._blocks)
+    padded = RealspaceMatrix(
+        2 ** (hamiltonian.states - 1).bit_length(), hamiltonian.modes, hamiltonian._blocks
+    )
 
     norms = np.zeros(shape=(padded.states, padded.states))
 
-    i, j = batch
-    norms[i, j] = _block_norm(padded.block(i, j), gridpoints)
+    for i, j in [k for k in product(range(hamiltonian.states), repeat=2)]:
+        norms[i, j] = _block_norm(padded.block(i, j), gridpoints)
 
     return norms
 
 
-def _compute_norm(norm_mat: np.ndarray):
-    if norm_mat.shape == (1, 1):
-        return norm_mat[0, 0]
+def _block_norm(block: RealspaceSum, gridpoints: int):
+    """Returns the norm of a vibronic Hamiltonian block.
 
-    half = norm_mat.shape[0] // 2
+    Args:
+        block (RealspaceSum): The vibronic Hamiltonian block.
+        gridpoints (int):
 
-    top_left = norm_mat[0:half, 0:half]
-    top_right = norm_mat[0:half, half:]
-    bottom_left = norm_mat[half:, 0:half]
-    bottom_right = norm_mat[half:, half:]
+    Returns:
+        float: the norms of the vibronic Hamiltonian blocks
 
-    norm1 = max(_compute_norm(top_left), _compute_norm(bottom_right))
-    norm2 = math.sqrt(_compute_norm(top_right) * _compute_norm(bottom_left))
+    **Example**
 
-    return norm1 + norm2
-
-
-def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
+    >>> from pennylane.labs.trotter_error import RealspaceOperator, RealspaceSum, RealspaceCoeffs
+    >>> import numpy as np
+    >>> n_states = 1
+    >>> n_modes = 5
+    >>> op1 = RealspaceOperator(n_modes, (), RealspaceCoeffs(np.array(1)))
+    >>> op2 = RealspaceOperator(n_modes, ("Q"), RealspaceCoeffs(np.array([1, 2, 3, 4, 5]), label="phi"))
+    >>> rs_sum = RealspaceSum(n_modes, [op1, op2])
+    >>> _block_norm(rs_sum, 2)
+    11.606601717798213
+    """
     mode_groups = {}
 
-    for op in rs_sum.ops:
+    for op in block.ops:
         for index, coeff in op.coeffs.nonzero().items():
             group = frozenset(index)
 
@@ -79,33 +110,28 @@ def _block_norm(rs_sum: RealspaceSum, gridpoints: int):
     return sum(_get_eigenvalue(group_ops, gridpoints) for group_ops in mode_groups.values())
 
 
-@cache
-def build_mat(gridpoints, ops):
-    if len(ops) == 0:
-        return sp.sparse.eye(gridpoints)
-
-    mats = [sp.sparse.eye(gridpoints, dtype=np.complex128)] * len(ops)
-    for i, op in enumerate(ops):
-        for ch in op:
-            if ch == "P":
-                mats[i] @= _momentum_operator(gridpoints, basis="harmonic", sparse=True)
-            elif ch == "Q":
-                mats[i] @= _position_operator(gridpoints, basis="harmonic", sparse=True)
-
-    ret = mats[0]
-
-    for mat in mats[1:]:
-        ret = sp.sparse.kron(ret, mat, format="csr")
-
-    return ret
-
-
 def _get_eigenvalue(group_ops, gridpoints):
+    """Returns the largest eigenvalue of a linear combination of position and momentum products.
+
+    Args:
+        group_ops (dict): A dictionary of operators and coefficients as key and values, respectively.
+        gridpoints (int):
+
+    Returns:
+        float: largest eigenvalue of the input operator
+
+    **Example**
+
+    >>> group_ops = {'ops': [('QPP',), ('QQ',), ('Q',), ('PPQ',)],
+    ...              'coeffs': [(0.01), (0.02j), (0.03), (0.04j)]}
+    >>> _get_eigenvalue(group_ops, 4)
+    0.15442961739479524
+    """
     ops, coeffs = group_ops["ops"], group_ops["coeffs"]
-    mat = coeffs[0] * build_mat(gridpoints, ops[0])
+    mat = coeffs[0] * build_mat(ops[0], gridpoints)
 
     for op, coeff in zip(ops[1:], coeffs[1:]):
-        mat += coeff * build_mat(gridpoints, op)
+        mat += coeff * build_mat(op, gridpoints)
 
     _, _, values = sp.sparse.find(mat)
     if np.allclose(values, 0):
@@ -125,11 +151,58 @@ def _get_eigenvalue(group_ops, gridpoints):
     return 0
 
 
-def _is_pow_2(k: int) -> bool:
-    """Test if k is a power of two"""
-    return k & (k - 1) == 0
+@cache
+def build_mat(ops, gridpoints):
+    """Returns the sparse matrix form of position and momentum products.
+
+    For a tuple of position and momentum products, e.g., ('QQ', 'QQPP'), this function first
+    computes the matrix form of each poduct, i.e., mat(QQ), mat(QQPP) and then returns the Kronecker
+    product of the matricesas.
+
+    Args:
+        ops (typle(string): A tuple containing position and momentum products.
+        gridpoints (int):
+
+    Returns:
+        csr_array: the sparse matrix form of position and momentum products
+
+    **Example**
+
+    >>> mat = build_mat(('QQ', 'QQPP'), 4)
+    >>> mat.shape
+    (16, 16)
+    """
+    if len(ops) == 0:
+        return sp.sparse.eye(gridpoints)
+
+    mats = [sp.sparse.eye(gridpoints, dtype=np.complex128)] * len(ops)
+    for i, op in enumerate(ops):
+        for ch in op:
+            if ch == "P":
+                mats[i] @= _momentum_operator(gridpoints, basis="harmonic", sparse=True)
+            elif ch == "Q":
+                mats[i] @= _position_operator(gridpoints, basis="harmonic", sparse=True)
+
+    ret = mats[0]
+
+    for mat in mats[1:]:
+        ret = sp.sparse.kron(ret, mat, format="csr")
+
+    return ret
 
 
-def _next_pow_2(k: int) -> int:
-    """Return the smallest power of 2 greater than or equal to k"""
-    return 2 ** (k - 1).bit_length()
+def _compute_norm(norm_mat: np.ndarray):
+    if norm_mat.shape == (1, 1):
+        return norm_mat[0, 0]
+
+    half = norm_mat.shape[0] // 2
+
+    top_left = norm_mat[0:half, 0:half]
+    top_right = norm_mat[0:half, half:]
+    bottom_left = norm_mat[half:, 0:half]
+    bottom_right = norm_mat[half:, half:]
+
+    norm1 = max(_compute_norm(top_left), _compute_norm(bottom_right))
+    norm2 = math.sqrt(_compute_norm(top_right) * _compute_norm(bottom_left))
+
+    return norm1 + norm2
