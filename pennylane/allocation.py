@@ -158,7 +158,7 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
         def c():
             qml.H(0)
 
-            wires = qml.allocate(1, state="zero", restored=True)
+            wire = qml.allocate(1, state="zero", restored=True)
             qml.CNOT((0, wire[0]))
             qml.CNOT((0, wire[0]))
             qml.deallocate(wire)
