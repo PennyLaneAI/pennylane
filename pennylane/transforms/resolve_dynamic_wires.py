@@ -215,12 +215,12 @@ def resolve_dynamic_wires(
                 deallocated.add(w)
                 manager.return_wire(wire_map.pop(w))
         else:
-            op = op.map_wires(wire_map)
-            if intersection := deallocated.intersection(set(op.wires)):
+            mapped_op = op.map_wires(wire_map)
+            if intersection := deallocated.intersection(set(mapped_op.wires)):
                 raise ValueError(
-                    f"Encountered deallocated wires {intersection} in {op}. Dynamic wires cannot be used after deallocation."
+                    f"Encountered deallocated wires {intersection} in {mapped_op}. Dynamic wires cannot be used after deallocation."
                 )
-            new_ops.append(op.map_wires(wire_map))
+            new_ops.append(mapped_op)
 
     mps = [mp.map_wires(wire_map) for mp in tape.measurements]
     for mp in mps:
