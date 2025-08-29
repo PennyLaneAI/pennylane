@@ -227,6 +227,60 @@ class Testdraw:
 
         assert draw(circ)() == "0: ──RX†──H†─┤  State"
 
+    def test_ctrl(self):
+        """Test that the controlled operation is visualized correctly."""
+
+        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.ctrl(qml.RX(0.1, wires=0), control=(1, 2, 3))
+            return qml.state()
+
+        assert (
+            draw(circ)() == "1: ─╭●──┤  State\n2: ─├●──┤  State\n3: ─├●──┤  State\n0: ─╰RX─┤  State"
+        )
+
+    def test_ctrl_with_ctrl_values(self):
+        """Test that the controlled operation with control values is visualized correctly."""
+
+        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.ctrl(qml.RX(0.1, wires=0), control=(1, 2, 3), control_values=(0, 1, 0))
+            return qml.state()
+
+        assert (
+            draw(circ)() == "1: ─╭○──┤  State\n2: ─├●──┤  State\n3: ─├○──┤  State\n0: ─╰RX─┤  State"
+        )
+
+    def test_adjoint_ctrl(self):
+        """Test that the adjoint controlled operation is visualized correctly."""
+
+        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.adjoint(qml.ctrl(qml.RX(0.1, wires=0), (1, 2, 3), control_values=(0, 1, 0)))
+            return qml.state()
+
+        assert (
+            draw(circ)()
+            == "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State"
+        )
+
+    def test_ctrl_adjoint(self):
+        """Test that the controlled adjoint operation is visualized correctly."""
+
+        @qml.compiler.python_compiler.transforms.merge_rotations_pass
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def circ():
+            qml.ctrl(qml.adjoint(qml.RX(0.1, wires=0)), (1, 2, 3), control_values=(0, 1, 0))
+            return qml.state()
+
+        assert (
+            draw(circ)()
+            == "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State"
+        )
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])
