@@ -2306,7 +2306,7 @@ def test_renomalization_issue():
         qml.evolve(H_interaction + global_drive)(params, ts)
         return qml.counts()
 
-    circuit_qml = qml.QNode(circuit, qml.device("default.qubit", shots=1000), interface="jax")
+    circuit_qml = qml.QNode(circuit, qml.device("default.qubit"), interface="jax", shots=1000)
 
     circuit_qml(params)
     jax.config.update("jax_enable_x64", initial_mode)

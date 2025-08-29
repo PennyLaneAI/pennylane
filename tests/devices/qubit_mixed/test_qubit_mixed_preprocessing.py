@@ -395,7 +395,7 @@ class TestPreprocessing:
 
         seed = jax.random.PRNGKey(42)
 
-        dev = DefaultMixed(wires=1, seed=seed, shots=100)
+        dev = DefaultMixed(wires=1, seed=seed)
 
         # Preprocess the device
         _ = dev.preprocess()
