@@ -26,6 +26,21 @@ from pennylane.exceptions import DeviceError
 from pennylane.operation import classproperty
 
 
+@pytest.fixture(autouse=True, scope="function")
+def reset_decomposition_state():
+    """Ensure decomposition state is reset after each test to prevent interference."""
+    # Record the initial state
+    initial_state = qml.decomposition.enabled_graph()
+
+    yield  # Run the test
+
+    # Restore the initial state after the test
+    if initial_state:
+        qml.decomposition.enable_graph()
+    else:
+        qml.decomposition.disable_graph()
+
+
 class NoMatOp(qml.operation.Operation):
     """Dummy operation for expanding circuit."""
 
@@ -1171,6 +1186,9 @@ class TestDefaultQubitPreprocessGraphDecompIntegration:
             assert processed_old.operations[0].name == gate_name
             assert processed_new.operations[0].name == gate_name
 
+        # Clean up: restore original decomposition state
+        qml.decomposition.disable_graph()
+
     def test_all_dq_gate_set_consistency_across_systems(self, create_operation_from_name):
         """Test that all DefaultQubit gates in ALL_DQ_GATE_SET behave consistently between systems.
 
@@ -1238,3 +1256,6 @@ class TestDefaultQubitPreprocessGraphDecompIntegration:
             assert False, error_msg
 
         # Success: All gates in ALL_DQ_GATE_SET behave consistently between systems
+
+        # Clean up: restore original decomposition state
+        qml.decomposition.disable_graph()
