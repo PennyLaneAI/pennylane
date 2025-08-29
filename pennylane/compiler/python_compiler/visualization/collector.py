@@ -14,7 +14,8 @@
 """This file contains the implementation of the QMLCollector class,
 which collects and maps PennyLane operations and measurements from xDSL."""
 
-from typing import Any, Callable, Union
+from functools import singledispatchmethod
+from typing import Any, Union
 
 from xdsl.dialects import builtin, func
 from xdsl.dialects.builtin import (
@@ -53,8 +54,6 @@ class QMLCollector:
     and converting supported xDSL operations and measurements to PennyLane objects.
     """
 
-    SUPPORTED_OPS: dict[type, Callable[[Any], Operator | MeasurementProcess]]
-
     def __init__(self, module: builtin.ModuleOp):
         self.module = module
         self.wire_to_ssa_qubits: dict[int, SSAValue] = {}
@@ -62,33 +61,34 @@ class QMLCollector:
         self.params_to_ssa_params: dict[Union[FloatAttr, IntegerAttr], SSAValue] = {}
         self.quantum_register: SSAValue | None = None
 
-    # pylint: disable=protected-access
-    SUPPORTED_OPS = {
-        StateOp: lambda self, xdsl_obj: self._handle_state_meas(xdsl_obj),
-        ProbsOp: lambda self, xdsl_obj: self._handle_probs_meas(xdsl_obj),
-        SampleOp: lambda self, xdsl_obj: self._handle_sample_meas(xdsl_obj),
-        ExpvalOp: lambda self, xdsl_obj: self._handle_expval_meas(xdsl_obj),
-        CustomOp: lambda self, xdsl_obj: self._handle_custom_op(xdsl_obj),
-    }
+    # pylint: disable=unused-argument
+    @singledispatchmethod
+    def handle(self, xdsl_op: Any) -> Union[Operator, MeasurementProcess, None]:
+        """Default: unsupported op → return None (caller simply skips it)."""
+        return None
 
-    def _handle_state_meas(self, xdsl_state: StateOp) -> MeasurementProcess:
+    @handle.register
+    def _(self, xdsl_state: StateOp) -> MeasurementProcess:
         return xdsl_to_qml_meas(xdsl_state)
 
-    def _handle_probs_meas(self, xdsl_probs: ProbsOp) -> MeasurementProcess:
+    @handle.register
+    def _(self, xdsl_probs: ProbsOp) -> MeasurementProcess:
         xdsl_compbasis_op = xdsl_probs.obs.owner
         qml_compbasis_op = xdsl_to_qml_compbasis_op(xdsl_compbasis_op)
         return xdsl_to_qml_meas(xdsl_probs, qml_compbasis_op)
 
-    # TODO: right now shots do not seem to work
-    def _handle_sample_meas(self, xdsl_sample: SampleOp) -> MeasurementProcess:
+    @handle.register
+    def _(self, xdsl_sample: SampleOp) -> MeasurementProcess:
         return xdsl_to_qml_meas(xdsl_sample)
 
-    def _handle_expval_meas(self, xdsl_expval: ExpvalOp) -> MeasurementProcess:
+    @handle.register
+    def _(self, xdsl_expval: ExpvalOp) -> MeasurementProcess:
         xdsl_named_obs_op = xdsl_expval.obs.owner
         qml_obs_op = xdsl_to_qml_named_op(xdsl_named_obs_op)
         return xdsl_to_qml_meas(xdsl_expval, qml_obs_op)
 
-    def _handle_custom_op(self, xdsl_custom_op: CustomOp) -> Operator:
+    @handle.register
+    def _(self, xdsl_custom_op: CustomOp) -> Operator:
         if self.quantum_register is None:
             raise ValueError("Quantum register (AllocOp) not found.")
         if not self.wire_to_ssa_qubits:
@@ -137,15 +137,12 @@ class QMLCollector:
             for op in func_op.body.walk():
 
                 self._process_qubit_mapping(op)
-                handler = self.SUPPORTED_OPS.get(type(op), None)
+                result = self.handle(op)
 
-                if handler:
-                    qml_obj = handler(self, op)
+                if isinstance(result, MeasurementProcess):
+                    collected_meas.append(result)
 
-                    if isinstance(qml_obj, MeasurementProcess):
-                        collected_meas.append(qml_obj)
-
-                    if isinstance(qml_obj, Operator):
-                        collected_ops.append(qml_obj)
+                if isinstance(result, Operator):
+                    collected_ops.append(result)
 
         return collected_ops, collected_meas
