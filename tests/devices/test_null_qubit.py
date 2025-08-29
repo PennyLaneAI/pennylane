@@ -39,7 +39,10 @@ def test_name():
 def test_shots():
     """Test the shots property of NullQubit."""
     assert NullQubit().shots == qml.measurements.Shots(None)
-    assert NullQubit(shots=100).shots == qml.measurements.Shots(100)
+    with pytest.warns(
+        qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+    ):
+        assert NullQubit(shots=100).shots == qml.measurements.Shots(100)
 
     with pytest.raises(AttributeError):
         NullQubit().shots = 10
@@ -1139,9 +1142,9 @@ class TestIntegration:
     @pytest.mark.parametrize("wires,expected", [(None, [0, 0]), (3, [0, 0, 0])])
     def test_sample_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by sample."""
-        dev = NullQubit(wires=wires, shots=5)
+        dev = NullQubit(wires=wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=5)
         def circuit():
             qml.PauliX(2)
             qml.Identity(0)
@@ -1202,9 +1205,9 @@ class TestIntegration:
     )
     def test_counts_uses_device_wires(self, wires, all_outcomes, expected):
         """Test that if device wires are given, then they are used by probs."""
-        dev = NullQubit(wires=wires, shots=10)
+        dev = NullQubit(wires=wires)
 
-        @qml.qnode(dev, interface=None)
+        @qml.qnode(dev, interface=None, shots=10)
         def circuit():
             qml.PauliX(2)
             qml.Identity(0)
