@@ -514,6 +514,7 @@
 
 * Added a mapper function `map_to_resource_ops` that maps PennyLane operators to ResourceOperator equivalents.
   [(#8146)](https://github.com/PennyLaneAI/pennylane/pull/8146)
+  [(#)]()
 
 * Added state of the art resources for the `ResourceTrotterProduct` template.
   [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
