@@ -29,6 +29,7 @@ from pennylane.decomposition import DecompositionGraph, enabled_graph
 from pennylane.decomposition.decomposition_graph import DecompGraphSolution
 from pennylane.decomposition.utils import translate_op_alias
 from pennylane.operation import Operator
+from pennylane.ops import Conditional
 from pennylane.transforms.core import transform
 
 
@@ -207,7 +208,6 @@ def _get_plxpr_decompose():  # pylint: disable=missing-docstring, too-many-state
             if self._decomp_graph_solution and self._decomp_graph_solution.is_solved_for(
                 op, num_work_wires=self._num_available_work_wires
             ):
-
                 rule = self._decomp_graph_solution.decomposition(
                     op, num_work_wires=self._num_available_work_wires
                 )
@@ -854,10 +854,28 @@ def _operator_decomposition_gen(  # pylint: disable=too-many-arguments
     if max_expansion is not None and max_expansion <= current_depth:
         max_depth_reached = True
 
-    if acceptance_function(op) or max_depth_reached:
+    # Handle classically controlled operators
+    if isinstance(op, Conditional):
+        if acceptance_function(op.base) or max_depth_reached:
+            yield op
+        else:
+            yield from (
+                Conditional(op.meas_val, base_op)
+                for base_op in _operator_decomposition_gen(
+                    op.base,
+                    acceptance_function,
+                    max_expansion=max_expansion,
+                    current_depth=current_depth,
+                    graph_solution=graph_solution,
+                )
+            )
+
+    elif acceptance_function(op) or max_depth_reached:
         yield op
+
     elif isinstance(op, (Allocate, Deallocate)):
         yield op
+
     elif graph_solution is not None and graph_solution.is_solved_for(op, num_available_work_wires):
         op_rule = graph_solution.decomposition(op, num_available_work_wires)
         with queuing.AnnotatedQueue() as decomposed_ops:
