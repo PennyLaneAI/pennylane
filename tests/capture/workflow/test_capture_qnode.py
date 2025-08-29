@@ -974,7 +974,7 @@ class TestQNodeVmapIntegration:
         x = jnp.array([1.0, 2.0, 3.0])
 
         jaxpr = jax.make_jaxpr(jax.vmap(qml.set_shots(circuit, shots=50), in_axes=0))(x)
-        res = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
+        jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, x)
 
         assert len(jaxpr.eqns) == 1
         eqn0 = jaxpr.eqns[0]

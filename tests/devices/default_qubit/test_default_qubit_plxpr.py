@@ -131,7 +131,10 @@ class TestExecution:
         jaxpr = jax.make_jaxpr(lambda x: x + 1)(0.1)
         dev = qml.device("default.qubit", wires=1)
 
-        with pytest.raises(NotImplementedError, match="DefaultQubitInterpreter does not yet support partitioned shots."):
+        with pytest.raises(
+            NotImplementedError,
+            match="DefaultQubitInterpreter does not yet support partitioned shots.",
+        ):
             dev.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, 0.2, shots=(100, 100))
 
     def test_use_device_prng(self):

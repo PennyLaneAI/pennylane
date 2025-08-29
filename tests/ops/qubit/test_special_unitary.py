@@ -838,7 +838,9 @@ class TestSpecialUnitaryIntegration:
 
         dev = dev_fn(wires=2)
         diff_method = "backprop" if shots is None else "parameter-shift"
-        qnode = qml.QNode(self.circuit, dev, interface="torch", diff_method=diff_method, shots=shots)
+        qnode = qml.QNode(
+            self.circuit, dev, interface="torch", diff_method=diff_method, shots=shots
+        )
 
         x = torch.tensor(self.x, requires_grad=True)
         res = qnode(x)
