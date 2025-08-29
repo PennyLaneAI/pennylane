@@ -185,7 +185,7 @@ class NullDecomposeGraphStatePattern(RewritePattern):
             rewriter.erase_op(graph_prep_op.adj_matrix.owner)
 
 
-def _parse_adj_matrix(graph_prep_op: mbqc.GraphStatePrepOp) -> DenselyPackedAdjMatrix:
+def _parse_adj_matrix(graph_prep_op: mbqc.GraphStatePrepOp) -> list[int]:
     """Parse the adjacency matrix from the result of the ConstantOp given as input to the
     graph_state_prep op.
 
@@ -194,8 +194,8 @@ def _parse_adj_matrix(graph_prep_op: mbqc.GraphStatePrepOp) -> DenselyPackedAdjM
     elements, whose values are typically either 0 for 'false' or 255 for 'true'.
 
     Returns:
-        DenselyPackedAdjMatrix: The densely packed adjacency matrix as a sequence of ints. See the
-        note in the module documentation for a description of this format.
+        list[int]: The densely packed adjacency matrix as a list of ints. See the note in the module
+        documentation for a description of this format.
     """
     adj_matrix_const_op = graph_prep_op.adj_matrix.owner
     adj_matrix_value = adj_matrix_const_op.properties.get("value")
