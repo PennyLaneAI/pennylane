@@ -36,6 +36,7 @@ from pennylane.measurements import (
     MidMeasureMP,
     SampleMeasurement,
     ShadowExpvalMP,
+    Shots,
     StateMeasurement,
     StateMP,
 )
@@ -1009,7 +1010,12 @@ class DefaultQubit(Device):
     # pylint: disable=import-outside-toplevel
     @debug_logger
     def eval_jaxpr(
-        self, jaxpr: Jaxpr, consts: list[TensorLike], *args, execution_config=None
+        self,
+        jaxpr: Jaxpr,
+        consts: list[TensorLike],
+        *args,
+        execution_config=None,
+        shots=Shots(None),
     ) -> list[TensorLike]:
         from .qubit.dq_interpreter import DefaultQubitInterpreter
 
@@ -1026,7 +1032,8 @@ class DefaultQubit(Device):
 
         if self.wires is None:
             raise DeviceError("Device wires are required for jaxpr execution.")
-        if self.shots.has_partitioned_shots:
+        shots = Shots(shots)
+        if shots.has_partitioned_shots:
             raise DeviceError("Shot vectors are unsupported with jaxpr execution.")
         if self._prng_key is not None:
             key = self.get_prng_keys()[0]
@@ -1037,7 +1044,7 @@ class DefaultQubit(Device):
 
         interpreter = DefaultQubitInterpreter(
             num_wires=len(self.wires),
-            shots=self.shots.total_shots,
+            shots=shots.total_shots,
             key=key,
             execution_config=execution_config,
         )
