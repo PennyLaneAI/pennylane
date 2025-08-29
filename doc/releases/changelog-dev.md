@@ -93,6 +93,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
+  [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
+
 * A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
   This allows for more customization and efficiency when calculating expectation values across the non-commuting groups
   of observables that make up a ``Hamiltonian``/``LinearCombination``.
@@ -759,6 +762,10 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
+  [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
+  [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
 
 * The `autograph` keyword argument has been removed from the `QNode` constructor. 
   To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
