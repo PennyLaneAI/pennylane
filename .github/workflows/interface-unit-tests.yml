@@ -488,6 +488,7 @@ jobs:
       pytest_markers: external
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
+      additional_os_packages: graphviz
       additional_pip_packages: |
         pyzx matplotlib stim quimb mitiq ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime xdsl==0.49 filecheck
         ${{ needs.default-dependency-versions.outputs.jax-version }}
