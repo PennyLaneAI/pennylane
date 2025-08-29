@@ -449,8 +449,8 @@ def clifford_t_decomposition(
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev. Alternatively,
             the Ross-Selinger algorithm can be used with ``"gridsynth"``.
         cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
-        cache_eps_rtol (Optional[float]): The relative tolerance for `epsilon` values between which the cache may be reused.
-            Defaults to ``None``, which means that a cached decomposition will be used if it is at least as precise as the requested error.
+        cache_eps_rtol (Optional[float]): The relative tolerance for ``epsilon`` values between which the cache may be reused.
+            Defaults to ``None``, which means that a cached decomposition will be used if it is `at least as precise` as the requested error.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
     Returns:
