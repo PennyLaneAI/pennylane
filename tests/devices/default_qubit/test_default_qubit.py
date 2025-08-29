@@ -41,7 +41,11 @@ def test_name():
 def test_shots():
     """Test the shots property of DefaultQubit."""
     assert DefaultQubit().shots == qml.measurements.Shots(None)
-    assert DefaultQubit(shots=100).shots == qml.measurements.Shots(100)
+    with pytest.warns(
+        qml.exceptions.PennyLaneDeprecationWarning,
+        match="shots on device is deprecated"
+    ):
+        assert DefaultQubit(shots=100).shots == qml.measurements.Shots(100)
 
     with pytest.raises(AttributeError):
         DefaultQubit().shots = 10
