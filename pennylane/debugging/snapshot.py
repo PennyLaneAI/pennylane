@@ -206,7 +206,7 @@ def snapshots(tape: QuantumScript) -> tuple[QuantumScriptBatch, PostprocessingFn
     two mcm's, we have four states.
 
     >>> qml.snapshots(c.update(mcm_method="tree-traversal"))(1.0)
-    {0: array([0.5, 0.5]),
+    {0: [array([0.5, 0.5])],
     1: [array([1., 0.]), array([0.06120872, 0.93879128])],
     2: [array([1., 0.]), array([0., 1.]), array([1., 0.]), array([0., 1.])],
     'execution_results': array([0.51653561, 0.48346439])}
