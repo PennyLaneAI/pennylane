@@ -489,11 +489,12 @@ jobs:
       pytest_additional_args: ${{ needs.warnings-as-errors-setup.outputs.pytest_warning_args }}
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}external-libraries-tests (${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
       additional_pip_packages: |
-        pyzx matplotlib stim quimb mitiq ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime xdsl==0.46 filecheck
+        pyzx matplotlib stim quimb mitiq ply optax scipy-openblas32>=0.3.26 qualtran openqasm3 antlr4_python3_runtime xdsl==0.49 filecheck
         ${{ needs.default-dependency-versions.outputs.jax-version }}
         git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}
+        autoray==0.8.0
 
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
 
@@ -697,8 +698,9 @@ jobs:
       pytest_xml_file_path: '${{ inputs.job_name_prefix }}device-tests (${{ matrix.config.device }}, ${{ matrix.config.shots }}, ${{ matrix.python-version }})${{ inputs.job_name_suffix }}.xml'
   
   all-tests-passed:
-    runs-on: ubuntu-latest
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
     needs:
+      - determine_runner
       - torch-tests
       - autograd-tests
       - jax-tests
@@ -726,8 +728,10 @@ jobs:
         run: echo "All test jobs completed successfully."
 
   upload-to-codecov:
-    runs-on: ubuntu-latest
-    needs: all-tests-passed
+    runs-on: ${{ needs.determine_runner.outputs.runner_group }}
+    needs: 
+      - all-tests-passed
+      - determine_runner
 
     # Run this if and only if the "all-test-passed" job succeeded
     if: >-
