@@ -20,10 +20,10 @@ from functools import lru_cache
 
 from pennylane.capture import enabled as capture_enabled
 from pennylane.exceptions import QuantumFunctionError
+from pennylane.operation import Operator
 from pennylane.wires import Wires
 
 from .measurement_value import MeasurementValue
-from .measurements import MeasurementProcess
 
 
 def _measure_impl(
@@ -117,7 +117,7 @@ def find_post_processed_mcms(circuit):
     return post_processed_mcms
 
 
-class MidMeasureMP(MeasurementProcess):
+class MidMeasureMP(Operator):
     """Mid-circuit measurement.
 
     This class additionally stores information about unknown measurement outcomes in the qubit model.
@@ -135,10 +135,12 @@ class MidMeasureMP(MeasurementProcess):
         id (str): Custom label given to a measurement instance.
     """
 
-    _shortname = "measure"
+    num_wires = 1
+    num_params = 0
+    batch_size = None
 
     def _flatten(self):
-        metadata = (("wires", self.raw_wires), ("reset", self.reset), ("id", self.id))
+        metadata = (("wires", self.wires), ("reset", self.reset), ("id", self.id))
         return (None, None), metadata
 
     def __init__(
@@ -148,26 +150,15 @@ class MidMeasureMP(MeasurementProcess):
         postselect: int | None = None,
         id: str | None = None,
     ):
-        self.batch_size = None
         super().__init__(wires=Wires(wires), id=id)
+        self._hyperparameters = {"reset": reset, "postselect": postselect}
         self.reset = reset
         self.postselect = postselect
 
     # pylint: disable=arguments-renamed, arguments-differ
     @classmethod
     def _primitive_bind_call(cls, wires=None, reset=False, postselect=None, id=None):
-        wires = () if wires is None else wires
-        return cls._wires_primitive.bind(*wires, reset=reset, postselect=postselect, id=id)
-
-    @classmethod
-    def _abstract_eval(
-        cls,
-        n_wires: int | None = None,
-        has_eigvals=False,
-        shots: int | None = None,
-        num_device_wires: int = 0,
-    ) -> tuple:
-        return (), int
+        raise NotImplementedError
 
     def label(self, decimals=None, base_label=None, cache=None):  # pylint: disable=unused-argument
         r"""How the mid-circuit measurement is represented in diagrams and drawings.
@@ -192,14 +183,6 @@ class MidMeasureMP(MeasurementProcess):
         return _label
 
     @property
-    def samples_computational_basis(self):
-        return False
-
-    @property
-    def _queue_category(self):
-        return "_ops"
-
-    @property
     def hash(self):
         """int: Returns an integer hash uniquely representing the measurement process"""
         fingerprint = (
@@ -209,21 +192,6 @@ class MidMeasureMP(MeasurementProcess):
         )
 
         return hash(fingerprint)
-
-    @property
-    def data(self):
-        """The data of the measurement. Needed to match the Operator API."""
-        return []
-
-    @property
-    def name(self):
-        """The name of the measurement. Needed to match the Operator API."""
-        return self.__class__.__name__
-
-    @property
-    def num_params(self):
-        """The number of parameters. Needed to match the Operator API."""
-        return 0
 
 
 def measure(
