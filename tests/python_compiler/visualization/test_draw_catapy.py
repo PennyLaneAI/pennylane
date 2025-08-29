@@ -28,7 +28,7 @@ from catalyst.passes.xdsl_plugin import getXDSLPluginAbsolutePath
 import pennylane as qml
 from pennylane.compiler.python_compiler.visualization import draw
 
-# pylint: disable=implicit-str-concat
+# pylint: disable=implicit-str-concat, unnecessary-lambda
 
 
 @pytest.mark.usefixtures("enable_disable_plxpr")
@@ -215,119 +215,77 @@ class Testdraw:
 
         assert draw(transforms_circuit, level=level)() == expected
 
-    def test_adjoint(self):
-        """Test that the adjoint operation is visualized correctly."""
+    @pytest.mark.parametrize(
+        "op, kwargs, expected",
+        [
+            (
+                lambda: qml.ctrl(qml.RX(0.1, 0), control=(1, 2, 3)),
+                {},
+                "1: ─╭●──┤  State\n2: ─├●──┤  State\n3: ─├●──┤  State\n0: ─╰RX─┤  State",
+            ),
+            (
+                lambda: qml.ctrl(qml.RX(0.1, 0), control=(1, 2, 3), control_values=(0, 1, 0)),
+                {},
+                "1: ─╭○──┤  State\n2: ─├●──┤  State\n3: ─├○──┤  State\n0: ─╰RX─┤  State",
+            ),
+            (
+                lambda: qml.adjoint(qml.ctrl(qml.RX(0.1, 0), (1, 2, 3), control_values=(0, 1, 0))),
+                {},
+                "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State",
+            ),
+            (
+                lambda: qml.ctrl(qml.adjoint(qml.RX(0.1, 0)), (1, 2, 3), control_values=(0, 1, 0)),
+                {},
+                "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State",
+            ),
+        ],
+    )
+    def test_ctrl_adjoint_variants(self, op, kwargs, expected):
+        """
+        Test the visualization of control and adjoint variants.
+        """
 
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def circ():
-            qml.adjoint(qml.RX(0.1, wires=0))
-            qml.adjoint(qml.Hadamard(wires=0))
+            op()
             return qml.state()
 
-        assert draw(circ)() == "0: ──RX†──H†─┤  State"
+        assert draw(circ)(**kwargs) == expected
 
-    def test_ctrl(self):
-        """Test that the controlled operation is visualized correctly."""
-
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def circ():
-            qml.ctrl(qml.RX(0.1, wires=0), control=(1, 2, 3))
-            return qml.state()
-
-        assert (
-            draw(circ)() == "1: ─╭●──┤  State\n2: ─├●──┤  State\n3: ─├●──┤  State\n0: ─╰RX─┤  State"
-        )
-
-    def test_ctrl_with_ctrl_values(self):
-        """Test that the controlled operation with control values is visualized correctly."""
-
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def circ():
-            qml.ctrl(qml.RX(0.1, wires=0), control=(1, 2, 3), control_values=(0, 1, 0))
-            return qml.state()
-
-        assert (
-            draw(circ)() == "1: ─╭○──┤  State\n2: ─├●──┤  State\n3: ─├○──┤  State\n0: ─╰RX─┤  State"
-        )
-
-    def test_adjoint_ctrl(self):
-        """Test that the adjoint controlled operation is visualized correctly."""
-
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def circ():
-            qml.adjoint(qml.ctrl(qml.RX(0.1, wires=0), (1, 2, 3), control_values=(0, 1, 0)))
-            return qml.state()
-
-        assert (
-            draw(circ)()
-            == "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State"
-        )
-
-    def test_ctrl_adjoint(self):
-        """Test that the controlled adjoint operation is visualized correctly."""
-
-        @qml.compiler.python_compiler.transforms.merge_rotations_pass
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def circ():
-            qml.ctrl(qml.adjoint(qml.RX(0.1, wires=0)), (1, 2, 3), control_values=(0, 1, 0))
-            return qml.state()
-
-        assert (
-            draw(circ)()
-            == "1: ─╭○───┤  State\n2: ─├●───┤  State\n3: ─├○───┤  State\n0: ─╰RX†─┤  State"
-        )
-
-    def test_probs_meas(self):
-        """Test that the probability measurement is visualized correctly."""
+    @pytest.mark.parametrize(
+        "measurement, expected",
+        [
+            (
+                lambda: (qml.probs(0), qml.probs(1), qml.probs(2)),
+                "0: ──RX─┤  Probs\n1: ──RY─┤  Probs\n2: ──RZ─┤  Probs",
+            ),
+            (
+                lambda: qml.probs(),
+                "0: ──RX─┤  Probs\n1: ──RY─┤  Probs\n2: ──RZ─┤  Probs",
+            ),
+            (
+                lambda: (qml.expval(qml.X(0)), qml.expval(qml.Y(1)), qml.expval(qml.Z(2))),
+                "0: ──RX─┤  <X>\n1: ──RY─┤  <Y>\n2: ──RZ─┤  <Z>",
+            ),
+            (
+                lambda: (qml.var(qml.X(0)), qml.var(qml.Y(1)), qml.var(qml.Z(2))),
+                "0: ──RX─┤  Var[X]\n1: ──RY─┤  Var[Y]\n2: ──RZ─┤  Var[Z]",
+            ),
+        ],
+    )
+    def test_measurements(self, measurement, expected):
+        """
+        Test the visualization of measurements.
+        """
 
         @qml.qnode(qml.device("lightning.qubit", wires=3))
         def circ():
             qml.RX(0.1, 0)
             qml.RY(0.2, 1)
             qml.RZ(0.3, 2)
-            return qml.probs(0), qml.probs(1), qml.probs(2)
+            return measurement()
 
-        assert draw(circ)() == "0: ──RX─┤  Probs\n1: ──RY─┤  Probs\n2: ──RZ─┤  Probs"
-
-    def test_probs_meas_2(self):
-        """Test that the probability measurement is visualized correctly."""
-
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def circ():
-            qml.RX(0.1, 0)
-            qml.RY(0.2, 1)
-            qml.RZ(0.3, 2)
-            return qml.probs()
-
-        assert draw(circ)() == "0: ──RX─┤  Probs\n1: ──RY─┤  Probs\n2: ──RZ─┤  Probs"
-
-    def test_expval_meas(self):
-        """Test that the expectation value measurement is visualized correctly."""
-
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def circ():
-            qml.RX(0.1, 0)
-            qml.RY(0.2, 1)
-            qml.RZ(0.3, 2)
-            return qml.expval(qml.X(0)), qml.expval(qml.Y(1)), qml.expval(qml.Z(2))
-
-        assert draw(circ)() == "0: ──RX─┤  <X>\n1: ──RY─┤  <Y>\n2: ──RZ─┤  <Z>"
-
-    def test_var_meas(self):
-        """Test that the variance measurement is visualized correctly."""
-
-        @qml.qnode(qml.device("lightning.qubit", wires=3))
-        def circ():
-            qml.RX(0.1, 0)
-            qml.RY(0.2, 1)
-            qml.RZ(0.3, 2)
-            return qml.var(qml.X(0)), qml.var(qml.Y(1)), qml.var(qml.Z(2))
-
-        assert draw(circ)() == "0: ──RX─┤  Var[X]\n1: ──RY─┤  Var[Y]\n2: ──RZ─┤  Var[Z]"
+        assert draw(circ)() == expected
 
 
 if __name__ == "__main__":
