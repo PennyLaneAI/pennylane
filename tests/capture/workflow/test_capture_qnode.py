@@ -549,7 +549,7 @@ class TestUserTransforms:
         assert jnp.allclose(res, expected)
 
 
-@pytest.mark.parametrize("dev_name", ["default.qubit"])
+@pytest.mark.parametrize("dev_name", ["default.qubit", "lightning.qubit"])
 class TestDevicePreprocessing:
     """Integration tests for preprocessing and executing qnodes with program capture."""
 
