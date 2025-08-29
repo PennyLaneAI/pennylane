@@ -496,9 +496,9 @@ jobs:
         git+https://github.com/PennyLaneAI/pennylane-qiskit.git@master
         ${{ needs.default-dependency-versions.outputs.catalyst-nightly }}
         ${{ inputs.additional_python_packages }}
-        autoray==0.8.0
       additional_pip_packages_post: |
         git+https://github.com/PennyLaneAI/pennylane-lightning.git@adjust-`LightningBase.eval_jaxpr`-compatible-with-independent-shots
+
       requirements_file: ${{ github.event_name == 'schedule' && strategy.job-index == 0 && 'external.txt' || '' }}
 
 
