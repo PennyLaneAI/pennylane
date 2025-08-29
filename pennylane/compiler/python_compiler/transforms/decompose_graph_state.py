@@ -135,7 +135,7 @@ class DecomposeGraphStatePattern(RewritePattern):
         rewriter.erase_matched_op()
 
         # Erase the constant op that returned the adjacency matrix only if it has no other uses
-        if len(graph_prep_op.adj_matrix.uses) == 0:
+        if graph_prep_op.adj_matrix.uses.get_length() == 0:
             rewriter.erase_op(graph_prep_op.adj_matrix.owner)
 
 
@@ -181,7 +181,7 @@ class NullDecomposeGraphStatePattern(RewritePattern):
         rewriter.erase_matched_op()
 
         # Erase the constant op that returned the adjacency matrix only if it has no other uses
-        if len(graph_prep_op.adj_matrix.uses) == 0:
+        if graph_prep_op.adj_matrix.uses.get_length() == 0:
             rewriter.erase_op(graph_prep_op.adj_matrix.owner)
 
 
