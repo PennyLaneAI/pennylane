@@ -598,6 +598,7 @@ def simulate_tree_mcm(
     # Finalize terminal measurements post-processing #
     ##################################################
 
+    _finalize_debugger(debugger)
     measurement_dicts = get_measurement_dicts(terminal_measurements, stack, depth)
     if finite_shots:
         terminal_measurements = circuit.measurements
@@ -605,6 +606,14 @@ def simulate_tree_mcm(
     mcm_samples = prune_mcm_samples(mcm_samples)
     results = combine_measurements(terminal_measurements, measurement_dicts, mcm_samples)
     return variance_post_processing((results,))
+
+
+def _finalize_debugger(debugger):
+    if not debugger or not debugger.active:
+        return
+    for tag, results in debugger.snapshots.items():
+        if not isinstance(results, list):
+            debugger.snapshots[tag] = [results]
 
 
 def split_circuit_at_mcms(circuit):
