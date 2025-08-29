@@ -18,10 +18,8 @@ from functools import cache
 
 import numpy as np
 import scipy as sp
-from mode_selector import get_reduced_model
 
 from pennylane.labs.trotter_error import RealspaceMatrix, RealspaceSum
-
 from pennylane.labs.trotter_error.realspace.matrix import _momentum_operator, _position_operator
 
 
