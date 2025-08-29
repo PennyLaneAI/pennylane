@@ -5,7 +5,10 @@
 
 * A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
   which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
+  A corresponding decomposition rule has been added to support efficiently controlling the pattern,
+  in which only the central (target) operator is controlled, and not U or U†.
   [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
+  [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
 
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
@@ -85,12 +88,17 @@
   Array([ 3.14159265, -1.57079633], dtype=float64)
   ```
 
-<h3>Improvements 🛠</h3>
+* The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
+  [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
+<h3>Improvements 🛠</h3>
 
 * The function :func:`qml.clifford_t_decomposition` with `method="gridsynth"` are now compatible 
   with quantum just-in-time compilation via the `@qml.qjit` decorator.
   [(#7711)](https://github.com/PennyLaneAI/pennylane/pull/7711)
+
+* A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
+  [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
 
 * A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
   This allows for more customization and efficiency when calculating expectation values across the non-commuting groups
@@ -501,6 +509,8 @@
 * The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
   StableHLO dialect with missing upstream operations.
   [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
+  [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
+  
 
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
@@ -552,6 +562,7 @@
 
 * `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+  [(#8046)](https://github.com/PennyLaneAI/pennylane/pull/8046)
 
 * Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
   This prevents the potential mutation of a global object. 
@@ -749,6 +760,14 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
+  [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
+  [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
+
+* The `autograph` keyword argument has been removed from the `QNode` constructor. 
+  To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
+  [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
+  
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
   [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
 
