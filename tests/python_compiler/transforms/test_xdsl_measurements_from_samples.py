@@ -509,12 +509,9 @@ class TestMeasurementsFromSamplesIntegration:
         measurements that require an observable (i.e. expval and var).
         """
 
-        with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-        ):
-            dev = qml.device("lightning.qubit", wires=1, shots=shots)
+        dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_op(wires=0)
             return mp(obs(wires=0))
@@ -543,12 +540,9 @@ class TestMeasurementsFromSamplesIntegration:
         probs measurements.
         """
 
-        with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-        ):
-            dev = qml.device("lightning.qubit", wires=1, shots=shots)
+        dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_op(wires=0)
             return qml.probs(wires=0)
@@ -584,12 +578,9 @@ class TestMeasurementsFromSamplesIntegration:
         counts measurements.
         """
 
-        with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-        ):
-            dev = qml.device("lightning.qubit", wires=1, shots=shots)
+        dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_op(wires=0)
             return qml.counts(wires=0)
@@ -621,13 +612,9 @@ class TestMeasurementsFromSamplesIntegration:
 
         In this case, the measurements_from_samples pass should effectively be a no-op.
         """
+        dev = qml.device("lightning.qubit", wires=1)
 
-        with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-        ):
-            dev = qml.device("lightning.qubit", wires=1, shots=shots)
-
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_op(wires=0)
             return qml.sample(wires=0)
@@ -665,12 +652,9 @@ class TestMeasurementsFromSamplesIntegration:
         In this test, the terminal measurements are performed separately per wire.
         """
 
-        with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-        ):
-            dev = qml.device("lightning.qubit", wires=2, shots=shots)
+        dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_ops[0](wires=0)
             initial_ops[1](wires=1)
@@ -711,12 +695,9 @@ class TestMeasurementsFromSamplesIntegration:
         In this test, the terminal measurements are performed on the combination of both wires.
         """
 
-        with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-        ):
-            dev = qml.device("lightning.qubit", wires=2, shots=shots)
+        dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_ops[0](wires=0)
             initial_ops[1](wires=1)
@@ -747,13 +728,9 @@ class TestMeasurementsFromSamplesIntegration:
         """Test the measurements_from_samples transform on a device with two wires and a terminal,
         "global" probs measurements (one that implicitly acts on all wires).
         """
+        dev = qml.device("lightning.qubit", wires=2)
 
-        with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-        ):
-            dev = qml.device("lightning.qubit", wires=2, shots=shots)
-
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_ops[0](wires=0)
             initial_ops[1](wires=1)
@@ -786,12 +763,9 @@ class TestMeasurementsFromSamplesIntegration:
         """Test the measurements_from_samples transform on a device with two wires and a terminal,
         "global" probs measurements (one that implicitly acts on all wires).
         """
-        with pytest.warns(
-            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-        ):
-            dev = qml.device("lightning.qubit", wires=2, shots=shots)
+        dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_ops[0](wires=0)
             initial_ops[1](wires=1)
@@ -819,14 +793,10 @@ class TestMeasurementsFromSamplesIntegration:
 
         @qml.qjit(pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
         def workload(shots):
-
-            with pytest.warns(
-                qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
-            ):
-                dev = qml.device("lightning.qubit", wires=1, shots=shots)
+            dev = qml.device("lightning.qubit", wires=1)
 
             @measurements_from_samples_pass
-            @qml.qnode(dev)
+            @qml.qnode(dev, shots=shots)
             def circuit():
                 return qml.expval(qml.Z(wires=0))
 
