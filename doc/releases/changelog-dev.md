@@ -3,6 +3,23 @@
 
 <h3>New features since last release</h3>
 
+* Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
+  [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
+
+  ```python
+  @qml.qnode(qml.device('default.qubit'))
+  def c():
+      with qml.allocation.allocate(1) as wires:
+          qml.H(wires)
+          qml.CNOT((wires[0], 0))
+      return qml.probs(wires=0)
+
+  c()
+  ```
+  ```
+  array([0.5, 0.5])
+  ```
+
 * A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
   which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
   A corresponding decomposition rule has been added to support efficiently controlling the pattern,

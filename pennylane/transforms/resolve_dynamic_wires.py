@@ -17,6 +17,7 @@ This submodule contains a transform for resolving dynamic wires into real wires.
 from collections.abc import Hashable, Sequence
 
 from pennylane.allocation import Allocate, Deallocate
+from pennylane.exceptions import AllocationError
 from pennylane.measurements import measure
 from pennylane.tape import QuantumScript, QuantumScriptBatch
 from pennylane.typing import PostprocessingFn, Result, ResultBatch
@@ -37,7 +38,7 @@ class _WireManager:
         """Retrieve a concrete wire label from available registers."""
         if not self._zeroed and not self._any_state:
             if self.min_int is None:
-                raise ValueError("no wires left to allocate.")
+                raise AllocationError("no wires left to allocate.")
             self._zeroed.append(self.min_int)
             self.min_int += 1
         if require_zeros:
@@ -215,17 +216,23 @@ def resolve_dynamic_wires(
                 deallocated.add(w)
                 manager.return_wire(wire_map.pop(w))
         else:
-            op = op.map_wires(wire_map)
+            if wire_map:
+                op = op.map_wires(wire_map)
             if intersection := deallocated.intersection(set(op.wires)):
-                raise ValueError(
+                raise AllocationError(
                     f"Encountered deallocated wires {intersection} in {op}. Dynamic wires cannot be used after deallocation."
                 )
-            new_ops.append(op.map_wires(wire_map))
+            new_ops.append(op)
 
-    mps = [mp.map_wires(wire_map) for mp in tape.measurements]
+    if wire_map:
+        mps = [mp.map_wires(wire_map) for mp in tape.measurements]
+    else:
+        mps = tape.measurements
     for mp in mps:
         if intersection := deallocated.intersection(set(mp.wires)):
-            raise ValueError(
+            raise AllocationError(
                 f"Encountered deallocated wires {intersection} in {mp}. Dynamic wires cannot be used after deallocation."
             )
-    return (tape.copy(ops=new_ops, measurements=mps),), null_postprocessing
+    return (
+        tape.copy(ops=new_ops, measurements=mps, trainable_params=tape.trainable_params),
+    ), null_postprocessing
