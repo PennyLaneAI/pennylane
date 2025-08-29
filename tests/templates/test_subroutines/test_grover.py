@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
+from pennylane.capture.autograph import run_autograph
 from pennylane.ops import Hadamard, MultiControlledX, PauliZ
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
@@ -398,18 +399,20 @@ class TestDynamicDecomposition:
         from pennylane.transforms.decompose import DecomposeInterpreter
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=autograph)
+        @qml.qnode(device=qml.device("default.qubit", wires=5))
         def circuit(wires):
             qml.GroverOperator(wires=wires, work_wires=work_wires)
             return qml.state()
 
+        if autograph:
+            circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(circuit)(wires)
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, *wires)
 
         with qml.capture.pause():
 
             @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
-            @qml.qnode(device=qml.device("default.qubit", wires=5), autograph=False)
+            @qml.qnode(device=qml.device("default.qubit", wires=5))
             def circuit_comparison():
                 qml.GroverOperator(wires=wires, work_wires=work_wires)
                 return qml.state()

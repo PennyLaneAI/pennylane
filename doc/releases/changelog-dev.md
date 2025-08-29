@@ -3,6 +3,13 @@
 
 <h3>New features since last release</h3>
 
+* A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
+  which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
+  A corresponding decomposition rule has been added to support efficiently controlling the pattern,
+  in which only the central (target) operator is controlled, and not U or U†.
+  [(#8023)](https://github.com/PennyLaneAI/pennylane/pull/8023)
+  [(#8070)](https://github.com/PennyLaneAI/pennylane/pull/8070)
+
 * A new keyword argument ``partial`` has been added to :class:`qml.Select`. It allows for 
   simplifications in the decomposition of ``Select`` under the assumption that the state of the
   control wires has no overlap with computational basis states that are not used by ``Select``.
@@ -81,7 +88,68 @@
   Array([ 3.14159265, -1.57079633], dtype=float64)
   ```
 
+* The :func:`~.transforms.decompose` transform is now able to decompose classically controlled operations.
+  [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
+
 <h3>Improvements 🛠</h3>
+
+* A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
+  [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
+
+* A new keyword argument called ``shot_dist`` has been added to the :func:`~.transforms.split_non_commuting` transform.
+  This allows for more customization and efficiency when calculating expectation values across the non-commuting groups
+  of observables that make up a ``Hamiltonian``/``LinearCombination``.
+  [(#7988)](https://github.com/PennyLaneAI/pennylane/pull/7988)
+
+  Given a QNode that returns a sample-based measurement (e.g., ``expval``) of a ``Hamiltonian``/``LinearCombination``
+  with finite ``shots``, the current default behaviour of :func:`~.transforms.split_non_commuting` will perform ``shots``
+  executions for each group of commuting terms. With the ``shot_dist`` argument, this behaviour can be changed:
+
+  * ``"uniform"``: evenly distributes the number of ``shots`` across all groups of commuting terms
+  * ``"weighted"``: distributes the number of ``shots`` according to weights proportional to the L1 norm of the coefficients in each group
+  * ``"weighted_random"``: same as ``"weighted"``, but the numbers of ``shots`` are sampled from a multinomial distribution
+  * or a user-defined function implementing a custom shot distribution strategy
+
+  To show an example about how this works, let's start by defining a simple Hamiltonian:
+
+  ```python
+  import pennylane as qml
+
+  ham = qml.Hamiltonian(
+      coeffs=[10, 0.1, 20, 100, 0.2],
+      observables=[
+          qml.X(0) @ qml.Y(1),
+          qml.Z(0) @ qml.Z(2),
+          qml.Y(1),
+          qml.X(1) @ qml.X(2),
+          qml.Z(0) @ qml.Z(1) @ qml.Z(2)
+      ]
+  )
+  ```
+
+  This Hamiltonian can be split into 3 non-commuting groups of mutually commuting terms.
+  With ``shot_dist = "weighted"``, for example, the number of shots will be divided
+  according to the L1 norm of each group's coefficients:
+
+  ```python
+  from functools import partial
+  from pennylane.transforms import split_non_commuting
+
+  dev = qml.device("default.qubit")
+
+  @partial(split_non_commuting, shot_dist="weighted")
+  @qml.qnode(dev, shots=10000)
+  def circuit():
+      return qml.expval(ham)
+
+  with qml.Tracker(dev) as tracker:
+      circuit()
+  ```
+
+  ```pycon
+  >>> print(tracker.history["shots"])
+  [2303, 23, 7674]
+  ```
 
 * The number of `shots` can now be specified directly in QNodes as a standard keyword argument.
   [(#8073)](https://github.com/PennyLaneAI/pennylane/pull/8073)
@@ -136,7 +204,7 @@
   ```
 
   [(#8076)](https://github.com/PennyLaneAI/pennylane/pull/8076)
-  
+
 * PennyLane `autograph` supports standard python for index assignment (`arr[i] = x`) instead of jax.numpy form (`arr = arr.at[i].set(x)`).
   Users can now use standard python assignment when designing circuits with experimental program capture enabled.
 
@@ -393,8 +461,13 @@
 
 * With :func:`~.decomposition.enable_graph()`, dynamically allocated wires are now supported in decomposition rules. This provides a smoother overall experience when decomposing operators in a way that requires auxiliary/work wires.
   [(#7861)](https://github.com/PennyLaneAI/pennylane/pull/7861)
+
+  * The :func:`~.transforms.decompose` transform now accepts a `num_available_work_wires` argument that allows the user to specify the number of work wires available for dynamic allocation.
   [(#7963)](https://github.com/PennyLaneAI/pennylane/pull/7963)
   [(#7980)](https://github.com/PennyLaneAI/pennylane/pull/7980)
+
+  * Decomposition rules added for the :class:`~.MultiControlledX` that dynamically allocate work wires if none was explicitly specified via the `work_wires` argument of the operator.
+  [(#8024)](https://github.com/PennyLaneAI/pennylane/pull/8024)
 
 * A :class:`~.decomposition.decomposition_graph.DecompGraphSolution` class is added to store the solution of a decomposition graph. An instance of this class is returned from the `solve` method of the :class:`~.decomposition.decomposition_graph.DecompositionGraph`.
   [(#8031)](https://github.com/PennyLaneAI/pennylane/pull/8031)
@@ -432,6 +505,8 @@
 * The `stablehlo` xDSL dialect has been added to the Python compiler, which extends the existing
   StableHLO dialect with missing upstream operations.
   [(#8036)](https://github.com/PennyLaneAI/pennylane/pull/8036)
+  [(#8084)](https://github.com/PennyLaneAI/pennylane/pull/8084)
+  
 
 * Added more templates with state of the art resource estimates. Users can now use the `ResourceQPE`,
   `ResourceControlledSequence`, and `ResourceIterativeQPE` templates with the resource estimation tool.
@@ -441,6 +516,10 @@
   [(#7910)](https://github.com/PennyLaneAI/pennylane/pull/7910)
 
 <h3>Breaking changes 💔</h3>
+
+* The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
+  no longer queue any operators.
+  [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
 
 * `qml.sample` no longer has singleton dimensions squeezed out for single shots or single wires. This cuts
   down on the complexity of post-processing due to having to handle single shot and single wire cases
@@ -479,6 +558,7 @@
 
 * `ExecutionConfig` and `MCMConfig` from `pennylane.devices` are now frozen dataclasses whose fields should be updated with `dataclass.replace`. 
   [(#7697)](https://github.com/PennyLaneAI/pennylane/pull/7697)
+  [(#8046)](https://github.com/PennyLaneAI/pennylane/pull/8046)
 
 * Functions involving an execution configuration will now default to `None` instead of `pennylane.devices.DefaultExecutionConfig` and have to be handled accordingly. 
   This prevents the potential mutation of a global object. 
@@ -676,6 +756,15 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
+  [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
+  [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
+  [(#8160)](https://github.com/PennyLaneAI/pennylane/pull/8160)
+
+* The `autograph` keyword argument has been removed from the `QNode` constructor. 
+  To enable autograph conversion, use the `qjit` decorator together with the `qml.capture.disable_autograph` context manager.
+  [(#8104)](https://github.com/PennyLaneAI/pennylane/pull/8104)
+  
 * Add ability to disable autograph conversion using the newly added `qml.capture.disable_autograph` decorator or context manager.
   [(#8102)](https://github.com/PennyLaneAI/pennylane/pull/8102)
 
@@ -819,6 +908,11 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* Fixes a bug that made the queueing behaviour of :meth:`~.pauli.PauliWord.operation` and
+  :meth:`~.pauli.PauliSentence.operation` dependent on the global state of a program due to
+  a caching issue.
+  [(#8135)](https://github.com/PennyLaneAI/pennylane/pull/8135)
+
 * A more informative error is raised when extremely deep circuits are attempted to be drawn.
   [(#8139)](https://github.com/PennyLaneAI/pennylane/pull/8139)
 
@@ -871,8 +965,9 @@
 * Fixes `SemiAdder` to work when inputs are defined with a single wire.
   [(#7940)](https://github.com/PennyLaneAI/pennylane/pull/7940)
 
-* Fixes a bug where `qml.prod` applied on a quantum function does not dequeue operators passed as arguments to the function.
+* Fixes a bug where `qml.prod`, `qml.matrix`, and `qml.cond` applied on a quantum function does not dequeue operators passed as arguments to the function.
   [(#8094)](https://github.com/PennyLaneAI/pennylane/pull/8094)
+  [(#8119)](https://github.com/PennyLaneAI/pennylane/pull/8119)
 
 <h3>Contributors ✍️</h3>
 
