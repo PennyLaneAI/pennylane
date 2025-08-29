@@ -108,7 +108,7 @@ def _get_batch_shape(non_const_args, non_const_batch_dims):
 
     input_shapes = [
         (arg.shape[batch_dim],)
-        for arg, batch_dim in zip(non_const_args, non_const_batch_dims)
+        for arg, batch_dim in zip(non_const_args, non_const_batch_dims, strict=True)
         if batch_dim is not None
     ]
 
@@ -287,7 +287,7 @@ def _qnode_batching_rule(
     This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
 
-    for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
+    for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims, strict=True)):
 
         if _is_scalar_tensor(arg):
             continue
