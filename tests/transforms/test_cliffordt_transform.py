@@ -551,7 +551,7 @@ class TestCliffordCached:
         clt2._CLIFFORD_T_CACHE = None
 
         num_angles = 1
-        rand_angles = qml.math.random.random.rand(num_angles)
+        rand_angles = qml.math.random.rand(num_angles)
         rand_angles = qml.math.concatenate((rand_angles, -rand_angles))
 
         num_repeat = 2

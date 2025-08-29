@@ -8,7 +8,7 @@ autograd
 tomlkit
 appdirs
 packaging
-autoray>=0.6.11
+autoray>=0.8.0
 matplotlib
 requests
 rich

@@ -110,13 +110,12 @@ class TestPennyLaneTransformer:
         assert new_fn(1.23) == 2.46
         assert "inner_factory.<locals>.<lambda>" in str(new_fn)
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_transform_on_qnode(self, autograph):
+    def test_transform_on_qnode(self):
         """Test the transform method on a QNode updates the qnode.func"""
         transformer = PennyLaneTransformer()
         user_context = converter.ProgramContext(TOPLEVEL_OPTIONS)
 
-        @qml.qnode(qml.device("default.qubit", wires=3), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=3))
         def circ(x):
             qml.RX(x, 0)
             return qml.expval(qml.Z(0))
@@ -245,11 +244,10 @@ class TestIntegration:
         assert check_cache(fn)
         assert check_cache(inner)
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_qnode(self, autograph):
+    def test_qnode(self):
         """Test autograph on a QNode."""
 
-        @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circ(x: float):
             qml.RY(x, wires=0)
             return qml.expval(qml.PauliZ(0))
@@ -302,23 +300,21 @@ class TestIntegration:
         assert check_cache(inner1.func)
         assert check_cache(inner2.func)
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_adjoint_op(self, autograph):
+    def test_adjoint_op(self):
         """Test that the adjoint of an operator successfully passes through autograph"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circ():
             qml.adjoint(qml.X(0))
             return qml.expval(qml.Z(0))
 
-        plxpr = qml.capture.make_plxpr(circ, autograph=True)()
+        plxpr = qml.capture.make_plxpr(circ)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_ctrl_op(self, autograph):
+    def test_ctrl_op(self):
         """Test that controlled operators successfully pass through autograph"""
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circ():
             qml.X(1)
             qml.ctrl(qml.X(0), 1)
@@ -327,14 +323,13 @@ class TestIntegration:
         plxpr = qml.capture.make_plxpr(circ, autograph=True)()
         assert jax.core.eval_jaxpr(plxpr.jaxpr, plxpr.consts)[0] == -1
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_adjoint_wrapper(self, autograph):
+    def test_adjoint_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'adjoint'."""
 
         def inner(x):
             qml.RY(x, wires=0)
 
-        @qml.qnode(qml.device("default.qubit", wires=1), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=1))
         def circ(x: float):
             inner(x * 2)
             qml.adjoint(inner)(x)
@@ -351,14 +346,13 @@ class TestIntegration:
     @pytest.mark.xfail(
         reason="ctrl_transform_prim not working with autograph. See sc-84934",
     )
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_ctrl_wrapper(self, autograph):
+    def test_ctrl_wrapper(self):
         """Test conversion is happening successfully on functions wrapped with 'ctrl'."""
 
         def inner(x):
             qml.RY(x, wires=0)
 
-        @qml.qnode(qml.device("default.qubit", wires=2), autograph=autograph)
+        @qml.qnode(qml.device("default.qubit", wires=2))
         def circ(x: float):
             qml.PauliX(1)
             qml.ctrl(inner, control=1)(x)
@@ -403,8 +397,7 @@ class TestIntegration:
         assert check_cache(fn)
         assert check_cache(inner)
 
-    @pytest.mark.parametrize("autograph", [True, False])
-    def test_tape_transform(self, autograph):
+    def test_tape_transform(self):
         """Test if tape transform is applied when autograph is on."""
 
         dev = qml.device("default.qubit", wires=1)
@@ -414,7 +407,7 @@ class TestIntegration:
             raise NotImplementedError
 
         @my_quantum_transform
-        @qml.qnode(dev, autograph=autograph)
+        @qml.qnode(dev)
         def circuit(x):
             qml.RY(x, wires=0)
             qml.RX(x, wires=0)
