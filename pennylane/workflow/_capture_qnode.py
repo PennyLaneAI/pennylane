@@ -78,6 +78,7 @@ import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
+from pennylane.measurements import Shots
 from pennylane.typing import TensorLike
 
 from .construct_execution_config import construct_execution_config
