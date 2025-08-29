@@ -807,11 +807,11 @@ class TestMeasurementsFromSamplesIntegration:
 
     def test_qjit_filecheck(self, run_filecheck_qjit):
         """Test that the measurements_from_samples_pass works correctly with qjit."""
-        dev = qml.device("lightning.qubit", wires=2, shots=25)
+        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit(target="mlir", pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
         @measurements_from_samples_pass
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=25)
         def circuit():
             # CHECK-NOT: quantum.namedobs
             # CHECK: [[obs:%.+]] = quantum.compbasis
