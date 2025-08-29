@@ -256,9 +256,6 @@ def resources_from_resource_ops(
     tight_budget=None,
 ) -> Resources:
     """Extract resources from a resource operator."""
-    if isinstance(obj, Operation):
-        obj = map_to_resource_op(obj)
-
     return resources_from_resource(
         1 * obj,
         gate_set,
