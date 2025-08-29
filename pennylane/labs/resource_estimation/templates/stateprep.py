@@ -1142,7 +1142,7 @@ class ResourceSuperposition(ResourceOperator):
         num_precision_wires = math.ceil(math.log2(math.pi / precision))
 
         # Step-1: Condensed state prep to prepare |psi> = Sum_i(c_i * |i>)
-        num_qubits = int(math.log2(num_slaters))
+        num_qubits = int(math.ceil(math.log2(num_slaters)))
 
         if stateprep_op is None:
             stateprep = resource_rep(
@@ -1175,7 +1175,7 @@ class ResourceSuperposition(ResourceOperator):
             plre.ResourceMultiControlledX,
             {"num_ctrl_wires": multi_rx_ctrl_wires, "num_ctrl_values": 0},
         )
-        gate_list.append(GateCount(multi_rx, 2 * num_state_qubits))
+        gate_list.append(GateCount(multi_rx, int(math.log2(num_slaters))))
 
         # cnots to flip enumeration register
         gate_list.append(
