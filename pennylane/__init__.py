@@ -96,7 +96,7 @@ from pennylane.measurements import (
     shadow_expval,
 )
 from pennylane.ops import *
-from pennylane.ops import adjoint, ctrl, cond, exp, sum, pow, prod, s_prod
+from pennylane.ops import adjoint, ctrl, cond, change_op_basis, exp, sum, pow, prod, s_prod
 from pennylane.ops import LinearCombination as Hamiltonian
 from pennylane.templates import layer
 from pennylane.templates.embeddings import *

@@ -107,6 +107,17 @@ class TestAllocateOp:
         assert not op.restored
 
 
+def test_dynamic_register_not_hashable():
+    """Test that the DynamicRegister is not hashable."""
+
+    reg = DynamicRegister([DynamicWire()])
+    with pytest.raises(TypeError, match="unhashable type"):
+        hash(reg)
+
+    with pytest.raises(qml.exceptions.WireError, match="Wires must be hashable"):
+        qml.wires.Wires((0, reg))
+
+
 def test_Deallocate_validity():
     """Test that Deallocate is a valid operation."""
     wires = [DynamicWire(), DynamicWire()]

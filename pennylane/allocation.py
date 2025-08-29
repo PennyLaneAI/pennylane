@@ -206,6 +206,9 @@ class DynamicRegister(Wires):
     def __exit__(self, *_, **__):
         deallocate(self)
 
+    def __hash__(self):
+        raise TypeError("unhashable type 'DynamicRegister'")
+
 
 def allocate(num_wires: int, require_zeros: bool = True, restored: bool = False) -> DynamicRegister:
     """Dynamically allocates new wires in-line, or as a context manager which also safely 
