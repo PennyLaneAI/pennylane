@@ -37,7 +37,7 @@ from pennylane.exceptions import DecompositionError
 from pennylane.operation import Operator
 
 from .decomposition_rule import DecompositionRule, WorkWireSpec, list_decomps, null_decomp
-from .resources import CircuitComponent, CompressedResourceOp, Resources, resource_rep
+from .resources import CompressedResourceOp, Resources, resource_rep
 from .symbolic_decomposition import (
     adjoint_rotation,
     cancel_adjoint,
@@ -208,7 +208,7 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
 
     def __init__(
         self,
-        operations: list[CircuitComponent],
+        operations: list[Operator | CompressedResourceOp],
         gate_set: set[type | str] | dict[type | str, float],
         fixed_decomps: dict | None = None,
         alt_decomps: dict | None = None,
@@ -250,11 +250,11 @@ class DecompositionGraph:  # pylint: disable=too-many-instance-attributes,too-fe
         self._start = self._graph.add_node(None)
         self._construct_graph(operations)
 
-    def _construct_graph(self, operations: Iterable[CircuitComponent]):
+    def _construct_graph(self, operations: Iterable[Operator | CompressedResourceOp]):
         """Constructs the decomposition graph."""
         for op in operations:
             if isinstance(op, qml.measurements.MidMeasureMP):
-                op = resource_rep(type(op))
+                continue  # cannot decompose a mid-circuit measurement
             if isinstance(op, qml.ops.Conditional):
                 op = op.base  # decompose the base of a classically controlled operator.
             if isinstance(op, Operator):

@@ -20,13 +20,9 @@ import functools
 from collections import defaultdict
 from dataclasses import dataclass, field
 from functools import cached_property
-from typing import Union
 
 import pennylane as qml
-from pennylane.measurements import MidMeasureMP
 from pennylane.operation import Operator
-
-CircuitComponent = Union[Operator, MidMeasureMP]
 
 
 @dataclass(frozen=False)
@@ -120,15 +116,11 @@ class CompressedResourceOp:
 
     """
 
-    def __init__(self, op_type: type[CircuitComponent], params: dict | None = None):
+    def __init__(self, op_type: type[Operator], params: dict | None = None):
         if not isinstance(op_type, type):
-            raise TypeError(
-                f"op_type must be an Operator type or MidMeasureMP, got {type(op_type)}"
-            )
-        if not issubclass(op_type, CircuitComponent):
-            raise TypeError(
-                f"op_type must be a subclass of Operator or MidMeasureMP, got {op_type}"
-            )
+            raise TypeError(f"op_type must be an Operator type, got {type(op_type)}")
+        if not issubclass(op_type, qml.operation.Operator):
+            raise TypeError(f"op_type must be a subclass of Operator, got {op_type}")
         self.op_type = op_type
         self.params = params or {}
         self._hashable_params = _make_hashable(params) if params else ()
@@ -174,11 +166,8 @@ def _make_hashable(d):
 def _validate_resource_rep(op_type, params):
     """Validates the resource representation of an operator."""
 
-    if not issubclass(op_type, CircuitComponent):
-        raise TypeError(f"op_type must be a type of Operator or MidMeasureMP, got {op_type}")
-
-    if issubclass(op_type, MidMeasureMP):
-        return
+    if not issubclass(op_type, qml.operation.Operator):
+        raise TypeError(f"op_type must be a type of Operator, got {op_type}")
 
     if not isinstance(op_type.resource_keys, (set, frozenset)):
         raise TypeError(
@@ -200,7 +189,7 @@ def _validate_resource_rep(op_type, params):
         )
 
 
-def resource_rep(op_type: type[CircuitComponent], **params) -> CompressedResourceOp:
+def resource_rep(op_type: type[Operator], **params) -> CompressedResourceOp:
     """Binds an operator type with additional resource parameters.
 
     .. note::
@@ -296,17 +285,19 @@ def resource_rep(op_type: type[CircuitComponent], **params) -> CompressedResourc
         return adjoint_resource_rep(**params)
     if issubclass(op_type, qml.ops.Pow):
         return pow_resource_rep(**params)
-    if op_type in (qml.ops.Controlled, qml.ops.ControlledOp):
+    if op_type is qml.ops.ControlledOp:
+        op_type = qml.ops.Controlled
+    if op_type is qml.ops.Controlled:
         base_rep = resource_rep(params["base_class"], **params["base_params"])
         params["base_class"] = base_rep.op_type
         params["base_params"] = base_rep.params
-        return CompressedResourceOp(qml.ops.Controlled, params)
-    if op_type is qml.ops.Prod:
+    if op_type is qml.ops.op_math.Prod:
         resources = defaultdict(int)
         for rep, count in params["resources"].items():
-            addition = rep.params["resources"] if rep.op_type is qml.ops.Prod else {rep: 1}
+            addition = rep.params["resources"] if rep.op_type is qml.ops.op_math.Prod else {rep: 1}
             for sub_rep, sub_count in addition.items():
                 resources[sub_rep] += count * sub_count
+
         params["resources"] = resources
     return CompressedResourceOp(op_type, params)
 
