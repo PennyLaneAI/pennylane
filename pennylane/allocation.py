@@ -170,19 +170,21 @@ def deallocate(wires: DynamicWire | Wires | Sequence[DynamicWire]) -> Deallocate
             return qml.expval(qml.Z(0))
 
     >>> print(qml.draw(c)())
-            0: ──H────────╭●────╭●──────────────────────┤  <Z>
-<DynamicWire>: ──Allocate─╰X────╰X───────────Deallocate─┤     
-<DynamicWire>: ─╭Allocate─╭SWAP─╭Deallocate─────────────┤     
-<DynamicWire>: ─╰Allocate─╰SWAP─╰Deallocate─────────────┤     
+                0: ──H────────╭●────╭●──────────────────────┤  <Z>
+    <DynamicWire>: ──Allocate─╰X────╰X───────────Deallocate─┤     
+    <DynamicWire>: ─╭Allocate─╭SWAP─╭Deallocate─────────────┤     
+    <DynamicWire>: ─╰Allocate─╰SWAP─╰Deallocate─────────────┤     
 
-    Here, two dynamic wires are allocated in the circuit originally. When PennyLane determines
+    Here, three dynamic wires were allocated in the circuit originally. When PennyLane determines
     what concrete values to use for dynamic wires to send to the device for execution, we can see 
     that the first dynamic wire is already deallocated back into the zero state. This allows us to 
-    use it for the second allocation used in the ``SWAP`` gate.
+    use it for one of the wires requested in the second allocation, resulting in three wires total
+    being required from the device:
 
     >>> print(qml.draw(c, level="device")())
-    0: ──H─╭●─╭●─╭SWAP─┤  <Z>
-    1: ────╰X─╰X─╰SWAP─┤     
+    0: ──H─╭●─╭●───────┤  <Z>
+    1: ────╰X─╰X─╭SWAP─┤     
+    2: ──────────╰SWAP─┤    
     """
     if capture_enabled():
         if not isinstance(wires, Sequence):
