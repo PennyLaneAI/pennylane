@@ -277,3 +277,39 @@ def test_against_matrix_log(fragments, product_formula):
     log_error = log - (1j * t * ham) / t**order
 
     assert np.allclose(np.linalg.norm(bch_error - log_error), 0)
+
+
+params = [
+    ("serial", 1),
+    ("mp_pool", 1),
+    ("mp_pool", 2),
+    ("cf_procpool", 1),
+    ("cf_procpool", 2),
+    ("cf_threadpool", 1),
+    ("cf_threadpool", 2),
+    ("mpi4py_pool", 1),
+    ("mpi4py_pool", 2),
+    ("mpi4py_comm", 1),
+    ("mpi4py_comm", 2),
+]
+
+
+@pytest.mark.parametrize("backend, num_workers", params)
+def test_effective_hamiltonian_backend(backend, num_workers, mpi4py_support):
+    """Test that effective_hamiltonian function runs without errors for different backends."""
+
+    if backend in {"mpi4py_pool", "mpi4py_comm"} and not mpi4py_support:
+        pytest.skip(f"Skipping test: '{backend}' requires mpi4py, which is not installed.")
+
+    r, delta = 1, 0.5
+
+    fragments = {0: np.zeros(shape=(3, 3)), 1: np.zeros(shape=(3, 3)), 2: np.zeros(shape=(3, 3))}
+
+    n_frags = len(fragments)
+
+    first_order = ProductFormula(list(range(n_frags)), coeffs=[delta / r] * n_frags) ** r
+    ham = effective_hamiltonian(
+        first_order, fragments, order=2, num_workers=num_workers, backend=backend
+    )
+
+    assert isinstance(ham, np.ndarray)
