@@ -391,11 +391,16 @@ class _CachedCallable:
         self.method_kwargs = method_kwargs
         self.query = lru_cache(maxsize=cache_size)(self.cached_decompose)
 
-    def compatible(self, method, epsilon, cache_size, **method_kwargs):
-        """Check equality based on `method`, `epsilon` and `method_kwargs`."""
+    def compatible(self, method, epsilon, cache_size, cache_eps_rtol, **method_kwargs):
+        """Check compatibility based on `method`, `epsilon`, `cache_eps_rtol` and `method_kwargs`."""
         return (
             self.method == method
             and self.epsilon <= epsilon
+            and (
+                qml.math.allclose(self.epsilon, epsilon, rtol=cache_eps_rtol, atol=0.0)
+                if cache_eps_rtol is not None
+                else True
+            )
             and self.cache_size <= cache_size
             and self.method_kwargs == method_kwargs
         )
@@ -420,6 +425,7 @@ def clifford_t_decomposition(
     epsilon=1e-4,
     method="sk",
     cache_size=1000,
+    cache_eps_rtol=None,
     **method_kwargs,
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""Decomposes a circuit into the Clifford+T basis.
@@ -443,6 +449,8 @@ def clifford_t_decomposition(
         method (str): Method to be used for Clifford+T decomposition. Default value is ``"sk"`` for Solovay-Kitaev. Alternatively,
             the Ross-Selinger algorithm can be used with ``"gridsynth"``.
         cache_size (int): The size of the cache built for the decomposition function based on the angle. Defaults to ``1000``.
+        cache_eps_rtol (Optional[float]): The relative tolerance for ``epsilon`` values between which the cache may be reused.
+            Defaults to ``None``, which means that a cached decomposition will be used if it is `at least as precise` as the requested error.
         **method_kwargs: Keyword argument to pass options for the ``method`` used for decompositions.
 
     Returns:
@@ -552,7 +560,7 @@ def clifford_t_decomposition(
         # Build the decomposition cache based on the method
         global _CLIFFORD_T_CACHE  # pylint: disable=global-statement
         if _CLIFFORD_T_CACHE is None or not _CLIFFORD_T_CACHE.compatible(
-            method, epsilon, cache_size, **method_kwargs
+            method, epsilon, cache_size, cache_eps_rtol, **method_kwargs
         ):
             _CLIFFORD_T_CACHE = _CachedCallable(method, epsilon, cache_size, **method_kwargs)
 
