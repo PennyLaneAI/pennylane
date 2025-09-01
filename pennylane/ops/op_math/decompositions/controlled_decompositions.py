@@ -30,7 +30,6 @@ from pennylane.decomposition import (
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
-from pennylane.templates import TemporaryAND
 from pennylane.wires import Wires
 
 
@@ -418,6 +417,9 @@ def _mcx_many_workers_condition(num_control_wires, num_work_wires, **__):
 
 
 def _mcx_many_workers_resource(num_control_wires, work_wire_type, **__):
+    # pylint: disable=import-outside-toplevel
+    from pennylane.templates.subroutines.temporary_and import TemporaryAND
+
     if work_wire_type == "borrowed":
         return {ops.Toffoli: 4 * (num_control_wires - 2)}
     return {
@@ -434,6 +436,8 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     """Decomposes the multi-controlled PauliX gate using the approach in Lemma 7.2 of
     https://arxiv.org/abs/quant-ph/9503016, which requires a suitably large register of
     work wires"""
+    # pylint: disable=import-outside-toplevel
+    from pennylane.templates.subroutines.temporary_and import TemporaryAND
 
     target_wire, control_wires = wires[-1], wires[:-1]
     work_wires = work_wires[: len(control_wires) - 2]
