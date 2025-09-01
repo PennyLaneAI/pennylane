@@ -14,10 +14,18 @@
 """CNOT routing algorithm ROWCOL as described in https://arxiv.org/abs/1910.14478."""
 
 from collections.abc import Iterable
+from copy import copy
 
 import networkx as nx
 import numpy as np
 from networkx.algorithms.approximation import steiner_tree
+
+import pennylane as qml
+from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import transform
+from pennylane.typing import PostprocessingFn
+
+from .parity_matrix import parity_matrix
 
 try:
     import galois
@@ -286,7 +294,10 @@ def _eliminate(P: np.ndarray, connectivity: nx.Graph, idx: int, mode: str, verbo
     return P % 2, cnots
 
 
-def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) -> list[tuple[int]]:
+@transform
+def rowcol(
+    tape: QuantumScript, connectivity: nx.Graph = None, verbose: bool = False
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     r"""CNOT routing algorithm ROWCOL.
 
     This algorithm was introduced by `Wu et al. <https://arxiv.org/abs/1910.14478>`__ and is
@@ -648,8 +659,9 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
             "rowcol requires the package galois. You can install it with pip install galois."
         )  # pragma: no cover
 
-    P = P.copy()
-    connectivity = connectivity.copy()
+    P = parity_matrix(tape)
+
+    connectivity = copy(connectivity)
     n = len(P)
     # If no connectivity is given, assume full connectivity
     if connectivity is None:
@@ -677,4 +689,12 @@ def rowcol(P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False) 
     assert np.allclose(np.eye(n), P)
 
     # Return CNOTs in reverse order
-    return cnots[::-1]
+    circ = QuantumScript([qml.CNOT(pair) for pair in cnots[::-1]], tape.measurements)
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [circ], null_postprocessing
