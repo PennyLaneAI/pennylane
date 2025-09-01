@@ -508,26 +508,35 @@ decompose_mcx_many_borrowed_workers = flip_zero_control(_mcx_many_borrowed_worke
 
 
 def _mcx_two_workers_condition(num_control_wires, num_work_wires, **__):
-    return num_control_wires > 2 and num_work_wires >= 2
+    return num_control_wires > 2 and (
+        num_work_wires >= 2 or num_work_wires == 1 and num_control_wires < 6
+    )
 
 
 def _mcx_two_workers_resource(num_control_wires, work_wire_type, **__):
     # pylint: disable=import-outside-toplevel
-    # from pennylane.templates.subroutines.temporary_and import TemporaryAND
+    from pennylane.templates.subroutines.temporary_and import TemporaryAND
+
+    is_small_mcx = num_control_wires < 6
 
     if work_wire_type == "zeroed":
         n_ccx = 2 * num_control_wires - 3
-        n_temporary_ccx_pair = 1 + int(num_control_wires > 5)
-        n_temporary_ccx_pair = 0
+        n_temporary_ccx_pairs = 2 - is_small_mcx
         return {
-            ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pair,
-            ops.X: n_ccx - 3 if num_control_wires < 6 else n_ccx - 5,
-            TemporaryAND: n_temporary_ccx_pair,
-            adjoint_resource_rep(TemporaryAND): n_temporary_ccx_pair,
+            ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs,
+            ops.X: n_ccx - 3 if is_small_mcx else n_ccx - 5,
+            TemporaryAND: n_temporary_ccx_pairs,
+            adjoint_resource_rep(TemporaryAND): n_temporary_ccx_pairs,
         }
     # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
-    return {ops.Toffoli: n_ccx, ops.X: n_ccx - 4 if num_control_wires < 6 else n_ccx - 8}
+    n_temporary_ccx_pairs = 2 * (1 - is_small_mcx)
+    return {
+        ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs,
+        TemporaryAND: n_temporary_ccx_pairs,
+        adjoint_resource_rep(TemporaryAND): n_temporary_ccx_pairs,
+        ops.X: n_ccx - 4 if is_small_mcx else n_ccx - 8,
+    }
 
 
 @register_condition(_mcx_two_workers_condition)
@@ -545,32 +554,30 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
 
     """
     # pylint: disable=import-outside-toplevel
-    # from pennylane.templates.subroutines.temporary_and import TemporaryAND
+    from pennylane.templates.subroutines.temporary_and import TemporaryAND
 
     # First use the work wire to prepare the first two control wires as conditionally clean.
-    # if work_wire_type == "borrowed":
-    ops.Toffoli([wires[0], wires[1], work_wires[0]])
-    # else:
-    # TemporaryAND([wires[0], wires[1], work_wires[0]])
+    if work_wire_type == "borrowed":
+        ops.Toffoli([wires[0], wires[1], work_wires[0]])
+    else:
+        TemporaryAND([wires[0], wires[1], work_wires[0]])
 
     middle_ctrl_indices = _build_log_n_depth_ccx_ladder(wires[:-1])
 
     # Apply the MCX in the middle
-    if len(middle_ctrl_indices) == 1:
+    if (
+        len(middle_ctrl_indices) == 1
+    ):  # This clause is activated for "small" MCX (less than 6 controls)
         ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
     else:
         middle_wires = [wires[i] for i in middle_ctrl_indices]
-        _mcx_one_worker(
-            work_wires[:1] + middle_wires + wires[-1:],
-            work_wires[1:],
-            work_wire_type=work_wire_type,
-        )
+        _mcx_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
 
     # Uncompute the first ladder
     ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
-    ops.Toffoli([wires[0], wires[1], work_wires[0]])
     if work_wire_type == "borrowed":
+        ops.Toffoli([wires[0], wires[1], work_wires[0]])
 
         # Perform toggle-detection if the work wire is borrowed
         middle_ctrl_indices = _build_log_n_depth_ccx_ladder(wires[:-1])
@@ -578,15 +585,11 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
             ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
         else:
             middle_wires = [wires[i] for i in middle_ctrl_indices]
-            _mcx_one_worker(
-                work_wires[:1] + middle_wires + wires[-1:],
-                work_wires[1:],
-                work_wire_type=work_wire_type,
-            )
+            _mcx_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 
-    # else:
-    # ops.adjoint(TemporaryAND([wires[0], wires[1], work_wires[0]]))
+    else:
+        ops.adjoint(TemporaryAND([wires[0], wires[1], work_wires[0]]))
 
 
 decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
@@ -596,10 +599,11 @@ decompose_mcx_two_workers_explicit = flip_zero_control(_mcx_two_workers)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "zeroed"),
-    work_wires={"zeroed": 2},
+    work_wires=lambda num_control_wires, **_: {"zeroed": 1 + (num_control_wires > 5)},
 )
 def _mcx_two_zeroed_workers(wires, **kwargs):
-    with allocation.allocate(2, require_zeros=True, restored=True) as work_wires:
+    is_small_mcx = (len(wires) - 1) < 6
+    with allocation.allocate(2 - is_small_mcx, require_zeros=True, restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "zeroed"})
         _mcx_two_workers(wires, **kwargs)
 
@@ -611,10 +615,11 @@ decompose_mcx_two_zeroed_workers = flip_zero_control(_mcx_two_zeroed_workers)
 @register_condition(lambda num_control_wires, **_: num_control_wires > 2)
 @register_resources(
     lambda num_control_wires, **_: _mcx_two_workers_resource(num_control_wires, "borrowed"),
-    work_wires={"borrowed": 2},
+    work_wires=lambda num_control_wires, **_: {"borrowed": 2 - (num_control_wires < 6)},
 )
 def _mcx_two_borrowed_workers(wires, **kwargs):
-    with allocation.allocate(2, require_zeros=False, restored=True) as work_wires:
+    is_small_mcx = (len(wires) - 1) < 6
+    with allocation.allocate(2 - is_small_mcx, require_zeros=False, restored=True) as work_wires:
         kwargs.update({"work_wires": work_wires, "work_wire_type": "borrowed"})
         _mcx_two_workers(wires, **kwargs)
 
@@ -628,15 +633,15 @@ def _mcx_one_worker_condition(num_control_wires, num_work_wires, **__):
 
 def _mcx_one_worker_resource(num_control_wires, work_wire_type, **__):
     # pylint: disable=import-outside-toplevel
-    # from pennylane.templates.subroutines.temporary_and import TemporaryAND
+    from pennylane.templates.subroutines.temporary_and import TemporaryAND
 
     if work_wire_type == "zeroed":
-        n_ccx = 2 * num_control_wires - 3
+        n_ccx = 2 * num_control_wires - 5
         return {
             ops.Toffoli: n_ccx,
-            # TemporaryAND: 1,
-            # adjoint_resource_rep(TemporaryAND): 1,
-            ops.X: n_ccx - 3,
+            TemporaryAND: 1,
+            adjoint_resource_rep(TemporaryAND): 1,
+            ops.X: n_ccx - 1,
         }
     # Otherwise, we assume the work wire is borrowed
     n_ccx = 4 * num_control_wires - 8
@@ -658,26 +663,26 @@ def _mcx_one_worker(wires, work_wires, work_wire_type="zeroed", **__):
 
     """
     # pylint: disable=import-outside-toplevel
-    # from pennylane.templates.subroutines.temporary_and import TemporaryAND
+    from pennylane.templates.subroutines.temporary_and import TemporaryAND
 
-    # if work_wire_type == "borrowed":
-    ops.Toffoli([wires[0], wires[1], work_wires[0]])
-    # else:
-    # TemporaryAND([wires[0], wires[1], work_wires[0]])
+    if work_wire_type == "borrowed":
+        ops.Toffoli([wires[0], wires[1], work_wires[0]])
+    else:
+        TemporaryAND([wires[0], wires[1], work_wires[0]])
 
     final_ctrl_index = _build_linear_depth_ladder(wires[:-1])
     ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
     ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
 
-    ops.Toffoli([wires[0], wires[1], work_wires[0]])
     if work_wire_type == "borrowed":
+        ops.Toffoli([wires[0], wires[1], work_wires[0]])
 
         # Perform toggle-detection of the work wire is borrowed
         _build_linear_depth_ladder(wires[:-1])
         ops.Toffoli([work_wires[0], wires[final_ctrl_index], wires[-1]])
         ops.adjoint(_build_linear_depth_ladder, lazy=False)(wires[:-1])
-    # else:
-    # ops.adjoint(TemporaryAND([wires[0], wires[1], work_wires[0]]))
+    else:
+        ops.adjoint(TemporaryAND([wires[0], wires[1], work_wires[0]]))
 
 
 decompose_mcx_one_worker_explicit = flip_zero_control(_mcx_one_worker)
