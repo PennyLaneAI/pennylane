@@ -351,7 +351,7 @@ from .zx import (
 )
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
-from .intermediate_reps import parity_matrix, phase_polynomial
+from .intermediate_reps import parity_matrix, phase_polynomial, rowcol
 
 
 def __getattr__(name):
