@@ -19,7 +19,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.labs.intermediate_reps import parity_matrix
+from pennylane.transforms import parity_matrix
 
 circ1 = qml.tape.QuantumScript(
     [

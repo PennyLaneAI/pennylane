@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 
 import pennylane as qml
-from pennylane.labs.intermediate_reps import phase_polynomial
+from pennylane.transforms import phase_polynomial
 
 # trivial example
 circ0 = qml.tape.QuantumScript([])

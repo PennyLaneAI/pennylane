@@ -14,7 +14,6 @@
 """CNOT routing algorithm ROWCOL as described in https://arxiv.org/abs/1910.14478."""
 
 from collections.abc import Iterable
-from copy import copy
 
 import networkx as nx
 import numpy as np
@@ -326,12 +325,9 @@ def rowcol(
 
     **Example**
 
-    Here we compute the example 1 from `Wu et al. <https://arxiv.org/abs/1910.14478>`__ in code.
-    We also compute it by hand in the manual example section below.
+    Let us start by defining a connectivity graph
 
-    To start, we have the connectivity graph
-
-    .. code-block:: python
+    .. code-block::
 
         (0) - (3) - (4)
                |
@@ -351,18 +347,17 @@ def rowcol(
     >>> def qfunc():
     ...     for i in range(4):
     ...         qml.CNOT((i, i+1))
-    ...     qml.SWAP((0, 4))
-    ...     qml.SWAP((2, 0))
-    ...     qml.SWAP((3, 2))
-    ...     qml.SWAP((4, 3))
+    ...
+    ...     for (i, j) in [(0, 4), (3, 0), (0, 2), (3, 1), (2, 4)]:
+    ...         qml.CNOT((i, j))
 
-    >>> tape = qml.tape.make_qscript(qfunc)().expand()
+    >>> tape = qml.tape.make_qscript(qfunc)()
     >>> print(qml.drawer.tape_text(tape, wire_order=range(5)))
-    0: ─╭●──────────╭●─╭X─╭●─╭X─╭●─╭X───────────────────┤  
-    1: ─╰X─╭●───────│──│──│──│──│──│────────────────────┤  
-    2: ────╰X─╭●────│──│──│──╰●─╰X─╰●─╭X─╭●─╭X──────────┤  
-    3: ───────╰X─╭●─│──│──│───────────╰●─╰X─╰●─╭X─╭●─╭X─┤  
-    4: ──────────╰X─╰X─╰●─╰X───────────────────╰●─╰X─╰●─┤  
+    0: ─╭●──────────╭●─╭X─╭●───────┤  
+    1: ─╰X─╭●───────│──│──│──╭X────┤  
+    2: ────╰X─╭●────│──│──╰X─│──╭●─┤  
+    3: ───────╰X─╭●─│──╰●────╰●─│──┤  
+    4: ──────────╰X─╰X──────────╰X─┤  
 
 
     We import ``rowcol`` and then run the algorithm:
@@ -370,22 +365,17 @@ def rowcol(
     >>> from pennylane.transforms import rowcol
     >>> (new_tape,), _ = rowcol(tape, G)
     >>> print(qml.drawer.tape_text(new_tape, wire_order=range(5)))
-    0: ──────────────────────────────────╭X───────╭X─╭●───────┤
-    1: ─────────────╭X───────╭X─╭●────╭X─│────────│──│────────┤
-    2: ────╭X────╭●─╰●────╭X─╰●─╰X─╭●─╰●─│─────╭●─│──│─────╭X─┤
-    3: ─╭X─╰●─╭X─╰X─╭●─╭X─╰●─╭X────╰X────╰●─╭X─╰X─╰●─╰X─╭●─╰●─┤
-    4: ─╰●────╰●────╰X─╰●────╰●─────────────╰●──────────╰X────┤
+    0: ───────────────────╭●───────╭X─┤  
+    1: ─╭X────╭X─╭●────╭X─│────────│──┤  
+    2: ─╰●─╭X─╰●─╰X─╭●─╰●─│─────╭X─│──┤  
+    3: ─╭●─╰●───────╰X────╰X─╭●─╰●─╰●─┤  
+    4: ─╰X───────────────────╰X───────┤  
 
     We can confirm that this circuit indeed implements the original parity matrix:
 
     >>> from pennylane.transforms import parity_matrix
-    >>> recon_P = parity_matrix(circ, wire_order=range(5))
-    >>> recon_P
-    array([[1, 1, 1, 0, 0],
-           [1, 1, 0, 0, 0],
-           [1, 1, 1, 1, 0],
-           [1, 0, 0, 0, 0],
-           [1, 1, 1, 1, 1]])
+    >>> np.allclose(parity_matrix(new_tape, wire_order=range(5)), parity_matrix(tape, wire_order=range(5)))
+    True
 
     .. details::
         :title: Algorithm overview
@@ -429,8 +419,7 @@ def rowcol(
         :title: Manual example
         :href: manual-example
 
-        We walk through example 1 in `Wu et al. <https://arxiv.org/abs/1910.14478>`__, which
-        was demonstrated in code above, in detail. The steps are numbered according to
+        We walk through example 1 in `Wu et al. <https://arxiv.org/abs/1910.14478>`__. The steps are numbered according to
         the algorithm overview above.
         We restrict ourselves to the following connectivity graph.
 
@@ -672,9 +661,35 @@ def rowcol(
             "rowcol requires the package galois. You can install it with pip install galois."
         )  # pragma: no cover
 
-    P = parity_matrix(tape)
+    wire_order = tape.wires
+    P = parity_matrix(tape, wire_order=wire_order)
 
-    connectivity = copy(connectivity)
+    cnots = _rowcol_parity_matrix(P, connectivity, verbose)
+    circ = QuantumScript(
+        [qml.CNOT((wire_order[i], wire_order[j])) for (i, j) in cnots], tape.measurements
+    )
+
+    def null_postprocessing(results):
+        """A postprocesing function returned by a transform that only converts the batch of results
+        into a result for a single ``QuantumTape``.
+        """
+        return results[0]
+
+    return [circ], null_postprocessing
+
+
+def _rowcol_parity_matrix(
+    P: np.ndarray, connectivity: nx.Graph = None, verbose: bool = False
+) -> list[tuple[int]]:
+    """RowCol algorithm that turns a parity matrix to a list of CNOT operators"""
+
+    if not has_galois:  # pragma: no cover
+        raise ImportError(
+            "rowcol requires the package galois. You can install it with pip install galois."
+        )  # pragma: no cover
+
+    P = P.copy()
+    connectivity = connectivity.copy()
     n = len(P)
     # If no connectivity is given, assume full connectivity
     if connectivity is None:
@@ -702,12 +717,4 @@ def rowcol(
     assert np.allclose(np.eye(n), P)
 
     # Return CNOTs in reverse order
-    circ = QuantumScript([qml.CNOT(pair) for pair in cnots[::-1]], tape.measurements)
-
-    def null_postprocessing(results):
-        """A postprocesing function returned by a transform that only converts the batch of results
-        into a result for a single ``QuantumTape``.
-        """
-        return results[0]
-
-    return [circ], null_postprocessing
+    return cnots[::-1]
