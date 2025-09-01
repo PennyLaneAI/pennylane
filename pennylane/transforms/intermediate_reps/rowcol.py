@@ -347,6 +347,7 @@ def rowcol(
 
     Further we define the circuit in Fig. 6 therein.
 
+    >>> import pennylane as qml
     >>> def qfunc():
     ...     for i in range(4):
     ...         qml.CNOT((i, i+1))
@@ -356,7 +357,7 @@ def rowcol(
     ...     qml.SWAP((4, 3))
 
     >>> tape = qml.tape.make_qscript(qfunc)().expand()
-    >>> print(qml.drawer.tape_text(tape))
+    >>> print(qml.drawer.tape_text(tape, wire_order=range(5)))
     0: ─╭●──────────╭●─╭X─╭●─╭X─╭●─╭X───────────────────┤  
     1: ─╰X─╭●───────│──│──│──│──│──│────────────────────┤  
     2: ────╰X─╭●────│──│──│──╰●─╰X─╰●─╭X─╭●─╭X──────────┤  
@@ -368,11 +369,7 @@ def rowcol(
 
     >>> from pennylane.transforms import rowcol
     >>> (new_tape,), _ = rowcol(tape, G)
-
-    The constructed circuit is the one found in the paper as well:
-
-    >>> circ = qml.tape.QuantumScript([qml.CNOT(pair) for pair in cnots])
-    >>> print(qml.drawer.tape_text(circ, wire_order=range(5)))
+    >>> print(qml.drawer.tape_text(new_tape, wire_order=range(5)))
     0: ──────────────────────────────────╭X───────╭X─╭●───────┤
     1: ─────────────╭X───────╭X─╭●────╭X─│────────│──│────────┤
     2: ────╭X────╭●─╰●────╭X─╰●─╰X─╭●─╰●─│─────╭●─│──│─────╭X─┤
@@ -381,9 +378,14 @@ def rowcol(
 
     We can confirm that this circuit indeed implements the original parity matrix:
 
+    >>> from pennylane.transforms import parity_matrix
     >>> recon_P = parity_matrix(circ, wire_order=range(5))
-    >>> np.allclose(P, recon_P)
-    True
+    >>> recon_P
+    array([[1, 1, 1, 0, 0],
+           [1, 1, 0, 0, 0],
+           [1, 1, 1, 1, 0],
+           [1, 0, 0, 0, 0],
+           [1, 1, 1, 1, 1]])
 
     .. details::
         :title: Algorithm overview
