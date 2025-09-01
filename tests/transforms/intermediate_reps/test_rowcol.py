@@ -31,6 +31,7 @@ binary_graph_3 = nx.balanced_tree(2, 3)
 ternary_graph_2 = nx.balanced_tree(3, 2)
 
 
+@pytest.mark.external
 class TestTreeTraversal:
     """Tests for tree-traversal methods."""
 
@@ -160,6 +161,7 @@ def assert_respects_connectivity(cnots, connectivity):
     assert unique_undirected_cnots.issubset(edges)
 
 
+@pytest.mark.external
 class TestRowCol:
     """Tests for rowcol."""
 
