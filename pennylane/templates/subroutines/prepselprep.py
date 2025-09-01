@@ -92,19 +92,14 @@ class PrepSelPrep(Operation):
 
     def __init__(self, lcu, control=None, id=None):
 
-        coeffs, ops = lcu.terms()
         control = Wires(control)
         self.hyperparameters["lcu"] = lcu
-        self.hyperparameters["coeffs"] = coeffs
-        self.hyperparameters["ops"] = ops
         self.hyperparameters["control"] = control
+        target_wires = lcu.wires
 
-        if any(
-            control_wire in Wires.all_wires([op.wires for op in ops]) for control_wire in control
-        ):
+        if any(control_wire in target_wires for control_wire in control):
             raise ValueError("Control wires should be different from operation wires.")
 
-        target_wires = Wires.all_wires([op.wires for op in ops])
         self.hyperparameters["target_wires"] = target_wires
 
         all_wires = target_wires + control
@@ -118,12 +113,11 @@ class PrepSelPrep(Operation):
         return cls(data[0], metadata[0])
 
     def __repr__(self):
-        return f"PrepSelPrep(coeffs={tuple(self.coeffs)}, ops={tuple(self.ops)}, control={self.control})"
+        return f"PrepSelPrep(lcu={self.lcu}, control={self.control})"
 
     def map_wires(self, wire_map: dict) -> "PrepSelPrep":
-        new_ops = [o.map_wires(wire_map) for o in self.hyperparameters["ops"]]
         new_control = [wire_map.get(wire, wire) for wire in self.hyperparameters["control"]]
-        new_lcu = LinearCombination(self.hyperparameters["coeffs"], new_ops)
+        new_lcu = self.lcu.map_wires(wire_map)
         return PrepSelPrep(new_lcu, new_control)
 
     def decomposition(self):
@@ -134,7 +128,7 @@ class PrepSelPrep(Operation):
         if cache is None or not isinstance(cache.get("matrices", None), list):
             return op_label if self._id is None else f'{op_label}("{self._id}")'
 
-        coeffs = math.array(self.coeffs)
+        coeffs = math.array(self.lcu.terms()[0])
         shape = math.shape(coeffs)
         for i, mat in enumerate(cache["matrices"]):
             if shape == math.shape(mat) and math.allclose(coeffs, mat):
@@ -187,16 +181,6 @@ class PrepSelPrep(Operation):
         self.hyperparameters["lcu"].data = new_data
 
     @property
-    def coeffs(self):
-        """The coefficients of the LCU."""
-        return self.hyperparameters["coeffs"]
-
-    @property
-    def ops(self):
-        """The operations of the LCU."""
-        return self.hyperparameters["ops"]
-
-    @property
     def lcu(self):
         """The LCU to be block-encoded."""
         return self.hyperparameters["lcu"]
@@ -235,7 +219,7 @@ def _prepselprep_resources(op_reps, num_control):
 
 # pylint: disable=unused-argument, too-many-arguments
 @register_resources(_prepselprep_resources)
-def _prepselprep_decomp(*_, wires, lcu, coeffs, ops, control, target_wires):
+def _prepselprep_decomp(*_, wires, lcu, control, target_wires):
     coeffs, ops = _get_new_terms(lcu)
     sqrt_coeffs = math.sqrt(coeffs)
     StatePrep(sqrt_coeffs, normalize=True, pad_with=0, wires=control)
