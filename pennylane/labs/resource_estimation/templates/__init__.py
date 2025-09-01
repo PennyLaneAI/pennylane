@@ -25,13 +25,23 @@ from .subroutines import (
     ResourceQROM,
     ResourceSelectPauliRot,
     ResourceQubitUnitary,
+    ResourceControlledSequence,
+    ResourceQPE,
+    ResourceIterativeQPE,
 )
 from .trotter import (
+    ResourceTrotterProduct,
     ResourceTrotterCDF,
     ResourceTrotterTHC,
     ResourceTrotterVibrational,
     ResourceTrotterVibronic,
 )
+
+from .stateprep import (
+    ResourceMPSPrep,
+    ResourceQROMStatePreparation,
+)
+
 from .qubitize import ResourceQubitizeTHC
 from .compact_hamiltonian import CompactHamiltonian
 from .comparators import (
