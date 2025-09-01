@@ -24,6 +24,7 @@ execnet==2.1.1
 filelock==3.19.1
 flaky==3.8.1
 fonttools==4.59.1
+galois==0.4.6
 gast==0.6.0
 gitdb==4.0.12
 GitPython==3.1.45
