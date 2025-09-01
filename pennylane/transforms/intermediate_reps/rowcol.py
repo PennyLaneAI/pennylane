@@ -305,14 +305,18 @@ def rowcol(
     where examples can be found as well.
 
     Args:
-        P (np.ndarray): Parity matrix to implement. Will not be altered
+        tape (QNode or QuantumScript or Callable): Input circuit containing only :class:`~CNOT` gates. Will internally be translated to the :func:`~parity_matrix` IR.
         connectivity (nx.Graph): Connectivity graph to route into. If ``None`` (the default),
             full connectivity is assumed.
         verbose (bool): Whether or not to print progress of obtained CNOT gates. Default is ``False``.
 
     Returns:
-        list[tuple[int]]: Wire pairs for CNOTs that implement the parity matrix (control first,
-        target second).
+        qnode (QNode) or quantum function (Callable) or tuple[List[QuantumScript], function]:
+        the transformed circuit as described in :func:`qml.transform <pennylane.transform>`.
+    
+    Raises:
+        ImportError: if the required ``galois`` package is not installed (``pip install galois``).
+        TypeError: if the input quantum circuit is not a CNOT circuit.
 
     .. note::
 
@@ -341,22 +345,29 @@ def rowcol(
     >>> import networkx as nx
     >>> G = nx.Graph([(0, 3), (1, 2), (2, 3), (3, 4)])
 
-    We would like to find a CNOT circuit implementing the following parity matrix ``P``:
+    Further we define the circuit in Fig. 6 therein.
 
-    >>> P = np.array([
-    ...     [1, 1, 0, 1, 1],
-    ...     [0, 0, 1, 1, 0],
-    ...     [1, 0, 1, 0 ,1],
-    ...     [1, 1, 0, 1, 0],
-    ...     [1, 1, 1, 1, 0],
-    ... ])
+    >>> def qfunc():
+    ...     for i in range(4):
+    ...         qml.CNOT((i, i+1))
+    ...     qml.SWAP((0, 4))
+    ...     qml.SWAP((2, 0))
+    ...     qml.SWAP((3, 2))
+    ...     qml.SWAP((4, 3))
 
-    We import ``rowcol`` and the function ``parity_matrix`` that will allow us to
-    check that the computed circuit produces the input parity matrix.
-    Then we run the algorithm:
+    >>> tape = qml.tape.make_qscript(qfunc)().expand()
+    >>> print(qml.drawer.tape_text(tape))
+    0: ─╭●──────────╭●─╭X─╭●─╭X─╭●─╭X───────────────────┤  
+    1: ─╰X─╭●───────│──│──│──│──│──│────────────────────┤  
+    2: ────╰X─╭●────│──│──│──╰●─╰X─╰●─╭X─╭●─╭X──────────┤  
+    3: ───────╰X─╭●─│──│──│───────────╰●─╰X─╰●─╭X─╭●─╭X─┤  
+    4: ──────────╰X─╰X─╰●─╰X───────────────────╰●─╰X─╰●─┤  
 
-    >>> from pennylane.labs.intermediate_reps import rowcol, parity_matrix
-    >>> cnots = rowcol(P, G)
+
+    We import ``rowcol`` and then run the algorithm:
+
+    >>> from pennylane.transforms import rowcol
+    >>> (new_tape,), _ = rowcol(tape, G)
 
     The constructed circuit is the one found in the paper as well:
 
