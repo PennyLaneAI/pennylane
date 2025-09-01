@@ -83,7 +83,7 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.postorder_traverse
     ~transforms.preorder_traverse
     ~transforms.parity_matrix
-    ~transforms.phase_polynomials
+    ~transforms.phase_polynomial
 
 There are also utility functions that take a circuit and return a DAG.
 
