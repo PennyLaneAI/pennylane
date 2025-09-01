@@ -30,6 +30,7 @@ from pennylane.decomposition import (
 from pennylane.decomposition.symbolic_decomposition import flip_zero_control
 from pennylane.operation import Operation, Operator
 from pennylane.ops.op_math.decompositions.unitary_decompositions import two_qubit_decomp_rule
+from pennylane.templates import TemporaryAND
 from pennylane.wires import Wires
 
 
@@ -417,12 +418,12 @@ def _mcx_many_workers_condition(num_control_wires, num_work_wires, **__):
 
 
 def _mcx_many_workers_resource(num_control_wires, work_wire_type, **__):
+    if work_wire_type == "borrowed":
+        return {ops.Toffoli: 4 * (num_control_wires - 2)}
     return {
-        ops.Toffoli: (
-            4 * (num_control_wires - 2)
-            if work_wire_type == "borrowed"
-            else 2 * (num_control_wires - 2) + 1
-        )
+        TemporaryAND: num_control_wires - 2,
+        adjoint_resource_rep(TemporaryAND): num_control_wires - 2,
+        ops.Toffoli: 1,
     }
 
 
@@ -437,23 +438,29 @@ def _mcx_many_workers(wires, work_wires, work_wire_type, **__):
     target_wire, control_wires = wires[-1], wires[:-1]
     work_wires = work_wires[: len(control_wires) - 2]
 
+    if work_wire_type == "borrowed":
+        up_gate = down_gate = ops.Toffoli
+    else:
+        down_gate = TemporaryAND
+        up_gate = ops.adjoint(TemporaryAND)
+
     @control_flow.for_loop(1, len(work_wires), 1)
     def loop_up(i):
-        ops.Toffoli(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
+        up_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
     @control_flow.for_loop(len(work_wires) - 1, 0, -1)
     def loop_down(i):
-        ops.Toffoli(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
+        down_gate(wires=[control_wires[i], work_wires[i], work_wires[i - 1]])
 
     if work_wire_type == "borrowed":
         ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
         loop_up()
 
-    ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
+    down_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
     loop_down()
     ops.Toffoli(wires=[control_wires[0], work_wires[0], target_wire])
     loop_up()
-    ops.Toffoli(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
+    up_gate(wires=[control_wires[-1], control_wires[-2], work_wires[-1]])
 
     if work_wire_type == "borrowed":
         loop_down()
