@@ -534,6 +534,11 @@
 
 <h3>Breaking changes 💔</h3>
 
+* :class:`~.PrepSelPrep` no longer has the attributes ``coeffs`` and ``ops``. Instead, its
+  attribute ``lcu`` should be used. This avoids storing the same information (``lcu`` and its
+  linear decomposition) redundantly.
+  [(#8169)](https://github.com/PennyLaneAI/pennylane/pull/8169)
+
 * `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
   and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
   [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
