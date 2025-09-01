@@ -55,10 +55,7 @@ def test_repr():
 
     op = qml.PrepSelPrep(lcu, control)
     with np.printoptions(legacy="1.21"):
-        assert (
-            repr(op)
-            == "PrepSelPrep(coeffs=(0.25, 0.75), ops=(Z(2), X(1) @ X(2)), control=Wires([0]))"
-        )
+        assert repr(op) == "PrepSelPrep(lcu=0.25 * Z(2) + 0.75 * (X(1) @ X(2)), control=Wires([0]))"
 
 
 def _get_new_terms(lcu):
@@ -92,13 +89,10 @@ def manual_circuit(lcu, control):
         qml.AmplitudeEmbedding(qml.math.sqrt(coeffs), normalize=True, pad_with=0, wires=control)
     )
 
-    return qml.state()
-
 
 def prepselprep_circuit(lcu, control):
     """PrepSelPrep circuit used for testing"""
     qml.PrepSelPrep(lcu, control)
-    return qml.state()
 
 
 a_set_of_lcus = [
@@ -132,8 +126,6 @@ class TestPrepSelPrep:
     lcu6 = qml.dot([0.5, -0.5], [qml.Z(1), qml.X(1)])
     lcu7 = qml.dot([0.5, -0.5, 0 + 0.5j], [qml.Z(2), qml.X(2), qml.X(2)])
     lcu8 = qml.dot([0.5, 0.5j], [qml.X(1), qml.Z(1)])
-
-    dev = qml.device("default.qubit")
 
     @pytest.mark.parametrize(
         ("lcu", "control", "wire_order"),
@@ -186,13 +178,13 @@ class TestPrepSelPrep:
     )
     def test_block_encoding(self, lcu, control, wire_order, dim):
         """Test that the decomposition is a block-encoding"""
-        dev = qml.device("default.qubit")
-        prepselprep = qml.QNode(prepselprep_circuit, dev)
         matrix = qml.matrix(lcu)
 
         coeffs, _ = _get_new_terms(lcu)
         normalization_factor = qml.math.sum(coeffs)
-        block_encoding = qml.matrix(prepselprep, wire_order=wire_order)(lcu, control=control)
+        block_encoding = qml.matrix(prepselprep_circuit, wire_order=wire_order)(
+            lcu, control=control
+        )
 
         assert qml.math.allclose(matrix / normalization_factor, block_encoding[0:dim, 0:dim])
 
@@ -261,8 +253,6 @@ class TestPrepSelPrep:
 
         new_op = type(op)._unflatten(*op._flatten())
         assert op.lcu == new_op.lcu
-        assert all(coeff1 == coeff2 for coeff1, coeff2 in zip(op.coeffs, new_op.coeffs))
-        assert all(qml.equal(op1, op2) for op1, op2 in zip(op.ops, new_op.ops))
         assert op.control == new_op.control
         assert op.wires == new_op.wires
         assert op.target_wires == new_op.target_wires
@@ -299,7 +289,7 @@ class TestPrepSelPrep:
         assert op_with_id.label(cache={"matrices": [0.1, 0.6]}) == 'PrepSelPrep(M2,"myID")'
 
         # use cache with same matrix existing
-        c = qml.math.array(op.coeffs)
+        c = qml.math.array(lcu.terms()[0])
         assert op.label(cache={"matrices": [0.1, c]}) == "PrepSelPrep(M1)"
         assert op_with_id.label(cache={"matrices": [c, 0.1, 0.6]}) == 'PrepSelPrep(M0,"myID")'
 
