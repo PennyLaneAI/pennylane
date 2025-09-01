@@ -79,6 +79,8 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.pattern_matching
     ~transforms.to_zx
     ~transforms.from_zx
+    ~transforms.parity_matrix
+    ~transforms.phase_polynomials
 
 There are also utility functions that take a circuit and return a DAG.
 
@@ -348,6 +350,7 @@ from .zx import (
 )
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
+from .intermediate_reps import parity_matrix, phase_polynomial
 
 
 def __getattr__(name):
