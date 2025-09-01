@@ -80,6 +80,8 @@ both transforms, and decompositions within the larger PennyLane codebase.
     ~transforms.pattern_matching
     ~transforms.to_zx
     ~transforms.from_zx
+    ~transforms.postorder_traverse
+    ~transforms.preorder_traverse
     ~transforms.parity_matrix
     ~transforms.phase_polynomials
 
@@ -351,7 +353,13 @@ from .zx import (
 )
 from .broadcast_expand import broadcast_expand
 from .decompose import decompose
-from .intermediate_reps import parity_matrix, phase_polynomial, rowcol
+from .intermediate_reps import (
+    parity_matrix,
+    phase_polynomial,
+    rowcol,
+    postorder_traverse,
+    preorder_traverse,
+)
 
 
 def __getattr__(name):
