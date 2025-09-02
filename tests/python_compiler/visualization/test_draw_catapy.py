@@ -335,6 +335,42 @@ class Testdraw:
             == "0: ──H─╭GlobalPhase─┤  State\n1: ──H─├GlobalPhase─┤  State\n2: ──H─╰GlobalPhase─┤  State"
         )
 
+    @pytest.mark.jax
+    def test_qubit_unitary(self):
+        """Test the visualization of qubit unitary operations."""
+
+        # pylint:disable=import-outside-toplevel
+        import jax
+
+        array_1_wire = jax.numpy.array([[0, 1], [1, 0]])
+        array_2_wire = jax.numpy.array([[0, 1, 0, 1], [1, 0, 1, 0], [1, 0, 1, 0], [1, 0, 1, 0]])
+        array_3_wire = jax.numpy.array(
+            [
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+            ]
+        )
+
+        @qml.qnode(qml.device("lightning.qubit", wires=3))
+        def _():
+            qml.QubitUnitary(array_1_wire, wires=0)
+            qml.QubitUnitary(array_2_wire, wires=[0, 1])
+            qml.QubitUnitary(array_3_wire, wires=[0, 1, 2])
+            qml.QubitUnitary(array_2_wire, wires=[0, 1])
+            qml.QubitUnitary(array_1_wire, wires=0)
+            return qml.state()
+
+        assert (
+            draw(_)()
+            == "0: ──U(M0)─╭U(M1)─╭U(M2)─╭U(M1)──U(M0)─┤  State\n1: ────────╰U(M1)─├U(M2)─╰U(M1)────────┤  State\n2: ───────────────╰U(M2)───────────────┤  State"
+        )
+
 
 if __name__ == "__main__":
     pytest.main(["-x", __file__])

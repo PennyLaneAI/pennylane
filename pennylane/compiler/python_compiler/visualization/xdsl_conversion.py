@@ -144,7 +144,7 @@ def resolve_constant_wire(ssa: SSAValue) -> int:
         return resolve_constant_wire(op.operands[0])
     if op.name == "stablehlo.constant":
         return _extract_dense_constant_value(op)
-    if isinstance(op, CustomOp):
+    if isinstance(op, (CustomOp, GlobalPhaseOp, QubitUnitaryOp)):
         return resolve_constant_wire(op.in_qubits[ssa.index])
     if isinstance(op, ExtractOpPL):
         return dispatch_wires_extract(op)
@@ -221,14 +221,9 @@ def xdsl_to_qml_qubit_unitary_op(op: QubitUnitaryOp) -> Operator:
     # pylint: disable=protected-access
     tensor_abstr_shape = op.matrix.owner.operand._type.shape.data
     tensor_shape = [tensor_abstr_shape[i].data for i in range(len(tensor_abstr_shape))]
-    qml_op = qml.QubitUnitary(jax.numpy.zeros(tensor_shape), wires=ssa_to_qml_wires(op))
-
-    if op.properties.get("adjoint"):
-        qml_op = qml.adjoint(qml_op)
-
-    # TODO: handle ctrl
-
-    return qml_op
+    gate = qml.QubitUnitary(jax.numpy.zeros(tensor_shape), wires=ssa_to_qml_wires(op))
+    # TODO: handle ctrl and adjoint
+    return gate
 
 
 def xdsl_to_qml_measure_op(op: MeasureOp) -> MeasurementProcess:
