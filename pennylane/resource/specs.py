@@ -30,62 +30,74 @@ def _get_absolute_import_path(fn):
     return f"{inspect.getmodule(fn).__name__}.{fn.__name__}"
 
 
-# def _create_tracker_device_class(dev: qml.devices.Device):
-#     from dataclasses import replace
+def _create_tracker_device_class(dev, compute_depth):
+    from dataclasses import replace
 
-#     class TrackerDevice(qml.devices.NullQubit):
-#         """A device that tracks the resources used by the circuit."""
+    from pennylane.transforms.core import TransformProgram
 
-#         config_filepath = dev.config_filepath
-#         spoofed_class = dev.__class__
+    from ..devices import NullQubit
+    from ..devices.execution_config import ExecutionConfig
 
-#         def __init__(self, *args, **kwargs):
-#             super().__init__(*args, track_resources=True, **kwargs)
+    class TrackerDevice(NullQubit):
+        """A device that tracks the resources used by the circuit."""
 
-#         def preprocess(
-#             self, execution_config=qml.devices.DefaultExecutionConfig
-#         ) -> tuple[qml.transforms.core.TransformProgram, qml.devices.ExecutionConfig]:
-#             program, _ = self.spoofed_class.preprocess(self, execution_config)
-#             for t in program:
-#                 if t.transform == qml.devices.preprocess.decompose.transform:
-#                     original_stopping_condition = t.kwargs["stopping_condition"]
+        config_filepath = dev.config_filepath
+        spoofed_class = dev.__class__
 
-#                     def new_stopping_condition(op):
-#                         return (not op.has_decomposition) or original_stopping_condition(op)
+        def __init__(self, *args, **kwargs):
+            super().__init__(
+                *args,
+                track_resources=True,
+                resources_fname=_RESOURCE_TRACKING_FILEPATH,
+                compute_depth=compute_depth,
+                **kwargs,
+            )
 
-#                     t.kwargs["stopping_condition"] = new_stopping_condition
+        def preprocess(
+            self, execution_config: ExecutionConfig | None = None
+        ) -> tuple[TransformProgram, ExecutionConfig]:
+            program, _ = self.spoofed_class.preprocess(self, execution_config)
 
-#                     original_shots_stopping_condition = t.kwargs.get(
-#                         "stopping_condition_shots", None
-#                     )
-#                     if original_shots_stopping_condition:
+            for t in program:
+                if t.transform == qml.devices.preprocess.decompose.transform:
+                    original_stopping_condition = t.kwargs["stopping_condition"]
 
-#                         def new_shots_stopping_condition(op):
-#                             return (not op.has_decomposition) or original_shots_stopping_condition(
-#                                 op
-#                             )
+                    def new_stopping_condition(op):
+                        return (not op.has_decomposition) or original_stopping_condition(op)
 
-#                         t.kwargs["stopping_condition_shots"] = new_shots_stopping_condition
+                    t.kwargs["stopping_condition"] = new_stopping_condition
 
-#             updated_values = {}
-#             if execution_config.gradient_method in ["best", "adjoint"]:
-#                 updated_values["gradient_method"] = "device"
-#             if execution_config.use_device_gradient is None:
-#                 updated_values["use_device_gradient"] = execution_config.gradient_method in {
-#                     "best",
-#                     "device",
-#                     "adjoint",
-#                     "backprop",
-#                 }
-#             if execution_config.use_device_jacobian_product is None:
-#                 updated_values["use_device_jacobian_product"] = (
-#                     execution_config.gradient_method == "device"
-#                 )
-#             if execution_config.grad_on_execution is None:
-#                 updated_values["grad_on_execution"] = execution_config.gradient_method == "device"
-#             return program, replace(execution_config, **updated_values)
+                    original_shots_stopping_condition = t.kwargs.get(
+                        "stopping_condition_shots", None
+                    )
+                    if original_shots_stopping_condition:
 
-#     return TrackerDevice
+                        def new_shots_stopping_condition(op):
+                            return (not op.has_decomposition) or original_shots_stopping_condition(
+                                op
+                            )
+
+                        t.kwargs["stopping_condition_shots"] = new_shots_stopping_condition
+
+            updated_values = {}
+            if execution_config.gradient_method in ["best", "adjoint"]:
+                updated_values["gradient_method"] = "device"
+            if execution_config.use_device_gradient is None:
+                updated_values["use_device_gradient"] = execution_config.gradient_method in {
+                    "best",
+                    "device",
+                    "adjoint",
+                    "backprop",
+                }
+            if execution_config.use_device_jacobian_product is None:
+                updated_values["use_device_jacobian_product"] = (
+                    execution_config.gradient_method == "device"
+                )
+            if execution_config.grad_on_execution is None:
+                updated_values["grad_on_execution"] = execution_config.gradient_method == "device"
+            return program, replace(execution_config, **updated_values)
+
+    return TrackerDevice
 
 
 def specs(
@@ -301,12 +313,12 @@ def specs(
         return infos[0] if len(infos) == 1 else infos
 
     def specs_qjit(*args, **kwargs) -> SpecsDict:
-        # TODO: Determine if its possible to have batched QJIT code
-        # Funcs w/ multiple qnodes will have multiple devices, maybe this is the correct analog
+        # TODO: Determine if its possible to have batched QJIT code / how to handle it
         import catalyst  # We'll need Catalyst for this part
 
         if not isinstance(qnode.original_function, qml.QNode):
             raise NotImplementedError("qml.specs can only be used on QNodes or qjit'd QNodes")
+        original_device = qnode.device
 
         info = qml.resource.resource.SpecsDict()
 
@@ -316,12 +328,10 @@ def specs(
 
             # breakpoint()
             # TODO: Inherit devices args from input
-            spoofed_dev = qml.device(
-                "null.qubit",
-                wires=qnode.device.wires,
-                shots=qnode.device.shots,
-                track_resources=True,
-                resources_fname=_RESOURCE_TRACKING_FILEPATH,
+            TrackerDevice = _create_tracker_device_class(original_device, compute_depth)
+            spoofed_dev = TrackerDevice(
+                wires=original_device.wires,
+                shots=original_device.shots,
             )
 
             new_qnode = qnode.original_function
@@ -345,17 +355,19 @@ def specs(
                 num_gates=resource_data["num_gates"],
                 gate_types=defaultdict(int, resource_data["gate_types"]),
                 gate_sizes=defaultdict(int, resource_data["gate_sizes"]),
-                depth=None,
-                shots=None,
+                depth=resource_data["depth"],
+                shots=qnode.original_function.shots,  # TODO: Can this ever be overriden during compilation?
             )
+
+            info["interface"] = qnode.original_function.interface
 
             # print(resource_data)
             os.remove(_RESOURCE_TRACKING_FILEPATH)
         else:
             raise NotImplementedError(f"Unsupported level argument '{level}' for QJIT'd code.")
 
-        info["num_device_wires"] = len(qnode.device.wires)
-        info["device_name"] = qnode.device.name
+        info["num_device_wires"] = len(original_device.wires)
+        info["device_name"] = original_device.name
         info["level"] = level
         info["gradient_options"] = qnode.gradient_kwargs
         info["diff_method"] = (
