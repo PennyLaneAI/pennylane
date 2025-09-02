@@ -213,13 +213,9 @@ class ResourceQubitizeTHC(ResourceOperator):
         gate_list.append(GateCount(resource_rep(plre.ResourceAdjoint, {"base_cmpr_op": prep_op})))
 
         # reflection cost from Eq. 44 in arXiv:2011.03494
-        # print("kwargs: ", kwargs["config"]["qubitization_coeff_precision"])
-        # coeff_precision = 15 # kwargs["config"]["qubitization_coeff_precision"]
-        # print("coeff_precision: ", coeff_precision)
-        print("HELLOOOO: ", kwargs)
         coeff_precision = (
             prep_op.params["coeff_precision"] or kwargs["config"]["qubitization_coeff_precision"]
-        )  # kwargs.get("config", {}).get("qubitization_coeff_precision")
+        )
 
         toffoli = resource_rep(plre.ResourceToffoli)
         gate_list.append(GateCount(toffoli, 2 * m_register + coeff_precision + 4))
