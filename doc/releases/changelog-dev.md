@@ -784,6 +784,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update links in `README.md`.
+  [(#8165)](https://github.com/PennyLaneAI/pennylane/pull/8165)
+
 * Update `autograph` guide to reflect new capabilities.
   [(#8132)](https://github.com/PennyLaneAI/pennylane/pull/8132)
 
