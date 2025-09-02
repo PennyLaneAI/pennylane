@@ -98,9 +98,9 @@ def _generate_cnot_adj_matrix() -> list:
     the register is:
 
     ctl --  0  --  1  --  2  --  3  --  4  -- 5
-                         |
-                         6
-                         |
+                          |
+                          6
+                          |
     tgt --  7  --  8  --  9  -- 10  -- 11  -- 12
 
     Note that both ctrl and target qubits are not in the adjacent matrix and
@@ -214,6 +214,20 @@ class ConvertToMBQCFormalismPattern(
         op: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):
+        """Allocate a graph state prep operation and auxiliary qubits are extracted
+        and stored them into a dict for later use.
+
+        Args:
+            adj_matrix_op (arith.ConstantOp) : A `arith.ConstantOp` object stores the connectitivity
+            information of auxiliary qubits.
+            op (CustomOp) : A `CustomOp` object. Note that op here is a quantum.customop object
+                 instead of a qml.ops.
+            rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
+
+        Return:
+            graph_qubits_dict : A dictionary of auxiliary qubits in the graph state. The keys represents
+            the indices of qubits described in the [`arXiv:quant-ph/0301052 <https://arxiv.org/abs/quant-ph/0301052>`_].
+        """
         num_aux_wres = (
             _NumAuxWires.CNOT.value
             if op.gate_name.data == "CNOT"
