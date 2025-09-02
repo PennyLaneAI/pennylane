@@ -681,6 +681,9 @@ class ConvertToMBQCFormalismPattern(
         """Match and rewrite for converting to the MBQC formalism."""
 
         for region in root.regions:
+            # TODOs: Current implementation ensures only one type adj matrix op is inserted into one region of an IR.
+            # We can further optimize it by ensure only one type adj matrix op is inserted into the IR. We can
+            # come back to this later.
             one_wire_adj_matrix_op = None
             two_wire_adj_matrix_op = None
             for op in region.ops:
