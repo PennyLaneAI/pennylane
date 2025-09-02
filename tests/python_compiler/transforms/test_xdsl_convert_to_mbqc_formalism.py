@@ -283,15 +283,22 @@ class TestConvertToMBQCFormalismPass:
         run_filecheck(program, pipeline)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_gates_in_mbqc_gate_set_lowering(self, run_filecheck_qjit):
-        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit."""
+    def test_gates_in_mbqc_gate_set_lowering_for_loop(self, run_filecheck_qjit):
+        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and capture the control flows."""
         dev = qml.device("null.qubit", wires=1000)
+
+        @qml.for_loop(0, 1000, 1)
+        def loop_func(i):
+            qml.H(i)
+            qml.S(i)
+            RotXZX(0.1, 0.2, 0.3, wires=[i])
+            qml.RZ(phi=0.1, wires=[i])
 
         @qml.qjit(
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
-            autograph=True
+            autograph=True,
         )
         @convert_to_mbqc_formalism_pass
         @qml.set_shots(1000)
@@ -310,23 +317,50 @@ class TestConvertToMBQCFormalismPass:
             # CHECK: quantum.custom "PauliX"
             # CHECK: quantum.custom "PauliZ"
             # CHECK: quantum.dealloc_qb
-            @qml.for_loop(0, 1000, 1)
-            def loop_func(i):
-                qml.H(i)
-                qml.S(i)
-                RotXZX(0.1, 0.2, 0.3, wires=[i])
-                qml.RZ(phi=0.1, wires=[i])
             loop_func()
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(wires=0))
 
         run_filecheck_qjit(circuit)
 
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_gates_in_mbqc_gate_set_lowering_for(self, run_filecheck_qjit):
+        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and unrolled for loops."""
+        dev = qml.device("null.qubit", wires=1000)
+
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+            pipelines=mbqc_pipeline(),
+            autograph=False,
+        )
+        @convert_to_mbqc_formalism_pass
+        @qml.set_shots(1000)
+        @qml.qnode(dev)
+        def circuit():
+            # CHECK-NOT: quantum.custom "CNOT"()
+            # CHECK-NOT: quantum.custom "S"()
+            # CHECK-NOT: quantum.custom "RZ"()
+            # CHECK-NOT: quantum.custom "RotXZX"()
+            # CHECK-NOT: quantum.custom "Hadamard"
+            # CHECK-NOT: scf.for
+            # CHECK: mbqc.graph_state_prep
+            # CHECK: quantum.custom "CZ"
+            # CHECK: mbqc.measure_in_basis
+            # CHECK: scf.if
             # CHECK: quantum.custom "PauliX"
             # CHECK: quantum.custom "PauliZ"
-            # CHECK: quantum.custom "CZ"
             # CHECK: quantum.dealloc_qb
-            # CHECK: mbqc.measure_in_basis
+            for i in range(1000):
+                qml.H(i)
+                qml.S(i)
+                RotXZX(0.1, 0.2, 0.3, wires=[i])
+                qml.RZ(phi=0.1, wires=[i])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Z(wires=0))
+
+        run_filecheck_qjit(circuit)
+
     @pytest.mark.xfail(
         reason="Failure due to the deallocation of qubits in a qreg and insertion of qubit into a qreg is not supported yet."
     )
@@ -334,6 +368,13 @@ class TestConvertToMBQCFormalismPass:
     def test_gates_in_mbqc_gate_set_e2e(self):
         """Test that the convert_to_mbqc_formalism_pass end to end on null.qubit."""
         dev = qml.device("null.qubit", wires=1000)
+
+        @qml.for_loop(0, 1000, 1)
+        def loop_func(i):
+            qml.H(i)
+            qml.S(i)
+            RotXZX(0.1, 0.2, 0.3, wires=[i])
+            qml.RZ(phi=0.1, wires=[i])
 
         @qml.qjit(
             target="mlir",
@@ -346,12 +387,6 @@ class TestConvertToMBQCFormalismPass:
         @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
-            @qml.for_loop(0, 1000, 1)
-            def loop_func(i):
-                qml.H(i)
-                qml.S(i)
-                RotXZX(0.1, 0.2, 0.3, wires=[i])
-                qml.RZ(phi=0.1, wires=[i])
             loop_func()
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(wires=0))
