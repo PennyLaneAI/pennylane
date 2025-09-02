@@ -26,6 +26,26 @@ from pennylane.exceptions import DeviceError
 from pennylane.operation import classproperty
 
 
+@pytest.fixture(params=[False, True], ids=["no_graph", "with_graph"], autouse=True)
+def decomposition_mode(request):
+    """Fixture that runs tests with both graph and non-graph decomposition modes.
+
+    Automatically sets up and tears down the graph decomposition mode for each test.
+    """
+    use_graph = request.param
+
+    # Setup: Configure graph decomposition based on parameter
+    if use_graph:
+        qml.decomposition.enable_graph()
+    else:
+        qml.decomposition.disable_graph()
+
+    yield use_graph
+
+    # Teardown: Always clean up
+    qml.decomposition.disable_graph()
+
+
 class NoMatOp(qml.operation.Operation):
     """Dummy operation for expanding circuit."""
 
@@ -536,50 +556,27 @@ class TestPreprocessingIntegration:
         expected = (np.array([1, 2, 3]), np.array([4, 5, 6]))
         assert np.array_equal(batch_fn(val), expected)
 
-    @pytest.mark.parametrize("use_graph", [False, True])
-    def test_preprocess_expand(self, use_graph):
+    def test_preprocess_expand(self):
         """Test that preprocess returns the correct tapes when expansion is needed."""
+        ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
+        measurements = [[qml.expval(qml.PauliZ(0))], [qml.expval(qml.PauliX(1))]]
+        tapes = [
+            qml.tape.QuantumScript(ops=ops, measurements=measurements[0]),
+            qml.tape.QuantumScript(ops=ops, measurements=measurements[1]),
+        ]
 
-        # Configure graph decomposition based on parameter
-        if use_graph:
-            qml.decomposition.enable_graph()
-        else:
-            qml.decomposition.disable_graph()
+        program = qml.device("default.qubit").preprocess_transforms()
+        res_tapes, batch_fn = program(tapes)
 
-        try:
-            ops = [qml.Hadamard(0), NoMatOp(1), qml.RZ(0.123, wires=1)]
-            measurements = [[qml.expval(qml.PauliZ(0))], [qml.expval(qml.PauliX(1))]]
-            tapes = [
-                qml.tape.QuantumScript(ops=ops, measurements=measurements[0]),
-                qml.tape.QuantumScript(ops=ops, measurements=measurements[1]),
-            ]
+        expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
 
-            program = qml.device("default.qubit").preprocess_transforms()
-            res_tapes, batch_fn = program(tapes)
+        assert len(res_tapes) == 2
+        for i, t in enumerate(res_tapes):
+            for op, exp in zip(t.circuit, expected + measurements[i]):
+                qml.assert_equal(op, exp)
 
-            expected = [qml.Hadamard(0), qml.PauliX(1), qml.PauliY(1), qml.RZ(0.123, wires=1)]
-
-            assert len(res_tapes) == 2
-
-            # For both graph and non-graph cases, the NoMatOp should be expanded
-            # to its decomposition: [qml.PauliX(1), qml.PauliY(1)]
-            for i, t in enumerate(res_tapes):
-                # Check that we have the expected operations (expansion should happen consistently)
-                assert len(t.operations) == 4  # Hadamard + PauliX + PauliY + RZ
-                assert t.operations[0].name == "Hadamard"
-                assert t.operations[1].name == "PauliX"
-                assert t.operations[2].name == "PauliY"
-                assert t.operations[3].name == "RZ"
-
-                # Check measurements are preserved
-                assert len(t.measurements) == 1
-                qml.assert_equal(t.measurements[0], measurements[i][0])
-
-            val = (("a", "b"), "c", "d")
-            assert batch_fn(val) == (("a", "b"), "c")
-        finally:
-            # Always clean up
-            qml.decomposition.disable_graph()
+        val = (("a", "b"), "c", "d")
+        assert batch_fn(val) == (("a", "b"), "c")
 
     def test_preprocess_split_and_expand_not_adjoint(self):
         """Test that preprocess returns the correct tapes when splitting and expanding
@@ -858,126 +855,70 @@ class TestAdjointDiffTapeValidation:
         ):
             program((qs,))
 
-    @pytest.mark.parametrize("use_graph", [False, True])
-    def test_unsupported_op_decomposed(self, use_graph):
+    def test_unsupported_op_decomposed(self):
         """Test that an operation supported on the forward pass but
         not adjoint is decomposed when adjoint is requested."""
 
-        # Configure graph decomposition based on parameter
-        if use_graph:
-            qml.decomposition.enable_graph()
-        else:
-            qml.decomposition.disable_graph()
+        qs = qml.tape.QuantumScript(
+            [qml.U2(qml.numpy.array(0.1), qml.numpy.array(0.2), wires=[0])],
+            [qml.expval(qml.PauliZ(2))],
+        )
+        batch = (qs,)
+        program = qml.device("default.qubit").preprocess_transforms(
+            ExecutionConfig(gradient_method="adjoint")
+        )
+        res, _ = program(batch)
+        res = res[0]
+        assert isinstance(res, qml.tape.QuantumScript)
+        qml.assert_equal(res[0], qml.RZ(qml.numpy.array(0.2), wires=0))
+        qml.assert_equal(res[1], qml.RY(qml.numpy.array(np.pi / 2), wires=0))
+        qml.assert_equal(res[2], qml.RZ(qml.numpy.array(-0.2), wires=0))
+        qml.assert_equal(res[3], qml.PhaseShift(qml.numpy.array(0.2), wires=0))
+        qml.assert_equal(res[4], qml.PhaseShift(qml.numpy.array(0.1), wires=0))
 
-        try:
-            qs = qml.tape.QuantumScript(
-                [qml.U2(qml.numpy.array(0.1), qml.numpy.array(0.2), wires=[0])],
-                [qml.expval(qml.PauliZ(2))],
-            )
-            batch = (qs,)
-            program = qml.device("default.qubit").preprocess_transforms(
-                ExecutionConfig(gradient_method="adjoint")
-            )
-            res, _ = program(batch)
-            res = res[0]
-            assert isinstance(res, qml.tape.QuantumScript)
-
-            if use_graph:
-                # With graph decomposition, U2 might be preserved due to matrix support
-                # Check that we get some valid decomposition (could be U2 or decomposed form)
-                assert len(res.operations) >= 1
-                # At minimum, verify the operation(s) are valid for DefaultQubit
-                for op in res.operations:
-                    assert hasattr(op, "matrix") or op.name in ["RZ", "RY", "PhaseShift", "U2"]
-            else:
-                # With non-graph decomposition, expect the specific decomposed form
-                assert len(res.operations) == 5
-                qml.assert_equal(res[0], qml.RZ(qml.numpy.array(0.2), wires=0))
-                qml.assert_equal(res[1], qml.RY(qml.numpy.array(np.pi / 2), wires=0))
-                qml.assert_equal(res[2], qml.RZ(qml.numpy.array(-0.2), wires=0))
-                qml.assert_equal(res[3], qml.PhaseShift(qml.numpy.array(0.2), wires=0))
-                qml.assert_equal(res[4], qml.PhaseShift(qml.numpy.array(0.1), wires=0))
-        finally:
-            # Always clean up
-            qml.decomposition.disable_graph()
-
-    @pytest.mark.parametrize("use_graph", [False, True])
-    def test_trainable_params_decomposed(self, use_graph):
+    def test_trainable_params_decomposed(self):
         """Test that the trainable parameters of a tape are updated when it is expanded"""
 
-        # Configure graph decomposition based on parameter
-        if use_graph:
-            qml.decomposition.enable_graph()
-        else:
-            qml.decomposition.disable_graph()
+        ops = [
+            qml.QubitUnitary(qml.numpy.array([[0, 1], [1, 0]]), wires=0),
+            qml.CNOT([0, 1]),
+            qml.Rot(qml.numpy.array(0.1), qml.numpy.array(0.2), qml.numpy.array(0.3), wires=0),
+        ]
+        qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
 
-        try:
-            ops = [
-                qml.QubitUnitary(qml.numpy.array([[0, 1], [1, 0]]), wires=0),
-                qml.CNOT([0, 1]),
-                qml.Rot(qml.numpy.array(0.1), qml.numpy.array(0.2), qml.numpy.array(0.3), wires=0),
-            ]
-            qs = qml.tape.QuantumScript(ops, [qml.expval(qml.PauliZ(0))])
+        qs.trainable_params = [0]
+        program = qml.device("default.qubit").preprocess_transforms(
+            ExecutionConfig(gradient_method="adjoint")
+        )
+        res, _ = program((qs,))
+        res = res[0]
 
-            qs.trainable_params = [0]
-            program = qml.device("default.qubit").preprocess_transforms(
-                ExecutionConfig(gradient_method="adjoint")
-            )
-            res, _ = program((qs,))
-            res = res[0]
+        assert isinstance(res, qml.tape.QuantumScript)
+        assert len(res.operations) == 8
+        qml.assert_equal(res[0], qml.RZ(qml.numpy.array(np.pi / 2), 0))
+        qml.assert_equal(res[1], qml.RY(qml.numpy.array(np.pi), 0))
+        qml.assert_equal(res[2], qml.RZ(qml.numpy.array(7 * np.pi / 2), 0))
+        qml.assert_equal(res[3], qml.GlobalPhase(-np.pi / 2))
+        qml.assert_equal(res[4], qml.CNOT([0, 1]))
+        qml.assert_equal(res[5], qml.RZ(qml.numpy.array(0.1), 0))
+        qml.assert_equal(res[6], qml.RY(qml.numpy.array(0.2), 0))
+        qml.assert_equal(res[7], qml.RZ(qml.numpy.array(0.3), 0))
+        assert res.trainable_params == [0, 1, 2, 3, 4, 5, 6]
 
-            assert isinstance(res, qml.tape.QuantumScript)
-
-            if use_graph:
-                # With graph decomposition, operations might be preserved if they have matrix support
-                # The important thing is that trainable_params are consistent
-                assert len(res.operations) >= 3  # At least the original operations
-                # Check that all operations are supported by DefaultQubit
-                for op in res.operations:
-                    assert hasattr(op, "matrix") or op.name in [
-                        "RZ",
-                        "RY",
-                        "GlobalPhase",
-                        "CNOT",
-                        "Rot",
-                        "QubitUnitary",
-                    ]
-                # trainable_params should be updated appropriately
-                assert len(res.trainable_params) >= 1
-            else:
-                # With non-graph decomposition, expect the specific decomposed form
-                assert len(res.operations) == 8
-                qml.assert_equal(res[0], qml.RZ(qml.numpy.array(np.pi / 2), 0))
-                qml.assert_equal(res[1], qml.RY(qml.numpy.array(np.pi), 0))
-                qml.assert_equal(res[2], qml.RZ(qml.numpy.array(7 * np.pi / 2), 0))
-                qml.assert_equal(res[3], qml.GlobalPhase(-np.pi / 2))
-                qml.assert_equal(res[4], qml.CNOT([0, 1]))
-                qml.assert_equal(res[5], qml.RZ(qml.numpy.array(0.1), 0))
-                qml.assert_equal(res[6], qml.RY(qml.numpy.array(0.2), 0))
-                qml.assert_equal(res[7], qml.RZ(qml.numpy.array(0.3), 0))
-                assert res.trainable_params == [0, 1, 2, 3, 4, 5, 6]
-
-            # Test with different trainable params
-            qs.trainable_params = [2, 3]
-            res, _ = program((qs,))
-            res = res[0]
-            assert isinstance(res, qml.tape.QuantumScript)
-
-            if not use_graph:
-                # Only check detailed structure for non-graph case
-                assert len(res.operations) == 8
-                qml.assert_equal(res[0], qml.RZ(qml.numpy.array(np.pi / 2), 0))
-                qml.assert_equal(res[1], qml.RY(qml.numpy.array(np.pi), 0))
-                qml.assert_equal(res[2], qml.RZ(qml.numpy.array(7 * np.pi / 2), 0))
-                qml.assert_equal(res[3], qml.GlobalPhase(-np.pi / 2))
-                qml.assert_equal(res[4], qml.CNOT([0, 1]))
-                qml.assert_equal(res[5], qml.RZ(qml.numpy.array(0.1), 0))
-                qml.assert_equal(res[6], qml.RY(qml.numpy.array(0.2), 0))
-                qml.assert_equal(res[7], qml.RZ(qml.numpy.array(0.3), 0))
-                assert res.trainable_params == [0, 1, 2, 3, 4, 5, 6]
-        finally:
-            # Always clean up
-            qml.decomposition.disable_graph()
+        qs.trainable_params = [2, 3]
+        res, _ = program((qs,))
+        res = res[0]
+        assert isinstance(res, qml.tape.QuantumScript)
+        assert len(res.operations) == 8
+        qml.assert_equal(res[0], qml.RZ(qml.numpy.array(np.pi / 2), 0))
+        qml.assert_equal(res[1], qml.RY(qml.numpy.array(np.pi), 0))
+        qml.assert_equal(res[2], qml.RZ(qml.numpy.array(7 * np.pi / 2), 0))
+        qml.assert_equal(res[3], qml.GlobalPhase(-np.pi / 2))
+        qml.assert_equal(res[4], qml.CNOT([0, 1]))
+        qml.assert_equal(res[5], qml.RZ(qml.numpy.array(0.1), 0))
+        qml.assert_equal(res[6], qml.RY(qml.numpy.array(0.2), 0))
+        qml.assert_equal(res[7], qml.RZ(qml.numpy.array(0.3), 0))
+        assert res.trainable_params == [0, 1, 2, 3, 4, 5, 6]
 
     def test_u3_non_trainable_params(self):
         """Test that a warning is raised and all parameters are trainable in the expanded
