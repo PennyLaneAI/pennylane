@@ -68,6 +68,10 @@ def test_perturbation_error(backend, parallel_mode, mpi4py_support):
     assert isinstance(errors, list)
     assert len(errors) == 2
 
+    # Basic value test, actual results: e0 ~ 0.92j, e1 ~ 4.80j
+    assert 0.1 < abs(errors[0][3]) < 10.0
+    assert 0.1 < abs(errors[1][3]) < 10.0
+
 
 def test_perturbation_error_invalid_parallel_mode():
     """Test that perturbation error raises an error for invalid parallel mode."""

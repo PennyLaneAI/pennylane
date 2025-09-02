@@ -778,6 +778,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* trotter error accumulates expectation values instead of states, more performant.
+  [(#8175)](https://github.com/PennyLaneAI/pennylane/pull/8175)
+
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
   [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
