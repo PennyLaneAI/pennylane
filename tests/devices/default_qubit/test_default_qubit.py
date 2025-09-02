@@ -41,7 +41,10 @@ def test_name():
 def test_shots():
     """Test the shots property of DefaultQubit."""
     assert DefaultQubit().shots == qml.measurements.Shots(None)
-    assert DefaultQubit(shots=100).shots == qml.measurements.Shots(100)
+    with pytest.warns(
+        qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+    ):
+        assert DefaultQubit(shots=100).shots == qml.measurements.Shots(100)
 
     with pytest.raises(AttributeError):
         DefaultQubit().shots = 10
@@ -2129,9 +2132,9 @@ class TestIntegration:
     @pytest.mark.parametrize("wires,expected", [(None, [1, 0]), (3, [0, 0, 1])])
     def test_sample_uses_device_wires(self, wires, expected):
         """Test that if device wires are given, then they are used by sample."""
-        dev = DefaultQubit(wires=wires, shots=5)
+        dev = DefaultQubit(wires=wires)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=5)
         def circuit():
             qml.PauliX(2)
             qml.Identity(0)
@@ -2192,9 +2195,9 @@ class TestIntegration:
     )
     def test_counts_uses_device_wires(self, wires, all_outcomes, expected):
         """Test that if device wires are given, then they are used by probs."""
-        dev = DefaultQubit(wires=wires, shots=10)
+        dev = DefaultQubit(wires=wires)
 
-        @qml.qnode(dev, interface=None)
+        @qml.qnode(dev, interface=None, shots=10)
         def circuit():
             qml.PauliX(2)
             qml.Identity(0)
@@ -2303,7 +2306,7 @@ def test_renomalization_issue():
         qml.evolve(H_interaction + global_drive)(params, ts)
         return qml.counts()
 
-    circuit_qml = qml.QNode(circuit, qml.device("default.qubit", shots=1000), interface="jax")
+    circuit_qml = qml.QNode(circuit, qml.device("default.qubit"), interface="jax", shots=1000)
 
     circuit_qml(params)
     jax.config.update("jax_enable_x64", initial_mode)

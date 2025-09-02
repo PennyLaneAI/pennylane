@@ -22,6 +22,7 @@ import pennylane as qml
 from pennylane.devices.preprocess import (
     _operator_decomposition_gen,
     decompose,
+    device_resolve_dynamic_wires,
     measurements_from_counts,
     measurements_from_samples,
     mid_circuit_measurements,
@@ -808,6 +809,67 @@ def test_validate_multiprocessing_workers_None():
     )
     device = qml.devices.DefaultQubit()
     validate_multiprocessing_workers(qs, None, device)
+
+
+class TestDeviceResolveDynamicWires:
+
+    def test_many_allocations_no_wires(self):
+        """Test that min integer will keep incrementing to higher numbers."""
+
+        allocations = [qml.allocation.Allocate.from_num_wires(1) for _ in range(10)]
+        ops = [qml.X(op.wires) for op in allocations]
+        tape = qml.tape.QuantumScript(allocations + ops)
+
+        [new_tape], fn = device_resolve_dynamic_wires(tape, wires=None)
+
+        assert fn(("a",)) == "a"
+        for op, wire in zip(new_tape.operations, range(0, 10)):
+            qml.assert_equal(op, qml.X(wire))
+
+    def test_error_on_not_enough_available_wires(self):
+        """Test that an error is raised if there are not enough available wires on the device."""
+
+        allocation = qml.allocation.Allocate.from_num_wires(2)
+        ops = [qml.X(w) for w in allocation.wires]
+        tape = qml.tape.QuantumScript([allocation] + ops)
+
+        with pytest.raises(
+            qml.exceptions.AllocationError, match=r"Not enough available wires on device"
+        ):
+            device_resolve_dynamic_wires(tape, wires=qml.wires.Wires([0]))
+
+    def test_many_allocations_device_wires(self):
+        """Test that provided device wires are used properly."""
+
+        allocations = [qml.allocation.Allocate.from_num_wires(1) for _ in range(10)]
+        ops = [qml.X(op.wires) for op in allocations]
+        tape = qml.tape.QuantumScript(allocations + ops)
+
+        wires = qml.wires.Wires(list(range(10)))
+        [new_tape], fn = device_resolve_dynamic_wires(tape, wires=wires)
+
+        assert fn(("a",)) == "a"
+        for op, wire in zip(new_tape.operations, wires):
+            qml.assert_equal(op, qml.X(wire))
+
+    def test_min_int_non_integer_algorithmic_wires(self):
+        """Test that a min int can be calculated when the tape contains non-integer wires."""
+
+        allocation = qml.allocation.Allocate.from_num_wires(1)
+        ops = [qml.Z("a"), qml.Z("b"), qml.Z("my_wire"), qml.X(allocation.wires)]
+        tape = qml.tape.QuantumScript([allocation] + ops)
+
+        [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None)
+        qml.assert_equal(new_tape[-1], qml.X(0))
+
+    def test_min_int_unsorted_wires(self):
+        """Test that the min_int is the smallest integer larger than all integers in operation wires."""
+        allocation = qml.allocation.Allocate.from_num_wires(1)
+        ops = [qml.Z(5), qml.Z(11), qml.Z(4), qml.X(allocation.wires)]
+        tape = qml.tape.QuantumScript([allocation] + ops)
+
+        [new_tape], _ = device_resolve_dynamic_wires(tape, wires=None)
+        qml.assert_equal(new_tape[-1], qml.X(12))
 
 
 class TestDecomposeGraphIntegration:

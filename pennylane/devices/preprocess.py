@@ -22,14 +22,16 @@ from collections.abc import Callable, Generator, Sequence
 from copy import copy
 
 import pennylane as qml
-from pennylane.exceptions import DeviceError, QuantumFunctionError, WireError
+from pennylane.exceptions import AllocationError, DeviceError, QuantumFunctionError, WireError
 from pennylane.math import requires_grad
 from pennylane.measurements import SampleMeasurement, StateMeasurement
 from pennylane.operation import StatePrepBase
 from pennylane.ops import Snapshot
 from pennylane.tape import QuantumScript, QuantumScriptBatch
+from pennylane.transforms import resolve_dynamic_wires
 from pennylane.transforms.core import transform
 from pennylane.typing import PostprocessingFn
+from pennylane.wires import Wires
 
 from .execution_config import MCMConfig
 
@@ -157,46 +159,47 @@ def validate_device_wires(
             f"Abstract wires are not yet supported."
         )
 
-    if wires:
+    if not wires:
+        return (tape,), null_postprocessing
 
-        if any(qml.math.is_abstract(w) for w in wires):
-            raise WireError(
-                f"Cannot run circuit(s) on {name} as abstract wires are present in the device: {wires}. "
-                f"Abstract wires are not yet supported."
-            )
+    if any(qml.math.is_abstract(w) for w in wires):
+        raise WireError(
+            f"Cannot run circuit(s) on {name} as abstract wires are present in the device: {wires}. "
+            f"Abstract wires are not yet supported."
+        )
 
-        if extra_wires := set(tape.wires) - set(wires):
-            raise WireError(
-                f"Cannot run circuit(s) on {name} as they contain wires "
-                f"not found on the device: {extra_wires}"
-            )
+    if extra_wires := set(tape.wires) - set(wires):
+        raise WireError(
+            f"Cannot run circuit(s) on {name} as they contain wires "
+            f"not found on the device: {extra_wires}"
+        )
 
-        modified = False
-        new_ops = None
-        for i, op in enumerate(tape.operations):
-            if isinstance(op, qml.Snapshot):
-                mp = op.hyperparameters["measurement"]
-                if not mp.wires:
-                    if not new_ops:
-                        new_ops = list(tape.operations)
-                    modified = True
-                    new_mp = copy(mp)
-                    new_mp._wires = wires  # pylint:disable=protected-access
-                    new_ops[i] = qml.Snapshot(
-                        measurement=new_mp, tag=op.tag, shots=op.hyperparameters["shots"]
-                    )
-        if not new_ops:
-            new_ops = tape.operations  # no copy in this case
-
-        measurements = tape.measurements.copy()
-        for m_idx, mp in enumerate(measurements):
-            if not mp.obs and not mp.wires:
+    modified = False
+    new_ops = None
+    for i, op in enumerate(tape.operations):
+        if isinstance(op, qml.Snapshot):
+            mp = op.hyperparameters["measurement"]
+            if not mp.wires:
+                if not new_ops:
+                    new_ops = list(tape.operations)
                 modified = True
                 new_mp = copy(mp)
                 new_mp._wires = wires  # pylint:disable=protected-access
-                measurements[m_idx] = new_mp
-        if modified:
-            tape = tape.copy(ops=new_ops, measurements=measurements)
+                new_ops[i] = qml.Snapshot(
+                    measurement=new_mp, tag=op.tag, shots=op.hyperparameters["shots"]
+                )
+    if not new_ops:
+        new_ops = tape.operations  # no copy in this case
+
+    measurements = tape.measurements.copy()
+    for m_idx, mp in enumerate(measurements):
+        if not mp.obs and not mp.wires:
+            modified = True
+            new_mp = copy(mp)
+            new_mp._wires = wires  # pylint:disable=protected-access
+            measurements[m_idx] = new_mp
+    if modified:
+        tape = tape.copy(ops=new_ops, measurements=measurements)
 
     return (tape,), null_postprocessing
 
@@ -788,3 +791,55 @@ def _get_diagonalized_tape_and_wires(tape):
     measured_wires = list(measured_wires)
 
     return diagonalized_tape, measured_wires
+
+
+@transform
+def device_resolve_dynamic_wires(
+    tape: QuantumScript, wires: None | Wires
+) -> tuple[QuantumScriptBatch, PostprocessingFn]:
+    """Allocate dynamic wires in a manner consistent with the provided device wires.
+
+    Args:
+        tape (QuantumScript): a circuit that may contain dynamic wire allocation
+        wires (None| Wires): the device wires
+
+    If device wires are provided, possible values for dynamic wires are determined from
+    device wires not present in the tape.
+
+    >>> from pennylane.devices.preprocess import device_resolve_dynamic_wires
+    >>> def f():
+    ...     qml.H(0)
+    ...     with qml.allocation.allocate(1) as wires:
+    ...         qml.X(wires)
+    ...     with qml.allocation.allocate(1) as wires:
+    ...         qml.X(wires)
+
+    >>> transformed = device_resolve_dynamic_wires(f, wires=qml.wires.Wires((0, "a", "b")))
+    >>> print(qml.draw(transformed)())
+    0: ──H─┤
+    b: ──X─┤
+    a: ──X─┤
+
+    If the device has no wires, then wires are allocated starting at the smallest
+    integer that is larger than all integer wires present in the ``tape``.
+
+    >>> transformed_None = device_resolve_dynamic_wires(f, wires=None)
+    >>> print(qml.draw(transformed_None)())
+    0: ──H──────────────┤
+    1: ──X──┤↗│  │0⟩──X─┤
+
+    See :func:`~.resolve_dynamic_wires` for a more detailed description.
+
+    """
+    if wires:
+        zeroed = reversed(list(set(wires) - set(tape.wires)))
+        min_int = None
+    else:
+        zeroed = ()
+        min_int = max((i for i in tape.wires if isinstance(i, int)), default=-1) + 1
+    try:
+        return resolve_dynamic_wires(tape, zeroed=zeroed, min_int=min_int)
+    except AllocationError as e:
+        raise AllocationError(
+            f"Not enough available wires on device with wires {wires} for requested dynamic wires."
+        ) from e
