@@ -110,6 +110,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
+  [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
+
 * A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
   [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
 
@@ -777,6 +780,15 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Update links in `README.md`.
+  [(#8165)](https://github.com/PennyLaneAI/pennylane/pull/8165)
+
+* Update `autograph` guide to reflect new capabilities.
+  [(#8132)](https://github.com/PennyLaneAI/pennylane/pull/8132)
+
+* Start using `strict=True` to `zip` usage in source code.
+  [(#8164)](https://github.com/PennyLaneAI/pennylane/pull/8164)
 
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)

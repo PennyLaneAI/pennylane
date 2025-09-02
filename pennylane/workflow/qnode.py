@@ -158,7 +158,9 @@ def _validate_qfunc_output(qfunc_output, measurements) -> None:
 
     terminal_measurements = [m for m in measurements if not isinstance(m, MidMeasureMP)]
 
-    if any(ret is not m for ret, m in zip(measurement_processes, terminal_measurements)):
+    if any(
+        ret is not m for ret, m in zip(measurement_processes, terminal_measurements, strict=True)
+    ):
         raise QuantumFunctionError(
             "All measurements must be returned in the order they are measured."
         )
