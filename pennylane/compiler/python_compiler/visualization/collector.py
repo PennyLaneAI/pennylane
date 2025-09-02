@@ -31,10 +31,11 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     GlobalPhaseOp,
     MeasureOp,
     ProbsOp,
+    QubitUnitaryOp,
     SampleOp,
+    SetStateOp,
     StateOp,
     VarianceOp,
-    QubitUnitaryOp,
 )
 from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
@@ -46,7 +47,8 @@ from .xdsl_conversion import (
     xdsl_to_qml_measure_op,
     xdsl_to_qml_obs_op,
     xdsl_to_qml_op,
-    xdsl_to_qml_qubit_unitary_op
+    xdsl_to_qml_qubit_unitary_op,
+    xdsl_to_qml_set_state_op,
 )
 
 
@@ -111,6 +113,14 @@ class QMLCollector:
         if not self.wire_to_ssa_qubits:
             raise NotImplementedError("No wires extracted from the register found.")
         return xdsl_to_qml_qubit_unitary_op(xdsl_op)
+
+    @handle.register
+    def _(self, xdsl_op: SetStateOp) -> Operator:
+        if self.quantum_register is None:
+            raise ValueError("Quantum register (AllocOp) not found.")
+        if not self.wire_to_ssa_qubits:
+            raise NotImplementedError("No wires extracted from the register found.")
+        return xdsl_to_qml_set_state_op(xdsl_op)
 
     ############################################################
     ### Internal Methods

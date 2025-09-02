@@ -25,7 +25,6 @@ from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
     ComputationalBasisOp,
     CustomOp,
-    QubitUnitaryOp,
 )
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
@@ -33,6 +32,8 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     HamiltonianOp,
     MeasureOp,
     NamedObsOp,
+    QubitUnitaryOp,
+    SetStateOp,
     TensorOp,
 )
 from pennylane.measurements import MeasurementProcess
@@ -62,7 +63,7 @@ from_str_to_PL_measurement = {
     "quantum.measure": qml.measure,
 }
 
-# pylint: disable=too-many-return-statements
+# pylint: disable=too-many-return-statements, protected-access
 
 ######################################################
 ### Gate/Measurement resolution
@@ -144,7 +145,7 @@ def resolve_constant_wire(ssa: SSAValue) -> int:
         return resolve_constant_wire(op.operands[0])
     if op.name == "stablehlo.constant":
         return _extract_dense_constant_value(op)
-    if isinstance(op, (CustomOp, GlobalPhaseOp, QubitUnitaryOp)):
+    if isinstance(op, (CustomOp, GlobalPhaseOp, QubitUnitaryOp, SetStateOp)):
         return resolve_constant_wire(op.in_qubits[ssa.index])
     if isinstance(op, ExtractOpPL):
         return dispatch_wires_extract(op)
@@ -217,12 +218,18 @@ def xdsl_to_qml_op(op: CustomOp | GlobalPhaseOp) -> Operator:
 
 def xdsl_to_qml_qubit_unitary_op(op: QubitUnitaryOp) -> Operator:
     """Convert a ``quantum.unitary`` xDSL op to a PennyLane operator."""
-
-    # pylint: disable=protected-access
     tensor_abstr_shape = op.matrix.owner.operand._type.shape.data
     tensor_shape = [tensor_abstr_shape[i].data for i in range(len(tensor_abstr_shape))]
-    gate = qml.QubitUnitary(jax.numpy.zeros(tensor_shape), wires=ssa_to_qml_wires(op))
+    gate = qml.QubitUnitary(U=jax.numpy.zeros(tensor_shape), wires=ssa_to_qml_wires(op))
     # TODO: handle ctrl and adjoint
+    return gate
+
+
+def xdsl_to_qml_set_state_op(op: SetStateOp) -> Operator:
+    """Convert a ``quantum.set_state`` xDSL op to a PennyLane operator."""
+    tensor_abstr_shape = op.in_state.owner.operand._type.shape.data
+    tensor_shape = [tensor_abstr_shape[i].data for i in range(len(tensor_abstr_shape))]
+    gate = qml.StatePrep(state=jax.numpy.zeros(tensor_shape), wires=ssa_to_qml_wires(op))
     return gate
 
 
