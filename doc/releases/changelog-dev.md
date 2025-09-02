@@ -3,21 +3,101 @@
 
 <h3>New features since last release</h3>
 
-* Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
+* Wires can now be dynamically allocated and deallocated in quantum functions with 
+  :func:`~.allocate` and :func:`~.deallocate`. These features unlock many important applications 
+  that rely on smart and efficient handling of wires, such as decompositions of gates that require 
+  temporary auxiliary wires and logical patterns in subroutines that benefit from having dynamic 
+  memory management.
   [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
 
-  ```python
-  @qml.qnode(qml.device('default.qubit'))
-  def c():
-      with qml.allocation.allocate(1) as wires:
-          qml.H(wires)
-          qml.CNOT((wires[0], 0))
-      return qml.probs(wires=0)
+  The :func:`~.allocate` function can accept three arguments that dictate how dynamically allocated 
+  wires are handled:
 
-  c()
+  * `num_wires`: the number of wires to dynamically allocate. 
+  * `state = "zero"/"any"`: the initial state that the dynamically allocated wires are requested to 
+    be in. Currently, supported values are `"zero"` (initialize in the all-zero state) or `"any"` 
+    (any arbitrary state).
+  * `restored = True/False`: a user-guarantee that the allocated wires will be restored to their 
+    original state (`True`) or not (`False`) when those wires are deallocated. 
+
+  The recommended way to safely allocate and deallocate memory is to use :func:`~.allocate` as a 
+  context manager:
+
+  ```python
+  import pennylane as qml
+
+  @qml.qnode(qml.device("default.qubit")) 
+  def circuit():
+      qml.H(0)
+      qml.H(1)
+
+      with qml.allocate(2, state="zero", restored=True) as new_wires:
+          qml.H(new_wires[0])
+          qml.H(new_wires[1])
+          
+      return qml.expval(qml.Z(0))
   ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+              0: ──H───────────────────────┤  <Z>
+              1: ──H───────────────────────┤
+  <DynamicWire>: ─╭Allocate──H─╭Deallocate─┤
+  <DynamicWire>: ─╰Allocate──H─╰Deallocate─┤
   ```
-  array([0.5, 0.5])
+
+  As illustrated, using :func:`~.allocate` as a context manager ensures that allocation and safe
+  deallocation are controlled within a localized scope. Equivalenty, :func:`~.allocate` can be used
+  in-line along with :func:`~.deallocate` for manual handling: 
+
+  ```python
+  new_wires = qml.allocate(2, state="zero", restored=True)
+  qml.H(new_wires[0])
+  qml.H(new_wires[1])
+  qml.deallocate(new_wires)
+  ```
+
+  For more complex dynamic allocation in circuits, PennyLane will resolve the dynamic allocation 
+  calls in the most resource-efficient manner before sending the program to the device. Consider the
+  following circuit, which contains two dynamic allocations within a `for` loop.
+
+  ```python
+  @qml.qnode(qml.device("default.qubit"), mcm_method="tree-traversal") 
+  def circuit():
+      qml.H(0)
+
+      for i in range(2):
+          with qml.allocate(1, state="zero", restored=True) as new_qubit1:
+              with qml.allocate(1, state="any", restored=False) as new_qubit2:
+                  m0 = qml.measure(new_qubit1[0], reset=True)
+                  qml.cond(m0 == 1, qml.Z)(new_qubit2[0])
+                  qml.CNOT((0, new_qubit2))
+
+      return qml.expval(qml.Z(0))
+  ```
+
+  ```pycon
+  >>> print(qml.draw(circuit)())
+              0: ──H─────────────────────╭●───────────────────────╭●─────────────┤  <Z>
+  <DynamicWire>: ──Allocate──┤↗│  │0⟩────│──────────Deallocate────│──────────────┤     
+  <DynamicWire>: ──Allocate───║────────Z─╰X─────────Deallocate────│──────────────┤     
+  <DynamicWire>: ─────────────║────────║──Allocate──┤↗│  │0⟩──────│───Deallocate─┤     
+  <DynamicWire>: ─────────────║────────║──Allocate───║──────────Z─╰X──Deallocate─┤     
+                              ╚════════╝             ╚══════════╝                      
+  ```
+
+  The user-level circuit drawing shows four separate allocations and deallocations (two per loop 
+  iteration). However, the circuit that the device receives gets automatically compiled to only use 
+  **two** additional wires (wires labelled `1` and `2` in the diagram below). The is due to the 
+  fact that `new_qubit1` and `new_qubit2` can both be reused after they've been deallocated in 
+  the first iteration of the `for` loop:
+
+  ```
+  >>> print(qml.draw(circuit, level="device")())
+  0: ──H───────────╭●──────────────╭●─┤  <Z>
+  1: ──┤↗│  │0⟩────│───┤↗│  │0⟩────│──┤     
+  2: ───║────────Z─╰X───║────────Z─╰X─┤     
+        ╚════════╝      ╚════════╝          
   ```
 
 * A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
