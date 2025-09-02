@@ -17,7 +17,6 @@ written using xDSL."""
 
 import math
 from dataclasses import dataclass
-from enum import Enum
 
 import networkx as nx
 from xdsl import context, passes, pattern_rewriter
