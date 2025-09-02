@@ -207,7 +207,7 @@ from pennylane.exceptions import (
 from pennylane.math import expand_matrix, is_abstract
 from pennylane.queuing import QueuingManager
 from pennylane.typing import TensorLike
-from pennylane.wires import Wires, WiresLike
+from pennylane.wires import DynamicWire, Wires, WiresLike
 
 from .pytrees import register_pytree
 
@@ -351,7 +351,9 @@ def create_operator_primitive(
         # for plxpr, all wires must be integers
         # could be abstract when using tracing evaluation in interpreter
         wire_args = args[split:] if split else ()
-        wires = tuple(w if is_abstract(w) else int(w) for w in wire_args)
+        wires = tuple(
+            w if is_abstract(w) or isinstance(w, DynamicWire) else int(w) for w in wire_args
+        )
         return type.__call__(operator_type, *args[:split], wires=wires, **kwargs)
 
     abstract_type = _get_abstract_operator()
@@ -1186,7 +1188,7 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
         if ndims != self.ndim_params:
             ndims_matches = [
                 (ndim == exp_ndim, ndim == exp_ndim + 1)
-                for ndim, exp_ndim in zip(ndims, self.ndim_params)
+                for ndim, exp_ndim in zip(ndims, self.ndim_params, strict=True)
             ]
             if not all(correct or batched for correct, batched in ndims_matches):
                 raise ValueError(
@@ -1195,7 +1197,9 @@ class Operator(abc.ABC, metaclass=capture.ABCCaptureMeta):
                 )
 
             first_dims = [
-                qml.math.shape(p)[0] for (_, batched), p in zip(ndims_matches, params) if batched
+                qml.math.shape(p)[0]
+                for (_, batched), p in zip(ndims_matches, params, strict=True)
+                if batched
             ]
             if not qml.math.allclose(first_dims, first_dims[0]):
                 raise ValueError(

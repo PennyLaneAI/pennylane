@@ -3,6 +3,23 @@
 
 <h3>New features since last release</h3>
 
+* Dynamic wire allocation with `qml.allocation.allocate` can now be executed on `default.qubit`.
+  [(#7718)](https://github.com/PennyLaneAI/pennylane/pull/7718)
+
+  ```python
+  @qml.qnode(qml.device('default.qubit'))
+  def c():
+      with qml.allocation.allocate(1) as wires:
+          qml.H(wires)
+          qml.CNOT((wires[0], 0))
+      return qml.probs(wires=0)
+
+  c()
+  ```
+  ```
+  array([0.5, 0.5])
+  ```
+
 * A new :func:`~.ops.op_math.change_basis_op` function and :class:`~.ops.op_math.ChangeOpBasis` class were added,
   which allow a compute-uncompute pattern (U V U†) to be represented by a single operator.
   A corresponding decomposition rule has been added to support efficiently controlling the pattern,
@@ -92,6 +109,9 @@
   [(#8145)](https://github.com/PennyLaneAI/pennylane/pull/8145)
 
 <h3>Improvements 🛠</h3>
+
+* `allocate` now takes `state: Literal["zero", "any"] = "zero"` instead of `require_zeros=True`.
+  [(#8163)](https://github.com/PennyLaneAI/pennylane/pull/8163)
 
 * A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
   [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
@@ -337,6 +357,9 @@
 * With program capture, an error is now raised if the conditional predicate is not a scalar.
   [(#8066)](https://github.com/PennyLaneAI/pennylane/pull/8066)
 
+* :func:`~.tape.plxpr_to_tape` now supports converting circuits containing dynamic wire allocation.
+  [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -518,6 +541,10 @@
 
 <h3>Breaking changes 💔</h3>
 
+* `DefaultQubit.eval_jaxpr` does not use `self.shots` from device anymore; instead, it takes `shots` as a keyword argument,
+  and the qnode primitive should process the `shots` and call `eval_jaxpr` accordingly.
+  [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
+
 * The methods :meth:`~.pauli.PauliWord.operation` and :meth:`~.pauli.PauliSentence.operation`
   no longer queue any operators.
   [(#8136)](https://github.com/PennyLaneAI/pennylane/pull/8136)
@@ -657,6 +684,7 @@
   ```
 
   [(#7979)](https://github.com/PennyLaneAI/pennylane/pull/7979)
+  [(#8161)](https://github.com/PennyLaneAI/pennylane/pull/8161)
 
 * Support for using TensorFlow with PennyLane has been deprecated and will be dropped in Pennylane v0.44.
   Future versions of PennyLane are not guaranteed to work with TensorFlow.
@@ -756,6 +784,12 @@
   [(#7855)](https://github.com/PennyLaneAI/pennylane/pull/7855)
 
 <h3>Internal changes ⚙️</h3>
+
+* Update `autograph` guide to reflect new capabilities.
+  [(#8132)](https://github.com/PennyLaneAI/pennylane/pull/8132)
+
+* Start using `strict=True` to `zip` usage in source code.
+  [(#8164)](https://github.com/PennyLaneAI/pennylane/pull/8164)
 
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
@@ -871,6 +905,9 @@
   functionality not available upstream in xDSL.
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
   [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
+
+* Moved `allocation.DynamicWire` to the `wires` module to avoid circular dependencies.
+  [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
 
 <h3>Documentation 📝</h3>
 
