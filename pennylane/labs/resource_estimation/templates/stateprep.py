@@ -839,8 +839,8 @@ class ResourcePrepTHC(ResourceOperator):
             Hamiltonian for which the state is being prepared
         coeff_precision (int, optional): The number of bits used to represent the precision for loading
             the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-            ~pennylane.labs.resource_estimation.resource_config` is used.
-        select_swap_depth (int, optional): A parameter of ~pennylane.labs.resource_estimation.ResourceQROM
+            :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
+        select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
             used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (list[int] or optional): the wires on which the operator acts
 
@@ -896,8 +896,8 @@ class ResourcePrepTHC(ResourceOperator):
                   Hamiltonian for which the state is being prepared
                 * coeff_precision (int, optional): The number of bits used to represent the precision for loading
                   the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                  ~pennylane.labs.resource_estimation.resource_config` is used.
-                * select_swap_depth (int, optional): A parameter of ~pennylane.labs.resource_estimation.ResourceQROM
+                  :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
+                * select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
                   used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
@@ -918,8 +918,8 @@ class ResourcePrepTHC(ResourceOperator):
                 Hamiltonian for which the state is being prepared
             coeff_precision (int, optional): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                ~pennylane.labs.resource_estimation.resource_config` is used.
-            select_swap_depth (int, optional): A parameter of ~pennylane.labs.resource_estimation.ResourceQROM
+                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
+            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -954,8 +954,8 @@ class ResourcePrepTHC(ResourceOperator):
                 Hamiltonian for which the walk operator is being created
             coeff_precision (int, optional): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                ~pennylane.labs.resource_estimation.resource_config` is used.
-            select_swap_depth (int, optional): A parameter of ~pennylane.labs.resource_estimation.ResourceQROM
+                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
+            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
@@ -1085,8 +1085,8 @@ class ResourcePrepTHC(ResourceOperator):
                 Hamiltonian for which the walk operator is being created
             coeff_precision (int, optional): The number of bits used to represent the precision for loading
                 the coefficients of Hamiltonian. If :code:`None` is provided, the default value from the
-                ~pennylane.labs.resource_estimation.resource_config` is used.
-            select_swap_depth (int, optional): A parameter of ~pennylane.labs.resource_estimation.ResourceQROM
+                :data:`~.pennylane.labs.resource_estimation.resource_tracking.resource_config` is used.
+            select_swap_depth (int, optional): A parameter of :class:`~.pennylane.labs.resource_estimation.ResourceQROM`
                 used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         Resources:
             The resources are calculated based on Figures 3 and 4 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
