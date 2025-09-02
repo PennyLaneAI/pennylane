@@ -98,7 +98,7 @@ class ResourcePhaseShift(ResourceOperator):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
 
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -275,7 +275,7 @@ class ResourceRX(ResourceOperator):
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
 
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -452,7 +452,7 @@ class ResourceRY(ResourceOperator):
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -630,7 +630,7 @@ class ResourceRZ(ResourceOperator):
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:
@@ -781,7 +781,7 @@ class ResourceRot(ResourceOperator):
     def resource_rep(cls, eps=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources."""
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
     def default_resource_decomp(cls, eps=None, **kwargs) -> list[GateCount]:

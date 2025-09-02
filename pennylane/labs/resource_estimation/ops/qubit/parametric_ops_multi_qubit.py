@@ -115,7 +115,7 @@ class ResourceMultiRZ(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"num_wires": num_wires, "eps": eps})
+        return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires, "eps": eps})
 
     @classmethod
     def default_adjoint_resource_decomp(cls, num_wires, eps=None) -> list[GateCount]:
@@ -362,7 +362,8 @@ class ResourcePauliRot(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"pauli_string": pauli_string, "eps": eps})
+        num_wires = len(pauli_string)
+        return CompressedResourceOp(cls, num_wires, {"pauli_string": pauli_string, "eps": eps})
 
     @classmethod
     def default_adjoint_resource_decomp(cls, pauli_string, eps=None) -> list[GateCount]:
@@ -626,7 +627,7 @@ class ResourceIsingXX(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
     def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
@@ -815,7 +816,7 @@ class ResourceIsingYY(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
     def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
@@ -1002,7 +1003,7 @@ class ResourceIsingXY(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
     def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
@@ -1197,7 +1198,7 @@ class ResourceIsingZZ(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
     def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:
@@ -1380,7 +1381,7 @@ class ResourcePSWAP(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"eps": eps})
+        return CompressedResourceOp(cls, cls.num_wires, {"eps": eps})
 
     @classmethod
     def default_adjoint_resource_decomp(cls, eps=None) -> list[GateCount]:

@@ -75,10 +75,10 @@ class ResourceUniformStatePrep(ResourceOperator):
         self.num_states = num_states
         k = (num_states & -num_states).bit_length() - 1
         L = num_states // (2**k)
-        if L == 1:
-            self.num_wires = k
-        else:
-            self.num_wires = k + int(math.ceil(math.log2(L)))
+
+        self.num_wires = k
+        if L != 1:
+            self.num_wires += int(math.ceil(math.log2(L)))
         super().__init__(wires=wires)
 
     @property
@@ -99,7 +99,13 @@ class ResourceUniformStatePrep(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"num_states": num_states})
+        k = (num_states & -num_states).bit_length() - 1
+        L = num_states // (2**k)
+
+        num_wires = k
+        if L != 1:
+            num_wires += int(math.ceil(math.log2(L)))
+        return CompressedResourceOp(cls, num_wires, {"num_states": num_states})
 
     @classmethod
     def default_resource_decomp(cls, num_states, **kwargs):
@@ -206,7 +212,10 @@ class ResourceAliasSampling(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"num_coeffs": num_coeffs, "precision": precision})
+        num_wires = int(math.ceil(math.log2(num_coeffs)))
+        return CompressedResourceOp(
+            cls, num_wires, {"num_coeffs": num_coeffs, "precision": precision}
+        )
 
     @classmethod
     def default_resource_decomp(cls, num_coeffs, precision=None, **kwargs) -> list[GateCount]:
@@ -341,7 +350,8 @@ class ResourceMPSPrep(ResourceOperator):
             "max_bond_dim": max_bond_dim,
             "precision": precision,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = num_mps_matrices
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(
@@ -413,7 +423,8 @@ class ResourceQROMStatePreparation(ResourceOperator):
             and positive
         select_swap_depths (Union[None, int, Iterable(int)], optional): a parameter of :code:`QROM`
             used to trade-off extra qubits for reduced circuit depth
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], optional): The wires to prepare the target state on. Excluding any
+            additional qubits allocated during the decomposition (via select-swap).
 
     Resources:
         The resources for QROMStatePreparation are computed according to the decomposition described
@@ -587,7 +598,8 @@ class ResourceQROMStatePreparation(ResourceOperator):
             "positive_and_real": positive_and_real,
             "selswap_depths": selswap_depths,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = num_state_qubits
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def _decomp_selection_helper(

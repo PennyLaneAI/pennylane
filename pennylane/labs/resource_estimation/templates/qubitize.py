@@ -78,14 +78,9 @@ class ResourceQubitizeTHC(ResourceOperator):
         self.rotation_precision = rotation_precision
         self.compare_precision = compare_precision
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            num_orb = compact_ham.params["num_orbitals"]
-            tensor_rank = compact_ham.params["tensor_rank"]
-            self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(2 * tensor_rank + 1))) + 1
-            self.wires = None
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+        self.num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(2 * tensor_rank + 1))) + 1
         super().__init__(wires=wires)
 
     @property
@@ -124,13 +119,17 @@ class ResourceQubitizeTHC(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        num_orb = compact_ham.params["num_orbitals"]
+        tensor_rank = compact_ham.params["tensor_rank"]
+        num_wires = num_orb * 2 + 2 * int(np.ceil(math.log2(2 * tensor_rank + 1))) + 1
+
         params = {
             "compact_ham": compact_ham,
             "coeff_precision": coeff_precision,
             "rotation_precision": rotation_precision,
             "compare_precision": compare_precision,
         }
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(

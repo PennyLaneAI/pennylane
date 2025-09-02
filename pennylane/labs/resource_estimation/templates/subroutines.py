@@ -88,7 +88,8 @@ class ResourceOutOfPlaceSquare(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"register_size": register_size})
+        num_wires = 3 * register_size
+        return CompressedResourceOp(cls, num_wires, {"register_size": register_size})
 
     @classmethod
     def default_resource_decomp(cls, register_size, **kwargs):
@@ -175,7 +176,7 @@ class ResourcePhaseGradient(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"num_wires": num_wires})
+        return CompressedResourceOp(cls, num_wires, {"num_wires": num_wires})
 
     @classmethod
     def default_resource_decomp(cls, num_wires, **kwargs):
@@ -273,8 +274,9 @@ class ResourceOutMultiplier(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        num_wires = a_num_qubits + b_num_qubits + 2 * max((a_num_qubits, b_num_qubits))
         return CompressedResourceOp(
-            cls, {"a_num_qubits": a_num_qubits, "b_num_qubits": b_num_qubits}
+            cls, num_wires, {"a_num_qubits": a_num_qubits, "b_num_qubits": b_num_qubits}
         )
 
     @classmethod
@@ -373,7 +375,8 @@ class ResourceSemiAdder(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"max_register_size": max_register_size})
+        num_wires = 2 * max_register_size
+        return CompressedResourceOp(cls, num_wires, {"max_register_size": max_register_size})
 
     @classmethod
     def default_resource_decomp(cls, max_register_size, **kwargs):
@@ -529,17 +532,15 @@ class ResourceControlledSequence(ResourceOperator):
         self.base_cmpr_op = base_cmpr_op
         self.num_ctrl_wires = num_control_wires
 
-        if wires and base.wires:
-            self.wires = Wires.all_wires([wires, base.wires])
-            self.num_wires = len(self.wires)
-        elif (base.wires is None) and (wires is not None):
-            self.wires = wires
-            num_base_wires = base.num_wires
-            self.num_wires = num_control_wires + num_base_wires
+        self.num_wires = num_control_wires + base_cmpr_op.num_wires
+        if wires:
+            self.wires = Wires(wires)
+            if base_wires := base.wires:
+                self.wires = Wires.all_wires([self.wires, base_wires])
+            if len(self.wires) != self.num_wires:
+                raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
         else:
-            self.wires = None or base.wires
-            num_base_wires = base.num_wires
-            self.num_wires = num_control_wires + num_base_wires
+            self.wires = None
 
     @property
     def resource_params(self):
@@ -554,7 +555,9 @@ class ResourceControlledSequence(ResourceOperator):
         return {"base_cmpr_op": self.base_cmpr_op, "num_ctrl_wires": self.num_ctrl_wires}
 
     @classmethod
-    def resource_rep(cls, base_cmpr_op, num_ctrl_wires) -> CompressedResourceOp:
+    def resource_rep(
+        cls, base_cmpr_op: CompressedResourceOp, num_ctrl_wires: int
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -567,7 +570,8 @@ class ResourceControlledSequence(ResourceOperator):
             CompressedResourceOp: the operator in a compressed representation
         """
         params = {"base_cmpr_op": base_cmpr_op, "num_ctrl_wires": num_ctrl_wires}
-        return CompressedResourceOp(cls, params)
+        num_wires = num_ctrl_wires + base_cmpr_op.num_wires
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(cls, base_cmpr_op, num_ctrl_wires, **kwargs):
@@ -704,12 +708,15 @@ class ResourceQPE(ResourceOperator):
         self.adj_qft_cmpr_op = adj_qft_cmpr_op
         self.num_estimation_wires = num_estimation_wires
 
-        if wires is not None:
+        self.num_wires = self.num_estimation_wires + base_cmpr_op.num_wires
+        if wires:
             self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
+            if base_wires := base.wires:
+                self.wires = Wires.all_wires([self.wires, base_wires])
+            if len(self.wires) != self.num_wires:
+                raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
         else:
             self.wires = None
-            self.num_wires = self.num_estimation_wires + base.num_wires
 
     @property
     def resource_params(self) -> dict:
@@ -734,9 +741,9 @@ class ResourceQPE(ResourceOperator):
     @classmethod
     def resource_rep(
         cls,
-        base_cmpr_op,
-        num_estimation_wires,
-        adj_qft_cmpr_op,
+        base_cmpr_op: CompressedResourceOp,
+        num_estimation_wires: int,
+        adj_qft_cmpr_op: CompressedResourceOp,
     ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
@@ -757,7 +764,8 @@ class ResourceQPE(ResourceOperator):
             "num_estimation_wires": num_estimation_wires,
             "adj_qft_cmpr_op": adj_qft_cmpr_op,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = num_estimation_wires + base_cmpr_op.num_wires
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(cls, base_cmpr_op, num_estimation_wires, adj_qft_cmpr_op, **kwargs):
@@ -807,7 +815,6 @@ class ResourceIterativeQPE(ResourceOperator):
     Args:
         base (~.pennylane.labs.resource_estimation.ResourceOperator): the phase estimation operator
         num_iter (int): the number of mid-circuit measurements made to read out the phase
-        wires (Sequence[int], optional): the wires the operation acts on
 
     Resources:
         The resources are obtained following the construction from `arXiv:0610214v3 <https://arxiv.org/abs/quant-ph/0610214v3>`_.
@@ -832,21 +839,15 @@ class ResourceIterativeQPE(ResourceOperator):
 
     resource_keys = {"base_cmpr_op", "num_iter"}
 
-    def __init__(self, base, num_iter, wires=None):
+    def __init__(self, base: ResourceOperator, num_iter: int):
         self.dequeue(base)
         self.queue()
 
         self.base_cmpr_op = base.resource_rep_from_op()
         self.num_iter = num_iter
 
-        if wires is not None:
-            self.wires = Wires(wires)
-            self.num_wires = len(self.wires)
-        else:
-            self.wires = base.wires or None
-            self.num_wires = base.num_wires
-
-        super().__init__(wires=wires)
+        self.wires = base.wires
+        self.num_wires = self.base_cmpr_op.num_wires
 
     @property
     def resource_params(self):
@@ -861,7 +862,9 @@ class ResourceIterativeQPE(ResourceOperator):
         return {"base_cmpr_op": self.base_cmpr_op, "num_iter": self.num_iter}
 
     @classmethod
-    def resource_rep(cls, base_cmpr_op, num_iter) -> CompressedResourceOp:
+    def resource_rep(
+        cls, base_cmpr_op: CompressedResourceOp, num_iter: int
+    ) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute the resources.
 
@@ -873,7 +876,10 @@ class ResourceIterativeQPE(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        return CompressedResourceOp(cls, {"base_cmpr_op": base_cmpr_op, "num_iter": num_iter})
+        num_wires = base_cmpr_op.num_wires
+        return CompressedResourceOp(
+            cls, num_wires, {"base_cmpr_op": base_cmpr_op, "num_iter": num_iter}
+        )
 
     @classmethod
     def default_resource_decomp(cls, base_cmpr_op, num_iter, **kwargs):
@@ -969,7 +975,7 @@ class ResourceQFT(ResourceOperator):
             CompressedResourceOp: the operator in a compressed representation
         """
         params = {"num_wires": num_wires}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(cls, num_wires, **kwargs) -> list[GateCount]:
@@ -1128,7 +1134,7 @@ class ResourceAQFT(ResourceOperator):
             CompressedResourceOp: the operator in a compressed representation
         """
         params = {"order": order, "num_wires": num_wires}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(cls, order, num_wires, **kwargs) -> list[GateCount]:
@@ -1303,7 +1309,8 @@ class ResourceBasisRotation(ResourceOperator):
             CompressedResourceOp: the operator in a compressed representation
         """
         params = {"dim_N": dim_N}
-        return CompressedResourceOp(cls, params)
+        num_wires = dim_N
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def tracking_name(cls, dim_N) -> str:
@@ -1316,7 +1323,9 @@ class ResourceSelect(ResourceOperator):
 
     Args:
         select_ops (list[~.ResourceOperator]): the set of operations to select over
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], optional): The wires the operation acts on. If :code:`select_ops`
+            provide wire labels, then this is just the set of control wire labels. Otherwise, it
+            also includes the target wire labels of the selected operators.
 
     Resources:
         The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
@@ -1344,7 +1353,7 @@ class ResourceSelect(ResourceOperator):
      {'CNOT': 7, 'S': 2, 'Z': 1, 'Hadamard': 8, 'X': 4, 'Toffoli': 2}
     """
 
-    resource_keys = {"cmpr_ops"}
+    resource_keys = {"num_wires", "cmpr_ops"}
 
     def __init__(self, select_ops, wires=None) -> None:
         self.dequeue(op_to_remove=select_ops)
@@ -1360,32 +1369,40 @@ class ResourceSelect(ResourceOperator):
                 "All factors of the Select must be instances of `ResourceOperator` in order to obtain resources."
             ) from error
 
-        if wires is not None:
-            self.wires = Wires(wires)
+        ops_wires = Wires.all_wires([op.wires for op in select_ops if op.wires is not None])
+        fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
+        minimum_num_wires = fewest_unique_wires + num_ctrl_wires
+
+        if wires:
+            self.wires = Wires.all_wires([Wires(wires), ops_wires])
+            if len(self.wires) < minimum_num_wires:
+                raise ValueError(
+                    f"Expected atleast {minimum_num_wires} wires ({num_ctrl_wires} control + {fewest_unique_wires} target). Got {self.wires}."
+                )
             self.num_wires = len(self.wires)
         else:
-            ops_wires = [op.wires for op in select_ops if op.wires is not None]
-            if len(ops_wires) == 0:
-                self.wires = None
-                self.num_wires = max(op.num_wires for op in select_ops) + num_ctrl_wires
-            else:
-                self.wires = Wires.all_wires(ops_wires)
-                self.num_wires = len(self.wires) + num_ctrl_wires
+            self.wires = None
+            self.num_wires = minimum_num_wires
 
     @classmethod
-    def default_resource_decomp(cls, cmpr_ops, **kwargs):  # pylint: disable=unused-argument
+    def default_resource_decomp(
+        cls, cmpr_ops, num_wires, **kwargs
+    ):  # pylint: disable=unused-argument
         r"""The resources for a select implementation taking advantage of the unary iterator trick.
 
         Args:
             cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
+            num_wires (int): The number of wires the operation acts on. This is a sum of the
+                control wires (:math:`\lceil(log_{2}(N))\rceil`) required and the number wires
+                targeted by the :code:`select_ops`.
 
         Resources:
             The resources are based on the analysis in `Babbush et al. (2018) <https://arxiv.org/pdf/1805.03662>`_ section III.A,
             'Unary Iteration and Indexed Operations'. See Figures 4, 6, and 7.
 
             Note: This implementation assumes we have access to :math:`n - 1` additional work qubits,
-            where :math:`n = \ceil{log_{2}(N)}` and :math:`N` is the number of batches of unitaries
+            where :math:`n = \left\lceil log_{2}(N) \right\rceil` and :math:`N` is the number of batches of unitaries
             to select.
 
         Returns:
@@ -1416,13 +1433,16 @@ class ResourceSelect(ResourceOperator):
         return gate_types
 
     @staticmethod
-    def textbook_resources(cmpr_ops, **kwargs) -> list[GateCount]:
+    def textbook_resources(cmpr_ops, num_wires, **kwargs) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object in the list represents a gate and the
         number of times it occurs in the circuit.
 
         Args:
             cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
+            num_wires (int): The number of wires the operation acts on. This is a sum of the
+                control wires (:math:`\lceil(log_{2}(N))\rceil`) required and the number wires
+                targeted by the :code:`select_ops`.
 
         Resources:
             The resources correspond directly to the definition of the operation. Specifically,
@@ -1461,24 +1481,34 @@ class ResourceSelect(ResourceOperator):
         Returns:
             dict: A dictionary containing the resource parameters:
                 * cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed representation, to be applied according to the selected qubits.
+                * num_wires (int): The number of wires the operation acts on. This is a sum of the
+                  control wires (:math:`\lceil(log_{2}(N))\rceil`) required and the number wires
+                  targeted by the :code:`select_ops`.
 
         """
-        return {"cmpr_ops": self.cmpr_ops}
+        return {"cmpr_ops": self.cmpr_ops, "num_wires": self.num_wires}
 
     @classmethod
-    def resource_rep(cls, cmpr_ops) -> CompressedResourceOp:
+    def resource_rep(cls, cmpr_ops, num_wires=None) -> CompressedResourceOp:
         r"""Returns a compressed representation containing only the parameters of
         the Operator that are needed to compute a resource estimation.
 
         Args:
             cmpr_ops (list[CompressedResourceOp]): The list of operators, in the compressed
                 representation, to be applied according to the selected qubits.
+            num_wires (int): An optional parameter representing the number of wires the operation
+                acts on. This is a sum of the control wires (:math:`\lceil(log_{2}(N))\rceil`)
+                required and the number wires targeted by the :code:`select_ops`.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
         params = {"cmpr_ops": cmpr_ops}
-        return CompressedResourceOp(cls, params)
+        num_ctrl_wires = math.ceil(math.log2(len(cmpr_ops)))
+        fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
+
+        num_wires = num_wires or fewest_unique_wires + num_ctrl_wires
+        return CompressedResourceOp(cls, num_wires, params)
 
 
 class ResourceQROM(ResourceOperator):
@@ -1496,7 +1526,8 @@ class ResourceQROM(ResourceOperator):
             `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_. Can be :code:`None`,
             :code:`1` or a positive integer power of two. Defaults to :code:`None`, which internally
             determines the optimal depth.
-        wires (Sequence[int], optional): the wires the operation acts on
+        wires (Sequence[int], optional): The wires the operation acts on (control and target).
+            Excluding any additional qubits allocated during the decomposition (e.g select-swap wires).
 
     Resources:
         The resources for QROM are taken from the following two papers:
@@ -1563,15 +1594,8 @@ class ResourceQROM(ResourceOperator):
         self.size_bitstring = size_bitstring
         self.num_bit_flips = num_bit_flips or (num_bitstrings * size_bitstring // 2)
 
-        if wires is not None:
-            self.num_wires = len(wires)
-            assert self.num_wires > size_bitstring
-            self.num_control_wires = self.num_wires - size_bitstring
-            assert self.num_control_wires >= math.ceil(math.log2(num_bitstrings))
-
-        else:
-            self.num_control_wires = math.ceil(math.log2(num_bitstrings))
-            self.num_wires = size_bitstring + self.num_control_wires
+        self.num_control_wires = math.ceil(math.log2(num_bitstrings))
+        self.num_wires = size_bitstring + self.num_control_wires
 
         if select_swap_depth is not None:
             if not isinstance(select_swap_depth, int):
@@ -1924,7 +1948,8 @@ class ResourceQROM(ResourceOperator):
             "select_swap_depth": select_swap_depth,
             "clean": clean,
         }
-        return CompressedResourceOp(cls, params)
+        num_wires = size_bitstring + math.ceil(math.log2(num_bitstrings))
+        return CompressedResourceOp(cls, num_wires, params)
 
 
 class ResourceQubitUnitary(ResourceOperator):
@@ -1999,7 +2024,7 @@ class ResourceQubitUnitary(ResourceOperator):
             CompressedResourceOp: the operator in a compressed representation
         """
         params = {"num_wires": num_wires, "precision": precision}
-        return CompressedResourceOp(cls, params)
+        return CompressedResourceOp(cls, num_wires, params)
 
     @classmethod
     def default_resource_decomp(cls, num_wires, precision=None, **kwargs) -> list[GateCount]:
@@ -2150,8 +2175,10 @@ class ResourceSelectPauliRot(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
+        num_wires = num_ctrl_wires + 1
         return CompressedResourceOp(
             cls,
+            num_wires,
             {
                 "num_ctrl_wires": num_ctrl_wires,
                 "rotation_axis": rotation_axis,
