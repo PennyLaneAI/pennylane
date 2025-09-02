@@ -150,9 +150,6 @@ class TestGlobalPhase:
 
         op = plre.ResourceGlobalPhase(wires=0)
         op2 = plre.ResourceControlled(op, num_ctrl_wires, num_ctrl_values)
-        print(
-            "oper: ", expected_res, op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)
-        )
         assert repr(op.controlled_resource_decomp(num_ctrl_wires, num_ctrl_values)) == repr(
             expected_res
         )

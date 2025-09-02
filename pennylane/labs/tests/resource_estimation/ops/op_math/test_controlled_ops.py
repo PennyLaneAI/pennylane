@@ -592,7 +592,6 @@ class TestResourceMultiControlledX:
     def test_resource_params(self, op, params):
         """Test that the resource_params are produced as expected."""
         expected_params = self._prep_params(*params)
-        print("params", params, expected_params, op.resource_params)
         assert op.resource_params == expected_params
 
     def test_resource_adjoint(self):

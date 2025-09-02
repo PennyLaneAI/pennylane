@@ -1371,7 +1371,7 @@ class ResourceSelect(ResourceOperator):
 
         ops_wires = Wires.all_wires([op.wires for op in select_ops if op.wires is not None])
         fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
-        minimum_num_wires = fewest_unique_wires + num_ctrl_wires
+        minimum_num_wires = max(fewest_unique_wires, len(ops_wires)) + num_ctrl_wires
 
         if wires:
             self.wires = Wires.all_wires([Wires(wires), ops_wires])
@@ -1503,11 +1503,11 @@ class ResourceSelect(ResourceOperator):
         Returns:
             CompressedResourceOp: the operator in a compressed representation
         """
-        params = {"cmpr_ops": cmpr_ops}
         num_ctrl_wires = math.ceil(math.log2(len(cmpr_ops)))
         fewest_unique_wires = max(op.num_wires for op in cmpr_ops)
 
         num_wires = num_wires or fewest_unique_wires + num_ctrl_wires
+        params = {"cmpr_ops": cmpr_ops, "num_wires": num_wires}
         return CompressedResourceOp(cls, num_wires, params)
 
 
