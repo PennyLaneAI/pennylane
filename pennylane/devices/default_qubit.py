@@ -106,20 +106,15 @@ ALL_DQ_GATE_SET = {
     "PauliY",
     "PauliZ",
     "PhaseShift",
-    "QubitUnitary",
     "RX",
     "RY",
     "RZ",
-    "Rot",
     "S",
     "SWAP",
     "SX",
     "StatePrep",
     "T",
     "Toffoli",
-    "U1",
-    "U2",
-    "U3",
 }
 
 
@@ -634,10 +629,7 @@ class DefaultQubit(Device):
                     stopping_condition=stopping_condition,
                 )
             else:
-                transform_program.add_transform(
-                    transforms_decompose,
-                    gate_set=stopping_condition
-                )
+                transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
 
             return transform_program
 
