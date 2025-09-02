@@ -290,7 +290,7 @@ class Exp(ScalarSymbolicOp, Operation):
         # TODO: Support nested sums in method
         base = self.base.simplify()
         coeff = self.coeff
-        while isinstance(base, SProd):
+        if isinstance(base, SProd):
             coeff *= base.scalar
             base = base.base
 
@@ -407,13 +407,11 @@ class Exp(ScalarSymbolicOp, Operation):
         """
         # Cancel the coefficients added by PauliRot and Ising gates
         coeff = (
-            math.real(2j * coeff)
+            math.real(2j * coeff)  # jax has no real_if_close
             if math.get_interface(coeff) == "jax"
-            else math.real_if_close(2j * coeff)
+            else math.real_if_close(2j * coeff)  # only cast to real if close
         )
         pauli_word = qml.pauli.pauli_word_to_string(base)
-        if pauli_word == "I" * base.num_wires:
-            return []
         return [qml.PauliRot(theta=coeff, pauli_word=pauli_word, wires=base.wires)]
 
     def _trotter_decomposition(self, ops: list[Operator], coeffs: list[complex]):
