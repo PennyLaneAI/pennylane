@@ -44,10 +44,9 @@ class ResourceSelectTHC(ResourceOperator):
             Hamiltonian on which the select operator is being applied
         rotation_precision (int, optional): The number of bits used to represent the precision for loading
             the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-            :code:`resource_config` is used.
-        select_swap_depth (int, optional): A natural number that determines if data
-            will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-            Defaults to :code:`None`, which internally determines the optimal depth.
+            ~pennylane.labs.resource_estimation.resource_config is used.
+        select_swap_depth (int, optional): A parameter of ~pennylane.labs.resource_estimation.ResourceQROM
+            used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         wires (list[int] or optional): the wires on which the operator acts
 
     Resources:
@@ -58,7 +57,7 @@ class ResourceSelectTHC(ResourceOperator):
     The resources for this operation are computed using:
 
     >>> compact_ham = plre.CompactHamiltonian.thc(num_orbitals=20, tensor_rank=40)
-    >>> res = plre.estimate_resources(plre.ResourceSelectTHC(compact_ham))
+    >>> res = plre.estimate_resources(plre.ResourceSelectTHC(compact_ham, rotation_precision=15))
     >>> print(res)
     --- Resources: ---
      Total qubits: 371
@@ -107,10 +106,9 @@ class ResourceSelectTHC(ResourceOperator):
                   Hamiltonian on which the select operator is being applied
                 * rotation_precision (int, optional): The number of bits used to represent the precision for loading
                   the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                  :code:`resource_config` is used.
-                * select_swap_depth (int, optional): A natural number that determines if data
-                  will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                  Defaults to :code:`None`, which internally determines the optimal depth.
+                  ~pennylane.labs.resource_estimation.resource_config` is used.
+                * select_swap_depth (int, optional): A parameter of ~pennylane.labs.resource_estimation.ResourceQROM
+                  used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
         """
         return {
             "compact_ham": self.compact_ham,
@@ -130,10 +128,9 @@ class ResourceSelectTHC(ResourceOperator):
                 Hamiltonian on which the select operator is being applied
             rotation_precision (int, optional): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                :code:`resource_config` is used.
-            select_swap_depth (int, optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                Defaults to :code:`None`, which internally determines the optimal depth.
+                ~pennylane.labs.resource_estimation.resource_config` is used.
+            select_swap_depth (int, optional): A parameter of ~pennylane.labs.resource_estimation.ResourceQROM
+                used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Returns:
             CompressedResourceOp: the operator in a compressed representation
@@ -174,12 +171,10 @@ class ResourceSelectTHC(ResourceOperator):
             compact_ham (~pennylane.labs.resource_estimation.CompactHamiltonian): a tensor hypercontracted
                 Hamiltonian on which the select operator is being applied
             rotation_precision (int, optional): The number of bits used to represent the precision for loading
-                the rotation angles for basis rotation. If :code:`None` is provide, the default value from the
-                :code:`resource_config` is used.
-            select_swap_depth (int, optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                Defaults to :code:`None`, which internally determines the optimal depth.
+                the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
+                ~pennylane.labs.resource_estimation.resource_config` is used.
+            select_swap_depth (int, optional): A parameter of ~pennylane.labs.resource_estimation.ResourceQROM
+                used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
             The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_.
@@ -314,11 +309,9 @@ class ResourceSelectTHC(ResourceOperator):
                 Hamiltonian on which the select operator is being applied
             rotation_precision (int, optional): The number of bits used to represent the precision for loading
                 the rotation angles for basis rotation. If :code:`None` is provided, the default value from the
-                :code:`resource_config` is used.
-            select_swap_depth (int, optional): A natural number that determines if data
-                will be loaded in parallel by adding more rows following Figure 1.C of
-                `Low et al. (2024) <https://arxiv.org/pdf/1812.00954>`_.
-                Defaults to :code:`None`, which internally determines the optimal depth.
+                ~pennylane.labs.resource_estimation.resource_config` is used.
+            select_swap_depth (int, optional): A parameter of ~pennylane.labs.resource_estimation.ResourceQROM
+                used to trade-off extra qubits for reduced circuit depth. Defaults to :code:`None`, which internally determines the optimal depth.
 
         Resources:
             The resources are calculated based on Figure 5 in `arXiv:2011.03494 <https://arxiv.org/abs/2011.03494>`_
