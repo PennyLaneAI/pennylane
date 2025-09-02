@@ -945,8 +945,8 @@
 
 <h3>Bug fixes 🐛</h3>
 
-* Operators queued with qml.apply no longer get dequeued by subsequent dequeuing operations
-  (e.g. qml.adjoint).
+* Operators queued with :func:`pennylane.apply` no longer get dequeued by subsequent dequeuing operations
+  (e.g. :func:`pennylane.adjoint`).
   [(#8078)](https://github.com/PennyLaneAI/pennylane/pull/8078)
 
 * Fixes a bug that made the queueing behaviour of :meth:`~.pauli.PauliWord.operation` and
