@@ -1128,3 +1128,56 @@ class TestDecomposeGraphIntegration:
             len(processed_new.operations) == 1
         ), f"Graph should preserve {gate_name} (in gate_set)"
         assert processed_new.operations[0].name == gate_name
+
+
+@pytest.mark.parametrize("use_graph", [False, True])
+def test_full_circuit_decomposition_supported_on_default_qubit(use_graph):
+    """Test that a full circuit is decomposed to operations supported by DefaultQubit.
+
+    This test creates a circuit with various operations, makes it a qnode,
+    constructs the tape with device-level preprocessing, and verifies that
+    all final operations are supported by DefaultQubit.
+    """
+    # Enable/disable graph decomposition based on parameter
+    if use_graph:
+        qml.decomposition.enable_graph()
+    else:
+        qml.decomposition.disable_graph()
+
+    try:
+        # Create a circuit with various operations including some that might need decomposition
+        @qml.qnode(qml.device("default.qubit", wires=4))
+        def circuit():
+            qml.Hadamard(0)
+            qml.CNOT([0, 1])
+            qml.U3(0.1, 0.2, 0.3, wires=2)  # Should be decomposed
+            qml.QFT(wires=[0, 1, 2])  # Might be decomposed depending on system
+            qml.Toffoli([0, 1, 3])  # Should be decomposed
+            qml.U2(0.4, 0.5, wires=1)  # Should be decomposed
+            return qml.expval(qml.PauliZ(0))
+
+        # Construct tape with device-level preprocessing
+        tape = qml.workflow.construct_tape(circuit, level="device")()
+
+        # Get DefaultQubit device to check supported operations
+        device = qml.device("default.qubit", wires=4)
+
+        # Verify all operations in the final tape are supported by DefaultQubit
+        for op in tape.operations:
+            # Check if the operation is supported by checking against DefaultQubit's capabilities
+            # DefaultQubit supports operations that either have a matrix or can be handled natively
+            supported = (
+                hasattr(op, "matrix")
+                and op.has_matrix
+                or op.name in device.operations
+                or
+                # Special cases for operations that DefaultQubit handles
+                op.name in ["Identity", "GlobalPhase", "BasisState", "QubitStateVector"]
+            )
+            assert (
+                supported
+            ), f"Operation {op.name} on wires {op.wires} is not supported by DefaultQubit"
+
+    finally:
+        # Always clean up: disable graph decomposition
+        qml.decomposition.disable_graph()

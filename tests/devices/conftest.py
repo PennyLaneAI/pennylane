@@ -147,38 +147,28 @@ def test_operation_consistency():
         """Helper to test operation consistency between graph and non-graph systems."""
         from pennylane.devices.preprocess import decompose
 
-        tape = QuantumScript([operation], [qml.expval(qml.Z(0))])
+        # Store original graph state
+        original_enabled = (
+            enable_graph.graph_enabled if hasattr(enable_graph, "graph_enabled") else False
+        )
 
-        # Test non-graph decomposition
-        disable_graph()
-        processed_old = decompose(tape, stopping_condition, gate_set=gate_set)[0][0]
+        try:
+            tape = QuantumScript([operation], [qml.expval(qml.Z(0))])
 
-        # Test graph decomposition
-        enable_graph()
-        processed_new = decompose(tape, stopping_condition, gate_set=gate_set)[0][0]
+            # Test non-graph decomposition
+            disable_graph()
+            processed_old = decompose(tape, stopping_condition, gate_set=gate_set)[0][0]
 
-        return processed_old, processed_new
+            # Test graph decomposition
+            enable_graph()
+            processed_new = decompose(tape, stopping_condition, gate_set=gate_set)[0][0]
+
+            return processed_old, processed_new
+        finally:
+            # Restore original graph state
+            if original_enabled:
+                enable_graph()
+            else:
+                disable_graph()
 
     return _test_operation_consistency
-
-
-@pytest.fixture(scope="session")
-def enable_graph_decomposition():
-    """Fixture that enables graph decomposition for the test session.
-
-    This fixture ensures graph decomposition is enabled at the start of tests
-    that require it, and restores the original state after the test.
-    """
-    # Store original state
-    original_state = enabled_graph()
-
-    # Enable graph decomposition
-    enable_graph()
-
-    yield
-
-    # Restore original state
-    if original_state:
-        enable_graph()
-    else:
-        disable_graph()
