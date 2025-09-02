@@ -233,10 +233,6 @@ class Exp(ScalarSymbolicOp, Operation):
         return self.base.is_hermitian and math.allequal(math.imag(self.coeff), 0)
 
     @property
-    def _queue_category(self):
-        return "_ops"
-
-    @property
     def resource_params(self) -> dict:
         return {
             "base": self.base,
