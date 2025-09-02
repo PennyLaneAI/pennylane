@@ -17,6 +17,7 @@ Defines a function for converting plxpr to a tape.
 from copy import copy
 
 import pennylane as qml
+from pennylane.allocation import Allocate, Deallocate, allocate_prim, deallocate_prim
 from pennylane.capture.base_interpreter import FlattenedInterpreter
 from pennylane.capture.primitives import (
     adjoint_transform_prim,
@@ -28,6 +29,7 @@ from pennylane.capture.primitives import (
     qnode_prim,
 )
 from pennylane.measurements import MeasurementValue, get_mcm_predicates
+from pennylane.wires import DynamicWire
 
 from .qscript import QuantumScript
 
@@ -197,6 +199,19 @@ def _(
     self.state["ops"].extend(child.state["ops"])
     self.state["measurements"].extend(child.state["measurements"])
     return out
+
+
+@CollectOpsandMeas.register_primitive(allocate_prim)
+def _(self, *, num_wires, state, restored):
+    wires = [DynamicWire() for _ in range(num_wires)]
+    self.state["ops"].append(Allocate(wires, state=state, restored=restored))
+    return wires
+
+
+@CollectOpsandMeas.register_primitive(deallocate_prim)
+def _(self, *wires):
+    self.state["ops"].append(Deallocate(wires))
+    return []
 
 
 def plxpr_to_tape(plxpr: "jax.extend.core.Jaxpr", consts, *args, shots=None) -> QuantumScript:
