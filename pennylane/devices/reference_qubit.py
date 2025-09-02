@@ -88,7 +88,9 @@ def simulate(tape: qml.tape.QuantumTape, seed=None) -> qml.typing.Result:
     return results
 
 
-operations = frozenset({"PauliX", "PauliY", "PauliZ", "Hadamard", "CNOT", "CZ", "RX", "RY", "RZ"})
+operations = frozenset(
+    {"PauliX", "PauliY", "PauliZ", "Hadamard", "CNOT", "CZ", "RX", "RY", "RZ", "GlobalPhase"}
+)
 
 
 def supports_operation(op: qml.operation.Operator) -> bool:

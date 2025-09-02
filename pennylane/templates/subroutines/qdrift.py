@@ -17,7 +17,7 @@ import copy
 from pennylane import math
 from pennylane.exceptions import QuantumFunctionError
 from pennylane.operation import Operation
-from pennylane.ops import LinearCombination, Sum, exp
+from pennylane.ops import Evolution, LinearCombination, Sum
 from pennylane.queuing import QueuingManager, apply
 from pennylane.wires import Wires
 
@@ -65,7 +65,7 @@ def _sample_decomposition(coeffs, ops, time, n=1, seed=None):
     normalization_factor = math.sum(math.abs(coeffs))
     probs = math.abs(coeffs) / normalization_factor
     exps = [
-        exp(base, (coeff / math.abs(coeff)) * normalization_factor * time * 1j / n)
+        Evolution(base, -(coeff / math.abs(coeff)) * normalization_factor * time / n)
         for base, coeff in zip(ops, coeffs)
     ]
 
