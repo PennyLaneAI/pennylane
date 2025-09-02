@@ -790,6 +790,7 @@
 * Start using `strict=True` to `zip` usage in source code.
   [(#8164)](https://github.com/PennyLaneAI/pennylane/pull/8164)
   [(#8182)](https://github.com/PennyLaneAI/pennylane/pull/8182)
+  [(#8183)](https://github.com/PennyLaneAI/pennylane/pull/8183)
 
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
