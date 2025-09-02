@@ -634,8 +634,6 @@ class TestMinimalDevice:
         [
             (None, None, "<MinimalDevice device at 0x"),
             ([1, 3], None, "<MinimalDevice device (wires=2) at 0x"),
-            (None, [10, 20], "<MinimalDevice device (shots=30) at 0x"),
-            ([1, 3], [10, 20], "<MinimalDevice device (wires=2, shots=30) at 0x"),
         ],
     )
     def test_repr(self, wires, shots, expected):
@@ -647,7 +645,10 @@ class TestMinimalDevice:
 
         assert self.dev.shots == qml.measurements.Shots(None)
 
-        shots_dev = self.MinimalDevice(shots=100)
+        with pytest.warns(
+            qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+        ):
+            shots_dev = self.MinimalDevice(shots=100)
         assert shots_dev.shots == qml.measurements.Shots(100)
 
         with pytest.raises(

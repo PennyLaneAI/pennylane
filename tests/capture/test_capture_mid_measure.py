@@ -331,9 +331,9 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=2, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev, postselect_mode="fill-shots")
+        @qml.qnode(dev, postselect_mode="fill-shots", shots=shots)
         def f(x):
             qml.RX(x, 0)
             qml.measure(0, reset=reset, postselect=postselect)
@@ -382,9 +382,9 @@ class TestMidMeasureExecute:
         if multi_mcm and mp_fn in (qml.expval, qml.var):
             pytest.skip("Cannot measure sequences of MCMs with expval or var")
 
-        dev = get_device(wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=3, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def f(x, y):
             qml.RX(x, 0)
             m1 = qml.measure(0)
@@ -420,9 +420,9 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=3, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def f(x, y):
             qml.RX(x, 0)
             m1 = qml.measure(0)
@@ -460,9 +460,9 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=3, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=3, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def f(x, y):
             qml.RX(x, 0)
             m1 = qml.measure(0)
@@ -484,9 +484,9 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=2, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def f(x):
             qml.RX(x, 0)
             m = qml.measure(0)
@@ -502,9 +502,9 @@ class TestMidMeasureExecute:
         if shots is None and mp_fn is qml.sample:
             pytest.skip("Cannot measure samples in analytic mode")
 
-        dev = get_device(wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = get_device(wires=2, seed=jax.random.PRNGKey(seed))
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def f(x):
             qml.RX(x, 0)
             m = qml.measure(0)
