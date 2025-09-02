@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from functools import singledispatch
 
+import math
 import pennylane.labs.resource_estimation.ops as re_ops
 import pennylane.labs.resource_estimation.templates as re_temps
 import pennylane.ops as qops
@@ -323,7 +324,8 @@ def _(op: qtemps.MPS):
 
 @map_to_resource_op.register
 def _(op: qtemps.QROMStatePreparation):
-    return re_temps.ResourceQROMStatePreparation(num_wires=len(op.wires))
+    precision = math.pi / (2**len(op.hyperparameters["precision_wires"]))
+    return re_temps.ResourceQROMStatePreparation(num_wires=len(op.wires), precision=precision)
 
 
 @map_to_resource_op.register
