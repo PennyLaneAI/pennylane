@@ -22,6 +22,7 @@ import pytest
 import pennylane as qml
 from pennylane import numpy as pnp
 from pennylane import ops as qml_ops
+from pennylane.capture.autograph import run_autograph
 from pennylane.ops.functions.assert_valid import _test_decomposition_rule
 
 
@@ -275,20 +276,22 @@ class TestDynamicDecomposition:
         wires = list(range(n_wires))
 
         @DecomposeInterpreter(max_expansion=max_expansion, gate_set=gate_set)
-        @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=autograph)
+        @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
         def circuit(weights, wires):
             qml.StronglyEntanglingLayers(
                 weights, wires=wires, ranges=ranges, imprimitive=imprimitive
             )
             return qml.state()
 
+        if autograph:
+            circuit = run_autograph(circuit)
         jaxpr = jax.make_jaxpr(circuit)(weights, wires=wires)
         result = jax.core.eval_jaxpr(jaxpr.jaxpr, jaxpr.consts, weights, *wires)
 
         with qml.capture.pause():
 
             @partial(qml.transforms.decompose, max_expansion=max_expansion, gate_set=gate_set)
-            @qml.qnode(device=qml.device("default.qubit", wires=n_wires), autograph=False)
+            @qml.qnode(device=qml.device("default.qubit", wires=n_wires))
             def circuit_comparison():
                 qml.StronglyEntanglingLayers(
                     weights, wires=range(n_wires), ranges=ranges, imprimitive=imprimitive
