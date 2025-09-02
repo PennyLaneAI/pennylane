@@ -277,13 +277,15 @@ class NullQubit(Device):
         """The name of the device."""
         return "null.qubit"
 
-    def __init__(self, wires=None, shots=None, track_resources=False) -> None:
+    def __init__(self, wires=None, shots=None, track_resources=False, resources_fname=None) -> None:
         super().__init__(wires=wires, shots=shots)
         self._debugger = None
         self._track_resources = track_resources
 
         # this is required by Catalyst to toggle the tracker at runtime
         self.device_kwargs = {"track_resources": track_resources}
+        if resources_fname is not None:
+            self.device_kwargs["resources_fname"] = resources_fname
 
     def _simulate(self, circuit, interface):
         num_device_wires = len(self.wires) if self.wires else len(circuit.wires)
