@@ -316,9 +316,10 @@ def _(op: qtemps.TrotterProduct):
     )
 
 
-# @map_to_resource_op.register
-# def _(op: qtemps.MPS):
-#     return re_temps.ResourceMPSPrep(num_wires=len(op.wires))
+@map_to_resource_op.register
+def _(op: qtemps.MPSPrep):
+    max_bond_dim = max([data.shape[-1] for data in op.mps])
+    return re_temps.ResourceMPSPrep(num_mps_matrices=len(op.mps), max_bond_dim=max_bond_dim)
 
 
 @map_to_resource_op.register

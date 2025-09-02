@@ -178,6 +178,20 @@ class Test_map_to_resource_op:
                 qml.IntegerComparator(5, geq=False, wires=[0, 1, 2, 3]),
                 re_temps.ResourceIntegerComparator(value=5, register_size=3, geq=False),
             ),
+            (
+                qtemps.MPSPrep(
+                    [np.ones((2, 4)), np.ones((4, 2, 2)), np.ones((2, 2))], wires=[0, 1, 2]
+                ),
+                re_temps.ResourceMPSPrep(num_mps_matrices=3, max_bond_dim=4, precision=None),
+            ),
+            (
+                qtemps.QROMStatePreparation(
+                    np.array([0.25] * 16), wires=[0, 1, 2, 3], precision_wires=[4, 5]
+                ),
+                re_temps.ResourceQROMStatePreparation(
+                    num_state_qubits=6, precision=np.pi / 4, positive_and_real=False, select_swap_depths=1
+                ),
+            ),
         ],
     )
     def test_map_to_resource_op_templates(self, operator, expected_res_op):
