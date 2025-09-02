@@ -357,6 +357,9 @@
 * With program capture, an error is now raised if the conditional predicate is not a scalar.
   [(#8066)](https://github.com/PennyLaneAI/pennylane/pull/8066)
 
+* :func:`~.tape.plxpr_to_tape` now supports converting circuits containing dynamic wire allocation.
+  [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
+
 <h4>OpenQASM-PennyLane interoperability</h4>
 
 * The :func:`qml.from_qasm3` function can now convert OpenQASM 3.0 circuits that contain
@@ -901,6 +904,9 @@
   functionality not available upstream in xDSL.
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
   [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
+
+* Moved `allocation.DynamicWire` to the `wires` module to avoid circular dependencies.
+  [(#8179)](https://github.com/PennyLaneAI/pennylane/pull/8179)
 
 <h3>Documentation 📝</h3>
 
