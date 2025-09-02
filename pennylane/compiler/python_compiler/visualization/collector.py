@@ -38,7 +38,7 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     StateOp,
     VarianceOp,
 )
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements import MeasurementProcess, MidMeasureMP
 from pennylane.operation import Operator
 
 from .xdsl_conversion import (
@@ -155,10 +155,10 @@ class QMLCollector:
                 self._process_qubit_mapping(op)
                 result = self.handle(op)
 
-                if isinstance(result, MeasurementProcess):
-                    collected_meas.append(result)
-
-                if isinstance(result, Operator):
+                if isinstance(result, (Operator, MidMeasureMP)):
                     collected_ops.append(result)
+
+                elif isinstance(result, MeasurementProcess):
+                    collected_meas.append(result)
 
         return collected_ops, collected_meas

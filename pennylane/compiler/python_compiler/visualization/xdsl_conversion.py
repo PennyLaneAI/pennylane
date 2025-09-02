@@ -37,7 +37,7 @@ from pennylane.compiler.python_compiler.dialects.quantum import (
     SetStateOp,
     TensorOp,
 )
-from pennylane.measurements import MeasurementProcess
+from pennylane.measurements import MeasurementProcess, MidMeasureMP
 from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all
 from pennylane.typing import Callable
@@ -147,6 +147,7 @@ def resolve_constant_wire(ssa: SSAValue) -> int:
     if op.name == "stablehlo.constant":
         return _extract_dense_constant_value(op)
     if isinstance(op, (CustomOp, GlobalPhaseOp, QubitUnitaryOp, SetStateOp, MultiRZOp)):
+        # TODO: handle the edge case in my notebook
         return resolve_constant_wire(op.in_qubits[ssa.index])
     if isinstance(op, ExtractOpPL):
         return dispatch_wires_extract(op)
@@ -237,8 +238,9 @@ def xdsl_to_qml_op(
 
 def xdsl_to_qml_measure_op(op: MeasureOp) -> MeasurementProcess:
     """Convert a ``quantum.measure`` xDSL op to a PennyLane measurement."""
-    wire = _extract(op, "in_qubit", resolve_constant_wire, single=True)
-    return resolve_measurement(op.name)(wires=wire)
+    wire = resolve_constant_wire(op.in_qubit)
+    postselect = op.postselect
+    return MidMeasureMP([wire], postselect=postselect)
 
 
 def xdsl_to_qml_obs_op(op: NamedObsOp | TensorOp | HamiltonianOp) -> Operator:

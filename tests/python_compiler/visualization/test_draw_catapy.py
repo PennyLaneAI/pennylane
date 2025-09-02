@@ -337,6 +337,18 @@ class Testdraw:
             == "0: ──H─╭GlobalPhase─┤  State\n1: ──H─├GlobalPhase─┤  State\n2: ──H─╰GlobalPhase─┤  State"
         )
 
+    def test_visualization_mcm(self):
+        """Test the visualization of mid-circuit measurements."""
+
+        @qml.qnode(qml.device("lightning.qubit", wires=2))
+        def _():
+            qml.measure(0)
+            qml.RX(0.1, 1)
+            qml.measure(1)
+            return qml.state()
+
+        assert draw(_)() == "0: ──┤↗├──────┤  State\n1: ──RX───┤↗├─┤  State"
+
     @pytest.mark.jax
     @pytest.mark.parametrize(
         "ops, expected",
