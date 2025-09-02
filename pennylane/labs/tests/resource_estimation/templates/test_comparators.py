@@ -32,7 +32,7 @@ class TestSingleQubitComparator:
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(plre.ResourceSingleQubitComparator, {})
+        expected = plre.CompressedResourceOp(plre.ResourceSingleQubitComparator, 4, {})
         assert plre.ResourceSingleQubitComparator.resource_rep() == expected
 
     def test_resources(self):
@@ -55,7 +55,7 @@ class TestTwoQubitComparator:
 
     def test_resource_rep(self):
         """Test that the compressed representation is correct."""
-        expected = plre.CompressedResourceOp(plre.ResourceTwoQubitComparator, {})
+        expected = plre.CompressedResourceOp(plre.ResourceTwoQubitComparator, 4, {})
         assert plre.ResourceTwoQubitComparator.resource_rep() == expected
 
     def test_resources(self):
@@ -98,6 +98,7 @@ class TestIntegerComparator:
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
             plre.ResourceIntegerComparator,
+            register_size + 1,
             {"value": value, "register_size": register_size, "geq": geq},
         )
         assert plre.ResourceIntegerComparator.resource_rep(value, register_size, geq) == expected
@@ -216,6 +217,7 @@ class TestRegisterComparator:
         """Test that the compressed representation is correct."""
         expected = plre.CompressedResourceOp(
             plre.ResourceRegisterComparator,
+            first_register + second_register + 1,
             {"first_register": first_register, "second_register": second_register, "geq": geq},
         )
         assert (

@@ -31,7 +31,7 @@ class TestIdentity:
 
     def test_resource_rep(self):
         """Test the compressed representation"""
-        expected = plre.CompressedResourceOp(plre.ResourceIdentity, {})
+        expected = plre.CompressedResourceOp(plre.ResourceIdentity, 1, {})
         assert plre.ResourceIdentity.resource_rep() == expected
 
     def test_resource_params(self):
@@ -97,7 +97,7 @@ class TestGlobalPhase:
 
     def test_resource_rep(self):
         """Test the compressed representation"""
-        expected = plre.CompressedResourceOp(plre.ResourceGlobalPhase, {})
+        expected = plre.CompressedResourceOp(plre.ResourceGlobalPhase, 1, {})
         assert plre.ResourceGlobalPhase.resource_rep() == expected
 
     def test_resource_params(self):

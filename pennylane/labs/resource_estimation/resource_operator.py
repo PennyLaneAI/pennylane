@@ -211,9 +211,10 @@ class ResourceOperator(ABC):
     def __init__(self, *args, wires=None, **kwargs) -> None:
         self.wires = None
         if wires is not None:
+            wires = Wires(wires)
             if len(wires) != self.num_wires:
                 raise ValueError(f"Expected {self.num_wires} wires, got {wires}.")
-            self.wires = Wires(wires)
+            self.wires = wires
 
         self.queue()
         super().__init__()

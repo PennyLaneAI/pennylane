@@ -64,8 +64,9 @@ class ResourceSingleQubitComparator(ResourceOperator):
       {'Toffoli': 1, 'CNOT': 4, 'X': 3}
     """
 
+    num_wires = 4
+
     def __init__(self, wires=None):
-        self.num_wires = 4
         super().__init__(wires=wires)
 
     @property
@@ -164,8 +165,9 @@ class ResourceTwoQubitComparator(ResourceOperator):
       {'Toffoli': 2, 'CNOT': 7, 'X': 1}
     """
 
+    num_wires = 4
+
     def __init__(self, wires=None):
-        self.num_wires = 4
         super().__init__(wires=wires)
 
     @property
