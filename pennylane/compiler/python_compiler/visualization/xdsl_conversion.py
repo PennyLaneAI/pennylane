@@ -25,6 +25,7 @@ from pennylane import ops
 from pennylane.compiler.python_compiler.dialects.quantum import (
     ComputationalBasisOp,
     CustomOp,
+    QubitUnitaryOp,
 )
 from pennylane.compiler.python_compiler.dialects.quantum import ExtractOp as ExtractOpPL
 from pennylane.compiler.python_compiler.dialects.quantum import (
@@ -38,6 +39,13 @@ from pennylane.measurements import MeasurementProcess
 from pennylane.operation import Operator
 from pennylane.ops import __all__ as ops_all
 from pennylane.typing import Callable
+
+has_jax = True
+try:
+    import jax
+except ImportError:
+    has_jax = False
+
 
 from_str_to_PL_gate = {
     name: getattr(ops, name)
@@ -205,6 +213,22 @@ def xdsl_to_qml_op(op: CustomOp | GlobalPhaseOp) -> Operator:
         gate = qml.ctrl(gate, control=ctrls, control_values=cvals)
 
     return gate
+
+
+def xdsl_to_qml_qubit_unitary_op(op: QubitUnitaryOp) -> Operator:
+    """Convert a ``quantum.unitary`` xDSL op to a PennyLane operator."""
+
+    # pylint: disable=protected-access
+    tensor_abstr_shape = op.matrix.owner.operand._type.shape.data
+    tensor_shape = [tensor_abstr_shape[i].data for i in range(len(tensor_abstr_shape))]
+    qml_op = qml.QubitUnitary(jax.numpy.zeros(tensor_shape), wires=ssa_to_qml_wires(op))
+
+    if op.properties.get("adjoint"):
+        qml_op = qml.adjoint(qml_op)
+
+    # TODO: handle ctrl
+
+    return qml_op
 
 
 def xdsl_to_qml_measure_op(op: MeasureOp) -> MeasurementProcess:

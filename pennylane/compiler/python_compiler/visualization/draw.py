@@ -65,6 +65,7 @@ def draw(qnode: QNode, *, level: None | int = None) -> Callable:
     cache: dict[int, tuple[str, str]] = _cache_store.setdefault(qnode, {})
 
     def _draw_callback(pass_instance, module, pass_level):
+        print(f"module: {module}")
         collector = QMLCollector(module)
         ops, meas = collector.collect()
         tape = QuantumScript(ops, meas)
