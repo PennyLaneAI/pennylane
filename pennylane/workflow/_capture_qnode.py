@@ -78,6 +78,7 @@ import pennylane as qml
 from pennylane.capture import FlatFn, QmlPrimitive
 from pennylane.exceptions import CaptureError
 from pennylane.logging import debug_logger
+from pennylane.measurements import Shots
 from pennylane.typing import TensorLike
 
 from .construct_execution_config import construct_execution_config
@@ -108,7 +109,7 @@ def _get_batch_shape(non_const_args, non_const_batch_dims):
 
     input_shapes = [
         (arg.shape[batch_dim],)
-        for arg, batch_dim in zip(non_const_args, non_const_batch_dims)
+        for arg, batch_dim in zip(non_const_args, non_const_batch_dims, strict=True)
         if batch_dim is not None
     ]
 
@@ -167,10 +168,6 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
         non_shots_args = args
     else:
         shots, non_shots_args = args[:shots_len], args[shots_len:]
-    if qml.measurements.Shots(shots) != device.shots:
-        raise NotImplementedError(
-            "Overriding shots is not yet supported with the program capture execution."
-        )
 
     consts = non_shots_args[:n_consts]
     non_const_args = non_shots_args[n_consts:]
@@ -218,7 +215,11 @@ def _(*args, qnode, device, execution_config, qfunc_jaxpr, n_consts, shots_len, 
     qfunc_jaxpr = qfunc_jaxpr.jaxpr
 
     partial_eval = partial(
-        device.eval_jaxpr, qfunc_jaxpr, consts, execution_config=execution_config
+        device.eval_jaxpr,
+        qfunc_jaxpr,
+        consts,
+        execution_config=execution_config,
+        shots=Shots(shots),
     )
     if batch_dims is None:
         return partial_eval(*non_const_args)
@@ -287,7 +288,7 @@ def _qnode_batching_rule(
     This rule exploits the parameter broadcasting feature of the QNode to vectorize the circuit execution.
     """
 
-    for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims)):
+    for idx, (arg, batch_dim) in enumerate(zip(batched_args, batch_dims, strict=True)):
 
         if _is_scalar_tensor(arg):
             continue
