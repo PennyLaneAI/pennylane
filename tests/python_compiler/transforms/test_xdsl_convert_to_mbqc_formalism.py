@@ -285,7 +285,7 @@ class TestConvertToMBQCFormalismPass:
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_lowering(self, run_filecheck_qjit):
         """Test that the convert_to_mbqc_formalism_pass works correctly with qjit."""
-        dev = qml.device("null.qubit", wires=1000, shots=1000)
+        dev = qml.device("null.qubit", wires=1000)
 
         @qml.qjit(
             target="mlir",
@@ -294,6 +294,7 @@ class TestConvertToMBQCFormalismPass:
             autograph=True
         )
         @convert_to_mbqc_formalism_pass
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
             # CHECK-NOT: quantum.custom "CNOT"()
@@ -332,7 +333,7 @@ class TestConvertToMBQCFormalismPass:
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_e2e(self):
         """Test that the convert_to_mbqc_formalism_pass end to end on null.qubit."""
-        dev = qml.device("null.qubit", wires=1000, shots=100000)
+        dev = qml.device("null.qubit", wires=1000)
 
         @qml.qjit(
             target="mlir",
@@ -342,13 +343,16 @@ class TestConvertToMBQCFormalismPass:
         )
         @convert_to_mbqc_formalism_pass
         @measurements_from_samples_pass
+        @qml.set_shots(1000)
         @qml.qnode(dev)
         def circuit():
-            for i in range(1000):
+            @qml.for_loop(0, 1000, 1)
+            def loop_func(i):
                 qml.H(i)
                 qml.S(i)
                 RotXZX(0.1, 0.2, 0.3, wires=[i])
                 qml.RZ(phi=0.1, wires=[i])
+            loop_func()
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(wires=0))
 
