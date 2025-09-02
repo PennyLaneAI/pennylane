@@ -280,44 +280,54 @@ class DefaultMixed(Device):
             for c in circuits
         )
 
-    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
+    def setup_execution_config(
+        self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
+    ) -> ExecutionConfig:
         """This is a private helper for ``preprocess`` that sets up the execution config.
 
         Args:
-            execution_config (ExecutionConfig): an unprocessed execution config.
+            config (ExecutionConfig): an unprocessed execution config.
 
         Returns:
             ExecutionConfig: a preprocessed execution config.
         """
+        config = config or ExecutionConfig()
         updated_values = {}
 
         # Add gradient related
-        if execution_config.gradient_method == "best":
+        if config.gradient_method == "best":
             updated_values["gradient_method"] = "backprop"
-        updated_values["use_device_gradient"] = execution_config.gradient_method in {
+        updated_values["use_device_gradient"] = config.gradient_method in {
             "backprop",
             "best",
         }
         updated_values["grad_on_execution"] = False
-        updated_values["interface"] = get_canonical_interface_name(execution_config.interface)
+        updated_values["interface"] = get_canonical_interface_name(config.interface)
 
         # Add device options
-        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        updated_values["device_options"] = dict(config.device_options)  # copy
 
-        for option in execution_config.device_options:
+        for option in config.device_options:
             if option not in self._device_options:
                 raise DeviceError(f"device option {option} not present on {self}")
 
         for option in self._device_options:
             if option not in updated_values["device_options"]:
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
-        return replace(execution_config, **updated_values)
+
+        method = config.mcm_config.mcm_method
+        if method is None:
+            updated_values["mcm_config"] = replace(config.mcm_config, mcm_method="deferred")
+        elif method != "deferred":
+            raise DeviceError("DefaultMixed only supports mcm_method='deferred'. Got {method}.")
+
+        return replace(config, **updated_values)
 
     @debug_logger
-    def preprocess(
+    def preprocess_transforms(
         self,
-        execution_config: ExecutionConfig = None,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
+        execution_config: ExecutionConfig | None = None,
+    ) -> TransformProgram:
         """This function defines the device transform program to be applied and an updated device
         configuration.
 
@@ -326,10 +336,9 @@ class DefaultMixed(Device):
                 describing the parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns
+            TransformProgram: A transform program that when called returns
             ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
-            function to be called after execution, and a configuration with unset
-            specifications filled in.
+            function to be called after execution
 
         This device:
 
@@ -338,7 +347,6 @@ class DefaultMixed(Device):
 
         """
         execution_config = execution_config or ExecutionConfig()
-        config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
         # Defer first since it addes wires to the device
@@ -352,7 +360,7 @@ class DefaultMixed(Device):
         # TODO: If the setup_execution_config method becomes circuit-dependent in the future,
         # we should handle this case directly within setup_execution_config. This would
         # eliminate the need for the no_sampling transform in this section.
-        if config.gradient_method == "backprop":
+        if execution_config.gradient_method == "backprop":
             transform_program.add_transform(no_sampling, name="backprop + default.mixed")
 
         if self.readout_err is not None:
@@ -370,4 +378,4 @@ class DefaultMixed(Device):
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
-        return transform_program, config
+        return transform_program

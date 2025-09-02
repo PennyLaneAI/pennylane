@@ -801,30 +801,36 @@ class QNode:
         self._shots = Shots(shots)
         self._shots_override_device = True
 
-    @debug_logger
-    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
-        """Call the quantum function with a tape context, ensuring the operations get queued."""
-        kwargs = copy.copy(kwargs)
+    def _get_shots(self, kwargs: dict):
+        """
+
+        Note that this mutates kwargs to remove shots from it.
+        """
         if "shots" in kwargs:
-            # NOTE: at removal, remember to remove the userwarning below as well
             warnings.warn(
                 "'shots' specified on call to a QNode is deprecated and will be removed in v0.44. Use qml.set_shots instead.",
                 PennyLaneDeprecationWarning,
                 stacklevel=2,
             )
-            if self._shots_override_device:
-                _kwargs_shots = kwargs.pop("shots")
-                warnings.warn(
-                    "Both 'shots=' parameter and 'set_shots' transform are specified. "
-                    f"The transform will take precedence over 'shots={_kwargs_shots}.'",
-                    UserWarning,
-                    stacklevel=2,
-                )
 
-        if self._qfunc_uses_shots_arg or self._shots_override_device:  # QNode.shots precedency:
-            shots = self.shots
-        else:
-            shots = kwargs.pop("shots", self.shots)
+        if "shots" in kwargs and self._shots_override_device:  # pylint: disable=protected-access
+            warnings.warn(
+                "Both 'shots=' parameter and 'set_shots' transform are specified. "
+                f"The transform will take precedence over 'shots={kwargs['shots']}.'",
+                UserWarning,
+                stacklevel=2,
+            )
+        if (
+            "shots" in inspect.signature(self.func).parameters or self._shots_override_device
+        ):  # pylint: disable=protected-access
+            return self.shots
+        return kwargs.pop("shots", self.shots)
+
+    @debug_logger
+    def construct(self, args, kwargs) -> qml.tape.QuantumScript:
+        """Call the quantum function with a tape context, ensuring the operations get queued."""
+        kwargs = copy.copy(kwargs)
+        shots = self._get_shots(kwargs)
 
         # Before constructing the tape, we pass the device to the
         # debugger to ensure they are compatible if there are any

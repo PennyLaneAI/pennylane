@@ -42,6 +42,7 @@ from pennylane.measurements import (
 )
 from pennylane.ops.op_math import Adjoint, Controlled, ControlledOp
 from pennylane.tape import QuantumScriptOrBatch
+from pennylane.tape.qscript import QuantumScript
 from pennylane.transforms.core import TransformProgram
 from pennylane.typing import Result, ResultBatch
 
@@ -345,10 +346,31 @@ class NullQubit(Device):
         """No-op property to allow for borrowing DefaultQubit.preprocess without AttributeErrors"""
         return None
 
+    def setup_execution_config(
+        self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
+    ) -> ExecutionConfig:
+        config = config or ExecutionConfig()
+        updated_values = {}
+        if config.gradient_method in ["best", "adjoint"]:
+            updated_values["gradient_method"] = "device"
+        if config.use_device_gradient is None:
+            updated_values["use_device_gradient"] = config.gradient_method in {
+                "best",
+                "device",
+                "adjoint",
+                "backprop",
+            }
+        if config.use_device_jacobian_product is None:
+            updated_values["use_device_jacobian_product"] = config.gradient_method == "device"
+        if config.grad_on_execution is None:
+            updated_values["grad_on_execution"] = config.gradient_method == "device"
+
+        return replace(config, **updated_values)
+
     # pylint: disable=cell-var-from-loop
-    def preprocess(
+    def preprocess_transforms(
         self, execution_config: ExecutionConfig | None = None
-    ) -> tuple[TransformProgram, ExecutionConfig]:
+    ) -> TransformProgram:
         if execution_config is None:
             execution_config = ExecutionConfig()
 
@@ -370,23 +392,7 @@ class NullQubit(Device):
 
                     t.kwargs["stopping_condition_shots"] = new_shots_stopping_condition
 
-        updated_values = {}
-        if execution_config.gradient_method in ["best", "adjoint"]:
-            updated_values["gradient_method"] = "device"
-        if execution_config.use_device_gradient is None:
-            updated_values["use_device_gradient"] = execution_config.gradient_method in {
-                "best",
-                "device",
-                "adjoint",
-                "backprop",
-            }
-        if execution_config.use_device_jacobian_product is None:
-            updated_values["use_device_jacobian_product"] = (
-                execution_config.gradient_method == "device"
-            )
-        if execution_config.grad_on_execution is None:
-            updated_values["grad_on_execution"] = execution_config.gradient_method == "device"
-        return program, replace(execution_config, **updated_values)
+        return program
 
     def execute(
         self,

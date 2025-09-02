@@ -306,36 +306,33 @@ class DefaultQutritMixed(Device):
             return circuit is None or not circuit.shots
         return False
 
-    def _setup_execution_config(self, execution_config: ExecutionConfig) -> ExecutionConfig:
-        """This is a private helper for ``preprocess`` that sets up the execution config.
+    def setup_execution_config(
+        self, config: ExecutionConfig | None = None, circuit: QuantumScript | None = None
+    ) -> ExecutionConfig:
 
-        Args:
-            execution_config (ExecutionConfig): an unprocessed execution config.
+        config = config or ExecutionConfig()
 
-        Returns:
-            ExecutionConfig: a preprocessed execution config.
-        """
         updated_values = {}
-        for option in execution_config.device_options:
+        for option in config.device_options:
             if option not in self._device_options:
                 raise DeviceError(f"device option {option} not present on {self}")
 
-        if execution_config.gradient_method == "best":
+        if config.gradient_method == "best":
             updated_values["gradient_method"] = "backprop"
         updated_values["use_device_gradient"] = False
         updated_values["grad_on_execution"] = False
-        updated_values["device_options"] = dict(execution_config.device_options)  # copy
+        updated_values["device_options"] = dict(config.device_options)  # copy
 
         for option in self._device_options:
             if option not in updated_values["device_options"]:
                 updated_values["device_options"][option] = getattr(self, f"_{option}")
-        return replace(execution_config, **updated_values)
+        return replace(config, **updated_values)
 
     @debug_logger
-    def preprocess(
+    def preprocess_transforms(
         self,
         execution_config: ExecutionConfig | None = None,
-    ) -> tuple[TransformProgram, ExecutionConfig]:
+    ) -> TransformProgram:
         """This function defines the device transform program to be applied and an updated device
         configuration.
 
@@ -344,10 +341,9 @@ class DefaultQutritMixed(Device):
                 describing the parameters needed to fully describe the execution.
 
         Returns:
-            TransformProgram, ExecutionConfig: A transform program that when called returns
+            TransformProgram: A transform program that when called returns
             ``QuantumTape`` objects that the device can natively execute, as well as a postprocessing
-            function to be called after execution, and a configuration with unset
-            specifications filled in.
+            function to be called after execution
 
         This device:
 
@@ -357,7 +353,6 @@ class DefaultQutritMixed(Device):
         """
         if execution_config is None:
             execution_config = ExecutionConfig()
-        config = self._setup_execution_config(execution_config)
         transform_program = TransformProgram()
 
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
@@ -374,13 +369,13 @@ class DefaultQutritMixed(Device):
             validate_observables, stopping_condition=observable_stopping_condition, name=self.name
         )
 
-        if config.gradient_method == "backprop":
+        if execution_config.gradient_method == "backprop":
             transform_program.add_transform(no_sampling, name="backprop + default.qutrit")
 
         if self.readout_errors is not None:
             transform_program.add_transform(warn_readout_error_state)
 
-        return transform_program, config
+        return transform_program
 
     @debug_logger
     def execute(
