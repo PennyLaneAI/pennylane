@@ -299,6 +299,7 @@ class Exp(ScalarSymbolicOp, Operation):
 
         # pylint: disable=unidiomatic-typecheck
         if type(self) is Exp and not math.is_abstract(coeff) and math.real(coeff):
+            # if type is Evolution, we assume that is is indeed time evolution
             return False
 
         if qml.pauli.is_pauli_word(base):
