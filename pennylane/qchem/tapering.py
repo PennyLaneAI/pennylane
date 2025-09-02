@@ -244,7 +244,8 @@ def _taper_pauli_sentence(ps_h, generators, paulixops, paulix_sector):
         ts_ps += ps_u @ ps @ ps_u  # helps restrict the peak memory usage for u @ h @ u
 
     wireset = ps_h.wires + ps_u.wires
-    wiremap = dict(zip(list(wireset.toset()), range(len(wireset) + 1), strict=True))
+
+    wiremap = dict(zip(list(wireset.toset()), range(len(wireset)), strict=True))
     paulix_wires = [x.wires[0] for x in paulixops]
 
     wires_tap = [i for i in wiremap.keys() if i not in paulix_wires]
