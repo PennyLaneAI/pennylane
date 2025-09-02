@@ -505,7 +505,7 @@ decompose_mcx_many_borrowed_workers = flip_zero_control(_mcx_many_borrowed_worke
 
 def _mcx_two_workers_condition(num_control_wires, num_work_wires, **__):
     return num_control_wires > 2 and (
-        num_work_wires >= 2 or num_work_wires == 1 and num_control_wires < 6
+        num_work_wires >= 2 or (num_work_wires == 1 and num_control_wires < 6)
     )
 
 
@@ -525,6 +525,7 @@ def _mcx_two_workers_resource(num_control_wires, work_wire_type, **__):
     # Otherwise, we assume the work wires are borrowed
     n_ccx = 4 * num_control_wires - 8
     n_temporary_ccx_pairs = 2 * (1 - is_small_mcx)
+    # To do: Can we actually use the TemporaryAND here?
     return {
         ops.Toffoli: n_ccx - 2 * n_temporary_ccx_pairs,
         qml.TemporaryAND: n_temporary_ccx_pairs,
@@ -562,6 +563,7 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
         ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
     else:
         middle_wires = [wires[i] for i in middle_ctrl_indices]
+        # To do: Can we actually use the TemporaryAND indirectly in _one_worker here?
         _mcx_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
 
     # Uncompute the first ladder
@@ -576,6 +578,7 @@ def _mcx_two_workers(wires, work_wires, work_wire_type, **__):
             ops.Toffoli([work_wires[0], wires[middle_ctrl_indices[0]], wires[-1]])
         else:
             middle_wires = [wires[i] for i in middle_ctrl_indices]
+            # To do: Can we actually use the TemporaryAND indirectly in _one_worker here?
             _mcx_one_worker(work_wires[:1] + middle_wires + wires[-1:], work_wires[1:])
         ops.adjoint(_build_log_n_depth_ccx_ladder, lazy=False)(wires[:-1])
 

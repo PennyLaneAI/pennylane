@@ -258,7 +258,6 @@ def flip_zero_control(inner_decomp: DecompositionRule) -> DecompositionRule:
         zero_control_wires = [w for w, val in zip(control_wires, control_values) if not val]
         for w in zero_control_wires:
             qml.PauliX(w)
-        print(inner_decomp)
         inner_decomp(
             *params,
             wires=wires,
