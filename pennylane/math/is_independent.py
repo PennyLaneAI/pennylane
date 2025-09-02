@@ -192,7 +192,7 @@ def _get_random_args(args, interface, num, seed, bounds):
             )
             _args = tuple(
                 tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
-                for _arg, arg in zip(_args, args)
+                for _arg, arg in zip(_args, args, strict=True)
             )
             rnd_args.append(_args)
     elif interface == "torch":
@@ -243,7 +243,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
         if is_tuple_valued:
             if not all(
                 np.allclose(new, orig, atol=atol, rtol=rtol)
-                for new, orig in zip(new_output, original_output)
+                for new, orig in zip(new_output, original_output, strict=True)
             ):
                 return False
         else:
