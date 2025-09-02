@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from pennylane import capture, math, ops
+from pennylane.decomposition import enabled_graph
 from pennylane.exceptions import DeviceError
 from pennylane.logging import debug_logger, debug_logger_init
 from pennylane.measurements import (
@@ -626,7 +627,17 @@ class DefaultQubit(Device):
 
             if config.mcm_config.mcm_method == "deferred":
                 transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
-            transform_program.add_transform(transforms_decompose, gate_set=stopping_condition)
+            if enabled_graph():
+                transform_program.add_transform(
+                    transforms_decompose,
+                    gate_set=ALL_DQ_GATE_SET,
+                    stopping_condition=stopping_condition,
+                )
+            else:
+                transform_program.add_transform(
+                    transforms_decompose,
+                    gate_set=stopping_condition
+                )
 
             return transform_program
 
