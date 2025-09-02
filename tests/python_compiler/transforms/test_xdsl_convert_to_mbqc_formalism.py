@@ -285,12 +285,13 @@ class TestConvertToMBQCFormalismPass:
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_lowering(self, run_filecheck_qjit):
         """Test that the convert_to_mbqc_formalism_pass works correctly with qjit."""
-        dev = qml.device("null.qubit", wires=1000, shots=100000)
+        dev = qml.device("null.qubit", wires=1000, shots=1000)
 
         @qml.qjit(
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
+            autograph=True
         )
         @convert_to_mbqc_formalism_pass
         @qml.qnode(dev)
@@ -300,22 +301,31 @@ class TestConvertToMBQCFormalismPass:
             # CHECK-NOT: quantum.custom "RZ"()
             # CHECK-NOT: quantum.custom "RotXZX"()
             # CHECK-NOT: quantum.custom "Hadamard"
-            # CHECK: quantum.custom "PauliX"
-            # CHECK: quantum.custom "PauliZ"
+            # CHECK: scf.for
+            # CHECK: mbqc.graph_state_prep
             # CHECK: quantum.custom "CZ"
-            # CHECK: quantum.dealloc_qb
             # CHECK: mbqc.measure_in_basis
             # CHECK: scf.if
-            for i in range(1000):
+            # CHECK: quantum.custom "PauliX"
+            # CHECK: quantum.custom "PauliZ"
+            # CHECK: quantum.dealloc_qb
+            @qml.for_loop(0, 1000, 1)
+            def loop_func(i):
                 qml.H(i)
                 qml.S(i)
                 RotXZX(0.1, 0.2, 0.3, wires=[i])
                 qml.RZ(phi=0.1, wires=[i])
+            loop_func()
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(wires=0))
 
         run_filecheck_qjit(circuit)
 
+            # CHECK: quantum.custom "PauliX"
+            # CHECK: quantum.custom "PauliZ"
+            # CHECK: quantum.custom "CZ"
+            # CHECK: quantum.dealloc_qb
+            # CHECK: mbqc.measure_in_basis
     @pytest.mark.xfail(
         reason="Failure due to the deallocation of qubits in a qreg and insertion of qubit into a qreg is not supported yet."
     )
