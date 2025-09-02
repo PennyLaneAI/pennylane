@@ -396,7 +396,7 @@ By using ``lightning.qubit`` we can now treat the execution environment
 as a black-box, and see the log-level messages as they hit the custom
 functions as part of the execution pipeline.
 
-The above features have been added for Torch, Tensorflow, JAX and
+The above features have been added for PyTorch, JAX and
 autograd, and should produce a sufficient level of detail in the
 execution messages.
 

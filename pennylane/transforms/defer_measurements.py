@@ -389,7 +389,7 @@ def _get_plxpr_defer_measurements():
                 qml.PauliX(wires=wires)
 
         self.state["cur_target"] -= 1
-        return MeasurementValue([meas], lambda x: x)
+        return MeasurementValue([meas])
 
     @DeferMeasurementsInterpreter.register_primitive(cond_prim)
     def _(self, *invals, jaxpr_branches, consts_slices, args_slice):
@@ -408,11 +408,6 @@ def _get_plxpr_defer_measurements():
         args = invals[args_slice]
 
         for i, (condition, jaxpr) in enumerate(zip(conditions, jaxpr_branches, strict=True)):
-            if jaxpr is None:
-                # If a false branch isn't provided, the jaxpr corresponding to the condition
-                # for the false branch will be None. That is the only scenario where we would
-                # reach here.
-                continue
 
             if isinstance(condition, MeasurementValue):
                 control_wires = Wires([m.wires[0] for m in condition.measurements])
@@ -829,7 +824,9 @@ def defer_measurements(
                 new_ms = [
                     qml.map_wires(m, {m.wires[0]: control_wires[m.id]}) for m in mp.mv.measurements
                 ]
-                new_m = MeasurementValue(new_ms, mp.mv.processing_fn)
+                new_m = MeasurementValue(
+                    new_ms, mp.mv.processing_fn if mp.mv.has_processing else None
+                )
             else:
                 new_m = []
                 for val in mp.mv:
@@ -837,7 +834,9 @@ def defer_measurements(
                         qml.map_wires(m, {m.wires[0]: control_wires[m.id]})
                         for m in val.measurements
                     ]
-                    new_m.append(MeasurementValue(new_ms, val.processing_fn))
+                    new_m.append(
+                        MeasurementValue(new_ms, val.processing_fn if val.has_processing else None)
+                    )
 
             with QueuingManager.stop_recording():
                 new_mp = (

@@ -138,7 +138,7 @@ class QROM(Operation):
     .. code-block:: pycon
 
         >>> print(circuit())
-        [1 1 0]
+        [[1 1 0]]
 
 
     .. details::
@@ -156,7 +156,7 @@ class QROM(Operation):
         The ``work_wires`` are the auxiliary qubits used by the template to reduce the number of gates required.
         Let :math:`k` be the number of work wires. If :math:`k = 0`, the template is equivalent to executing :class:`~.Select`.
         Following the idea in [`arXiv:1812.00954 <https://arxiv.org/abs/1812.00954>`__], auxiliary qubits can be used to
-        load more than one bitstring in parallel . Let :math:`\lambda` be
+        load more than one bitstring in parallel. Let :math:`\lambda` be
         the number of bitstrings we want to store in parallel, assumed to be a power of :math:`2`.
         Then, :math:`k = l \cdot (\lambda-1)` work wires are needed,
         where :math:`l` is the length of the bitstrings.
@@ -430,7 +430,10 @@ def _qrom_decomposition_resources(
     if num_control_select_wires > 0:
         select_ops = {
             resource_rep(
-                Select, num_control_wires=num_control_select_wires, op_reps=tuple(new_ops_reps)
+                Select,
+                num_control_wires=num_control_select_wires,
+                op_reps=tuple(new_ops_reps),
+                partial=False,
             ): 1
         }
     else:

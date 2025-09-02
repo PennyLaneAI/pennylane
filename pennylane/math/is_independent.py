@@ -122,7 +122,9 @@ def _jax_is_indep_analytic(func, *args, **kwargs):
     return True
 
 
-def _tf_is_indep_analytic(func, *args, **kwargs):
+def _tf_is_indep_analytic(
+    func, *args, **kwargs
+):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
     """Test analytically whether a function is independent of its arguments
     using TensorFlow.
 
@@ -178,7 +180,7 @@ def _get_random_args(args, interface, num, seed, bounds):
     that have the same shapes as ``args``.
     """
     width = bounds[1] - bounds[0]
-    if interface == "tf":
+    if interface == "tf":  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         import tensorflow as tf  # pylint: disable=import-outside-toplevel
 
         tf.random.set_seed(seed)
@@ -190,7 +192,7 @@ def _get_random_args(args, interface, num, seed, bounds):
             )
             _args = tuple(
                 tf.Variable(_arg) if isinstance(arg, tf.Variable) else _arg
-                for _arg, arg in zip(_args, args)
+                for _arg, arg in zip(_args, args, strict=True)
             )
             rnd_args.append(_args)
     elif interface == "torch":
@@ -241,7 +243,7 @@ def _is_indep_numerical(func, interface, args, kwargs, num_pos, seed, atol, rtol
         if is_tuple_valued:
             if not all(
                 np.allclose(new, orig, atol=atol, rtol=rtol)
-                for new, orig in zip(new_output, original_output)
+                for new, orig in zip(new_output, original_output, strict=True)
             ):
                 return False
         else:
@@ -372,7 +374,10 @@ def is_independent(
         if not _jax_is_indep_analytic(func, *args, **kwargs):
             return False
 
-    if interface in ("tf", "tensorflow"):
+    if interface in (
+        "tf",
+        "tensorflow",
+    ):  # pragma: no cover (TensorFlow tests were disabled during deprecation)
         if not _tf_is_indep_analytic(func, *args, **kwargs):
             return False
 

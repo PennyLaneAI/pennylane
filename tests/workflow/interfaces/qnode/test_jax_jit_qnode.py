@@ -878,9 +878,10 @@ class TestShotsIntegration:
     def test_finite_shot_single_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors and returns correct shapes."""
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
         @jax.jit
+        @qml.set_shots(shots)
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -898,9 +899,10 @@ class TestShotsIntegration:
     def test_finite_shot_multiple_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors and returns correct shapes."""
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
         @jax.jit
+        @qml.set_shots(shots)
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -922,9 +924,10 @@ class TestShotsIntegration:
     def test_shot_vectors_single_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors and returns correct shapes."""
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
         @jax.jit
+        @qml.set_shots(shots)
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -950,9 +953,10 @@ class TestShotsIntegration:
     def test_shot_vectors_multiple_measurements(self, interface, shots, seed):
         """Test jax-jit can work with shot vectors and returns correct shapes for multiple measurements."""
 
-        dev = qml.device("default.qubit", shots=shots, seed=seed)
+        dev = qml.device("default.qubit", seed=seed)
 
         @jax.jit
+        @qml.set_shots(shots)
         @qml.qnode(dev, interface=interface, diff_method="parameter-shift")
         def circuit(x):
             qml.RX(x, wires=0)
@@ -3262,7 +3266,7 @@ class TestSinglePrecision:
         try:
 
             @jax.jit
-            @qml.qnode(qml.device("default.qubit", shots=10), diff_method=qml.gradients.param_shift)
+            @qml.qnode(qml.device("default.qubit"), diff_method=qml.gradients.param_shift, shots=10)
             def circuit(x):
                 qml.RX(x, wires=0)
                 return qml.sample(wires=0)

@@ -75,6 +75,10 @@ def _no_return(fn):
     return fn
 
 
+def _empty_return_fn(*_, **__):
+    return None
+
+
 class Conditional(SymbolicOp, Operation):
     """A Conditional Operation.
 
@@ -95,7 +99,7 @@ class Conditional(SymbolicOp, Operation):
             can be useful for some applications where the instance has to be identified
     """
 
-    def __init__(self, expr, then_op: type[Operation], id=None):
+    def __init__(self, expr, then_op: Operation, id=None):
         self.hyperparameters["meas_val"] = expr
         self._name = f"Conditional({then_op.name})"
         super().__init__(then_op, id=id)
@@ -249,12 +253,18 @@ class CondCallable:
         return list(zip(self.preds[1:], self.branch_fns[1:]))
 
     def __call_capture_disabled(self, *args, **kwargs):
+
+        # dequeue operators passed to args
+        leaves, _ = qml.pytrees.flatten((args, kwargs), lambda obj: isinstance(obj, Operator))
+        for l in leaves:
+            if isinstance(l, Operator):
+                qml.QueuingManager.remove(l)
+
         # python fallback
         for pred, branch_fn in zip(self.preds, self.branch_fns):
             if pred:
                 return branch_fn(*args, **kwargs)
-        # TODO: Remove when PL supports pylint==3.3.6 (it is considered a useless-suppression) [sc-91362]
-        # pylint: disable=not-callable
+
         return self.false_fn(*args, **kwargs)
 
     def __call_capture_enabled(self, *args, **kwargs):
@@ -286,19 +296,17 @@ class CondCallable:
                 raise ValueError(f"Condition predicate must be a scalar. Got {pred_shape}.")
             conditions.append(pred)
             if fn is None:
-                jaxpr_branches.append(None)
-                consts_slices.append(slice(0, 0))
-            else:
-                f = FlatFn(functools.partial(fn, **kwargs))
-                if jax.config.jax_dynamic_shapes:
-                    f = _add_abstract_shapes(f)
-                jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
-                jaxpr_branches.append(jaxpr.jaxpr)
-                consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
-                consts += jaxpr.consts
-                end_const_ind += len(jaxpr.consts)
+                fn = _empty_return_fn
+            f = FlatFn(functools.partial(fn, **kwargs))
+            if jax.config.jax_dynamic_shapes:
+                f = _add_abstract_shapes(f)
+            jaxpr = jax.make_jaxpr(f, abstracted_axes=abstracted_axes)(*args)
+            jaxpr_branches.append(jaxpr.jaxpr)
+            consts_slices.append(slice(end_const_ind, end_const_ind + len(jaxpr.consts)))
+            consts += jaxpr.consts
+            end_const_ind += len(jaxpr.consts)
 
-        _validate_jaxpr_returns(jaxpr_branches)
+        _validate_jaxpr_returns(jaxpr_branches, self.otherwise_fn)
         flat_args, _ = jax.tree_util.tree_flatten(args)
         results = cond_prim.bind(
             *conditions,
@@ -746,21 +754,15 @@ def _validate_abstract_values(
             _aval_mismatch_error(branch_type, branch_index, i, outval, expected_outval)
 
 
-def _validate_jaxpr_returns(jaxpr_branches):
+def _validate_jaxpr_returns(jaxpr_branches, false_fn):
     out_avals_true = [out.aval for out in jaxpr_branches[0].outvars]
-    for idx, jaxpr_branch in enumerate(jaxpr_branches):
 
-        if idx == 0:
-            continue
+    if false_fn is None and out_avals_true:
+        raise ValueError(
+            "The false branch must be provided if the true branch returns any variables"
+        )
 
-        if jaxpr_branch is None:
-            if out_avals_true:
-                raise ValueError(
-                    "The false branch must be provided if the true branch returns any variables"
-                )
-            # this is tested, but coverage does not pick it up
-            continue  # pragma: no cover
-
+    for idx, jaxpr_branch in enumerate(jaxpr_branches[1:], start=1):
         out_avals_branch = [out.aval for out in jaxpr_branch.outvars]
         branch_type = "elif" if idx < len(jaxpr_branches) - 1 else "false"
         _validate_abstract_values(out_avals_branch, out_avals_true, branch_type, idx - 1)
@@ -805,8 +807,6 @@ def _get_cond_qfunc_prim():
 
         for pred, jaxpr, const_slice in zip(conditions, jaxpr_branches, consts_slices):
             consts = all_args[const_slice]
-            if jaxpr is None:
-                continue
             if isinstance(pred, qml.measurements.MeasurementValue):
 
                 with qml.queuing.AnnotatedQueue() as q:

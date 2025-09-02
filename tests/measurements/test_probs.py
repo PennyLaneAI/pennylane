@@ -98,8 +98,9 @@ class TestProbs:
     @pytest.mark.parametrize("shots", [None, 100])
     def test_probs_no_arguments(self, shots):
         """Test that using ``qml.probs`` with no arguments returns the probabilities of all wires."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             return qml.probs()
@@ -157,7 +158,7 @@ class TestProbs:
         assert np.allclose(res, expected, atol=tol, rtol=0)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize(
         "subset_wires,expected",
         [
@@ -178,7 +179,7 @@ class TestProbs:
         assert qml.math.allclose(subset_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch"])
     @pytest.mark.parametrize(
         "subset_wires,expected",
         [
@@ -199,7 +200,7 @@ class TestProbs:
         assert qml.math.allclose(subset_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     def test_process_density_matrix_basic(self, interface):
         """Test that process_density_matrix returns correct probabilities from a density matrix."""
         dm = qml.math.array([[0.5, 0], [0, 0.5]], like=interface)
@@ -210,7 +211,7 @@ class TestProbs:
         assert qml.math.allclose(calculated_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, expected",
         [
@@ -233,7 +234,7 @@ class TestProbs:
         assert qml.math.allclose(subset_probs, expected)
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires, expected",
         [
@@ -273,7 +274,7 @@ class TestProbs:
         ), f"Value mismatch: expected {expected.tolist()}, got {subset_probs.tolist()}"
 
     @pytest.mark.all_interfaces
-    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "tensorflow", "autograd"])
+    @pytest.mark.parametrize("interface", ["numpy", "jax", "torch", "autograd"])
     @pytest.mark.parametrize(
         "subset_wires",
         [[3, 1, 0]],
@@ -345,9 +346,10 @@ class TestProbs:
         """Test the probability is correct for a known state preparation when jitted with JAX."""
         jax = pytest.importorskip("jax")
 
-        dev = qml.device("default.qubit", wires=2, shots=shots, seed=jax.random.PRNGKey(seed))
+        dev = qml.device("default.qubit", wires=2, seed=jax.random.PRNGKey(seed))
         params = jax.numpy.array(params)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev, diff_method=None)
         def circuit(x):
             qml.PhaseShift(x, wires=1)
@@ -371,8 +373,9 @@ class TestProbs:
     def test_integration_analytic_false(self, tol, shots):
         """Test the probability is correct for a known state preparation when the
         analytic attribute is set to False."""
-        dev = qml.device("default.qubit", wires=3, shots=shots)
+        dev = qml.device("default.qubit", wires=3)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit():
             qml.PauliX(0)
@@ -389,8 +392,9 @@ class TestProbs:
     ):  # pylint: disable=too-many-arguments
         """Test that probs for mid-circuit measurement values
         are correct for a single measurement value."""
-        dev = qml.device("default.qubit", wires=2, shots=shots, seed=seed)
+        dev = qml.device("default.qubit", wires=2, seed=seed)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(phi):
             qml.RX(phi, 0)
@@ -463,7 +467,7 @@ class TestProbs:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
+            match="Only sequences of unprocessed MeasurementValues can be passed with the op argument",
         ):
             _ = qml.probs(op=[m0, qml.PauliZ(0)])
 
@@ -476,15 +480,28 @@ class TestProbs:
 
         with pytest.raises(
             QuantumFunctionError,
-            match="Only sequences of single MeasurementValues can be passed with the op argument",
+            match="Only sequences of unprocessed MeasurementValues can be passed with the op argument",
         ):
             _ = qml.probs(op=[m0 + m1, m2])
+
+    def test_processed_measurement_value_lists_not_allowed(self):
+        """Test that passing a list containing measurement values composed with arithmetic
+        raises an error."""
+        m0 = qml.measure(0)
+        m1 = qml.measure(1)
+
+        with pytest.raises(
+            QuantumFunctionError,
+            match="Only sequences of unprocessed MeasurementValues can be passed with the op argument",
+        ):
+            _ = qml.probs(op=[2 * m0, m1])
 
     @pytest.mark.parametrize("shots", [None, 100])
     def test_batch_size(self, shots):
         """Test the probability is correct for a batched input."""
-        dev = qml.device("default.qubit", wires=1, shots=shots)
+        dev = qml.device("default.qubit", wires=1)
 
+        @qml.set_shots(shots)
         @qml.qnode(dev)
         def circuit(x):
             qml.RX(x, 0)

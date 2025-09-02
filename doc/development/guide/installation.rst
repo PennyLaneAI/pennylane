@@ -18,7 +18,7 @@ be installed alongside PennyLane:
 * `autograd <https://github.com/HIPS/autograd>`_
 * `tomlkit <https://github.com/python-poetry/tomlkit>`_
 * `appdirs <https://github.com/ActiveState/appdirs>`_
-* `autoray <https://github.com/jcmgray/autoray>`__ >= 0.6.11
+* `autoray <https://github.com/jcmgray/autoray>`__ >= 0.8.0 
 * `cachetools <https://github.com/tkem/cachetools>`_
 * `pennylane-lightning <https://github.com/PennyLaneAI/pennylane-lightning>`_ >= 0.42
 * `requests <https://github.com/psf/requests>`_
@@ -46,15 +46,12 @@ of Python packaged for scientific computation.
 Interface dependencies
 ~~~~~~~~~~~~~~~~~~~~~~
 
-For development of the TensorFlow, PyTorch, and JAX interfaces, there are additional
+For development of the PyTorch and JAX interfaces, there are additional
 requirements which must be installed manually:
 
 * **JAX interface**: ``jax`` and ``jaxlib`` == 0.6.0
 
 * **PyTorch interface**: ``pytorch``
-
-* **TensorFlow interface**: ``tensorflow`` < 2.17
-
 
 Installation
 ------------

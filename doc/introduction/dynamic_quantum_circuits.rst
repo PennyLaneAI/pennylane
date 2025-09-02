@@ -94,9 +94,13 @@ Executing this QNode with 10 shots yields
 .. code-block:: pycon
 
     >>> func(np.pi / 2, shots=10)
-    array([1, 1, 1, 1, 1, 1, 1])
+    array([[1],
+       [1],
+       [1],
+       [1],
+       [1]])
 
-Note that only 7 samples are returned. This is because samples that do not meet the postselection criteria are
+Note that less than 10 samples are returned. This is because samples that do not meet the postselection criteria are
 discarded. This behaviour can be customized, see the section
 :ref:`"Configuring mid-circuit measurements" <mcm_config>`.
 
@@ -233,7 +237,7 @@ sampling, and a tree-traversal approach. These methods differ in their memory re
 and computational cost, as well as their compatibility with other features such as
 shots and differentiation methods.
 While the requirements depend on details of the simulation, the expected
-scalings  with respect to the number of mid-circuit measurements (and shots) are
+scalings with respect to the number of mid-circuit measurements (and shots) are
 
 .. role:: gr
 .. role:: or
@@ -303,9 +307,7 @@ technique will depend on details of the simulation workflow. As a rule of thumb:
   support under (almost) all circumstances, but at large memory cost. It is the only method
   supporting analytic simulations.
 
-By default, ``QNode``\ s use deferred measurements and dynamic one-shot sampling (if supported)
-when executed without and with shots, respectively. The method can be configured with
-the keyword argument ``mcm_method`` at ``QNode`` creation
+The method can be configured with the keyword argument ``mcm_method`` at ``QNode`` creation
 (see :ref:`"Configuring mid-circuit measurements" <mcm_config>`).
 
 .. _deferred_measurements:
@@ -410,14 +412,14 @@ cost.
 
     The tree-traversal algorithm is supported by the following devices:
 
-    * :class:`~.pennylane.devices.DefaultQubit`,
-    
+    * `default.qubit <https://pennylane.ai/devices/default-qubit>`_,
+
     * `lightning.qubit <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_qubit/device.html>`_,
-    
-    * `lightning.gpu <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_gpu/device.html>`_,
-    
+
+    * `lightning.gpu <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_gpu/device.html>`_
+
     * `lightning.kokkos <https://docs.pennylane.ai/projects/lightning/en/stable/lightning_kokkos/device.html>`_,
-    
+
     Just-in-time (JIT) compilation is not available on ``DefaultQubit`` with ``shots=None``.
 
 .. _mcm_config:
@@ -429,17 +431,18 @@ As described above, there are multiple simulation techniques for circuits with
 mid-circuit measurements in PennyLane. They can be configured when initializing a
 :class:`~pennylane.QNode`, using the following keywords:
 
-* ``mcm_method``: Sets the method used for applying mid-circuit measurements. The options are
-  ``"deferred"``, ``"one-shot"``, and ``"tree-traversal"`` for the three techniques described above.
-  The default is ``mcm_method="one-shot"`` when executing with shots, and ``"deferred"`` otherwise.
-  When using :func:`~pennylane.qjit`, there is the additional (default) option
-  ``mcm_method="single-branch-statistics"``, which explores a single branch of the execution
-  tree at random.
-
-  .. warning::
-
-      If the ``mcm_method`` argument is provided, the transforms for deferred measurements
-      or dynamic one-shot sampling must not be applied manually to the :class:`~pennylane.QNode`.
+* ``mcm_method``: Sets the method used for applying mid-circuit measurements.
+  The three techniques described above can be specified with ``"deferred"``,
+  ``"one-shot"``, and ``"tree-traversal"``. When using :func:`~pennylane.qjit`,
+  there is the additional option ``"single-branch-statistics"``, which
+  explores a single branch of the execution tree at random. If not provided,
+  the method is selected by the device. For devices without native support
+  for mid-circuit measurements, ``"one-shot"`` is the default for finite-shots
+  execution, and ``"deferred"`` is the default for analytic mode, i.e., when
+  ``shots=None``. For devices with native mid-circuit measurement support,
+  ``"device"`` may be used to request the device-native method for applying
+  mid-circuit measurements. This is true for ``default.qubit`` and ``lightning.qubit``,
+  but this is not guranteed for other devices.
 
 * ``postselect_mode``: Configures how invalid shots are handled when postselecting
   mid-circuit measurements with finite-shot circuits. Use ``"hw-like"`` to discard invalid samples.
