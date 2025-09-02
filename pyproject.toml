@@ -15,7 +15,7 @@ dependencies = [
     "rustworkx>=0.14.0",
     "autograd",
     "appdirs",
-    "autoray>=0.6.11,<0.8",
+    "autoray>=0.8.0",
     "cachetools",
     "pennylane-lightning>=0.42",
     "requests",
