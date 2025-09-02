@@ -181,12 +181,6 @@ class TestInitialization:
         for op1, op2 in zip(ops_actual, ops_exp):
             qml.assert_equal(op1, op2)
 
-    def test_decomposition_raises_error(self):
-        sprod_op = s_prod(3.14, qml.Identity(wires=1))
-
-        with pytest.raises(DecompositionUndefinedError):
-            sprod_op.decomposition()
-
     def test_diagonalizing_gates(self):
         """Test that the diagonalizing gates are correct."""
         diag_sprod_op = SProd(1.23, qml.PauliX(wires=0))
@@ -316,6 +310,52 @@ class TestMscMethods:
 
         op = SProd(0.21319, DummyOp(1))
         assert op.has_diagonalizing_gates is value
+
+
+class TestDecomposition:
+
+    def test_decomposition_coeff_norm_1(self):
+        """Test that a decomposition exists when the coefficient is of norm 1."""
+
+        op = qml.s_prod(1j, qml.X(0))
+        assert op.has_decomposition
+        decomp = op.decomposition()
+
+        assert len(decomp) == 2
+        qml.assert_equal(decomp[0], qml.GlobalPhase(-np.pi / 2))
+        qml.assert_equal(decomp[1], qml.X(0))
+
+        decomp_mat = qml.matrix(op.decomposition, wire_order=[0])()
+        assert qml.math.allclose(decomp_mat, 1j * qml.X.compute_matrix())
+
+        with qml.queuing.AnnotatedQueue() as q:
+            op.decomposition()
+
+        assert len(q) == 2
+        qml.assert_equal(q.queue[0], qml.GlobalPhase(-np.pi / 2))
+        qml.assert_equal(q.queue[1], qml.X(0))
+
+    @pytest.mark.jax
+    def test_no_decomposition_abstract_coeff(self):
+        """Test that no decomposition exists when the coeff is abstract."""
+
+        import jax
+
+        def f(coeff):
+            op = qml.s_prod(coeff, qml.X(0))
+            assert not op.has_decomposition
+            with pytest.raises(DecompositionUndefinedError):
+                op.decomposition()
+
+        jax.jit(f)(1.0)
+
+    def test_no_decomposition_norm_not_one(self):
+        """Test that no decomposition exists if the norm is not 1."""
+
+        op = qml.s_prod(2, qml.X(0))
+        assert not op.has_decomposition
+        with pytest.raises(DecompositionUndefinedError):
+            op.decomposition()
 
 
 class TestMatrix:
