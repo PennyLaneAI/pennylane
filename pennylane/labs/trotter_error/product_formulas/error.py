@@ -91,22 +91,33 @@ def effective_hamiltonian(
         raise ValueError("Fragments do not match product formula")
 
     bch = bch_expansion(product_formula(1j * timestep), order)
-    eff = _AdditiveIdentity()
-
-    commutators = [commutator for ith_order in bch for commutator in ith_order.keys()]
 
     executor = concurrency.backends.get_executor(backend)
     with executor(max_workers=num_workers) as ex:
-        expectations = ex.starmap(
-            _insert_fragments,
-            [(commutator, fragments) for commutator in commutators],
+        partial_sum = ex.starmap(
+            _eval_commutator,
+            [
+                (commutator, coeff, fragments)
+                for ith_order in bch
+                for commutator, coeff in ith_order.items()
+            ],
         )
 
-    coeffs = [coeff for ith_order in bch for coeff in ith_order.values()]
-    for coeff, commutator in zip(coeffs, expectations):
-        eff += coeff * nested_commutator(commutator)
+    return sum(partial_sum)
 
-    return eff
+
+def _eval_commutator(commutator, coeff, fragments):
+    r"""Computes a commutator after replacing symbols in the commutator with concrete fragments.
+
+    Args:
+        commutator: commutator to be evaluated
+        coeff (complex): coefficient associated with the commutator
+        fragments (dict): dictionary representing a sequence of fragments
+
+    Returns:
+        ndarray: the evaluated form of the commutator
+    """
+    return coeff * nested_commutator(_insert_fragments(commutator, fragments))
 
 
 def _insert_fragments(
