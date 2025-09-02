@@ -380,12 +380,11 @@ class ParametricMidMeasureMP(MidMeasureMP):
     def _flatten(self):
         metadata = (
             ("angle", self.angle),
-            ("wires", self.raw_wires),
             ("plane", self.plane),
             ("reset", self.reset),
             ("id", self.id),
         )
-        return (None, None), metadata
+        return (), (self.wires, metadata)
 
     @property
     def hash(self):
@@ -416,7 +415,7 @@ class ParametricMidMeasureMP(MidMeasureMP):
         cls, angle=0.0, wires=None, plane="ZX", reset=False, postselect=None, id=None
     ):
         wires = () if wires is None else wires
-        return cls._wires_primitive.bind(
+        return cls._primitive.bind(
             *wires, angle=angle, plane=plane, reset=reset, postselect=postselect, id=id
         )
 
@@ -492,11 +491,10 @@ class XMidMeasureMP(ParametricMidMeasureMP):
 
     def _flatten(self):
         metadata = (
-            ("wires", self.raw_wires),
             ("reset", self.reset),
             ("id", self.id),
         )
-        return (None, None), metadata
+        return (), (self.wires, metadata)
 
     def __repr__(self):
         """Representation of this class."""
@@ -555,11 +553,10 @@ class YMidMeasureMP(ParametricMidMeasureMP):
 
     def _flatten(self):
         metadata = (
-            ("wires", self.raw_wires),
             ("reset", self.reset),
             ("id", self.id),
         )
-        return (None, None), metadata
+        return (), (self.wires, metadata)
 
     def __repr__(self):
         """Representation of this class."""
