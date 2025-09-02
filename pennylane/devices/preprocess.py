@@ -773,7 +773,7 @@ def _get_diagonalized_tape_and_wires(tape):
 
 @transform
 def device_resolve_dynamic_wires(
-    tape: QuantumScript, wires: None | Wires
+    tape: QuantumScript, wires: None | Wires, use_resets: bool = True
 ) -> tuple[QuantumScriptBatch, PostprocessingFn]:
     """Allocate dynamic wires in a manner consistent with the provided device wires.
 
@@ -816,7 +816,7 @@ def device_resolve_dynamic_wires(
         zeroed = ()
         min_int = max((i for i in tape.wires if isinstance(i, int)), default=-1) + 1
     try:
-        return resolve_dynamic_wires(tape, zeroed=zeroed, min_int=min_int)
+        return resolve_dynamic_wires(tape, zeroed=zeroed, min_int=min_int, use_resets=use_resets)
     except AllocationError as e:
         raise AllocationError(
             f"Not enough available wires on device with wires {wires} for requested dynamic wires."

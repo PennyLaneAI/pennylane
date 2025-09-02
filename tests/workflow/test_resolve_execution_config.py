@@ -69,7 +69,7 @@ def test_mcm_config_validation():
 
     resolved_config = _resolve_execution_config(execution_config, device, [empty_tape])
 
-    expected_mcm_config = MCMConfig(postselect_mode=None)
+    expected_mcm_config = MCMConfig(mcm_method="deferred", postselect_mode=None)
 
     assert resolved_config.mcm_config == expected_mcm_config
 
@@ -87,7 +87,8 @@ def test_jax_interface(mcm_method, postselect_mode):
 
     resolved_config = _resolve_execution_config(execution_config, device, [tape_with_finite_shots])
 
-    expected_mcm_config = MCMConfig(mcm_method, postselect_mode="pad-invalid-samples")
+    # since finite shots, mcm_method always one-shot
+    expected_mcm_config = MCMConfig("one-shot", postselect_mode="pad-invalid-samples")
 
     assert resolved_config.mcm_config == expected_mcm_config
 

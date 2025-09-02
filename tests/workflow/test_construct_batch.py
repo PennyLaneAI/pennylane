@@ -121,7 +121,7 @@ class TestTransformProgramGetter:
         ):
             p_none = get_transform_program(circuit, None)
         assert p_none == p_dev
-        assert len(p_dev) == 10
+        assert len(p_dev) == 9
         config = qml.devices.ExecutionConfig(interface=getattr(circuit, "interface", None))
         assert p_dev == p_grad + dev.preprocess_transforms(config)
 
@@ -129,7 +129,7 @@ class TestTransformProgramGetter:
         p_sliced = get_transform_program(circuit, slice(2, 7, 2))
         assert len(p_sliced) == 3
         assert p_sliced[0].transform == qml.compile.transform
-        assert p_sliced[2].transform == qml.devices.preprocess.mid_circuit_measurements.transform
+        assert p_sliced[2].transform == qml.devices.preprocess.validate_device_wires.transform
         assert p_sliced[1].transform == qml.devices.preprocess.decompose.transform
 
     def test_diff_method_device_gradient(self):
@@ -156,7 +156,7 @@ class TestTransformProgramGetter:
             return qml.expval(qml.PauliZ(0))
 
         full_prog = get_transform_program(circuit)
-        assert len(full_prog) == 14
+        assert len(full_prog) == 13
 
         config = qml.devices.ExecutionConfig(
             interface=getattr(circuit, "interface", None),

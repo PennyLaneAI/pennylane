@@ -621,20 +621,35 @@ class TestTransformDispatcher:  # pylint: disable=too-many-public-methods
     @pytest.mark.parametrize("valid_transform", valid_transforms)
     def test_device_transform(self, valid_transform):
         """Test a device transform."""
-        dispatched_transform = transform(valid_transform)
-        new_dev = dispatched_transform(dev, index=0)
 
-        assert new_dev.original_device is dev
+        class DummyDev(qml.devices.Device):
+
+            # pylint: disable=unused-argument
+            def preprocess_transforms(self, execution_config=None):
+                prog = qml.transforms.core.TransformProgram()
+                prog.add_transform(qml.defer_measurements)
+                prog.add_transform(qml.compile)
+                return prog
+
+            def execute(self, circuits, execution_config=None):
+                return [0] * len(circuits)
+
+        _dev = DummyDev()
+
+        dispatched_transform = transform(valid_transform)
+        new_dev = dispatched_transform(_dev, index=0)
+
+        assert new_dev.original_device is _dev
         assert repr(new_dev).startswith("Transformed Device")
 
-        program = dev.preprocess_transforms()
+        program = _dev.preprocess_transforms()
         new_program = new_dev.preprocess_transforms()
 
         assert isinstance(program, qml.transforms.core.TransformProgram)
         assert isinstance(new_program, qml.transforms.core.TransformProgram)
 
-        assert len(program) == 6
-        assert len(new_program) == 7
+        assert len(program) == 2
+        assert len(new_program) == 3
 
         assert new_program[-1].transform is valid_transform
 

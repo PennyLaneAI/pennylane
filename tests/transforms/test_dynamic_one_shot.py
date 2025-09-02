@@ -103,7 +103,7 @@ def test_postselect_mode(postselect_mode, mocker):
     """Test that invalid shots are discarded if requested"""
     shots = 100
     dev = qml.device("default.qubit")
-    spy = mocker.spy(qml, "dynamic_one_shot")
+    spy = mocker.spy(qml.transforms, "dynamic_one_shot")
 
     @qml.set_shots(shots)
     @qml.qnode(dev, postselect_mode=postselect_mode)

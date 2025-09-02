@@ -88,7 +88,8 @@ def test_resolved_construction_default_qubit(interface):
 
     config = construct_execution_config(qn, resolve=True)()
 
-    mcm_config = MCMConfig(None, None)
+    postselect_mode = "fill-shots" if "jax-jit" == interface else None
+    mcm_config = MCMConfig(mcm_method="deferred", postselect_mode=postselect_mode)
     expected_config = ExecutionConfig(
         grad_on_execution=False,
         use_device_gradient=True,
@@ -122,9 +123,9 @@ def test_jax_interface(mcm_method, postselect_mode, interface):
         qml.X(0)
         return qml.expval(qml.Z(0))
 
-    config = construct_execution_config(circuit)(shots=100)
+    config = construct_execution_config(qml.set_shots(circuit, 100))()
 
-    expected_mcm_config = MCMConfig(mcm_method, postselect_mode="pad-invalid-samples")
+    expected_mcm_config = MCMConfig(mcm_method="one-shot", postselect_mode="pad-invalid-samples")
     expected_config = ExecutionConfig(
         grad_on_execution=False,
         use_device_gradient=False,

@@ -590,7 +590,10 @@ class DefaultQubit(Device):
             stopping_condition_shots=stopping_condition_shots,
             name=self.name,
         )
-        transform_program.add_transform(device_resolve_dynamic_wires, wires=self.wires)
+        _use_resets = config.mcm_config.mcm_method != "deferred"
+        transform_program.add_transform(
+            device_resolve_dynamic_wires, wires=self.wires, use_resets=_use_resets
+        )
         transform_program.add_transform(validate_device_wires, self.wires, name=self.name)
         transform_program.add_transform(
             validate_measurements,
@@ -618,7 +621,6 @@ class DefaultQubit(Device):
             _add_adjoint_transforms(
                 transform_program, device_vjp=config.use_device_jacobian_product
             )
-
         return transform_program
 
     # pylint: disable = too-many-branches
