@@ -318,12 +318,12 @@ class TestConvertToMBQCFormalismPass:
             # CHECK-NOT: quantum.custom "RZ"()
             # CHECK-NOT: quantum.custom "RotXZX"()
             # CHECK-NOT: scf.for
-            # CHECK: quantum.custom "Hadamard"
-            # CHECK: quantum.custom "CZ"
+            # CHECK: quantum.custom "Hadamard"()
+            # CHECK: quantum.custom "CZ"()
             # CHECK: mbqc.measure_in_basis
             # CHECK: scf.if
-            # CHECK: quantum.custom "PauliX"
-            # CHECK: quantum.custom "PauliZ"
+            # CHECK: quantum.custom "PauliX"()
+            # CHECK: quantum.custom "PauliZ"()
             # CHECK: quantum.dealloc_qb
             for i in range(1000):
                 qml.H(i)
@@ -362,12 +362,12 @@ class TestConvertToMBQCFormalismPass:
             # CHECK-NOT: quantum.custom "RZ"()
             # CHECK-NOT: quantum.custom "RotXZX"()
             # CHECK: scf.for
-            # CHECK: quantum.custom "Hadamard"
-            # CHECK: quantum.custom "CZ"
+            # CHECK: quantum.custom "Hadamard"()
+            # CHECK: quantum.custom "CZ"()
             # CHECK: mbqc.measure_in_basis
             # CHECK: scf.if
-            # CHECK: quantum.custom "PauliX"
-            # CHECK: quantum.custom "PauliZ"
+            # CHECK: quantum.custom "PauliX"()
+            # CHECK: quantum.custom "PauliZ"()
             # CHECK: quantum.dealloc_qb
             loop_for()
             qml.CNOT(wires=[0, 1])
@@ -404,12 +404,12 @@ class TestConvertToMBQCFormalismPass:
             # CHECK-NOT: quantum.custom "RZ"()
             # CHECK-NOT: quantum.custom "RotXZX"()
             # CHECK: scf.while
-            # CHECK: quantum.custom "Hadamard"
-            # CHECK: quantum.custom "CZ"
+            # CHECK: quantum.custom "Hadamard"()
+            # CHECK: quantum.custom "CZ"()
             # CHECK: mbqc.measure_in_basis
             # CHECK: scf.if
-            # CHECK: quantum.custom "PauliX"
-            # CHECK: quantum.custom "PauliZ"
+            # CHECK: quantum.custom "PauliX"()
+            # CHECK: quantum.custom "PauliZ"()
             # CHECK: quantum.dealloc_qb
             while_for(0)
             qml.CNOT(wires=[0, 1])
