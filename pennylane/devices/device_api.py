@@ -990,6 +990,7 @@ class Device(abc.ABC):
         consts: list[TensorLike],
         *args,
         execution_config: ExecutionConfig | None = None,
+        shots: Shots = Shots(None),
     ) -> list[TensorLike]:
         """An **experimental** method for natively evaluating PLXPR. See the ``capture`` module for more details.
 
@@ -1000,6 +1001,7 @@ class Device(abc.ABC):
 
         Keyword Args:
             execution_config (Optional[ExecutionConfig]): a data structure with additional information required for execution
+            shots (Shots): the number of shots to use for the evaluation
 
         Returns:
             list[TensorLike]: the result of evaluating the jaxpr with the given parameters.

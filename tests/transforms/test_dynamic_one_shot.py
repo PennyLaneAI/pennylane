@@ -49,13 +49,19 @@ def test_gather_non_mcm_unsupported_measurement():
 
 def test_get_legacy_capability():
     dev = DefaultQubitLegacy(wires=[0], shots=1)
-    dev = qml.devices.LegacyDeviceFacade(dev)
+    with pytest.warns(
+        qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+    ):
+        dev = qml.devices.LegacyDeviceFacade(dev)
     caps = get_legacy_capabilities(dev)
     assert caps["model"] == "qubit"
     assert not "supports_mid_measure" in caps
     assert not _supports_one_shot(dev)
 
-    dev2 = qml.devices.DefaultMixed(wires=[0], shots=1)
+    with pytest.warns(
+        qml.exceptions.PennyLaneDeprecationWarning, match="shots on device is deprecated"
+    ):
+        dev2 = qml.devices.DefaultMixed(wires=[0], shots=1)
     assert not _supports_one_shot(dev2)
 
 
