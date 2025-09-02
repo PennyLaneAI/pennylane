@@ -22,11 +22,11 @@ written using xDSL.
     documentation for the GraphStatePrepOp operation in the MBQC dialect in Catalyst.
 """
 
+import math
 from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Generator, TypeAlias
 
-import numpy as np
 from xdsl import context, passes, pattern_rewriter
 from xdsl.dialects import builtin
 from xdsl.pattern_rewriter import PatternRewriter, RewritePattern
@@ -36,7 +36,7 @@ from pennylane.exceptions import CompileError
 from ..dialects import mbqc, quantum
 from .api import compiler_transform
 
-DenselyPackedAdjMatrix: TypeAlias = list[int] | list[bool]
+DenselyPackedAdjMatrix: TypeAlias = Sequence[int] | Sequence[bool]
 
 
 @dataclass(frozen=True)
@@ -51,10 +51,7 @@ class DecomposeGraphStatePass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the decompose-graph-state pass."""
 
-        greedy_applier = pattern_rewriter.GreedyRewritePatternApplier(
-            [DecomposeGraphStatePattern()]
-        )
-        walker = pattern_rewriter.PatternRewriteWalker(greedy_applier)
+        walker = pattern_rewriter.PatternRewriteWalker(DecomposeGraphStatePattern())
         walker.rewrite_module(module)
 
 
@@ -116,6 +113,8 @@ class DecomposeGraphStatePattern(RewritePattern):
             qreg = qinsert_op.out_qreg
 
         # In this section, we iterate over the ops created above and insert them.
+        # Note that we do not need to specify the insertion point here; all ops are inserted before
+        # the matched op, automatically putting them in the order we want them in.
         for qextract_op in qextract_ops:
             rewriter.insert_op(qextract_op)
 
@@ -134,7 +133,10 @@ class DecomposeGraphStatePattern(RewritePattern):
 
         # Finally, erase the ops that have now been replaced with quantum ops
         rewriter.erase_matched_op()
-        rewriter.erase_op(graph_prep_op.adj_matrix.owner)
+
+        # Erase the constant op that returned the adjacency matrix only if it has no other uses
+        if graph_prep_op.adj_matrix.uses.get_length() == 0:
+            rewriter.erase_op(graph_prep_op.adj_matrix.owner)
 
 
 @dataclass(frozen=True)
@@ -149,10 +151,7 @@ class NullDecomposeGraphStatePass(passes.ModulePass):
     def apply(self, _ctx: context.Context, module: builtin.ModuleOp) -> None:
         """Apply the null-decompose-graph-state pass."""
 
-        greedy_applier = pattern_rewriter.GreedyRewritePatternApplier(
-            [NullDecomposeGraphStatePattern()]
-        )
-        walker = pattern_rewriter.PatternRewriteWalker(greedy_applier)
+        walker = pattern_rewriter.PatternRewriteWalker(NullDecomposeGraphStatePattern())
         walker.rewrite_module(module)
 
 
@@ -180,10 +179,13 @@ class NullDecomposeGraphStatePattern(RewritePattern):
 
         # Finally, erase the ops that have now been replaced with quantum ops
         rewriter.erase_matched_op()
-        rewriter.erase_op(graph_prep_op.adj_matrix.owner)
+
+        # Erase the constant op that returned the adjacency matrix only if it has no other uses
+        if graph_prep_op.adj_matrix.uses.get_length() == 0:
+            rewriter.erase_op(graph_prep_op.adj_matrix.owner)
 
 
-def _parse_adj_matrix(graph_prep_op: mbqc.GraphStatePrepOp) -> DenselyPackedAdjMatrix:
+def _parse_adj_matrix(graph_prep_op: mbqc.GraphStatePrepOp) -> list[int]:
     """Parse the adjacency matrix from the result of the ConstantOp given as input to the
     graph_state_prep op.
 
@@ -192,8 +194,8 @@ def _parse_adj_matrix(graph_prep_op: mbqc.GraphStatePrepOp) -> DenselyPackedAdjM
     elements, whose values are typically either 0 for 'false' or 255 for 'true'.
 
     Returns:
-        DenselyPackedAdjMatrix: The densely packed adjacency matrix as a sequence of ints. See the
-        note in the module documentation for a description of this format.
+        list[int]: The densely packed adjacency matrix as a list of ints. See the note in the module
+        documentation for a description of this format.
     """
     adj_matrix_const_op = graph_prep_op.adj_matrix.owner
     adj_matrix_value = adj_matrix_const_op.properties.get("value")
@@ -234,16 +236,29 @@ def _n_vertices_from_packed_adj_matrix(adj_matrix: DenselyPackedAdjMatrix) -> in
     assert isinstance(
         adj_matrix, Sequence
     ), f"Expected `adj_matrix` to be a sequence, but got {type(adj_matrix).__name__}"
-    m = len(adj_matrix)
-    N = (1 + np.sqrt(1 + 8 * m)) / 2
 
-    if N != int(N):
+    m = len(adj_matrix)
+
+    # The formula to compute the number of vertices, N, in the graph from the number elements in the
+    # densely packed adjacency matrix, m, is
+    #   N = (1 + sqrt(1 + 8m)) / 2
+    # To avoid floating-point errors in the sqrt function, we break it down into integer-arithmetic
+    # operations and ensure that the solution is one where N is mathematically a true integer.
+
+    discriminant = 1 + 8 * m
+    sqrt_discriminant = math.isqrt(discriminant)
+
+    # Check if it's a perfect square
+    if sqrt_discriminant * sqrt_discriminant != discriminant:
         raise CompileError(
             f"The number of elements in the densely packed adjacency matrix is {m}, which does not "
             f"correspond to an integer number of graph vertices"
         )
 
-    return int(N)
+    # The numerator, 1 + sqrt(1 + 8m), must be even for the result to be an integer. The quantity
+    # sqrt(1 + 8m) will always be odd if it's a perfect square, so the quantity (1 + sqrt(1 + 8m))
+    # will always be even. We can therefore safely divide (using integer division).
+    return (1 + sqrt_discriminant) // 2
 
 
 def _edge_iter(adj_matrix: DenselyPackedAdjMatrix) -> Generator[tuple[int, int], None, None]:
@@ -267,7 +282,7 @@ def _edge_iter(adj_matrix: DenselyPackedAdjMatrix) -> Generator[tuple[int, int],
         (1, 3)
         (2, 3)
     """
-    # Calling `_n_vertices_from_packed_adj_matrix()`` asserts that the input `adj_matrix` is in the
+    # Calling `_n_vertices_from_packed_adj_matrix()` asserts that the input `adj_matrix` is in the
     # correct format and is valid.
     _n_vertices_from_packed_adj_matrix(adj_matrix)
 

@@ -40,6 +40,57 @@ from pennylane.compiler.python_compiler.transforms.decompose_graph_state import 
 from pennylane.exceptions import CompileError
 
 
+@pytest.fixture(scope="module", name="mbqc_single_qubit_graph")
+def fixture_mbqc_single_qubit_graph():
+    """Fixture that returns the densely packed adjacency matrix for the graph state used for
+    representing single-qubit gates in the MBQC formalism.
+
+    The graph state is as follows:
+
+        0 -- 1 -- 2 -- 3
+    """
+    # fmt: off
+    packed_adj_matrix = [
+    #   0  1  2
+        1,       # 1
+        0, 1,    # 2
+        0, 0, 1  # 3
+    ]
+    return packed_adj_matrix
+
+
+@pytest.fixture(scope="module", name="mbqc_cnot_graph")
+def fixture_mbqc_cnot_graph():
+    """Fixture that returns the densely packed adjacency matrix for the graph state used for
+    representing a CNOT gate in the MBQC formalism.
+
+    The graph state is as follows:
+
+        0 -- 1 -- 2 -- 3 -- 4 -- 5
+                  |
+                  6
+                  |
+        7 -- 8 -- 9 -- 10 - 11 - 12
+    """
+    # fmt: off
+    packed_adj_matrix = [
+    #   0  1  2  3  4  5  6  7  8  9  10 11
+        1,
+        0, 1,
+        0, 0, 1,
+        0, 0, 0, 1,
+        0, 0, 0, 0, 1,
+        0, 0, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 1,
+        0, 0, 0, 0, 0, 0, 1, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1
+    ]
+    return packed_adj_matrix
+
+
 class TestDecomposeGraphStatePass:
     """Unit tests for the decompose-graph-state pass."""
 
@@ -300,6 +351,52 @@ class TestDecomposeGraphStatePass:
         pipeline = (DecomposeGraphStatePass(),)
         run_filecheck(program, pipeline)
 
+    def test_adj_matrix_reuse(self, run_filecheck):
+        """Test that the decompose-graph-state pass supports the case where we reuse the adjacency
+        matrix resulting from a constant op multiple times.
+        """
+
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: quantum.alloc(3)
+            // CHECK: quantum.alloc(3)
+
+            %adj_matrix = arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            %qreg1 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            %qreg2 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
+        """
+
+        pipeline = (DecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
+    def test_with_stablehlo_constant(self, run_filecheck):
+        """Test that the decompose-graph-state pass supports the case where the adjacency matrix
+        results from a `stablehlo.constant` op (rather than an `arith.constant` op).
+        """
+
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: stablehlo.constant
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: quantum.alloc(3)
+
+            %adj_matrix = "stablehlo.constant"() <{value = dense<[1, 0, 1]> : tensor<3xi1>}> : () -> tensor<3xi1>
+            %qreg1 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
+        """
+
+        pipeline = (DecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
 
 class TestNullDecomposeGraphStatePass:
     """Unit tests for the null-decompose-graph-state pass."""
@@ -419,6 +516,52 @@ class TestNullDecomposeGraphStatePass:
         pipeline = (NullDecomposeGraphStatePass(),)
         run_filecheck(program, pipeline)
 
+    def test_adj_matrix_reuse(self, run_filecheck):
+        """Test that the null-decompose-graph-state pass supports the case where we reuse the
+        adjacency matrix resulting from a constant op multiple times.
+        """
+
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: quantum.alloc(3)
+            // CHECK: quantum.alloc(3)
+
+            %adj_matrix = arith.constant dense<[1, 0, 1]> : tensor<3xi1>
+            %qreg1 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            %qreg2 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
+        """
+
+        pipeline = (NullDecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
+    def test_with_stablehlo_constant(self, run_filecheck):
+        """Test that the null-decompose-graph-state pass supports the case where the adjacency matrix
+        results from a `stablehlo.constant` op (rather than an `arith.constant` op).
+        """
+
+        program = """
+        // CHECK-LABEL: circuit
+        func.func @circuit() {
+            // CHECK-NOT: stablehlo.constant
+            // CHECK-NOT: mbqc.graph_state_prep
+
+            // CHECK: quantum.alloc(3)
+
+            %adj_matrix = "stablehlo.constant"() <{value = dense<[1, 0, 1]> : tensor<3xi1>}> : () -> tensor<3xi1>
+            %qreg1 = mbqc.graph_state_prep (%adj_matrix : tensor<3xi1>) [init "Hadamard", entangle "CZ"] : !quantum.reg
+            func.return
+        }
+        """
+
+        pipeline = (NullDecomposeGraphStatePass(),)
+        run_filecheck(program, pipeline)
+
 
 class TestAdjMatrixHelpers:
     """Test suite for the densely packed adjacency matrix helper functions."""
@@ -475,3 +618,65 @@ class TestAdjMatrixHelpers:
         with pytest.raises(CompileError, match="densely packed adjacency matrix"):
             adj_matrix = [0] * n
             _ = list(_edge_iter(adj_matrix))
+
+    def test_n_vertices_mbqc_single_qubit(self, mbqc_single_qubit_graph):
+        """Test that the ``_n_vertices_from_packed_adj_matrix`` function correctly determines that
+        the number of vertices in the densely packed adjacency matrix for the graph state used for
+        representing single-qubit gates in the MBQC formalism is equal to 4.
+        """
+        n_observed = _n_vertices_from_packed_adj_matrix(mbqc_single_qubit_graph)
+        assert n_observed == 4
+
+    def test_n_vertices_mbqc_cnot(self, mbqc_cnot_graph):
+        """Test that the ``_n_vertices_from_packed_adj_matrix`` function correctly determines that
+        the number of vertices in the densely packed adjacency matrix for the graph state used for
+        representing a CNOT gate in the MBQC formalism is equal to 13.
+        """
+        n_observed = _n_vertices_from_packed_adj_matrix(mbqc_cnot_graph)
+        assert n_observed == 13
+
+    def test_edge_iter_mbqc_single_qubit(self, mbqc_single_qubit_graph):
+        """Test that the ``_edge_iter`` generator function applied to the densely packed adjacency
+        matrix for the graph state used for representing single-qubit gates in the MBQC formalism
+        yields the correct edges.
+
+        For reference, the graph is:
+
+            0 -- 1 -- 2 -- 3
+        """
+        edges_observed = list(_edge_iter(mbqc_single_qubit_graph))
+
+        assert edges_observed == [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+        ]
+
+    def test_edge_iter_mbqc_cnot(self, mbqc_cnot_graph):
+        """Test that the ``_edge_iter`` generator function applied to the densely packed adjacency
+        matrix for the graph state used for representing a CNOT gate in the MBQC formalism yields
+        the correct edges.
+
+        For reference, the graph is:
+
+            0 -- 1 -- 2 -- 3 -- 4 -- 5
+                      |
+                      6
+                      |
+            7 -- 8 -- 9 -- 10 - 11 - 12
+        """
+        edges_observed = list(_edge_iter(mbqc_cnot_graph))
+        assert edges_observed == [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 4),
+            (4, 5),
+            (2, 6),
+            (7, 8),
+            (6, 9),
+            (8, 9),
+            (9, 10),
+            (10, 11),
+            (11, 12),
+        ]
