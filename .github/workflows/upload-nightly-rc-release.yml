@@ -12,6 +12,9 @@ jobs:
     name: Setup the release
     runs-on: ubuntu-24.04
     steps:
+    - name: Checkout PennyLane repo
+      uses: actions/checkout@v4
+          
     - name: Get latest branch matching pattern
       id: get-latest-branch
       run: |
