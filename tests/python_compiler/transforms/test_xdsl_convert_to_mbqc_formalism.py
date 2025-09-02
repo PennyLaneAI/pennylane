@@ -337,7 +337,7 @@ class TestConvertToMBQCFormalismPass:
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_lowering_for(self, run_filecheck_qjit):
-        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and unrolled loops."""
+        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and for-loop structure."""
         dev = qml.device("null.qubit", wires=1000)
 
         @qml.for_loop(1, 1000, 1)
@@ -377,7 +377,7 @@ class TestConvertToMBQCFormalismPass:
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
     def test_gates_in_mbqc_gate_set_lowering_while(self, run_filecheck_qjit):
-        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and unrolled loops."""
+        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and while-loop structure."""
         dev = qml.device("null.qubit", wires=1000)
 
         @qml.while_loop(lambda i: i > 1000)

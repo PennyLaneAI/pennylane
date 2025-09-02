@@ -32,11 +32,6 @@ from ..dialects.quantum import AllocQubitOp, CustomOp, DeallocQubitOp, QubitType
 from .api import compiler_transform
 
 
-class _MeasureBasis(Enum):
-    X = "X"
-    Y = "Y"
-
-
 def _generate_graph(op_name: str):
     """Generate a networkx graph to represent the connectivity of auxiliary qubits of
     a gate.
@@ -186,14 +181,14 @@ class ConvertToMBQCFormalismPattern(
 
     def _insert_xy_basis_measure_op(
         self,
-        xy_basis: _MeasureBasis,
+        angle: float,
         qubit: QubitType,
         insert_before: CustomOp,
         rewriter: pattern_rewriter.PatternRewriter,
     ):  # pylint: disable=too-many-arguments, too-many-positional-arguments
         """Insert an arbitrary basis measure related operations to the IR.
         Args:
-            xy_basis (_MeasureBasis) : The measurement basis.
+            angle (float) : The angle of measurement basis.
             qubit (QubitType) : The target qubit to be measured.
             insert_before (CustomOp) : A `CustomOp` object to be used as the insertion point for the `measure` op.
             rewriter (pattern_rewriter.PatternRewriter): A PatternRewriter object.
@@ -201,7 +196,6 @@ class ConvertToMBQCFormalismPattern(
         Returns:
             The results include: 1. a measurement result; 2, a result qubit.
         """
-        angle = 0.0 if xy_basis == _MeasureBasis.X else math.pi / 2
         plane_op = MeasurementPlaneAttr(MeasurementPlaneEnum("XY"))
         # Create a constant op from a float64 variable
         const_angle_op = arith.ConstantOp(builtin.FloatAttr(data=angle, type=builtin.Float64Type()))
@@ -217,11 +211,11 @@ class ConvertToMBQCFormalismPattern(
 
     def _insert_measure_x_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert a X-basis measure op related operations to the IR."""
-        return self._insert_xy_basis_measure_op(_MeasureBasis.X, qubit, op, rewriter)
+        return self._insert_xy_basis_measure_op(0.0, qubit, op, rewriter)
 
     def _insert_measure_y_op(self, qubit, op, rewriter: pattern_rewriter.PatternRewriter):
         """Insert a Y-basis measure op related operations to the IR."""
-        return self._insert_xy_basis_measure_op(_MeasureBasis.Y, qubit, op, rewriter)
+        return self._insert_xy_basis_measure_op(math.pi / 2, qubit, op, rewriter)
 
     def _insert_cond_arbitrary_basis_measure_op(
         self,
@@ -566,7 +560,7 @@ class ConvertToMBQCFormalismPattern(
 
         return ctrl_aux_qubit, tgt_aux_qubit
 
-    def _queue_byprod_corrections(
+    def _insert_byprod_corrections(
         self,
         mres: list[builtin.IntegerType],
         qubits: QubitType | list[QubitType],
@@ -653,7 +647,7 @@ class ConvertToMBQCFormalismPattern(
                     )
 
                     # Insert byproduct ops to the IR
-                    graph_qubits_dict[5] = self._queue_byprod_corrections(
+                    graph_qubits_dict[5] = self._insert_byprod_corrections(
                         mres, graph_qubits_dict[5], op, rewriter
                     )
 
@@ -691,7 +685,7 @@ class ConvertToMBQCFormalismPattern(
                     )
 
                     # Insert byproduct ops to the IR
-                    graph_qubits_dict[7], graph_qubits_dict[15] = self._queue_byprod_corrections(
+                    graph_qubits_dict[7], graph_qubits_dict[15] = self._insert_byprod_corrections(
                         mres, [graph_qubits_dict[7], graph_qubits_dict[15]], op, rewriter
                     )
 
@@ -699,6 +693,8 @@ class ConvertToMBQCFormalismPattern(
                     # TODOs: the following line will lead to failure, the error msg is :
                     # RuntimeError: [/__w/catalyst/catalyst/runtime/lib/backend/common/QubitManager.hpp:47][Function:_remove_simulator_qubit_id] Error in Catalyst Runtime: Invalid simulator qubit index
                     # While, if we replace [9, 15] with [1,7,9, 15], there is no error for the unit test
+                    # It could be fixed by the [PR <https://github.com/PennyLaneAI/catalyst/pull/2000>_], we should
+                    # revisit this later once the PR above is merged.
                     self._deallocate_aux_qubits(graph_qubits_dict, [9, 15], op, rewriter)
 
                     # Replace all uses of output qubit of op with the result auxiliary qubit
