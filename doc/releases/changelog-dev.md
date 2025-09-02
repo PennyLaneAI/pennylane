@@ -784,6 +784,9 @@
 * Updated `CompressedResourceOp` class to track the number of wires an operator requires in labs.
   [(#8173)](https://github.com/PennyLaneAI/pennylane/pull/8173)
 
+* Update links in `README.md`.
+  [(#8165)](https://github.com/PennyLaneAI/pennylane/pull/8165)
+
 * Update `autograph` guide to reflect new capabilities.
   [(#8132)](https://github.com/PennyLaneAI/pennylane/pull/8132)
 
