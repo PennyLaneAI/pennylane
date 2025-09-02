@@ -12,13 +12,10 @@ jobs:
     name: Setup the release
     runs-on: ubuntu-24.04
     steps:
-    - name: Checkout PennyLane repo
-      uses: actions/checkout@v4
-          
     - name: Get latest branch matching pattern
       id: get-latest-branch
       run: |
-        git fetch --all
+        git fetch --all -q
         latest_branch=$(git branch -r --sort=-committerdate | grep -Eo 'origin/v[0-9]+\.[0-9]+\.[0-9]+-rc0' | head -n 1 | sed 's|origin/||')
         git branch -r --sort=-committerdate | grep -Eo 'origin/v[0-9]+\.[0-9]+\.[0-9]+-rc0' | head -n 1 | sed 's|origin/||'
         echo "LATEST_BRANCH=$latest_branch" >> $GITHUB_ENV
@@ -32,7 +29,7 @@ jobs:
     - name: Bump dev version
       run: |
         echo "Latest branch is ${{ env.LATEST_BRANCH }}"
-        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version.py
+        python $GITHUB_WORKSPACE/.github/workflows/scripts/set_nightly_version_rc.py
 
     - name: Build wheels
       run: |
