@@ -176,16 +176,17 @@ def perturbation_error(
         assert num_workers == 1, "num_workers must be set to 1 for serial execution."
         expectations = []
         for state in states:
-            new_state = _AdditiveIdentity()
+            order_sum = 0j
             for commutators in commutator_lists:
                 if len(commutators) == 0:
                     continue
 
                 order = len(commutators[0])
                 for commutator in commutators:
-                    new_state += _apply_commutator(commutator, fragments, state)
+                    new_state = _apply_commutator(commutator, fragments, state)
+                    order_sum += state.dot(new_state)
 
-                expectations.append({order: (1j * timestep) ** order * state.dot(new_state)})
+                expectations.append({order: (1j * timestep) ** order * order_sum})
 
         return expectations
 
@@ -232,16 +233,17 @@ def _get_expval_state(commutator_lists, fragments, state: AbstractState, timeste
     """Returns the expectation value of ``state`` with respect to the operator obtained by substituting ``fragments`` into ``commutators``."""
 
     expectations = {}
-    new_state = _AdditiveIdentity()
+    order_sum = 0j
     for commutators in commutator_lists:
         if len(commutators) == 0:
             continue
 
         order = len(commutators[0])
         for commutator in commutators:
-            new_state += _apply_commutator(commutator, fragments, state)
+            new_state = _apply_commutator(commutator, fragments, state)
+            order_sum += state.dot(new_state)
 
-        expectations[order] = (1j * timestep) ** order * state.dot(new_state)
+        expectations[order] = (1j * timestep) ** order * order_sum
 
     return expectations
 
