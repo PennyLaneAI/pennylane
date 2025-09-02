@@ -492,7 +492,7 @@ def _commute_phases_u(left_givens, right_givens, phases, interface):
             -math.conj(grot_mat[1, 0]) / abs_s * phases[j, j],
             grot_mat[1, 1] / abs_c * phases[j, j],
         ]
-        for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag):
+        for diag_idx, diag_val in zip([(i, i), (j, j)], nphase_diag, strict=True):
             phases = _set_unitary_matrix(phases, diag_idx, diag_val, like=interface)
 
         nleft_givens.append((math.conj(givens_mat), (i, j)))
