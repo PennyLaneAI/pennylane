@@ -110,6 +110,9 @@
 
 <h3>Improvements 🛠</h3>
 
+* `qml.snapshots` can now be used with `mcm_method="one-shot"` and `mcm_method="tree-traversal"`.
+  [(#8140)](https://github.com/PennyLaneAI/pennylane/pull/8140)
+
 * A `DynamicRegister` can no longer be used as an individual wire itself, as this led to confusing results.
   [(#8151)](https://github.com/PennyLaneAI/pennylane/pull/8151)
 
