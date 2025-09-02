@@ -16,8 +16,9 @@ This module contains tests for class needed to map PennyLane operations to their
 """
 import pytest
 
-import pennylane as qml
 import numpy as np
+
+import pennylane as qml
 import pennylane.labs.resource_estimation.ops as re_ops
 import pennylane.labs.resource_estimation.templates as re_temps
 import pennylane.templates as qtemps
@@ -96,7 +97,6 @@ class Test_map_to_resource_op:
 
         assert map_to_resource_op(operator) == expected_res_op
 
-
     @pytest.mark.parametrize(
         "operator, expected_res_op",
         [
@@ -138,7 +138,9 @@ class Test_map_to_resource_op:
                     target_wire=[2],
                     rot_axis="Y",
                 ),
-                re_temps.ResourceSelectPauliRot(rotation_axis="Y", num_ctrl_wires=2, precision=None),
+                re_temps.ResourceSelectPauliRot(
+                    rotation_axis="Y", num_ctrl_wires=2, precision=None
+                ),
             ),
             (
                 qml.QubitUnitary(np.eye(2), wires=0),
@@ -151,7 +153,9 @@ class Test_map_to_resource_op:
                     target_wire=[2],
                     rot_axis="Y",
                 ),
-                re_temps.ResourceSelectPauliRot(rotation_axis="Y", num_ctrl_wires=2, precision=None),
+                re_temps.ResourceSelectPauliRot(
+                    rotation_axis="Y", num_ctrl_wires=2, precision=None
+                ),
             ),
             (
                 qml.QuantumPhaseEstimation(qml.PauliZ(2), estimation_wires=[0, 1]),

@@ -225,6 +225,7 @@ def _(op: qtemps.TemporaryAND):
 def _(op: qops.Toffoli):
     return re_ops.ResourceToffoli()
 
+
 @map_to_resource_op.register
 def _(op: qtemps.OutMultiplier):
     return re_temps.ResourceOutMultiplier(
@@ -249,14 +250,13 @@ def _(op: qtemps.QFT):
 
 @map_to_resource_op.register
 def _(op: qtemps.AQFT):
-    return re_temps.ResourceAQFT(
-        order=op.hyperparameters["order"], num_wires=len(op.wires)
-    )
+    return re_temps.ResourceAQFT(order=op.hyperparameters["order"], num_wires=len(op.wires))
 
 
 @map_to_resource_op.register
 def _(op: qtemps.BasisRotation):
     return re_temps.ResourceBasisRotation(dim_N=len(op.wires))
+
 
 @map_to_resource_op.register
 def _(op: qtemps.Select):
@@ -289,13 +289,12 @@ def _(op: qtemps.SelectPauliRot):
 def _(op: qops.QubitUnitary):
     return re_temps.ResourceQubitUnitary(num_wires=len(op.wires), precision=None)
 
+
 @map_to_resource_op.register
 def _(op: qtemps.ControlledSequence):
     res_base = map_to_resource_op(op.hyperparameters["base"])
     num_control_wires = len(op.hyperparameters["control_wires"])
-    return re_temps.ResourceControlledSequence(
-        base=res_base, num_control_wires=num_control_wires
-    )
+    return re_temps.ResourceControlledSequence(base=res_base, num_control_wires=num_control_wires)
 
 
 @map_to_resource_op.register
@@ -317,15 +316,17 @@ def _(op: qtemps.TrotterProduct):
     )
 
 
-@map_to_resource_op.register
-def _(op: qtemps.MPS):
-    return re_temps.ResourceMPSPrep(num_wires=len(op.wires))
+# @map_to_resource_op.register
+# def _(op: qtemps.MPS):
+#     return re_temps.ResourceMPSPrep(num_wires=len(op.wires))
 
 
 @map_to_resource_op.register
 def _(op: qtemps.QROMStatePreparation):
-    precision = math.pi / (2**len(op.hyperparameters["precision_wires"]))
-    return re_temps.ResourceQROMStatePreparation(num_wires=len(op.wires), precision=precision)
+    precision = math.pi / (2 ** len(op.hyperparameters["precision_wires"]))
+    return re_temps.ResourceQROMStatePreparation(
+        num_state_qubits=len(op.wires), precision=precision
+    )
 
 
 @map_to_resource_op.register
