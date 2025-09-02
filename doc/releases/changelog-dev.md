@@ -778,6 +778,9 @@
 
 <h3>Internal changes ⚙️</h3>
 
+* Update docstring in `perturbation_error` to reflect renamed positional arg
+  [#(8174)](https://github.com/PennyLaneAI/pennylane/pull/8174)
+
 * Unpin `autoray` package in `pyproject.toml` by fixing source code that was broken by release.
   [(#8147)](https://github.com/PennyLaneAI/pennylane/pull/8147)
   [(#8159)](https://github.com/PennyLaneAI/pennylane/pull/8159)
