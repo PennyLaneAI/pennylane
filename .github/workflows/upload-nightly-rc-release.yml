@@ -19,6 +19,7 @@ jobs:
       id: get-latest-branch
       run: |
         latest_branch=$(git branch -r --sort=-committerdate | grep -Eo 'origin/v[0-9]+\.[0-9]+\.[0-9]+-rc0' | head -n 1 | sed 's|origin/||')
+        git branch -r --sort=-committerdate | grep -Eo 'origin/v[0-9]+\.[0-9]+\.[0-9]+-rc0' | head -n 1 | sed 's|origin/||'
         echo "LATEST_BRANCH=$latest_branch" >> $GITHUB_ENV
 
     - name: Checkout PennyLane repo
