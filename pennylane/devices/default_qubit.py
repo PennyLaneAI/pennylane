@@ -625,7 +625,11 @@ class DefaultQubit(Device):
         if capture.enabled():
 
             if config.mcm_config.mcm_method == "deferred":
-                transform_program.add_transform(defer_measurements, num_wires=len(self.wires))
+                transform_program.add_transform(
+                    defer_measurements,
+                    num_wires=len(self.wires),
+                    stopping_condition=stopping_condition,
+                )
             transform_program.add_transform(transforms_decompose, gate_set=ALL_DQ_GATE_SET)
 
             return transform_program
