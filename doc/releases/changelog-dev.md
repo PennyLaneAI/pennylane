@@ -908,6 +908,13 @@
   [(#8067)](https://github.com/PennyLaneAI/pennylane/pull/8067)
   [(#8120)](https://github.com/PennyLaneAI/pennylane/pull/8120)
 
+* Two new xDSL passes have been added to the Python compiler: `decompose-graph-state`, which
+  decomposes `mbqc.graph_state_prep` operations to their corresponding set of quantum operations for
+  execution on state simulators, and `null-decompose-graph-state`, which replaces
+  `mbqc.graph_state_prep` operations with single quantum-register allocation operations for
+  execution on null devices.
+  [(#8090)](https://github.com/PennyLaneAI/pennylane/pull/8090)
+
 <h3>Documentation 📝</h3>
 
 * Rename `ancilla` to `auxiliary` in internal documentation.
@@ -942,6 +949,9 @@
 * Updated description of `alpha` parameter in `ClassicalShadow.entropy`.
   Trimmed the outdated part of discussion regarding different choices of `alpha`.
   [(#8100)](https://github.com/PennyLaneAI/pennylane/pull/8100)
+
+* The :doc:`Dynamic Quantum Circuits </introduction/dynamic_quantum_circuits>` page has been updated to include the latest device-dependent mid-circuit measurement method defaults.
+  [(#8149)](https://github.com/PennyLaneAI/pennylane/pull/8149)
 
 <h3>Bug fixes 🐛</h3>
 
