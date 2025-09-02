@@ -45,6 +45,6 @@ __all__ = [
     "MeasurementsFromSamplesPass",
     "merge_rotations_pass",
     "MergeRotationsPass",
-    "NullDecomposeGraphStatePass",
     "null_decompose_graph_state_pass",
+    "NullDecomposeGraphStatePass",
 ]

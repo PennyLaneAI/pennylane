@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module contains the implementation of the decompose_graph_state transform,
-written using xDSL.
+"""This module contains the implementations of the decompose_graph_state and
+null_decompose_graph_state transforms, written using xDSL.
 
 .. note::
 
