@@ -188,8 +188,13 @@ class ResourceTrotterProduct(ResourceOperator):  # pylint: disable=too-many-ance
 
     @classmethod
     def default_resource_decomp(
-        cls, first_order_expansion, num_steps, order, num_wires, **kwargs
-    ) -> list[GateCount]:  # pylint: disable=unused-argument
+        cls,
+        first_order_expansion,
+        num_steps,
+        order,
+        num_wires,  # pylint: disable=unused-argument
+        **kwargs,
+    ) -> list[GateCount]:
         r"""Returns a list representing the resources of the operator. Each object represents a
         quantum gate and the number of times it occurs in the decomposition.
 

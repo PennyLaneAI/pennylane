@@ -794,10 +794,11 @@ class ResourceProd(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * num_wires (int): the number of wires this operator acts upon
-            * cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
-              A sequence of tuples containing the operations, in the compressed representation, and
-              a count for how many times they are repeated corresponding to the factors in the product.
+                * num_wires (int): the number of wires this operator acts upon
+                * cmpr_factors_and_counts (Tuple[Tuple[~.labs.resource_estimation.CompressedResourceOp, int]]):
+                  A sequence of tuples containing the operations, in the compressed representation, and
+                  a count for how many times they are repeated corresponding to the factors in the product.
+
         """
         return {
             "num_wires": self.num_wires,
@@ -993,13 +994,13 @@ class ResourceChangeBasisOp(ResourceOperator):
 
         Returns:
             dict: A dictionary containing the resource parameters:
-            * cmpr_compute_op (CompressedResourceOp): A compressed resource operator, corresponding
-              to the compute operation.
-            * cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
-              to the base operation.
-            * cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
-              to the uncompute operation.
-            * num_wires (int): the number of wires this operator acts upon
+                * cmpr_compute_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the compute operation.
+                * cmpr_base_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the base operation.
+                * cmpr_uncompute_op (CompressedResourceOp): A compressed resource operator, corresponding
+                  to the uncompute operation.
+                * num_wires (int): the number of wires this operator acts upon
 
         """
         return {
