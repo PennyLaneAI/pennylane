@@ -122,8 +122,10 @@ def _get_eigenvalue(group_ops, gridpoints):
 
     **Example**
 
-    >>> group_ops = {'ops': [('QPP',), ('QQ',), ('Q',), ('PPQ',)],
-    ...              'coeffs': [(0.01), (0.02j), (0.03), (0.04j)]}
+    >>> group_ops = {
+    ...    "ops": [("QPP",), ("QQ",), ("Q",), ("PPQ",)],
+    ...    "coeffs": [(0.01), (0.02j), (0.03), (0.04j)],
+    ... }
     >>> _get_eigenvalue(group_ops, 4)
     0.15442961739479524
     """
