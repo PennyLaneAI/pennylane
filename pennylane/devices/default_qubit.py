@@ -44,7 +44,6 @@ from pennylane.operation import DecompositionUndefinedError
 from pennylane.ops.op_math import Conditional
 from pennylane.tape import QuantumScript, QuantumScriptBatch, QuantumScriptOrBatch
 from pennylane.transforms import broadcast_expand, convert_to_numpy_parameters
-from pennylane.transforms import decompose as transforms_decompose
 from pennylane.transforms import defer_measurements
 from pennylane.transforms.core import TransformProgram, transform
 from pennylane.typing import PostprocessingFn, Result, ResultBatch, TensorLike
@@ -630,7 +629,7 @@ class DefaultQubit(Device):
                     num_wires=len(self.wires),
                 )
             transform_program.add_transform(
-                transforms_decompose,
+                decompose,
                 gate_set=ALL_DQ_GATE_SET,
                 stopping_condition=stopping_condition,
             )
