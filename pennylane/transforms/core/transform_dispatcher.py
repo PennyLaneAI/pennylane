@@ -444,10 +444,10 @@ class TransformDispatcher:  # pylint: disable=too-many-instance-attributes
             if self.is_informative:
                 return processing_fn(transformed_tapes)
 
-            for op in transformed_tape.circuit:
+            for op in transformed_tape.operations:
                 apply(op)
 
-            mps = transformed_tape.measurements
+            mps = [qml.apply(mp) for mp in transformed_tape.measurements]
 
             if not mps:
                 return qfunc_output
