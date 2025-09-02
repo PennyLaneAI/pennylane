@@ -649,7 +649,7 @@ class TestPreprocessingIntegration:
         expected = (np.array([1, 2, 3]), np.array([4, 5, 6]))
         assert np.array_equal(batch_fn(val), expected)
 
-    def test_preprocess_check_validity_fail(self):
+    def test_preprocess_check_validity_fail(self, decomposition_mode):
         """Test that preprocess throws an error if the split and expanded tapes have
         unsupported operators."""
         ops = [qml.Hadamard(0), NoMatNoDecompOp(1), qml.RZ(0.123, wires=1)]
@@ -660,8 +660,13 @@ class TestPreprocessingIntegration:
         ]
 
         program = qml.device("default.qubit").preprocess_transforms()
-        with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
-            program(tapes)
+
+        if decomposition_mode:  # with_graph, the fallback won't trigger error
+            with pytest.warns(UserWarning):
+                program(tapes)
+        else:  # no_graph
+            with pytest.raises(DeviceError, match="Operator NoMatNoDecompOp"):
+                program(tapes)
 
     @pytest.mark.parametrize(
         "ops, measurement, message",
