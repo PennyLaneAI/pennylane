@@ -954,6 +954,15 @@
 
 <h3>Bug fixes 🐛</h3>
 
+* `Exp` and `Evolution` now have improved decompositions, allowing them to handle more situations
+  more robustly. In particular, the generator is simplified prior to decomposition. Now more
+  time evolution ops can be supported on devices that do not natively support them.
+  [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
+
+* A scalar product of a norm one scalar and an operator now decomposes into a `GlobalPhase` and the operator.
+  For example, `-1 * qml.X(0)` now decomposes into `[qml.GlobalPhase(-np.pi), qml.X(0)]`.
+  [(#8133)](https://github.com/PennyLaneAI/pennylane/pull/8133)
+
 * Fixes a bug that made the queueing behaviour of :meth:`~.pauli.PauliWord.operation` and
   :meth:`~.pauli.PauliSentence.operation` dependent on the global state of a program due to
   a caching issue.

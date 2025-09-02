@@ -61,10 +61,10 @@ def _recursive_expression(x, order, ops):
         list: the approximation as product of exponentials of the Hamiltonian terms
     """
     if order == 1:
-        return [qml_ops.exp(op, x * 1j) for op in ops]
+        return [qml_ops.Evolution(op, -x) for op in ops]
 
     if order == 2:
-        return [qml_ops.exp(op, x * 0.5j) for op in ops + ops[::-1]]
+        return [qml_ops.Evolution(op, -x * 0.5) for op in ops + ops[::-1]]
 
     scalar_1 = _scalar(order)
     scalar_2 = 1 - 4 * scalar_1
@@ -523,16 +523,18 @@ def _trotter_product_decomposition_resources(n, order, ops):
 
     if order == 1:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Exp, base=op, num_steps=None)] = n * _count(op, ops)
+            reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = n * _count(
+                op, ops
+            )
         return reps
     if order == 2:
         for op in ops:
-            reps[resource_rep(qml_ops.op_math.Exp, base=op, num_steps=None)] = (
+            reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = (
                 n * 2 * _count(op, ops)
             )
         return reps
     for op in ops:
-        reps[resource_rep(qml_ops.op_math.Exp, base=op, num_steps=None)] = (
+        reps[resource_rep(qml_ops.op_math.Evolution, base=op, num_steps=None)] = (
             n * _count(op, ops) * 2 * 5 * (order - 2) / 2
         )
     return reps
@@ -548,12 +550,12 @@ def _trotter_product_decomposition(*args, **kwargs):
     def _recursive(x, order, ops):
         if order == 1:
             for op in ops[::-1]:
-                qml_ops.exp(op, x * 1j)
+                qml_ops.Evolution(op, -x)
             return
 
         if order == 2:
             for op in ops + ops[::-1]:
-                qml_ops.exp(op, x * 0.5j)
+                qml_ops.Evolution(op, -x * 0.5)
             return
 
         scalar_1 = _scalar(order)
