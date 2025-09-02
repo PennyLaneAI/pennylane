@@ -197,6 +197,9 @@ def new_resources_from_qfunc(
         num_algo_qubits = 0
         circuit_wires = []
         for op in q.queue:
+            if isinstance(op, (BorrowWires, ReturnWires)):
+                raise ValueError("BorrowWires and ReturnWires is currently not supported in the circuit")
+            
             if isinstance(op, (ResourceOperator, Operation)):
                 if op.wires:
                     circuit_wires.append(op.wires)
@@ -235,6 +238,12 @@ def new_resources_from_qfunc(
                 qm.take(cmp_rep_op.num_wires)
                 if verbose:
                     print("-----< qfunc allocate >----")
+                    print(qm)
+
+            elif isinstance(cmp_rep_op, FreeWires):
+                qm.release(cmp_rep_op.num_wires)
+                if verbose:
+                    print("-----< qfunc free >----")
                     print(qm)
 
             else:
@@ -422,6 +431,12 @@ def new_counts_from_compressed_res_op(
             qbit_mngr.take(action.num_wires * scalar)
             if verbose:
                 print("-----< decomp alloc >----")
+                print(qbit_mngr)
+        
+        if isinstance(action, FreeWires):
+            qbit_mngr.release(action.num_wires * scalar)
+            if verbose:
+                print("-----< decomp free >----")
                 print(qbit_mngr)
     return
 

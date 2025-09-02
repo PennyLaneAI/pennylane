@@ -216,6 +216,22 @@ class NewQubitManager:
         self.clean_idle_aux -= n_requested
         self.dirty_active_aux += n_requested
 
+    def release(self, n_requested=1):
+        """Restore dirty auxiliary qubits to the |0> state"""
+        if n_requested > self.dirty_idle_aux + self.dirty_active_aux:
+            raise ValueError
+
+        n_available = min(n_requested, self.dirty_active_aux)  # release active qubits first 
+
+        self.clean_idle_aux += n_available
+        self.dirty_active_aux -= n_available
+
+        n_requested -= n_available
+        if n_requested == 0: return
+
+        self.clean_idle_aux += n_requested
+        self.dirty_idle_aux -= n_requested
+
     def step_into_decomp_simple(self, num_active_qubits) -> "NewQubitManager":
         QM = self.__class__()
 
