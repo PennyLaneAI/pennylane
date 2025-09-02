@@ -509,15 +509,16 @@ class TestMeasurementsFromSamplesIntegration:
         measurements that require an observable (i.e. expval and var).
         """
 
-        dev = qml.device("lightning.qubit", wires=1, shots=shots)
+        dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_op(wires=0)
             return mp(obs(wires=0))
 
+        qml.capture.disable()
         assert expected_res == circuit_ref(), "Sanity check failed, is expected_res correct?"
-
+        qml.capture.enable()
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -540,17 +541,18 @@ class TestMeasurementsFromSamplesIntegration:
         probs measurements.
         """
 
-        dev = qml.device("lightning.qubit", wires=1, shots=shots)
+        dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_op(wires=0)
             return qml.probs(wires=0)
 
+        qml.capture.disable()
         assert np.array_equal(
             expected_res, circuit_ref()
         ), "Sanity check failed, is expected_res correct?"
-
+        qml.capture.enable()
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -560,6 +562,9 @@ class TestMeasurementsFromSamplesIntegration:
 
     # -------------------------------------------------------------------------------------------- #
 
+    @pytest.mark.skip(
+        "Temp skip in https://github.com/PennyLaneAI/pennylane/pull/8161 should be bring back after CI fixed"
+    )
     @pytest.mark.xfail(
         reason="Counts not supported in Catalyst with program capture",
         strict=True,
@@ -578,9 +583,9 @@ class TestMeasurementsFromSamplesIntegration:
         counts measurements.
         """
 
-        dev = qml.device("lightning.qubit", wires=1, shots=shots)
+        dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_op(wires=0)
             return qml.counts(wires=0)
@@ -612,9 +617,9 @@ class TestMeasurementsFromSamplesIntegration:
 
         In this case, the measurements_from_samples pass should effectively be a no-op.
         """
-        dev = qml.device("lightning.qubit", wires=1, shots=shots)
+        dev = qml.device("lightning.qubit", wires=1)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_op(wires=0)
             return qml.sample(wires=0)
@@ -652,16 +657,17 @@ class TestMeasurementsFromSamplesIntegration:
         In this test, the terminal measurements are performed separately per wire.
         """
 
-        dev = qml.device("lightning.qubit", wires=2, shots=shots)
+        dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_ops[0](wires=0)
             initial_ops[1](wires=1)
             return mp(obs(wires=0)), mp(obs(wires=1))
 
+        qml.capture.disable()
         assert expected_res == circuit_ref(), "Sanity check failed, is expected_res correct?"
-
+        qml.capture.enable()
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -695,9 +701,9 @@ class TestMeasurementsFromSamplesIntegration:
         In this test, the terminal measurements are performed on the combination of both wires.
         """
 
-        dev = qml.device("lightning.qubit", wires=2, shots=shots)
+        dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_ops[0](wires=0)
             initial_ops[1](wires=1)
@@ -728,18 +734,19 @@ class TestMeasurementsFromSamplesIntegration:
         """Test the measurements_from_samples transform on a device with two wires and a terminal,
         "global" probs measurements (one that implicitly acts on all wires).
         """
-        dev = qml.device("lightning.qubit", wires=2, shots=shots)
+        dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_ops[0](wires=0)
             initial_ops[1](wires=1)
             return qml.probs()
 
+        qml.capture.disable()
         assert np.array_equal(
             expected_res, circuit_ref()
         ), "Sanity check failed, is expected_res correct?"
-
+        qml.capture.enable()
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -763,18 +770,19 @@ class TestMeasurementsFromSamplesIntegration:
         """Test the measurements_from_samples transform on a device with two wires and a terminal,
         "global" probs measurements (one that implicitly acts on all wires).
         """
-        dev = qml.device("lightning.qubit", wires=2, shots=shots)
+        dev = qml.device("lightning.qubit", wires=2)
 
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=shots)
         def circuit_ref():
             initial_ops[0](wires=0)
             initial_ops[1](wires=1)
             return qml.probs(wires=0), qml.probs(wires=1)
 
+        qml.capture.disable()
         assert np.array_equal(
             expected_res, circuit_ref()
         ), "Sanity check failed, is expected_res correct?"
-
+        qml.capture.enable()
         circuit_compiled = qml.qjit(
             measurements_from_samples_pass(circuit_ref),
             pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()],
@@ -793,10 +801,10 @@ class TestMeasurementsFromSamplesIntegration:
 
         @qml.qjit(pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
         def workload(shots):
-            dev = qml.device("lightning.qubit", wires=1, shots=shots)
+            dev = qml.device("lightning.qubit", wires=1)
 
             @measurements_from_samples_pass
-            @qml.qnode(dev)
+            @qml.qnode(dev, shots=shots)
             def circuit():
                 return qml.expval(qml.Z(wires=0))
 
@@ -807,11 +815,11 @@ class TestMeasurementsFromSamplesIntegration:
 
     def test_qjit_filecheck(self, run_filecheck_qjit):
         """Test that the measurements_from_samples_pass works correctly with qjit."""
-        dev = qml.device("lightning.qubit", wires=2, shots=25)
+        dev = qml.device("lightning.qubit", wires=2)
 
         @qml.qjit(target="mlir", pass_plugins=[xdsl_plugin.getXDSLPluginAbsolutePath()])
         @measurements_from_samples_pass
-        @qml.qnode(dev)
+        @qml.qnode(dev, shots=25)
         def circuit():
             # CHECK-NOT: quantum.namedobs
             # CHECK: [[obs:%.+]] = quantum.compbasis
