@@ -283,12 +283,50 @@ class TestConvertToMBQCFormalismPass:
         run_filecheck(program, pipeline)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_gates_in_mbqc_gate_set_lowering_for_loop(self, run_filecheck_qjit):
-        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and capture the control flows."""
+    def test_gates_in_mbqc_gate_set_lowering(self, run_filecheck_qjit):
+        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and unrolled loops."""
         dev = qml.device("null.qubit", wires=1000)
 
-        @qml.for_loop(0, 1000, 1)
-        def loop_func(i):
+        @qml.qjit(
+            target="mlir",
+            pass_plugins=[getXDSLPluginAbsolutePath()],
+            pipelines=mbqc_pipeline(),
+            autograph=False,
+        )
+        @convert_to_mbqc_formalism_pass
+        @qml.set_shots(1000)
+        @qml.qnode(dev)
+        def circuit():
+            # CHECK-NOT: quantum.custom "CNOT"()
+            # CHECK-NOT: quantum.custom "S"()
+            # CHECK-NOT: quantum.custom "RZ"()
+            # CHECK-NOT: quantum.custom "RotXZX"()
+            # CHECK-NOT: quantum.custom "Hadamard"()
+            # CHECK-NOT: scf.for
+            # CHECK: mbqc.graph_state_prep
+            # CHECK: quantum.custom "CZ"
+            # CHECK: mbqc.measure_in_basis
+            # CHECK: scf.if
+            # CHECK: quantum.custom "PauliX"
+            # CHECK: quantum.custom "PauliZ"
+            # CHECK: quantum.dealloc_qb
+            for i in range(1000):
+                qml.H(i)
+                qml.S(i)
+                RotXZX(0.1, 0.2, 0.3, wires=[i])
+                qml.RZ(phi=0.1, wires=[i])
+            qml.CNOT(wires=[0, 1])
+            return qml.expval(qml.Z(wires=0))
+
+        run_filecheck_qjit(circuit)
+
+    @pytest.mark.usefixtures("enable_disable_plxpr")
+    def test_gates_in_mbqc_gate_set_lowering_for(self, run_filecheck_qjit):
+        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and unrolled loops."""
+        dev = qml.device("null.qubit", wires=1000)
+
+        @qml.for_loop(1, 1000, 1)
+        def loop_for(i):
             qml.H(i)
             qml.S(i)
             RotXZX(0.1, 0.2, 0.3, wires=[i])
@@ -317,22 +355,31 @@ class TestConvertToMBQCFormalismPass:
             # CHECK: quantum.custom "PauliX"
             # CHECK: quantum.custom "PauliZ"
             # CHECK: quantum.dealloc_qb
-            loop_func()
+            loop_for()
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(wires=0))
 
         run_filecheck_qjit(circuit)
 
     @pytest.mark.usefixtures("enable_disable_plxpr")
-    def test_gates_in_mbqc_gate_set_lowering_for(self, run_filecheck_qjit):
-        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and unrolled for loops."""
+    def test_gates_in_mbqc_gate_set_lowering_while(self, run_filecheck_qjit):
+        """Test that the convert_to_mbqc_formalism_pass works correctly with qjit and unrolled loops."""
         dev = qml.device("null.qubit", wires=1000)
+
+        @qml.while_loop(lambda i: i > 1000)
+        def while_for(i):
+            qml.H(i)
+            qml.S(i)
+            RotXZX(0.1, 0.2, 0.3, wires=[i])
+            qml.RZ(phi=0.1, wires=[i])
+            i = i + 1
+            return i
 
         @qml.qjit(
             target="mlir",
             pass_plugins=[getXDSLPluginAbsolutePath()],
             pipelines=mbqc_pipeline(),
-            autograph=False,
+            autograph=True,
         )
         @convert_to_mbqc_formalism_pass
         @qml.set_shots(1000)
@@ -343,19 +390,14 @@ class TestConvertToMBQCFormalismPass:
             # CHECK-NOT: quantum.custom "RZ"()
             # CHECK-NOT: quantum.custom "RotXZX"()
             # CHECK-NOT: quantum.custom "Hadamard"
-            # CHECK-NOT: scf.for
-            # CHECK: mbqc.graph_state_prep
+            # CHECK: scf.while
             # CHECK: quantum.custom "CZ"
             # CHECK: mbqc.measure_in_basis
             # CHECK: scf.if
             # CHECK: quantum.custom "PauliX"
             # CHECK: quantum.custom "PauliZ"
             # CHECK: quantum.dealloc_qb
-            for i in range(1000):
-                qml.H(i)
-                qml.S(i)
-                RotXZX(0.1, 0.2, 0.3, wires=[i])
-                qml.RZ(phi=0.1, wires=[i])
+            while_for(0)
             qml.CNOT(wires=[0, 1])
             return qml.expval(qml.Z(wires=0))
 
