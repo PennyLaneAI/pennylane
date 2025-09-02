@@ -23,6 +23,7 @@ from .decompose_graph_state import (
 from .measurements_from_samples import MeasurementsFromSamplesPass, measurements_from_samples_pass
 from .merge_rotations import MergeRotationsPass, merge_rotations_pass
 from .combine_global_phases import combine_global_phases_pass, CombineGlobalPhasesPass
+from .convert_to_mbqc_formalism import convert_to_mbqc_formalism_pass, ConvertToMBQCFormalismPass
 from .diagonalize_measurements import (
     DiagonalizeFinalMeasurementsPass,
     diagonalize_final_measurements_pass,
@@ -32,6 +33,8 @@ from .diagonalize_measurements import (
 __all__ = [
     "combine_global_phases_pass",
     "CombineGlobalPhasesPass",
+    "convert_to_mbqc_formalism_pass",
+    "ConvertToMBQCFormalismPass",
     "decompose_graph_state_pass",
     "DecomposeGraphStatePass",
     "diagonalize_final_measurements_pass",
